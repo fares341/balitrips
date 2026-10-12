@@ -21,3 +21,14 @@ describe('normalizePhone', () => {
     expect(looksLikeEmail('+97150')).toBe(false)
   })
 })
+
+describe('phone-only accounts', async () => {
+  const { isPlaceholderEmail, placeholderEmailFor } = await import('./phone')
+
+  it('derives a stable, undeliverable address from the number', () => {
+    expect(placeholderEmailFor('+6281234567890')).toBe('p6281234567890@phone.balitrips.invalid')
+    expect(isPlaceholderEmail('p6281234567890@phone.balitrips.invalid')).toBe(true)
+    expect(isPlaceholderEmail('someone@example.com')).toBe(false)
+    expect(isPlaceholderEmail(null)).toBe(false)
+  })
+})

@@ -54,3 +54,6 @@ WHERE "days" IS NULL
 ALTER TABLE "payments" ADD COLUMN IF NOT EXISTS "method" varchar(32);--> statement-breakpoint
 -- Offline payments recorded from Studio (markOrderPaidOffline) are bank transfers.
 UPDATE "payments" SET "method" = 'bank_transfer' WHERE "method" IS NULL AND "provider" = 'manual';
+--> statement-breakpoint
+-- 3.1: phone verification (WhatsApp code).
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone_verified_at" timestamp with time zone;

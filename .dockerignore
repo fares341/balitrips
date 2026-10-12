@@ -33,3 +33,6 @@ Dockerfile
 docker-compose*.yml
 .vscode
 .idea
+
+# Test account credentials written by deploy/start-production.* — never ship them.
+test-accounts-*.txt

@@ -92,3 +92,6 @@ plan.md
 
 # generated calibration evidence
 scripts/.calibration-preview.png
+
+# Test account credentials written by deploy/start-production.*
+test-accounts-*.txt

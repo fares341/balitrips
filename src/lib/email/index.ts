@@ -19,6 +19,8 @@
  * where it would scroll away.
  */
 
+import { isPlaceholderEmail } from '@/lib/auth/phone'
+
 import { ConsoleTransport } from './console'
 import { ResendTransport } from './resend'
 import type { EmailMessage, EmailTransport, SendResult } from './types'
@@ -104,6 +106,11 @@ export function __setEmailTransport(transport: EmailTransport | null): void {
  * choosing for them.
  */
 export async function sendEmail(message: EmailMessage): Promise<SendResult> {
+  // حساب الجوال وحده (الوثيقة 3.1) يحمل بريداً بديلاً في نطاق `.invalid` لا يُسلَّم.
+  // لا نحاول الإرسال إليه (كان سيرتد من Resend ويضر بسمعة النطاق).
+  if (isPlaceholderEmail(message.to)) {
+    return { id: null, delivered: false, error: 'phone-only account (no email address)' }
+  }
   let transport: EmailTransport
   try {
     transport = getEmailTransport()

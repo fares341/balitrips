@@ -123,15 +123,23 @@ describe('signUpSchema', () => {
   })
 
   it('reports only the first problem per field', () => {
-    const errors = errorsFor(signUpSchema, { ...valid, name: '', email: '' })
-    expect(errors).toEqual({ name: 'co_err_required', email: 'co_err_required' })
+    const errors = errorsFor(signUpSchema, { ...valid, name: '', email: 'bad@' })
+    expect(errors).toEqual({ name: 'co_err_required', email: 'co_err_email' })
+  })
+
+  it('allows signing up with a mobile number and no email (spec 3.1)', () => {
+    expect(errorsFor(signUpSchema, { ...valid, email: '' })).toBe(null)
   })
 })
 
 describe('forgotPasswordSchema', () => {
   it('validates the address before anything is sent', () => {
-    expect(errorsFor(forgotPasswordSchema, { email: 'nope' })).toEqual({ email: 'co_err_email' })
+    expect(errorsFor(forgotPasswordSchema, { email: 'nope' })).toEqual({
+      email: 'auth_err_identifier',
+    })
     expect(errorsFor(forgotPasswordSchema, { email: 'a@b.co' })).toBe(null)
+    // حساب الجوال: الرابط يصل عبر واتساب.
+    expect(errorsFor(forgotPasswordSchema, { email: '+62 812 3456 7890' })).toBe(null)
   })
 })
 

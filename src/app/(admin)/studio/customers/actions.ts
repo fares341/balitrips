@@ -440,6 +440,8 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
         email,
         phone: phoneRaw === '' ? null : phoneRaw,
         phoneNormalized,
+        // رقم جديد = غير مُتحقق منه بعد.
+        ...(phoneNormalized !== before.phoneNormalized ? { phoneVerifiedAt: null } : {}),
         country: countryRaw === '' ? null : countryRaw.toUpperCase(),
       }
       await tx.update(users).set(next).where(eq(users.id, userId))

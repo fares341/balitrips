@@ -551,7 +551,7 @@ export function AuthModal({
         autoFocus
       />
       <TextField
-        label={t('auth_email')}
+        label={t('auth_email_optional')}
         type="email"
         inputMode="email"
         value={form.email}
@@ -680,13 +680,13 @@ export function AuthModal({
       ) : (
         <>
           <TextField
-            label={t('auth_email')}
-            type="email"
+            label={t('auth_identifier')}
+            type="text"
             inputMode="email"
             value={form.email}
             onChange={update('email')}
-            placeholder="you@email.com"
-            autoComplete="email"
+            placeholder={t('auth_identifier_ph')}
+            autoComplete="username"
             maxLength={MAX_EMAIL_LENGTH}
             error={errors.email}
             disabled={busy}

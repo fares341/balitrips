@@ -1,6 +1,11 @@
 # Normalize line endings so Windows/macOS/Linux and CI agree.
 * text=auto eol=lf
 
+# Windows batch files must keep CRLF or cmd.exe misreads labels and GOTO.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh text eol=lf
+
 # Binary assets — never touch these.
 *.png binary
 *.jpg binary

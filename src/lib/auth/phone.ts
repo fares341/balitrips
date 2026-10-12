@@ -21,3 +21,20 @@ export function normalizePhone(raw: string | null | undefined): string | null {
 export function looksLikeEmail(value: string): boolean {
   return value.includes('@')
 }
+
+/**
+ * التسجيل بالجوال وحده (الوثيقة 3.1: "رقم الجوال + كلمة مرور").
+ *
+ * Better Auth يبني الحساب على البريد، فحساب الجوال يأخذ بريداً بديلاً ثابتاً مشتقاً
+ * من الرقم في نطاق `.invalid` (RFC 2606: لا يُسلَّم إليه أي بريد أبداً). لا يُرسل
+ * إليه شيء (`isPlaceholderEmail` في ناقل البريد)، ويُعرض في الواجهة كـ "لا بريد".
+ */
+export const PHONE_EMAIL_DOMAIN = 'phone.balitrips.invalid'
+
+export function placeholderEmailFor(normalizedPhone: string): string {
+  return `p${normalizedPhone.replace(/\D/g, '')}@${PHONE_EMAIL_DOMAIN}`
+}
+
+export function isPlaceholderEmail(email: string | null | undefined): boolean {
+  return typeof email === 'string' && email.toLowerCase().endsWith(`@${PHONE_EMAIL_DOMAIN}`)
+}

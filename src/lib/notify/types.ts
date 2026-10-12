@@ -47,6 +47,13 @@ export const USER_NOTIFICATION_TYPES = {
   custom_quote: { email: true, whatsapp: true },
   /** الوثيقة 4.4: إرسال الجدول المخصص عبر واتساب (رابط العارض الآمن في الحساب). */
   pdf_ready_whatsapp: { email: false, whatsapp: true },
+  /**
+   * رسائل مصادقة تُرسل مباشرة (sendWhatsappTemplate) لا عبر notifyUser: لا صف في
+   * جدول الإشعارات ولا طابور — تحمل رمزاً أو رابطاً صالحاً. قوالب Meta من فئة
+   * "Authentication".
+   */
+  password_reset_whatsapp: { email: false, whatsapp: true },
+  phone_otp: { email: false, whatsapp: true },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -82,6 +89,8 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   order_updated: ['orderNumber', 'status'],
   custom_quote: ['name', 'amount'],
   pdf_ready_whatsapp: ['name', 'link'],
+  password_reset_whatsapp: ['link'],
+  phone_otp: ['code'],
   admin_message: ['body'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],

@@ -33,21 +33,6 @@ export const MAX_EMAIL_LENGTH = 256
 /** `users.phone` is varchar(32). */
 export const MAX_PHONE_LENGTH = 32
 
-/**
- * Required-then-shape ordering.
- *
- * `z.email()` alone reports "enter a valid email" for an empty box, which
- * reads as a correction of something the visitor has not typed yet. The
- * length check runs before the format check so a 300-character paste is
- * reported as too long rather than as malformed.
- */
-const emailField = z
-  .string()
-  .trim()
-  .min(1, 'co_err_required')
-  .max(MAX_EMAIL_LENGTH, 'co_err_long')
-  .pipe(z.email('co_err_email'))
-
 const passwordField = z
   .string()
   .min(MIN_PASSWORD_LENGTH, 'auth_err_pw_short')
@@ -100,10 +85,20 @@ export const signInSchema = z.object({
 
 export type SignInValues = z.infer<typeof signInSchema>
 
+/**
+ * البريد اختياري عند التسجيل (الوثيقة 3.1 تسمح بالجوال + كلمة مرور وحدهما).
+ * فارغ = حساب جوال؛ الخادم يعطيه بريداً بديلاً لا يُرسل إليه شيء.
+ */
+const optionalEmailField = z
+  .string()
+  .trim()
+  .max(MAX_EMAIL_LENGTH, 'co_err_long')
+  .refine((value) => value === '' || z.email().safeParse(value).success, 'co_err_email')
+
 export const signUpSchema = z
   .object({
     name: z.string().trim().min(1, 'co_err_required').max(MAX_NAME_LENGTH, 'co_err_long'),
-    email: emailField,
+    email: optionalEmailField,
     phone: phoneField,
     country: countryField,
     /** الوثيقة 3.1: اللغة المفضلة (اختياري؛ الافتراضي لغة الصفحة). */
@@ -120,8 +115,9 @@ export const signUpSchema = z
 
 export type SignUpValues = z.infer<typeof signUpSchema>
 
+/** نسيت كلمة المرور: بريد، أو جوال لحساب الجوال (يصل الرابط عبر واتساب). */
 export const forgotPasswordSchema = z.object({
-  email: emailField,
+  email: identifierField,
 })
 
 export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>

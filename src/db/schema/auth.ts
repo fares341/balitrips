@@ -33,6 +33,8 @@ export const users = pgTable(
      * (الوثيقة 3.2). فريد بين الحسابات. `phone` يبقى كما كتبه العميل للعرض.
      */
     phoneNormalized: varchar('phone_normalized', { length: 20 }),
+    /** الوثيقة 3.1: تحقق الجوال برمز عبر واتساب. يُصفَّر عند تغيير الرقم. */
+    phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
     country: varchar('country', { length: 2 }),
     locale: varchar('locale', { length: 5 }).notNull().default('en'),
 

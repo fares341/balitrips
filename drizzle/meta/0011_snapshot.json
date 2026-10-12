@@ -6373,6 +6373,12 @@
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": false
+        },
+        "phone_verified_at": {
+          "name": "phone_verified_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {

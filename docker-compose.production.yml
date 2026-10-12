@@ -1,0 +1,158 @@
+# ---------------------------------------------------------------------------
+# Bali Trips — single-host production stack that BUILDS its own images.
+#
+# Used by deploy/start-production.sh (Linux/macOS) and
+# deploy/start-production.cmd (Windows). Unlike docker-compose.prod.yml
+# (pull-only, blue/green, images from CI) this file runs ONE app container and
+# builds everything locally, so a fresh server or a laptop can run the real
+# production build with one command.
+#
+# Everything is configured from ONE file: .env.production (created by the start
+# script from .env.production.example on the first run, with fresh secrets).
+#
+#   app        Next.js standalone server           http://localhost:${APP_PORT:-3000}
+#   worker     queues: email, WhatsApp, PDF, schedules
+#   postgres   data in the `pgdata` volume
+#   gotenberg  HTML → PDF for itinerary documents
+#   caddy      HTTPS on 80/443 — only with the `https` profile (--https)
+# ---------------------------------------------------------------------------
+
+name: bali-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+x-build-args: &build-args
+  # The image build prerenders content pages, so it reads the database. The
+  # start scripts point this at the postgres port published below.
+  DATABASE_URL: ${BUILD_DATABASE_URL:-}
+  NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+  NEXT_PUBLIC_CDN_URL: ${NEXT_PUBLIC_CDN_URL:-}
+  NEXT_PUBLIC_DEFAULT_CURRENCY: ${NEXT_PUBLIC_DEFAULT_CURRENCY:-USD}
+  NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL:-}
+  NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER:-}
+  NEXT_PUBLIC_WHATSAPP_DISPLAY: ${NEXT_PUBLIC_WHATSAPP_DISPLAY:-}
+  NEXT_PUBLIC_SOCIAL_INSTAGRAM: ${NEXT_PUBLIC_SOCIAL_INSTAGRAM:-}
+  NEXT_PUBLIC_SOCIAL_TIKTOK: ${NEXT_PUBLIC_SOCIAL_TIKTOK:-}
+  NEXT_PUBLIC_SOCIAL_YOUTUBE: ${NEXT_PUBLIC_SOCIAL_YOUTUBE:-}
+  ADMIN_BASE_PATH: ${ADMIN_BASE_PATH:-}
+  PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-}
+  ALLOW_SANDBOX_PAYMENTS: ${ALLOW_SANDBOX_PAYMENTS:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bali}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-bali}
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+    # Loopback only: reachable by the image build on this machine, never from
+    # the network. The app and worker use the internal `postgres` hostname.
+    ports:
+      - '127.0.0.1:${DB_HOST_PORT:-55432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: 256mb
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+    logging: *logging
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    command:
+      - 'gotenberg'
+      - '--chromium-disable-javascript=false'
+      - '--chromium-allow-list=file:///tmp/.*'
+      - '--api-timeout=60s'
+    shm_size: 256mb
+    logging: *logging
+
+  app:
+    build:
+      context: .
+      target: runner
+      args: *build-args
+    image: bali-app:production
+    restart: unless-stopped
+    env_file:
+      - ./.env.production
+    environment:
+      NODE_ENV: production
+      PORT: '3000'
+      HOSTNAME: '0.0.0.0'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bali}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bali}
+      NODE_OPTIONS: '--max-old-space-size=512'
+    ports:
+      - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'
+    volumes:
+      - media_data:/app/public/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      default:
+        # caddy/Caddyfile proxies to app-blue / app-green (blue/green on the
+        # droplet). Here one container answers to both names.
+        aliases:
+          - app-blue
+          - app-green
+    logging: *logging
+
+  worker:
+    build:
+      context: .
+      target: worker
+    image: bali-worker:production
+    restart: unless-stopped
+    init: true
+    env_file:
+      - ./.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bali}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bali}
+      GOTENBERG_URL: http://gotenberg:3000
+      NODE_OPTIONS: '--max-old-space-size=384'
+    volumes:
+      - media_data:/app/public/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    logging: *logging
+
+  caddy:
+    image: caddy:2.10-alpine
+    profiles: ['https']
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN is required for --https}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required for --https}
+      ADMIN_BASE_PATH: ${ADMIN_BASE_PATH:?ADMIN_BASE_PATH is required}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    logging: *logging
+
+volumes:
+  pgdata:
+  media_data:
+  caddy_data:
+  caddy_config:

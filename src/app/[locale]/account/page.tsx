@@ -16,6 +16,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { db } from '@/db'
 import { users } from '@/db/schema'
 import { enabledSocialProviders } from '@/lib/auth/server'
+import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { getUser } from '@/lib/auth/session'
 import { BLOCKED_MESSAGE_KEYS, type BlockedReason } from '@/lib/security/require'
 
@@ -24,6 +25,7 @@ import { accountMetadata } from './_lib/meta'
 import { ProfileForm } from './profile-form'
 import { SignedOutPane } from './signed-out-pane'
 import { VerifyEmailNotice } from './verify-email-notice'
+import { VerifyPhoneNotice } from './verify-phone-notice'
 
 type PageParams = Promise<{ locale: string }>
 type PageSearch = Promise<Record<string, string | string[] | undefined>>
@@ -97,13 +99,19 @@ export default async function AccountProfilePage({
   // `user.since || "Jun 2026"` — which printed June 2026 for every account
   // ever created.
   const rows = await db
-    .select({ createdAt: users.createdAt })
+    .select({
+      createdAt: users.createdAt,
+      phone: users.phoneNormalized,
+      phoneVerifiedAt: users.phoneVerifiedAt,
+    })
     .from(users)
     .where(eq(users.id, user.id))
     .limit(1)
 
   const memberSince = rows[0]?.createdAt ?? null
-  const label = user.name ?? user.email
+  // حساب الجوال وحده (الوثيقة 3.1): بريده بديل داخلي لا يُعرض ولا يُطلب تأكيده.
+  const phoneOnly = isPlaceholderEmail(user.email)
+  const label = user.name ?? (phoneOnly ? (user.phone ?? '') : user.email)
   const initial = label.trim().charAt(0).toUpperCase() || 'T'
 
   return (
@@ -119,7 +127,10 @@ export default async function AccountProfilePage({
           {t('acct_verify_bad_link')}
         </div>
       ) : null}
-      {!user.emailVerified && <VerifyEmailNotice email={user.email} />}
+      {!user.emailVerified && !phoneOnly && <VerifyEmailNotice email={user.email} />}
+      {rows[0]?.phone && rows[0].phoneVerifiedAt === null ? (
+        <VerifyPhoneNotice phone={rows[0].phone} />
+      ) : null}
       <div className="bt-acct-sechead">
         <h1 id="bt-acct-profile-h">{t('acct_profile_t')}</h1>
       </div>
@@ -145,7 +156,7 @@ export default async function AccountProfilePage({
       <ProfileForm
         initial={{
           name: user.name ?? '',
-          email: user.email,
+          email: phoneOnly ? '' : user.email,
           phone: user.phone ?? '',
           country: user.country ?? '',
           locale: user.locale,

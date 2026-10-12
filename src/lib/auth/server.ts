@@ -66,13 +66,20 @@ import {
 import { DEVICE_COOKIE, describeAgent, deviceIdentity } from '@/lib/security/fingerprint'
 import { clientIp, requestCity, requestCountry } from '@/lib/security/ip'
 
-import { looksLikeEmail, normalizePhone } from './phone'
+import { isPlaceholderEmail, looksLikeEmail, normalizePhone, placeholderEmailFor } from './phone'
 
 import { sendPasswordResetEmail, sendVerificationEmail, toMailLocale } from './email'
 
 /* --------------------------------------------------------------------------
    Environment
    -------------------------------------------------------------------------- */
+
+/** نقاط تقبل في خانة `email` رقم جوال دولياً بدلاً منه. */
+const PHONE_IDENTIFIER_PATHS = new Set([
+  '/sign-in/email',
+  '/forget-password',
+  '/request-password-reset',
+])
 
 /** نقاط تبدأ دخولاً أو تنشئ حساباً: IP المحظور يُرفض عندها قبل أي عمل. */
 const BAN_CHECKED_PATHS = new Set([
@@ -202,11 +209,30 @@ export const auth = betterAuth({
     revokeSessionsOnPasswordReset: true,
 
     sendResetPassword: async ({ user, url }) => {
+      const locale = toMailLocale((user as { locale?: unknown }).locale)
+      // حساب جوال (بلا بريد حقيقي): الرابط عبر واتساب إلى رقمه المسجّل. مباشرة،
+      // لا عبر الطابور ولا جدول الإشعارات — الرابط يحمل رمزاً صالحاً.
+      if (isPlaceholderEmail(user.email)) {
+        const [row] = await db
+          .select({ phone: users.phoneNormalized })
+          .from(users)
+          .where(eq(users.id, String(user.id)))
+          .limit(1)
+        const { sendWhatsappTemplate, toWhatsappNumber } = await import('@/lib/notify/whatsapp')
+        const result = await sendWhatsappTemplate(
+          toWhatsappNumber(row?.phone ?? null),
+          'password_reset_whatsapp',
+          { link: url },
+          locale,
+        )
+        if (!result.sent) console.error('[auth] reset link not sent on WhatsApp', result.reason)
+        return
+      }
       await sendPasswordResetEmail({
         to: user.email,
         name: user.name ?? null,
         url,
-        locale: toMailLocale((user as { locale?: unknown }).locale),
+        locale,
       })
     },
   },
@@ -354,6 +380,7 @@ export const auth = betterAuth({
       phone: { type: 'string', required: false, returned: true },
       /** يُحسب في الخطاف أدناه من `phone`؛ لا يقبله أحد من جسم الطلب. */
       phoneNormalized: { type: 'string', required: false, input: false, returned: false },
+      phoneVerifiedAt: { type: 'date', required: false, input: false, returned: false },
       country: { type: 'string', required: false, returned: true },
       /**
        * الحظر. `input: false` حتى لا يرسله أحد في جسم التسجيل؛ `returned`
@@ -654,6 +681,15 @@ export const auth = betterAuth({
               })
             }
             data.phoneNormalized = normalized
+            // رقم مختلف عن المُتحقق منه = يحتاج تحققاً جديداً.
+            if (self !== undefined) {
+              const [current] = await db
+                .select({ phone: users.phoneNormalized })
+                .from(users)
+                .where(eq(users.id, self))
+                .limit(1)
+              if (current?.phone !== normalized) data.phoneVerifiedAt = null
+            }
           }
           if ('country' in raw) {
             data.country =
@@ -705,7 +741,24 @@ export const auth = betterAuth({
         await rememberResetOwner(resetToken(ctx.body, ctx.query))
         return
       }
-      if (ctx.path !== '/sign-in/email') return
+      // الوثيقة 3.1: التسجيل بالجوال وحده — بلا بريد يُعطى الحساب بريداً بديلاً
+      // ثابتاً (`placeholderEmailFor`) لا يُرسل إليه شيء. التحقق من الرقم وفرادته
+      // في `databaseHooks.user.create.before` كالمعتاد.
+      if (ctx.path === '/sign-up/email') {
+        const body = (ctx.body ?? {}) as Record<string, unknown>
+        const email = typeof body.email === 'string' ? body.email.trim() : ''
+        if (email !== '') return
+        const normalized = typeof body.phone === 'string' ? normalizePhone(body.phone) : null
+        if (normalized === null) {
+          throw APIError.from('BAD_REQUEST', {
+            message: 'An email or an international mobile number is required.',
+            code: 'PHONE_REQUIRED',
+          })
+        }
+        return { context: { body: { ...body, email: placeholderEmailFor(normalized) } } }
+      }
+      // الدخول ونسيت كلمة المرور يقبلان بريداً أو جوالاً (الوثيقة 3.2).
+      if (!PHONE_IDENTIFIER_PATHS.has(ctx.path)) return
       const body = (ctx.body ?? {}) as Record<string, unknown>
       const identifier = typeof body.email === 'string' ? body.email.trim() : ''
       if (identifier === '' || looksLikeEmail(identifier)) return
