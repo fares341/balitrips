@@ -27,6 +27,7 @@ import { auditLog, orderItems, orders, payments, refunds, users } from '@/db/sch
 import type { Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
+import { isPlaceholderEmail } from '@/lib/auth/phone'
 import {
   renderOrderConfirmationEmail,
   renderRefundNoticeEmail,
@@ -173,6 +174,8 @@ async function sendWelcome(userId: string, verifyUrl: string | undefined): Promi
     ...(verifyUrl === undefined ? {} : { verifyUrl }),
   })
 
+  // Phone-only account: nothing to mail (and nothing to retry).
+  if (isPlaceholderEmail(user.email)) return
   const result = await sendEmail({ to: user.email, ...rendered })
   if (!result.delivered) throw new Error(`Welcome mail not delivered: ${result.error ?? 'unknown'}`)
 
@@ -254,6 +257,7 @@ async function sendOrderConfirmation(orderId: string): Promise<void> {
     orderUrl: absoluteUrl(locale, '/account/invoices'),
   })
 
+  if (isPlaceholderEmail(recipient)) return
   const result = await sendEmail({ to: recipient, ...rendered })
   if (!result.delivered) {
     throw new Error(`Order confirmation not delivered: ${result.error ?? 'unknown'}`)
@@ -323,6 +327,7 @@ async function sendRefundNotice(orderId: string, refundId: string | undefined): 
     orderUrl: absoluteUrl(locale, '/account/invoices'),
   })
 
+  if (isPlaceholderEmail(recipient)) return
   const result = await sendEmail({ to: recipient, ...rendered })
   if (!result.delivered) {
     throw new Error(`Refund notice not delivered: ${result.error ?? 'unknown'}`)

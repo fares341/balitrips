@@ -18,6 +18,7 @@ import { getPathname } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
 import { renderNotificationEmail, sendEmail, toMailLocale } from '@/lib/email'
 import { isElevated, isRole } from '@/lib/auth/roles'
+import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { notifyUser } from '@/lib/notify'
 import { isNotificationType } from '@/lib/notify/types'
 import { sendWhatsappTemplate, toWhatsappNumber } from '@/lib/notify/whatsapp'
@@ -122,6 +123,8 @@ export async function sendNotificationEmail(notificationId: string): Promise<voi
   }
 
   if (!user || user.deletedAt !== null) return
+  // Phone-only account: no mailbox — the bell and WhatsApp carry it instead.
+  if (isPlaceholderEmail(user.email)) return
   const locale = toMailLocale(user.locale)
   const rendered = renderNotificationEmail({
     locale,

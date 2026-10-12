@@ -189,8 +189,14 @@ export function useMapFilters(
     setQueryText(value)
     // يُطلب الموقع حين تظهر "قريب مني" في الجملة — مرة، لا مع كل حرف بعدها.
     const next = understandQuery(value, vocabulary)
-    if (next.nearMe && !understood.nearMe && near === null && geoStatus !== 'locating') {
-      requestLocation(true)
+    if (next.nearMe && !understood.nearMe) {
+      if (near === null) {
+        if (geoStatus !== 'locating') requestLocation(true)
+      } else {
+        // الموقع معروف من زر "قريب مني": الجملة تحكم الآن (ترتيب بالمسافة بلا
+        // دائرة ثابتة)، كما لو طُلب الموقع منها أول مرة.
+        setRadiusKm(null)
+      }
     }
   }
 

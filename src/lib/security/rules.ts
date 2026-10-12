@@ -144,8 +144,24 @@ export const RULES: readonly RuleSpec[] = [
     // + تنبيه الفريق. تحتاج جلسة قائمة، فلا يوجّهها أحد ضد حساب غيره.
     autoAction: 'suspend_user',
     notifyStaff: true,
-    why: ['not_entitled', 'download_limit', 'view_limit'],
+    // Only content the account never bought. A paying customer re-opening a
+    // file past its download/view cap is not probing — see limit_exhausted.
+    why: ['not_entitled'],
     label: 'Repeated attempts to open content the account does not own',
+  },
+  {
+    /** حدود التنزيل/المشاهدة المستنفدة: تنبيه للفريق فقط، بلا تعليق للعميل الذي دفع. */
+    id: 'limit_exhausted',
+    counts: ['unauthorized_access'],
+    by: 'user',
+    measure: 'events',
+    windowMs: HOUR,
+    threshold: 15,
+    severity: 'low',
+    autoAction: null,
+    notifyStaff: true,
+    why: ['download_limit', 'view_limit'],
+    label: 'Repeated opens of a file past its download or view limit',
   },
   {
     /**

@@ -177,8 +177,10 @@
 	# users: edge-caching one visitor's copy would either leak paid content
 	# to anonymous visitors or serve the blurred version to paying ones.
 	# /account (invoices, devices, subscriptions, schedules) and /plans ("buy" vs
-	# "you own this") read the session: never cacheable at the edge.
-	@privatePage path_regexp priv ^/(?:en|ar|id)/(?:account|plans|cart|checkout|map|reset-password)(?:/|$)
+	# "you own this") read the session: never cacheable at the edge. /blog,
+	# /events and /itineraries render members-only (exclusive) entries for
+	# entitled visitors only, and /trip/<token> is a private shared trip.
+	@privatePage path_regexp priv ^/(?:en|ar|id)/(?:account|plans|cart|checkout|map|reset-password|blog|events|itineraries|trip)(?:/|$)
 
 	# Localised HTML. Split in two so the locale home page is not tagged with
 	# an empty section.

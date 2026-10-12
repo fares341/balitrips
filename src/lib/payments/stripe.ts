@@ -22,6 +22,8 @@
 
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
+import { isPlaceholderEmail } from '@/lib/auth/phone'
+
 import {
   normalisePaymentMethod,
   PaymentProviderError,
@@ -246,7 +248,11 @@ export class StripePaymentProvider implements PaymentProvider {
       {
         mode: 'payment',
         client_reference_id: input.orderId,
-        customer_email: input.customer.email,
+        // Phone-only accounts have a reserved, undeliverable address — let
+        // Stripe Checkout ask for a receipt e-mail instead.
+        ...(isPlaceholderEmail(input.customer.email)
+          ? {}
+          : { customer_email: input.customer.email }),
         locale: STRIPE_LOCALES.has(input.customer.locale) ? input.customer.locale : 'auto',
         success_url: input.returnUrl,
         cancel_url: input.returnUrl,

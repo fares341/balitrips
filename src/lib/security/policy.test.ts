@@ -109,6 +109,9 @@ describe('rules', async () => {
   it('never suspends the owner because a removed device keeps polling', () => {
     expect(RULES.find((r) => r.id === 'unauthorized_probe')?.why).not.toContain('device_revoked')
     expect(RULES.find((r) => r.id === 'revoked_device_use')?.autoAction).toBeNull()
+    // A paying customer past a download/view cap is alerted on, never suspended.
+    expect(RULES.find((r) => r.id === 'unauthorized_probe')?.why).toEqual(['not_entitled'])
+    expect(RULES.find((r) => r.id === 'limit_exhausted')?.autoAction).toBeNull()
   })
   it('keeps ip_spread alert-only but notifies staff', () => {
     const rule = RULES.find((r) => r.id === 'ip_spread')

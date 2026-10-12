@@ -41,6 +41,7 @@ die() { printf '\n\033[1;31m✖ %s\033[0m\n' "$*" >&2; exit 1; }
 
 command -v docker >/dev/null || die "Docker is not installed."
 docker compose version >/dev/null 2>&1 || die "The docker compose plugin is missing."
+command -v curl >/dev/null || die "curl is required (health check)."
 
 # --- .env.production -------------------------------------------------------
 setvar() { # setvar KEY VALUE — replace or append, literally (no sourcing).
@@ -99,19 +100,19 @@ say "Building the worker image (migrations, seed, queues)"
 "${COMPOSE[@]}" build worker
 
 if [[ "$ACTION" == remove-tests ]]; then
-  "${COMPOSE[@]}" run --rm --no-deps worker pnpm exec tsx scripts/create-test-accounts.ts --remove
-  exit 0
+  "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/create-test-accounts.ts --remove
+  exit $?
 fi
 
 say "Applying database migrations"
-"${COMPOSE[@]}" run --rm --no-deps worker pnpm db:migrate
+"${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx src/db/migrate.ts
 
 # Seed on request, or automatically when the database has no content yet (the
 # image build prerenders content pages and fails on an empty database).
 REGIONS="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc 'select count(*) from regions' 2>/dev/null | tr -d '[:space:]' || echo 0)"
 if [[ "$SEED" == 1 || "${REGIONS:-0}" == 0 ]]; then
   say "Loading starter content (regions, categories, tags, sample places)"
-  "${COMPOSE[@]}" run --rm --no-deps worker pnpm db:seed
+  "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx src/db/seed/index.ts
 fi
 
 # --- App image --------------------------------------------------------------
@@ -149,8 +150,9 @@ done
 if [[ "$TEST_ACCOUNTS" == 1 ]]; then
   say "Creating test accounts for every role"
   OUT="$ROOT/test-accounts-$(date +%Y%m%d-%H%M).txt"
-  "${COMPOSE[@]}" run --rm --no-deps worker pnpm exec tsx scripts/create-test-accounts.ts | tee "$OUT"
-  chmod 600 "$OUT"
+  (umask 077; "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/create-test-accounts.ts >"$OUT") ||
+    { cat "$OUT"; die "Creating the test accounts failed (see above)."; }
+  cat "$OUT"
   echo "  → saved to $OUT (contains passwords and 2FA secrets — keep it private)"
 fi
 

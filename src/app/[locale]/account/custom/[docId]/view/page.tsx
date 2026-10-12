@@ -8,6 +8,7 @@ import { LinkButton } from '@/components/shared'
 import { db } from '@/db'
 import { customTripDocuments, customTripRequests } from '@/db/schema'
 import { getPathname } from '@/i18n/routing'
+import { contactLabel } from '@/lib/auth/phone'
 import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
@@ -44,7 +45,7 @@ export default async function CustomPlanViewPage({ params }: { params: PageParam
         .limit(1)
     : []
   const watermark = viewerWatermark(
-    user.email,
+    contactLabel(user),
     request ? `CT-${request.requestId.slice(0, 8).toUpperCase()}` : null,
   )
 

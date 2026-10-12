@@ -76,6 +76,8 @@ export function authErrorKey(error: AuthError): string {
       return 'auth_err_phone_taken'
     case 'PHONE_REQUIRED':
       return 'auth_err_phone_intl'
+    case 'EMAIL_RESERVED':
+      return 'auth_err_email_reserved'
 
     case 'PASSWORD_TOO_SHORT':
       return 'auth_err_pw_short'

@@ -22,7 +22,9 @@ import { db } from '@/db'
 import { activityLog, customTripDocuments, customTripRequests } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { contactLabel } from '@/lib/auth/phone'
 import { loadPermissions } from '@/lib/entitlements/plans'
+import { customDocumentUnlocked } from '@/lib/orders/custom-request'
 import { stampPdf } from '@/lib/pdf/watermark'
 import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -156,6 +158,7 @@ async function resolveCustomDocument(userId: string, documentId: string) {
         eq(customTripDocuments.id, documentId),
         eq(customTripRequests.userId, userId),
         isNull(customTripDocuments.withdrawnAt),
+        customDocumentUnlocked,
       ),
     )
     .limit(1)
@@ -285,7 +288,7 @@ export async function deliverSchedule(
   let stamped: Uint8Array
   try {
     stamped = await stampPdf(source, {
-      email: user.email,
+      email: contactLabel(user),
       name: user.name,
       orderNumber: resolved.orderNumber,
       deliveryId,

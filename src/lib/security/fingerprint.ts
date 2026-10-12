@@ -88,8 +88,21 @@ export function sameAgentFamily(
   const b = parseUserAgent(current)
   const browserDiffers =
     a.browser !== 'Unknown' && b.browser !== 'Unknown' && a.browser !== b.browser
-  const osDiffers = a.os !== 'Unknown' && b.os !== 'Unknown' && a.os !== b.os
+  const osA = osFamily(a.os)
+  const osB = osFamily(b.os)
+  const osDiffers = osA !== 'Unknown' && osB !== 'Unknown' && osA !== osB
   return !browserDiffers && !osDiffers
+}
+
+/**
+ * "Request desktop site" makes an iPad/iPhone send a macOS User-Agent and an
+ * Android phone a Linux one, mid-session. Those pairs count as one family so
+ * a single tap is not taken for a stolen cookie.
+ */
+function osFamily(os: string): string {
+  if (os === 'iOS' || os === 'macOS') return 'Apple'
+  if (os === 'Android' || os === 'Linux' || os === 'ChromeOS') return 'Linux'
+  return os
 }
 
 export interface DeviceIdentity extends ParsedAgent {

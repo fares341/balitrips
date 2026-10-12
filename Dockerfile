@@ -8,8 +8,13 @@
 # ---------------------------------------------------------------------------
 
 FROM node:22-alpine AS base
-RUN corepack enable
+# pnpm is fetched once at build time into a world-readable corepack home, so
+# the non-root runtime user never downloads it (or waits on a prompt).
+ENV COREPACK_HOME=/opt/corepack \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /app
+COPY package.json ./
+RUN corepack enable && corepack install && chmod -R a+rX /opt/corepack
 
 
 # --- deps: install once, cached on the lockfile ---------------------------
@@ -116,4 +121,4 @@ COPY . .
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 USER nextjs
-CMD ["pnpm", "worker"]
+CMD ["node_modules/.bin/tsx", "src/worker/index.ts"]

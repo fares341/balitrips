@@ -37,6 +37,7 @@ goto parse
 where docker >nul 2>nul || (echo [X] Docker is not installed or not on PATH. & exit /b 1)
 docker info >nul 2>nul || (echo [X] Docker Desktop is not running. Start it and try again. & exit /b 1)
 docker compose version >nul 2>nul || (echo [X] docker compose is missing. & exit /b 1)
+where curl >nul 2>nul || (echo [X] curl.exe is missing ^(it ships with Windows 10 1803+^). & exit /b 1)
 
 REM --- .env.production -------------------------------------------------------
 if not exist "%ENV_FILE%" (
@@ -70,11 +71,11 @@ if "%ADMIN_BASE_PATH%"=="" (echo [X] ADMIN_BASE_PATH is empty in .env.production
 
 if /I "%ACTION%"=="stop" (
   %COMPOSE% --profile https down
-  exit /b %ERRORLEVEL%
+  exit /b !ERRORLEVEL!
 )
 if /I "%ACTION%"=="logs" (
   %COMPOSE% logs -f --tail=200 app worker
-  exit /b %ERRORLEVEL%
+  exit /b !ERRORLEVEL!
 )
 
 echo.
@@ -86,13 +87,13 @@ echo ^> Building the worker image (migrations, seed, queues)
 %COMPOSE% build worker || exit /b 1
 
 if /I "%ACTION%"=="remove-tests" (
-  %COMPOSE% run --rm --no-deps worker pnpm exec tsx scripts/create-test-accounts.ts --remove
-  exit /b %ERRORLEVEL%
+  %COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx scripts/create-test-accounts.ts --remove
+  exit /b !ERRORLEVEL!
 )
 
 echo.
 echo ^> Applying database migrations
-%COMPOSE% run --rm --no-deps worker pnpm db:migrate || exit /b 1
+%COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx src/db/migrate.ts || exit /b 1
 
 set REGIONS=0
 for /f "usebackq delims=" %%R in (`%COMPOSE% exec -T postgres psql -U %POSTGRES_USER% -d %POSTGRES_DB% -tAc "select count(*) from regions"`) do set "REGIONS=%%R"
@@ -103,7 +104,7 @@ goto noseed
 :doseed
 echo.
 echo ^> Loading starter content (regions, categories, tags, sample places)
-%COMPOSE% run --rm --no-deps worker pnpm db:seed || exit /b 1
+%COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx src/db/seed/index.ts || exit /b 1
 :noseed
 
 echo.
@@ -139,9 +140,17 @@ if "%TEST_ACCOUNTS%"=="1" (
   echo.
   echo ^> Creating test accounts for every role
   for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmm"') do set "STAMP=%%T"
-  %COMPOSE% run --rm --no-deps worker pnpm exec tsx scripts/create-test-accounts.ts > "%ROOT%\test-accounts-!STAMP!.txt"
-  type "%ROOT%\test-accounts-!STAMP!.txt"
-  echo   -^> saved to test-accounts-!STAMP!.txt ^(contains passwords and 2FA secrets - keep it private^)
+  set "OUT=%ROOT%\test-accounts-!STAMP!.txt"
+  %COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx scripts/create-test-accounts.ts > "!OUT!"
+  if errorlevel 1 (
+    type "!OUT!"
+    echo [X] Creating the test accounts failed - see the output above.
+    exit /b 1
+  )
+  REM Only the current Windows user may read the file (passwords + 2FA secrets).
+  icacls "!OUT!" /inheritance:r /grant:r "%USERNAME%:F" >nul 2>nul
+  type "!OUT!"
+  echo   -^> saved to !OUT! ^(contains passwords and 2FA secrets - keep it private^)
 )
 
 if "%NEXT_PUBLIC_SITE_URL%"=="" set "NEXT_PUBLIC_SITE_URL=http://localhost:%APP_PORT%"

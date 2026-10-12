@@ -38,3 +38,12 @@ export function placeholderEmailFor(normalizedPhone: string): string {
 export function isPlaceholderEmail(email: string | null | undefined): boolean {
   return typeof email === 'string' && email.toLowerCase().endsWith(`@${PHONE_EMAIL_DOMAIN}`)
 }
+
+/**
+ * ما يُعرض للمستخدم أو يُطبع في العلامة المائية بدل البريد: الجوال لحساب
+ * بالجوال وحده (البريد البديل لا يعني شيئاً لصاحبه)، وإلا البريد.
+ */
+export function contactLabel(user: { email: string; phone?: string | null }): string {
+  if (!isPlaceholderEmail(user.email)) return user.email
+  return user.phone?.trim() || user.email.slice(0, user.email.indexOf('@')).replace(/^p/, '+')
+}

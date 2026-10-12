@@ -98,7 +98,8 @@ export async function CustomPlans({
                     </button>
                   </form>
                 )}
-                {doc && (
+                {/* Quoted plans open once paid (refund/cancel locks them again). */}
+                {doc && (!quoted || paid) && (
                   <div className="row" style={{ gap: 8 }}>
                     <LinkButton href={`/account/custom/${doc.id}/view`} variant="orange" size="sm">
                       {t('acct_sched_view')}

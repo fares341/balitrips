@@ -31,6 +31,7 @@ import { SectionHead } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { contactLabel } from '@/lib/auth/phone'
 import { listLandmarks, listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
 import { buildMapPayload, loadEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
 import { logActivity } from '@/lib/security/activity'
@@ -151,7 +152,7 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   // العلامة المائية والحماية من النسخ للمسجّل فقط (الوثيقة 17): بريده وتاريخ
   // اليوم بتوقيت بالي، فتحمل أي لقطة شاشة هوية صاحبها.
   const viewerLabel = access.ok
-    ? `${access.user.email} · ${new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date())}`
+    ? `${contactLabel(access.user)} · ${new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date())}`
     : null
 
   const preview = payload.places.filter((place) => !place.locked).slice(0, PREVIEW_LIMIT)

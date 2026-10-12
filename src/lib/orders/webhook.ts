@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { db } from '@/db'
 import { entitlements, orderItems, orders, payments, planMembers, webhookEvents } from '@/db/schema'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { releaseCustomRequestsPayment } from '@/lib/orders/custom-request'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import type { WebhookEvent } from '@/lib/payments'
@@ -245,4 +246,6 @@ export async function revokeOrderEntitlements(
         ),
       ),
     )
+  // جدول مخصص دُفع بهذا الطلب: يعود غير مدفوع فتُقفل ملفاته.
+  await releaseCustomRequestsPayment(tx, orderId)
 }

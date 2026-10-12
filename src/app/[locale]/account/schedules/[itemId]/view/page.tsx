@@ -13,6 +13,7 @@ import { LinkButton } from '@/components/shared'
 import { db } from '@/db'
 import { orderItems, orders } from '@/db/schema'
 import { getPathname } from '@/i18n/routing'
+import { contactLabel } from '@/lib/auth/phone'
 import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
@@ -50,7 +51,7 @@ export default async function ScheduleViewPage({ params }: { params: PageParams 
         .where(and(eq(orderItems.id, itemId), eq(orders.userId, user.id)))
         .limit(1)
     : []
-  const watermark = viewerWatermark(user.email, order?.orderNumber ?? null)
+  const watermark = viewerWatermark(contactLabel(user), order?.orderNumber ?? null)
 
   return (
     <section aria-labelledby="bt-acct-view-h">

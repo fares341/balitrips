@@ -140,9 +140,9 @@ services:
       - '443:443'
       - '443:443/udp'
     environment:
-      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN is required for --https}
-      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required for --https}
-      ADMIN_BASE_PATH: ${ADMIN_BASE_PATH:?ADMIN_BASE_PATH is required}
+      SITE_DOMAIN: ${SITE_DOMAIN:-}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      ADMIN_BASE_PATH: ${ADMIN_BASE_PATH:-}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

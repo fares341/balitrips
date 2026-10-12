@@ -115,17 +115,48 @@ export async function verifyPhoneCodeAction(
   const code = String(form.get('code') ?? '').replace(/\D/g, '')
   if (code.length !== 6) return { status: 'sent', messageKey: 'acct_phone_bad_code' }
 
-  const stored = await readStored(user.id)
-  if (stored === null) return { status: 'error', messageKey: 'acct_phone_expired' }
-  if (stored.attempts >= MAX_ATTEMPTS) {
-    await writeStored(user.id, null)
-    return { status: 'error', messageKey: 'acct_phone_expired' }
-  }
-
-  if (stored.hash !== hashCode(user.id, code)) {
-    await writeStored(user.id, { ...stored, attempts: stored.attempts + 1 })
-    return { status: 'sent', messageKey: 'acct_phone_bad_code' }
-  }
+  // Row-locked check-and-count: parallel guesses queue on the lock, so the
+  // five-attempt cap holds however many requests arrive at once.
+  type Outcome = { kind: 'expired' } | { kind: 'wrong' } | { kind: 'ok'; phone: string }
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [row] = await tx
+      .select({
+        id: verifications.id,
+        value: verifications.value,
+        expiresAt: verifications.expiresAt,
+      })
+      .from(verifications)
+      .where(eq(verifications.identifier, identifierFor(user.id)))
+      .limit(1)
+      .for('update')
+    if (!row) return { kind: 'expired' }
+    let stored: Stored | null = null
+    try {
+      stored = JSON.parse(row.value) as Stored
+    } catch {
+      stored = null
+    }
+    if (
+      stored === null ||
+      row.expiresAt.getTime() < Date.now() ||
+      stored.attempts >= MAX_ATTEMPTS
+    ) {
+      await tx.delete(verifications).where(eq(verifications.id, row.id))
+      return { kind: 'expired' }
+    }
+    if (stored.hash !== hashCode(user.id, code)) {
+      await tx
+        .update(verifications)
+        .set({ value: JSON.stringify({ ...stored, attempts: stored.attempts + 1 }) })
+        .where(eq(verifications.id, row.id))
+      return { kind: 'wrong' }
+    }
+    // Single use: consumed in the same transaction that accepted it.
+    await tx.delete(verifications).where(eq(verifications.id, row.id))
+    return { kind: 'ok', phone: stored.phone }
+  })
+  if (outcome.kind === 'expired') return { status: 'error', messageKey: 'acct_phone_expired' }
+  if (outcome.kind === 'wrong') return { status: 'sent', messageKey: 'acct_phone_bad_code' }
 
   // الرقم نفسه الذي أُرسل إليه الرمز (لم يتغير أثناء الانتظار).
   const updated = await db
@@ -134,12 +165,11 @@ export async function verifyPhoneCodeAction(
     .where(
       and(
         eq(users.id, user.id),
-        eq(users.phoneNormalized, stored.phone),
+        eq(users.phoneNormalized, outcome.phone),
         isNull(users.phoneVerifiedAt),
       ),
     )
     .returning({ id: users.id })
-  await writeStored(user.id, null)
   if (updated.length === 0) return { status: 'error', messageKey: 'acct_phone_expired' }
 
   revalidatePath('/[locale]/account', 'page')

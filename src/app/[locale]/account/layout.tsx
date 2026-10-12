@@ -25,6 +25,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HOME_HREF } from '@/components/layout/routes'
 import { Breadcrumbs } from '@/components/shared'
+import { contactLabel } from '@/lib/auth/phone'
 import { getUser } from '@/lib/auth/session'
 
 import { toLocale } from '../_seo-hreflang'
@@ -58,7 +59,8 @@ export default async function AccountLayout({
     return <div className="bt-acct-page">{children}</div>
   }
 
-  const label = user.name ?? user.email
+  const contact = contactLabel(user)
+  const label = user.name ?? contact
   const initial = label.trim().charAt(0).toUpperCase() || 'T'
 
   return (
@@ -76,7 +78,7 @@ export default async function AccountLayout({
           leave a screen reader unsure which one names the document.
         */}
         <span style={{ fontWeight: 800, fontSize: 20 }}>{t('acct_title')}</span>
-        <AccountMenu name={user.name} email={user.email} items={ACCOUNT_TABS} />
+        <AccountMenu name={user.name} email={contact} items={ACCOUNT_TABS} />
       </div>
 
       <div className="bt-acct-grid">
@@ -96,7 +98,7 @@ export default async function AccountLayout({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {user.email}
+                {contact}
               </div>
             </div>
           </div>

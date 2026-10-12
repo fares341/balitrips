@@ -38,6 +38,7 @@ import {
   mergeAnonymousCartOnSignIn,
   setPendingCheckout,
 } from '@/lib/cart'
+import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { CheckoutError, checkout } from '@/lib/orders/checkout'
 
@@ -149,7 +150,7 @@ export async function startCheckoutAction(
       expectedTotalMinor: cart.totalMinor,
       customer: {
         email: user.email,
-        name: user.name ?? user.email,
+        name: user.name ?? (isPlaceholderEmail(user.email) ? (user.phone ?? '') : user.email),
         ...(user.phone === null ? {} : { phone: user.phone }),
         ...(user.country === null ? {} : { country: user.country }),
         locale,

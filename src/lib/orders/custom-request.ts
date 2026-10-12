@@ -167,3 +167,23 @@ export async function markCustomRequestsPaid(tx: Tx, orderId: string): Promise<n
   }
   return updated.length
 }
+
+/**
+ * Refund or cancellation of the order that paid a quote: the request is unpaid
+ * again, so its documents lock (`customDocumentUnlocked`) and the customer may
+ * pay again. Called from `revokeOrderEntitlements`, in the same transaction.
+ */
+export async function releaseCustomRequestsPayment(tx: Tx, orderId: string): Promise<number> {
+  const rows = await tx
+    .update(customTripRequests)
+    .set({ paidOrderId: null })
+    .where(eq(customTripRequests.paidOrderId, orderId))
+    .returning({ id: customTripRequests.id })
+  return rows.length
+}
+
+/**
+ * SQL condition: the request's documents may be opened. A request with a
+ * quote must be paid first; one without a quote (free / handled offline) is open.
+ */
+export const customDocumentUnlocked = sql`(${customTripRequests.quoteMinor} is null or ${customTripRequests.quoteMinor} <= 0 or ${customTripRequests.paidOrderId} is not null)`

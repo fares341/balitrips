@@ -133,6 +133,9 @@ export async function updateProfileAction(
     if (isAPIError(error) && error.body?.code === 'PHONE_TAKEN') {
       return { status: 'error', errors: { phone: 'auth_err_phone_taken' }, formError: null }
     }
+    if (isAPIError(error) && error.body?.code === 'PHONE_REQUIRED') {
+      return { status: 'error', errors: { phone: 'acct_phone_required' }, formError: null }
+    }
     console.error('[account] profile update failed', error)
     return { status: 'error', errors: {}, formError: 'c_error' }
   }

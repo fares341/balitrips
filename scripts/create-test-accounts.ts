@@ -27,7 +27,7 @@
 
 import { randomBytes } from 'node:crypto'
 
-import { and, eq, inArray, like } from 'drizzle-orm'
+import { and, eq, inArray, isNull, like } from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
@@ -172,31 +172,86 @@ async function loadHashPassword(): Promise<(password: string) => Promise<string>
   )
 }
 
+/**
+ * Removes the test accounts in ONE transaction (all or nothing).
+ *
+ * Sign-in material, devices and access grants are deleted outright. The user
+ * row itself is deleted only if nothing else points at it; an account that
+ * placed orders, wrote reviews or appears in the audit log keeps its row
+ * (financial and audit history are never rewritten) but is pseudonymised and
+ * closed — the same treatment as Studio → Customers → Delete. TEST plans that
+ * an order still references stay as drafts (never on sale).
+ */
 async function removeAll(): Promise<void> {
   const emails = SPECS.map(emailOf)
-  const rows = await db
-    .select({ id: users.id, email: users.email })
-    .from(users)
-    .where(inArray(users.email, emails))
-  const ids = rows.map((row) => row.id)
-  if (ids.length > 0) {
-    await db.delete(planMembers).where(inArray(planMembers.ownerUserId, ids))
-    await db.delete(entitlements).where(inArray(entitlements.userId, ids))
-    await db.delete(sessions).where(inArray(sessions.userId, ids))
-    await db.delete(devices).where(inArray(devices.userId, ids))
-    await db.delete(accounts).where(inArray(accounts.userId, ids))
-    for (const id of ids) {
-      await db.delete(verifications).where(like(verifications.identifier, `%${id}%`))
+  const summary = await db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(inArray(users.email, emails))
+    const ids = rows.map((row) => row.id)
+    let deleted = 0
+    let closed = 0
+    if (ids.length > 0) {
+      await tx.delete(planMembers).where(inArray(planMembers.ownerUserId, ids))
+      await tx.delete(planMembers).where(inArray(planMembers.memberUserId, ids))
+      await tx.delete(sessions).where(inArray(sessions.userId, ids))
+      await tx.delete(accounts).where(inArray(accounts.userId, ids))
+      for (const id of ids) {
+        await tx.delete(verifications).where(like(verifications.identifier, `%${id}%`))
+      }
+      for (const id of ids) {
+        // Savepoint per account: a foreign-key refusal rolls back only this try.
+        const gone = await tx
+          .transaction(async (sp) => {
+            await sp.delete(entitlements).where(eq(entitlements.userId, id))
+            await sp.delete(devices).where(eq(devices.userId, id))
+            await sp.delete(users).where(eq(users.id, id))
+            return true
+          })
+          .catch(() => false)
+        if (gone) {
+          deleted += 1
+          continue
+        }
+        await tx
+          .update(entitlements)
+          .set({ revokedAt: new Date(), revokedReason: 'test account removed' })
+          .where(and(eq(entitlements.userId, id), isNull(entitlements.revokedAt)))
+        await tx.update(devices).set({ status: 'revoked' }).where(eq(devices.userId, id))
+        await tx
+          .update(users)
+          .set({
+            email: `deleted+${id}@invalid.local`,
+            name: 'Removed test account',
+            phone: null,
+            phoneNormalized: null,
+            phoneVerifiedAt: null,
+            status: 'inactive',
+            twoFactorEnabled: false,
+            twoFactorSecret: null,
+            deletedAt: new Date(),
+          })
+          .where(eq(users.id, id))
+        closed += 1
+      }
     }
-    await db.delete(users).where(inArray(users.id, ids))
-  }
-  await db.delete(plans).where(
-    inArray(
-      plans.slug,
-      Object.values(PLAN_SPECS).map((p) => p.slug),
-    ),
+    let plansKept = 0
+    for (const spec of Object.values(PLAN_SPECS)) {
+      const gone = await tx
+        .transaction(async (sp) => {
+          await sp.delete(plans).where(eq(plans.slug, spec.slug))
+          return true
+        })
+        .catch(() => false)
+      if (!gone) plansKept += 1
+    }
+    return { deleted, closed, plansKept }
+  })
+  console.log(
+    `Removed ${summary.deleted} test account(s); closed and pseudonymised ${summary.closed} that have orders or history; ` +
+      `TEST plans removed${summary.plansKept > 0 ? ` (${summary.plansKept} kept as draft — referenced by orders)` : ''}.`,
   )
-  console.log(`Removed ${ids.length} test account(s) and the TEST plans.`)
 }
 
 async function ensurePlan(key: keyof typeof PLAN_SPECS) {
@@ -406,7 +461,8 @@ async function main(): Promise<void> {
     console.log(`    recovery: ${entry.codes.join('  ')}`)
   }
   console.log(
-    `\nRemove them all later:  pnpm exec tsx scripts/create-test-accounts.ts --remove\n${line}\n`,
+    `\nRemove them all later:  ./deploy/start-production.sh --remove-test-accounts` +
+      `   (Windows: deploy\\start-production.cmd remove-test-accounts)\n${line}\n`,
   )
 }
 

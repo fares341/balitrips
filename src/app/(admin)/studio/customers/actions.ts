@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { logActivity } from '@/lib/security/activity'
 import { entitlements, plans, sessions, users } from '@/db/schema'
-import { normalizePhone } from '@/lib/auth/phone'
+import { isPlaceholderEmail, normalizePhone, placeholderEmailFor } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
 import { isEntitlementKind } from '@/lib/entitlements'
 import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
@@ -400,7 +400,7 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
 
   try {
     const name = (fstr(form, 'name') ?? '').trim().slice(0, 128)
-    const email = freq(form, 'email', 'Email').trim().toLowerCase()
+    let email = freq(form, 'email', 'Email').trim().toLowerCase()
     const phoneRaw = (fstr(form, 'phone') ?? '').trim()
     const countryRaw = (fstr(form, 'country') ?? '').trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 256) {
@@ -416,6 +416,21 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
     const revoked = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
       if (!before) throw new Error('That account no longer exists')
+
+      // Phone-only accounts carry a reserved placeholder address that follows
+      // the number. Staff may replace it with a real e-mail, never invent one.
+      const phoneForPlaceholder = normalizePhone(phoneRaw)
+      if (isPlaceholderEmail(email)) {
+        if (!isPlaceholderEmail(before.email) || email !== before.email.toLowerCase()) {
+          throw new Error('That e-mail domain is reserved for phone-only accounts.')
+        }
+        if (phoneForPlaceholder === null) {
+          throw new Error(
+            'This account signs in with its mobile number only — add a real e-mail before removing the number.',
+          )
+        }
+        email = placeholderEmailFor(phoneForPlaceholder)
+      }
 
       if (email !== before.email) {
         const [taken] = await tx
@@ -606,6 +621,9 @@ export async function grantPlanToCustomer(userId: string, form: FormData): Promi
             and(
               eq(entitlements.userId, userId),
               isNotNull(entitlements.planId),
+              // A family seat shared by someone else belongs to that owner's
+              // plan; replacing this customer's own plan must not take it away.
+              isNull(entitlements.sharedByUserId),
               isNull(entitlements.revokedAt),
               or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
             ),

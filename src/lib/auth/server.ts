@@ -684,11 +684,22 @@ export const auth = betterAuth({
             // رقم مختلف عن المُتحقق منه = يحتاج تحققاً جديداً.
             if (self !== undefined) {
               const [current] = await db
-                .select({ phone: users.phoneNormalized })
+                .select({ phone: users.phoneNormalized, email: users.email })
                 .from(users)
                 .where(eq(users.id, self))
                 .limit(1)
               if (current?.phone !== normalized) data.phoneVerifiedAt = null
+              // حساب بالجوال وحده: الرقم هو وسيلة الدخول الوحيدة، فلا يُمسح،
+              // والبريد البديل يتبع الرقم الجديد.
+              if (current !== undefined && isPlaceholderEmail(current.email)) {
+                if (normalized === null) {
+                  throw APIError.from('BAD_REQUEST', {
+                    message: 'This account signs in with its mobile number; it cannot be removed.',
+                    code: 'PHONE_REQUIRED',
+                  })
+                }
+                if (current.phone !== normalized) data.email = placeholderEmailFor(normalized)
+              }
             }
           }
           if ('country' in raw) {
@@ -744,10 +755,21 @@ export const auth = betterAuth({
       // الوثيقة 3.1: التسجيل بالجوال وحده — بلا بريد يُعطى الحساب بريداً بديلاً
       // ثابتاً (`placeholderEmailFor`) لا يُرسل إليه شيء. التحقق من الرقم وفرادته
       // في `databaseHooks.user.create.before` كالمعتاد.
+      // نطاق البريد البديل محجوز للحسابات بالجوال وحده.
+      if (ctx.path === '/change-email') {
+        const body = (ctx.body ?? {}) as Record<string, unknown>
+        if (typeof body.newEmail === 'string' && isPlaceholderEmail(body.newEmail.trim())) {
+          throw reservedEmailError()
+        }
+        return
+      }
       if (ctx.path === '/sign-up/email') {
         const body = (ctx.body ?? {}) as Record<string, unknown>
         const email = typeof body.email === 'string' ? body.email.trim() : ''
-        if (email !== '') return
+        if (email !== '') {
+          if (isPlaceholderEmail(email)) throw reservedEmailError()
+          return
+        }
         const normalized = typeof body.phone === 'string' ? normalizePhone(body.phone) : null
         if (normalized === null) {
           throw APIError.from('BAD_REQUEST', {
@@ -988,6 +1010,13 @@ function takeResetOwner(token: string | null): string | null {
 
 /** عنوان لا يملكه أحد: دخول برقم غير مسجّل يفشل كأي بيانات خاطئة. */
 const PHONE_NOT_FOUND_EMAIL = 'no-account@phone.invalid'
+
+function reservedEmailError() {
+  return APIError.from('BAD_REQUEST', {
+    message: 'This email address is not allowed.',
+    code: 'EMAIL_RESERVED',
+  })
+}
 
 /** هل الرقم الموحّد مستخدم لحساب آخر (غير محذوف)؟ */
 async function phoneTaken(normalized: string, exceptUserId?: string): Promise<boolean> {
