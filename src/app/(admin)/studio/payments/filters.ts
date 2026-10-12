@@ -4,6 +4,16 @@ import { orders, payments, users } from '@/db/schema'
 
 import { param } from '../../_lib/result'
 
+/** الطرق المعروضة في فلتر الصفحة (الوثيقة 22.7). */
+export const PAYMENT_METHOD_FILTERS = [
+  'card',
+  'apple_pay',
+  'google_pay',
+  'bank_transfer',
+  'manual',
+  'link',
+] as const
+
 export const PAYMENT_STATUSES = [
   'requires_action',
   'processing',
@@ -25,12 +35,15 @@ export function paymentFilters(params: Params) {
     ? rawStatus
     : null
   const provider = param(params, 'provider')
+  const rawMethod = param(params, 'method')
+  const method = rawMethod && /^[a-z0-9_]{1,32}$/.test(rawMethod) ? rawMethod : null
   const from = param(params, 'from')
   const to = param(params, 'to')
 
   const filters: SQL[] = []
   if (status) filters.push(eq(payments.status, status))
   if (provider) filters.push(eq(payments.provider, provider.slice(0, 32)))
+  if (method) filters.push(eq(payments.method, method))
   if (from && DAY.test(from)) filters.push(gte(payments.createdAt, new Date(`${from}T00:00:00Z`)))
   if (to && DAY.test(to)) {
     const end = new Date(`${to}T00:00:00Z`)
@@ -50,6 +63,7 @@ export function paymentFilters(params: Params) {
     q,
     status,
     provider,
+    method,
     from: from && DAY.test(from) ? from : null,
     to: to && DAY.test(to) ? to : null,
     where: filters.length > 0 ? and(...filters) : undefined,

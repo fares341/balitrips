@@ -26,7 +26,7 @@ import {
   type OrderStatus,
 } from '@/lib/orders/state'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
-import { notifyOrderPaid } from '@/lib/notify/orders'
+import { isOrderUpdateStatus, notifyOrderPaid, notifyOrderUpdated } from '@/lib/notify/orders'
 import { revokeOrderEntitlements } from '@/lib/orders/webhook'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -136,16 +136,19 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         })
       }
 
-      await tx.insert(refunds).values({
-        paymentId: payment.id,
-        orderItemId,
-        amountMinor,
-        currency: payment.currency,
-        reason,
-        actorId: session.userId,
-        providerRefundId: result.providerRefundId,
-        status: result.status,
-      })
+      const [refundRow] = await tx
+        .insert(refunds)
+        .values({
+          paymentId: payment.id,
+          orderItemId,
+          amountMinor,
+          currency: payment.currency,
+          reason,
+          actorId: session.userId,
+          providerRefundId: result.providerRefundId,
+          status: result.status,
+        })
+        .returning({ id: refunds.id })
 
       const lineRefunded = line.refundedMinor + amountMinor
       await tx
@@ -257,8 +260,35 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         tx,
       )
 
-      return { nextStatus, currency: payment.currency, manual: payment.provider === 'manual' }
+      return {
+        nextStatus,
+        currency: payment.currency,
+        manual: payment.provider === 'manual',
+        refundId: refundRow?.id ?? null,
+        settled: result.status === 'succeeded',
+      }
     })
+
+    // بعد الالتزام (الوثيقة 15.1/19.1/20.1): إشعار العميل وسجل نشاطه، وبريد
+    // الاسترداد. استرداد مسوّى يأخذ بريد `refund_notice`، فإشعار الحالة بلا بريد
+    // (لا رسالتان لنفس الحدث). غير المسوّى بعد يأخذ بريد إشعار الحالة بدلاً منه.
+    if (isOrderUpdateStatus(summary.nextStatus)) {
+      await notifyOrderUpdated(orderId, summary.nextStatus, {
+        by: session.userId,
+        item: orderItemId,
+        email: !summary.settled,
+      })
+    }
+    // مهمة البريد تعلن المسوّى فقط، وتسجّل `refund_notice:<id>` — فاسترداد معلّق
+    // عند المزوّد لا يوضع في الطابور الآن (كان سيُسجَّل "مُرسلاً" بلا مبلغه).
+    if (summary.settled && summary.refundId !== null) {
+      try {
+        const { enqueueEmail } = await import('@/worker/queues')
+        await enqueueEmail({ kind: 'refund_notice', orderId, refundId: summary.refundId })
+      } catch (error) {
+        console.error('[orders] could not queue the refund notice', error)
+      }
+    }
 
     outcome = {
       ok: `Refunded ${amountMinor} ${summary.currency} minor units. Order is now ${summary.nextStatus.replace(/_/g, ' ')}.${summary.manual ? ' This order was paid by bank transfer: send the money back the same way.' : ''}`,
@@ -283,7 +313,7 @@ export async function confirmOrder(orderId: string): Promise<void> {
   let outcome: Outcome
 
   try {
-    await db.transaction(async (tx) => {
+    const previous = await db.transaction(async (tx) => {
       const [order] = await tx
         .select()
         .from(orders)
@@ -313,8 +343,13 @@ export async function confirmOrder(orderId: string): Promise<void> {
         },
         tx,
       )
+      return status
     })
 
+    // بعد الالتزام. تأكيد مكرر (confirmed → confirmed) لا يُبلَّغ مرتين.
+    if (previous !== 'confirmed') {
+      await notifyOrderUpdated(orderId, 'confirmed', { by: session.userId })
+    }
     outcome = { ok: 'Order confirmed.' }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -337,7 +372,7 @@ export async function setLineFulfilment(
     const allowed = ['pending', 'confirmed', 'delivered', 'cancelled']
     if (!allowed.includes(status)) throw new Error(`Unknown fulfilment status "${status}"`)
 
-    await db.transaction(async (tx) => {
+    const previous = await db.transaction(async (tx) => {
       const [before] = await tx
         .select()
         .from(orderItems)
@@ -365,8 +400,13 @@ export async function setLineFulfilment(
         },
         tx,
       )
+      return before.fulfilmentStatus
     })
 
+    // بعد الالتزام: تنفيذ/إلغاء/تأكيد بند يُبلَّغ للعميل. الرجوع إلى `pending` لا.
+    if (previous !== status && isOrderUpdateStatus(status)) {
+      await notifyOrderUpdated(orderId, status, { by: session.userId, item: orderItemId })
+    }
     outcome = { ok: `Line marked ${status}.` }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -418,6 +458,7 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
       await tx.insert(payments).values({
         orderId,
         provider: 'manual',
+        method: 'bank_transfer',
         providerPaymentId: `manual:${reference}`,
         status: 'succeeded',
         amountMinor: order.totalMinor,

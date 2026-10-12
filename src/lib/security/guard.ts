@@ -9,6 +9,11 @@
  * كلفة الاستعلام الإضافي مقبولة لأنه يعمل فقط على مسارات المحتوى المدفوع
  * (تحميل PDF، بيانات الخريطة المقفلة)، لا على الصفحات العامة.
  *
+ * إعادة استخدام الجلسة (الوثيقة 18.1 "نشاط غير طبيعي"): إن اختلفت عائلة المتصفح
+ * أو نظام التشغيل بين User-Agent الذي أُنشئت به الجلسة والطلب الحالي، فالكوكي
+ * نُسخ إلى جهاز آخر. تُحذف الجلسة، ويُسجَّل `unauthorized_access` بسبب
+ * `session_reuse`، ويُبلَّغ الفريق. الإصدارات لا تُقارن (تحديث المتصفح طبيعي).
+ *
  * ليس middleware: `src/proxy.ts` ممنوع من قراءة الكوكيز كي يبقى الموقع
  * قابلاً للتخزين في Cloudflare، وليس حدّاً للصلاحيات أصلاً.
  */
@@ -22,6 +27,7 @@ import { getSession, type SessionUser } from '@/lib/auth/session'
 
 import { logActivity } from './activity'
 import { findActiveBan, type BanReason } from './bans'
+import { describeAgent, sameAgentFamily } from './fingerprint'
 import { clientIp } from './ip'
 
 export type SecureAccess =
@@ -35,12 +41,14 @@ export async function checkSecureAccess(resource: string): Promise<SecureAccess>
   const session = await getSession()
   if (session === null) return { ok: false, reason: 'signed-out' }
 
-  const ip = clientIp(await headers())
+  const requestHeaders = await headers()
+  const ip = clientIp(requestHeaders)
   const userId = session.user.id
 
   const [row] = await db
     .select({
       deviceId: sessions.deviceId,
+      userAgent: sessions.userAgent,
       deviceStatus: devices.status,
       fingerprintHash: devices.fingerprintHash,
     })
@@ -56,6 +64,21 @@ export async function checkSecureAccess(resource: string): Promise<SecureAccess>
       userId,
       ip,
       details: { resource, why: 'session_ended' },
+    })
+    return { ok: false, reason: 'session-ended', userId }
+  }
+
+  const currentAgent = requestHeaders.get('user-agent')
+  if (!sameAgentFamily(row.userAgent, currentAgent)) {
+    await endReusedSession({
+      sessionId: session.sessionId,
+      userId,
+      email: session.user.email,
+      ip,
+      deviceId: row.deviceId,
+      resource,
+      storedAgent: row.userAgent,
+      currentAgent,
     })
     return { ok: false, reason: 'session-ended', userId }
   }
@@ -84,4 +107,49 @@ export async function checkSecureAccess(resource: string): Promise<SecureAccess>
   }
 
   return { ok: true, user: session.user, sessionId: session.sessionId, deviceId: row.deviceId, ip }
+}
+
+/**
+ * كوكي جلسة يُستخدم من متصفح/نظام غير الذي أُنشئ عليه: احذف الجلسة، سجّل، نبّه الفريق.
+ * الحذف أولاً (بلا معاملة مفتوحة)، ثم السجل والإشعار.
+ */
+async function endReusedSession(input: {
+  sessionId: string
+  userId: string
+  email: string
+  ip: string | null
+  deviceId: string | null
+  resource: string
+  storedAgent: string | null
+  currentAgent: string | null
+}): Promise<void> {
+  const ended = await db
+    .delete(sessions)
+    .where(eq(sessions.id, input.sessionId))
+    .returning({ id: sessions.id })
+  // طلب متزامن حذفها قبلنا: سُجّل ونُبّه مرة واحدة بالفعل.
+  if (ended.length === 0) return
+
+  const stored = describeAgent(input.storedAgent)
+  const current = describeAgent(input.currentAgent)
+  await logActivity({
+    action: 'unauthorized_access',
+    userId: input.userId,
+    ip: input.ip,
+    deviceId: input.deviceId,
+    details: {
+      resource: input.resource,
+      why: 'session_reuse',
+      expected: `${stored.browser} · ${stored.os}`,
+      seen: `${current.browser} · ${current.os}`,
+      deviceType: current.deviceType,
+    },
+  })
+  // استيراد ديناميكي كما في ./rules: الإشعارات تفتح طوابير pg-boss.
+  const { notifyStaff } = await import('@/lib/notify')
+  await notifyStaff(
+    'staff_security_alert',
+    { rule: 'session_reuse', subject: input.email },
+    `/customers/${input.userId}`,
+  )
 }

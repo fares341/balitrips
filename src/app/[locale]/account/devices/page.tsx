@@ -17,7 +17,16 @@ import { deviceLimitFor } from '@/lib/security/devices'
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { removeMyDevice } from './actions'
-import { currentDeviceId, listMyDevices, listMyLogins, loginPlace } from './queries'
+import { currentDeviceId, listMyDevices, listMyLogins, loginDevice, loginPlace } from './queries'
+
+/** مفاتيح نوع الجهاز (الوثيقة 3.2). قيمة غير معروفة لا تُعرض. */
+const DEVICE_TYPE_KEYS: Record<string, string> = {
+  mobile: 'acct_dev_type_mobile',
+  tablet: 'acct_dev_type_tablet',
+  desktop: 'acct_dev_type_desktop',
+}
+const deviceTypeKey = (value: string | null | undefined) =>
+  value ? DEVICE_TYPE_KEYS[value] : undefined
 
 type PageParams = Promise<{ locale: string }>
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -95,6 +104,11 @@ export default async function AccountDevicesPage({
                     <bdi>
                       {item.browser ?? '—'} · {item.os ?? '—'}
                     </bdi>
+                    {deviceTypeKey(item.deviceType) && (
+                      <div className="muted" style={{ fontSize: 13 }}>
+                        {t(deviceTypeKey(item.deviceType) ?? '')}
+                      </div>
+                    )}
                     {item.id === current && (
                       <div className="muted" style={{ fontSize: 13 }}>
                         {t('acct_dev_this')}
@@ -138,21 +152,30 @@ export default async function AccountDevicesPage({
               </tr>
             </thead>
             <tbody>
-              {logins.map((row) => (
-                <tr key={row.id}>
-                  <td>{format.dateTime(row.at, { dateStyle: 'medium', timeStyle: 'short' })}</td>
-                  <td>{t(row.action === 'login' ? 'acct_logins_ok' : 'acct_logins_failed')}</td>
-                  <td>
-                    <bdi>{row.browser ? `${row.browser} · ${row.os ?? '—'}` : '—'}</bdi>
-                  </td>
-                  <td>
-                    <bdi>{row.ip ?? '—'}</bdi>
-                  </td>
-                  <td>
-                    <bdi>{loginPlace(row.details) ?? '—'}</bdi>
-                  </td>
-                </tr>
-              ))}
+              {logins.map((row) => {
+                const device = loginDevice(row)
+                const typeKey = deviceTypeKey(device?.deviceType)
+                return (
+                  <tr key={row.id}>
+                    <td>{format.dateTime(row.at, { dateStyle: 'medium', timeStyle: 'short' })}</td>
+                    <td>{t(row.action === 'login' ? 'acct_logins_ok' : 'acct_logins_failed')}</td>
+                    <td>
+                      <bdi>{device?.label ?? '—'}</bdi>
+                      {typeKey && (
+                        <div className="muted" style={{ fontSize: 13 }}>
+                          {t(typeKey)}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <bdi>{row.ip ?? '—'}</bdi>
+                    </td>
+                    <td>
+                      <bdi>{loginPlace(row.details) ?? '—'}</bdi>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

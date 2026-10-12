@@ -28,6 +28,7 @@ import { accountMetadata } from '../_lib/meta'
 import { listTripDays } from '../_lib/queries'
 import { PlannedPlaces } from './planned-places'
 import { PrintTripButton } from './print-button'
+import { TripSharePanel } from './share-panel'
 
 const ACTIVITIES_HREF = '/activities'
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -91,6 +92,7 @@ export default async function AccountTripPage({ params }: { params: PageParams }
       </p>
 
       <PlannedPlaces userId={user.id} locale={locale} />
+      <TripSharePanel userId={user.id} locale={locale} />
 
       {days.length === 0 ? (
         <div className="bt-acct-empty">

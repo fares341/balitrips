@@ -96,6 +96,11 @@ export class SandboxPaymentProvider implements PaymentProvider {
     return false
   }
 
+  async getPaymentMethod(): Promise<string | null> {
+    // The sandbox challenge page simulates a card with 3-D Secure.
+    return 'card'
+  }
+
   async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent> {
     const provided = headers['x-sandbox-signature'] ?? headers['X-Sandbox-Signature']
     if (!provided) {

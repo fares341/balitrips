@@ -1,7 +1,7 @@
 import { PDFDocument } from 'pdf-lib'
 import { describe, expect, it } from 'vitest'
 
-import { stampPdf, toWinAnsi, watermarkLines } from './watermark'
+import { printableName, stampPdf, toWinAnsi, watermarkLines } from './watermark'
 
 const info = {
   email: 'traveller@example.com',
@@ -28,6 +28,20 @@ describe('watermark', () => {
     expect(footer).toContain('#BT-2026-000123')
     expect(footer).toContain('2026-10-12 08:30 UTC')
     expect(footer).toContain('Ref 6f1c2d3e')
+  })
+
+  it('adds the buyer name when Latin-1 can draw it, and falls back to the email otherwise', () => {
+    const latin = watermarkLines({ ...info, name: 'José  Müller' })
+    expect(latin.tile).toContain('José Müller')
+    expect(latin.tile).toContain('traveller@example.com')
+    expect(latin.footer).toContain('Licensed to José Müller <traveller@example.com>')
+    expect(latin.footer).toContain('#BT-2026-000123')
+
+    const arabic = watermarkLines({ ...info, name: 'سارة' })
+    expect(arabic.tile).toBe('traveller@example.com · #BT-2026-000123')
+    expect(arabic.footer).not.toContain('?')
+    expect(printableName('  ')).toBeNull()
+    expect(printableName(null)).toBeNull()
   })
 
   it('stamps every page and records the delivery in metadata', async () => {

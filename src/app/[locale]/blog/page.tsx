@@ -25,7 +25,7 @@
  * static shell the moment PPR is switched on.
  */
 
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
@@ -34,8 +34,10 @@ import { Breadcrumbs } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import type { Locale } from '@/i18n/config'
+import { articleRequirementsByIds } from '@/lib/content/extra-queries'
 import { pick } from '@/lib/content/localize'
 import { listArticleCategories, listArticles } from '@/lib/content/queries'
+import type { EntitlementKind } from '@/lib/entitlements'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 
@@ -87,6 +89,8 @@ export default async function BlogPage({
   const t = await getTranslations({ locale })
 
   const sidebar = await listArticles({ locale, limit: SIDEBAR_COUNT })
+  const sidebarLocks = await articleRequirementsByIds(sidebar.map((article) => article.id))
+  const lockLabels = { map_access: t('art_badge_map'), vip: t('art_badge_vip') }
 
   return (
     <main>
@@ -136,7 +140,14 @@ export default async function BlogPage({
               <h2 style={{ fontSize: 18, marginBottom: 14 }}>{t('bh_latest')}</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {sidebar.map((article) => (
-                  <ArticleCard key={article.id} article={article} compact />
+                  <Locked
+                    key={article.id}
+                    requirement={sidebarLocks.get(article.id)}
+                    labels={lockLabels}
+                    compact
+                  >
+                    <ArticleCard article={article} compact />
+                  </Locked>
                 ))}
               </div>
             </div>
@@ -144,6 +155,45 @@ export default async function BlogPage({
         </div>
       </section>
     </main>
+  )
+}
+
+/**
+ * Lock badge for exclusive articles (spec 2.3/2.4). Overlaid rather than
+ * built into `ArticleCard`, which is shared with the home page. The card
+ * itself carries only public fields — the body is never in a list.
+ */
+function Locked({
+  requirement,
+  labels,
+  compact = false,
+  children,
+}: {
+  requirement: EntitlementKind | undefined
+  labels: Record<EntitlementKind, string>
+  compact?: boolean
+  children: ReactNode
+}) {
+  if (requirement === undefined) return <>{children}</>
+  const label = labels[requirement]
+  return (
+    <div style={{ position: 'relative' }}>
+      {children}
+      <span
+        className="tag tag-orange"
+        style={{
+          position: 'absolute',
+          top: compact ? 4 : 12,
+          insetInlineStart: compact ? 4 : 12,
+          zIndex: 1,
+          fontSize: compact ? 10.5 : undefined,
+          pointerEvents: 'none',
+        }}
+      >
+        <Icon name="lock" size={compact ? 10 : 12} />
+        {compact ? null : ` ${label}`}
+      </span>
+    </div>
   )
 }
 
@@ -172,6 +222,8 @@ async function BlogResults({ locale, searchParams }: { locale: Locale; searchPar
     listArticleCategories(),
     listArticles({ locale, q, categoryKey }),
   ])
+  const locks = await articleRequirementsByIds(articles.map((article) => article.id))
+  const lockLabels = { map_access: t('art_badge_map'), vip: t('art_badge_vip') }
 
   /**
    * "all" is a sentinel the seed carries as a real row, not a category an
@@ -279,7 +331,9 @@ async function BlogResults({ locale, searchParams }: { locale: Locale; searchPar
       ) : (
         <div className="grid bt-grid-2" style={{ marginTop: 24 }}>
           {articles.map((article, index) => (
-            <ArticleCard key={article.id} article={article} priority={index < 2} />
+            <Locked key={article.id} requirement={locks.get(article.id)} labels={lockLabels}>
+              <ArticleCard article={article} priority={index < 2} />
+            </Locked>
           ))}
         </div>
       )}

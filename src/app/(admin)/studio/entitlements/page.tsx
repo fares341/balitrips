@@ -37,7 +37,9 @@ export default async function EntitlementsPage({
 
   const filters: SQL[] = []
   if (q) filters.push(ilike(users.email, `%${q}%`))
-  if (kind === 'map_access' || kind === 'vip') filters.push(eq(entitlements.kind, kind))
+  if (kind === 'basic' || kind === 'map_access' || kind === 'vip') {
+    filters.push(eq(entitlements.kind, kind))
+  }
   if (state === 'active') {
     const live = and(
       isNull(entitlements.revokedAt),
@@ -132,6 +134,7 @@ export default async function EntitlementsPage({
           <label htmlFor="kind-filter">Kind</label>
           <select className="a-select" id="kind-filter" name="kind" defaultValue={kind ?? ''}>
             <option value="">Any</option>
+            <option value="basic">basic (no map)</option>
             <option value="map_access">map_access</option>
             <option value="vip">vip</option>
           </select>

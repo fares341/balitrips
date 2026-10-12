@@ -29,11 +29,15 @@
  *    not get to name a price or a vehicle.
  */
 
+import { revalidatePath } from 'next/cache'
+import { getLocale } from 'next-intl/server'
 import { z } from 'zod'
 
 import { db } from '@/db'
 import { customTripRequests } from '@/db/schema'
 import { defaultLocale, isLocale } from '@/i18n/config'
+import { redirect } from '@/i18n/routing'
+import { addItem, CartRejectedError } from '@/lib/cart'
 import {
   daysBetweenInclusive,
   isPastInBali,
@@ -256,6 +260,8 @@ export async function submitCustomTrip(
         phone,
         startDate,
         endDate,
+        // الوثيقة 22.4: عدد الأيام شاملاً اليومين، من التاريخين المتحقق منهما.
+        days,
         travellers: input.travellers,
         theme: input.theme,
         budgetPerPersonMinor,
@@ -312,6 +318,36 @@ export async function submitCustomTrip(
     // the form keeps its values and the client offers a retry.
     return { status: 'error', reason: 'server' }
   }
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * "ادفع" على عرض سعر جدول مخصص (الوثيقة 13.1): يضيف بند `custom` للسلة ويذهب
+ * للدفع. النموذج يرسل معرّف الطلب فقط؛ `addItem` يتحقق أنه للمستخدم الحالي،
+ * مسعَّر، وغير مدفوع، والسعر يُحسب من صف الطلب على الخادم عند الدفع.
+ */
+export async function payCustomQuote(form: FormData): Promise<void> {
+  const locale = await getLocale()
+  const raw = form.get('requestId')
+  const requestId = typeof raw === 'string' && UUID.test(raw) ? raw : null
+
+  let target = '/checkout'
+  if (requestId === null) {
+    target = '/account/schedules?quote=invalid'
+  } else {
+    try {
+      await addItem({ kind: 'custom', refId: requestId, quantity: 1 })
+      revalidatePath('/[locale]/cart', 'page')
+      revalidatePath('/[locale]/checkout', 'page')
+    } catch (error) {
+      if (!(error instanceof CartRejectedError)) {
+        console.error('[custom] could not add the quote to the cart', { requestId, error })
+      }
+      target = '/account/schedules?quote=invalid'
+    }
+  }
+  redirect({ href: target, locale })
 }
 
 /** Map a Zod issue path onto the form's own field names. */

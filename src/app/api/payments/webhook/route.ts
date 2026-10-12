@@ -34,11 +34,12 @@
  */
 
 import { eq } from 'drizzle-orm'
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 
 import { db } from '@/db'
 import { orders } from '@/db/schema'
 import { clearCartForUser } from '@/lib/cart'
+import { recordPaymentMethod } from '@/lib/orders/payment-method'
 import { processWebhookEvent } from '@/lib/orders/webhook'
 import { getPaymentProvider } from '@/lib/payments'
 import { notifyOrderPaid, notifyPaymentFailed } from '@/lib/notify/orders'
@@ -81,6 +82,15 @@ export async function POST(request: Request): Promise<Response> {
     }
     if (outcome.handled && outcome.to === 'cancelled' && outcome.from === 'pending') {
       await notifyPaymentFailed(outcome.orderId)
+    }
+
+    // الوثيقة 22.7: طريقة الدفع (بطاقة / Apple Pay / Google Pay…). بعد إرسال الرد،
+    // بأفضل جهد — لا يؤخّر الـ webhook ولا يفشله. يشمل دفعة ثانية على طلب مدفوع.
+    // A replayed delivery (`duplicate`) already scheduled this once.
+    const fresh = outcome.handled || outcome.reason === 'no_transition'
+    if (fresh && event.type === 'payment.succeeded' && event.providerPaymentId !== null) {
+      const providerPaymentId = event.providerPaymentId
+      after(() => recordPaymentMethod(provider, providerPaymentId))
     }
 
     return NextResponse.json(

@@ -61,7 +61,7 @@ export default async function PlansPage({
             <tr>
               <th>Plan</th>
               <th>Price</th>
-              <th>Unlocks</th>
+              <th>Map access</th>
               <th>Duration</th>
               <th>Devices</th>
               <th>Active customers</th>
@@ -78,7 +78,9 @@ export default async function PlansPage({
                   <div className="a-mono a-muted">{plan.slug}</div>
                 </td>
                 <td>{formatMoney(plan.priceMinor, plan.currency, 'en')}</td>
-                <td className="a-mono">{plan.entitlementKind}</td>
+                <td className="a-mono">
+                  {plan.entitlementKind === 'basic' ? 'none (PDF only)' : plan.entitlementKind}
+                </td>
                 <td>{plan.durationDays === null ? 'Lifetime' : `${plan.durationDays} days`}</td>
                 <td>{plan.deviceLimit}</td>
                 <td>{active}</td>

@@ -55,6 +55,8 @@ export const devices = pgTable(
 
     browser: varchar('browser', { length: 64 }),
     os: varchar('os', { length: 64 }),
+    /** 'mobile' | 'tablet' | 'desktop' من User-Agent (الوثيقة 3.2). NULL للأجهزة الأقدم. */
+    deviceType: varchar('device_type', { length: 16 }),
     userAgent: text('user_agent'),
     ip: varchar('ip', { length: 64 }),
 

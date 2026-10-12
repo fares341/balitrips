@@ -14,10 +14,8 @@
  * unit-tested) without React or a database.
  */
 
-import type { Locale } from '@/i18n/config'
-import { searchableText } from '@/lib/content/localize'
-import type { FullMapPlace } from '@/lib/entitlements'
-import { normalizeSearch } from '@/lib/search/normalize'
+import type { FullMapPlace, RedactedMapPlace } from '@/lib/entitlements'
+import { placeHaystack, type LocalizedLike } from '@/lib/search/query'
 
 /**
  * Geographic extent of the satellite raster, from the handoff (`MAP_BBOX`).
@@ -75,7 +73,16 @@ export function projectLat(lat: number): number {
  * `{ id, locked, requiredEntitlement }` and cannot be widened into this by
  * anything the client does.
  */
-export type OpenMapPlace = FullMapPlace & { locked: false }
+export type OpenMapPlace = FullMapPlace & {
+  locked: false
+  /** الترتيب اليدوي من لوحة التحكم — للترتيب (الوثيقة 8.6). */
+  sortOrder: number
+  /** مفضلة + رحلتي + مشاهدات. يُرسل للأماكن المفتوحة فقط. */
+  popularity: number
+}
+
+/** ما تستقبله الخريطة: مكان مفتوح كامل، أو `{ id, locked, requiredEntitlement }`. */
+export type MapClientPlace = OpenMapPlace | RedactedMapPlace
 
 export interface MapPin {
   place: OpenMapPlace
@@ -85,7 +92,7 @@ export interface MapPin {
   ny: number
   /** Category colour for the dot and its halo. */
   color: string
-  /** Pre-lowercased name/category/slug text for the search box. */
+  /** نص البحث المطبّع بالثلاث لغات (`pinHaystack`). */
   haystack: string
 }
 
@@ -115,23 +122,74 @@ export function pinColor(tags: readonly string[] | null): string {
 }
 
 /**
- * نص البحث داخل الخريطة لكل دبوس: الاسم، التصنيف، المنطقة والحي، والوسوم —
- * بلغة الزائر والإنجليزية، مطبّعاً (أ/ا، ة/ه…) كي يجد "أوبود" و"اوبود" نفس المكان.
- * مصدر واحد للخريطتين المسطحة والثلاثية.
+ * نص البحث داخل الخريطة لكل دبوس: الاسم، الوصف، التصنيف والتصنيفات الفرعية،
+ * المنطقة والحي، والوسوم — بالثلاث لغات، مطبّعاً (أ/ا، ة/ه، café/cafe).
+ * نفس `placeHaystack` الذي يستخدمه `/api/places/search`، فتتفق النتيجتان.
+ *
+ * `categoryLabels`: أسماء التصنيفات الفرعية (المكان يحمل مفاتيحها فقط).
  */
-export function pinHaystack(place: OpenMapPlace, locale: Locale): string {
-  return normalizeSearch(
-    [
-      searchableText(place.name, locale),
-      searchableText(place.category, locale),
-      searchableText(place.categoryLabel, locale),
-      searchableText(place.regionLabel, locale),
-      searchableText(place.parentRegionLabel, locale),
-      place.regionKey ?? '',
-      place.slug,
-      ...place.tagList.map((tag) => searchableText(tag.label, locale)),
-    ].join(' '),
-  )
+export function pinHaystack(
+  place: OpenMapPlace,
+  categoryLabels: ReadonlyMap<string, LocalizedLike>,
+): string {
+  return placeHaystack({
+    slug: place.slug,
+    name: place.name,
+    category: place.category,
+    description: place.description,
+    categoryKey: place.categoryKey,
+    categoryLabel: place.categoryLabel,
+    subCategories: place.subCategoryKeys.map((key) => ({ key, label: categoryLabels.get(key) })),
+    tags: place.tagList,
+    regionKey: place.regionKey,
+    regionLabel: place.regionLabel,
+    parentRegionKey: place.parentRegionKey,
+    parentRegionLabel: place.parentRegionLabel,
+  })
+}
+
+/**
+ * مكان المنطقة على الخريطة المسطحة: مركزها ونصف قطرها ككسور من الإطار،
+ * بنفس الإسقاط الذي تستخدمه الدبابيس. null لمنطقة بلا إحداثيات.
+ */
+export function projectArea(region: {
+  centerLat: number | null
+  centerLon: number | null
+  radiusKm: number | null
+}): { nx: number; ny: number; rx: number; ry: number } | null {
+  const { centerLat, centerLon, radiusKm } = region
+  if (centerLat === null || centerLon === null) return null
+  const km = radiusKm ?? 2
+  // درجة عرض ≈ 111.32 كم؛ درجة الطول تنكمش بجيب تمام العرض.
+  const dLat = km / 111.32
+  const dLon = km / (111.32 * Math.cos((centerLat * Math.PI) / 180))
+  return {
+    nx: projectLon(centerLon),
+    ny: projectLat(centerLat),
+    rx: dLon / (MAP_BBOX.e - MAP_BBOX.w),
+    ry: dLat / (MAP_BBOX.n - MAP_BBOX.s),
+  }
+}
+
+/**
+ * الدبابيس من الحمولة المنقّحة. `locked: false` هو حارس النوع وجدار الدفع معاً:
+ * المكان المقفل `{ id, locked, requiredEntitlement }` بلا إحداثيات، فلا يُسقط ولا
+ * يدخل نص البحث ولو خطأً. مصدر واحد للخريطتين المسطحة والثلاثية.
+ */
+export function buildPins(
+  places: readonly MapClientPlace[],
+  categories: readonly { key: string; label: LocalizedLike }[],
+): MapPin[] {
+  const categoryLabels = new Map(categories.map((entry) => [entry.key, entry.label]))
+  return places
+    .filter((place): place is OpenMapPlace => !place.locked)
+    .map((place) => ({
+      place,
+      nx: projectLon(place.lon),
+      ny: projectLat(place.lat),
+      color: pinColor(place.tags ?? null),
+      haystack: pinHaystack(place, categoryLabels),
+    }))
 }
 
 /** Clamp helper shared by the zoom and the translation clamp. */

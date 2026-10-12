@@ -82,6 +82,7 @@ import type {
 } from './types'
 import { entityHref } from './types'
 import { placeAccess, type FullMapPlace } from '@/lib/entitlements/redaction'
+import type { MapTaxonomy } from '@/lib/search/query'
 import { buildSrcSet, derivativeKey, fallbackRung, isUnoptimised } from '@/lib/media/ladder'
 
 // ---------------------------------------------------------------------------
@@ -1021,7 +1022,7 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDetail | nu
  * `buildMapPayload(places, entitlements)` and only the redacted result ever
  * crosses to the client. Never serialise this array into a page payload.
  */
-export async function listMapPlaces(): Promise<FullMapPlace[]> {
+export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
   const rows = await db
     .select({
       place: mapPlaces,
@@ -1071,7 +1072,7 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
   const subIds = [
     ...new Set(rows.flatMap((row) => (row.place.subCategoryIds ?? []).filter(isUuidLike))),
   ]
-  const [galleryRows, subRows] = await Promise.all([
+  const [galleryRows, subRows, popularity] = await Promise.all([
     galleryIds.length === 0 ? [] : db.select().from(media).where(inArray(media.id, galleryIds)),
     subIds.length === 0
       ? []
@@ -1079,6 +1080,7 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
           .select({ id: categories.id, key: categories.key })
           .from(categories)
           .where(inArray(categories.id, subIds)),
+    rows.length === 0 ? new Map<string, number>() : mapPlacePopularity(),
   ])
   const galleryById = new Map(galleryRows.map((row) => [row.id, row]))
   const subKeyById = new Map(subRows.map((row) => [row.id, row.key]))
@@ -1129,8 +1131,90 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
       canFavorite: place.canFavorite,
       canAddToTrip: place.canAddToTrip,
       priority: place.priority,
+      sortOrder: place.sortOrder,
+      popularity: popularity.get(place.id) ?? 0,
     }),
   )
+}
+
+/**
+ * مكان خريطة كامل + حقلا الترتيب (الوثيقة 8.6). يمر عبر `buildMapPayload`
+ * مثل أي حقل آخر: يصل للمتصفح للأماكن المفتوحة فقط، والمقفل يبقى
+ * `{ id, locked, requiredEntitlement }`.
+ */
+export type MapPlaceRecord = FullMapPlace & {
+  /** الترتيب اليدوي من لوحة التحكم (الأقل أولاً). */
+  sortOrder: number
+  /** "الأكثر مشاهدة أو حفظاً": مفضلة + رحلتي + مشاهدات (آخر سنة). */
+  popularity: number
+}
+
+/**
+ * شعبية كل مكان في استعلام مجمّع واحد (لا N+1): مرات الحفظ في المفضلة،
+ * والإضافة إلى "رحلتي"، ومشاهدات اللوحة (`activity_log` 'view_place').
+ *
+ * المشاهدات محصورة في آخر 365 يوماً: السجل ينمو بلا حد، والفهرس
+ * (action, created_at) يجعل النافذة مسحاً محدوداً بدل الجدول كله.
+ */
+export async function mapPlacePopularity(): Promise<Map<string, number>> {
+  const rows = await db.execute<{ place_id: string; n: number }>(sql`
+    select s.place_id, sum(s.n)::int as n from (
+      select f.ref_id::text as place_id, count(*) as n
+        from favorites f where f.kind = 'place' group by f.ref_id
+      union all
+      select ti.place_id::text, count(*) from trip_items ti group by ti.place_id
+      union all
+      select a.details->>'placeId', count(*) from activity_log a
+        where a.action = 'view_place' and a.details ? 'placeId'
+          and a.created_at > now() - interval '365 days'
+        group by a.details->>'placeId'
+    ) s
+    group by s.place_id
+  `)
+  return new Map([...rows].map((row) => [row.place_id, Number(row.n)]))
+}
+
+/**
+ * التصنيفات العامة للخريطة (الوثيقة 7، 9.3): المناطق والأحياء، التصنيفات
+ * والوسوم — المفعّلة فقط وبترتيب `sort_order` من لوحة التحكم، حتى التي لا
+ * أماكن فيها بعد. قوائم الخريطة كانت تُشتق من الأماكن المحمّلة، فلا تظهر
+ * منطقة فارغة ويتبع الترتيب ترتيب الأماكن.
+ *
+ * بيانات عامة بالكامل (أسماء ومراكز تقريبية) — لا شيء فيها من مكان مقفل.
+ */
+export async function listMapTaxonomy(): Promise<MapTaxonomy> {
+  const activeParent = alias(regions, 'active_parent')
+  const [regionRows, categoryRows, tagRows] = await Promise.all([
+    db
+      .select({
+        key: regions.key,
+        label: regions.label,
+        // حي منطقته العامة معطّلة يظهر في المستوى الأول بدل أن يختفي.
+        parentKey: activeParent.key,
+        centerLat: regions.centerLat,
+        centerLon: regions.centerLon,
+        radiusKm: regions.radiusKm,
+      })
+      .from(regions)
+      .leftJoin(
+        activeParent,
+        and(eq(activeParent.id, regions.parentId), eq(activeParent.status, 'active')),
+      )
+      .where(eq(regions.status, 'active'))
+      .orderBy(asc(regions.sortOrder), asc(regions.key)),
+    db
+      .select({ key: categories.key, label: categories.label })
+      .from(categories)
+      // "all" تبويب "الكل" في فلتر الأنشطة، لا تصنيف أماكن.
+      .where(and(eq(categories.status, 'active'), ne(categories.key, 'all')))
+      .orderBy(asc(categories.sortOrder), asc(categories.key)),
+    db
+      .select({ key: tags.key, label: tags.label })
+      .from(tags)
+      .where(eq(tags.status, 'active'))
+      .orderBy(asc(tags.sortOrder), asc(tags.key)),
+  ])
+  return { regions: regionRows, categories: categoryRows, tags: tagRows }
 }
 
 // ---------------------------------------------------------------------------

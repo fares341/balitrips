@@ -114,11 +114,54 @@ export interface PaymentProvider {
   cancelIntent?(providerPaymentId: string): Promise<boolean>
 
   /**
+   * How a settled payment was made (الوثيقة 22.7): 'card', 'apple_pay',
+   * 'google_pay', 'link', 'bank_transfer'… Null when the provider cannot say
+   * (not settled, or no payment attached). Best-effort and read-only — callers
+   * record it after the fact and never block order state on it.
+   */
+  getPaymentMethod?(providerPaymentId: string): Promise<string | null>
+
+  /**
    * Verify the signature and parse. MUST throw on an invalid signature —
    * an unverified webhook is an unauthenticated request to change order
    * state, which is as sensitive as it gets.
    */
   parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent>
+}
+
+/** Known payment-method values. Providers may report others (normalised). */
+export const PAYMENT_METHODS = [
+  'card',
+  'apple_pay',
+  'google_pay',
+  'bank_transfer',
+  'manual',
+] as const
+
+const METHOD_LABELS: Record<string, string> = {
+  card: 'Card',
+  apple_pay: 'Apple Pay',
+  google_pay: 'Google Pay',
+  bank_transfer: 'Bank transfer',
+  manual: 'Manual',
+  link: 'Stripe Link',
+}
+
+/** English label for staff screens. Unknown values are shown as-is. */
+export function paymentMethodLabel(method: string | null | undefined): string | null {
+  if (!method) return null
+  return METHOD_LABELS[method] ?? method.replace(/_/g, ' ')
+}
+
+/** Lower-case `[a-z0-9_]`, at most 32 chars (the column width), or null. */
+export function normalisePaymentMethod(value: string | null | undefined): string | null {
+  if (!value) return null
+  const clean = value
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 32)
+  return clean === '' ? null : clean
 }
 
 export class PaymentProviderError extends Error {

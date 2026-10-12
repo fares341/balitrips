@@ -81,6 +81,12 @@ export default async function AccountSchedulesPage({
         </div>
       )}
 
+      {query.quote === 'invalid' && (
+        <div style={{ marginBottom: 20 }}>
+          <FormNotice>{t('acct_custom_pay_err')}</FormNotice>
+        </div>
+      )}
+
       {query.doc === 'pending' && (
         <div style={{ marginBottom: 20 }}>
           <FormNotice>{t('acct_sched_pending')}</FormNotice>

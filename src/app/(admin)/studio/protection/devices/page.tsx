@@ -55,6 +55,7 @@ export default async function DevicesPage({
         email: users.email,
         browser: devices.browser,
         os: devices.os,
+        deviceType: devices.deviceType,
         ip: devices.ip,
         status: devices.status,
         firstSeenAt: devices.firstSeenAt,
@@ -139,6 +140,7 @@ export default async function DevicesPage({
                 </td>
                 <td>
                   {row.browser ?? '—'} · {row.os ?? '—'}
+                  {row.deviceType ? <div className="a-muted">{row.deviceType}</div> : null}
                 </td>
                 <td className="a-mono">{row.ip ?? '—'}</td>
                 <td>

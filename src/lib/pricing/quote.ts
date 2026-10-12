@@ -37,6 +37,8 @@ export type CartItemKind =
   | 'package'
   | 'place'
   | 'plan'
+  /** جدول مخصص مدفوع (الوثيقة 13.1): `refId` = `custom_trip_requests.id`. */
+  | 'custom'
 
 export interface QuoteRequestItem {
   id: string
@@ -82,6 +84,12 @@ export interface CatalogSnapshot {
   itineraries: Map<string, { priceMinor: number; currency: string; version: number }>
   /** الباقات المنشورة (`plans`). سعرها من هنا دائماً، لا من العميل. */
   plans: Map<string, { priceMinor: number; currency: string }>
+  /**
+   * عروض أسعار الجداول المخصصة القابلة للدفع: فقط ما يملكه المشتري، ومسعَّر،
+   * وغير مدفوع. الغائب هنا → `unknown_item`. السعر من صف الطلب، لا من العميل.
+   * اختياري كي لا يلزم كل من يبني كتالوجاً بلا بنود مخصصة بتمريره.
+   */
+  customRequests?: Map<string, { priceMinor: number; currency: string }>
   packages: Map<
     string,
     { priceMinor: number; currency: string; maxGuests: number; pricingMode: 'flat' | 'per_guest' }
@@ -175,6 +183,9 @@ export function buildQuote(
         break
       case 'plan':
         pricePlan(item, catalog, lines, issues)
+        break
+      case 'custom':
+        priceCustom(item, catalog, lines, issues)
         break
       case 'place':
         // Saved places are free but still belong on the confirmed
@@ -376,6 +387,29 @@ function pricePlan(
     quantity: 1,
     lineTotalMinor: plan.priceMinor,
     currency: plan.currency,
+  })
+}
+
+function priceCustom(
+  item: QuoteRequestItem,
+  catalog: CatalogSnapshot,
+  lines: QuoteLine[],
+  issues: QuoteIssue[],
+): void {
+  const request = item.refId ? catalog.customRequests?.get(item.refId) : undefined
+  if (!request || !Number.isSafeInteger(request.priceMinor) || request.priceMinor <= 0) {
+    issues.push({ itemId: item.id, code: 'unknown_item' })
+    return
+  }
+  // عرض سعر واحد يُدفع مرة واحدة؛ الكمية لا معنى لها.
+  lines.push({
+    itemId: item.id,
+    kind: 'custom',
+    refId: item.refId,
+    unitPriceMinor: request.priceMinor,
+    quantity: 1,
+    lineTotalMinor: request.priceMinor,
+    currency: request.currency,
   })
 }
 

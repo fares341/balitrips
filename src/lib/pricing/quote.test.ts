@@ -48,6 +48,7 @@ function catalog(): CatalogSnapshot {
       ],
     ]),
     plans: new Map([['plan-1', { priceMinor: 1900, currency: 'USD' }]]),
+    customRequests: new Map([['req-1', { priceMinor: 25000, currency: 'USD' }]]),
     itineraries: new Map([['it7', { priceMinor: 7900, currency: 'USD', version: 3 }]]),
     packages: new Map([
       ['pk_honey', { priceMinor: 69000, currency: 'USD', maxGuests: 2, pricingMode: 'flat' }],
@@ -472,5 +473,40 @@ describe('time-slot format tolerance', () => {
     expect(buildQuote([item({ travelTime: '03:00:00' })], catalog(), NOW).issues[0]?.code).toBe(
       'invalid_time_slot',
     )
+  })
+})
+
+describe('custom itinerary quotes', () => {
+  const custom = (over: Partial<QuoteRequestItem> = {}) =>
+    item({
+      id: 'c1',
+      kind: 'custom',
+      refId: 'req-1',
+      quantity: 1,
+      travelDate: null,
+      travelTime: null,
+      ...over,
+    })
+
+  it('prices from the request row, once', () => {
+    const q = buildQuote([custom({ quantity: 4 })], catalog(), NOW)
+    expect(q.ok).toBe(true)
+    expect(q.lines[0]?.quantity).toBe(1)
+    expect(q.lines[0]?.lineTotalMinor).toBe(25000)
+    expect(q.totalMinor).toBe(25000)
+  })
+
+  it('refuses a request that is not in the snapshot (not owned, unquoted or paid)', () => {
+    const q = buildQuote([custom({ refId: 'someone-elses' })], catalog(), NOW)
+    expect(q.ok).toBe(false)
+    expect(q.issues[0]?.code).toBe('unknown_item')
+  })
+
+  it('refuses when the loader supplied no custom requests at all', () => {
+    const snapshot = catalog()
+    delete snapshot.customRequests
+    const q = buildQuote([custom()], snapshot, NOW)
+    expect(q.ok).toBe(false)
+    expect(q.issues[0]?.code).toBe('unknown_item')
   })
 })

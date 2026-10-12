@@ -1,16 +1,20 @@
 'use server'
 
-import { and, eq, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, gt, isNotNull, isNull, ne, or, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { sessions, users } from '@/db/schema'
+import { logActivity } from '@/lib/security/activity'
+import { entitlements, plans, sessions, users } from '@/db/schema'
 import { normalizePhone } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
+import { isEntitlementKind } from '@/lib/entitlements'
+import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
+import { planExpiry } from '@/lib/entitlements/plans'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { freq, fstr, fuuid } from '../../_lib/form'
+import { fbool, freq, fstr, fuuid } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { clearAllVerifications, clearSessionVerification } from '../../_lib/two-factor'
@@ -500,9 +504,14 @@ export async function setAccountActive(userId: string, form: FormData): Promise<
       if (before.status === 'banned') {
         throw new Error('This account is banned. Lift the ban from the Protection panel instead.')
       }
+      // إعادة التفعيل ترفع أيضاً "التعليق لحين المراجعة" (suspended) وتمسح سببه.
       await tx
         .update(users)
-        .set({ status: active ? 'active' : 'inactive' })
+        .set(
+          active
+            ? { status: 'active', banReason: null, bannedUntil: null }
+            : { status: 'inactive' },
+        )
         .where(eq(users.id, userId))
       let ended = 0
       if (!active) {
@@ -516,7 +525,11 @@ export async function setAccountActive(userId: string, form: FormData): Promise<
       await writeAudit(
         {
           actor: session,
-          action: active ? 'user.activate' : 'user.deactivate',
+          action: active
+            ? before.status === 'suspended'
+              ? 'user.unsuspend'
+              : 'user.activate'
+            : 'user.deactivate',
           entityType: 'user',
           entityId: userId,
           before: { status: before.status },
@@ -526,10 +539,114 @@ export async function setAccountActive(userId: string, form: FormData): Promise<
       )
       return ended
     })
+    if (active) {
+      await logActivity({
+        action: 'unbanned',
+        userId,
+        details: { by: session.userId, reason: 'reactivated by admin' },
+      })
+    }
     outcome = {
       ok: active
         ? 'Account activated.'
         : `Account deactivated. ${killed} session(s) ended; it cannot sign in until reactivated.`,
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(detail(userId), outcome))
+}
+
+/**
+ * "تغيير الباقة" (الوثيقة 21.2): منح باقة يدوياً بلا طلب — نفس ما يمنحه الشراء
+ * (النوع، حد الأجهزة، المدة ← تاريخ الانتهاء، والباقة)، ومعه `grantedByActorId`
+ * كي يبقى "من منح هذا الحساب الباقة" قابلاً للإجابة. "استبدال" يسحب أولاً صلاحيات
+ * الباقات الحيّة الحالية (ونسخ أفراد العائلة منها). مسجَّل في التدقيق.
+ */
+export async function grantPlanToCustomer(userId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('entitlements.grant')
+  let outcome: Outcome
+  try {
+    const planId = fuuid(form, 'planId', 'Plan')
+    const replace = fbool(form, 'replace')
+    const reason = fstr(form, 'reason')?.slice(0, 500) ?? null
+
+    const summary = await db.transaction(async (tx) => {
+      const [account] = await tx
+        .select({ id: users.id, deletedAt: users.deletedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
+      if (!account) throw new Error('That account no longer exists')
+      if (account.deletedAt) throw new Error('This account has been erased.')
+
+      const [plan] = await tx
+        .select()
+        .from(plans)
+        .where(and(eq(plans.id, planId), isNull(plans.deletedAt)))
+        .limit(1)
+      if (!plan) throw new Error('That plan no longer exists')
+      if (!isEntitlementKind(plan.entitlementKind)) {
+        throw new Error(`Plan has an unknown access kind "${plan.entitlementKind}".`)
+      }
+
+      const now = new Date()
+      let revoked: string[] = []
+      if (replace) {
+        const rows = await tx
+          .update(entitlements)
+          .set({
+            revokedAt: now,
+            revokedReason: `replaced by plan ${plan.slug} (${session.email})`,
+          })
+          .where(
+            and(
+              eq(entitlements.userId, userId),
+              isNotNull(entitlements.planId),
+              isNull(entitlements.revokedAt),
+              or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+            ),
+          )
+          .returning({ id: entitlements.id })
+        revoked = rows.map((row) => row.id)
+        for (const id of revoked) {
+          await revokeFamilyMembersOf(tx, id, `owner plan replaced by ${session.email}`)
+        }
+      }
+
+      const [row] = await tx
+        .insert(entitlements)
+        .values({
+          userId,
+          kind: plan.entitlementKind,
+          planId: plan.id,
+          deviceLimit: plan.deviceLimit,
+          grantedByActorId: session.userId,
+          grantedByOrderId: null,
+          startsAt: now,
+          expiresAt: planExpiry(plan.durationDays, now),
+        })
+        .returning()
+
+      await writeAudit(
+        {
+          actor: session,
+          action: 'entitlement.grant_plan',
+          entityType: 'user',
+          entityId: userId,
+          before: replace ? { revokedEntitlementIds: revoked } : null,
+          after: { ...row, plan: plan.slug, reason },
+        },
+        tx,
+      )
+      return { slug: plan.slug, revoked: revoked.length }
+    })
+
+    outcome = {
+      ok:
+        `Granted plan ${summary.slug}.` +
+        (summary.revoked > 0 ? ` ${summary.revoked} previous plan grant(s) revoked.` : ''),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error

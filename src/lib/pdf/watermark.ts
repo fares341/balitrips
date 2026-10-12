@@ -9,14 +9,17 @@
  * النسخة المسرّبة تقود إلى الطلب والحساب والجهاز والوقت بالضبط.
  *
  * ⚠︎ الخط: خطوط PDF القياسية لا تدعم العربية، وpdf-lib لا يشكّل الحروف
- * العربية ولا يطبق اتجاه النص — اسم عربي سيُطبع حروفاً مقطعة معكوسة. لذلك
- * العلامة تستخدم البريد ورقم الطلب (لاتينية دائماً تقريباً)، وأي حرف خارج
- * WinAnsi يُستبدل بـ `?`. هذا قرار مقصود وليس نقصاً.
+ * العربية ولا يطبق اتجاه النص — اسم عربي سيُطبع حروفاً مقطعة معكوسة. لذلك:
+ *   - اسم المشتري يُطبع **فقط** إن كان كله Latin-1 (الوثيقة 16.2/17)؛ وإلا يُحذف
+ *     ويبقى البريد وحده معرّفاً — لا نطبع اسماً مشوّهاً بعلامات `?`.
+ *   - البريد ورقم الطلب يُطبعان دائماً، وأي حرف فيهما خارج WinAnsi يصبح `?`.
  */
 
 import { degrees, PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 
 export interface WatermarkInfo {
+  /** اسم المشتري؛ يُطبع فقط إن كان قابلاً للرسم كاملاً (`printableName`). */
+  name?: string | null
   email: string
   orderNumber: string
   deliveryId: string
@@ -33,13 +36,29 @@ export function toWinAnsi(text: string): string {
     .join('')
 }
 
+/**
+ * الاسم كما يُطبع، أو null إن لم يكن Latin-1 بالكامل (عربي، صيني…) — عندها يكفي
+ * البريد. المسافات تُوحَّد والطول يُقصر كي لا يدفع السطر خارج الصفحة.
+ */
+export function printableName(name: string | null | undefined): string | null {
+  const value = (name ?? '').replace(/\s+/g, ' ').trim()
+  if (value === '') return null
+  const latin1 = Array.from(value).every((ch) => {
+    const code = ch.codePointAt(0) ?? 0
+    return (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff)
+  })
+  return latin1 ? value.slice(0, 64) : null
+}
+
 export function watermarkLines(info: WatermarkInfo): { tile: string; footer: string } {
   const stamp = info.at.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+  const name = printableName(info.name)
   const email = toWinAnsi(info.email)
   const order = toWinAnsi(info.orderNumber)
+  const who = name === null ? email : `${name} <${email}>`
   return {
-    tile: `${email} · #${order}`,
-    footer: `Licensed to ${email} · Order #${order} · ${stamp} · Ref ${info.deliveryId.slice(0, 8)} · Personal use only — do not share`,
+    tile: name === null ? `${email} · #${order}` : `${name} · ${email} · #${order}`,
+    footer: `Licensed to ${who} · Order #${order} · ${stamp} · Ref ${info.deliveryId.slice(0, 8)} · Personal use only — do not share`,
   }
 }
 

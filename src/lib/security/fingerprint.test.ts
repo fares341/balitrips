@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deviceIdentity, parseUserAgent } from './fingerprint'
+import { deviceIdentity, parseDeviceType, parseUserAgent, sameAgentFamily } from './fingerprint'
 
 const CHROME_MAC =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
@@ -17,6 +17,33 @@ describe('parseUserAgent', () => {
     expect(parseUserAgent(EDGE_WIN)).toEqual({ browser: 'Edge', os: 'Windows' })
     expect(parseUserAgent(SAFARI_IPHONE)).toEqual({ browser: 'Safari', os: 'iOS' })
     expect(parseUserAgent(null)).toEqual({ browser: 'Unknown', os: 'Unknown' })
+  })
+})
+
+const ANDROID_TABLET =
+  'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+const ANDROID_PHONE =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36'
+
+describe('parseDeviceType', () => {
+  it('tells phones, tablets and desktops apart', () => {
+    expect(parseDeviceType(SAFARI_IPHONE)).toBe('mobile')
+    expect(parseDeviceType(ANDROID_PHONE)).toBe('mobile')
+    expect(parseDeviceType(ANDROID_TABLET)).toBe('tablet')
+    expect(parseDeviceType(CHROME_MAC)).toBe('desktop')
+    expect(parseDeviceType(null)).toBe('desktop')
+  })
+})
+
+describe('sameAgentFamily', () => {
+  it('ignores version updates but not a different browser or OS', () => {
+    expect(sameAgentFamily(CHROME_MAC, CHROME_MAC_NEXT)).toBe(true)
+    expect(sameAgentFamily(CHROME_MAC, EDGE_WIN)).toBe(false)
+    expect(sameAgentFamily(CHROME_MAC, SAFARI_IPHONE)).toBe(false)
+  })
+  it('does not judge what it cannot parse', () => {
+    expect(sameAgentFamily(null, CHROME_MAC)).toBe(true)
+    expect(sameAgentFamily(CHROME_MAC, 'curl/8.0')).toBe(true)
   })
 })
 

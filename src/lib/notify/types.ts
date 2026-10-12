@@ -11,7 +11,8 @@ export const USER_NOTIFICATION_TYPES = {
   order_paid: { email: false /* order_confirmation يُرسل أصلاً */, whatsapp: true },
   plan_activated: { email: true, whatsapp: true },
   plan_expiring: { email: true, whatsapp: true },
-  custom_status: { email: true, whatsapp: false },
+  /** الوثيقة 19.1: تحديث حالة الطلب المخصص — داخل الموقع + بريد + واتساب. */
+  custom_status: { email: true, whatsapp: true },
   custom_pdf_ready: { email: true, whatsapp: true },
   /** الوثيقة 5.4: "إرسال رسالة واتساب عند اكتمال الجدول". */
   custom_completed: { email: true, whatsapp: true },
@@ -26,6 +27,26 @@ export const USER_NOTIFICATION_TYPES = {
   admin_message: { email: false, whatsapp: false },
   /** أُضيف إلى باقة عائلية (الوثيقة 13.3). */
   family_added: { email: true, whatsapp: false },
+  /**
+   * الوثيقة 15.1/19.1/20.1: الإدارة غيّرت حالة طلب حجز (تأكيد، تنفيذ بند، استرداد،
+   * إلغاء). `status` نصّ الحالة بلغة العميل. عند الاسترداد يُطفأ البريد لأن
+   * `refund_notice` هو بريد ذلك الحدث.
+   */
+  order_updated: { email: true, whatsapp: true },
+  /**
+   * الوثيقة 14.1: كل دخول ناجح من جهاز معروف — داخل الموقع فقط. الجهاز الجديد
+   * يأخذ `new_device_login` (بريد + واتساب) بدلاً منه.
+   */
+  login_alert: { email: false, whatsapp: false },
+  /**
+   * محاولة دخول من جهاز جديد رُفضت (حد الأجهزة) أو عُلّقت لموافقة الإدارة.
+   * مرة واحدة لكل جهاز في الساعة (`notifyBlockedSignIn` في src/lib/security/devices.ts).
+   */
+  device_blocked_attempt: { email: true, whatsapp: false },
+  /** الوثيقة 13.1: سعر الجدول المخصص جاهز للدفع. */
+  custom_quote: { email: true, whatsapp: true },
+  /** الوثيقة 4.4: إرسال الجدول المخصص عبر واتساب (رابط العارض الآمن في الحساب). */
+  pdf_ready_whatsapp: { email: false, whatsapp: true },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -57,6 +78,10 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   plan_expiring: ['plan', 'date'],
   custom_pdf_ready: ['name'],
   custom_completed: ['name'],
+  custom_status: ['status'],
+  order_updated: ['orderNumber', 'status'],
+  custom_quote: ['name', 'amount'],
+  pdf_ready_whatsapp: ['name', 'link'],
   admin_message: ['body'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],

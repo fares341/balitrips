@@ -34,6 +34,7 @@ export const TRIP_KIND_ICON: Record<CartItemKind, IconName> = {
   package: 'star',
   place: 'pin',
   plan: 'gem',
+  custom: 'pdf',
 }
 
 /**

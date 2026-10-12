@@ -48,7 +48,7 @@ import {
   loadEntitlements,
   type EntitlementSet,
 } from '@/lib/entitlements'
-import { listPublishedPlans, type PlanRow } from '@/lib/entitlements/plans'
+import { listPublishedPlans, loadLivePlanIds, type PlanRow } from '@/lib/entitlements/plans'
 import { formatMoney } from '@/lib/money'
 
 import { pageMetadata } from '../_meta'
@@ -59,6 +59,8 @@ import { buyPlan } from './actions'
 import { PLAN_TIERS } from './tiers'
 
 const PLANS_HREF = '/plans'
+
+const NO_PLANS: ReadonlySet<string> = new Set()
 
 /**
  * The awaited translator, passed down rather than re-awaited per component.
@@ -125,7 +127,15 @@ export default async function PlansPage({ params }: { params: Promise<{ locale: 
             less informed than the resolved version that replaces it.
           */}
           <Suspense
-            fallback={<PlanGrid locale={locale} plans={plans} held={emptyEntitlements()} t={t} />}
+            fallback={
+              <PlanGrid
+                locale={locale}
+                plans={plans}
+                held={emptyEntitlements()}
+                livePlanIds={NO_PLANS}
+                t={t}
+              />
+            }
           >
             <EntitledPlanGrid locale={locale} plans={plans} t={t} />
           </Suspense>
@@ -154,9 +164,9 @@ async function EntitledPlanGrid({
   t: Translator
 }) {
   const userId = await currentUserId()
-  const held = await loadEntitlements(userId)
+  const [held, livePlanIds] = await Promise.all([loadEntitlements(userId), loadLivePlanIds(userId)])
 
-  return <PlanGrid locale={locale} plans={plans} held={held} t={t} />
+  return <PlanGrid locale={locale} plans={plans} held={held} livePlanIds={livePlanIds} t={t} />
 }
 
 /**
@@ -170,11 +180,13 @@ function PlanGrid({
   locale,
   plans,
   held,
+  livePlanIds,
   t,
 }: {
   locale: Locale
   plans: readonly PlanRow[]
   held: EntitlementSet
+  livePlanIds: ReadonlySet<string>
   t: Translator
 }) {
   const free = PLAN_TIERS[0]
@@ -211,8 +223,10 @@ function PlanGrid({
       {plans.map((plan) => {
         const kind = isEntitlementKind(plan.entitlementKind) ? plan.entitlementKind : null
         // `has` applies the implication table: a VIP holder reads as active on
-        // Map Access too, which is the truth.
-        const active = kind !== null && held.has(kind)
+        // Map Access too, which is the truth. A `basic` (PDF-only) plan opens
+        // nothing on the map, so it is active only when this very plan is held.
+        const mapless = kind === 'basic'
+        const active = livePlanIds.has(plan.id) || (kind !== null && !mapless && held.has(kind))
         const icon = (plan.icon ?? 'star') as IconName
 
         return (
@@ -249,6 +263,25 @@ function PlanGrid({
                   {pick(feature, locale)}
                 </li>
               ))}
+              {mapless && (
+                <li>
+                  <span className="bt-check no" aria-hidden="true">
+                    <Icon name="cross" size={14} />
+                  </span>
+                  {t('sub_basic_no_map')}
+                </li>
+              )}
+              {mapless && (
+                <li>
+                  <span
+                    className={plan.canDownloadPdf ? 'bt-check yes' : 'bt-check no'}
+                    aria-hidden="true"
+                  >
+                    <Icon name={plan.canDownloadPdf ? 'pdf' : 'cross'} size={14} />
+                  </span>
+                  {t(plan.canDownloadPdf ? 'sub_basic_pdf' : 'sub_basic_pdf_view')}
+                </li>
+              )}
               <li>
                 <span className="bt-check yes" aria-hidden="true">
                   <Icon name="phone" size={14} color="var(--forest)" />

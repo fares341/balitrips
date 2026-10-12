@@ -1,7 +1,9 @@
 /**
  * GET /api/places/search — البحث المركّب والأماكن القريبة.
  *
- *   ?q=        نص (اسم، منطقة، تصنيف، وسم — بكل اللغات)
+ *   ?q=        نص (اسم، منطقة، تصنيف، وسم — بكل اللغات). جملة كاملة تُفهم:
+ *              "كافيهات في كوتا" ← المنطقة Kuta؛ "Cafes near me" ← `nearMe` في
+ *              الرد (أرسل lat/lon للترتيب بالأقرب). انظر src/lib/search/query.ts
  *   &region=   مفتاح منطقة (regions.key)
  *   &category= مفتاح تصنيف (categories.key)
  *   &tag=      مفتاح وسم، يتكرر للدمج (AND)
@@ -63,11 +65,12 @@ export async function GET(request: Request): Promise<NextResponse> {
       // الموقع لا يُخزَّن — فقط هل استُخدم.
       details: {
         q: p.get('q')?.slice(0, 80) ?? null,
-        region: region.success ? region.data : null,
+        region: result.region,
         category: category.success ? category.data : null,
         tags,
         gems: p.get('gems') === '1',
         nearby: result.usedLocation,
+        nearMe: result.nearMe,
         hits: result.hits.length,
       },
     })

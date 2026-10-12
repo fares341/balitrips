@@ -286,6 +286,7 @@ export async function deliverSchedule(
   try {
     stamped = await stampPdf(source, {
       email: user.email,
+      name: user.name,
       orderNumber: resolved.orderNumber,
       deliveryId,
       at: new Date(),

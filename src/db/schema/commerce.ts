@@ -44,7 +44,7 @@ export const cartItems = pgTable(
       .notNull()
       .references(() => carts.id, { onDelete: 'cascade' }),
 
-    /** 'activity' | 'driver' | 'itinerary' | 'package' | 'place' */
+    /** 'activity' | 'driver' | 'itinerary' | 'package' | 'place' | 'plan' | 'custom' */
     kind: varchar('kind', { length: 24 }).notNull(),
     /** Id of the source entity. Null for driver, which has no catalog row. */
     refId: uuid('ref_id'),
@@ -192,6 +192,13 @@ export const payments = pgTable(
     amountMinor: priceMinor('amount_minor'),
     currency: currency(),
 
+    /**
+     * Payment method (الوثيقة 22.7): 'card' | 'apple_pay' | 'google_pay' |
+     * 'bank_transfer' | 'manual' | provider type (e.g. 'link', 'alipay').
+     * NULL = not known yet (recorded best-effort after the provider settles).
+     */
+    method: varchar('method', { length: 32 }),
+
     /** Guards against double-charge on double-click, enforced by the index. */
     idempotencyKey: varchar('idempotency_key', { length: 128 }).notNull(),
 
@@ -254,7 +261,7 @@ export const entitlements = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
 
-    /** 'map_access' | 'vip' */
+    /** 'basic' (no map) | 'map_access' | 'vip' */
     kind: varchar('kind', { length: 32 }).notNull(),
 
     grantedByOrderId: uuid('granted_by_order_id').references(() => orders.id),
@@ -355,6 +362,8 @@ export const customTripRequests = pgTable('custom_trip_requests', {
 
   startDate: date('start_date'),
   endDate: date('end_date'),
+  /** عدد أيام الرحلة شاملاً اليومين (الوثيقة 22.4)، محسوب عند الإدراج. */
+  days: integer('days'),
   travellers: integer('travellers'),
   theme: varchar('theme', { length: 32 }),
   budgetPerPersonMinor: moneyMinor('budget_per_person_minor'),
@@ -378,6 +387,16 @@ export const customTripRequests = pgTable('custom_trip_requests', {
   status: varchar('status', { length: 24 }).notNull().default('new'),
   /** ملاحظات الفريق الداخلية — لا تُعرض للعميل. */
   adminNotes: text('admin_notes'),
+
+  /**
+   * عرض السعر (الوثيقة 13.1 "جدول مخصص"): يحدده الفريق، ويدفعه العميل كبند
+   * سلة من نوع `custom`. السعر يُقرأ من هنا على الخادم دائماً.
+   */
+  quoteMinor: moneyMinor('quote_minor'),
+  quoteCurrency: varchar('quote_currency', { length: 3 }),
+  quotedAt: timestamp('quoted_at', { withTimezone: true }),
+  /** الطلب المدفوع الذي سدّد العرض. NULL = لم يُدفع. */
+  paidOrderId: uuid('paid_order_id').references(() => orders.id, { onDelete: 'set null' }),
   ...timestamps,
 })
 

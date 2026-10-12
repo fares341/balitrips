@@ -12,7 +12,7 @@ import { Field, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
-import { banIp, liftDeviceBan, liftIpBan, saveSecuritySettings } from './actions'
+import { banIp, liftDeviceBan, liftIpBan, liftSuspension, saveSecuritySettings } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,48 +31,66 @@ export default async function ProtectionPage({
   const now = new Date()
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
-  const [ipBans, deviceBans, bannedUsers, summary, settings, [openAlerts]] = await Promise.all([
-    db
-      .select({ ban: bannedIps, by: users.email })
-      .from(bannedIps)
-      .leftJoin(users, eq(users.id, bannedIps.createdBy))
-      .where(and(isNull(bannedIps.liftedAt), or(isNull(bannedIps.until), gt(bannedIps.until, now))))
-      .orderBy(desc(bannedIps.createdAt)),
-    db
-      .select({ ban: bannedDevices, by: users.email })
-      .from(bannedDevices)
-      .leftJoin(users, eq(users.id, bannedDevices.createdBy))
-      .where(
-        and(
-          isNull(bannedDevices.liftedAt),
-          or(isNull(bannedDevices.until), gt(bannedDevices.until, now)),
-        ),
-      )
-      .orderBy(desc(bannedDevices.createdAt)),
-    db
-      .select({
-        id: users.id,
-        email: users.email,
-        bannedUntil: users.bannedUntil,
-        banReason: users.banReason,
-      })
-      .from(users)
-      .where(
-        and(eq(users.status, 'banned'), or(isNull(users.bannedUntil), gt(users.bannedUntil, now))),
-      )
-      .orderBy(desc(users.updatedAt))
-      .limit(100),
-    db
-      .select({ action: activityLog.action, value: sql<number>`count(*)::int` })
-      .from(activityLog)
-      .where(gte(activityLog.createdAt, dayAgo))
-      .groupBy(activityLog.action),
-    readSetting('security'),
-    db
-      .select({ value: sql<number>`count(*)::int` })
-      .from(securityAlerts)
-      .where(eq(securityAlerts.status, 'open')),
-  ])
+  const [ipBans, deviceBans, bannedUsers, suspendedUsers, summary, settings, [openAlerts]] =
+    await Promise.all([
+      db
+        .select({ ban: bannedIps, by: users.email })
+        .from(bannedIps)
+        .leftJoin(users, eq(users.id, bannedIps.createdBy))
+        .where(
+          and(isNull(bannedIps.liftedAt), or(isNull(bannedIps.until), gt(bannedIps.until, now))),
+        )
+        .orderBy(desc(bannedIps.createdAt)),
+      db
+        .select({ ban: bannedDevices, by: users.email })
+        .from(bannedDevices)
+        .leftJoin(users, eq(users.id, bannedDevices.createdBy))
+        .where(
+          and(
+            isNull(bannedDevices.liftedAt),
+            or(isNull(bannedDevices.until), gt(bannedDevices.until, now)),
+          ),
+        )
+        .orderBy(desc(bannedDevices.createdAt)),
+      db
+        .select({
+          id: users.id,
+          email: users.email,
+          bannedUntil: users.bannedUntil,
+          banReason: users.banReason,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.status, 'banned'),
+            or(isNull(users.bannedUntil), gt(users.bannedUntil, now)),
+          ),
+        )
+        .orderBy(desc(users.updatedAt))
+        .limit(100),
+      // الوثيقة 18.2: معلّقة تلقائياً لحين مراجعة الإدارة.
+      db
+        .select({
+          id: users.id,
+          email: users.email,
+          reason: users.banReason,
+          since: users.updatedAt,
+        })
+        .from(users)
+        .where(and(eq(users.status, 'suspended'), isNull(users.deletedAt)))
+        .orderBy(desc(users.updatedAt))
+        .limit(100),
+      db
+        .select({ action: activityLog.action, value: sql<number>`count(*)::int` })
+        .from(activityLog)
+        .where(gte(activityLog.createdAt, dayAgo))
+        .groupBy(activityLog.action),
+      readSetting('security'),
+      db
+        .select({ value: sql<number>`count(*)::int` })
+        .from(securityAlerts)
+        .where(eq(securityAlerts.status, 'open')),
+    ])
 
   const count = (action: string) => summary.find((row) => row.action === action)?.value ?? 0
   const activityHref = (action: string) => adminHref(`/protection/activity?action=${action}`)
@@ -159,8 +177,10 @@ export default async function ProtectionPage({
               style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 8 }}
             >
               <input type="checkbox" name="autoBan" defaultChecked={settings.autoBan} />
-              Automatic temporary bans (1h IP ban for credential stuffing, 24h account ban for heavy
-              device switching). Alerts are raised either way.
+              Automatic actions: 1h IP ban for credential stuffing, 24h account ban for heavy device
+              switching, and suspension pending review for repeated over-the-limit sign-ins or
+              repeated attempts on content the account does not own. Staff and admin accounts are
+              never acted on automatically. Alerts are raised either way.
             </label>
             {mayWrite ? (
               <div className="a-actions">
@@ -193,6 +213,57 @@ export default async function ProtectionPage({
             <div style={{ fontSize: 28, fontWeight: 700 }}>{count(action)}</div>
           </Link>
         ))}
+      </div>
+
+      <div className="a-card">
+        <h2>Suspended accounts (pending review)</h2>
+        <p className="a-hint">
+          Suspended automatically by the protection rules. They cannot sign in or open paid content
+          until reactivated. Review the account&apos;s activity first.
+        </p>
+        {suspendedUsers.length === 0 ? (
+          <Empty>No account is waiting for review.</Empty>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Reason</th>
+                <th>Since</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {suspendedUsers.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <Link href={adminHref(`/customers/${row.id}`)}>{row.email}</Link>{' '}
+                    <Link
+                      className="a-muted"
+                      href={adminHref(`/protection/activity?user=${row.id}`)}
+                    >
+                      activity
+                    </Link>
+                  </td>
+                  <td>{row.reason ?? '—'}</td>
+                  <td>
+                    <When value={row.since} />
+                  </td>
+                  <td>
+                    {mayWrite ? (
+                      <form className="a-inline-form" action={liftSuspension}>
+                        <input type="hidden" name="userId" value={row.id} />
+                        <button className="a-btn accent small" type="submit">
+                          Reactivate
+                        </button>
+                      </form>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </div>
 
       <div className="a-card">

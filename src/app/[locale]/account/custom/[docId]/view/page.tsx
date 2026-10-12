@@ -1,19 +1,25 @@
 /** عرض جدول مخصص داخل الموقع — نفس العارض الآمن، مصدره `../file`. */
 
+import { and, eq } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LinkButton } from '@/components/shared'
+import { db } from '@/db'
+import { customTripDocuments, customTripRequests } from '@/db/schema'
 import { getPathname } from '@/i18n/routing'
 import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
 import { accountMetadata } from '../../../_lib/meta'
 import { SecurePdfViewer } from '../../../schedules/[itemId]/view/secure-pdf-viewer'
+import { viewerWatermark } from '../../../schedules/[itemId]/view/watermark'
 
 type PageParams = Promise<{ locale: string; docId: string }>
 
 export const dynamic = 'force-dynamic'
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw } = await params
@@ -28,7 +34,19 @@ export default async function CustomPlanViewPage({ params }: { params: PageParam
   const user = await requireActiveUser('account:custom_view')
 
   const src = getPathname({ href: `/account/custom/${encodeURIComponent(docId)}/file`, locale })
-  const watermark = `${user.email} · ${new Date().toISOString().slice(0, 10)}`
+  // نفس رقم الطلب المختوم في الملف (`CT-<8 أحرف من معرّف الطلب>`، schedule-file.ts).
+  const [request] = UUID.test(docId)
+    ? await db
+        .select({ requestId: customTripDocuments.requestId })
+        .from(customTripDocuments)
+        .innerJoin(customTripRequests, eq(customTripRequests.id, customTripDocuments.requestId))
+        .where(and(eq(customTripDocuments.id, docId), eq(customTripRequests.userId, user.id)))
+        .limit(1)
+    : []
+  const watermark = viewerWatermark(
+    user.email,
+    request ? `CT-${request.requestId.slice(0, 8).toUpperCase()}` : null,
+  )
 
   return (
     <section aria-labelledby="bt-acct-cview-h">

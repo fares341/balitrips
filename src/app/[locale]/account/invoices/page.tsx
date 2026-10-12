@@ -47,6 +47,9 @@ const STATUS_VARIANT: Record<OrderStatus, TagVariant> = {
   partially_refunded: 'orange',
 }
 
+/** طرق الدفع التي لها نص مترجم (`pay_method_*`). */
+const PAY_METHODS = new Set(['card', 'apple_pay', 'google_pay', 'bank_transfer', 'manual'])
+
 export default async function AccountInvoicesPage({
   params,
   searchParams,
@@ -126,7 +129,14 @@ export default async function AccountInvoicesPage({
                       {summary}
                       {extra !== '' && <span className="muted">{extra}</span>}
                     </td>
-                    <td className="num">{formatMoney(item.totalMinor, item.currency, locale)}</td>
+                    <td className="num">
+                      {formatMoney(item.totalMinor, item.currency, locale)}
+                      {item.paymentMethod !== null && PAY_METHODS.has(item.paymentMethod) && (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          {t(`pay_method_${item.paymentMethod}`)}
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <Tag variant={STATUS_VARIANT[item.status]} style={{ whiteSpace: 'nowrap' }}>
                         {t(`cf_st_${item.status}`)}

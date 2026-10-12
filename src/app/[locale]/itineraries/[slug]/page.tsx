@@ -42,6 +42,7 @@ import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { formatMoney } from '@/lib/money'
 import { alternates } from '../_meta'
+import { LinkedPlaces } from './linked-places'
 
 const INDEX_HREF = ENTITY_PATHS.itinerary
 
@@ -65,6 +66,13 @@ function addToTripHref(slug: string): string {
  * collapses them into one query per request instead of two.
  */
 const loadItinerary = cache(getItineraryBySlug)
+
+/**
+ * Request-rendered: "Places in this itinerary" is redacted per viewer (a
+ * subscriber sees the places their plan unlocks, a guest sees free ones), and
+ * a cached page cannot be both. Same trade as /map.
+ */
+export const dynamic = 'force-dynamic'
 
 export async function generateStaticParams() {
   const itineraries = await listItineraries()
@@ -330,6 +338,8 @@ export default async function ItineraryDetailPage({
               </ol>
             </div>
           )}
+
+          <LinkedPlaces itineraryId={itinerary.id} locale={locale} />
 
           {stops.length > 0 && (
             <div className="bt-detail-block">

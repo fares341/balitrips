@@ -35,6 +35,11 @@ export const ACTIVITY_ACTIONS = [
   'update_request',
   'banned',
   'unbanned',
+  /** تعليق تلقائي لحين مراجعة الإدارة (الوثيقة 18.2)، ورفعه. */
+  'suspended',
+  'unsuspended',
+  /** الوثيقة 15.1/19.1: الإدارة غيّرت حالة طلب العميل (تأكيد، تنفيذ، استرداد، إلغاء). */
+  'update_order',
   /** الوثيقة 15.2: "الصفحات التي زارها". */
   'page_view',
 ] as const

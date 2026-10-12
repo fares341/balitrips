@@ -10,7 +10,15 @@ import { and, eq, gt, isNull, or } from 'drizzle-orm'
 import { db } from '@/db'
 import { bannedDevices, bannedIps, users } from '@/db/schema'
 
-export type BanReason = 'user' | 'device' | 'ip'
+/** `suspended` = الحساب معلّق تلقائياً لحين مراجعة الإدارة (الوثيقة 18.2). */
+export type BanReason = 'user' | 'suspended' | 'device' | 'ip'
+
+/** حالات الحساب التي تمنع الدخول بلا مدة: تعطيل إداري، وتعليق لحين المراجعة. */
+export const BLOCKING_STATUSES = ['inactive', 'suspended'] as const
+
+export function isSuspended(user: { status: string } | null | undefined): boolean {
+  return user?.status === 'suspended'
+}
 
 /** هل ما زال الحظر سارياً؟ `until` = null يعني دائم. */
 export function isBanActive(until: Date | string | null | undefined, now = new Date()): boolean {
@@ -26,8 +34,9 @@ export function isUserBanned(
   now = new Date(),
 ): boolean {
   if (user === null || user === undefined) return false
-  // حساب معطّل من الإدارة (الوثيقة: "تفعيل/تعطيل الحساب") يُعامل كحظر حتى يُفعَّل.
-  if (user.status === 'inactive') return true
+  // حساب معطّل من الإدارة (الوثيقة: "تفعيل/تعطيل الحساب")، أو معلّق تلقائياً لحين
+  // المراجعة (الوثيقة 18.2)، يُعامل كحظر حتى يُفعَّل.
+  if ((BLOCKING_STATUSES as readonly string[]).includes(user.status)) return true
   return user.status === 'banned' && isBanActive(user.bannedUntil, now)
 }
 
@@ -77,6 +86,7 @@ export async function findActiveBan(query: BanQuery, now = new Date()): Promise<
       : undefined,
   ])
 
+  if (isSuspended(userRow)) return 'suspended'
   if (isUserBanned(userRow, now)) return 'user'
   if (deviceRow !== undefined) return 'device'
   if (ipRow !== undefined) return 'ip'

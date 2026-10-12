@@ -5,20 +5,26 @@
  * لعنوان الصفحة أن يكشف شيئاً. هنا فقط: مستخدم مسجّل، وسطر العلامة المائية.
  */
 
+import { and, eq } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LinkButton } from '@/components/shared'
+import { db } from '@/db'
+import { orderItems, orders } from '@/db/schema'
 import { getPathname } from '@/i18n/routing'
 import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
 import { accountMetadata } from '../../../_lib/meta'
 import { SecurePdfViewer } from './secure-pdf-viewer'
+import { viewerWatermark } from './watermark'
 
 type PageParams = Promise<{ locale: string; itemId: string }>
 
 export const dynamic = 'force-dynamic'
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw } = await params
@@ -34,8 +40,17 @@ export default async function ScheduleViewPage({ params }: { params: PageParams 
   const user = await requireActiveUser('account:schedule_view')
 
   const src = getPathname({ href: `/account/schedules/${encodeURIComponent(itemId)}/file`, locale })
-  // تاريخ ISO لا محلي: التاريخ العربي داخل سطر لاتيني يتبعثر بسبب اتجاه النص.
-  const watermark = `${user.email} · ${new Date().toISOString().slice(0, 10)}`
+  // الوثيقة 16.3/17: العلامة فوق العارض تحمل رقم الطلب أيضاً. البحث مقصور على
+  // طلبات هذا المستخدم؛ ملكية الملف نفسه يفحصها `../file` عند الجلب.
+  const [order] = UUID.test(itemId)
+    ? await db
+        .select({ orderNumber: orders.orderNumber })
+        .from(orderItems)
+        .innerJoin(orders, eq(orders.id, orderItems.orderId))
+        .where(and(eq(orderItems.id, itemId), eq(orders.userId, user.id)))
+        .limit(1)
+    : []
+  const watermark = viewerWatermark(user.email, order?.orderNumber ?? null)
 
   return (
     <section aria-labelledby="bt-acct-view-h">

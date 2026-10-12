@@ -37,10 +37,10 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Button, Modal } from '@/components/shared'
 import { Icon, Logo } from '@/components/ui'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
-import { getPathname, useRouter } from '@/i18n/routing'
+import { getPathname, Link, useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
 
-import { authClient, authErrorKey } from './client'
+import { authClient, authErrorAction, authErrorKey } from './client'
 import { countryOptions } from './countries'
 import { prepareDeviceCookie } from './device-fingerprint'
 import { FormError, FormNotice, SelectField, TextField } from './fields'
@@ -424,6 +424,16 @@ export function AuthModal({
       </div>
 
       <FormError messageKey={formError} />
+      {/* الوثيقة 14.2: بلغ حد الأجهزة — رابط الترقية لباقة عائلية. */}
+      {formError !== null && authErrorAction(formError) !== null && (
+        <Link
+          href={authErrorAction(formError)?.href ?? '/plans'}
+          onClick={onClose}
+          style={{ fontWeight: 700, marginTop: -8 }}
+        >
+          {t(authErrorAction(formError)?.labelKey ?? 'auth_err_device_limit_cta')} →
+        </Link>
+      )}
 
       {/* الوثيقة 3.2: الدخول بالبريد أو رقم الجوال. */}
       <TextField

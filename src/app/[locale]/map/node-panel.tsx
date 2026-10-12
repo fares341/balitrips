@@ -102,6 +102,9 @@ export function NodePanel({ pin, onClose }: NodePanelProps) {
           {!place.isFree && !place.isHiddenGem && place.requiredEntitlement === 'vip' && (
             <Tag variant="orange">VIP</Tag>
           )}
+          {!place.isFree && place.requiredEntitlement === 'map_access' && (
+            <Tag>{t('map_badge_plan')}</Tag>
+          )}
           {tags.map((tag) => (
             <Tag key={tag}>{tag}</Tag>
           ))}

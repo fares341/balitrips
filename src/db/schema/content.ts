@@ -564,6 +564,14 @@ export const articles = pgTable('articles', {
   /** Where the in-article CTA points: 'map' | 'activities' | 'driver'. */
   bridge: varchar('bridge', { length: 32 }),
 
+  /**
+   * الوثيقة 2.3/2.4 "مشاهدة محتوى حصري": من يقرأ النص الكامل.
+   * NULL = الجميع، 'map_access' أو 'vip' = حاملو الصلاحية فقط (VIP يشمل
+   * map_access). العنوان والمقتطف والصورة عامة دائماً؛ النص لا يُرسل لغير
+   * المستحق. قيمة غير معروفة تُعامل كـ 'vip' (الإغلاق اتجاه الفشل الآمن).
+   */
+  requiredEntitlement: varchar('required_entitlement', { length: 32 }),
+
   ...publishing,
   ...timestamps,
   ...softDelete,

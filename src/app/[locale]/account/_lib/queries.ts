@@ -37,6 +37,8 @@ import {
   orderItems,
   orders,
   packages,
+  payments,
+  plans,
   regions,
 } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
@@ -373,6 +375,8 @@ export async function listTripDays(userId: string): Promise<TripDayView[]> {
 export interface ScheduleView {
   /** `order_items.id`. This is what the download route authorises against. */
   orderItemId: string
+  /** `orders.id`, for the admin customer page's link to the order. */
+  orderId: string
   orderNumber: string
   itineraryId: string
   /** Null when the itinerary was unpublished after purchase. */
@@ -457,6 +461,7 @@ export async function listSchedules(userId: string, locale: Locale): Promise<Sch
 
     return {
       orderItemId: item.id,
+      orderId: item.orderId,
       orderNumber,
       itineraryId,
       slug: itinerary?.slug ?? null,
@@ -565,8 +570,23 @@ export type SubscriptionStatus = 'active' | 'expired' | 'revoked'
 
 export interface SubscriptionView {
   id: string
-  /** 'map_access' | 'vip', or whatever else staff granted. */
+  /** 'basic' | 'map_access' | 'vip', or whatever else staff granted. */
   kind: string
+  /** اسم الباقة (الوثيقة 3.3). Null = منح يدوي/قديم بلا باقة. */
+  planName: Localized | null
+  /**
+   * ملخص صلاحيات هذا الصف. منح بلا باقة يتبع الافتراضات نفسها التي يطبقها
+   * `combinePermissions` (null → مسموح).
+   */
+  permissions: {
+    map: boolean
+    vip: boolean
+    canDownloadPdf: boolean
+    canUseTrip: boolean
+    canSaveFavorites: boolean
+    /** Null = حد المنصة الافتراضي. */
+    deviceLimit: number | null
+  }
   status: SubscriptionStatus
   startsAt: Date
   /** Null means lifetime — "yours for the whole trip". */
@@ -583,15 +603,24 @@ export interface SubscriptionView {
  */
 export async function listSubscriptions(userId: string): Promise<SubscriptionView[]> {
   const rows = await db
-    .select({ entitlement: entitlements, orderNumber: orders.orderNumber })
+    .select({
+      entitlement: entitlements,
+      orderNumber: orders.orderNumber,
+      planName: plans.name,
+      canDownloadPdf: plans.canDownloadPdf,
+      canUseTrip: plans.canUseTrip,
+      canSaveFavorites: plans.canSaveFavorites,
+    })
     .from(entitlements)
     .leftJoin(orders, eq(orders.id, entitlements.grantedByOrderId))
+    .leftJoin(plans, eq(plans.id, entitlements.planId))
     .where(eq(entitlements.userId, userId))
     .orderBy(desc(entitlements.startsAt))
 
   const now = Date.now()
 
-  const views = rows.map(({ entitlement, orderNumber }): SubscriptionView => {
+  const views = rows.map((row): SubscriptionView => {
+    const { entitlement, orderNumber } = row
     const expiresAt = entitlement.expiresAt
     const status: SubscriptionStatus =
       entitlement.revokedAt !== null
@@ -603,6 +632,15 @@ export async function listSubscriptions(userId: string): Promise<SubscriptionVie
     return {
       id: entitlement.id,
       kind: entitlement.kind,
+      planName: row.planName ?? null,
+      permissions: {
+        map: entitlement.kind === 'map_access' || entitlement.kind === 'vip',
+        vip: entitlement.kind === 'vip',
+        canDownloadPdf: row.canDownloadPdf ?? true,
+        canUseTrip: row.canUseTrip ?? true,
+        canSaveFavorites: row.canSaveFavorites ?? true,
+        deviceLimit: entitlement.deviceLimit,
+      },
       status,
       startsAt: entitlement.startsAt,
       expiresAt,
@@ -630,6 +668,12 @@ export interface InvoiceView {
   itemCount: number
   /** First line's frozen name, for the "Item" column. */
   summary: Localized | null
+  /**
+   * How the order was paid (الوثيقة 22.7): 'card' | 'apple_pay' | 'google_pay' |
+   * 'bank_transfer' | … from the first settled payment. Null when unpaid or not
+   * yet recorded.
+   */
+  paymentMethod: string | null
 }
 
 export async function listInvoices(userId: string): Promise<InvoiceView[]> {
@@ -656,6 +700,26 @@ export async function listInvoices(userId: string): Promise<InvoiceView[]> {
     )
     .orderBy(orderItems.createdAt)
 
+  const settled = await db
+    .select({ orderId: payments.orderId, method: payments.method })
+    .from(payments)
+    .where(
+      and(
+        inArray(
+          payments.orderId,
+          rows.map((row) => row.id),
+        ),
+        inArray(payments.status, ['succeeded', 'refunded']),
+      ),
+    )
+    .orderBy(payments.createdAt)
+  const methodByOrder = new Map<string, string>()
+  for (const payment of settled) {
+    if (payment.method !== null && !methodByOrder.has(payment.orderId)) {
+      methodByOrder.set(payment.orderId, payment.method)
+    }
+  }
+
   const counts = new Map<string, number>()
   const firstName = new Map<string, Localized>()
   for (const line of lines) {
@@ -674,5 +738,6 @@ export async function listInvoices(userId: string): Promise<InvoiceView[]> {
     currency: row.presentmentCurrency,
     itemCount: counts.get(row.id) ?? 0,
     summary: firstName.get(row.id) ?? null,
+    paymentMethod: methodByOrder.get(row.id) ?? null,
   }))
 }

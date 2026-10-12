@@ -8,6 +8,7 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import { isRefundable, type OrderStatus } from '@/lib/orders/state'
+import { paymentMethodLabel } from '@/lib/payments'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { requireCapability } from '../../../_lib/session'
@@ -406,6 +407,7 @@ export default async function OrderDetailPage({
                   <tr key={payment.id}>
                     <td>
                       {payment.provider}
+                      {payment.method ? <div>{paymentMethodLabel(payment.method)}</div> : null}
                       <div className="a-mono a-muted">{payment.providerPaymentId ?? '—'}</div>
                     </td>
                     <td>

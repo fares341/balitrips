@@ -166,3 +166,45 @@ describe('placeAccess (Hidden Gems)', async () => {
     )
   })
 })
+
+describe('basic (PDF-only plan)', () => {
+  const places = [
+    place({ id: 'a', isFree: true }),
+    place({ id: 'b' }),
+    place({ id: 'c', requiredEntitlement: 'vip' }),
+    place({ id: 'd', isHiddenGem: true }),
+  ]
+
+  it('implies nothing on the map', () => {
+    expect(grants('basic', 'map_access')).toBe(false)
+    expect(grants('basic', 'vip')).toBe(false)
+    const held = makeEntitlementSet(['basic'])
+    expect(held.has('map_access')).toBe(false)
+    expect(held.has('vip')).toBe(false)
+    expect(held.has('basic')).toBe(false)
+    expect(held.kinds.size).toBe(0)
+  })
+
+  it('never unlocks a map place', () => {
+    const payload = buildMapPayload(places, makeEntitlementSet(['basic']))
+    expect(payload.unlocked).toBe(false)
+    expect(payload.lockedCount).toBe(3)
+    expect(redactPlace(place(), makeEntitlementSet(['basic'])).locked).toBe(true)
+  })
+
+  it('treats a place row requiring "basic" as VIP, not as open to basic holders', async () => {
+    const { placeAccess, canSeePlace } = await import('./redaction')
+    expect(placeAccess({ isFree: false, requiredEntitlement: 'basic' }).requiredEntitlement).toBe(
+      'vip',
+    )
+    expect(
+      canSeePlace({ isFree: false, requiredEntitlement: 'basic' }, makeEntitlementSet(['basic'])),
+    ).toBe(false)
+  })
+
+  it('adds nothing when combined with map access', () => {
+    const held = makeEntitlementSet(['basic', 'map_access'])
+    expect(held.has('map_access')).toBe(true)
+    expect(held.has('vip')).toBe(false)
+  })
+})

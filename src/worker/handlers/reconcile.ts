@@ -27,6 +27,7 @@ import { notifyOrderPaid } from '@/lib/notify/orders'
 import { auditLog, orders, payments } from '@/db/schema'
 import { getPaymentProvider, type PaymentStatus } from '@/lib/payments'
 import { canTransition, type OrderStatus } from '@/lib/orders/state'
+import { recordPaymentMethod } from '@/lib/orders/payment-method'
 
 import type { ReconcileJob } from '../queues'
 import type { WorkerContext } from './context'
@@ -284,6 +285,8 @@ async function promoteFromProvider(candidate: Candidate): Promise<ProviderOutcom
 
     if (reported === 'succeeded' && (await promoteFromLocalPayments(candidate))) {
       outcome.promoted = true
+      // طريقة الدفع (بطاقة/Apple Pay…) — أفضل جهد، لا يعطّل التسوية.
+      await recordPaymentMethod(provider, payment.providerPaymentId)
     }
   }
 

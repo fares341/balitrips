@@ -105,11 +105,14 @@ function ResultCard({
       </div>
       <div style={{ padding: 14 }}>
         <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          {/* مجاني / خطة الخريطة / VIP — الصلاحية الفعلية (الجوهرة VIP دائماً). */}
           {place.isFree ? (
             <Tag variant="palm">{t('mp_free')}</Tag>
           ) : place.requiredEntitlement === 'vip' ? (
             <Tag variant="orange">VIP</Tag>
-          ) : null}
+          ) : (
+            <Tag>{t('map_badge_plan')}</Tag>
+          )}
           {place.isHiddenGem && <Tag variant="orange">{t('map_f_gems')}</Tag>}
           {category !== null && <Tag variant="forest">{category}</Tag>}
         </div>

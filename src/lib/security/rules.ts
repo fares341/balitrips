@@ -11,7 +11,10 @@
  *    20 مرة ليقفلك) — تحظر الـ IP المهاجِم وتنبّه فقط.
  *  - **الحسابات الإدارية لا تُحظر تلقائياً** — تنبيه فقط. قفل آخر مدير خارج
  *    النظام لا يُصلح إلا من قاعدة البيانات.
- *  - **الحظر التلقائي مؤقت دائماً.** الدائم قرار بشري.
+ *  - **الحظر التلقائي مؤقت دائماً.** الدائم قرار بشري. الاستثناء `suspend_user`:
+ *    تعليق بلا مدة **لحين مراجعة الإدارة** (الوثيقة 18.2) — ليس حكماً نهائياً بل
+ *    إيقاف حتى يقرر إنسان، ويُرفع من Studio → Protection. يُستخدم فقط لقواعد لا
+ *    يبلغها إلا من يملك الحساب فعلاً (بعد كلمة مرور صحيحة أو بجلسة قائمة).
  *  - يمكن إيقاف كل الإجراءات التلقائية من Studio → Protection (`autoBan`)؛
  *    التنبيهات تستمر.
  *  - تنبيه مفتوح واحد لكل (قاعدة، موضوع) خلال 24 ساعة: التكرار يزيد `hits`،
@@ -32,7 +35,7 @@ const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
 export type Severity = 'low' | 'medium' | 'high'
-export type AutoAction = 'ban_ip_1h' | 'ban_user_24h' | null
+export type AutoAction = 'ban_ip_1h' | 'ban_user_24h' | 'suspend_user' | null
 
 export interface RuleSpec {
   id: string
@@ -48,6 +51,11 @@ export interface RuleSpec {
   autoAction: AutoAction
   /** فلتر إضافي على `details->>'why'`. */
   why?: readonly string[]
+  /**
+   * إشعار الفريق عند فتح التنبيه حتى لو لم تكن الخطورة `high` (الوثيقة 19.2).
+   * التنبيهات عالية الخطورة تُبلَّغ دائماً.
+   */
+  notifyStaff?: boolean
   label: string
 }
 
@@ -95,7 +103,11 @@ export const RULES: readonly RuleSpec[] = [
     label: 'Account keeps switching devices (likely shared)',
   },
   {
-    // محاولات متكررة من أجهزة فوق الحد: تنبيه للمراجعة فقط، بلا حظر تلقائي.
+    /**
+     * محاولات متكررة من أجهزة فوق الحد (محاولات مشاركة، الوثيقة 18.1): تعليق
+     * الحساب لحين المراجعة. لا يبلغها المهاجم ضد ضحية: الحدثان يُسجَّلان فقط بعد
+     * كلمة مرور صحيحة (`session.create.before`).
+     */
     id: 'device_limit_hits',
     counts: ['device_limit_blocked', 'device_pending'],
     by: 'user',
@@ -103,7 +115,8 @@ export const RULES: readonly RuleSpec[] = [
     windowMs: DAY,
     threshold: 10,
     severity: 'medium',
-    autoAction: null,
+    autoAction: 'suspend_user',
+    notifyStaff: true,
     label: 'Repeated sign-ins from devices over the limit',
   },
   {
@@ -114,7 +127,9 @@ export const RULES: readonly RuleSpec[] = [
     windowMs: DAY,
     threshold: 6,
     severity: 'medium',
+    // تنبيه فقط (المسافر يتنقل بين شبكات الفنادق والجوال)، لكن الفريق يُبلَّغ.
     autoAction: null,
+    notifyStaff: true,
     label: 'Sign-ins from many different IPs in a day',
   },
   {
@@ -125,9 +140,29 @@ export const RULES: readonly RuleSpec[] = [
     windowMs: HOUR,
     threshold: 15,
     severity: 'medium',
-    autoAction: null,
-    why: ['not_entitled', 'download_limit', 'view_limit', 'device_revoked'],
+    // الوثيقة 18.2/19.2: محاولات متكررة لمحتوى غير مملوك → تعليق لحين المراجعة
+    // + تنبيه الفريق. تحتاج جلسة قائمة، فلا يوجّهها أحد ضد حساب غيره.
+    autoAction: 'suspend_user',
+    notifyStaff: true,
+    why: ['not_entitled', 'download_limit', 'view_limit'],
     label: 'Repeated attempts to open content the account does not own',
+  },
+  {
+    /**
+     * جهاز أُزيل ما زال يطلب المحتوى. منفصلة عن unauthorized_probe لأنها **لا
+     * تعلّق**: جهاز طُرد بسياسة `evict_oldest` وخريطته مفتوحة يطلب البيانات كل
+     * دقيقة — تعليق صاحب الحساب بسببه عقاب للضحية لا للمشارك. تنبيه للمراجعة.
+     */
+    id: 'revoked_device_use',
+    counts: ['unauthorized_access'],
+    by: 'user',
+    measure: 'events',
+    windowMs: HOUR,
+    threshold: 15,
+    severity: 'low',
+    autoAction: null,
+    why: ['device_revoked'],
+    label: 'A removed device keeps requesting paid content',
   },
 ]
 
@@ -224,6 +259,36 @@ async function applyAutoAction(
       until: new Date(Date.now() + HOUR),
       createdBy: null,
     })
+  } else if (rule.autoAction === 'suspend_user' && values.userId !== null) {
+    const userId = values.userId
+    const [owner] = await db
+      .select({ role: users.role, status: users.status })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+    // محظور أو معطّل أو معلّق أصلاً: لا شيء نضيفه. الحسابات الإدارية لا تُعلَّق.
+    if (owner === undefined || owner.status !== 'active') return null
+    if (isRole(owner.role) && isElevated(owner.role)) return null
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({
+          status: 'suspended',
+          bannedUntil: null,
+          banReason: `Automatic (pending review): ${rule.label}`,
+        })
+        .where(and(eq(users.id, userId), eq(users.status, 'active')))
+      await tx.delete(sessions).where(eq(sessions.userId, userId))
+    })
+    // بعد الالتزام. `suspended` ليس من أحداث القواعد، فلا تقييم متداخل.
+    const { logActivity } = await import('./activity')
+    await logActivity({
+      action: 'suspended',
+      userId,
+      ip: values.ip,
+      details: { rule: rule.id, automatic: true },
+    })
   } else if (rule.autoAction === 'ban_user_24h' && values.userId !== null) {
     const [owner] = await db
       .select({ role: users.role, status: users.status })
@@ -287,7 +352,7 @@ export async function evaluateSecurityRules(entry: ActivityEntry): Promise<AutoA
         observed,
       }
       const isNew = await raise(rule, subject, values)
-      if (isNew && rule.severity === 'high') {
+      if (isNew && (rule.severity === 'high' || rule.notifyStaff === true)) {
         const { notifyStaff } = await import('@/lib/notify')
         await notifyStaff('staff_security_alert', { rule: rule.id, subject }, '/protection/alerts')
       }

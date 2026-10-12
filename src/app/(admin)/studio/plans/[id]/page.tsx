@@ -102,17 +102,18 @@ export default async function PlanEditPage({
           <div className="a-row">
             <MoneyField minor={plan?.priceMinor} currency={plan?.currency ?? 'USD'} />
             <Field
-              label="Unlocks"
+              label="Map access"
               htmlFor="entitlementKind"
-              hint="vip also unlocks everything map_access does."
+              hint="VIP also unlocks everything Map does. None = a PDF/features-only plan: the permissions below apply, but no map place is unlocked."
             >
               <Select
                 id="entitlementKind"
                 name="entitlementKind"
                 defaultValue={plan?.entitlementKind ?? 'map_access'}
               >
-                <option value="map_access">map_access — full map</option>
-                <option value="vip">vip — map + VIP places + Hidden Gems</option>
+                <option value="basic">None (PDF/features only)</option>
+                <option value="map_access">Map — full map</option>
+                <option value="vip">VIP — map + VIP places + Hidden Gems</option>
               </Select>
             </Field>
             <Field label="Duration (days)" htmlFor="durationDays" hint="Blank = lifetime.">

@@ -49,17 +49,21 @@ import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { accounts, sessions, users, verifications } from '@/db/schema'
+import { notifyUser } from '@/lib/notify'
 import { defaultLocale, isLocale } from '@/i18n/config'
 
 import { logActivity } from '@/lib/security/activity'
-import { findActiveBan } from '@/lib/security/bans'
+import { findActiveBan, type BanReason } from '@/lib/security/bans'
 import {
   DeviceApprovalPendingError,
   DeviceBannedError,
   DeviceLimitError,
+  deviceLabel,
+  notifyBlockedSignIn,
   registerSignInDevice,
+  utcStamp,
 } from '@/lib/security/devices'
-import { DEVICE_COOKIE, deviceIdentity } from '@/lib/security/fingerprint'
+import { DEVICE_COOKIE, describeAgent, deviceIdentity } from '@/lib/security/fingerprint'
 import { clientIp, requestCity, requestCountry } from '@/lib/security/ip'
 
 import { looksLikeEmail, normalizePhone } from './phone'
@@ -444,31 +448,29 @@ export const auth = betterAuth({
             (typeof session.userAgent === 'string' ? session.userAgent : null)
           const identity = deviceIdentity(ctx.getCookie(DEVICE_COOKIE), userAgent)
 
+          // الوثيقة 3.2: المتصفح، النظام، نوع الجهاز، الدولة والمدينة مع كل رفض.
+          const seenFrom = ctx.headers ? requestDetails(ctx.headers) : describeAgent(userAgent)
+
           const ban = await findActiveBan({ userId, fingerprintHash: identity.fingerprintHash, ip })
           if (ban !== null) {
             await logActivity({
               action: 'login_blocked',
               userId,
               ip,
-              details: { why: `banned_${ban}` },
+              details: { why: `banned_${ban}`, ...seenFrom },
             })
-            throw APIError.from('FORBIDDEN', {
-              message: 'This account cannot sign in.',
-              code: 'ACCOUNT_BANNED',
-            })
+            throw banError(ban)
           }
 
           try {
-            const deviceId = await registerSignInDevice({ userId, identity, userAgent, ip })
-            // تسجيل الجهاز قد يطلق حظراً تلقائياً (تبديل الأجهزة المتكرر).
+            const device = await registerSignInDevice({ userId, identity, userAgent, ip })
+            // تسجيل الجهاز قد يطلق حظراً أو تعليقاً تلقائياً (تبديل الأجهزة المتكرر).
             // نعيد الفحص كي لا تُنشأ جلسة لحساب حُظر للتو في نفس الطلب.
-            if ((await findActiveBan({ userId })) !== null) {
-              throw APIError.from('FORBIDDEN', {
-                message: 'This account cannot sign in.',
-                code: 'ACCOUNT_BANNED',
-              })
-            }
-            return { data: { ...session, deviceId } }
+            const late = await findActiveBan({ userId })
+            if (late !== null) throw banError(late)
+            // لـ `after` أدناه: دخول من جهاز معروف ← `login_alert` (الوثيقة 14.1).
+            signInDevices.set(ctx, { known: device.known, device: deviceLabel(identity) })
+            return { data: { ...session, deviceId: device.deviceId } }
           } catch (error) {
             if (error instanceof DeviceLimitError) {
               await logActivity({
@@ -478,10 +480,11 @@ export const auth = betterAuth({
                 details: {
                   limit: error.limit,
                   active: error.active,
-                  browser: identity.browser,
-                  os: identity.os,
+                  ...seenFrom,
                 },
               })
+              // المعاملة تراجعت (رمى داخلها): نبلغ صاحب الحساب، مرة في الساعة لكل جهاز.
+              await notifyBlockedSignIn(userId, identity, 'limit')
               throw APIError.from('FORBIDDEN', {
                 message: 'Device limit reached.',
                 code: 'DEVICE_LIMIT_REACHED',
@@ -499,7 +502,7 @@ export const auth = betterAuth({
                 action: 'login_blocked',
                 userId,
                 ip,
-                details: { why: 'device_banned' },
+                details: { why: 'device_banned', ...seenFrom },
               })
               throw APIError.from('FORBIDDEN', {
                 message: 'This account cannot sign in.',
@@ -510,9 +513,10 @@ export const auth = betterAuth({
           }
         },
         after: async (session, ctx) => {
+          const userId = String(session.userId)
           await logActivity({
             action: 'login',
-            userId: String(session.userId),
+            userId,
             ip: (ctx?.headers ? clientIp(ctx.headers) : null) ?? asIp(session.ipAddress),
             deviceId: typeof session.deviceId === 'string' ? session.deviceId : null,
             // الوثيقة 3.2: "الموقع التقريبي إن أمكن" — الدولة من رأس الـ CDN إن وُجد.
@@ -522,6 +526,19 @@ export const auth = betterAuth({
               city: ctx?.headers ? requestCity(ctx.headers) : null,
             },
           })
+          // الوثيقة 14.1: تنبيه بكل دخول ناجح. الجهاز الجديد أخذ `new_device_login`
+          // (بريد + واتساب) في registerSignInDevice؛ المعروف يأخذ تنبيهاً داخل الموقع.
+          // هنا بعد إنشاء الجلسة، فلا تنبيه عن دخول فشل في آخر لحظة.
+          const signIn = ctx ? signInDevices.get(ctx) : undefined
+          if (ctx) signInDevices.delete(ctx)
+          if (signIn?.known === true) {
+            await notifyUser(
+              userId,
+              'login_alert',
+              { device: signIn.device, when: utcStamp() },
+              '/account/devices',
+            )
+          }
         },
       },
       delete: {
@@ -670,13 +687,23 @@ export const auth = betterAuth({
           await logActivity({
             action: 'login_blocked',
             ip,
-            details: { why: 'banned_ip', path: ctx.path },
+            details: {
+              why: 'banned_ip',
+              path: ctx.path,
+              ...(ctx.headers ? requestDetails(ctx.headers) : describeAgent(null)),
+            },
           })
           throw APIError.from('FORBIDDEN', {
             message: 'This account cannot sign in.',
             code: 'ACCOUNT_BANNED',
           })
         }
+      }
+      // الوثيقة 15.1: إعادة التعيين بالرابط تُنسب لصاحب الحساب. Better Auth يستهلك
+      // الرمز (يحذف صف التحقق) أثناء الطلب، فنقرأ صاحبه هنا قبل ذلك.
+      if (ctx.path === '/reset-password') {
+        await rememberResetOwner(resetToken(ctx.body, ctx.query))
+        return
       }
       if (ctx.path !== '/sign-in/email') return
       const body = (ctx.body ?? {}) as Record<string, unknown>
@@ -714,12 +741,16 @@ export const auth = betterAuth({
         }
         return
       }
-      if (ctx.path === '/reset-password' && !isAPIError(ctx.context.returned)) {
-        await logActivity({
-          action: 'change_password',
-          ip: ctx.headers ? clientIp(ctx.headers) : null,
-          details: { via: 'reset_link' },
-        })
+      if (ctx.path === '/reset-password') {
+        const userId = takeResetOwner(resetToken(ctx.body, ctx.query))
+        if (!isAPIError(ctx.context.returned)) {
+          await logActivity({
+            action: 'change_password',
+            userId,
+            ip: ctx.headers ? clientIp(ctx.headers) : null,
+            details: { via: 'reset_link' },
+          })
+        }
         return
       }
       if (ctx.path !== '/sign-in/email') return
@@ -728,7 +759,8 @@ export const auth = betterAuth({
       if (
         returned.body?.code === 'DEVICE_LIMIT_REACHED' ||
         returned.body?.code === 'DEVICE_PENDING_APPROVAL' ||
-        returned.body?.code === 'ACCOUNT_BANNED'
+        returned.body?.code === 'ACCOUNT_BANNED' ||
+        returned.body?.code === 'ACCOUNT_SUSPENDED'
       ) {
         return // سُجّلت أعلاه بسببها الحقيقي
       }
@@ -745,7 +777,13 @@ export const auth = betterAuth({
         action: 'login_failed',
         userId: owner?.id ?? null,
         ip: ctx.headers ? clientIp(ctx.headers) : null,
-        details: { email, code: returned.body?.code ?? null, status: returned.status },
+        details: {
+          email,
+          code: returned.body?.code ?? null,
+          status: returned.status,
+          // الوثيقة 3.2: المتصفح، النظام، نوع الجهاز، الدولة والمدينة.
+          ...(ctx.headers ? requestDetails(ctx.headers) : describeAgent(null)),
+        },
       })
     }),
   },
@@ -825,6 +863,75 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
+
+/**
+ * الجهاز المسجّل في `session.create.before` لكل طلب دخول، لتقرأه `after`.
+ * Better Auth يمرّر كائن السياق نفسه للخطافين؛ WeakMap لا يُبقيه حياً بعد الطلب.
+ */
+const signInDevices = new WeakMap<object, { known: boolean; device: string }>()
+
+/** المتصفح، النظام، نوع الجهاز، الدولة والمدينة من رؤوس الطلب (للسجل فقط). */
+function requestDetails(headers: Headers) {
+  return {
+    ...describeAgent(headers.get('user-agent')),
+    country: requestCountry(headers),
+    city: requestCity(headers),
+  }
+}
+
+/**
+ * الحساب المعلّق لحين المراجعة يأخذ رسالة واضحة (الوثيقة 18.2) — هذا بعد التحقق
+ * من كلمة المرور، فلا يكشف شيئاً لمن لا يملكها. باقي أسباب المنع عامة عمداً.
+ */
+function banError(ban: BanReason) {
+  return ban === 'suspended'
+    ? APIError.from('FORBIDDEN', {
+        message: 'This account is suspended pending review.',
+        code: 'ACCOUNT_SUSPENDED',
+      })
+    : APIError.from('FORBIDDEN', {
+        message: 'This account cannot sign in.',
+        code: 'ACCOUNT_BANNED',
+      })
+}
+
+/* ---- Password reset attribution ----------------------------------------- */
+
+/** رمز → صاحب الحساب، بين خطافي before/after لنفس طلب `/reset-password`. */
+const resetOwners = new Map<string, { userId: string; at: number }>()
+const RESET_OWNER_TTL_MS = 5 * 60 * 1000
+
+function resetToken(body: unknown, query: unknown): string | null {
+  for (const source of [body, query]) {
+    const token = (source as { token?: unknown } | null | undefined)?.token
+    if (typeof token === 'string' && token !== '' && token.length <= 256) return token
+  }
+  return null
+}
+
+async function rememberResetOwner(token: string | null): Promise<void> {
+  if (token === null) return
+  const now = Date.now()
+  for (const [key, entry] of resetOwners) {
+    if (now - entry.at > RESET_OWNER_TTL_MS) resetOwners.delete(key)
+  }
+  // نفس المعرّف الذي يكتبه Better Auth في `request-password-reset`.
+  const [row] = await db
+    .select({ value: verifications.value })
+    .from(verifications)
+    .where(eq(verifications.identifier, `reset-password:${token}`))
+    .limit(1)
+  if (row !== undefined && /^[0-9a-f-]{36}$/i.test(row.value)) {
+    resetOwners.set(token, { userId: row.value, at: now })
+  }
+}
+
+function takeResetOwner(token: string | null): string | null {
+  if (token === null) return null
+  const entry = resetOwners.get(token)
+  resetOwners.delete(token)
+  return entry?.userId ?? null
+}
 
 /** عنوان لا يملكه أحد: دخول برقم غير مسجّل يفشل كأي بيانات خاطئة. */
 const PHONE_NOT_FOUND_EMAIL = 'no-account@phone.invalid'

@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { can } from '@/lib/auth/roles'
 import { orders, payments, users } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
+import { paymentMethodLabel } from '@/lib/payments'
 
 import { adminHref } from '../../_lib/admin-path'
 import { pageParam } from '../../_lib/result'
@@ -13,7 +14,7 @@ import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
 import { refundDuplicatePayment } from './actions'
-import { PAYMENT_STATUSES, paymentFilters } from './filters'
+import { PAYMENT_METHOD_FILTERS, PAYMENT_STATUSES, paymentFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,9 +35,9 @@ export default async function PaymentsPage({
   const mayExport = can(session.role, 'customers.export')
   const params = await searchParams
   const page = pageParam(params)
-  const { q, status, provider, from, to, where } = paymentFilters(params)
+  const { q, status, provider, method, from, to, where } = paymentFilters(params)
   const exportQuery = new URLSearchParams(
-    Object.entries({ q, status, provider, from, to }).flatMap(([key, value]) =>
+    Object.entries({ q, status, provider, method, from, to }).flatMap(([key, value]) =>
       value ? [[key, value]] : [],
     ),
   ).toString()
@@ -47,6 +48,7 @@ export default async function PaymentsPage({
         id: payments.id,
         provider: payments.provider,
         providerPaymentId: payments.providerPaymentId,
+        method: payments.method,
         status: payments.status,
         amountMinor: payments.amountMinor,
         currency: payments.currency,
@@ -119,6 +121,17 @@ export default async function PaymentsPage({
           </select>
         </div>
         <div className="a-field">
+          <label htmlFor="method">Method</label>
+          <select className="a-select" id="method" name="method" defaultValue={method ?? ''}>
+            <option value="">All</option>
+            {PAYMENT_METHOD_FILTERS.map((value) => (
+              <option key={value} value={value}>
+                {paymentMethodLabel(value)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="a-field">
           <label htmlFor="from">From</label>
           <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
         </div>
@@ -152,6 +165,7 @@ export default async function PaymentsPage({
               <th>Order</th>
               <th>Customer</th>
               <th>Provider</th>
+              <th>Method</th>
               <th>Payment</th>
               <th>Order status</th>
               <th className="num">Amount</th>
@@ -176,6 +190,7 @@ export default async function PaymentsPage({
                     <div className="a-muted a-mono">{row.providerPaymentId}</div>
                   ) : null}
                 </td>
+                <td>{paymentMethodLabel(row.method) ?? <span className="a-muted">—</span>}</td>
                 <td>
                   <Pill
                     tone={

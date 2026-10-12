@@ -16,18 +16,17 @@
  */
 
 import dynamic from 'next/dynamic'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
-
-import type { Locale } from '@/i18n/config'
 
 import { MapAccessBar } from './map-access-bar'
 import { MapExplorer, type MapExplorerProps } from './map-explorer'
 import { MapFilterBar, useMapFilters } from './map-filters'
+import { MapWatermark, protectionHandlers } from './map-protect'
 import { MapResults } from './map-results'
 import type { ScenePin } from './map-3d'
 import { NodePanel } from './node-panel'
-import { pinColor, pinHaystack, projectLat, projectLon, type MapPin } from './projection'
+import { buildPins, type MapPin } from './projection'
 
 /**
  * ssr:false is required, not stylistic: three.js touches `window` and
@@ -112,7 +111,6 @@ const noSubscribe = () => () => {}
 const serverSurface = (): Surface => 'deciding'
 
 export function MapSurface(props: MapExplorerProps) {
-  const locale = useLocale() as Locale
   const t = useTranslations()
   /**
    * Build the pins once from the redacted payload.
@@ -123,26 +121,19 @@ export function MapSurface(props: MapExplorerProps) {
    * anything — there is nothing to hide.
    */
   const pins = useMemo<MapPin[]>(
-    () =>
-      props.places
-        .filter((place) => !place.locked)
-        .map((place) => ({
-          place,
-          nx: projectLon(place.lon),
-          ny: projectLat(place.lat),
-          color: pinColor(place.tags ?? null),
-          // Identical to the flat map's, so a query that finds a place there
-          // finds it here. Built from the localized name and category, not the
-          // raw JSON, or an Arabic search would never match.
-          haystack: pinHaystack(place, locale),
-        })),
-    [props.places, locale],
+    // Identical to the flat map's (`buildPins`), so a query that finds a place
+    // there finds it here — in all three languages, whatever the UI locale.
+    () => buildPins(props.places, props.taxonomy.categories),
+    [props.places, props.taxonomy.categories],
   )
 
   // `/map?place=<slug>` (بحث الموقع، المفضلة، رحلتي) يفتح لوحة المكان هنا أيضاً.
   // مكان مقفل لا يُطابق أي دبوس، فلا تُفتح لوحة له.
   const [selectedSlug, setSelectedSlug] = useState<string | null>(() => props.initialSlug)
-  const filters = useMapFilters(pins, (pin) => setSelectedSlug(pin.place.slug))
+  const filters = useMapFilters(pins, (pin) => setSelectedSlug(pin.place.slug), {
+    taxonomy: props.taxonomy,
+    vipFirst: props.vipFirst,
+  })
   const { matched } = filters
 
   const scenePins = useMemo<ScenePin[]>(
@@ -178,9 +169,18 @@ export function MapSurface(props: MapExplorerProps) {
 
   if (surface === '2d') return <MapExplorer {...props} />
 
+  const guarded = props.viewerLabel !== null
+
   return (
-    <div className="bt-mapwrap" style={{ marginTop: 0 }}>
-      <div className="bt-mapframe is-3d" style={{ position: 'relative' }}>
+    <div
+      className={guarded ? 'bt-mapwrap bt-map-protected' : 'bt-mapwrap'}
+      style={{ marginTop: 0 }}
+    >
+      <div
+        className="bt-mapframe is-3d"
+        style={{ position: 'relative' }}
+        {...protectionHandlers(guarded)}
+      >
         {surface === 'deciding' ? (
           <SurfaceMessage text={t('map_loading_island')} />
         ) : (
@@ -196,6 +196,8 @@ export function MapSurface(props: MapExplorerProps) {
             already handles localisation, focus management and the locked
             state, and two panels would drift apart. */}
         {selected ? <NodePanel pin={selected} onClose={() => setSelectedSlug(null)} /> : null}
+
+        {props.viewerLabel !== null && <MapWatermark label={props.viewerLabel} />}
 
         {/* Same chrome as the flat map, same CSS classes. Rebuilding it with
             new styles would give the site two map UIs that drift apart. */}
@@ -236,6 +238,8 @@ export function MapSurface(props: MapExplorerProps) {
         near={filters.near}
         onShow={(pin) => setSelectedSlug(pin.place.slug)}
       />
+
+      {guarded && <p className="bt-map-printnote">{t('map_print_blocked')}</p>}
     </div>
   )
 }

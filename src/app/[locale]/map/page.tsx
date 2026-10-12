@@ -31,13 +31,14 @@ import { SectionHead } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
-import { listLandmarks, listMapPlaces } from '@/lib/content/queries'
+import { listLandmarks, listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
 import { buildMapPayload, loadEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
 import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
 
 import { PageBanner } from '../_ui/page-banner'
 import { MapSurface } from './map-surface'
+import type { MapClientPlace } from './projection'
 
 const MAP_PATH = '/map'
 
@@ -122,16 +123,36 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     await logActivity({ action: 'open_map', userId, ip: access.ip, deviceId: access.deviceId })
   }
 
-  const [t, places, held, banners] = await Promise.all([
+  const [t, places, held, banners, taxonomy] = await Promise.all([
     getTranslations(),
     listMapPlaces(),
     loadEntitlements(userId),
     listLandmarks({ limit: 1 }),
+    listMapTaxonomy(),
   ])
 
   // Everything below this line works from `payload`. `places` is not passed to
   // a Client Component, not spread into props, and not read again.
   const payload = buildMapPayload(places, held)
+
+  // حقلا الترتيب (الوثيقة 8.6) يُضافان للمفتوح وحده، صراحةً: المقفل يبقى
+  // `{ id, locked, requiredEntitlement }` — لا شعبية ولا ترتيب يدوي يدلّ عليه.
+  const rank = new Map(places.map((place) => [place.id, place]))
+  const clientPlaces: MapClientPlace[] = payload.places.map((place) =>
+    place.locked
+      ? place
+      : {
+          ...place,
+          sortOrder: rank.get(place.id)?.sortOrder ?? 0,
+          popularity: rank.get(place.id)?.popularity ?? 0,
+        },
+  )
+
+  // العلامة المائية والحماية من النسخ للمسجّل فقط (الوثيقة 17): بريده وتاريخ
+  // اليوم بتوقيت بالي، فتحمل أي لقطة شاشة هوية صاحبها.
+  const viewerLabel = access.ok
+    ? `${access.user.email} · ${new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date())}`
+    : null
 
   const preview = payload.places.filter((place) => !place.locked).slice(0, PREVIEW_LIMIT)
 
@@ -164,10 +185,13 @@ export default async function MapPage({ params, searchParams }: PageProps) {
 
       <section className="bg-forest" style={{ overflow: 'hidden', paddingTop: 40 }}>
         <MapSurface
-          places={payload.places}
+          places={clientPlaces}
           lockedCount={payload.lockedCount}
           unlocked={payload.unlocked}
           initialSlug={initialSlug}
+          taxonomy={taxonomy}
+          vipFirst={held.has('vip')}
+          viewerLabel={viewerLabel}
         />
       </section>
 

@@ -38,6 +38,11 @@ import { entityHref } from '@/lib/content/types'
 import type { EntitlementSet } from '@/lib/entitlements'
 import { canSeePlace } from '@/lib/entitlements'
 import { loadPlansById, planPriceMap } from '@/lib/entitlements/plans'
+import {
+  customQuotePriceMap,
+  customRequestName,
+  loadPayableCustomQuotes,
+} from '@/lib/orders/custom-request'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
 
 const PUBLISHED = 'published'
@@ -85,10 +90,13 @@ function imageOf(row: MediaRow | undefined): { url: string | null; alt: Localize
  *                name only to someone who actually holds the entitlement —
  *                otherwise adding a place id by hand would be a way to read
  *                the names the map deliberately redacts.
+ * @param userId  The cart's owner. Custom-itinerary quotes are priced only for
+ *                the request's own customer; null prices none of them.
  */
 export async function loadCartCatalog(
   items: readonly QuoteRequestItem[],
   held: EntitlementSet,
+  userId: string | null = null,
 ): Promise<CartCatalog> {
   const idsOf = (kind: string): string[] => [
     ...new Set(
@@ -125,6 +133,7 @@ export async function loadCartCatalog(
   const packageIds = idsOf('package')
   const placeIds = idsOf('place')
   const planRowsPromise = loadPlansById(idsOf('plan'))
+  const customRowsPromise = loadPayableCustomQuotes(idsOf('custom'), userId)
 
   const [activityRows, itineraryRows, packageRows, placeRows, vehicleRows] = await Promise.all([
     activityIds.length
@@ -286,6 +295,17 @@ export async function loadCartCatalog(
     })
   }
 
+  const customRows = await customRowsPromise
+  for (const row of customRows) {
+    display.set(displayKey('custom', row.id), {
+      name: customRequestName(row),
+      imageUrl: null,
+      imageAlt: null,
+      href: '/account/schedules',
+      maxQuantity: 1,
+    })
+  }
+
   for (const row of vehicleRows) {
     display.set(displayKey('driver', row.vehicleClass), {
       name: row.label,
@@ -299,6 +319,7 @@ export async function loadCartCatalog(
 
   const snapshot: CatalogSnapshot = {
     plans: planPriceMap(planRows),
+    customRequests: customQuotePriceMap(customRows),
     activities: new Map(
       activityRows
         .filter((row) => row.status === PUBLISHED)
@@ -374,6 +395,7 @@ export async function snapshotUnitPrice(
   kind: string,
   refId: string | null,
   vehicleClass: string | null,
+  userId: string | null = null,
 ): Promise<{ priceMinor: number; currency: string | null }> {
   if (kind === 'driver') {
     if (vehicleClass === null) return { priceMinor: 0, currency: null }
@@ -422,6 +444,13 @@ export async function snapshotUnitPrice(
 
   if (kind === 'plan') {
     const [row] = await loadPlansById([refId])
+    return row
+      ? { priceMinor: row.priceMinor, currency: row.currency }
+      : { priceMinor: 0, currency: null }
+  }
+
+  if (kind === 'custom') {
+    const [row] = await loadPayableCustomQuotes([refId], userId)
     return row
       ? { priceMinor: row.priceMinor, currency: row.currency }
       : { priceMinor: 0, currency: null }

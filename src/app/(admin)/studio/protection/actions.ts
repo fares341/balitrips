@@ -22,7 +22,7 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fbool, fenum, fint, freq, fstr, fuuid } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
-import { requireCapability } from '../../_lib/session'
+import { requireCapability, type AdminSession } from '../../_lib/session'
 import { parseSetting, SETTING_DEFAULTS } from '../../_lib/settings'
 import { clearSessionVerification } from '../../_lib/two-factor'
 import { clearAllVerifications } from '../../_lib/two-factor'
@@ -118,39 +118,55 @@ export async function banUser(userId: string, form: FormData): Promise<void> {
   })
 }
 
+/**
+ * رفع الحظر، أو رفع التعليق التلقائي (`suspended`، الوثيقة 18.2) — زر "رفع الحظر"
+ * في صفحة العميل يعمل للحالتين.
+ */
 export async function unbanUser(userId: string): Promise<void> {
   const actor = await requireCapability('security.write')
+  await run(customerHref(userId), () => reactivate(actor, userId))
+}
 
-  await run(customerHref(userId), async () => {
-    await db.transaction(async (tx) => {
-      const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
-      if (before.status !== 'banned') throw new Error('That account is not banned.')
+/** نفس `unbanUser` من قائمة "الحسابات المعلّقة" في صفحة الحماية. */
+export async function liftSuspension(form: FormData): Promise<void> {
+  const actor = await requireCapability('security.write')
+  await run(PROTECTION, () => reactivate(actor, fuuid(form, 'userId', 'Account')))
+}
 
-      await tx
-        .update(users)
-        .set({ status: 'active', bannedUntil: null, banReason: null })
-        .where(eq(users.id, userId))
-      await writeAudit(
-        {
-          actor,
-          action: 'user.unban',
-          entityType: 'user',
-          entityId: userId,
-          before: { status: before.status, reason: before.banReason },
-          after: { status: 'active' },
-        },
-        tx,
-      )
-    })
-    await logActivity({
-      action: 'unbanned',
-      userId,
-      ip: actor.ipAddress,
-      details: { by: actor.userId },
-    })
-    return 'Ban lifted.'
+async function reactivate(actor: AdminSession, userId: string): Promise<string> {
+  const previous = await db.transaction(async (tx) => {
+    const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
+    if (!before) throw new Error('That account no longer exists')
+    if (before.status !== 'banned' && before.status !== 'suspended') {
+      throw new Error('That account is neither banned nor suspended.')
+    }
+
+    await tx
+      .update(users)
+      .set({ status: 'active', bannedUntil: null, banReason: null })
+      .where(eq(users.id, userId))
+    await writeAudit(
+      {
+        actor,
+        action: before.status === 'suspended' ? 'user.unsuspend' : 'user.unban',
+        entityType: 'user',
+        entityId: userId,
+        before: { status: before.status, reason: before.banReason },
+        after: { status: 'active' },
+      },
+      tx,
+    )
+    return before.status
   })
+  await logActivity({
+    action: previous === 'suspended' ? 'unsuspended' : 'unbanned',
+    userId,
+    ip: actor.ipAddress,
+    details: { by: actor.userId },
+  })
+  return previous === 'suspended'
+    ? 'Suspension lifted. The account can sign in again.'
+    : 'Ban lifted.'
 }
 
 /* --------------------------------------------------------------------------

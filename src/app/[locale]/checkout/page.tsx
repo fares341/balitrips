@@ -256,7 +256,7 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
                 return (
                   <div key={group.kind} className="bt-summary-row">
                     <span className="muted">
-                      <Icon name={TRIP_KIND_ICON[group.kind]} size={13} />{' '}
+                      <Icon name={TRIP_KIND_ICON[group.kind] ?? 'pdf'} size={13} />{' '}
                       {`${t(`ct2_grp_${group.kind}`)} (${format.number(group.lines.length)})`}
                     </span>
                     <span style={{ fontWeight: 700 }}>

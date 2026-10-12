@@ -4,56 +4,41 @@
  * منفصلة عن الخطة المؤكدة أدناه (الطلبات المدفوعة) عمداً — انظر trip_items.
  * السحب والإفلات (TripDragList) فوق أزرار ↑/↓: الأسهم للوحة المفاتيح وقارئ
  * الشاشة والهاتف. "رتّب حسب المسافة" يقترح مسار كل يوم (الوثيقة 12.3).
+ *
+ * المسار اليومي (الوثيقة 12.3): المسافة المستقيمة بين الأماكن المتتالية
+ * ومجموع اليوم ورابط Google Maps — للأماكن التي يراها المستخدم فقط. البيانات
+ * تصل محجوبة من `tripItemsForViewer`، فلا إحداثيات لمكان مقفل هنا أصلاً.
  */
 
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
-import { getTranslations } from 'next-intl/server'
+import { getFormatter, getTranslations } from 'next-intl/server'
 
 import { Button, LinkButton } from '@/components/shared'
 import { Icon } from '@/components/ui'
-import { db } from '@/db'
-import { mapPlaces, regions, tripItems } from '@/db/schema'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
+import { tripItemsForViewer } from '@/lib/content/extra-queries'
 import { pick } from '@/lib/content/localize'
-import { entityHref } from '@/lib/content/types'
-import { canSeePlace } from '@/lib/entitlements'
 import { loadPermissions } from '@/lib/entitlements/plans'
 
+import { googleMapsDayUrl, groupDays, TRIP_PRINT_HREF } from './_lib/route'
 import { moveTripItem, removeTripItem, setTripItemDay, suggestTripRoute } from './planned-actions'
 import { TripDragList } from './trip-drag-list'
 
 const DAY_CHOICES = Array.from({ length: 14 }, (_, i) => i + 1)
 
 export async function PlannedPlaces({ userId, locale }: { userId: string; locale: Locale }) {
-  const t = await getTranslations({ locale })
-  const [rows, permissions] = await Promise.all([
-    db
-      .select({
-        id: tripItems.id,
-        dayNumber: tripItems.dayNumber,
-        place: mapPlaces,
-        regionLabel: regions.label,
-      })
-      .from(tripItems)
-      .innerJoin(mapPlaces, eq(mapPlaces.id, tripItems.placeId))
-      .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
-      .where(
-        and(
-          eq(tripItems.userId, userId),
-          isNull(mapPlaces.deletedAt),
-          // مسودة أو مخفي من الإدارة لا يظهر — كما في الخريطة.
-          eq(mapPlaces.status, 'published'),
-          eq(mapPlaces.isHidden, false),
-        ),
-      )
-      .orderBy(
-        sql`${tripItems.dayNumber} asc nulls last`,
-        asc(tripItems.position),
-        asc(tripItems.createdAt),
-      ),
+  const [t, format, permissions] = await Promise.all([
+    getTranslations({ locale }),
+    getFormatter({ locale }),
     loadPermissions(userId),
   ])
+  // Redacted with the owner's own live entitlements: a lapsed plan hides the
+  // name and coordinates here exactly as on the map.
+  const items = await tripItemsForViewer(userId, permissions.entitlements)
+  const days = groupDays(items)
+  const rows = days.flatMap((day) => day.items)
+  const km = (value: number) =>
+    format.number(value, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })
 
   return (
     <div className="card" style={{ padding: 18, marginBottom: 24 }}>
@@ -78,37 +63,39 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
             </span>
           </form>
           <TripDragList
-            key={rows.map((row) => `${row.id}:${row.dayNumber ?? ''}`).join('|')}
+            key={rows.map((row) => `${row.itemId}:${row.dayNumber ?? ''}`).join('|')}
             items={rows.map((row, index) => {
               // باقة انتهت أو استُردّت: الاسم لا يظهر، كما على الخريطة.
-              const visible = canSeePlace(row.place, permissions.entitlements)
+              const place = row.place
               return {
-                id: row.id,
+                id: row.itemId,
                 day: row.dayNumber,
                 node: (
                   <>
                     <div style={{ flex: 1, minWidth: 160 }}>
-                      {visible ? (
-                        <Link
-                          href={entityHref('place', row.place.slug)}
-                          style={{ fontWeight: 700 }}
-                        >
-                          {pick(row.place.name, locale, row.place.slug)}
-                        </Link>
-                      ) : (
+                      {place.locked ? (
                         <span className="muted">
                           <Icon name="lock" size={13} /> {t('acct_plan_locked_place')}
                         </span>
+                      ) : (
+                        <Link href={place.href} style={{ fontWeight: 700 }}>
+                          {pick(place.name, locale, place.slug)}
+                        </Link>
                       )}
-                      {visible && row.regionLabel && (
+                      {!place.locked && place.regionLabel !== null && (
                         <div className="muted" style={{ fontSize: 12.5 }}>
-                          {pick(row.regionLabel, locale)}
+                          {pick(place.regionLabel, locale)}
+                        </div>
+                      )}
+                      {row.legKm !== null && (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          ↳ {t('trip_leg_from_prev', { km: km(row.legKm) })}
                         </div>
                       )}
                     </div>
 
                     <form action={setTripItemDay} className="row" style={{ gap: 6 }}>
-                      <input type="hidden" name="itemId" value={row.id} />
+                      <input type="hidden" name="itemId" value={row.itemId} />
                       <select
                         name="day"
                         defaultValue={row.dayNumber ?? ''}
@@ -129,7 +116,7 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
                     </form>
 
                     <form action={moveTripItem}>
-                      <input type="hidden" name="itemId" value={row.id} />
+                      <input type="hidden" name="itemId" value={row.itemId} />
                       <input type="hidden" name="dir" value="up" />
                       <Button
                         type="submit"
@@ -142,7 +129,7 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
                       </Button>
                     </form>
                     <form action={moveTripItem}>
-                      <input type="hidden" name="itemId" value={row.id} />
+                      <input type="hidden" name="itemId" value={row.itemId} />
                       <input type="hidden" name="dir" value="down" />
                       <Button
                         type="submit"
@@ -157,7 +144,7 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
                       </Button>
                     </form>
                     <form action={removeTripItem}>
-                      <input type="hidden" name="itemId" value={row.id} />
+                      <input type="hidden" name="itemId" value={row.itemId} />
                       <Button
                         type="submit"
                         variant="ghost"
@@ -172,8 +159,85 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
               }
             })}
           />
+
+          <DailyRoutes
+            days={days.flatMap((day) => {
+              const url = googleMapsDayUrl(day.visible)
+              return day.dayNumber === null || url === null
+                ? []
+                : [
+                    {
+                      dayNumber: day.dayNumber,
+                      totalKm: day.totalKm,
+                      stops: day.visible.length,
+                      url,
+                    },
+                  ]
+            })}
+            labels={{
+              title: t('trip_routes_t'),
+              hint: t('trip_routes_hint'),
+              day: t('acct_trip_day'),
+              open: t('trip_route_open'),
+            }}
+            km={km}
+            stopsLabel={(count) => t('trip_stops', { count })}
+          />
+
+          <div className="row" style={{ gap: 8, marginBlockStart: 14 }}>
+            <LinkButton href={`${TRIP_PRINT_HREF}?auto=1`} variant="ghost" size="sm">
+              <Icon name="pdf" size={15} /> {t('trip_export_pdf')}
+            </LinkButton>
+          </div>
         </>
       )}
+    </div>
+  )
+}
+
+/**
+ * Per dated day: straight-line total and a Google Maps route over the places
+ * the user can see. Undated places have no route — they have no day yet.
+ */
+function DailyRoutes({
+  days,
+  labels,
+  km,
+  stopsLabel,
+}: {
+  days: { dayNumber: number; totalKm: number; stops: number; url: string }[]
+  labels: { title: string; hint: string; day: string; open: string }
+  km: (value: number) => string
+  stopsLabel: (count: number) => string
+}) {
+  if (days.length === 0) return null
+  return (
+    <div style={{ marginBlockStart: 16 }}>
+      <h3 style={{ fontSize: 15, margin: 0 }}>{labels.title}</h3>
+      <p className="muted" style={{ fontSize: 12.5, margin: '2px 0 8px' }}>
+        {labels.hint}
+      </p>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+        {days.map((day) => (
+          <li key={day.dayNumber} className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <strong style={{ minWidth: 64 }}>
+              {labels.day} {day.dayNumber}
+            </strong>
+            <span className="muted" style={{ fontSize: 13 }}>
+              {stopsLabel(day.stops)}
+              {day.stops > 1 ? ` · ${km(day.totalKm)}` : ''}
+            </span>
+            <a
+              href={day.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange-deep)' }}
+            >
+              <Icon name="route" size={14} /> {labels.open} ↗
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

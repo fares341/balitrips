@@ -8,7 +8,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { orderItems, orders, plans, users } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
-import { toMailLocale } from '@/lib/email'
+import { toMailLocale, translator } from '@/lib/email'
 import { formatMoney } from '@/lib/money'
 import { logActivity } from '@/lib/security/activity'
 
@@ -85,4 +85,79 @@ export async function notifyPaymentFailed(orderId: string): Promise<void> {
       { orderNumber: order.orderNumber },
       `/orders/${orderId}`,
     )
+}
+
+/** الحالات التي يُبلَّغ بها العميل عند تغييرها من لوحة التحكم. */
+export const ORDER_UPDATE_STATUSES = [
+  'confirmed',
+  'delivered',
+  'cancelled',
+  'refunded',
+  'partially_refunded',
+] as const
+export type OrderUpdateStatus = (typeof ORDER_UPDATE_STATUSES)[number]
+
+export function isOrderUpdateStatus(value: string): value is OrderUpdateStatus {
+  return (ORDER_UPDATE_STATUSES as readonly string[]).includes(value)
+}
+
+/**
+ * الوثيقة 15.1/19.1/20.1 — "تحديث حالة الطلب": الإدارة أكدت الطلب، أو نفّذت/ألغت
+ * بنداً، أو استردّت. يُستدعى **بعد** التزام المعاملة. لا يرمي أبداً.
+ *
+ *  - سجل نشاط `update_order` لصاحب الطلب (يظهر في نشاطه).
+ *  - إشعار `order_updated` داخل الموقع + بريد + واتساب، والحالة بلغة العميل.
+ *  - `email: false` عند استرداد مسوّى: بريد `refund_notice` يُرسل لذلك الحدث.
+ */
+export async function notifyOrderUpdated(
+  orderId: string,
+  status: OrderUpdateStatus,
+  options: { by?: string | null; item?: string | null; email?: boolean } = {},
+): Promise<void> {
+  try {
+    const [order] = await db
+      .select({
+        userId: orders.userId,
+        orderNumber: orders.orderNumber,
+        locale: users.locale,
+      })
+      .from(orders)
+      .leftJoin(users, eq(users.id, orders.userId))
+      .where(eq(orders.id, orderId))
+      .limit(1)
+    // طلب ضيف بلا حساب: لا وجهة للإشعار داخل الموقع (بريد الاسترداد يصله).
+    if (!order?.userId) return
+
+    await logActivity({
+      action: 'update_order',
+      userId: order.userId,
+      details: {
+        orderId,
+        orderNumber: order.orderNumber,
+        status,
+        ...(options.item ? { orderItemId: options.item } : {}),
+        ...(options.by ? { by: options.by } : {}),
+      },
+    })
+
+    const t = translator(toMailLocale(order.locale)) as unknown as (key: string) => string
+    const key = `order_upd_st_${status}`
+    let label: string = status
+    try {
+      const value = t(key)
+      // next-intl يعيد اسم المفتاح لمفتاح مفقود بدل أن يرمي.
+      if (value !== key && !value.endsWith(`.${key}`)) label = value
+    } catch {
+      // مفتاح غير موجود بعد: الحالة الخام أفضل من لا شيء.
+    }
+    await notifyUser(
+      order.userId,
+      'order_updated',
+      { orderNumber: order.orderNumber, status: label, code: status },
+      '/account/invoices',
+      options.email === false ? { email: false } : {},
+    )
+  } catch (error) {
+    console.error('[notify] order update notification failed', { orderId, status, error })
+  }
 }

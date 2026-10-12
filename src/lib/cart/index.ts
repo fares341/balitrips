@@ -50,6 +50,7 @@ import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/route
 import { vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
 import { loadEntitlements } from '@/lib/entitlements'
+import { loadPayableCustomQuotes } from '@/lib/orders/custom-request'
 import {
   buildQuote,
   type CartItemKind,
@@ -102,10 +103,13 @@ const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? 'USD'
 /** Group order on the cart page, matching the handoff's `groups` array. */
 export const CART_KIND_ORDER: readonly CartItemKind[] = [
   'activity',
+  // كانت ناقصة: أسطر فئات الأنشطة تُسعَّر في الإجمالي ولا تظهر في مجموعات السلة.
+  'activity_tier',
   'driver',
   'itinerary',
   'package',
   'plan',
+  'custom',
   'place',
 ]
 
@@ -420,6 +424,17 @@ export interface MutationResult {
   itemCount: number
 }
 
+/**
+ * A line the cart refuses on principle — not a transient failure. Carries a
+ * stable code the caller can map to a message.
+ */
+export class CartRejectedError extends Error {
+  constructor(readonly code: 'custom_not_payable' | 'sign_in_required') {
+    super(`Cart refused the item: ${code}`)
+    this.name = 'CartRejectedError'
+  }
+}
+
 export interface AddItemResult extends MutationResult {
   itemId: string
   driverItemId: string | null
@@ -468,14 +483,41 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
       : clampQuantity(rawInput.guests, CART_MAX_QUANTITY)
   const input: AddItemInput = { ...rawInput, guests: guestsIn }
 
+  /*
+   * A custom-itinerary quote is payable only by the request's own customer,
+   * only once quoted, and only while unpaid. Checked here because
+   * `addToCartAction` passes any kind straight through from the client; and
+   * again by `buildQuote` at checkout, which reads the same rows.
+   */
+  let ownerId: string | null = null
+  if (input.kind === 'custom') {
+    const user = await getSessionUser()
+    if (!user) throw new CartRejectedError('sign_in_required')
+    const requestId = normalise(input.refId)
+    const [payable] = requestId ? await loadPayableCustomQuotes([requestId], user.id) : []
+    if (!payable) throw new CartRejectedError('custom_not_payable')
+    ownerId = user.id
+    // Dates belong to the request, not the cart line.
+    input.quantity = 1
+    input.travelDate = null
+    input.travelTime = null
+    input.endDate = null
+    input.guests = null
+    input.driver = null
+  }
+
   const cart = await getOrCreateCart()
   const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
 
   const refId = normalise(input.refId)
-  const price = await snapshotUnitPrice(input.kind, refId, normalise(input.vehicleClass))
+  const price = await snapshotUnitPrice(input.kind, refId, normalise(input.vehicleClass), ownerId)
 
   // Itineraries and saved places are bought once; quantity is meaningless.
-  const singular = input.kind === 'itinerary' || input.kind === 'place' || input.kind === 'plan'
+  const singular =
+    input.kind === 'itinerary' ||
+    input.kind === 'place' ||
+    input.kind === 'plan' ||
+    input.kind === 'custom'
   const requested = singular ? 1 : clampQuantity(input.quantity, CART_MAX_QUANTITY)
 
   const existing = rows.find((row) => sameBooking(row, input))
@@ -614,7 +656,14 @@ export async function updateQuantity(itemId: string, quantity: number): Promise<
 }
 
 async function maxQuantityFor(row: CartItemRow): Promise<number> {
-  if (row.kind === 'itinerary' || row.kind === 'place' || row.kind === 'plan') return 1
+  if (
+    row.kind === 'itinerary' ||
+    row.kind === 'place' ||
+    row.kind === 'plan' ||
+    row.kind === 'custom'
+  ) {
+    return 1
+  }
   if (row.kind !== 'activity' && row.kind !== 'package') return CART_MAX_QUANTITY
 
   const item: QuoteRequestItem = {
@@ -772,7 +821,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
   }))
 
   const held = await loadEntitlements(cart.userId)
-  const { snapshot, display } = await loadCartCatalog(requestItems, held)
+  const { snapshot, display } = await loadCartCatalog(requestItems, held, cart.userId)
   const quote = buildQuote(requestItems, snapshot)
 
   const lineById = new Map(quote.lines.map((line) => [line.itemId, line]))

@@ -52,22 +52,23 @@ import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { Icon, Photo } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
-import type { MapPlaceForClient } from '@/lib/entitlements'
+import type { MapTaxonomy } from '@/lib/search/query'
 
 import { MapFilterBar, useMapFilters } from './map-filters'
 import { MapAccessBar } from './map-access-bar'
+import { MapWatermark, protectionHandlers } from './map-protect'
 import { MapResults } from './map-results'
 import { NodePanel } from './node-panel'
 import {
+  buildPins,
   clamp,
   MAP_IMAGE_AVIF,
   MAP_IMAGE_SRC,
-  pinColor,
-  pinHaystack,
+  projectArea,
   projectLat,
   projectLon,
+  type MapClientPlace,
   type MapPin,
-  type OpenMapPlace,
 } from './projection'
 
 /** Where an unentitled visitor goes to buy access. */
@@ -137,17 +138,22 @@ const ANCHOR: CSSProperties = {
   transformOrigin: '0 0',
 }
 
-function isOpen(place: MapPlaceForClient): place is OpenMapPlace {
-  return !place.locked
-}
-
 export type MapExplorerProps = {
   /** Redacted payload. Locked entries carry an id and nothing else. */
-  places: MapPlaceForClient[]
+  places: MapClientPlace[]
   lockedCount: number
   unlocked: boolean
   /** `?place=` from the URL, so `entityHref('place', slug)` lands on the pin. */
   initialSlug: string | null
+  /** المناطق والتصنيفات والوسوم المفعّلة — بيانات عامة، لا شيء فيها مقفل. */
+  taxonomy: MapTaxonomy
+  /** المستخدم يملك VIP: أماكن VIP أولاً في النتائج. */
+  vipFirst: boolean
+  /**
+   * "البريد · التاريخ" للمسجّل، null للزائر. يفعّل حماية النسخ والعلامة
+   * المائية (الوثيقة 17).
+   */
+  viewerLabel: string | null
 }
 
 const wideQuery = () => `(min-width: ${HOVER_CARD_MIN_WIDTH}px)`
@@ -162,7 +168,15 @@ function readWide(): boolean {
   return window.matchMedia(wideQuery()).matches
 }
 
-export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapExplorerProps) {
+export function MapExplorer({
+  places,
+  lockedCount,
+  unlocked,
+  initialSlug,
+  taxonomy,
+  vipFirst,
+  viewerLabel,
+}: MapExplorerProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const format = useFormatter()
@@ -184,6 +198,8 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
   // Read from the browser before paint, not set from an effect.
   const wideEnough = useSyncExternalStore(subscribeWide, readWide, () => false)
   const [paywallHeight, setPaywallHeight] = useState(0)
+  /** null = تلقائي: تظهر المناطق وحدها حين يتعذّر الموقع. */
+  const [showAreas, setShowAreas] = useState<boolean | null>(null)
 
   const frameRef = useRef<HTMLDivElement>(null)
   const paywallRef = useRef<HTMLDivElement>(null)
@@ -207,19 +223,25 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
   // -------------------------------------------------------------------------
 
   const pins = useMemo<MapPin[]>(
-    () =>
-      places.filter(isOpen).map((place) => ({
-        place,
-        nx: projectLon(place.lon),
-        ny: projectLat(place.lat),
-        color: pinColor(place.tags),
-        haystack: pinHaystack(place, locale),
-      })),
-    [places, locale],
+    () => buildPins(places, taxonomy.categories),
+    [places, taxonomy.categories],
   )
 
-  const filters = useMapFilters(pins, (pin) => setActiveId(pin.place.id))
+  const filters = useMapFilters(pins, (pin) => setActiveId(pin.place.id), { taxonomy, vipFirst })
   const { matched } = filters
+
+  // المناطق المتاحة على الخريطة (الوثيقة 9.3): دائرة واسم عند مركز كل منطقة لها
+  // إحداثيات. تظهر تلقائياً حين يُرفض الموقع، كي يختار الزائر منطقة بدله.
+  const geoFailed = filters.geoStatus === 'denied' || filters.geoStatus === 'outside'
+  const areasOn = showAreas ?? geoFailed
+  const areaMarks = useMemo(
+    () =>
+      taxonomy.regions.flatMap((region) => {
+        const at = projectArea(region)
+        return at === null ? [] : [{ region, ...at }]
+      }),
+    [taxonomy.regions],
+  )
 
   const activePin = useMemo(
     () => (activeId === null ? null : (pins.find((pin) => pin.place.id === activeId) ?? null)),
@@ -551,8 +573,11 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
   const hoverable = (event: ReactPointerEvent<HTMLElement>) => event.pointerType === 'mouse'
 
   return (
-    <div className="bt-mapwrap" style={{ marginTop: 0 }}>
-      <div className="bt-mapframe" ref={frameRef}>
+    <div
+      className={viewerLabel !== null ? 'bt-mapwrap bt-map-protected' : 'bt-mapwrap'}
+      style={{ marginTop: 0 }}
+    >
+      <div className="bt-mapframe" ref={frameRef} {...protectionHandlers(viewerLabel !== null)}>
         <div
           className={dragging ? 'bt-stage grabbing' : 'bt-stage'}
           style={stageStyle}
@@ -586,6 +611,48 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
               }}
             />
           </div>
+
+          {areasOn &&
+            areaMarks.map((mark) => {
+              const on = filters.region === mark.region.key
+              const label = pick(mark.region.label, locale, mark.region.key)
+              return (
+                <div key={`area-${mark.region.key}`}>
+                  {/* الدائرة جغرافية: داخل المسرح، تكبر مع التقريب. */}
+                  <div
+                    className={on ? 'bt-area on' : 'bt-area'}
+                    aria-hidden="true"
+                    style={{
+                      left: `${(mark.nx - mark.rx) * 100}%`,
+                      top: `${(mark.ny - mark.ry) * 100}%`,
+                      width: `${mark.rx * 200}%`,
+                      height: `${mark.ry * 200}%`,
+                    }}
+                  />
+                  {/* الاسم يبقى بحجمه، مثل الدبابيس. */}
+                  <div
+                    style={{
+                      ...ANCHOR,
+                      left: `${mark.nx * 100}%`,
+                      top: `${mark.ny * 100}%`,
+                      transform: `scale(${counterScale})`,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className={on ? 'bt-area-label on' : 'bt-area-label'}
+                      aria-pressed={on}
+                      onClick={() => {
+                        if (gestureRef.current.moved) return
+                        filters.chooseRegion(on ? null : mark.region.key)
+                      }}
+                    >
+                      <bdi>{label}</bdi>
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
 
           {rendered.map((pin) => {
             const hot = pin.place.id === activeId
@@ -695,8 +762,19 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
           })}
         </div>
 
+        {viewerLabel !== null && <MapWatermark label={viewerLabel} />}
+
         {/* HUD. A sibling of the stage, not a child, so it never pans. */}
-        <MapFilterBar f={filters} />
+        <MapFilterBar f={filters}>
+          <button
+            type="button"
+            className={areasOn ? 'bt-mchip on' : 'bt-mchip'}
+            aria-pressed={areasOn}
+            onClick={() => setShowAreas(!areasOn)}
+          >
+            <Icon name="globe" size={13} /> {t('map_show_areas')}
+          </button>
+        </MapFilterBar>
 
         <div className="bt-zoom" style={{ bottom: unlocked ? 14 : paywallHeight + 24 }}>
           <button
@@ -753,6 +831,8 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
           frameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }}
       />
+
+      {viewerLabel !== null && <p className="bt-map-printnote">{t('map_print_blocked')}</p>}
     </div>
   )
 }

@@ -10,20 +10,32 @@
  * يعمل على الدبابيس المرسلة لهذا الزائر فقط — الأماكن المقفلة لا تصل للمتصفح
  * أصلاً، فلا شيء هنا يحتاج أن يتذكر إخفاءها.
  *
- *  - بحث نصي + اقتراحات فورية من `/api/places/suggest` (الوثيقة 2.3)
- *  - وسوم، منطقة، تصنيف، Hidden Gems — مجتمعة (2.2)
- *  - "قريب مني" بنصف قطر، وترتيب بالأقرب (2.1)؛ خارج بالي → اختيار المنطقة
+ *  - بحث ذكي (الوثيقة 8): "كافيهات في كوتا"، "Cafes near me"… يُفهم بـ
+ *    `understandQuery` (src/lib/search/query.ts) — نفس فهم `/api/places/search`.
+ *    المنطقة التي تسمّيها الجملة تصبح فلتر المنطقة وتظهر في القائمة؛ و"قريب
+ *    مني" يطلب الموقع ويرتّب بالأقرب، وعند الرفض يشرح ويعرض المناطق.
+ *  - اقتراحات فورية من `/api/places/suggest` (8.5)
+ *  - وسوم، منطقة، تصنيف، Hidden Gems — مجتمعة؛ المناطق والتصنيفات من جداولها
+ *    (المفعّلة، بترتيب لوحة التحكم) لا من الأماكن المحمّلة
+ *  - الترتيب (8.6): الأقرب، داخل المنطقة، أولوية الإدارة، VIP لمشترك VIP، الأشهر
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
-import { normalizeSearch } from '@/lib/search/normalize'
 import type { Suggestion } from '@/lib/search/places'
+import {
+  buildVocabulary,
+  compareHits,
+  matchesTerms,
+  understandQuery,
+  type MapTaxonomy,
+  type RankFields,
+} from '@/lib/search/query'
 
 import type { MapPin } from './projection'
 
@@ -32,15 +44,28 @@ const RADIUS_CHOICES = [2, 5, 10, 25] as const
 
 export type GeoStatus = 'idle' | 'locating' | 'denied' | 'outside'
 
-export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin) => void) {
+export interface MapFilterOptions {
+  /** المناطق والتصنيفات والوسوم المفعّلة (عامة) — للقوائم ولفهم الجملة. */
+  taxonomy: MapTaxonomy
+  /** المستخدم يملك VIP: أماكن VIP قبل غيرها (الوثيقة 8.6، البند 4). */
+  vipFirst: boolean
+}
+
+export function useMapFilters(
+  pins: readonly MapPin[],
+  onPickPlace: (pin: MapPin) => void,
+  { taxonomy, vipFirst }: MapFilterOptions,
+) {
   const locale = useLocale() as Locale
-  const [query, setQuery] = useState('')
+  const [query, setQueryText] = useState('')
   const [filterTag, setFilterTag] = useState<string | null>(null)
-  const [region, setRegion] = useState<string | null>(null)
+  /** المنطقة المختارة من القائمة أو الخريطة. الجملة قد تسمّي غيرها (انظر `region`). */
+  const [regionChoice, setRegionChoice] = useState<string | null>(null)
   const [category, setCategory] = useState<string | null>(null)
   const [gemsOnly, setGemsOnly] = useState(false)
   const [near, setNear] = useState<LatLon | null>(null)
-  const [radiusKm, setRadiusKm] = useState<number>(DEFAULT_RADIUS_KM)
+  /** null = أي مسافة: "قريب مني" في الجملة يرتّب بالأقرب ولا يقطع عند 5 كم. */
+  const [radiusKm, setRadiusKm] = useState<number | null>(DEFAULT_RADIUS_KM)
   const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
   // The answer and the query it answers: a late response for an older query is
   // ignored by comparing the two, rather than cleared from inside the effect.
@@ -48,58 +73,71 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
   const trimmed = query.trim()
   const suggestions = trimmed.length >= 2 && fetched.q === trimmed ? fetched.items : []
 
+  const vocabulary = useMemo(() => buildVocabulary(taxonomy), [taxonomy])
+  const understood = useMemo(() => understandQuery(query, vocabulary), [query, vocabulary])
+  // "كافيهات في كوتا": المنطقة التي سمّتها الجملة هي الفلتر، وتظهر في القائمة.
+  const region = understood.areaKey ?? regionChoice
+
   const facets = useMemo(() => {
     // المنطقة العامة أولاً ثم أحياؤها: "جنوب بالي" ثم "— Kuta"، "— Seminyak".
-    const parents = new Map<string, string>()
-    const children = new Map<string, { label: string; parent: string | null }>()
-    const categories = new Map<string, string>()
-    // الوسوم من لوحة التحكم (الموجودة على الأماكن المرئية) — لا قائمة ثابتة.
-    const tagChips = new Map<string, string>()
-    for (const pin of pins) {
-      const { regionKey, regionLabel, parentRegionKey, parentRegionLabel } = pin.place
-      const { categoryKey, categoryLabel, tagList } = pin.place
-      if (parentRegionKey !== null)
-        parents.set(parentRegionKey, pick(parentRegionLabel, locale, parentRegionKey))
-      if (regionKey !== null)
-        children.set(regionKey, {
-          label: pick(regionLabel, locale, regionKey),
-          parent: parentRegionKey,
-        })
-      if (categoryKey !== null)
-        categories.set(categoryKey, pick(categoryLabel, locale, categoryKey))
-      for (const tag of tagList) tagChips.set(tag.key, pick(tag.label, locale, tag.key))
-    }
+    // من جدول المناطق، فتظهر المنطقة حتى بلا أماكن بعد.
+    const known = new Set(taxonomy.regions.map((entry) => entry.key))
     const regions: [string, string][] = []
-    const topLevel = new Map(parents)
-    for (const [key, child] of children) if (child.parent === null) topLevel.set(key, child.label)
-    for (const [key, label] of topLevel) {
-      regions.push([key, label])
-      for (const [childKey, child] of children) {
-        if (child.parent === key) regions.push([childKey, `— ${child.label}`])
+    for (const top of taxonomy.regions) {
+      if (top.parentKey !== null && known.has(top.parentKey)) continue
+      regions.push([top.key, pick(top.label, locale, top.key)])
+      for (const child of taxonomy.regions) {
+        if (child.parentKey === top.key) {
+          regions.push([child.key, `— ${pick(child.label, locale, child.key)}`])
+        }
       }
     }
-    return { regions, categories: [...categories], tags: [...tagChips] }
-  }, [pins, locale])
+    const categories: [string, string][] = taxonomy.categories.map((entry) => [
+      entry.key,
+      pick(entry.label, locale, entry.key),
+    ])
+    // شرائح الوسوم: الموجودة على الأماكن المرئية فقط (شريحة بلا نتائج تضليل)،
+    // بترتيب لوحة التحكم.
+    const present = new Set(pins.flatMap((pin) => pin.place.tagKeys))
+    const tags: [string, string][] = taxonomy.tags
+      .filter((entry) => present.has(entry.key))
+      .map((entry) => [entry.key, pick(entry.label, locale, entry.key)])
+    return { regions, categories, tags }
+  }, [taxonomy, pins, locale])
 
   const matched = useMemo(() => {
-    const needle = normalizeSearch(query)
-    const out = pins.filter((pin) => {
-      if (filterTag !== null && !pin.place.tagKeys.includes(filterTag)) return false
-      if (region !== null && pin.place.regionKey !== region && pin.place.parentRegionKey !== region)
-        return false
+    const ranked: { pin: MapPin; rank: RankFields }[] = []
+    for (const pin of pins) {
+      const { place } = pin
+      if (filterTag !== null && !place.tagKeys.includes(filterTag)) continue
+      if (region !== null && place.regionKey !== region && place.parentRegionKey !== region)
+        continue
       if (
         category !== null &&
-        pin.place.categoryKey !== category &&
-        !pin.place.subCategoryKeys.includes(category)
+        place.categoryKey !== category &&
+        !place.subCategoryKeys.includes(category)
       )
-        return false
-      if (gemsOnly && !pin.place.isHiddenGem) return false
-      if (near !== null && haversineKm(near, pin.place) > radiusKm) return false
-      return needle === '' || pin.haystack.includes(needle)
-    })
-    if (near !== null) out.sort((a, b) => haversineKm(near, a.place) - haversineKm(near, b.place))
-    return out
-  }, [pins, query, filterTag, region, category, gemsOnly, near, radiusKm])
+        continue
+      if (gemsOnly && !place.isHiddenGem) continue
+      const distanceKm = near === null ? null : haversineKm(near, place)
+      if (distanceKm !== null && radiusKm !== null && distanceKm > radiusKm) continue
+      if (!matchesTerms(pin.haystack, understood.terms)) continue
+      ranked.push({
+        pin,
+        rank: {
+          distanceKm,
+          inRegion:
+            region !== null && (place.regionKey === region || place.parentRegionKey === region),
+          priority: place.priority,
+          sortOrder: place.sortOrder,
+          vip: vipFirst && place.requiredEntitlement === 'vip' && !place.isFree,
+          popularity: place.popularity,
+          name: pick(place.name, locale, place.slug),
+        },
+      })
+    }
+    return ranked.sort((a, b) => compareHits(a.rank, b.rank)).map((item) => item.pin)
+  }, [pins, understood, filterTag, region, category, gemsOnly, near, radiusKm, vipFirst, locale])
 
   useEffect(() => {
     const q = trimmed
@@ -121,26 +159,11 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
     }
   }, [trimmed, locale])
 
-  const applySuggestion = (item: Suggestion) => {
-    setQuery('')
-    if (item.type === 'region') setRegion(item.key)
-    else if (item.type === 'category') setCategory(item.key)
-    else if (item.type === 'category_in_region') {
-      setRegion(item.region)
-      setCategory(item.category)
-    } else if (item.type === 'tag') setFilterTag(item.key)
-    else {
-      const target = pins.find((pin) => pin.place.slug === item.slug)
-      if (target) onPickPlace(target)
-    }
-  }
-
-  const locate = () => {
-    if (near !== null) {
-      setNear(null)
-      setGeoStatus('idle')
-      return
-    }
+  /**
+   * `fromQuery`: "Cafes near me" — ترتيب بالأقرب بلا حد مسافة. الزر: نصف قطر.
+   * يُستدعى من معالجات الأحداث فقط، لا من تأثير.
+   */
+  const requestLocation = (fromQuery: boolean) => {
     if (!('geolocation' in navigator)) {
       setGeoStatus('denied')
       return
@@ -155,19 +178,59 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
         }
         setNear(here)
         setGeoStatus('idle')
+        setRadiusKm((current) => (fromQuery ? null : (current ?? DEFAULT_RADIUS_KM)))
       },
       () => setGeoStatus('denied'),
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 },
     )
   }
 
+  const setQuery = (value: string) => {
+    setQueryText(value)
+    // يُطلب الموقع حين تظهر "قريب مني" في الجملة — مرة، لا مع كل حرف بعدها.
+    const next = understandQuery(value, vocabulary)
+    if (next.nearMe && !understood.nearMe && near === null && geoStatus !== 'locating') {
+      requestLocation(true)
+    }
+  }
+
+  /** اختيار منطقة (القائمة، دائرة على الخريطة، شريحة). يُزيل المنطقة من الجملة كي لا تغلبه. */
+  const chooseRegion = (key: string | null) => {
+    setRegionChoice(key)
+    if (understood.areaKey !== null) setQueryText(understood.withoutArea)
+  }
+
+  const applySuggestion = (item: Suggestion) => {
+    setQueryText('')
+    if (item.type === 'region') setRegionChoice(item.key)
+    else if (item.type === 'category') setCategory(item.key)
+    else if (item.type === 'category_in_region') {
+      setRegionChoice(item.region)
+      setCategory(item.category)
+    } else if (item.type === 'tag') setFilterTag(item.key)
+    else {
+      const target = pins.find((pin) => pin.place.slug === item.slug)
+      if (target) onPickPlace(target)
+    }
+  }
+
+  const locate = () => {
+    if (near !== null) {
+      setNear(null)
+      setGeoStatus('idle')
+      return
+    }
+    requestLocation(false)
+  }
+
   return {
     query,
     setQuery,
+    understood,
     filterTag,
     setFilterTag,
     region,
-    setRegion,
+    chooseRegion,
     category,
     setCategory,
     gemsOnly,
@@ -186,9 +249,13 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
 
 export type MapFilters = ReturnType<typeof useMapFilters>
 
-/** الشريط العلوي فوق الخريطة. نفس الأصناف CSS في الواجهتين. */
-export function MapFilterBar({ f }: { f: MapFilters }) {
+/**
+ * الشريط العلوي فوق الخريطة. نفس الأصناف CSS في الواجهتين.
+ * `children`: أزرار خاصة بواجهة (مثل "اعرض المناطق" في المسطحة).
+ */
+export function MapFilterBar({ f, children }: { f: MapFilters; children?: ReactNode }) {
   const t = useTranslations()
+  const geoFailed = f.geoStatus === 'denied' || f.geoStatus === 'outside'
   return (
     <div className="bt-mapui">
       <div className="bt-mapsearch">
@@ -253,10 +320,12 @@ export function MapFilterBar({ f }: { f: MapFilters }) {
 
       <div className="bt-mapchips" style={{ marginTop: 8 }}>
         <select
-          className="bt-mchip"
+          className={f.region !== null ? 'bt-mchip on' : 'bt-mchip'}
           aria-label={t('map_region')}
           value={f.region ?? ''}
-          onChange={(event) => f.setRegion(event.target.value === '' ? null : event.target.value)}
+          onChange={(event) =>
+            f.chooseRegion(event.target.value === '' ? null : event.target.value)
+          }
         >
           <option value="">{t('map_region_all')}</option>
           {f.facets.regions.map(([key, label]) => (
@@ -266,7 +335,7 @@ export function MapFilterBar({ f }: { f: MapFilters }) {
           ))}
         </select>
         <select
-          className="bt-mchip"
+          className={f.category !== null ? 'bt-mchip on' : 'bt-mchip'}
           aria-label={t('map_category')}
           value={f.category ?? ''}
           onChange={(event) => f.setCategory(event.target.value === '' ? null : event.target.value)}
@@ -291,21 +360,51 @@ export function MapFilterBar({ f }: { f: MapFilters }) {
           <select
             className="bt-mchip"
             aria-label={t('map_radius')}
-            value={f.radiusKm}
-            onChange={(event) => f.setRadiusKm(Number(event.target.value))}
+            value={f.radiusKm ?? ''}
+            onChange={(event) =>
+              f.setRadiusKm(event.target.value === '' ? null : Number(event.target.value))
+            }
           >
             {RADIUS_CHOICES.map((km) => (
               <option key={km} value={km}>
                 {t('map_within_km', { km })}
               </option>
             ))}
+            <option value="">{t('map_any_distance')}</option>
           </select>
         )}
+        {children}
       </div>
-      {(f.geoStatus === 'denied' || f.geoStatus === 'outside') && (
+
+      {f.near !== null && f.understood.nearMe && (
         <p role="status" className="bt-mapnote">
-          {t(f.geoStatus === 'denied' ? 'map_geo_denied' : 'map_geo_outside')}
+          {t('map_sorted_near')}
         </p>
+      )}
+      {geoFailed && (
+        // الموقع مرفوض أو خارج بالي: الشرح، ثم المناطق نفسها كاختيار بارز (الوثيقة 9.3).
+        <div role="status" className="bt-mapnote bt-geo-areas">
+          <p>
+            {t(f.geoStatus === 'denied' ? 'map_geo_denied' : 'map_geo_outside')}
+            {f.understood.nearMe && <> {t('map_geo_fallback')}</>}
+          </p>
+          <div className="bt-geo-area-list" aria-label={t('map_pick_area')}>
+            {f.facets.regions.map(([key, label]) => {
+              const on = key === f.region
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={on ? 'bt-mchip on' : 'bt-mchip'}
+                  aria-pressed={on}
+                  onClick={() => f.chooseRegion(on ? null : key)}
+                >
+                  <bdi>{label.replace(/^— /, '')}</bdi>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       )}
     </div>
   )

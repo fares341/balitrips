@@ -18,7 +18,7 @@
 import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { devices, entitlements, sessions, users } from '@/db/schema'
+import { devices, entitlements, notifications, sessions, users } from '@/db/schema'
 import { isElevated, isRole } from '@/lib/auth/roles'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
@@ -127,14 +127,70 @@ export interface RegisterInput {
   ip: string | null
 }
 
+export interface RegisteredDevice {
+  deviceId: string
+  /** جهاز فعّال معروف لهذا الحساب (لا "جهاز جديد") — يأخذ `login_alert` فقط. */
+  known: boolean
+}
+
+/** "Chrome · macOS" للإشعارات. */
+export function deviceLabel(identity: Pick<DeviceIdentity, 'browser' | 'os'>): string {
+  return `${identity.browser} · ${identity.os}`
+}
+
+/** "2026-10-12 08:30 UTC" — لاتيني ثابت داخل نص أي لغة (وفي قالب واتساب). */
+export function utcStamp(at = new Date()): string {
+  return at.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'
+}
+
+const BLOCKED_NOTICE_WINDOW_MS = 60 * 60 * 1000
+
 /**
- * يسجّل الجهاز لعملية دخول ويعيد `devices.id`، أو يرمي
- * `DeviceLimitError` / `DeviceBannedError`.
+ * الوثيقة 14.1/19.1: محاولة دخول من جهاز جديد رُفضت (حد الأجهزة) أو عُلّقت
+ * لموافقة الإدارة — نبلغ صاحب الحساب (داخل الموقع + بريد). مرة واحدة لكل جهاز في
+ * الساعة: محاولات متكررة من نفس الجهاز لا تُغرق بريده. يُستدعى **بعد** المعاملة.
+ * لا يرمي.
+ */
+export async function notifyBlockedSignIn(
+  userId: string,
+  identity: Pick<DeviceIdentity, 'browser' | 'os' | 'fingerprintHash'>,
+  reason: 'limit' | 'pending',
+): Promise<void> {
+  try {
+    // مفتاح الجهاز في params: جزء من البصمة المجزّأة يكفي للتمييز ولا يكشف شيئاً.
+    const deviceKey = identity.fingerprintHash.slice(0, 16)
+    const [recent] = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.userId, userId),
+          eq(notifications.type, 'device_blocked_attempt'),
+          gt(notifications.createdAt, new Date(Date.now() - BLOCKED_NOTICE_WINDOW_MS)),
+          sql`${notifications.params}->>'deviceKey' = ${deviceKey}`,
+        ),
+      )
+      .limit(1)
+    if (recent !== undefined) return
+    await notifyUser(
+      userId,
+      'device_blocked_attempt',
+      { device: deviceLabel(identity), when: utcStamp(), reason, deviceKey },
+      '/account/devices',
+    )
+  } catch (error) {
+    console.error('[devices] blocked sign-in notice failed', { userId, error })
+  }
+}
+
+/**
+ * يسجّل الجهاز لعملية دخول ويعيد `devices.id` (ومعه هل هو جهاز معروف)، أو يرمي
+ * `DeviceLimitError` / `DeviceBannedError` / `DeviceApprovalPendingError`.
  *
  * يعمل داخل معاملة تقفل صف المستخدم (`FOR UPDATE`) كي لا يتجاوز دخولان
  * متزامنان من جهازين جديدين الحد معاً.
  */
-export async function registerSignInDevice(input: RegisterInput): Promise<string> {
+export async function registerSignInDevice(input: RegisterInput): Promise<RegisteredDevice> {
   const { userId, identity } = input
   const settings = await currentPolicy()
   const result = await db.transaction(async (tx) => {
@@ -166,6 +222,7 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
       userAgent: input.userAgent,
       browser: identity.browser,
       os: identity.os,
+      deviceType: identity.deviceType,
     }
 
     if (existing?.status === 'active') {
@@ -292,6 +349,7 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
           active: result.active,
           browser: identity.browser,
           os: identity.os,
+          deviceType: identity.deviceType,
         },
       })
       const [owner] = await db
@@ -301,10 +359,12 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
         .limit(1)
       await notifyStaff(
         'staff_device_approval',
-        { email: owner?.email ?? userId, device: `${identity.browser} · ${identity.os}` },
+        { email: owner?.email ?? userId, device: deviceLabel(identity) },
         '/protection/devices?status=pending',
       )
     }
+    // صاحب الحساب يعرف أن جهازاً جديداً حاول الدخول (مرة في الساعة لكل جهاز).
+    await notifyBlockedSignIn(userId, identity, 'pending')
     throw new DeviceApprovalPendingError(result.deviceId)
   }
 
@@ -314,29 +374,32 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
       userId,
       ip: input.ip,
       deviceId: result.deviceId,
-      details: { ...result.event, browser: identity.browser, os: identity.os, weak: identity.weak },
+      details: {
+        ...result.event,
+        browser: identity.browser,
+        os: identity.os,
+        deviceType: identity.deviceType,
+        weak: identity.weak,
+      },
     })
     // تنبيه المستخدم بجهاز جديد — لكن ليس لأول جهاز (التسجيل نفسه).
     if (result.event.active > 0) {
       await notifyUser(
         userId,
         'new_device_login',
-        {
-          device: `${identity.browser} · ${identity.os}`,
-          when: new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC',
-        },
+        { device: deviceLabel(identity), when: utcStamp() },
         '/account/devices',
       )
     }
-    const device = `${identity.browser} · ${identity.os}`
+    const device = deviceLabel(identity)
     // سياسة "warn": قُبل الجهاز فوق الحد — المستخدم يرى رسالة الترقية (الوثيقة 14.2)،
-    // لا سطراً في السجل فقط.
+    // لا سطراً في السجل فقط. الرابط لصفحة الباقات (الترقية إلى باقة عائلية).
     if (result.event.decision === 'warn' && result.event.limit !== null) {
       await notifyUser(
         userId,
         'device_limit_warning',
         { device, limit: result.event.limit },
-        '/account/devices',
+        '/plans',
       )
     }
     // الوثيقة 4.3: تنبيه الإدارة عند دخول مستخدم مدفوع من جهاز جديد.
@@ -363,7 +426,7 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
     }
   }
 
-  return result.deviceId
+  return { deviceId: result.deviceId, known: result.event === null }
 }
 
 /**

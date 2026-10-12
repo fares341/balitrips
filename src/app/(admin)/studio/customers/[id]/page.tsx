@@ -1,10 +1,23 @@
-import { desc, eq } from 'drizzle-orm'
+import { asc, desc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { listSchedules } from '@/app/[locale]/account/_lib/queries'
 import { db } from '@/db'
-import { auditLog, entitlements, favorites, orders, sessions, users } from '@/db/schema'
+import {
+  auditLog,
+  customTripDocuments,
+  customTripRequests,
+  entitlements,
+  favorites,
+  orders,
+  plans,
+  sessions,
+  users,
+} from '@/db/schema'
+import { defaultLocale, isLocale } from '@/i18n/config'
 import { can, isElevated, isRole, ROLES } from '@/lib/auth/roles'
+import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -16,6 +29,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
 import {
   changeRole,
+  grantPlanToCustomer,
   setAccountActive,
   updateCustomerProfile,
   deleteCustomer,
@@ -56,8 +70,18 @@ export default async function CustomerPage({
   if (!account) notFound()
 
   const now = new Date()
+  const accountLocale = isLocale(account.locale) ? account.locale : defaultLocale
 
-  const [sessionRows, orderRows, entitlementRows, favoriteRows, auditRows] = await Promise.all([
+  const [
+    sessionRows,
+    orderRows,
+    entitlementRows,
+    favoriteRows,
+    auditRows,
+    scheduleRows,
+    customDocRows,
+    planRows,
+  ] = await Promise.all([
     db.select().from(sessions).where(eq(sessions.userId, id)).orderBy(desc(sessions.createdAt)),
     db
       .select({
@@ -73,7 +97,12 @@ export default async function CustomerPage({
       .where(eq(orders.userId, id))
       .orderBy(desc(orders.createdAt))
       .limit(25),
-    db.select().from(entitlements).where(eq(entitlements.userId, id)),
+    db
+      .select({ entitlement: entitlements, planName: plans.name, planSlug: plans.slug })
+      .from(entitlements)
+      .leftJoin(plans, eq(plans.id, entitlements.planId))
+      .where(eq(entitlements.userId, id))
+      .orderBy(desc(entitlements.startsAt)),
     db.select().from(favorites).where(eq(favorites.userId, id)),
     db
       .select({
@@ -88,13 +117,56 @@ export default async function CustomerPage({
       .where(eq(auditLog.entityId, id))
       .orderBy(desc(auditLog.createdAt))
       .limit(20),
+    // الوثيقة 21.2 "الملفات": جداول PDF المشتراة (سطور itinerary مدفوعة).
+    listSchedules(id, accountLocale),
+    // ...وملفات الجداول المخصصة المرفوعة لطلباته.
+    db
+      .select({
+        doc: customTripDocuments,
+        requestId: customTripRequests.id,
+        startDate: customTripRequests.startDate,
+      })
+      .from(customTripDocuments)
+      .innerJoin(customTripRequests, eq(customTripRequests.id, customTripDocuments.requestId))
+      .where(eq(customTripRequests.userId, id))
+      .orderBy(desc(customTripDocuments.createdAt))
+      .limit(50),
+    db
+      .select({
+        id: plans.id,
+        name: plans.name,
+        slug: plans.slug,
+        status: plans.status,
+        entitlementKind: plans.entitlementKind,
+        durationDays: plans.durationDays,
+        deviceLimit: plans.deviceLimit,
+      })
+      .from(plans)
+      .where(isNull(plans.deletedAt))
+      .orderBy(asc(plans.sortOrder)),
   ])
 
   const mayChangeRole = can(session.role, 'roles.write')
   const mayExport = can(session.role, 'customers.export')
   const isSelf = account.id === session.userId
   const mayDeactivate = can(session.role, 'security.write')
+  const mayGrant = can(session.role, 'entitlements.grant')
   const live = sessionRows.filter((row) => row.expiresAt > now)
+  const livePlanGrants = entitlementRows.filter(
+    ({ entitlement }) =>
+      entitlement.planId !== null &&
+      entitlement.revokedAt === null &&
+      (entitlement.expiresAt === null || entitlement.expiresAt > now),
+  )
+  // 'inactive' (إداري) و'suspended' (تعليق تلقائي من قواعد الحماية) كلاهما يُعاد
+  // تفعيله بـ setAccountActive ← 'active'. 'banned' يُرفع من لوحة الحماية.
+  const dormant = account.status === 'inactive' || account.status === 'suspended'
+  const STATUS_TONE: Record<string, 'good' | 'warn' | 'bad' | 'neutral'> = {
+    active: 'good',
+    inactive: 'neutral',
+    suspended: 'warn',
+    banned: 'bad',
+  }
 
   return (
     <>
@@ -156,6 +228,10 @@ export default async function CustomerPage({
               <Pill tone="warn">unverified</Pill>
             )}
           </dd>
+          <dt className="a-muted">Status</dt>
+          <dd style={{ margin: 0 }}>
+            <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>{account.status}</Pill>
+          </dd>
           <dt className="a-muted">Name</dt>
           <dd style={{ margin: 0 }}>{account.name ?? '—'}</dd>
           <dt className="a-muted">Phone</dt>
@@ -195,18 +271,14 @@ export default async function CustomerPage({
         <form className="a-card a-row" action={setAccountActive.bind(null, account.id)}>
           <h2 style={{ margin: 0 }}>Account status</h2>
           <span>
-            Currently <strong>{account.status === 'inactive' ? 'inactive' : 'active'}</strong>.
+            Currently <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>{account.status}</Pill>
+            {account.status === 'suspended'
+              ? ' — suspended automatically by a protection rule.'
+              : '.'}
           </span>
-          <input
-            type="hidden"
-            name="active"
-            value={account.status === 'inactive' ? 'true' : 'false'}
-          />
-          <button
-            className={account.status === 'inactive' ? 'a-btn accent' : 'a-btn danger'}
-            type="submit"
-          >
-            {account.status === 'inactive' ? 'Activate account' : 'Deactivate account'}
+          <input type="hidden" name="active" value={dormant ? 'true' : 'false'} />
+          <button className={dormant ? 'a-btn accent' : 'a-btn danger'} type="submit">
+            {dormant ? 'Reactivate account' : 'Deactivate account'}
           </button>
         </form>
       ) : null}
@@ -441,6 +513,120 @@ export default async function CustomerPage({
         )}
       </div>
 
+      <div className="a-card">
+        <h2>Files</h2>
+        {scheduleRows.length === 0 && customDocRows.length === 0 ? (
+          <Empty>No purchased itineraries or custom plans.</Empty>
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Source</th>
+                <th>Document</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scheduleRows.map((row) => (
+                <tr key={row.orderItemId}>
+                  <td>
+                    <Link href={adminHref(`/itineraries/${row.itineraryId}`)}>
+                      {row.name ? pick(row.name, 'en') : 'Itinerary'}
+                    </Link>
+                    <div className="a-muted">v{row.version}</div>
+                  </td>
+                  <td>
+                    <Link className="a-mono" href={adminHref(`/orders/${row.orderId}`)}>
+                      {row.orderNumber}
+                    </Link>
+                  </td>
+                  <td>
+                    {row.documentReady ? (
+                      <Pill tone="good">PDF available</Pill>
+                    ) : (
+                      <Pill tone="warn">PDF not generated</Pill>
+                    )}
+                  </td>
+                  <td>
+                    <When value={row.purchasedAt} />
+                  </td>
+                </tr>
+              ))}
+              {customDocRows.map(({ doc, requestId, startDate }) => (
+                <tr key={doc.id}>
+                  <td>
+                    {doc.filename}
+                    <div className="a-muted">
+                      Custom plan v{doc.version} · {Math.round(doc.bytes / 1024)} KB
+                    </div>
+                  </td>
+                  <td>
+                    <Link href={adminHref(`/leads/${requestId}`)}>
+                      Custom request{startDate ? ` · ${startDate}` : ''}
+                    </Link>
+                  </td>
+                  <td>
+                    {doc.withdrawnAt ? (
+                      <Pill tone="neutral">withdrawn</Pill>
+                    ) : (
+                      <Pill tone="good">delivered</Pill>
+                    )}
+                  </td>
+                  <td>
+                    <When value={doc.createdAt} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
+      </div>
+
+      {mayGrant && !account.deletedAt ? (
+        <form className="a-card a-form" action={grantPlanToCustomer.bind(null, account.id)}>
+          <h2>Change plan</h2>
+          <p className="a-hint">
+            Grants the plan exactly as a purchase would — its access, device limit and duration
+            (from today) — with no order behind it. Recorded in the audit log under your name.
+            {livePlanGrants.length > 0
+              ? ` The account currently holds ${livePlanGrants.length} live plan grant(s).`
+              : ''}
+          </p>
+          <div className="a-row">
+            <Field label="Plan" htmlFor="planId">
+              <select className="a-select" id="planId" name="planId" required defaultValue="">
+                <option value="" disabled>
+                  Choose a plan…
+                </option>
+                {planRows.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {pick(plan.name, 'en', plan.slug)} ·{' '}
+                    {plan.entitlementKind === 'basic' ? 'no map' : plan.entitlementKind} ·{' '}
+                    {plan.durationDays === null ? 'lifetime' : `${plan.durationDays} days`} ·{' '}
+                    {plan.deviceLimit} device(s)
+                    {plan.status === 'published' ? '' : ' (draft)'}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Reason" htmlFor="grant-reason" hint="Recorded on the audit row.">
+              <TextInput id="grant-reason" name="reason" placeholder="Support, comp, upgrade…" />
+            </Field>
+            <div className="a-field">
+              <label>
+                <input type="checkbox" name="replace" /> Replace: revoke current live plan grants
+              </label>
+            </div>
+          </div>
+          <div className="a-actions">
+            <button className="a-btn accent" type="submit">
+              Grant
+            </button>
+          </div>
+        </form>
+      ) : null}
+
       {entitlementRows.length > 0 ? (
         <div className="a-card">
           <h2>Entitlements</h2>
@@ -448,15 +634,37 @@ export default async function CustomerPage({
             <thead>
               <tr>
                 <th>Kind</th>
+                <th>Plan</th>
+                <th>Source</th>
                 <th>Starts</th>
                 <th>Expires</th>
                 <th>State</th>
               </tr>
             </thead>
             <tbody>
-              {entitlementRows.map((row) => (
+              {entitlementRows.map(({ entitlement: row, planName, planSlug }) => (
                 <tr key={row.id}>
                   <td className="a-mono">{row.kind}</td>
+                  <td>
+                    {row.planId ? (
+                      <Link href={adminHref(`/plans/${row.planId}`)}>
+                        {planName ? pick(planName, 'en', planSlug ?? 'plan') : 'plan'}
+                      </Link>
+                    ) : (
+                      <span className="a-muted">—</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.grantedByOrderId ? (
+                      <Link href={adminHref(`/orders/${row.grantedByOrderId}`)}>order</Link>
+                    ) : row.grantedByActorId ? (
+                      <Pill tone="info">staff</Pill>
+                    ) : row.sharedByUserId ? (
+                      <Pill tone="info">family</Pill>
+                    ) : (
+                      <span className="a-muted">—</span>
+                    )}
+                  </td>
                   <td>
                     <When value={row.startsAt} />
                   </td>
@@ -470,6 +678,10 @@ export default async function CustomerPage({
                   <td>
                     {row.revokedAt ? (
                       <Pill tone="bad">revoked</Pill>
+                    ) : row.expiresAt !== null && row.expiresAt <= now ? (
+                      <Pill tone="warn">expired</Pill>
+                    ) : row.startsAt > now ? (
+                      <Pill tone="info">scheduled</Pill>
                     ) : (
                       <Pill tone="good">active</Pill>
                     )}

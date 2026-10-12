@@ -54,7 +54,11 @@ export async function ProtectionPanel({
 
       {banned ? (
         <div style={{ marginBlock: 12 }}>
-          <Pill tone="bad">banned {account.bannedUntil ? 'until' : 'permanently'}</Pill>{' '}
+          {account.status === 'suspended' ? (
+            <Pill tone="warn">suspended — pending review</Pill>
+          ) : (
+            <Pill tone="bad">banned {account.bannedUntil ? 'until' : 'permanently'}</Pill>
+          )}{' '}
           {account.bannedUntil ? <When value={account.bannedUntil} /> : null}
           <div className="a-hint">Reason: {account.banReason ?? '—'}</div>
           {mayWrite ? (
@@ -110,6 +114,7 @@ export async function ProtectionPanel({
               <tr key={row.id}>
                 <td>
                   {row.browser ?? '?'} · {row.os ?? '?'}
+                  {row.deviceType ? <span className="a-muted"> · {row.deviceType}</span> : null}
                   {row.weak ? (
                     <div>
                       <Pill tone="warn">no browser fingerprint</Pill>

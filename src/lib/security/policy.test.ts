@@ -72,6 +72,11 @@ describe('bans', () => {
     expect(isUserBanned({ status: 'banned', bannedUntil: null }, now)).toBe(true)
     // حساب معطّل إدارياً لا يدخل حتى يُفعَّل.
     expect(isUserBanned({ status: 'inactive', bannedUntil: null }, now)).toBe(true)
+    // الوثيقة 18.2: معلّق لحين مراجعة الإدارة — بلا مدة، يمنع حتى يُرفع.
+    expect(isUserBanned({ status: 'suspended', bannedUntil: null }, now)).toBe(true)
+    expect(isUserBanned({ status: 'suspended', bannedUntil: '2026-10-01T00:00:00Z' }, now)).toBe(
+      true,
+    )
     expect(isUserBanned({ status: 'banned', bannedUntil: '2026-10-01T00:00:00Z' }, now)).toBe(false)
     expect(isUserBanned(null, now)).toBe(false)
   })
@@ -89,14 +94,33 @@ describe('rules', async () => {
     const rule = RULES.find((r) => r.id === 'failed_logins_account')
     expect(rule?.autoAction).toBeNull()
   })
-  it('only ever auto-bans temporarily', () => {
-    for (const rule of RULES) expect([null, 'ban_ip_1h', 'ban_user_24h']).toContain(rule.autoAction)
+  it('only ever auto-bans temporarily, or suspends pending admin review', () => {
+    for (const rule of RULES) {
+      expect([null, 'ban_ip_1h', 'ban_user_24h', 'suspend_user']).toContain(rule.autoAction)
+    }
   })
-  it('never auto-bans for sign-in attempts from devices over the limit', () => {
+  it('suspends for repeated sharing and unauthorized-content attempts, and tells staff', () => {
+    for (const id of ['device_limit_hits', 'unauthorized_probe']) {
+      const rule = RULES.find((r) => r.id === id)
+      expect(rule?.autoAction).toBe('suspend_user')
+      expect(rule?.notifyStaff).toBe(true)
+    }
+  })
+  it('never suspends the owner because a removed device keeps polling', () => {
+    expect(RULES.find((r) => r.id === 'unauthorized_probe')?.why).not.toContain('device_revoked')
+    expect(RULES.find((r) => r.id === 'revoked_device_use')?.autoAction).toBeNull()
+  })
+  it('keeps ip_spread alert-only but notifies staff', () => {
+    const rule = RULES.find((r) => r.id === 'ip_spread')
+    expect(rule?.autoAction).toBeNull()
+    expect(rule?.notifyStaff).toBe(true)
+  })
+  it('counts distinct real devices for churn, not every refused attempt', () => {
     const churn = RULES.find((r) => r.id === 'device_churn')
     expect(churn?.counts).toEqual(['new_device'])
     expect(churn?.measure).toBe('distinct_device')
-    expect(RULES.find((r) => r.id === 'device_limit_hits')?.autoAction).toBeNull()
+    // Over-the-limit attempts suspend for review instead of a timed ban.
+    expect(RULES.find((r) => r.id === 'device_limit_hits')?.autoAction).not.toBe('ban_user_24h')
   })
   it('keeps the trigger list in activity.ts in sync with the rules', async () => {
     const { RULE_TRIGGERS } = await import('./activity')

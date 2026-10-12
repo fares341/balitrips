@@ -52,7 +52,11 @@ export const users = pgTable(
     image: text('image'),
 
     /**
-     * حالة الحساب: 'active' | 'banned'.
+     * حالة الحساب: 'active' | 'banned' | 'inactive' | 'suspended'.
+     *
+     * `inactive` تعطيل إداري يدوي. `suspended` تعليق تلقائي من قواعد الحماية
+     * (src/lib/security/rules.ts) لحين مراجعة الإدارة (الوثيقة 18.2) — لا مدة له،
+     * ويُرفع من Studio → Protection. الثلاثة تمنع الدخول (`isUserBanned`).
      *
      * الحظر يعيش على المستخدم نفسه (وليس جدولاً منفصلاً) لأن كل قراءة جلسة
      * تمر عليه أصلاً — `getSession()` تعامل الحساب المحظور كغير مسجّل، كما

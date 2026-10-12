@@ -22,6 +22,11 @@
  *     one with a value outside the three the design defines, silently
  *     advertised the map. An unset bridge now renders no CTA at all — an
  *     editor who has not chosen a destination has not chosen the map.
+ *
+ * Exclusive articles (spec 2.3/2.4, `articles.required_entitlement`): title,
+ * hero and excerpt are public; the body is fetched only after the viewer's
+ * live entitlements pass, so an unentitled reader's HTML and RSC payload
+ * never contain it. They get a paywall card pointing at /plans instead.
  */
 
 import type { Metadata } from 'next'
@@ -29,19 +34,34 @@ import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ArticleCard } from '@/components/cards'
-import { Breadcrumbs, Tag } from '@/components/shared'
+import { Breadcrumbs, LinkButton, Tag } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
-import { getArticleBySlug, listArticles } from '@/lib/content/queries'
-import type { ArticleDetail, ArticleSummary } from '@/lib/content/types'
+import {
+  getArticleBodyForViewer,
+  getArticleHead,
+  type ArticleHead,
+} from '@/lib/content/extra-queries'
+import { listArticles } from '@/lib/content/queries'
+import type { ArticleSummary, LocalizedText } from '@/lib/content/types'
+import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
 import type { Locale } from '@/i18n/config'
+import { checkSecureAccess } from '@/lib/security/guard'
 
 import { alternatesFor, toLocale } from '../../_seo-hreflang'
 
 const BLOG_HREF = '/blog'
+const PLANS_HREF = '/plans'
 const RELATED_COUNT = 3
+
+/**
+ * Request-rendered: whether the body is in the response depends on who is
+ * reading. A prerendered exclusive article would be either locked for its
+ * subscribers or open to everyone.
+ */
+export const dynamic = 'force-dynamic'
 
 /**
  * The three destinations the design defines for the in-article CTA.
@@ -77,10 +97,10 @@ export async function generateStaticParams() {
  * CMS textarea already trains authors in. Returns `[]` for a null or
  * whitespace-only body, which is the signal to render nothing.
  */
-function paragraphsOf(article: ArticleDetail, locale: Locale): string[] {
-  const body = pick(article.body, locale)
-  if (body.trim() === '') return []
-  return body
+function paragraphsOf(body: LocalizedText | null, locale: Locale): string[] {
+  const text = pick(body, locale)
+  if (text.trim() === '') return []
+  return text
     .split(/\r?\n\s*\r?\n/)
     .map((paragraph) => paragraph.trim())
     .filter((paragraph) => paragraph !== '')
@@ -90,7 +110,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
   const { locale: raw, slug } = await params
   const locale = toLocale(raw)
 
-  const article = await getArticleBySlug(slug)
+  const article = await getArticleHead(slug)
   if (!article) return {}
 
   const title = pick(article.title, locale, article.slug)
@@ -117,8 +137,19 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
   setRequestLocale(raw)
 
   const locale = toLocale(raw)
-  const article = await getArticleBySlug(slug)
+  const article = await getArticleHead(slug)
   if (!article) notFound()
+
+  // Public articles never touch the session; exclusive ones check the
+  // viewer's live entitlements through the same guard as the map.
+  let held = emptyEntitlements()
+  let signedIn = false
+  if (article.requiredEntitlement !== null) {
+    const access = await checkSecureAccess('article')
+    signedIn = access.ok
+    if (access.ok) held = await loadEntitlements(access.user.id)
+  }
+  const gate = await getArticleBodyForViewer(article.id, held)
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
@@ -129,7 +160,7 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
     article.category === null ? null : pick(article.category.label, locale, article.category.key)
   const publishedAt = article.publishedAt === null ? null : new Date(article.publishedAt)
 
-  const paragraphs = paragraphsOf(article, locale)
+  const paragraphs = gate.locked ? [] : paragraphsOf(gate.body, locale)
   const bridge = article.bridge === null ? undefined : BRIDGES[article.bridge]
   const related = await relatedArticles(article, locale)
 
@@ -158,9 +189,17 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
           </div>
         )}
 
-        {(categoryLabel !== null || publishedAt !== null) && (
+        {(categoryLabel !== null ||
+          publishedAt !== null ||
+          article.requiredEntitlement !== null) && (
           <div className="row" style={{ gap: 10, marginTop: 22 }}>
             {categoryLabel !== null && <Tag variant="palm">{categoryLabel}</Tag>}
+            {article.requiredEntitlement !== null && (
+              <span className="tag tag-orange">
+                <Icon name="lock" size={12} />{' '}
+                {article.requiredEntitlement === 'vip' ? t('art_badge_vip') : t('art_badge_map')}
+              </span>
+            )}
             {publishedAt !== null && (
               <time className="muted" style={{ fontSize: 13 }} dateTime={article.publishedAt ?? ''}>
                 {format.dateTime(publishedAt, { dateStyle: 'long' })}
@@ -187,6 +226,41 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
             {paragraphs.map((paragraph, index) => (
               <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
             ))}
+          </div>
+        )}
+
+        {gate.locked && (
+          <div
+            className="card card-pad"
+            role="note"
+            style={{
+              marginTop: 28,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+              textAlign: 'center',
+            }}
+          >
+            <span className="bt-paywall-ic">
+              <Icon name="lock" size={20} color="#fff" />
+            </span>
+            <h2 style={{ fontSize: 20, margin: 0 }}>
+              {article.requiredEntitlement === 'vip' ? t('art_lock_vip_t') : t('art_lock_map_t')}
+            </h2>
+            <p className="muted" style={{ margin: 0, maxWidth: '46ch' }}>
+              {t('art_lock_b')}
+            </p>
+            <div className="row" style={{ gap: 10, justifyContent: 'center' }}>
+              <LinkButton href={PLANS_HREF} variant="orange">
+                {t('art_lock_cta')}
+              </LinkButton>
+              {!signedIn && (
+                <LinkButton href="/account" variant="ghost">
+                  {t('art_lock_signin')}
+                </LinkButton>
+              )}
+            </div>
           </div>
         )}
 
@@ -230,7 +304,7 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
  * uncategorised or is the only one in its category. The article being read is
  * always excluded.
  */
-async function relatedArticles(article: ArticleDetail, locale: Locale): Promise<ArticleSummary[]> {
+async function relatedArticles(article: ArticleHead, locale: Locale): Promise<ArticleSummary[]> {
   const sameCategory =
     article.category === null
       ? []

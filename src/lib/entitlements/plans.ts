@@ -7,6 +7,7 @@
  *  3. عند انتقال الطلب إلى `paid` (webhook أو reconcile) تستدعي المعاملة نفسها
  *     `grantOrderPlans()`: صف `entitlements` لكل بند باقة، بمدة وحد أجهزة
  *     منسوخين من الباقة وقت الشراء.
+ *     ويعلّم بنود الجداول المخصصة (`custom`) مدفوعة (`markCustomRequestsPaid`).
  *  4. الاسترداد/الإلغاء يُبطلها عبر `revokeOrderEntitlements()` الموجود
  *     (مطابقة على `granted_by_order_id`).
  */
@@ -15,6 +16,8 @@ import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { entitlements, itineraries, orderItems, orders, plans } from '@/db/schema'
+
+import { markCustomRequestsPaid } from '@/lib/orders/custom-request'
 
 import { isEntitlementKind, makeEntitlementSet, type EntitlementSet } from './redaction'
 import { carryOverFamily } from './family'
@@ -66,6 +69,11 @@ export function planExpiry(durationDays: number | null, start: Date): Date | nul
  * webhook مكرر أو reconcile بعده لا ينشئان صفاً ثانياً.
  */
 export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date()): Promise<number> {
+  // الجدول المخصص المدفوع (الوثيقة 13.1): هذا هو الخطّاف المشترك بعد الدفع
+  // (webhook / reconcile / الدفع اليدوي)، فيُعلَّم الطلب مدفوعاً في المعاملة نفسها.
+  // لا يمنح صلاحية، فلا يدخل في العدد المُعاد.
+  await markCustomRequestsPaid(tx, orderId)
+
   const lines = await tx
     .select({ plan: plans })
     .from(orderItems)
@@ -218,4 +226,26 @@ export async function loadPermissions(userId: string | null): Promise<Permission
       ),
     )
   return combinePermissions(rows)
+}
+
+/**
+ * معرّفات الباقات التي يملك المستخدم منها صلاحية حيّة الآن. تُستعمل لشارة
+ * "مفعّلة" — باقة `basic` لا تظهر في `EntitlementSet` (لا تفتح الخريطة)، فلا
+ * يكفي `held.has(kind)` لمعرفة أنها مفعّلة.
+ */
+export async function loadLivePlanIds(userId: string | null): Promise<Set<string>> {
+  if (userId === null) return new Set()
+  const now = new Date()
+  const rows = await db
+    .select({ planId: entitlements.planId })
+    .from(entitlements)
+    .where(
+      and(
+        eq(entitlements.userId, userId),
+        isNull(entitlements.revokedAt),
+        or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+        lte(entitlements.startsAt, now),
+      ),
+    )
+  return new Set(rows.map((row) => row.planId).filter((id): id is string => id !== null))
 }

@@ -3,14 +3,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
-import { customTripDocuments, customTripRequests, users } from '@/db/schema'
+import { customTripDocuments, customTripRequests, orders, users } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
 import { LEAD_TONES, TRIP_STATUSES } from '../../../_lib/lead-statuses'
 import { requireCapability } from '../../../_lib/session'
-import { Field, TextArea, TextInput } from '../../../_ui/field'
+import { Field, MoneyField, TextArea, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
@@ -18,6 +19,8 @@ import { setTripRequestStatus } from '../actions'
 import {
   linkRequestToUser,
   saveRequestNotes,
+  sendCustomPdfWhatsapp,
+  setCustomQuote,
   uploadCustomPdf,
   withdrawCustomPdf,
 } from '../request-actions'
@@ -31,15 +34,22 @@ export default async function LeadDetailPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('leads.read')
+  const session = await requireCapability('leads.read')
+  const mayQuote = can(session.role, 'config.write') || can(session.role, 'orders.refund')
   const { id } = await params
   const query = await searchParams
   if (!isUuid(id)) notFound()
 
   const [row] = await db
-    .select({ request: customTripRequests, account: users.email })
+    .select({
+      request: customTripRequests,
+      account: users.email,
+      whatsappOptIn: users.whatsappOptIn,
+      paidOrderNumber: orders.orderNumber,
+    })
     .from(customTripRequests)
     .leftJoin(users, eq(users.id, customTripRequests.userId))
+    .leftJoin(orders, eq(orders.id, customTripRequests.paidOrderId))
     .where(eq(customTripRequests.id, id))
     .limit(1)
   if (!row) notFound()
@@ -56,6 +66,7 @@ export default async function LeadDetailPage({
     ['E-mail', request.email ?? '—'],
     ['Phone', request.phone ?? '—'],
     ['Dates', `${request.startDate ?? '—'}${request.endDate ? ` → ${request.endDate}` : ''}`],
+    ['Days', request.days === null ? '—' : String(request.days)],
     ['Travellers', String(request.travellers ?? '—')],
     ['Trip type', request.theme ?? '—'],
     [
@@ -163,6 +174,69 @@ export default async function LeadDetailPage({
       </div>
 
       <div className="a-card">
+        <h2>
+          Price{' '}
+          {request.paidOrderId !== null ? (
+            <Pill tone="good">paid</Pill>
+          ) : request.quoteMinor !== null ? (
+            <Pill tone="info">quoted</Pill>
+          ) : (
+            <Pill tone="neutral">no quote</Pill>
+          )}
+        </h2>
+        {request.quoteMinor !== null && request.quoteCurrency !== null ? (
+          <p>
+            <strong>{formatMoney(request.quoteMinor, request.quoteCurrency, 'en')}</strong>
+            {request.quotedAt ? (
+              <>
+                {' '}
+                · quoted <When value={request.quotedAt} />
+              </>
+            ) : null}
+            {request.paidOrderId !== null ? (
+              <>
+                {' '}
+                · paid with{' '}
+                <Link href={adminHref(`/orders/${request.paidOrderId}`)} className="a-mono">
+                  {row.paidOrderNumber ?? 'order'}
+                </Link>
+              </>
+            ) : null}
+          </p>
+        ) : (
+          <p className="a-muted">
+            No price yet. Once set, the traveller sees it in their account with a Pay button.
+          </p>
+        )}
+        {mayQuote && request.paidOrderId === null ? (
+          <form action={setCustomQuote.bind(null, id)} className="a-row">
+            <MoneyField
+              minorName="quoteMinor"
+              currencyName="quoteCurrency"
+              minor={request.quoteMinor}
+              currency={request.quoteCurrency ?? request.currency ?? 'USD'}
+            />
+            <div className="a-actions">
+              <button className="a-btn" type="submit">
+                Save price &amp; notify
+              </button>
+            </div>
+          </form>
+        ) : null}
+        {mayQuote && request.paidOrderId === null && request.quoteMinor !== null ? (
+          <form action={setCustomQuote.bind(null, id)} className="a-inline-form">
+            <input type="hidden" name="quoteMinor" value="" />
+            <button className="a-btn ghost small" type="submit">
+              Withdraw price
+            </button>
+          </form>
+        ) : null}
+        {!mayQuote ? (
+          <p className="a-hint">Only managers with orders or configuration rights set prices.</p>
+        ) : null}
+      </div>
+
+      <div className="a-card">
         <h2>Plan PDF</h2>
         <form
           action={uploadCustomPdf.bind(null, id)}
@@ -179,6 +253,16 @@ export default async function LeadDetailPage({
               accept="application/pdf"
               required
             />
+          </div>
+          <div className="a-field">
+            <label>
+              <input type="checkbox" name="alsoWhatsapp" defaultChecked /> Also send on WhatsApp
+            </label>
+            <span className="a-hint">
+              {row.whatsappOptIn
+                ? 'Sends a link to the secure viewer in their account.'
+                : 'The traveller has not opted in to WhatsApp (or the request is not linked); only in-site and e-mail will be sent.'}
+            </span>
           </div>
           <div className="a-actions">
             <button className="a-btn" type="submit">
@@ -220,12 +304,23 @@ export default async function LeadDetailPage({
                   </td>
                   <td>
                     {doc.withdrawnAt ? null : (
-                      <form action={withdrawCustomPdf.bind(null, id)} className="a-inline-form">
-                        <input type="hidden" name="documentId" value={doc.id} />
-                        <button className="a-btn danger small" type="submit">
-                          Withdraw
-                        </button>
-                      </form>
+                      <div className="a-row">
+                        <form
+                          action={sendCustomPdfWhatsapp.bind(null, id)}
+                          className="a-inline-form"
+                        >
+                          <input type="hidden" name="documentId" value={doc.id} />
+                          <button className="a-btn small" type="submit">
+                            Send via WhatsApp
+                          </button>
+                        </form>
+                        <form action={withdrawCustomPdf.bind(null, id)} className="a-inline-form">
+                          <input type="hidden" name="documentId" value={doc.id} />
+                          <button className="a-btn danger small" type="submit">
+                            Withdraw
+                          </button>
+                        </form>
+                      </div>
                     )}
                   </td>
                 </tr>

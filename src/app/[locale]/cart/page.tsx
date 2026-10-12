@@ -122,7 +122,11 @@ export default async function CartPage({ params }: { params: PageParams }) {
               {cart.groups.map((group) => (
                 <section key={group.kind} aria-labelledby={`bt-cart-grp-${group.kind}`}>
                   <h2 className="bt-cart-grouphead" id={`bt-cart-grp-${group.kind}`}>
-                    <Icon name={TRIP_KIND_ICON[group.kind]} size={17} color="var(--forest)" />
+                    <Icon
+                      name={TRIP_KIND_ICON[group.kind] ?? 'pdf'}
+                      size={17}
+                      color="var(--forest)"
+                    />
                     {t(`ct2_grp_${group.kind}`)}{' '}
                     <span className="muted">· {format.number(group.lines.length)}</span>
                   </h2>

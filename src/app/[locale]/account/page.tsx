@@ -17,6 +17,7 @@ import { db } from '@/db'
 import { users } from '@/db/schema'
 import { enabledSocialProviders } from '@/lib/auth/server'
 import { getUser } from '@/lib/auth/session'
+import { BLOCKED_MESSAGE_KEYS, type BlockedReason } from '@/lib/security/require'
 
 import { toLocale } from '../_seo-hreflang'
 import { accountMetadata } from './_lib/meta'
@@ -63,15 +64,13 @@ export default async function AccountProfilePage({
 
   // تحويل من `requireActiveUser()`: جهاز مُزال، أو حظر جهاز/IP/حساب، أو جلسة أنهتها الإدارة.
   const blocked =
-    query.blocked === 'banned' ||
-    query.blocked === 'device-revoked' ||
-    query.blocked === 'session-ended'
-      ? query.blocked
+    typeof query.blocked === 'string' && query.blocked in BLOCKED_MESSAGE_KEYS
+      ? (query.blocked as BlockedReason)
       : null
   const blockedNotice =
     blocked === null ? null : (
       <div role="alert" className="card" style={{ padding: 14, marginBottom: 18 }}>
-        {t(blocked === 'banned' ? 'acct_blocked_banned' : 'acct_blocked_device')}
+        {t(BLOCKED_MESSAGE_KEYS[blocked])}
       </div>
     )
 

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   StripePaymentProvider,
   encodeForm,
+  paymentMethodFromSession,
   sessionStatus,
   verifyStripeSignature,
   webhookType,
@@ -173,5 +174,48 @@ describe('StripePaymentProvider', () => {
       amountMinor: 3900,
       currency: 'USD',
     })
+  })
+})
+
+describe('payment method (22.7)', () => {
+  it('reports the wallet for Apple Pay and Google Pay card payments', () => {
+    expect(
+      paymentMethodFromSession({
+        id: 'cs',
+        payment_intent: {
+          id: 'pi',
+          payment_method: { type: 'card', card: { wallet: { type: 'apple_pay' } } },
+        },
+      }),
+    ).toBe('apple_pay')
+    expect(
+      paymentMethodFromSession({
+        id: 'cs',
+        payment_intent: {
+          id: 'pi',
+          latest_charge: {
+            payment_method_details: { type: 'card', card: { wallet: { type: 'google_pay' } } },
+          },
+        },
+      }),
+    ).toBe('google_pay')
+  })
+  it('reports a plain card and other method types', () => {
+    expect(
+      paymentMethodFromSession({
+        id: 'cs',
+        payment_intent: { id: 'pi', payment_method: { type: 'card', card: { wallet: null } } },
+      }),
+    ).toBe('card')
+    expect(
+      paymentMethodFromSession({
+        id: 'cs',
+        payment_intent: { id: 'pi', payment_method: { type: 'link' } },
+      }),
+    ).toBe('link')
+  })
+  it('returns null when nothing was expanded', () => {
+    expect(paymentMethodFromSession({ id: 'cs', payment_intent: 'pi_1' })).toBeNull()
+    expect(paymentMethodFromSession({ id: 'cs' })).toBeNull()
   })
 })

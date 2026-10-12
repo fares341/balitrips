@@ -85,12 +85,16 @@ export function authErrorKey(error: AuthError): string {
 
     // منع الدخول الأمني (src/lib/auth/server.ts). رسالة الحظر عامة عمداً:
     // لا نؤكد للمهاجم هل الحظر على الحساب أو الجهاز أو الشبكة.
+    // الوثيقة 14.2: رسالة الحد تقترح الترقية إلى باقة عائلية (انظر `authErrorAction`).
     case 'DEVICE_LIMIT_REACHED':
-      return 'auth_err_device_limit'
+      return 'auth_err_device_limit_upgrade'
     case 'DEVICE_PENDING_APPROVAL':
       return 'auth_err_device_pending'
     case 'ACCOUNT_BANNED':
       return 'auth_err_banned'
+    // الوثيقة 18.2: يصل فقط بعد كلمة مرور صحيحة، فالرسالة الواضحة لا تكشف شيئاً.
+    case 'ACCOUNT_SUSPENDED':
+      return 'auth_err_suspended'
 
     case 'INVALID_TOKEN':
     case 'TOKEN_EXPIRED':
@@ -99,4 +103,14 @@ export function authErrorKey(error: AuthError): string {
     default:
       return 'c_error'
   }
+}
+
+/**
+ * رابط يرافق رسالة الخطأ، إن وُجد: رسالة حد الأجهزة تقترح الترقية إلى باقة
+ * عائلية، فتعرض النافذة رابطاً إلى `/plans` بنص `labelKey`.
+ */
+export function authErrorAction(errorKey: string): { href: '/plans'; labelKey: string } | null {
+  return errorKey === 'auth_err_device_limit_upgrade'
+    ? { href: '/plans', labelKey: 'auth_err_device_limit_cta' }
+    : null
 }

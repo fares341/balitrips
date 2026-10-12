@@ -23,7 +23,7 @@ import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
-import { listSubscriptions, type SubscriptionStatus } from '../_lib/queries'
+import { listSubscriptions, type SubscriptionStatus, type SubscriptionView } from '../_lib/queries'
 import { FamilyPanel } from './family-panel'
 
 const PLANS_HREF = '/plans'
@@ -39,6 +39,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
 function presentation(kind: string): { titleKey: string; icon: IconName } {
   if (kind === 'map_access') return { titleKey: 'acct_subs_map', icon: 'pin' }
   if (kind === 'vip') return { titleKey: 'sub_vip_t', icon: 'gem' }
+  if (kind === 'basic') return { titleKey: 'acct_subs_basic', icon: 'pdf' }
   return { titleKey: 'acct_subs_t', icon: 'star' }
 }
 
@@ -46,6 +47,26 @@ const STATUS_KEY: Record<SubscriptionStatus, string> = {
   active: 'acct_subs_active',
   expired: 'acct_subs_expired',
   revoked: 'acct_subs_revoked',
+}
+
+type Translator = Awaited<ReturnType<typeof getTranslations>>
+
+/** الوثيقة 3.3: ملخص ما تمنحه الباقة — خريطة / VIP / PDF / رحلتي / المفضلة / الأجهزة. */
+function permissionSummary(perms: SubscriptionView['permissions'], t: Translator): string[] {
+  const parts = [
+    perms.vip
+      ? t('acct_subs_perm_vip')
+      : perms.map
+        ? t('acct_subs_perm_map')
+        : t('acct_subs_perm_nomap'),
+    perms.canDownloadPdf ? t('acct_subs_perm_pdf') : t('acct_subs_perm_pdf_view'),
+  ]
+  if (perms.canUseTrip) parts.push(t('acct_subs_perm_trip'))
+  if (perms.canSaveFavorites) parts.push(t('acct_subs_perm_favs'))
+  if (perms.deviceLimit !== null) {
+    parts.push(t('acct_subs_perm_devices', { count: perms.deviceLimit }))
+  }
+  return parts
 }
 
 const FAMILY_RESULT: Record<string, string> = {
@@ -138,10 +159,15 @@ export default async function AccountSubscriptionsPage({
                 </span>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{t(view.titleKey)}</div>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>
+                    {item.planName !== null ? pick(item.planName, locale) : t(view.titleKey)}
+                  </div>
                   <div className="muted" style={{ fontSize: 13 }}>
                     {detail}
                     {item.orderNumber !== null && ` · ${item.orderNumber}`}
+                  </div>
+                  <div className="muted" style={{ fontSize: 12.5, marginBlockStart: 4 }}>
+                    {permissionSummary(item.permissions, t).join(' · ')}
                   </div>
                 </div>
 

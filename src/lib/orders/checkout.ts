@@ -6,6 +6,7 @@ import {
   activities,
   activityTiers,
   cartItems,
+  customTripRequests,
   driverVehicles,
   itineraries,
   orderItems,
@@ -20,6 +21,11 @@ import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
 import { getPaymentProvider } from '@/lib/payments'
 import { cancelUnpaidOrder } from '@/lib/orders/expire'
+import {
+  customQuotePriceMap,
+  customRequestName,
+  loadPayableCustomQuotes,
+} from '@/lib/orders/custom-request'
 import {
   buildQuote,
   quoteMatchesExpectation,
@@ -74,7 +80,10 @@ export interface CheckoutResult {
 }
 
 /** Load exactly the catalog facts pricing needs for the items in a cart. */
-async function loadCatalog(items: readonly QuoteRequestItem[]): Promise<CatalogSnapshot> {
+async function loadCatalog(
+  items: readonly QuoteRequestItem[],
+  userId: string,
+): Promise<CatalogSnapshot> {
   const idsOf = (kind: string) =>
     items.filter((i) => i.kind === kind && i.refId).map((i) => i.refId as string)
 
@@ -157,11 +166,14 @@ async function loadCatalog(items: readonly QuoteRequestItem[]): Promise<CatalogS
   ])
 
   const planRows = await loadPlansById(idsOf('plan'))
+  // عروض الجداول المخصصة: للمالك وحده، مسعّرة وغير مدفوعة — وإلا unknown_item.
+  const customRows = await loadPayableCustomQuotes(idsOf('custom'), userId)
 
   // Unpublished rows are omitted entirely, so buildQuote reports them as
   // unknown_item rather than quietly selling something withdrawn from sale.
   return {
     plans: planPriceMap(planRows),
+    customRequests: customQuotePriceMap(customRows),
     activities: new Map(
       activityRows
         .filter((r) => r.status === 'published')
@@ -245,7 +257,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     parentItemId: r.parentItemId,
   }))
 
-  const catalog = await loadCatalog(requestItems)
+  const catalog = await loadCatalog(requestItems, input.userId)
   const quote = buildQuote(requestItems, catalog)
 
   if (!quote.ok) {
@@ -449,6 +461,18 @@ async function loadNameSnapshots(tx: Tx, quote: Quote): Promise<Map<string, Loca
       .from(plans)
       .where(inArray(plans.id, planIds))
     for (const row of planRows) out.set(row.id, row.name)
+  }
+  const customIds = byKind('custom')
+  if (customIds.length > 0) {
+    const customRows = await tx
+      .select({
+        id: customTripRequests.id,
+        startDate: customTripRequests.startDate,
+        endDate: customTripRequests.endDate,
+      })
+      .from(customTripRequests)
+      .where(inArray(customTripRequests.id, customIds))
+    for (const row of customRows) out.set(row.id, customRequestName(row))
   }
   // Driver lines carry no catalog id, so key the snapshot by kind.
   const driverLine = quote.lines.find((l) => l.kind === 'driver')

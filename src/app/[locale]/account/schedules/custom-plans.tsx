@@ -12,6 +12,9 @@ import { db } from '@/db'
 import { customTripDocuments, customTripRequests } from '@/db/schema'
 import type { Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { formatMoney } from '@/lib/money'
+
+import { payCustomQuote } from '../../custom/actions'
 
 export async function CustomPlans({
   userId,
@@ -56,6 +59,11 @@ export async function CustomPlans({
         {requests.map((request) => {
           const doc = latest.get(request.id)
           const statusKey = `cstatus_${request.status}`
+          // الوثيقة 13.1: عرض سعر قابل للدفع — مسعَّر، غير مدفوع، والطلب غير مغلق.
+          const quoted =
+            request.quoteMinor !== null && request.quoteMinor > 0 && request.quoteCurrency !== null
+          const paid = request.paidOrderId !== null
+          const closed = request.status === 'cancelled' || request.status === 'completed'
           return (
             <article key={request.id} className="card" style={{ padding: 16 }}>
               <div
@@ -72,7 +80,24 @@ export async function CustomPlans({
                     {t('acct_custom_status')}:{' '}
                     {t.has(statusKey as never) ? t(statusKey as never) : request.status}
                   </div>
+                  {quoted && request.quoteMinor !== null && request.quoteCurrency !== null && (
+                    <div style={{ fontSize: 13.5, marginTop: 4 }}>
+                      {t('acct_custom_quote')}:{' '}
+                      <strong>
+                        {formatMoney(request.quoteMinor, request.quoteCurrency, locale)}
+                      </strong>
+                      {paid && <span className="muted"> · {t('acct_custom_paid')}</span>}
+                    </div>
+                  )}
                 </div>
+                {quoted && !paid && !closed && (
+                  <form action={payCustomQuote}>
+                    <input type="hidden" name="requestId" value={request.id} />
+                    <button type="submit" className="btn btn-orange" style={{ minHeight: 40 }}>
+                      <Icon name="lock" size={15} color="#fff" /> {t('acct_custom_pay')}
+                    </button>
+                  </form>
+                )}
                 {doc && (
                   <div className="row" style={{ gap: 8 }}>
                     <LinkButton href={`/account/custom/${doc.id}/view`} variant="orange" size="sm">

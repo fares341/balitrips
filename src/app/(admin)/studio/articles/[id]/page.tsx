@@ -86,6 +86,21 @@ export default async function ArticleEditorPage({
                 <option value="driver">Driver</option>
               </Select>
             </Field>
+            <Field
+              label="Who can read"
+              htmlFor="requiredEntitlement"
+              hint="Title, excerpt and hero are always public. The body is sent only to readers with this plan; others see a paywall."
+            >
+              <Select
+                id="requiredEntitlement"
+                name="requiredEntitlement"
+                defaultValue={article?.requiredEntitlement ?? ''}
+              >
+                <option value="">Everyone</option>
+                <option value="map_access">Map plan holders</option>
+                <option value="vip">VIP</option>
+              </Select>
+            </Field>
           </div>
           <div className="a-row">
             <OptionField

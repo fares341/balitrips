@@ -49,6 +49,7 @@ export default async function ArticlesPage({
         title: articles.title,
         status: articles.status,
         bridge: articles.bridge,
+        requiredEntitlement: articles.requiredEntitlement,
         body: articles.body,
         publishedAt: articles.publishedAt,
         updatedAt: articles.updatedAt,
@@ -125,7 +126,12 @@ export default async function ArticlesPage({
                   <td>
                     <Link href={adminHref(`/articles/${row.id}`)}>
                       {pick(row.title, 'en', row.slug)}
-                    </Link>
+                    </Link>{' '}
+                    {row.requiredEntitlement ? (
+                      <Pill tone="warn">
+                        🔒 {row.requiredEntitlement === 'map_access' ? 'Map plan' : 'VIP'}
+                      </Pill>
+                    ) : null}
                     <div className="a-mono a-muted">{row.slug}</div>
                   </td>
                   <td>

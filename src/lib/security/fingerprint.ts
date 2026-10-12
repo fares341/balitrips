@@ -51,7 +51,49 @@ export function parseUserAgent(ua: string | null | undefined): ParsedAgent {
   return { browser, os }
 }
 
+export const DEVICE_TYPES = ['mobile', 'tablet', 'desktop'] as const
+export type DeviceType = (typeof DEVICE_TYPES)[number]
+
+/**
+ * نوع الجهاز من User-Agent (الوثيقة 3.2). iPad بنظام iPadOS 13+ يرسل User-Agent
+ * ماك افتراضياً فيظهر "desktop" — حدود معروفة لأي تحليل من جهة الخادم.
+ */
+export function parseDeviceType(ua: string | null | undefined): DeviceType {
+  const agent = ua ?? ''
+  if (/iPad|Tablet|PlayBook|Silk|Kindle/i.test(agent)) return 'tablet'
+  // أندرويد بلا "Mobile" = جهاز لوحي (اتفاقية Google لـ User-Agent).
+  if (/Android/i.test(agent) && !/Mobile/i.test(agent)) return 'tablet'
+  if (/Mobi|iPhone|iPod|Android|Windows Phone|IEMobile|Opera Mini/i.test(agent)) return 'mobile'
+  return 'desktop'
+}
+
+/** المتصفح + النظام + نوع الجهاز — لتفاصيل سجل النشاط. */
+export function describeAgent(
+  ua: string | null | undefined,
+): ParsedAgent & { deviceType: DeviceType } {
+  return { ...parseUserAgent(ua), deviceType: parseDeviceType(ua) }
+}
+
+/**
+ * هل الطلبان من نفس عائلة المتصفح ونظام التشغيل؟ اسم المتصفح والنظام فقط، بلا
+ * إصدارات (تحديث المتصفح لا يجعل الجلسة "مسروقة"). قيمة `Unknown` على أي طرف
+ * لا تُقارن — لا نحكم بالسرقة على ما لا نعرفه.
+ */
+export function sameAgentFamily(
+  stored: string | null | undefined,
+  current: string | null | undefined,
+): boolean {
+  if (!stored || !current) return true
+  const a = parseUserAgent(stored)
+  const b = parseUserAgent(current)
+  const browserDiffers =
+    a.browser !== 'Unknown' && b.browser !== 'Unknown' && a.browser !== b.browser
+  const osDiffers = a.os !== 'Unknown' && b.os !== 'Unknown' && a.os !== b.os
+  return !browserDiffers && !osDiffers
+}
+
 export interface DeviceIdentity extends ParsedAgent {
+  deviceType: DeviceType
   fingerprintHash: string
   /** لم تصل بصمة من المتصفح؛ الهوية مبنية على User-Agent وحده. */
   weak: boolean
@@ -72,6 +114,7 @@ export function deviceIdentity(
 
   return {
     ...agent,
+    deviceType: parseDeviceType(userAgent),
     fingerprintHash: createHash('sha256').update(material).digest('hex'),
     weak: client === null,
   }

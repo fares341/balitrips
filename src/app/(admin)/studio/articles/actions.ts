@@ -31,6 +31,9 @@ type Outcome = { ok: string } | { err: string }
  */
 const BRIDGES = ['', 'map', 'activities', 'driver'] as const
 
+/** "Who can read" (spec 2.3/2.4). '' = everyone, stored as NULL. */
+const READERS = ['', 'map_access', 'vip'] as const
+
 export async function saveArticle(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
 
@@ -58,6 +61,7 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
       categoryId: fuuidOrNull(form, 'categoryId', 'Category'),
       heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
       bridge: fenum(form, 'bridge', BRIDGES, '') || null,
+      requiredEntitlement: fenum(form, 'requiredEntitlement', READERS, '') || null,
       status,
     }
 

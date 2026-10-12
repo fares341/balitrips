@@ -6,24 +6,36 @@
  * that touches Postgres lives in ./index.ts.
  */
 
-export const ENTITLEMENT_KINDS = ['map_access', 'vip'] as const
+/**
+ * `basic` (الوثيقة 13.3 "باقة جدول فقط"): باقة لا تفتح الخريطة إطلاقاً، بل تحمل
+ * صلاحيات الباقة وحدها (تحميل PDF / رحلتي / المفضلة / الأجهزة).
+ */
+export const ENTITLEMENT_KINDS = ['basic', 'map_access', 'vip'] as const
 export type EntitlementKind = (typeof ENTITLEMENT_KINDS)[number]
+
+/** الأنواع التي تفتح شيئاً على الخريطة — وحدها يصح أن تكون متطلب مكان. */
+export const MAP_ENTITLEMENT_KINDS = ['map_access', 'vip'] as const
+export type MapEntitlementKind = (typeof MAP_ENTITLEMENT_KINDS)[number]
 
 /**
  * VIP is a superset of map access. The prototype wired both the $19 and the
  * $39 tier to the same handler, so VIP recorded nothing and gated nothing.
+ *
+ * `basic` implies nothing on the map: a PDF-only plan must never unlock a place.
  */
-const IMPLIES: Record<EntitlementKind, readonly EntitlementKind[]> = {
+const IMPLIES: Record<EntitlementKind, readonly MapEntitlementKind[]> = {
+  basic: [],
   map_access: ['map_access'],
   vip: ['vip', 'map_access'],
 }
 
 export function grants(held: EntitlementKind, required: EntitlementKind): boolean {
-  return IMPLIES[held].includes(required)
+  return (IMPLIES[held] as readonly EntitlementKind[]).includes(required)
 }
 
 export interface EntitlementSet {
-  kinds: Set<EntitlementKind>
+  /** Map kinds held (after implication). `basic` never appears here. */
+  kinds: Set<MapEntitlementKind>
   has(required: EntitlementKind): boolean
 }
 
@@ -34,15 +46,22 @@ export function emptyEntitlements(): EntitlementSet {
 }
 
 export function makeEntitlementSet(held: readonly EntitlementKind[]): EntitlementSet {
-  const kinds = new Set<EntitlementKind>()
+  const kinds = new Set<MapEntitlementKind>()
   for (const kind of held) {
     for (const implied of IMPLIES[kind]) kinds.add(implied)
   }
-  return { kinds, has: (required) => kinds.has(required) }
+  return {
+    kinds,
+    has: (required) => isMapEntitlementKind(required) && kinds.has(required),
+  }
 }
 
 export function isEntitlementKind(value: string): value is EntitlementKind {
   return (ENTITLEMENT_KINDS as readonly string[]).includes(value)
+}
+
+export function isMapEntitlementKind(value: string): value is MapEntitlementKind {
+  return (MAP_ENTITLEMENT_KINDS as readonly string[]).includes(value)
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +83,7 @@ export interface FullMapPlace {
   heroImageUrl: string | null
   activitySlug: string | null
   isFree: boolean
-  requiredEntitlement: EntitlementKind
+  requiredEntitlement: MapEntitlementKind
   /** Hidden Gem: يتطلب VIP دائماً (انظر `placeAccess`). */
   isHiddenGem: boolean
   regionKey: string | null
@@ -101,11 +120,12 @@ export function placeAccess(row: {
   isFree: boolean
   requiredEntitlement: string
   isHiddenGem?: boolean | null
-}): { isFree: boolean; requiredEntitlement: EntitlementKind } {
+}): { isFree: boolean; requiredEntitlement: MapEntitlementKind } {
   if (row.isHiddenGem === true) return { isFree: false, requiredEntitlement: 'vip' }
   return {
     isFree: row.isFree,
-    requiredEntitlement: isEntitlementKind(row.requiredEntitlement)
+    // 'basic' (أو أي قيمة ليست من أنواع الخريطة) متطلباً لمكان → vip، لا "مفتوح لـ basic".
+    requiredEntitlement: isMapEntitlementKind(row.requiredEntitlement)
       ? row.requiredEntitlement
       : 'vip',
   }
@@ -132,7 +152,7 @@ export function canSeePlace(
 export interface RedactedMapPlace {
   id: string
   locked: true
-  requiredEntitlement: EntitlementKind
+  requiredEntitlement: MapEntitlementKind
 }
 
 export type MapPlaceForClient = (FullMapPlace & { locked: false }) | RedactedMapPlace

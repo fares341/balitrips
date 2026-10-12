@@ -5,21 +5,29 @@ vi.mock('@/db', () => ({ db: {} }))
 const { compareHits, normalizeSearch, splitPlacePhrase } = await import('./places')
 const { combinePermissions, planExpiry } = await import('@/lib/entitlements/plans')
 
-const base = { distanceKm: null, inRegion: false, priority: 0, visible: true, saves: 0, name: 'A' }
+const base = {
+  distanceKm: null,
+  inRegion: false,
+  priority: 0,
+  sortOrder: 0,
+  vip: false,
+  popularity: 0,
+  name: 'A',
+}
 
-describe('result prioritisation (doc 2.4)', () => {
+describe('result prioritisation (doc 8.6)', () => {
   it('nearest first when a location is known', () => {
     const near = { ...base, distanceKm: 1, priority: 0 }
     const far = { ...base, distanceKm: 4, priority: 99 }
     expect([far, near].sort(compareHits)[0]).toBe(near)
   })
-  it('then inside the chosen area, then admin priority, then visible, then most saved', () => {
+  it('then inside the chosen area, then admin priority, then VIP, then most viewed/saved', () => {
     const inside = { ...base, inRegion: true }
     const promoted = { ...base, priority: 5 }
-    const locked = { ...base, visible: false, saves: 100 }
-    const popular = { ...base, saves: 7 }
-    const sorted = [locked, popular, promoted, inside].sort(compareHits)
-    expect(sorted).toEqual([inside, promoted, popular, locked])
+    const vip = { ...base, vip: true, popularity: 0 }
+    const popular = { ...base, popularity: 7 }
+    const sorted = [popular, vip, promoted, inside].sort(compareHits)
+    expect(sorted).toEqual([inside, promoted, vip, popular])
   })
 })
 
@@ -54,6 +62,7 @@ describe('search text', () => {
     expect(normalizeSearch('إطلالة')).toBe('اطلاله')
     expect(normalizeSearch('مَقهى')).toBe('مقهي')
     expect(normalizeSearch('KUTA')).toBe('kuta')
+    expect(normalizeSearch('Cafés')).toBe('cafes')
   })
   it('splits "X in Y" phrases in all three languages', () => {
     expect(splitPlacePhrase('cafes in kuta')).toEqual({ what: 'cafes', where: 'kuta' })

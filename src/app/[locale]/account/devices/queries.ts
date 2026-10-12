@@ -19,6 +19,7 @@ export async function listMyDevices(userId: string) {
       id: devices.id,
       browser: devices.browser,
       os: devices.os,
+      deviceType: devices.deviceType,
       firstSeenAt: devices.firstSeenAt,
       lastSeenAt: devices.lastSeenAt,
     })
@@ -40,6 +41,7 @@ export async function listMyLogins(userId: string, limit = 10) {
       at: activityLog.createdAt,
       browser: devices.browser,
       os: devices.os,
+      deviceType: devices.deviceType,
       details: activityLog.details,
     })
     .from(activityLog)
@@ -52,6 +54,30 @@ export async function listMyLogins(userId: string, limit = 10) {
     )
     .orderBy(desc(activityLog.createdAt))
     .limit(limit)
+}
+
+/**
+ * "Chrome · macOS" لسطر في سجل الدخول: من الجهاز المسجّل، وإلا من تفاصيل السجل
+ * (المحاولات الفاشلة والمرفوضة لا جهاز لها، لكنها تحفظ المتصفح والنظام).
+ */
+export function loginDevice(row: {
+  browser: string | null
+  os: string | null
+  deviceType: string | null
+  details: unknown
+}): { label: string; deviceType: string | null } | null {
+  const details =
+    row.details !== null && typeof row.details === 'object'
+      ? (row.details as { browser?: unknown; os?: unknown; deviceType?: unknown })
+      : {}
+  const text = (value: unknown) => (typeof value === 'string' && value !== '' ? value : null)
+  const browser = row.browser ?? text(details.browser)
+  const os = row.os ?? text(details.os)
+  if (browser === null && os === null) return null
+  return {
+    label: `${browser ?? '—'} · ${os ?? '—'}`,
+    deviceType: row.deviceType ?? text(details.deviceType),
+  }
 }
 
 /** "Denpasar, ID" من تفاصيل سجل الدخول (رؤوس الـ CDN)، أو null. */

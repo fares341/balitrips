@@ -51,7 +51,7 @@ export const plans = pgTable(
     priceMinor: priceMinor(),
     currency: currency(),
 
-    /** 'map_access' | 'vip' — ما تفتحه الباقة على الخريطة. */
+    /** 'basic' (بلا خريطة) | 'map_access' | 'vip' — ما تفتحه الباقة على الخريطة. */
     entitlementKind: varchar('entitlement_kind', { length: 32 }).notNull(),
     /** NULL = مدى الحياة. */
     durationDays: integer('duration_days'),

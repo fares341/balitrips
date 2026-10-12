@@ -26,6 +26,7 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: '/services', key: 'navr_services' },
   { href: '/driver', key: 'navr_driver2' },
   { href: '/activities', key: 'navr_act' },
+  { href: '/events', key: 'navr_events' },
   { href: '/itineraries', key: 'navr_itin' },
   /**
    * Packages were reachable only from a card on the home page and one link on

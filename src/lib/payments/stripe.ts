@@ -23,6 +23,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import {
+  normalisePaymentMethod,
   PaymentProviderError,
   type CreateIntentInput,
   type PaymentIntent,
@@ -62,7 +63,49 @@ interface StripeSession {
   payment_status?: 'paid' | 'unpaid' | 'no_payment_required'
   amount_total?: number | null
   currency?: string | null
-  payment_intent?: string | { id: string } | null
+  payment_intent?: string | StripeExpandedIntent | null
+}
+
+/** Only the fields `paymentMethodFromSession` reads, when expanded. */
+interface StripeWalletDetails {
+  type?: string | null
+  wallet?: { type?: string | null } | null
+}
+interface StripeExpandedIntent {
+  id: string
+  payment_method?:
+    | string
+    | { id?: string; type?: string | null; card?: StripeWalletDetails | null }
+    | null
+  latest_charge?:
+    | string
+    | {
+        id?: string
+        payment_method_details?: {
+          type?: string | null
+          card?: StripeWalletDetails | null
+        } | null
+      }
+    | null
+}
+
+/**
+ * طريقة الدفع من جلسة موسّعة (`payment_intent.payment_method` و
+ * `payment_intent.latest_charge`). محفظة البطاقة (Apple/Google Pay) تُفضَّل على
+ * 'card' لأنها ما يعنيه "طريقة الدفع" للفريق.
+ */
+export function paymentMethodFromSession(session: StripeSession): string | null {
+  const intent = session.payment_intent
+  if (!intent || typeof intent === 'string') return null
+
+  const pm = typeof intent.payment_method === 'object' ? intent.payment_method : null
+  const charge = typeof intent.latest_charge === 'object' ? intent.latest_charge : null
+  const details = charge?.payment_method_details ?? null
+
+  const type = pm?.type ?? details?.type ?? null
+  const wallet = pm?.card?.wallet?.type ?? details?.card?.wallet?.type ?? null
+  if (type === 'card' && wallet) return normalisePaymentMethod(wallet)
+  return normalisePaymentMethod(type)
 }
 
 export function sessionStatus(session: StripeSession): PaymentStatus {
@@ -312,6 +355,16 @@ export class StripePaymentProvider implements PaymentProvider {
       const current = await this.getIntent(providerPaymentId)
       return current.status === 'cancelled'
     }
+  }
+
+  async getPaymentMethod(providerPaymentId: string): Promise<string | null> {
+    const session = await this.call<StripeSession>(
+      'GET',
+      `/checkout/sessions/${encodeURIComponent(providerPaymentId)}?${encodeForm({
+        expand: ['payment_intent.payment_method', 'payment_intent.latest_charge'],
+      })}`,
+    )
+    return paymentMethodFromSession(session)
   }
 
   async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent> {
