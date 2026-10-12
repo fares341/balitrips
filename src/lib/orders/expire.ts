@@ -5,7 +5,7 @@
  * لا يلمس طلباً عليه دفعة ما زالت "حيّة" (ناجحة أو قيد التنفيذ).
  */
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { auditLog, entitlements, orderItems, orders, payments } from '@/db/schema'
@@ -47,7 +47,15 @@ export async function cancelUnpaidOrder(
     const [live] = await tx
       .select({ id: payments.id, status: payments.status })
       .from(payments)
-      .where(and(eq(payments.orderId, orderId), inArray(payments.status, [...LIVE_PAYMENT_STATES])))
+      .where(
+        and(
+          eq(payments.orderId, orderId),
+          inArray(payments.status, [...LIVE_PAYMENT_STATES]),
+          // صف حُجز في معاملة الطلب ولم تُنشأ له جلسة (توقف العملية بين الخطوتين):
+          // لا مال في الطريق، فلا يمنع الإلغاء.
+          isNotNull(payments.providerPaymentId),
+        ),
+      )
       .limit(1)
 
     if (live) {

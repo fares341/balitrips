@@ -90,8 +90,10 @@ export class SandboxPaymentProvider implements PaymentProvider {
     }
   }
 
-  async cancelIntent(): Promise<void> {
-    // Sandbox intents have no server-side state to close.
+  async cancelIntent(): Promise<boolean> {
+    // No server-side state to close, so it cannot be confirmed closed: the
+    // order is left to the hourly expiry sweep.
+    return false
   }
 
   async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent> {

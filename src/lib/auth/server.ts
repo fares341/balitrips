@@ -389,9 +389,10 @@ export const auth = betterAuth({
     /**
      * منع "الاستيلاء المسبق" على الحساب: مهاجم يسجّل ببريد الضحية وكلمة مرور
      * يعرفها (التأكيد غير إلزامي)، ثم تدخل الضحية بـ Google فيُربط حسابها بحسابه
-     * وتبقى كلمة مروره صالحة. عند ربط مزوّد اجتماعي (يثبت ملكية البريد) بحساب
-     * بريده غير مؤكَّد: تُحذف كلمة المرور الموجودة وتُنهى كل الجلسات، ويُعلَّم
-     * البريد مؤكَّداً. صاحب البريد الحقيقي يعيّن كلمة مرور جديدة بـ"نسيت كلمة المرور".
+     * وتبقى كلمة مروره صالحة. عند ربط مزوّد اجتماعي بحساب بريده غير مؤكَّد:
+     * تُحذف كلمة المرور الموجودة وتُنهى كل الجلسات (كاش الكوكي قد يُبقي جلسة
+     * قائمة حتى 5 دقائق). صاحب البريد يدخل بالمزوّد أو يعيّن كلمة مرور جديدة
+     * بـ"نسيت كلمة المرور". التأكيد نفسه يتركه Better Auth لما يقوله المزوّد.
      */
     account: {
       create: {
@@ -409,7 +410,6 @@ export const auth = betterAuth({
             .where(and(eq(accounts.userId, userId), eq(accounts.providerId, 'credential')))
             .returning({ id: accounts.id })
           await db.delete(sessions).where(eq(sessions.userId, userId))
-          await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, userId))
           if (removed.length > 0) {
             await logActivity({
               action: 'change_password',

@@ -14,13 +14,12 @@ import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireElevated } from '../../_lib/session'
 import {
   CHALLENGE_LOCK_MINUTES,
-  challengeLocked,
   clearChallengeFailures,
   consumeRecoveryCode,
   markSessionVerified,
   MAX_CHALLENGE_FAILURES,
   readSecret,
-  recordChallengeFailure,
+  reserveChallengeAttempt,
   storeRecoveryCodes,
   twoFactorStatus,
   verifyCodeOnce,
@@ -181,19 +180,21 @@ export async function answerChallenge(form: FormData): Promise<void> {
       throw new Error('Two-factor is not set up on this account yet.')
     }
 
-    if (await challengeLocked(session.userId)) {
+    const submitted = freq(form, 'code', 'Code')
+    const looksLikeRecovery = /[A-Za-z]/.test(submitted)
+
+    // المحاولة تُحجز (تُعدّ) قبل فحص الرمز، تحت قفل: طلبات متوازية كانت تمر
+    // كلها من فحص "مقفل؟" قبل أن يُسجَّل أي خطأ. النجاح يصفّر العدّاد.
+    const attempt = await reserveChallengeAttempt(session.userId)
+    if (attempt > MAX_CHALLENGE_FAILURES) {
       throw new Error(
         `Too many wrong codes. Try again in ${CHALLENGE_LOCK_MINUTES} minutes. Use a recovery code once the lock ends if your phone is unavailable.`,
       )
     }
 
-    const submitted = freq(form, 'code', 'Code')
-    const looksLikeRecovery = /[A-Za-z]/.test(submitted)
-
-    // خطأ في الرمز: يُعدّ. عند بلوغ الحد تُنهى هذه الجلسة ويُسجَّل القفل.
+    // رمز خاطئ: عند بلوغ الحد تُنهى هذه الجلسة ويُسجَّل القفل.
     const failed = async (message: string): Promise<never> => {
-      const count = await recordChallengeFailure(session.userId)
-      if (count >= MAX_CHALLENGE_FAILURES) {
+      if (attempt >= MAX_CHALLENGE_FAILURES) {
         await db.delete(sessions).where(eq(sessions.id, session.sessionId))
         await writeAudit({
           actor: session,
@@ -201,7 +202,7 @@ export async function answerChallenge(form: FormData): Promise<void> {
           entityType: 'user',
           entityId: session.userId,
           before: null,
-          after: { failures: count, lockMinutes: CHALLENGE_LOCK_MINUTES },
+          after: { failures: attempt, lockMinutes: CHALLENGE_LOCK_MINUTES },
         })
       }
       throw new Error(message)

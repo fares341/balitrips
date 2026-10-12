@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { loadPlansById, planPriceMap } from '@/lib/entitlements/plans'
@@ -269,7 +269,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   // جلسة دفع واحدة مفتوحة لكل عميل: الرجوع للدفع (زر "رجوع" أو تبويب ثانٍ) كان
   // يُنشئ جلسة Stripe جديدة بينما القديمة ما زالت قابلة للدفع 35 دقيقة — فيُدفع
   // الطلب مرتين. نغلق جلسات طلباته المعلّقة السابقة أولاً.
-  await closeOpenCheckouts(input.userId)
+  await closeOpenCheckouts(input.userId, input.idempotencyKey)
 
   const orderNumber = await nextOrderNumber()
   const provider = getPaymentProvider()
@@ -374,16 +374,21 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       orderNumber,
       amountMinor: quote.totalMinor,
       currency: quote.currency,
-      idempotencyKey: input.idempotencyKey,
+      // مفتاح المزوّد لكل طلب: إعادة المحاولة بعد فشل تُنشئ طلباً جديداً، ولو
+      // أُعيد مفتاح النموذج نفسه مع جسم مختلف لرفضه Stripe.
+      idempotencyKey: `order:${orderId}`,
       customer: input.customer,
       returnUrl: input.returnUrl,
       statementDescriptor: 'BALI TRIPS',
     })
   } catch (error) {
-    await db
-      .update(payments)
-      .set({ status: 'failed' })
-      .where(eq(payments.idempotencyKey, input.idempotencyKey))
+    // لم تُنشأ جلسة دفع: نحذف صف المفتاح (فتعيد ضغطة "ادفع" المحاولة بطلب جديد
+    // بدل التحويل لطلب ميت) ونلغي الطلب لتعود السعة فوراً.
+    await db.delete(payments).where(eq(payments.idempotencyKey, input.idempotencyKey))
+    await cancelUnpaidOrder(orderId, orderNumber, 'payment session could not be created').catch(
+      (cleanupError: unknown) =>
+        console.error('[checkout] cleanup after a failed intent', { orderId, cleanupError }),
+    )
     throw error
   }
 
@@ -483,7 +488,7 @@ function isUniqueViolation(error: unknown): boolean {
  * يغلق جلسات الدفع غير المدفوعة لطلبات العميل المعلّقة. أفضل جهد: فشل الإغلاق
  * لا يمنع الدفع الجديد (الطلب القديم ينتهي وحده بمهمة capacity.release-expired).
  */
-async function closeOpenCheckouts(userId: string): Promise<void> {
+async function closeOpenCheckouts(userId: string, currentKey: string): Promise<void> {
   const open = await db
     .select({
       id: payments.id,
@@ -498,7 +503,10 @@ async function closeOpenCheckouts(userId: string): Promise<void> {
       and(
         eq(orders.userId, userId),
         eq(orders.status, 'pending'),
-        inArray(payments.status, ['requires_action', 'processing']),
+        // `processing` = دفع قيد التسوية (تحويل مؤجل): المال في الطريق، لا يُغلق.
+        eq(payments.status, 'requires_action'),
+        // ضغطة مزدوجة بنفس المفتاح لا تُغلق طلب الضغطة الأولى.
+        ne(payments.idempotencyKey, currentKey),
       ),
     )
   if (open.length === 0) return
@@ -506,7 +514,8 @@ async function closeOpenCheckouts(userId: string): Promise<void> {
   for (const row of open) {
     if (row.providerPaymentId === null || row.provider !== provider.name) continue
     try {
-      await provider.cancelIntent?.(row.providerPaymentId)
+      const closed = (await provider.cancelIntent?.(row.providerPaymentId)) ?? false
+      if (!closed) continue
       await db.update(payments).set({ status: 'cancelled' }).where(eq(payments.id, row.id))
       // الطلب القديم يُلغى فوراً وتعود سعته — فيصل إشعار انتهاء الجلسة من
       // المزوّد على طلب ملغى أصلاً، فلا "فشل الدفع" مضلّل للعميل.

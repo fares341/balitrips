@@ -105,12 +105,13 @@ export interface PaymentProvider {
   refund(input: RefundInput): Promise<RefundResult>
 
   /**
-   * Close an unpaid intent so it can no longer be paid. Best effort: an intent
-   * that already settled or expired is left alone (no throw). Used when the
-   * same customer starts a new checkout, so two open payment pages for one
-   * cart cannot both be paid.
+   * Close an unpaid intent so it can no longer be paid. Resolves `true` only
+   * when the provider confirms the intent is now closed WITHOUT payment;
+   * `false` when it was paid, is settling, or its state is unknown. Callers
+   * cancel the order only on `true` — never on a guess, or a customer who
+   * paid in another tab ends up charged against a cancelled order.
    */
-  cancelIntent?(providerPaymentId: string): Promise<void>
+  cancelIntent?(providerPaymentId: string): Promise<boolean>
 
   /**
    * Verify the signature and parse. MUST throw on an invalid signature —

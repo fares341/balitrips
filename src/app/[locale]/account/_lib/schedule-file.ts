@@ -264,9 +264,21 @@ export async function deliverSchedule(
       : new NextResponse(null, { status: 429, headers: NO_STORE })
   }
 
+  // تسليم فشل (تخزين معطّل، ملف تالف) لا يُحتسب من حد التحميل/العرض.
+  const releaseReservation = () =>
+    db
+      .delete(activityLog)
+      .where(
+        and(
+          eq(activityLog.userId, user.id),
+          sql`${activityLog.details}->>'deliveryId' = ${deliveryId}`,
+        ),
+      )
+
   const source = await loadSource(resolved.objectKey)
   if (source === null) {
     console.error('[schedules] source PDF unavailable', resolved.objectKey)
+    await releaseReservation()
     return new NextResponse(null, { status: 503, headers: NO_STORE })
   }
 
@@ -281,6 +293,7 @@ export async function deliverSchedule(
   } catch (error) {
     // ملف تالف أو مشفّر: لا نسلّم نسخة بلا علامة.
     console.error('[schedules] watermarking failed', resolved.objectKey, error)
+    await releaseReservation()
     return new NextResponse(null, { status: 503, headers: NO_STORE })
   }
 

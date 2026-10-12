@@ -434,14 +434,14 @@ export async function removeActivityTier(activityId: string, tierId: string): Pr
       const [before] = await tx
         .select()
         .from(activityTiers)
-        .where(and(eq(activityTiers.id, tierId), isNull(activityTiers.deletedAt)))
+        .where(tierOf(activityId, tierId))
         .limit(1)
       if (!before) throw new Error('That tier no longer exists.')
 
       await tx
         .update(activityTiers)
         .set({ deletedAt: new Date(), status: 'draft', updatedAt: new Date() })
-        .where(eq(activityTiers.id, tierId))
+        .where(tierOf(activityId, tierId))
 
       await writeAudit(
         {

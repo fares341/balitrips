@@ -61,11 +61,54 @@ function live(now: Date) {
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
 
+/**
+ * من يشغل مقاعد فترة الصاحب `termId`: أفرادها (فعّال أو مدعو)، ودعوات معلّقة
+ * أُرسلت من فترة سابقة لنفس الباقة (تُقبل على الفترة الحيّة). كان العدّ على
+ * الفترة وحدها، فتختفي الدعوات القديمة بعد التجديد ويُدعى غيرها مكانها، ثم
+ * تُقبل القديمة فوق العدد.
+ */
+async function seatRows(
+  runner: Tx | typeof db,
+  ownerUserId: string,
+  termId: string,
+  planId: string | null,
+) {
+  return runner
+    .select({
+      id: planMembers.id,
+      email: planMembers.inviteEmail,
+      status: planMembers.status,
+    })
+    .from(planMembers)
+    .innerJoin(entitlements, eq(entitlements.id, planMembers.ownerEntitlementId))
+    .where(
+      and(
+        eq(planMembers.ownerUserId, ownerUserId),
+        ne(planMembers.status, 'removed'),
+        planId === null
+          ? eq(planMembers.ownerEntitlementId, termId)
+          : or(
+              eq(planMembers.ownerEntitlementId, termId),
+              and(
+                eq(planMembers.status, 'invited'),
+                eq(entitlements.planId, planId),
+                isNull(entitlements.revokedAt),
+              ),
+            ),
+      ),
+    )
+}
+
 /** باقات المستخدم العائلية الحيّة التي يملكها (لا المُشاركة معه) وأفرادها. */
 export async function listFamilyPlans(ownerUserId: string): Promise<FamilyPlanView[]> {
   const now = new Date()
   const owned = await db
-    .select({ id: entitlements.id, name: plans.name, maxMembers: plans.maxMembers })
+    .select({
+      id: entitlements.id,
+      planId: entitlements.planId,
+      name: plans.name,
+      maxMembers: plans.maxMembers,
+    })
     .from(entitlements)
     .innerJoin(plans, eq(plans.id, entitlements.planId))
     .where(
@@ -78,36 +121,18 @@ export async function listFamilyPlans(ownerUserId: string): Promise<FamilyPlanVi
     )
   if (owned.length === 0) return []
 
-  const memberRows = await db
-    .select({
-      id: planMembers.id,
-      owner: planMembers.ownerEntitlementId,
-      email: planMembers.inviteEmail,
-      status: planMembers.status,
-    })
-    .from(planMembers)
-    .where(
-      and(
-        inArray(
-          planMembers.ownerEntitlementId,
-          owned.map((row) => row.id),
-        ),
-        ne(planMembers.status, 'removed'),
-      ),
-    )
-
-  return owned.map((row) => ({
-    entitlementId: row.id,
-    planName: row.name,
-    maxMembers: row.maxMembers,
-    members: memberRows
-      .filter((member) => member.owner === row.id)
-      .map((member) => ({
+  return Promise.all(
+    owned.map(async (row) => ({
+      entitlementId: row.id,
+      planName: row.name,
+      maxMembers: row.maxMembers,
+      members: (await seatRows(db, ownerUserId, row.id, row.planId)).map((member) => ({
         id: member.id,
         email: member.email,
         status: member.status === 'active' ? ('active' as const) : ('invited' as const),
       })),
-  }))
+    })),
+  )
 }
 
 /** يمنح فرداً صلاحية منسوخة من صلاحية الصاحب. داخل معاملة. */
@@ -218,15 +243,7 @@ export async function inviteFamilyMember(
       return { ok: false as const, error: 'self' as const }
     }
 
-    const existing = await tx
-      .select({ email: planMembers.inviteEmail })
-      .from(planMembers)
-      .where(
-        and(
-          eq(planMembers.ownerEntitlementId, ownerEntitlementId),
-          ne(planMembers.status, 'removed'),
-        ),
-      )
+    const existing = await seatRows(tx, ownerUserId, ownerEntitlementId, owner.entitlement.planId)
     if (existing.some((row) => row.email === email)) {
       return { ok: false as const, error: 'duplicate' as const }
     }
@@ -300,7 +317,7 @@ export async function inviteFamilyMember(
 
 export type AcceptResult =
   | { ok: true }
-  | { ok: false; error: 'invalid' | 'wrong_account' | 'expired'; email?: string }
+  | { ok: false; error: 'invalid' | 'wrong_account' | 'expired' | 'full'; email?: string }
 
 /**
  * قبول دعوة من رابط البريد. يجب أن يكون المستخدم مسجّلاً بالبريد المدعو نفسه:
@@ -341,6 +358,21 @@ export async function acceptFamilyInvite(
       current = terms.find((term) => term.startsAt <= now)
     }
     if (current === undefined) return { ok: false as const, error: 'expired' as const }
+
+    const [plan] =
+      current.planId === null
+        ? []
+        : await tx
+            .select({ maxMembers: plans.maxMembers })
+            .from(plans)
+            .where(eq(plans.id, current.planId))
+            .limit(1)
+    const others = (await seatRows(tx, current.userId, current.id, current.planId)).filter(
+      (seat) => seat.id !== row.invite.id,
+    )
+    if (others.length >= (plan?.maxMembers ?? 1) - 1) {
+      return { ok: false as const, error: 'full' as const }
+    }
 
     const memberEntitlementId = await grantMember(tx, current, userId)
     await tx

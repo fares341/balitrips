@@ -232,12 +232,8 @@ async function readFailures(runner: Tx | typeof db, userId: string): Promise<num
   return Number.parseInt(row.value, 10) || 0
 }
 
-export async function challengeLocked(userId: string): Promise<boolean> {
-  return (await readFailures(db, userId)) >= MAX_CHALLENGE_FAILURES
-}
-
-/** يزيد العدّاد ذرّياً ويعيد العدد الجديد. النافذة تتجدد مع كل خطأ. */
-export async function recordChallengeFailure(userId: string): Promise<number> {
+/** يحجز محاولة: يزيد العدّاد ذرّياً ويعيد العدد الجديد. النافذة تتجدد مع كل محاولة. */
+export async function reserveChallengeAttempt(userId: string): Promise<number> {
   const identifier = `${FAIL_PREFIX}${userId}`
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${identifier}))`)

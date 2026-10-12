@@ -6,7 +6,15 @@ import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, payments, planMembers, refunds } from '@/db/schema'
+import {
+  entitlements,
+  itineraries,
+  orderItems,
+  orders,
+  payments,
+  planMembers,
+  refunds,
+} from '@/db/schema'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
@@ -166,18 +174,27 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         // استرداد سطر واحد يسحب ما منحه هذا السطر فقط: باقة → صفوفها (ونسخ
         // أفراد عائلتها، نفس plan_id)؛ جدول/مكان → الوصول للخريطة بلا باقة.
         // كان يسحب كل صلاحيات الطلب، ومنها خريطة جدولٍ آخر مدفوع.
-        await tx
-          .update(entitlements)
-          .set({ revokedAt: new Date(), revokedReason: `line refunded by ${session.email}` })
-          .where(
-            and(
-              eq(entitlements.grantedByOrderId, orderId),
-              isNull(entitlements.revokedAt),
-              line.kind === 'plan' && line.refId
-                ? eq(entitlements.planId, line.refId)
-                : isNull(entitlements.planId),
-            ),
-          )
+        // جدول/مكان: صف الخريطة (بلا باقة) واحد لكل نوع (map_access/vip) في الطلب
+        // كله. لا يُسحب ما دام سطر آخر غير مسترد في الطلب يمنح النوع نفسه.
+        const kindsToRevoke =
+          line.kind === 'plan' ? null : await mapKindsLostWith(tx, line.id, lines)
+        if (line.kind === 'plan' || (kindsToRevoke !== null && kindsToRevoke.length > 0)) {
+          await tx
+            .update(entitlements)
+            .set({ revokedAt: new Date(), revokedReason: `line refunded by ${session.email}` })
+            .where(
+              and(
+                eq(entitlements.grantedByOrderId, orderId),
+                isNull(entitlements.revokedAt),
+                line.kind === 'plan' && line.refId
+                  ? eq(entitlements.planId, line.refId)
+                  : and(
+                      isNull(entitlements.planId),
+                      inArray(entitlements.kind, kindsToRevoke ?? []),
+                    ),
+              ),
+            )
+        }
         if (line.kind === 'plan' && line.refId) {
           await tx
             .update(planMembers)
@@ -470,4 +487,46 @@ export async function issueReceipt(orderId: string): Promise<void> {
     outcome = { err: errorMessage(error) }
   }
   redirect(withOutcome(detail(orderId), outcome))
+}
+
+type RefundTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * أنواع الوصول للخريطة (بلا باقة) التي يفقدها الطلب باسترداد السطر `lineId`:
+ * نوع السطر (VIP إن كان جدول VIP، وإلا map_access)، ما لم يبقَ سطر جدول آخر
+ * غير مسترد كلياً "يشمل الخريطة" بالنوع نفسه. سطر "place" قديم يمنح map_access.
+ */
+async function mapKindsLostWith(
+  tx: RefundTx,
+  lineId: string,
+  lines: readonly (typeof orderItems.$inferSelect)[],
+): Promise<string[]> {
+  const itineraryIds = lines
+    .filter((row) => row.kind === 'itinerary' && row.refId !== null)
+    .map((row) => row.refId as string)
+  const flags =
+    itineraryIds.length === 0
+      ? []
+      : await tx
+          .select({
+            id: itineraries.id,
+            includesMap: itineraries.includesMap,
+            isVip: itineraries.isVip,
+          })
+          .from(itineraries)
+          .where(inArray(itineraries.id, itineraryIds))
+  const kindOf = (row: typeof orderItems.$inferSelect): string | null => {
+    if (row.kind === 'place') return 'map_access'
+    if (row.kind !== 'itinerary') return null
+    const flag = flags.find((item) => item.id === row.refId)
+    if (!flag?.includesMap) return null
+    return flag.isVip ? 'vip' : 'map_access'
+  }
+  const target = lines.find((row) => row.id === lineId)
+  const lost = target ? kindOf(target) : null
+  if (lost === null) return []
+  const stillCovered = lines.some(
+    (row) => row.id !== lineId && row.refundedMinor < row.lineTotalMinor && kindOf(row) === lost,
+  )
+  return stillCovered ? [] : [lost]
 }

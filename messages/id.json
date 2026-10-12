@@ -559,6 +559,7 @@
   "fam_add": "Tambah anggota",
   "fam_added": "Ditambahkan. Mereka bisa membuka peta dari akunnya sekarang.",
   "fam_email": "Email anggota",
+  "fam_err_accept_full": "Paket keluarga ini sudah penuh. Tanyakan kepada orang yang mengundang Anda.",
   "fam_err_duplicate": "Orang itu sudah ada di paket Anda.",
   "fam_err_expired": "Paket yang dibagikan kepada Anda sudah berakhir.",
   "fam_err_full": "Paket Anda tidak memiliki tempat tersisa.",

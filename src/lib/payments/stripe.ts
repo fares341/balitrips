@@ -297,17 +297,20 @@ export class StripePaymentProvider implements PaymentProvider {
     }
   }
 
-  async cancelIntent(providerPaymentId: string): Promise<void> {
+  async cancelIntent(providerPaymentId: string): Promise<boolean> {
     try {
-      await this.call(
+      const session = await this.call<StripeSession>(
         'POST',
         `/checkout/sessions/${encodeURIComponent(providerPaymentId)}/expire`,
         {},
       )
+      return sessionStatus(session) === 'cancelled'
     } catch (error) {
-      // Already complete or expired: Stripe answers 400 — nothing to close.
-      if (error instanceof PaymentProviderError && !error.retryable) return
-      throw error
+      if (!(error instanceof PaymentProviderError) || error.retryable) throw error
+      // 400 = not open any more. Paid, settling, or already expired? Ask —
+      // only "expired without payment" is safe to treat as closed.
+      const current = await this.getIntent(providerPaymentId)
+      return current.status === 'cancelled'
     }
   }
 

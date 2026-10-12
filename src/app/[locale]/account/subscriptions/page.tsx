@@ -53,6 +53,7 @@ const FAMILY_RESULT: Record<string, string> = {
   invalid: 'fam_err_invalid',
   wrong_account: 'fam_err_wrong_account',
   expired: 'fam_err_expired',
+  full: 'fam_err_accept_full',
 }
 
 export default async function AccountSubscriptionsPage({
