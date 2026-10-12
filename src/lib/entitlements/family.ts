@@ -123,7 +123,8 @@ async function grantMember(
       kind: owner.kind,
       grantedByOrderId: owner.grantedByOrderId,
       planId: owner.planId,
-      startsAt: new Date(),
+      // تجديد مؤجَّل للصاحب يبدأ في المستقبل: الفرد يبدأ معه، لا قبله.
+      startsAt: owner.startsAt > new Date() ? owner.startsAt : new Date(),
       expiresAt: owner.expiresAt,
       deviceLimit: owner.deviceLimit,
       sharedByUserId: owner.userId,
@@ -350,4 +351,70 @@ export async function removeFamilyMember(
     }
     return true
   })
+}
+
+/**
+ * تجديد باقة عائلية: صلاحية الصاحب الجديدة صف جديد، فينقل إليه أفراده (الوثيقة
+ * 13.3). الأعضاء الفعّالون يحصلون على نسخة بمدة التجديد نفسها، والدعوات
+ * المعلّقة تُنقل للصف الجديد (فيبقى رابطها صالحاً). يحترم حد الأفراد الحالي
+ * للباقة. داخل معاملة الدفع نفسها — لا لحظة يكون فيها الصاحب مجدِّداً والأفراد خارجها.
+ */
+export async function carryOverFamily(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  renewal: typeof entitlements.$inferSelect,
+): Promise<number> {
+  if (renewal.planId === null || renewal.sharedByUserId !== null) return 0
+  const [plan] = await tx
+    .select({ maxMembers: plans.maxMembers })
+    .from(plans)
+    .where(eq(plans.id, renewal.planId))
+    .limit(1)
+  if (!plan || plan.maxMembers <= 1) return 0
+
+  // آخر صلاحية سابقة للصاحب على نفس الباقة (غير مسحوبة).
+  const [previous] = await tx
+    .select({ id: entitlements.id })
+    .from(entitlements)
+    .where(
+      and(
+        eq(entitlements.userId, renewal.userId),
+        eq(entitlements.planId, renewal.planId),
+        isNull(entitlements.sharedByUserId),
+        isNull(entitlements.revokedAt),
+        ne(entitlements.id, renewal.id),
+      ),
+    )
+    .orderBy(sql`${entitlements.expiresAt} desc nulls first`)
+    .limit(1)
+  if (!previous) return 0
+
+  const members = await tx
+    .select()
+    .from(planMembers)
+    .where(and(eq(planMembers.ownerEntitlementId, previous.id), ne(planMembers.status, 'removed')))
+    .orderBy(sql`${planMembers.status} = 'active' desc`, planMembers.createdAt)
+
+  let moved = 0
+  for (const member of members.slice(0, plan.maxMembers - 1)) {
+    if (member.status === 'invited') {
+      await tx
+        .update(planMembers)
+        .set({ ownerEntitlementId: renewal.id })
+        .where(eq(planMembers.id, member.id))
+    } else if (member.memberUserId !== null) {
+      const memberEntitlementId = await grantMember(tx, renewal, member.memberUserId)
+      await tx.insert(planMembers).values({
+        ownerEntitlementId: renewal.id,
+        ownerUserId: renewal.userId,
+        inviteEmail: member.inviteEmail,
+        memberUserId: member.memberUserId,
+        memberEntitlementId,
+        status: 'active',
+      })
+    } else {
+      continue
+    }
+    moved += 1
+  }
+  return moved
 }

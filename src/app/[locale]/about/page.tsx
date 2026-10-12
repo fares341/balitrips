@@ -37,6 +37,7 @@ import {
   listRegions,
   reviewsForActivity,
 } from '@/lib/content/queries'
+import { trustStats } from '@/lib/content/stats'
 import type { ReviewDto } from '@/lib/content/types'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
@@ -96,12 +97,13 @@ export default async function AboutPage({ params }: { params: PageParams }) {
 
   const locale = toLocale(raw)
 
-  const [t, format, regions, landmarks, topActivities] = await Promise.all([
+  const [t, format, regions, landmarks, topActivities, trust] = await Promise.all([
     getTranslations({ locale }),
     getFormatter({ locale }),
     listRegions(),
     listLandmarks({ limit: WALL_SIZE + 1 }),
     listActivities({ sort: 'top', limit: REVIEW_SOURCE_COUNT, locale }),
+    trustStats(),
   ])
 
   const reviewGroups = await Promise.all(
@@ -115,20 +117,23 @@ export default async function AboutPage({ params }: { params: PageParams }) {
   )
 
   /**
-   * Trust figures.
-   *
-   * Only the region count has a query behind it. The other three are brand
-   * claims carried over verbatim from the design — the same call the homepage
-   * makes — and should be replaced with real aggregates before launch. They go
-   * through the locale formatter rather than the handoff's literal "500+" and
-   * "12k+" strings, so Arabic gets Arabic-Indic digits and each locale gets its
-   * own compact notation.
+   * Trust figures — all measured (src/lib/content/stats.ts). A figure below
+   * its meaningful minimum is left out rather than padded with a design claim.
    */
   const stats: readonly { value: string; label: string }[] = [
-    { value: `${format.number(500)}+`, label: t('ab_stat1') },
+    ...(trust.places > 0 ? [{ value: format.number(trust.places), label: t('ab_stat1') }] : []),
     { value: format.number(regions.length), label: t('ab_stat2') },
-    { value: `${format.number(4.9, { maximumFractionDigits: 1 })}★`, label: t('ab_stat3') },
-    { value: `${format.number(12000, { notation: 'compact' })}+`, label: t('ab_stat4') },
+    ...(trust.rating !== null
+      ? [
+          {
+            value: `${format.number(trust.rating, { maximumFractionDigits: 1 })}★`,
+            label: t('ab_stat3'),
+          },
+        ]
+      : []),
+    ...(trust.trips !== null
+      ? [{ value: format.number(trust.trips, { notation: 'compact' }), label: t('ab_stat4') }]
+      : []),
   ]
 
   return (

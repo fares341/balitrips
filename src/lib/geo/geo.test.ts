@@ -29,3 +29,30 @@ describe('geo', () => {
     expect(parseLatLon('95', '1')).toBeNull()
   })
 })
+
+describe('suggestRoute', async () => {
+  const { routeLengthKm, suggestRoute } = await import('./index')
+  const ULUWATU = { lat: -8.8291, lon: 115.0849 }
+  const SANUR = { lat: -8.6905, lon: 115.2626 }
+
+  it('keeps the first stop and visits every place once', () => {
+    const input = [KUTA, UBUD, SEMINYAK, ULUWATU, SANUR]
+    const route = suggestRoute(input)
+    expect(route[0]).toBe(KUTA)
+    expect(new Set(route)).toEqual(new Set(input))
+  })
+
+  it('is never longer than the order the user typed', () => {
+    const input = [KUTA, UBUD, ULUWATU, SEMINYAK, SANUR]
+    expect(routeLengthKm(suggestRoute(input))).toBeLessThanOrEqual(routeLengthKm(input))
+  })
+
+  it('goes to the nearest place next (Kuta → Seminyak, not Ubud)', () => {
+    expect(suggestRoute([KUTA, UBUD, SEMINYAK])[1]).toBe(SEMINYAK)
+  })
+
+  it('handles empty and tiny inputs', () => {
+    expect(suggestRoute([])).toEqual([])
+    expect(suggestRoute([KUTA])).toEqual([KUTA])
+  })
+})

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { clientIp, normalizeIp, requestCountry } from './ip'
+import { clientIp, normalizeIp, requestCity, requestCountry } from './ip'
 
 const bag = (values: Record<string, string>) => new Headers(values)
 
@@ -45,5 +45,15 @@ describe('requestCountry', () => {
     expect(requestCountry(new Headers({ 'cf-ipcountry': 'XX' }))).toBeNull()
     expect(requestCountry(new Headers({ 'cf-ipcountry': 'not-a-country' }))).toBeNull()
     expect(requestCountry(new Headers())).toBeNull()
+  })
+})
+
+describe('requestCity', () => {
+  it('reads, decodes and sanitises the CDN city header', () => {
+    expect(requestCity(new Headers({ 'cf-ipcity': 'Denpasar' }))).toBe('Denpasar')
+    expect(requestCity(new Headers({ 'cf-ipcity': 'S%C3%A3o%20Paulo' }))).toBe('São Paulo')
+    expect(requestCity(new Headers({ 'cf-ipcity': '<script>' }))).toBe('script')
+    expect(requestCity(new Headers({ 'cf-ipcity': '%E0%A4%A' }))).toBeNull()
+    expect(requestCity(new Headers())).toBeNull()
   })
 })

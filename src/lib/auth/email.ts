@@ -28,7 +28,12 @@
  * in plain text and in every database backup taken during that window.
  */
 
-import { sendEmail as sendViaTransport, renderPasswordResetEmail, toMailLocale } from '@/lib/email'
+import {
+  sendEmail as sendViaTransport,
+  renderPasswordResetEmail,
+  renderWelcomeEmail,
+  toMailLocale,
+} from '@/lib/email'
 import type { EmailMessage } from '@/lib/email'
 import type { Locale } from '@/i18n/config'
 
@@ -66,5 +71,28 @@ export async function sendPasswordResetEmail(input: {
     url: input.url,
   })
 
+  await sendViaTransport({ to: input.to, ...rendered })
+}
+
+/**
+ * تأكيد البريد (رسالة الترحيب مع زر "أكّد بريدي").
+ *
+ * التأكيد لا يمنع الدخول (`requireEmailVerification: false`) لكنه يجعل
+ * `email_verified_at` حقيقياً: الباقة العائلية تضيف الحساب المؤكَّد مباشرة.
+ * تُرسل مباشرة لا عبر الطابور — الرابط يحمل رمزاً صالحاً (انظر الملاحظة أعلاه).
+ */
+export async function sendVerificationEmail(input: {
+  to: string
+  name: string | null
+  url: string
+  siteUrl: string
+  locale: Locale
+}): Promise<void> {
+  const rendered = renderWelcomeEmail({
+    locale: input.locale,
+    name: input.name,
+    verifyUrl: input.url,
+    siteUrl: input.siteUrl,
+  })
   await sendViaTransport({ to: input.to, ...rendered })
 }

@@ -22,6 +22,7 @@ import { toLocale } from '../_seo-hreflang'
 import { accountMetadata } from './_lib/meta'
 import { ProfileForm } from './profile-form'
 import { SignedOutPane } from './signed-out-pane'
+import { VerifyEmailNotice } from './verify-email-notice'
 
 type PageParams = Promise<{ locale: string }>
 type PageSearch = Promise<Record<string, string | string[] | undefined>>
@@ -85,6 +86,14 @@ export default async function AccountProfilePage({
 
   const format = await getFormatter({ locale })
 
+  // بعد رابط التأكيد. Better Auth يُلحق `?error=` بالرابط كما هو، فقد يصل
+  // الخطأ داخل قيمة `verified` (`1?error=invalid_token`) أو كمعامل مستقل.
+  const verifiedParam = typeof query.verified === 'string' ? query.verified : ''
+  const badVerifyLink =
+    query.error === 'invalid_token' ||
+    query.error === 'token_expired' ||
+    /error=(invalid_token|token_expired)/.test(verifiedParam)
+
   // "Member since" is a real fact about the row, not the handoff's
   // `user.since || "Jun 2026"` — which printed June 2026 for every account
   // ever created.
@@ -101,6 +110,17 @@ export default async function AccountProfilePage({
   return (
     <section aria-labelledby="bt-acct-profile-h">
       {blockedNotice}
+      {verifiedParam === '1' && user.emailVerified && (
+        <div role="status" className="card" style={{ padding: 14, marginBottom: 18 }}>
+          {t('acct_verify_done')}
+        </div>
+      )}
+      {badVerifyLink ? (
+        <div role="alert" className="card" style={{ padding: 14, marginBottom: 18 }}>
+          {t('acct_verify_bad_link')}
+        </div>
+      ) : null}
+      {!user.emailVerified && <VerifyEmailNotice email={user.email} />}
       <div className="bt-acct-sechead">
         <h1 id="bt-acct-profile-h">{t('acct_profile_t')}</h1>
       </div>

@@ -58,3 +58,54 @@ export function parseLatLon(lat: unknown, lon: unknown): LatLon | null {
   if (la < -90 || la > 90 || lo < -180 || lo > 180) return null
   return { lat: la, lon: lo }
 }
+
+/** طول مسار يمر بالنقاط بالترتيب (كم). */
+export function routeLengthKm(points: readonly LatLon[]): number {
+  let total = 0
+  for (let i = 1; i < points.length; i += 1) {
+    total += haversineKm(points[i - 1] as LatLon, points[i] as LatLon)
+  }
+  return total
+}
+
+/**
+ * ترتيب أماكن اليوم في مسار قصير (الوثيقة 12.3: "ترتيب الأماكن حسب المسافة"،
+ * "اقتراح مسار يومي").
+ *
+ * يبدأ من النقطة الأولى (ما وضعه المستخدم أولاً — فندقه غالباً)، ثم الأقرب
+ * فالأقرب، ثم تحسين 2-opt يزيل تقاطعات المسار. مسار مفتوح (لا عودة للبداية).
+ * أمثل تماماً لا يلزم: يوم سياحي فيه أماكن قليلة، والفرق دقائق قيادة.
+ */
+export function suggestRoute<T extends LatLon>(points: readonly T[]): T[] {
+  if (points.length <= 2) return [...points]
+  const [start, ...rest] = points as [T, ...T[]]
+  const route: T[] = [start]
+  const left = [...rest]
+  while (left.length > 0) {
+    const last = route[route.length - 1] as T
+    let best = 0
+    for (let i = 1; i < left.length; i += 1) {
+      if (haversineKm(last, left[i] as T) < haversineKm(last, left[best] as T)) best = i
+    }
+    route.push(left.splice(best, 1)[0] as T)
+  }
+
+  // 2-opt على مسار مفتوح بنقطة بداية ثابتة: عكس أي مقطع يقصّر المسار.
+  const d = (a: number, b: number) => haversineKm(route[a] as T, route[b] as T)
+  let improved = true
+  for (let pass = 0; improved && pass < 50; pass += 1) {
+    improved = false
+    for (let i = 1; i < route.length - 1; i += 1) {
+      for (let k = i + 1; k < route.length; k += 1) {
+        const before = d(i - 1, i) + (k + 1 < route.length ? d(k, k + 1) : 0)
+        const after = d(i - 1, k) + (k + 1 < route.length ? d(i, k + 1) : 0)
+        if (after + 1e-9 < before) {
+          const segment = route.slice(i, k + 1).reverse()
+          route.splice(i, segment.length, ...segment)
+          improved = true
+        }
+      }
+    }
+  }
+  return route
+}

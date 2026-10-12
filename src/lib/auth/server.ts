@@ -60,11 +60,11 @@ import {
   registerSignInDevice,
 } from '@/lib/security/devices'
 import { DEVICE_COOKIE, deviceIdentity } from '@/lib/security/fingerprint'
-import { clientIp, requestCountry } from '@/lib/security/ip'
+import { clientIp, requestCity, requestCountry } from '@/lib/security/ip'
 
 import { looksLikeEmail, normalizePhone } from './phone'
 
-import { sendPasswordResetEmail, toMailLocale } from './email'
+import { sendPasswordResetEmail, sendVerificationEmail, toMailLocale } from './email'
 
 /* --------------------------------------------------------------------------
    Environment
@@ -194,6 +194,30 @@ export const auth = betterAuth({
         name: user.name ?? null,
         url,
         locale: toMailLocale((user as { locale?: unknown }).locale),
+      })
+    },
+  },
+
+  /* ---- Email verification --------------------------------------------- */
+
+  /**
+   * رابط تأكيد البريد عند التسجيل (ومن صفحة الحساب لإعادة الإرسال). لا يمنع
+   * الدخول؛ بعد التأكيد يعود المستخدم لصفحة حسابه بلغته.
+   */
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: DAY,
+    sendVerificationEmail: async ({ user, token }) => {
+      const locale = toMailLocale((user as { locale?: unknown }).locale)
+      const callbackURL = `/${locale}/account?verified=1`
+      const url = `${BASE_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent(callbackURL)}`
+      await sendVerificationEmail({
+        to: user.email,
+        name: user.name ?? null,
+        url,
+        siteUrl: `${BASE_URL}/${locale}`,
+        locale,
       })
     },
   },
@@ -446,6 +470,7 @@ export const auth = betterAuth({
             details: {
               ...(ctx?.path ? { via: ctx.path } : {}),
               country: ctx?.headers ? requestCountry(ctx.headers) : null,
+              city: ctx?.headers ? requestCity(ctx.headers) : null,
             },
           })
         },
@@ -517,6 +542,11 @@ export const auth = betterAuth({
          * فشل الطابور لا يُفشل التسجيل.
          */
         after: async (user) => {
+          // التسجيل بالبريد: رسالة الترحيب هي رسالة التأكيد (`emailVerification`)،
+          // فلا نرسل رسالتين. حساب Google/Apple مؤكَّد أصلاً: ترحيب عادي.
+          const record = user as { emailVerified?: unknown; emailVerifiedAt?: unknown }
+          const verified = record.emailVerified === true || record.emailVerifiedAt instanceof Date
+          if (!verified) return
           try {
             const { enqueueEmail } = await import('@/worker/queues')
             await enqueueEmail({ kind: 'welcome', userId: String(user.id) })

@@ -1,7 +1,7 @@
-import { and, eq, isNull, ne } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, payments, webhookEvents } from '@/db/schema'
+import { entitlements, orderItems, orders, payments, planMembers, webhookEvents } from '@/db/schema'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
@@ -228,4 +228,21 @@ export async function revokeOrderEntitlements(
     .update(entitlements)
     .set({ revokedAt: new Date(), revokedReason: reason })
     .where(and(eq(entitlements.grantedByOrderId, orderId), isNull(entitlements.revokedAt)))
+  // الباقة العائلية: صلاحيات الأفراد سُحبت أعلاه (نفس الطلب)؛ صفوف العضوية والدعوات
+  // المعلّقة تُغلق كي لا يبقى رابط دعوة صالحاً لباقة مستردّة.
+  await tx
+    .update(planMembers)
+    .set({ status: 'removed', tokenHash: null })
+    .where(
+      and(
+        ne(planMembers.status, 'removed'),
+        inArray(
+          planMembers.ownerEntitlementId,
+          tx
+            .select({ id: entitlements.id })
+            .from(entitlements)
+            .where(eq(entitlements.grantedByOrderId, orderId)),
+        ),
+      ),
+    )
 }

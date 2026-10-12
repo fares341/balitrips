@@ -17,6 +17,7 @@ import { db } from '@/db'
 import { entitlements, itineraries, orderItems, orders, plans } from '@/db/schema'
 
 import { isEntitlementKind, makeEntitlementSet, type EntitlementSet } from './redaction'
+import { carryOverFamily } from './family'
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -123,15 +124,20 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
       const until = current?.until ? new Date(current.until) : null
       if (until !== null && until.getTime() > now.getTime()) startsAt = until
     }
-    await tx.insert(entitlements).values({
-      userId: owner.userId,
-      kind: plan.entitlementKind,
-      grantedByOrderId: orderId,
-      planId: plan.id,
-      startsAt,
-      expiresAt: planExpiry(plan.durationDays, startsAt),
-      deviceLimit: plan.deviceLimit,
-    })
+    const [row] = await tx
+      .insert(entitlements)
+      .values({
+        userId: owner.userId,
+        kind: plan.entitlementKind,
+        grantedByOrderId: orderId,
+        planId: plan.id,
+        startsAt,
+        expiresAt: planExpiry(plan.durationDays, startsAt),
+        deviceLimit: plan.deviceLimit,
+      })
+      .returning()
+    // باقة عائلية مجدَّدة: الأفراد ينتقلون مع الصاحب.
+    if (row && plan.maxMembers > 1) await carryOverFamily(tx, row)
     granted += 1
   }
 

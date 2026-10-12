@@ -28,7 +28,7 @@ export async function listMyDevices(userId: string) {
 }
 
 /**
- * آخر عمليات تسجيل الدخول (الوثيقة 3.3): الوقت، الحالة، الجهاز، IP.
+ * آخر عمليات تسجيل الدخول (الوثيقة 3.3): الوقت، الحالة، الجهاز، IP، الموقع التقريبي.
  * الفاشلة تظهر أيضاً — من يرى محاولات لم يقم بها يعرف أن عليه تغيير كلمة المرور.
  */
 export async function listMyLogins(userId: string, limit = 10) {
@@ -40,6 +40,7 @@ export async function listMyLogins(userId: string, limit = 10) {
       at: activityLog.createdAt,
       browser: devices.browser,
       os: devices.os,
+      details: activityLog.details,
     })
     .from(activityLog)
     .leftJoin(devices, eq(devices.id, activityLog.deviceId))
@@ -51,4 +52,14 @@ export async function listMyLogins(userId: string, limit = 10) {
     )
     .orderBy(desc(activityLog.createdAt))
     .limit(limit)
+}
+
+/** "Denpasar, ID" من تفاصيل سجل الدخول (رؤوس الـ CDN)، أو null. */
+export function loginPlace(details: unknown): string | null {
+  if (details === null || typeof details !== 'object') return null
+  const { city, country } = details as { city?: unknown; country?: unknown }
+  const parts = [city, country].filter(
+    (part): part is string => typeof part === 'string' && part !== '',
+  )
+  return parts.length > 0 ? parts.join(', ') : null
 }

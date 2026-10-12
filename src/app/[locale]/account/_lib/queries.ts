@@ -598,7 +598,8 @@ export async function listSubscriptions(userId: string): Promise<SubscriptionVie
       status,
       startsAt: entitlement.startsAt,
       expiresAt,
-      orderNumber: orderNumber ?? null,
+      // نسخة من باقة عائلية: رقم طلب صاحب الباقة ليس للفرد أن يراه.
+      orderNumber: entitlement.sharedByUserId === null ? (orderNumber ?? null) : null,
     }
   })
 

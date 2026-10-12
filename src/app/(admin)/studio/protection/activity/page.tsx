@@ -1,16 +1,17 @@
-import { and, count, desc, eq, gte, ilike, lte, or, type SQL } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
+import { can } from '@/lib/auth/roles'
 import { activityLog, devices, users } from '@/db/schema'
-import { ACTIVITY_ACTIONS, isActivityAction } from '@/lib/security/activity'
+import { ACTIVITY_ACTIONS } from '@/lib/security/activity'
 
 import { adminHref } from '../../../_lib/admin-path'
-import { isUuid } from '../../../_lib/form'
-import { pageParam, param } from '../../../_lib/result'
+import { pageParam } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table, When, type PillTone } from '../../../_ui/table'
+import { activityFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,31 +35,17 @@ export default async function ActivityPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('security.read')
+  const session = await requireCapability('security.read')
   const params = await searchParams
 
-  const q = param(params, 'q')
-  const action = param(params, 'action')
-  const user = param(params, 'user')
-  const from = param(params, 'from')
-  const to = param(params, 'to')
+  const { q, action, user, from, to, where } = activityFilters(params)
   const page = pageParam(params)
-
-  const filters: SQL[] = []
-  if (q) {
-    const like = `%${q}%`
-    const match = or(ilike(users.email, like), ilike(activityLog.ip, like))
-    if (match) filters.push(match)
-  }
-  if (action && isActivityAction(action)) filters.push(eq(activityLog.action, action))
-  if (user && isUuid(user)) filters.push(eq(activityLog.userId, user))
-  if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) {
-    filters.push(gte(activityLog.createdAt, new Date(`${from}T00:00:00Z`)))
-  }
-  if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    filters.push(lte(activityLog.createdAt, new Date(`${to}T23:59:59Z`)))
-  }
-  const where = filters.length > 0 ? and(...filters) : undefined
+  const mayExport = can(session.role, 'customers.export')
+  const exportQuery = new URLSearchParams(
+    Object.entries({ q, action, user, from, to }).flatMap(([key, value]) =>
+      value ? [[key, value]] : [],
+    ),
+  ).toString()
 
   const [rows, [totalRow]] = await Promise.all([
     db
@@ -132,6 +119,15 @@ export default async function ActivityPage({
           <Link className="a-btn ghost" href={LIST}>
             Reset
           </Link>
+          {mayExport ? (
+            // Route handler: a plain <a> so the browser downloads the file.
+            <a
+              className="a-btn ghost"
+              href={`${adminHref('/protection/activity/export')}?${exportQuery}`}
+            >
+              Export CSV
+            </a>
+          ) : null}
         </div>
       </form>
 

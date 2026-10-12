@@ -72,3 +72,23 @@ export function requestCountry(headers: HeaderBag): string | null {
   // XX = غير معروف؛ T1 = شبكة Tor عند Cloudflare (يُحتفظ به — مفيد للمراجعة).
   return /^[A-Z][A-Z0-9]$/.test(value) && value !== 'XX' ? value : null
 }
+
+/**
+ * المدينة التقريبية: Cloudflare يرسل `cf-ipcity` عند تفعيل
+ * Managed Transforms → "Add visitor location headers" (متاح في كل الخطط).
+ * أو ما يحدده `GEO_CITY_HEADER`. للعرض فقط، ومنقّاة (طول، رموز تحكم، ترميز URL).
+ */
+export function requestCity(headers: HeaderBag): string | null {
+  const name = process.env.GEO_CITY_HEADER?.trim().toLowerCase() || 'cf-ipcity'
+  let value = headers.get(name)?.trim() ?? ''
+  if (value.includes('%')) {
+    try {
+      value = decodeURIComponent(value)
+    } catch {
+      return null
+    }
+  }
+  // eslint-disable-next-line no-control-regex
+  value = value.replace(/[\u0000-\u001f\u007f<>]/g, '').trim()
+  return value === '' ? null : value.slice(0, 64)
+}

@@ -17,7 +17,7 @@ import { deviceLimitFor } from '@/lib/security/devices'
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { removeMyDevice } from './actions'
-import { currentDeviceId, listMyDevices, listMyLogins } from './queries'
+import { currentDeviceId, listMyDevices, listMyLogins, loginPlace } from './queries'
 
 type PageParams = Promise<{ locale: string }>
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -134,6 +134,7 @@ export default async function AccountDevicesPage({
                 <th scope="col">{t('acct_logins_result')}</th>
                 <th scope="col">{t('acct_dev_device')}</th>
                 <th scope="col">IP</th>
+                <th scope="col">{t('acct_logins_where')}</th>
               </tr>
             </thead>
             <tbody>
@@ -146,6 +147,9 @@ export default async function AccountDevicesPage({
                   </td>
                   <td>
                     <bdi>{row.ip ?? '—'}</bdi>
+                  </td>
+                  <td>
+                    <bdi>{loginPlace(row.details) ?? '—'}</bdi>
                   </td>
                 </tr>
               ))}

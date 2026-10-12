@@ -52,6 +52,7 @@ import {
   listRegions,
   reviewsForActivity,
 } from '@/lib/content/queries'
+import { trustStats, type TrustStats } from '@/lib/content/stats'
 import type { ActivitySummary, CategoryDto, LandmarkDto, ReviewDto } from '@/lib/content/types'
 
 import { pageMetadata } from './_meta'
@@ -218,7 +219,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const t = await getTranslations()
   const format = await getFormatter()
 
-  const [regions, categories, featured, packages, itineraries, landmarks, articles] =
+  const [regions, categories, featured, packages, itineraries, landmarks, articles, trust] =
     await Promise.all([
       listRegions(),
       listCategories(),
@@ -227,6 +228,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       listItineraries(),
       listLandmarks(),
       listArticles({ limit: ARTICLE_PREVIEW_COUNT, locale }),
+      trustStats(),
     ])
 
   const lovedCategories = orderedCategories(categories, LOVED_KEYS, 6)
@@ -264,6 +266,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <HeroSection
         image={imageAt(pool, 0)}
         regionCount={regions.length}
+        trust={trust}
         t={t}
         formatNumber={(value, options) => format.number(value, options)}
       />
@@ -502,10 +505,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             empty={<EmptyRow>{t('ah_none')}</EmptyRow>}
             tabs={[
               { key: 'all', label: t('hl_allregions') },
-              ...regions.map((region): CollectionTab => ({
-                key: region.key,
-                label: pick(region.label, locale, region.key),
-              })),
+              ...regions.map(
+                (region): CollectionTab => ({
+                  key: region.key,
+                  label: pick(region.label, locale, region.key),
+                }),
+              ),
             ]}
             panels={{
               all: <LandmarkGrid landmarks={landmarks} empty={t('ah_none')} />,
@@ -531,11 +536,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <CollectionTabs
             idPrefix="home-loved"
             empty={<EmptyRow>{t('ah_none')}</EmptyRow>}
-            tabs={lovedCategories.map((category): CollectionTab => ({
-              key: category.key,
-              label: pick(category.label, locale, category.key),
-              icon: category.icon,
-            }))}
+            tabs={lovedCategories.map(
+              (category): CollectionTab => ({
+                key: category.key,
+                label: pick(category.label, locale, category.key),
+                icon: category.icon,
+              }),
+            )}
             panels={Object.fromEntries(
               lovedCategories.map((category, index) => [
                 category.key,
@@ -602,31 +609,37 @@ type FormatNumber = (value: number, options?: Intl.NumberFormatOptions) => strin
 /**
  * Section 1 — hero.
  *
- * The four stat figures are brand claims from the design, not measurements:
- * only the region count has a query behind it, and it is read from the live
- * taxonomy rather than asserted. The other three are carried over verbatim and
- * should be replaced with real aggregates before launch.
- *
- * They are rendered through the locale formatter rather than as the handoff's
- * literal strings ("500+", "12k+"), so Arabic gets Arabic-Indic digits and
- * Indonesian gets its own compact notation instead of a hard-coded "k".
+ * The stat figures are measured (src/lib/content/stats.ts); one below its
+ * meaningful minimum is omitted instead of shown as a design claim. Rendered
+ * through the locale formatter, so Arabic gets Arabic-Indic digits.
  */
 function HeroSection({
   image,
   regionCount,
+  trust,
   t,
   formatNumber,
 }: {
   image: ReturnType<typeof imageAt>
   regionCount: number
+  trust: TrustStats
   t: (key: string) => string
   formatNumber: FormatNumber
 }) {
   const stats: readonly { value: string; label: string }[] = [
-    { value: `${formatNumber(500)}+`, label: t('ab_stat1') },
+    ...(trust.places > 0 ? [{ value: formatNumber(trust.places), label: t('ab_stat1') }] : []),
     { value: formatNumber(regionCount), label: t('ab_stat2') },
-    { value: `${formatNumber(4.9, { maximumFractionDigits: 1 })}★`, label: t('ab_stat3') },
-    { value: `${formatNumber(12000, { notation: 'compact' })}+`, label: t('ab_stat4') },
+    ...(trust.rating !== null
+      ? [
+          {
+            value: `${formatNumber(trust.rating, { maximumFractionDigits: 1 })}★`,
+            label: t('ab_stat3'),
+          },
+        ]
+      : []),
+    ...(trust.trips !== null
+      ? [{ value: formatNumber(trust.trips, { notation: 'compact' }), label: t('ab_stat4') }]
+      : []),
   ]
 
   return (

@@ -1,16 +1,18 @@
-import { and, count, desc, eq, gt, ilike, isNotNull, isNull, or, type SQL } from 'drizzle-orm'
+import { and, count, desc, eq, gt } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
+import { can } from '@/lib/auth/roles'
 import { orders, sessions, users } from '@/db/schema'
 import { ROLES } from '@/lib/auth/roles'
 
 import { adminHref } from '../../_lib/admin-path'
-import { pageParam, param } from '../../_lib/result'
+import { pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
+import { customerFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,26 +37,16 @@ export default async function CustomersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('customers.read')
+  const session = await requireCapability('customers.read')
   const params = await searchParams
 
-  const q = param(params, 'q')
-  const role = param(params, 'role')
-  const state = param(params, 'state')
+  const { q, role, state, where } = customerFilters(params)
   const page = pageParam(params)
-
+  const mayExport = can(session.role, 'customers.export')
+  const exportQuery = new URLSearchParams(
+    Object.entries({ q, role, state }).flatMap(([key, value]) => (value ? [[key, value]] : [])),
+  ).toString()
   const now = new Date()
-  const filters: SQL[] = []
-
-  if (q) {
-    const like = `%${q}%`
-    const match = or(ilike(users.email, like), ilike(users.name, like), ilike(users.phone, like))
-    if (match) filters.push(match)
-  }
-  if (role && ROLES.includes(role as (typeof ROLES)[number])) filters.push(eq(users.role, role))
-  filters.push(state === 'deleted' ? isNotNull(users.deletedAt) : isNull(users.deletedAt))
-
-  const where = and(...filters)
 
   const [rows, [totalRow]] = await Promise.all([
     db
@@ -127,6 +119,12 @@ export default async function CustomersPage({
           <Link className="a-btn ghost" href={LIST}>
             Reset
           </Link>
+          {mayExport ? (
+            // Route handler: a plain <a> so the browser downloads the file.
+            <a className="a-btn ghost" href={`${adminHref('/customers/export')}?${exportQuery}`}>
+              Export CSV
+            </a>
+          ) : null}
         </div>
       </form>
 

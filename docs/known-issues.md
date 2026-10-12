@@ -8,15 +8,7 @@ than the fix.
 
 ## Open
 
-### 1. Unbacked brand claims
-
-`/about` and the homepage present "500+ hand-picked places", "4.9★ traveler
-rating" and "12k+ trips planned" as fact. Only "regions covered" is a live
-count; the seed holds 9 map places. Replace with real aggregates or remove
-before launch — these are the kind of claim a consumer-protection regulator
-treats as a representation.
-
-### 2. All imagery is generated placeholder
+### 1. All imagery is generated placeholder
 
 `scripts/seed-media.mjs` attached 52 generated SVG scenes so the layout can
 be evaluated. They are clearly credited "Generated placeholder — replace
@@ -24,28 +16,33 @@ with licensed photography". Real photography imports through the admin media
 library; the seed only fills rows where `hero_image_id` is null, so a
 re-seed cannot paint over uploaded work.
 
-### 3. Policy pages are placeholder prose
+### 2. Policy pages are placeholder prose
 
 Terms, privacy, refund and cookies exist as real routes with a
 "pending legal review" note. A **refund policy is a prerequisite for a
 travel merchant account**, not a launch-week nicety.
 
-### 4. Two-factor is enforced in development
+### 3. Arabic and Indonesian copy is unreviewed
 
-TOTP is mandatory for staff and admin, which is right for production and
-pure friction locally. Recommendation: gate on `NODE_ENV === 'production'`
-so it is required where it matters and skipped on a developer's machine.
-Left as-is pending a decision — "we'll add it back before launch" is how it
-never gets added back.
-
-### 5. Arabic and Indonesian copy is unreviewed
-
-780 keys per locale, machine-carried from the handoff. Needs a native
+~1,000 keys per locale, machine-carried from the handoff. Needs a native
 speaker before launch.
 
 ---
 
 ## Resolved
+
+### Unbacked brand claims (was open #1)
+
+The homepage and `/about` showed "500+ places", "4.9★" and "12k+ trips" as
+fact. All figures now come from `src/lib/content/stats.ts`: published
+places, regions, the average of published reviews (shown only from 10
+reviews) and paid orders (shown only from 50). A figure below its minimum is
+omitted, not padded.
+
+### Two-factor in development (was open #4)
+
+`DISABLE_ADMIN_2FA=true` skips TOTP locally and on a demo box; `LIVE_MODE=true`
+ignores that flag, so production always enforces it.
 
 ### Locale self-redirect loop
 
