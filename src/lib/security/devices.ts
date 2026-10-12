@@ -56,7 +56,7 @@ export function effectiveDeviceLimit(limits: readonly (number | null)[], fallbac
   return Math.min(best, MAX_DEVICE_LIMIT)
 }
 
-export type NewDeviceDecision = 'allow' | 'evict' | 'block' | 'warn'
+export type NewDeviceDecision = 'allow' | 'evict' | 'block' | 'warn' | 'approval'
 
 /** قرار نقي (قابل للاختبار) لجهاز غير معروف سابقاً لهذا الحساب. */
 export function decideNewDevice(input: {
@@ -67,6 +67,7 @@ export function decideNewDevice(input: {
   if (input.activeCount < input.limit) return 'allow'
   if (input.policy === 'evict_oldest') return 'evict'
   if (input.policy === 'warn') return 'warn'
+  if (input.policy === 'require_approval') return 'approval'
   return 'block'
 }
 
@@ -77,6 +78,17 @@ export class DeviceLimitError extends Error {
   ) {
     super(`Device limit reached (${active}/${limit})`)
     this.name = 'DeviceLimitError'
+  }
+}
+
+/** سبب الرفض الذي يميّز "رفضه مدير" عن "أزاله المستخدم". */
+export const REJECTED_REASON = 'admin_rejected'
+
+/** جهاز ينتظر موافقة الإدارة: الدخول مرفوض حتى يوافق مدير (الوثيقة 14.2). */
+export class DeviceApprovalPendingError extends Error {
+  constructor(readonly deviceId: string) {
+    super('This device is waiting for an administrator to approve it')
+    this.name = 'DeviceApprovalPendingError'
   }
 }
 
@@ -140,6 +152,11 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
       .limit(1)
 
     if (existing?.status === 'banned') throw new DeviceBannedError()
+    // رفضه مدير صراحةً: لا يعود "معلّقاً" مع كل محاولة (ولا تنبيه جديد للإدارة).
+    // يبقى ممنوعاً حتى يوافق عليه مدير من Studio → Protection → Devices.
+    if (existing?.status === 'revoked' && existing.revokedReason === REJECTED_REASON) {
+      throw new DeviceBannedError()
+    }
 
     const now = new Date()
     const seen = {
@@ -174,6 +191,44 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
     })
 
     if (decision === 'block') throw new DeviceLimitError(limit, active.length)
+
+    if (decision === 'approval' && existing?.status === 'pending') {
+      // ما زال ينتظر الإدارة: لا جلسة، ولا طلب موافقة ثانٍ. (إن تحرّرت خانة أو
+      // تغيّرت السياسة منذ الطلب، لا نصل هنا ويُقبل الجهاز بالمسار العادي.)
+      await tx.update(devices).set(seen).where(eq(devices.id, existing.id))
+      return { deviceId: existing.id, event: null, pending: 'again' as const }
+    }
+    if (decision === 'approval') {
+      // يُسجَّل الجهاز "معلّقاً" ويُرفض الدخول حتى يوافق مدير من لوحة التحكم.
+      let pendingId: string
+      if (existing !== undefined) {
+        await tx
+          .update(devices)
+          .set({ ...seen, status: 'pending', revokedAt: null, revokedReason: null })
+          .where(eq(devices.id, existing.id))
+        pendingId = existing.id
+      } else {
+        const [inserted] = await tx
+          .insert(devices)
+          .values({
+            userId,
+            fingerprintHash: identity.fingerprintHash,
+            weak: identity.weak,
+            status: 'pending',
+            ...seen,
+          })
+          .returning({ id: devices.id })
+        if (inserted === undefined) throw new Error('device insert returned nothing')
+        pendingId = inserted.id
+      }
+      return {
+        deviceId: pendingId,
+        event: null,
+        pending: 'new' as const,
+        limit,
+        active: active.length,
+      }
+    }
 
     let evictedId: string | null = null
     if (decision === 'evict') {
@@ -220,6 +275,37 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
       },
     }
   })
+
+  if ('pending' in result && result.pending !== undefined) {
+    if (result.pending === 'new') {
+      // `device_pending` لا تعدّه قاعدة device_churn: الجهاز يُحسب مرة واحدة فقط،
+      // كـ `new_device` عند الموافقة — وإلا كانت موافقة المدير نفسها تحظر العميل.
+      await logActivity({
+        action: 'device_pending',
+        userId,
+        ip: input.ip,
+        deviceId: result.deviceId,
+        details: {
+          awaitingApproval: true,
+          limit: Number.isFinite(result.limit) ? result.limit : null,
+          active: result.active,
+          browser: identity.browser,
+          os: identity.os,
+        },
+      })
+      const [owner] = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
+      await notifyStaff(
+        'staff_device_approval',
+        { email: owner?.email ?? userId, device: `${identity.browser} · ${identity.os}` },
+        '/protection/devices?status=pending',
+      )
+    }
+    throw new DeviceApprovalPendingError(result.deviceId)
+  }
 
   if (result.event !== null) {
     await logActivity({
@@ -319,4 +405,32 @@ export async function activeDeviceCount(userId: string): Promise<number> {
     .from(devices)
     .where(and(eq(devices.userId, userId), eq(devices.status, 'active')))
   return row?.value ?? 0
+}
+
+/**
+ * موافقة الإدارة على جهاز معلّق: يصبح فعّالاً (حتى فوق الحد — الموافقة استثناء
+ * مقصود)، ويُبلَّغ المستخدم أن يسجّل الدخول مجدداً.
+ */
+export async function approveDevice(deviceId: string): Promise<{ userId: string } | null> {
+  const [row] = await db
+    .update(devices)
+    .set({ status: 'active', revokedAt: null, revokedReason: null })
+    .where(
+      and(
+        eq(devices.id, deviceId),
+        or(
+          eq(devices.status, 'pending'),
+          and(eq(devices.status, 'revoked'), eq(devices.revokedReason, REJECTED_REASON)),
+        ),
+      ),
+    )
+    .returning({ userId: devices.userId, browser: devices.browser, os: devices.os })
+  if (!row) return null
+  await notifyUser(
+    row.userId,
+    'device_approved',
+    { device: `${row.browser ?? '?'} · ${row.os ?? '?'}` },
+    '/account',
+  )
+  return { userId: row.userId }
 }

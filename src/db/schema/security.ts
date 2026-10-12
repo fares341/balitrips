@@ -30,7 +30,8 @@ import { timestamps } from './_shared'
    الأجهزة
    -------------------------------------------------------------------------- */
 
-export const DEVICE_STATUSES = ['active', 'revoked', 'banned'] as const
+/** `pending` = بانتظار موافقة الإدارة (سياسة `require_approval`، الوثيقة 14.2). */
+export const DEVICE_STATUSES = ['active', 'pending', 'revoked', 'banned'] as const
 export type DeviceStatus = (typeof DEVICE_STATUSES)[number]
 
 export const devices = pgTable(

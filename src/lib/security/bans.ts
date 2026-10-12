@@ -26,6 +26,8 @@ export function isUserBanned(
   now = new Date(),
 ): boolean {
   if (user === null || user === undefined) return false
+  // حساب معطّل من الإدارة (الوثيقة: "تفعيل/تعطيل الحساب") يُعامل كحظر حتى يُفعَّل.
+  if (user.status === 'inactive') return true
   return user.status === 'banned' && isBanActive(user.bannedUntil, now)
 }
 

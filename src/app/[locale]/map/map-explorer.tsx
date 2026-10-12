@@ -56,6 +56,7 @@ import { pick, pickOptional } from '@/lib/content/localize'
 import type { MapPlaceForClient } from '@/lib/entitlements'
 
 import { MapFilterBar, useMapFilters } from './map-filters'
+import { MapResults } from './map-results'
 import { NodePanel } from './node-panel'
 import {
   clamp,
@@ -125,7 +126,8 @@ interface Gesture {
   captured: boolean
 }
 
-type PlacedPin = MapPin & { sx: number; sy: number }
+/** `cluster` = عدد الأماكن المجمّعة تحت هذا الدبوس (1 = مكان واحد). */
+type PlacedPin = MapPin & { sx: number; sy: number; cluster: number }
 
 /** A zero-size anchor at a projected point. Scaling it about its own origin
  *  cannot move it, which is what lets children counter-scale for free. */
@@ -223,25 +225,26 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
     if (frame.w === 0 || frame.h === 0) return []
 
     const { s, x, y } = view
-    const taken = new Set<string>()
+    // خلية → فهرس الدبوس الممثّل لها، كي تُعدّ الأماكن المخفية تحته (تجميع بعدد).
+    const taken = new Map<string, number>()
     const out: PlacedPin[] = []
 
     const place = (pin: MapPin): PlacedPin => ({
       ...pin,
       sx: x + pin.nx * frame.w * s,
       sy: y + pin.ny * frame.h * s,
+      cluster: 1,
     })
 
     // The selected pin is never culled and never declustered away — losing the
     // marker the panel is describing would be worse than a little overlap.
     if (activePin !== null) {
       const hot = place(activePin)
-      taken.add(`${Math.floor(hot.sx / DECLUSTER_CELL)}:${Math.floor(hot.sy / DECLUSTER_CELL)}`)
+      taken.set(`${Math.floor(hot.sx / DECLUSTER_CELL)}:${Math.floor(hot.sy / DECLUSTER_CELL)}`, 0)
       out.push(hot)
     }
 
     for (const pin of matched) {
-      if (out.length >= MAX_PINS) break
       if (activePin !== null && pin.place.id === activePin.place.id) continue
 
       const placed = place(pin)
@@ -249,8 +252,14 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
       if (placed.sy < -CULL_PADDING || placed.sy > frame.h + CULL_PADDING) continue
 
       const cell = `${Math.floor(placed.sx / DECLUSTER_CELL)}:${Math.floor(placed.sy / DECLUSTER_CELL)}`
-      if (taken.has(cell)) continue
-      taken.add(cell)
+      const owner = taken.get(cell)
+      if (owner !== undefined) {
+        const representative = out[owner]
+        if (representative !== undefined) representative.cluster += 1
+        continue
+      }
+      if (out.length >= MAX_PINS) continue
+      taken.set(cell, out.length)
       out.push(placed)
     }
 
@@ -596,10 +605,22 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
                 <button
                   type="button"
                   className={hot ? 'bt-node hot' : 'bt-node'}
-                  aria-label={pick(pin.place.name, locale, pin.place.slug)}
-                  aria-haspopup="dialog"
-                  aria-expanded={hot}
-                  onClick={(event) => selectPin(pin, event.currentTarget)}
+                  aria-label={
+                    pin.cluster > 1
+                      ? t('map_cluster', { count: pin.cluster })
+                      : pick(pin.place.name, locale, pin.place.slug)
+                  }
+                  aria-haspopup={pin.cluster > 1 ? undefined : 'dialog'}
+                  aria-expanded={pin.cluster > 1 ? undefined : hot}
+                  onClick={(event) => {
+                    // مجموعة: تقريب حولها حتى تنفصل الأماكن؛ مكان واحد: فتح لوحته.
+                    if (pin.cluster > 1 && !hot) {
+                      if (gestureRef.current.moved) return
+                      zoomAt(pin.sx, pin.sy, 2)
+                      return
+                    }
+                    selectPin(pin, event.currentTarget)
+                  }}
                   onPointerEnter={(event) => {
                     if (hoverable(event)) setHoveredId(pin.place.id)
                   }}
@@ -612,6 +633,11 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
                     className="bt-node-dot"
                     style={{ background: pin.color, width: dot, height: dot }}
                   />
+                  {pin.cluster > 1 && !hot && (
+                    <span className="bt-node-count" aria-hidden="true">
+                      {format.number(pin.cluster)}
+                    </span>
+                  )}
                 </button>
               </div>
             )
@@ -738,6 +764,15 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
         {' · '}
         {t('map_wheel_hint')}
       </p>
+
+      <MapResults
+        pins={matched}
+        near={filters.near}
+        onShow={(pin) => {
+          setActiveId(pin.place.id)
+          frameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }}
+      />
     </div>
   )
 }

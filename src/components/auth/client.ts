@@ -71,6 +71,12 @@ export function authErrorKey(error: AuthError): string {
     case 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL':
       return 'auth_err_exists'
 
+    // الجوال (الوثيقة 3.1). "مستخدم" لا يكشف شيئاً لا يكشفه "البريد مستخدم" أصلاً.
+    case 'PHONE_TAKEN':
+      return 'auth_err_phone_taken'
+    case 'PHONE_REQUIRED':
+      return 'auth_err_phone_intl'
+
     case 'PASSWORD_TOO_SHORT':
       return 'auth_err_pw_short'
 
@@ -81,6 +87,8 @@ export function authErrorKey(error: AuthError): string {
     // لا نؤكد للمهاجم هل الحظر على الحساب أو الجهاز أو الشبكة.
     case 'DEVICE_LIMIT_REACHED':
       return 'auth_err_device_limit'
+    case 'DEVICE_PENDING_APPROVAL':
+      return 'auth_err_device_pending'
     case 'ACCOUNT_BANNED':
       return 'auth_err_banned'
 

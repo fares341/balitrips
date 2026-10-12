@@ -15,7 +15,7 @@ import {
 } from '@/db/schema'
 import { NEW_DEVICE_POLICIES, PDF_DOWNLOAD_MODES } from '@/lib/security/config'
 import { logActivity } from '@/lib/security/activity'
-import { revokeDevice } from '@/lib/security/devices'
+import { approveDevice, REJECTED_REASON, revokeDevice } from '@/lib/security/devices'
 import { normalizeIp } from '@/lib/security/ip'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -385,5 +385,53 @@ export async function endSession(form: FormData): Promise<void> {
       after: null,
     })
     return 'Session ended. Paid content is refused from its next request; pages may show it signed in for up to five minutes.'
+  })
+}
+
+/* --------------------------------------------------------------------------
+   موافقة الإدارة على جهاز جديد (الوثيقة 14.2)
+   -------------------------------------------------------------------------- */
+
+export async function decideDevice(form: FormData): Promise<void> {
+  const actor = await requireCapability('security.write')
+  await run(adminHref('/protection/devices?status=pending'), async () => {
+    const deviceId = fuuid(form, 'deviceId', 'Device')
+    const decision = fenum(form, 'decision', ['approve', 'reject'] as const, 'reject')
+    const [device] = await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1)
+    if (!device) throw new Error('That device no longer exists')
+    const rejected = device.status === 'revoked' && device.revokedReason === REJECTED_REASON
+    if (device.status !== 'pending' && !(rejected && decision === 'approve')) {
+      throw new Error('That device is not waiting for approval')
+    }
+
+    if (decision === 'approve') {
+      if ((await approveDevice(deviceId)) === null) throw new Error('That device changed meanwhile')
+    } else {
+      await revokeDevice(deviceId, {
+        userId: device.userId,
+        status: 'revoked',
+        reason: REJECTED_REASON,
+      })
+    }
+    await writeAudit({
+      actor,
+      action: `device.${decision}`,
+      entityType: 'user',
+      entityId: device.userId,
+      before: { deviceId, status: device.status, browser: device.browser, os: device.os },
+      after: { status: decision === 'approve' ? 'active' : 'revoked' },
+    })
+    // IP المدير لا يُنسب لسجل العميل. الموافقة تُحسب "جهازاً جديداً" مرة واحدة
+    // (طلب الانتظار سُجّل `device_pending` ولا تعدّه قواعد الحماية).
+    await logActivity({
+      action: decision === 'approve' ? 'new_device' : 'device_revoked',
+      userId: device.userId,
+      deviceId,
+      ip: null,
+      details: { by: actor.userId, decision, adminApproval: true },
+    })
+    return decision === 'approve'
+      ? 'Device approved. The customer can sign in from it now.'
+      : 'Device rejected.'
   })
 }

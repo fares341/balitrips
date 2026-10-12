@@ -36,6 +36,8 @@ function place(over: Partial<FullMapPlace> = {}): FullMapPlace {
     tagList: [{ key: 'temples', label: { en: 'Temples', ar: 'المعابد', id: 'Pura' } }],
     detailedDescription: { en: 'Secret cove access', ar: 'مدخل سري', id: 'Akses rahasia' },
     videos: ['https://www.youtube.com/watch?v=abc'],
+    gallery: ['https://cdn.example.com/uluwatu-2.avif'],
+    subCategoryKeys: ['sights'],
     canFavorite: true,
     canAddToTrip: true,
     priority: 0,

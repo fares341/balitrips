@@ -18,7 +18,8 @@ import {
 
 function errorsFor(schema: { safeParse: (input: unknown) => unknown }, input: unknown) {
   const result = schema.safeParse(input) as
-    { success: true } | { success: false; error: Parameters<typeof fieldErrors>[0] }
+    | { success: true }
+    | { success: false; error: Parameters<typeof fieldErrors>[0] }
   if (result.success) return null
   return fieldErrors(result.error)
 }
@@ -31,10 +32,22 @@ describe('signInSchema', () => {
     })
   })
 
-  it('reports a malformed address as a format problem, not a missing one', () => {
+  it('reports something that is neither an email nor an international phone', () => {
     expect(
       errorsFor(signInSchema, { email: 'not-an-email', password: 'hunter22', rememberMe: true }),
-    ).toEqual({ email: 'co_err_email' })
+    ).toEqual({ email: 'auth_err_identifier' })
+    expect(
+      errorsFor(signInSchema, { email: 'bad@', password: 'hunter22', rememberMe: true }),
+    ).toEqual({ email: 'auth_err_identifier' })
+  })
+
+  it('accepts an international mobile number instead of an email (spec 3.2)', () => {
+    expect(
+      errorsFor(signInSchema, { email: '+971 50 123 4567', password: 'x', rememberMe: true }),
+    ).toBe(null)
+    expect(
+      errorsFor(signInSchema, { email: '0501234567', password: 'x', rememberMe: true }),
+    ).toEqual({ email: 'auth_err_identifier' })
   })
 
   it('does not apply the minimum length to an existing password', () => {
@@ -85,14 +98,23 @@ describe('signUpSchema', () => {
     })
   })
 
-  it('treats phone and country as optional', () => {
-    expect(errorsFor(signUpSchema, { ...valid, phone: '', country: '' })).toBe(null)
+  it('requires the phone (spec 3.1) but keeps country optional', () => {
+    expect(errorsFor(signUpSchema, { ...valid, country: '' })).toBe(null)
+    expect(errorsFor(signUpSchema, { ...valid, phone: '' })).toEqual({ phone: 'co_err_required' })
   })
 
-  it('rejects a phone number that is not one', () => {
+  it('rejects a phone that is not international', () => {
     expect(errorsFor(signUpSchema, { ...valid, phone: 'call me' })).toEqual({
-      phone: 'auth_err_phone',
+      phone: 'auth_err_phone_intl',
     })
+    expect(errorsFor(signUpSchema, { ...valid, phone: '0812 3456 789' })).toEqual({
+      phone: 'auth_err_phone_intl',
+    })
+  })
+
+  it('accepts a preferred language and rejects an unknown one', () => {
+    expect(errorsFor(signUpSchema, { ...valid, locale: 'ar' })).toBe(null)
+    expect(errorsFor(signUpSchema, { ...valid, locale: 'fr' })).not.toBe(null)
   })
 
   it('rejects a phone number longer than the column', () => {

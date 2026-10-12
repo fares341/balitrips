@@ -80,6 +80,10 @@ export interface FullMapPlace {
   detailedDescription: Record<string, string> | null
   /** روابط فيديو https (YouTube/Vimeo/mp4) — مُرشَّحة على الخادم. */
   videos: string[]
+  /** روابط صور المعرض (الوثيقة 6.3). */
+  gallery: string[]
+  /** مفاتيح التصنيفات الفرعية (الوثيقة 6.3). */
+  subCategoryKeys: string[]
   canFavorite: boolean
   canAddToTrip: boolean
   priority: number

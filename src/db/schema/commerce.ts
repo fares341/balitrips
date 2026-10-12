@@ -283,6 +283,10 @@ export const entitlements = pgTable(
     deviceLimit: integer('device_limit'),
     /** الباقة التي منحت هذا الصف، إن وُجدت. المدة والحد منسوخان هنا وقت الشراء. */
     planId: uuid('plan_id').references(() => plans.id),
+    /** فرد في باقة عائلية: من شاركها معه. صف مُشارك لا يُشارك مجدداً. */
+    sharedByUserId: uuid('shared_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
 
     ...timestamps,
   },
@@ -451,3 +455,42 @@ export const entitlementsRelations = relations(entitlements, ({ one }) => ({
   user: one(users, { fields: [entitlements.userId], references: [users.id] }),
   order: one(orders, { fields: [entitlements.grantedByOrderId], references: [orders.id] }),
 }))
+
+/* --------------------------------------------------------------------------
+   الباقة العائلية — الأفراد المدعوون
+   -------------------------------------------------------------------------- */
+
+/**
+ * فرد في باقة عائلية. صاحب الباقة يدعو بالبريد؛ إن كان للبريد حساب يُمنح فوراً
+ * صف `entitlements` بنفس النوع والمدة (و`granted_by_order_id` نفسه، فالاسترداد
+ * يسحبه تلقائياً)، وإلا يبقى "مدعواً" ويُفعَّل عند إنشاء الحساب بهذا البريد.
+ */
+export const planMembers = pgTable(
+  'plan_members',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** صلاحية صاحب الباقة التي يُشارك منها. */
+    ownerEntitlementId: uuid('owner_entitlement_id')
+      .notNull()
+      .references(() => entitlements.id, { onDelete: 'cascade' }),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    inviteEmail: varchar('invite_email', { length: 256 }).notNull(),
+    memberUserId: uuid('member_user_id').references(() => users.id, { onDelete: 'set null' }),
+    /** صف الصلاحية الممنوح للفرد (null حتى يُفعَّل). */
+    memberEntitlementId: uuid('member_entitlement_id').references(() => entitlements.id, {
+      onDelete: 'set null',
+    }),
+    /** invited | active | removed */
+    status: varchar('status', { length: 16 }).notNull().default('invited'),
+    /** sha256 لرمز رابط القبول المرسل بالبريد (null بعد القبول/الإزالة). */
+    tokenHash: varchar('token_hash', { length: 64 }),
+    ...timestamps,
+  },
+  (t) => [
+    index('plan_members_owner_idx').on(t.ownerEntitlementId),
+    index('plan_members_email_idx').on(t.inviteEmail),
+    uniqueIndex('plan_members_token_unique').on(t.tokenHash),
+  ],
+)

@@ -187,7 +187,15 @@ export async function searchPlaces(
     const inRegion = or(eq(regions.key, regionKey), eq(parentRegion.key, regionKey))
     if (inRegion) publicFilters.push(inRegion)
   }
-  if (input.category) publicFilters.push(eq(categories.key, input.category))
+  if (input.category) {
+    // التصنيف الرئيسي، أو أحد التصنيفات الفرعية (الوثيقة 6.3).
+    const inCategory = or(
+      eq(categories.key, input.category),
+      sql`exists (select 1 from ${categories} sc where sc.key = ${input.category}
+                  and coalesce(${mapPlaces.subCategoryIds}, '[]'::jsonb) @> jsonb_build_array(sc.id::text))`,
+    )
+    if (inCategory) publicFilters.push(inCategory)
+  }
   if (input.gemsOnly) publicFilters.push(eq(mapPlaces.isHiddenGem, true))
   for (const tagKey of input.tags ?? []) {
     publicFilters.push(

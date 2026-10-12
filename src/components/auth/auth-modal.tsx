@@ -36,7 +36,7 @@ import { useLocale, useTranslations } from 'next-intl'
 
 import { Button, Modal } from '@/components/shared'
 import { Icon, Logo } from '@/components/ui'
-import type { Locale } from '@/i18n/config'
+import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { getPathname, useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
 
@@ -88,6 +88,8 @@ const EMPTY_FORM = {
   email: '',
   phone: '',
   country: '',
+  /** اللغة المفضلة (الوثيقة 3.1). فارغ = لغة الصفحة. */
+  language: '',
   password: '',
   password2: '',
 }
@@ -203,10 +205,12 @@ export function AuthModal({
     setForm((current) => ({ ...current, [key]: value }))
     // Clearing on edit rather than on blur: the visitor is already fixing it,
     // and leaving the red border up while they type reads as "still wrong".
+    // The language select is `language` in the form but `locale` in the schema.
+    const errorKey = key === 'language' ? 'locale' : key
     setErrors((current) => {
-      if (current[key] === undefined) return current
+      if (current[errorKey] === undefined) return current
       const next = { ...current }
-      delete next[key]
+      delete next[errorKey]
       return next
     })
   }
@@ -270,6 +274,7 @@ export function AuthModal({
       email: form.email,
       phone: form.phone,
       country: form.country,
+      locale: form.language === '' ? undefined : form.language,
       password: form.password,
       password2: form.password2,
     })
@@ -284,6 +289,7 @@ export function AuthModal({
     setPending('email')
 
     const { name, email, phone, country, password } = parsed.data
+    const preferredLocale = parsed.data.locale ?? locale
 
     await prepareDeviceCookie()
     const { error } = await authClient.signUp.email({
@@ -294,9 +300,9 @@ export function AuthModal({
       // on the server, which is what allows them through; anything not
       // declared there is dropped rather than persisted. They are re-validated
       // and clamped in `databaseHooks.user.create.before`.
-      phone: phone === '' ? undefined : phone,
+      phone,
       country: country === '' ? undefined : country,
-      locale,
+      locale: preferredLocale,
     })
 
     if (error) {
@@ -419,14 +425,15 @@ export function AuthModal({
 
       <FormError messageKey={formError} />
 
+      {/* الوثيقة 3.2: الدخول بالبريد أو رقم الجوال. */}
       <TextField
-        label={t('auth_email')}
-        type="email"
+        label={t('auth_identifier')}
+        type="text"
         inputMode="email"
         value={form.email}
         onChange={update('email')}
-        placeholder="you@email.com"
-        autoComplete="email"
+        placeholder={t('auth_identifier_ph')}
+        autoComplete="username"
         maxLength={MAX_EMAIL_LENGTH}
         error={errors.email}
         disabled={busy}
@@ -549,7 +556,6 @@ export function AuthModal({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <TextField
           label={t('auth_phone')}
-          optionalLabel={t('co_optional')}
           type="tel"
           inputMode="tel"
           value={form.phone}
@@ -577,6 +583,17 @@ export function AuthModal({
           disabled={busy}
         />
       </div>
+
+      <SelectField
+        label={t('auth_language')}
+        optionalLabel={t('co_optional')}
+        value={form.language}
+        onChange={update('language')}
+        placeholder={t('auth_language_ph')}
+        options={locales.map((code) => ({ value: code, label: localeConfig[code].label }))}
+        error={errors.locale}
+        disabled={busy}
+      />
 
       <TextField
         label={t('auth_password')}

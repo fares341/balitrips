@@ -16,6 +16,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
 import {
   changeRole,
+  setAccountActive,
   updateCustomerProfile,
   deleteCustomer,
   restoreCustomer,
@@ -92,6 +93,7 @@ export default async function CustomerPage({
   const mayChangeRole = can(session.role, 'roles.write')
   const mayExport = can(session.role, 'customers.export')
   const isSelf = account.id === session.userId
+  const mayDeactivate = can(session.role, 'security.write')
   const live = sessionRows.filter((row) => row.expiresAt > now)
 
   return (
@@ -188,6 +190,26 @@ export default async function CustomerPage({
           ) : null}
         </dl>
       </div>
+
+      {mayDeactivate && account.status !== 'banned' && !isSelf ? (
+        <form className="a-card a-row" action={setAccountActive.bind(null, account.id)}>
+          <h2 style={{ margin: 0 }}>Account status</h2>
+          <span>
+            Currently <strong>{account.status === 'inactive' ? 'inactive' : 'active'}</strong>.
+          </span>
+          <input
+            type="hidden"
+            name="active"
+            value={account.status === 'inactive' ? 'true' : 'false'}
+          />
+          <button
+            className={account.status === 'inactive' ? 'a-btn accent' : 'a-btn danger'}
+            type="submit"
+          >
+            {account.status === 'inactive' ? 'Activate account' : 'Deactivate account'}
+          </button>
+        </form>
+      ) : null}
 
       {mayChangeRole ? (
         <form className="a-card a-form" action={updateCustomerProfile.bind(null, account.id)}>

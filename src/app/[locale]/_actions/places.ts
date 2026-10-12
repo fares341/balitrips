@@ -101,6 +101,33 @@ export async function toggleFavoritePlace(placeId: string): Promise<PlaceActionR
   return { ok: true, state: removed.length === 0 ? 'saved' : 'removed' }
 }
 
+/** حفظ صريح (لا تبديل) — لأزرار "احفظ" في نتائج البحث (الوثيقة 8.4). */
+export async function saveFavoritePlace(placeId: string): Promise<PlaceActionResult> {
+  const ready = await prepare(placeId, `favorite:${placeId}`)
+  if (ready.error !== null) return { ok: false, reason: ready.error }
+  const { access, place, permissions } = ready
+
+  if (!place.canFavorite) return { ok: false, reason: 'not_allowed' }
+  if (!permissions.canSaveFavorites) return { ok: false, reason: 'upgrade' }
+
+  const inserted = await db
+    .insert(favorites)
+    .values({ userId: access.user.id, kind: 'place', refId: place.id })
+    .onConflictDoNothing()
+    .returning({ refId: favorites.refId })
+  if (inserted.length > 0) {
+    await logActivity({
+      action: 'save_place',
+      userId: access.user.id,
+      ip: access.ip,
+      deviceId: access.deviceId,
+      details: { placeId: place.id, slug: place.slug, via: 'results' },
+    })
+  }
+  revalidatePath('/[locale]/account/favorites', 'page')
+  return { ok: true, state: 'saved' }
+}
+
 export async function addPlaceToTrip(placeId: string): Promise<PlaceActionResult> {
   const ready = await prepare(placeId, `trip:${placeId}`)
   if (ready.error !== null) return { ok: false, reason: ready.error }

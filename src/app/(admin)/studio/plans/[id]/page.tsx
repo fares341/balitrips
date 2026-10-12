@@ -135,6 +135,20 @@ export default async function PlanEditPage({
                 defaultValue={String(plan?.deviceLimit ?? 2)}
               />
             </Field>
+            <Field
+              label="People on the plan (family)"
+              htmlFor="maxMembers"
+              hint="1 = one person. More than 1 = a family plan: the buyer adds members by e-mail, each with their own account and devices."
+            >
+              <TextInput
+                id="maxMembers"
+                name="maxMembers"
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={String(plan?.maxMembers ?? 1)}
+              />
+            </Field>
           </div>
           <div className="a-row">
             <Checkbox

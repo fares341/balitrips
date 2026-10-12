@@ -50,6 +50,8 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
     if (durationDays !== null && (durationDays < 1 || durationDays > 3650)) {
       throw new Error('Duration must be 1–3650 days, or blank for lifetime')
     }
+    const maxMembers = fint(form, 'maxMembers', 1, 'People on the plan')
+    if (maxMembers < 1 || maxMembers > 10) throw new Error('People on the plan must be 1–10.')
     const deviceLimit = fint(form, 'deviceLimit', 2, 'Device limit')
     if (deviceLimit < 1 || deviceLimit > MAX_DEVICE_LIMIT) {
       throw new Error(`Device limit must be 1–${MAX_DEVICE_LIMIT}`)
@@ -67,6 +69,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       entitlementKind: fenum(form, 'entitlementKind', ENTITLEMENT_KINDS, 'map_access'),
       durationDays,
       deviceLimit,
+      maxMembers,
       canUseTrip: fbool(form, 'canUseTrip'),
       canSaveFavorites: fbool(form, 'canSaveFavorites'),
       canDownloadPdf: fbool(form, 'canDownloadPdf'),

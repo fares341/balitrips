@@ -19,6 +19,9 @@
 
 import { z } from 'zod'
 
+import { locales } from '@/i18n/config'
+import { looksLikeEmail, normalizePhone } from '@/lib/auth/phone'
+
 /** Mirrors `emailAndPassword.minPasswordLength` in @/lib/auth/server. */
 export const MIN_PASSWORD_LENGTH = 8
 /** Mirrors `emailAndPassword.maxPasswordLength`. */
@@ -51,18 +54,28 @@ const passwordField = z
   .max(MAX_PASSWORD_LENGTH, 'co_err_long')
 
 /**
- * Phone is optional and deliberately loose.
- *
- * It is a WhatsApp hand-off number, entered by travellers from every country
- * on earth in whatever format they know. Anything stricter than "digits, and
- * the punctuation people actually type" rejects valid numbers, and a rejected
- * valid number costs a booking.
+ * الجوال مطلوب عند التسجيل (الوثيقة 3.1) وهو مفتاح دخول (3.2)، لذا يجب أن يكون
+ * دولياً (+ أو 00 ثم رمز الدولة) كي يُوحَّد ويُطابق عند الدخول. الطول قبل الصيغة
+ * كي يُبلَّغ اللصق الطويل كـ "طويل" لا "غير صالح".
  */
 const phoneField = z
   .string()
   .trim()
+  .min(1, 'co_err_required')
   .max(MAX_PHONE_LENGTH, 'co_err_long')
-  .refine((value) => value === '' || /^[+0-9][0-9 ()./-]{4,}$/.test(value), 'auth_err_phone')
+  .refine((value) => normalizePhone(value) !== null, 'auth_err_phone_intl')
+
+/** خانة الدخول: بريد أو جوال دولي (الوثيقة 3.2). */
+const identifierField = z
+  .string()
+  .trim()
+  .min(1, 'co_err_required')
+  .max(MAX_EMAIL_LENGTH, 'co_err_long')
+  .refine(
+    (value) =>
+      looksLikeEmail(value) ? z.email().safeParse(value).success : normalizePhone(value) !== null,
+    'auth_err_identifier',
+  )
 
 /**
  * ISO 3166-1 alpha-2, because `users.country` is varchar(2).
@@ -76,7 +89,8 @@ const countryField = z
   .refine((value) => value === '' || /^[A-Z]{2}$/.test(value), 'auth_country_ph')
 
 export const signInSchema = z.object({
-  email: emailField,
+  /** بريد أو رقم جوال. الاسم `email` لأن نقطة Better Auth تستقبله بهذا الاسم. */
+  email: identifierField,
   // NOT `passwordField`: an existing account may predate the current minimum,
   // and telling the visitor their own password is "too short" at the sign-in
   // box is both wrong and a hint about what is stored.
@@ -92,6 +106,8 @@ export const signUpSchema = z
     email: emailField,
     phone: phoneField,
     country: countryField,
+    /** الوثيقة 3.1: اللغة المفضلة (اختياري؛ الافتراضي لغة الصفحة). */
+    locale: z.enum(locales).optional(),
     password: passwordField,
     password2: z.string(),
   })

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { sessions, users } from '@/db/schema'
+import { normalizePhone } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -296,6 +297,7 @@ export async function deleteCustomer(userId: string, form: FormData): Promise<vo
           email: `deleted+${userId}@invalid.local`,
           name: null,
           phone: null,
+          phoneNormalized: null,
           country: null,
           image: null,
           twoFactorEnabled: false,
@@ -420,10 +422,20 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
         if (taken) throw new Error('Another account already uses that e-mail.')
       }
 
+      const phoneNormalized = normalizePhone(phoneRaw)
+      if (phoneNormalized !== null) {
+        const [owner] = await tx
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.phoneNormalized, phoneNormalized), ne(users.id, userId)))
+          .limit(1)
+        if (owner) throw new Error('Another account already uses that mobile number.')
+      }
       const next = {
         name: name === '' ? null : name,
         email,
         phone: phoneRaw === '' ? null : phoneRaw,
+        phoneNormalized,
         country: countryRaw === '' ? null : countryRaw.toUpperCase(),
       }
       await tx.update(users).set(next).where(eq(users.id, userId))
@@ -468,5 +480,60 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
     outcome = { err: errorMessage(error) }
   }
 
+  redirect(withOutcome(detail(userId), outcome))
+}
+
+/**
+ * تفعيل/تعطيل الحساب (الوثيقة: "تفعيل/تعطيل الحساب"، "تفعيل الحساب عند مراجعة
+ * الإدارة"). مختلف عن الحظر: لا مدة ولا سبب أمني — إيقاف إداري يُرفع يدوياً.
+ * التعطيل يُنهي كل الجلسات فوراً.
+ */
+export async function setAccountActive(userId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('security.write')
+  let outcome: Outcome
+  try {
+    const active = fstr(form, 'active') === 'true'
+    if (!active && userId === session.userId) throw new Error('You cannot deactivate yourself.')
+    const killed = await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
+      if (!before) throw new Error('That account no longer exists')
+      if (before.status === 'banned') {
+        throw new Error('This account is banned. Lift the ban from the Protection panel instead.')
+      }
+      await tx
+        .update(users)
+        .set({ status: active ? 'active' : 'inactive' })
+        .where(eq(users.id, userId))
+      let ended = 0
+      if (!active) {
+        const rows = await tx
+          .delete(sessions)
+          .where(eq(sessions.userId, userId))
+          .returning({ id: sessions.id })
+        ended = rows.length
+        await clearAllVerifications(userId, tx)
+      }
+      await writeAudit(
+        {
+          actor: session,
+          action: active ? 'user.activate' : 'user.deactivate',
+          entityType: 'user',
+          entityId: userId,
+          before: { status: before.status },
+          after: { status: active ? 'active' : 'inactive', sessionsEnded: ended },
+        },
+        tx,
+      )
+      return ended
+    })
+    outcome = {
+      ok: active
+        ? 'Account activated.'
+        : `Account deactivated. ${killed} session(s) ended; it cannot sign in until reactivated.`,
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
   redirect(withOutcome(detail(userId), outcome))
 }

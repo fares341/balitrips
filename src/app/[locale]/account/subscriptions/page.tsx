@@ -17,11 +17,14 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { LinkButton, Tag } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui/icon'
+import { pick } from '@/lib/content/localize'
+import { listFamilyPlans } from '@/lib/entitlements/family'
 import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { listSubscriptions, type SubscriptionStatus } from '../_lib/queries'
+import { FamilyPanel } from './family-panel'
 
 const PLANS_HREF = '/plans'
 
@@ -45,8 +48,24 @@ const STATUS_KEY: Record<SubscriptionStatus, string> = {
   revoked: 'acct_subs_revoked',
 }
 
-export default async function AccountSubscriptionsPage({ params }: { params: PageParams }) {
+const FAMILY_RESULT: Record<string, string> = {
+  accepted: 'fam_accepted',
+  invalid: 'fam_err_invalid',
+  wrong_account: 'fam_err_wrong_account',
+  expired: 'fam_err_expired',
+}
+
+export default async function AccountSubscriptionsPage({
+  params,
+  searchParams,
+}: {
+  params: PageParams
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { locale: raw } = await params
+  const query = await searchParams
+  const familyResult =
+    typeof query.family === 'string' ? (FAMILY_RESULT[query.family] ?? null) : null
   const locale = toLocale(raw)
   setRequestLocale(locale)
 
@@ -54,7 +73,7 @@ export default async function AccountSubscriptionsPage({ params }: { params: Pag
   const format = await getFormatter({ locale })
   const user = await requireActiveUser('account:subscriptions')
 
-  const items = await listSubscriptions(user.id)
+  const [items, family] = await Promise.all([listSubscriptions(user.id), listFamilyPlans(user.id)])
 
   return (
     <section aria-labelledby="bt-acct-subs-h">
@@ -65,6 +84,12 @@ export default async function AccountSubscriptionsPage({ params }: { params: Pag
           {t('acct_subs_browse')}
         </LinkButton>
       </div>
+
+      {familyResult !== null && (
+        <p role="status" className="muted" style={{ marginBlockEnd: 16 }}>
+          {t(familyResult)}
+        </p>
+      )}
 
       {items.length === 0 ? (
         <div className="bt-acct-empty">
@@ -132,6 +157,16 @@ export default async function AccountSubscriptionsPage({ params }: { params: Pag
           })}
         </div>
       )}
+
+      {family.map((plan) => (
+        <FamilyPanel
+          key={plan.entitlementId}
+          entitlementId={plan.entitlementId}
+          planName={pick(plan.planName, locale)}
+          maxMembers={plan.maxMembers}
+          members={plan.members}
+        />
+      ))}
     </section>
   )
 }

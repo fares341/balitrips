@@ -19,6 +19,8 @@ export const ACTIVITY_ACTIONS = [
   'new_device',
   'device_evicted',
   'device_limit_blocked',
+  /** جهاز فوق الحد ينتظر موافقة الإدارة (سياسة require_approval). */
+  'device_pending',
   'device_revoked',
   'open_map',
   'search_map',
@@ -33,6 +35,8 @@ export const ACTIVITY_ACTIONS = [
   'update_request',
   'banned',
   'unbanned',
+  /** الوثيقة 15.2: "الصفحات التي زارها". */
+  'page_view',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

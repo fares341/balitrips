@@ -28,6 +28,11 @@ export const users = pgTable(
 
     name: varchar('name', { length: 128 }),
     phone: varchar('phone', { length: 32 }),
+    /**
+     * الجوال بصيغة دولية موحّدة (`+971501234567`) — مفتاح الدخول بالجوال
+     * (الوثيقة 3.2). فريد بين الحسابات. `phone` يبقى كما كتبه العميل للعرض.
+     */
+    phoneNormalized: varchar('phone_normalized', { length: 20 }),
     country: varchar('country', { length: 2 }),
     locale: varchar('locale', { length: 5 }).notNull().default('en'),
 
@@ -66,7 +71,10 @@ export const users = pgTable(
     ...timestamps,
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
-  (t) => [uniqueIndex('users_email_unique').on(t.email)],
+  (t) => [
+    uniqueIndex('users_email_unique').on(t.email),
+    uniqueIndex('users_phone_normalized_unique').on(t.phoneNormalized),
+  ],
 )
 
 export const accounts = pgTable(

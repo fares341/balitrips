@@ -490,8 +490,12 @@ export const mapPlaces = pgTable(
     /** أولوية الظهور في نتائج البحث (الأعلى أولاً) — "أماكن مميزة". */
     priority: integer('priority').notNull().default(0),
     detailedDescription: localized('detailed_description'),
-    /** روابط فيديو (YouTube/Vimeo/mp4). */
+    /** روابط فيديو (YouTube/Vimeo/mp4) — أو ملف مرفوع من لوحة التحكم. */
     videos: jsonb('videos').$type<string[]>(),
+    /** الوثيقة 6.3: "الصور" — معرض (معرّفات media بالترتيب) فوق الصورة الرئيسية. */
+    galleryImageIds: jsonb('gallery_image_ids').$type<string[]>(),
+    /** الوثيقة 6.3: "تصنيفات فرعية" — معرّفات categories إضافية للفلترة والبحث. */
+    subCategoryIds: jsonb('sub_category_ids').$type<string[]>(),
     /** ملاحظات داخلية — لا تُرسل للعميل أبداً. */
     internalNotes: text('internal_notes'),
 

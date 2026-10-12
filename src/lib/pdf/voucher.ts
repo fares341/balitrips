@@ -185,10 +185,11 @@ export async function generateOrderVoucher(orderId: string): Promise<GeneratedVo
  *
  * The ownership check is a parameter, not an assumption: pass the signed-in
  * user's id and this refuses to sign anything for an order that is not theirs.
+ * `null` is reserved for the admin receipt route, which checks `orders.read`.
  */
 export async function presignOrderVoucher(
   orderId: string,
-  userId: string,
+  userId: string | null,
   options: PresignedGetOptions = {},
 ): Promise<string | null> {
   const [order] = await db
@@ -202,7 +203,10 @@ export async function presignOrderVoucher(
     .where(eq(orders.id, orderId))
     .limit(1)
 
-  if (!order || order.userId !== userId || !VOUCHERABLE.has(order.status)) return null
+  // `userId = null` = الإدارة (تُفحص صلاحيتها في المسار نفسه)؛ غير ذلك يجب أن يملك الطلب.
+  if (!order || (userId !== null && order.userId !== userId) || !VOUCHERABLE.has(order.status)) {
+    return null
+  }
 
   const locale = toMailLocale(order.customer?.locale)
 

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { clientIp, normalizeIp } from './ip'
+import { clientIp, normalizeIp, requestCountry } from './ip'
 
 const bag = (values: Record<string, string>) => new Headers(values)
 
@@ -36,5 +36,14 @@ describe('clientIp', () => {
   it('falls back to x-real-ip, then null', () => {
     expect(clientIp(bag({ 'x-real-ip': '198.51.100.3' }))).toBe('198.51.100.3')
     expect(clientIp(bag({}))).toBeNull()
+  })
+})
+
+describe('requestCountry', () => {
+  it('reads the CDN country header and ignores unknowns', () => {
+    expect(requestCountry(new Headers({ 'cf-ipcountry': 'ae' }))).toBe('AE')
+    expect(requestCountry(new Headers({ 'cf-ipcountry': 'XX' }))).toBeNull()
+    expect(requestCountry(new Headers({ 'cf-ipcountry': 'not-a-country' }))).toBeNull()
+    expect(requestCountry(new Headers())).toBeNull()
   })
 })

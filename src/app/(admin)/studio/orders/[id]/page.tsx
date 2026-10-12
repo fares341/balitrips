@@ -14,7 +14,13 @@ import { requireCapability } from '../../../_lib/session'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
-import { confirmOrder, refundOrderItem, setLineFulfilment } from '../actions'
+import {
+  confirmOrder,
+  issueReceipt,
+  markOrderPaidOffline,
+  refundOrderItem,
+  setLineFulfilment,
+} from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -182,12 +188,46 @@ export default async function OrderDetailPage({
         </div>
       </div>
 
+      {mayRefund && status === 'pending' ? (
+        <form className="a-card a-row" action={markOrderPaidOffline.bind(null, row.id)}>
+          <h2 style={{ width: '100%', margin: 0 }}>Record an offline payment</h2>
+          <p className="a-hint" style={{ width: '100%' }}>
+            For a bank transfer or cash received outside the payment page. Marks the order paid,
+            grants the plans in it, notifies the customer and issues the receipt.
+          </p>
+          <div className="a-field">
+            <label htmlFor="reference">Transfer / receipt reference</label>
+            <input className="a-input" id="reference" name="reference" required minLength={3} />
+          </div>
+          <div className="a-actions">
+            <button className="a-btn accent" type="submit">
+              Mark as paid
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {mayFulfil &&
+      (status === 'paid' || status === 'confirmed' || status === 'partially_refunded') ? (
+        <div className="a-card a-row">
+          <h2 style={{ width: '100%', margin: 0 }}>Receipt</h2>
+          <form action={issueReceipt.bind(null, row.id)}>
+            <button className="a-btn ghost" type="submit">
+              Issue / regenerate receipt
+            </button>
+          </form>
+          <a className="a-btn ghost" href={adminHref(`/orders/${row.id}/receipt`)}>
+            Download receipt (PDF)
+          </a>
+        </div>
+      ) : null}
+
       {mayFulfil && (status === 'paid' || status === 'pending') ? (
         <form className="a-card" action={confirmOrder.bind(null, row.id)}>
           <h2>Fulfilment</h2>
           <p className="a-hint">
-            Confirms the booking with the operator. Orders are never moved to <code>paid</code> from
-            here — only a verified webhook does that.
+            Confirms the booking with the operator. Card payments reach <code>paid</code> only
+            through the verified webhook; bank transfers are recorded below.
           </p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
             <button className="a-btn accent" type="submit" disabled={status !== 'paid'}>

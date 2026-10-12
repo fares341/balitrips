@@ -17,6 +17,11 @@ describe('decideNewDevice', () => {
   it('applies the policy at the limit', () => {
     expect(decideNewDevice({ activeCount: 2, limit: 2, policy: 'block' })).toBe('block')
     expect(decideNewDevice({ activeCount: 2, limit: 2, policy: 'evict_oldest' })).toBe('evict')
+    // الوثيقة 14.2: "أو يحتاج موافقة الإدارة".
+    expect(decideNewDevice({ activeCount: 2, limit: 2, policy: 'require_approval' })).toBe(
+      'approval',
+    )
+    expect(decideNewDevice({ activeCount: 1, limit: 2, policy: 'require_approval' })).toBe('allow')
     expect(decideNewDevice({ activeCount: 5, limit: 2, policy: 'warn' })).toBe('warn')
   })
 })
@@ -65,6 +70,8 @@ describe('bans', () => {
   it('only bans status=banned users', () => {
     expect(isUserBanned({ status: 'active', bannedUntil: null }, now)).toBe(false)
     expect(isUserBanned({ status: 'banned', bannedUntil: null }, now)).toBe(true)
+    // حساب معطّل إدارياً لا يدخل حتى يُفعَّل.
+    expect(isUserBanned({ status: 'inactive', bannedUntil: null }, now)).toBe(true)
     expect(isUserBanned({ status: 'banned', bannedUntil: '2026-10-01T00:00:00Z' }, now)).toBe(false)
     expect(isUserBanned(null, now)).toBe(false)
   })

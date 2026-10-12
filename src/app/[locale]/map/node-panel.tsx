@@ -141,6 +141,39 @@ export function NodePanel({ pin, onClose }: NodePanelProps) {
           </details>
         )}
 
+        {place.gallery.length > 0 && (
+          <div
+            style={{
+              display: 'grid',
+              gridAutoFlow: 'column',
+              gridAutoColumns: '42%',
+              gap: 8,
+              overflowX: 'auto',
+              marginTop: 12,
+              scrollSnapType: 'x mandatory',
+            }}
+          >
+            {place.gallery.map((url) => (
+              <div
+                key={url}
+                style={{
+                  position: 'relative',
+                  aspectRatio: '4 / 3',
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  scrollSnapAlign: 'start',
+                }}
+              >
+                <Photo
+                  src={url}
+                  alt=""
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
         {place.videos.length > 0 && (
           <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
             <div style={{ fontWeight: 600, fontSize: 13.5 }}>{t('map_videos')}</div>

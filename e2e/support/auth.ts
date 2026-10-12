@@ -23,13 +23,22 @@ export function uniqueEmail(prefix = 'traveller'): string {
 export interface Credentials {
   name: string
   email: string
+  /** دولي وفريد — الجوال مطلوب عند التسجيل ويصلح للدخول (الوثيقة 3.1/3.2). */
+  phone: string
   password: string
+}
+
+/** رقم فريد لكل تشغيل: +62 8 ثم 10 أرقام. */
+export function uniquePhone(): string {
+  const digits = `${Date.now()}${Math.floor(Math.random() * 1000)}`.slice(-10)
+  return `+628${digits}`
 }
 
 export function newCredentials(prefix?: string): Credentials {
   return {
     name: 'Test Traveller',
     email: uniqueEmail(prefix),
+    phone: uniquePhone(),
     // Long enough for the zod rule in components/auth/schemas.ts.
     password: 'Str0ng-Passw0rd!23',
   }
@@ -75,6 +84,7 @@ export async function register(page: Page, credentials: Credentials): Promise<vo
 
   await dialog.getByLabel('Full name').fill(credentials.name)
   await dialog.getByLabel('Email address').fill(credentials.email)
+  await dialog.getByLabel('Phone (WhatsApp)').fill(credentials.phone)
   await dialog.getByLabel('Password', { exact: true }).fill(credentials.password)
   await dialog.getByLabel('Confirm password').fill(credentials.password)
 
@@ -98,7 +108,8 @@ export async function signIn(
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
 
-  await dialog.getByLabel('Email address').fill(credentials.email)
+  // خانة الدخول تقبل البريد أو الجوال.
+  await dialog.getByLabel('Email or mobile number').fill(credentials.email)
   await dialog.getByLabel('Password', { exact: true }).fill(credentials.password)
   await dialog.getByRole('button', { name: 'Sign in', exact: true }).click()
 

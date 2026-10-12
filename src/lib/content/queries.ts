@@ -104,9 +104,15 @@ const LIVE_PLACE = and(
 /** المنطقة العامة التي يقع فيها الحي (Kuta ← جنوب بالي). */
 const parentRegion = alias(regions, 'parent_region')
 
+function isUuidLike(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value)
+}
+
 /** روابط فيديو https فقط من مصادر تُضمَّن (YouTube/Vimeo) أو ملف mp4/webm. */
 function isSafeVideoUrl(value: unknown): value is string {
   if (typeof value !== 'string') return false
+  // فيديو مرفوع من لوحة التحكم في التطوير المحلي (بلا تخزين خارجي).
+  if (/^\/media\/videos\/[\w/-]+\.(mp4|webm)$/i.test(value)) return true
   try {
     const url = new URL(value)
     if (url.protocol !== 'https:') return false
@@ -1058,6 +1064,25 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
     tagsByPlace.set(row.placeId, list)
   }
 
+  // المعرض والتصنيفات الفرعية (الوثيقة 6.3) — استعلامان مجمّعان لكل الأماكن.
+  const galleryIds = [
+    ...new Set(rows.flatMap((row) => (row.place.galleryImageIds ?? []).filter(isUuidLike))),
+  ]
+  const subIds = [
+    ...new Set(rows.flatMap((row) => (row.place.subCategoryIds ?? []).filter(isUuidLike))),
+  ]
+  const [galleryRows, subRows] = await Promise.all([
+    galleryIds.length === 0 ? [] : db.select().from(media).where(inArray(media.id, galleryIds)),
+    subIds.length === 0
+      ? []
+      : db
+          .select({ id: categories.id, key: categories.key })
+          .from(categories)
+          .where(inArray(categories.id, subIds)),
+  ])
+  const galleryById = new Map(galleryRows.map((row) => [row.id, row]))
+  const subKeyById = new Map(subRows.map((row) => [row.id, row.key]))
+
   return rows.map(
     ({
       place,
@@ -1094,6 +1119,13 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
       tagList: tagsByPlace.get(place.id) ?? [],
       detailedDescription: place.detailedDescription,
       videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
+      gallery: (place.galleryImageIds ?? [])
+        .map((id) => toMedia(galleryById.get(id))?.url ?? null)
+        .filter((url): url is string => url !== null)
+        .slice(0, 12),
+      subCategoryKeys: (place.subCategoryIds ?? [])
+        .map((id) => subKeyById.get(id))
+        .filter((key): key is string => key !== undefined),
       canFavorite: place.canFavorite,
       canAddToTrip: place.canAddToTrip,
       priority: place.priority,

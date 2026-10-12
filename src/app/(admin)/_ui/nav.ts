@@ -30,6 +30,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '', label: 'Dashboard', capability: 'admin.access', exact: true },
       { path: '/inbox', label: 'Inbox', capability: 'admin.access' },
+      { path: '/notify', label: 'Send notification', capability: 'roles.write' },
     ],
   },
   {
@@ -50,6 +51,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Commerce',
     items: [
       { path: '/orders', label: 'Orders', capability: 'orders.read' },
+      { path: '/payments', label: 'Payments', capability: 'payments.read' },
       { path: '/plans', label: 'Plans', capability: 'content.read' },
       { path: '/entitlements', label: 'Entitlements', capability: 'customers.read' },
       { path: '/capacity', label: 'Driver capacity', capability: 'capacity.write' },
@@ -68,6 +70,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/protection', label: 'Bans & signals', capability: 'security.read', exact: true },
       { path: '/protection/alerts', label: 'Alerts', capability: 'security.read' },
       { path: '/protection/sessions', label: 'Live sessions', capability: 'security.read' },
+      { path: '/protection/devices', label: 'Devices', capability: 'security.read' },
       { path: '/protection/activity', label: 'Activity log', capability: 'security.read' },
     ],
   },

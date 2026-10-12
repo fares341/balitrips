@@ -10,7 +10,7 @@ import { deviceLimitFor } from '@/lib/security/devices'
 import { adminHref } from '../../../_lib/admin-path'
 import { Field, TextInput } from '../../../_ui/field'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
-import { actOnDevice, banUser, unbanUser } from '../../protection/actions'
+import { actOnDevice, banUser, decideDevice, unbanUser } from '../../protection/actions'
 
 /**
  * بطاقة الحماية في صفحة العميل: حالة الحظر، الأجهزة، وحد الأجهزة.
@@ -127,7 +127,13 @@ export async function ProtectionPanel({
                 <td>
                   <Pill
                     tone={
-                      row.status === 'active' ? 'good' : row.status === 'banned' ? 'bad' : 'neutral'
+                      row.status === 'active'
+                        ? 'good'
+                        : row.status === 'banned'
+                          ? 'bad'
+                          : row.status === 'pending'
+                            ? 'warn'
+                            : 'neutral'
                     }
                   >
                     {row.status}
@@ -135,6 +141,15 @@ export async function ProtectionPanel({
                   {row.revokedReason ? <div className="a-hint">{row.revokedReason}</div> : null}
                 </td>
                 <td>
+                  {mayWrite && row.status === 'pending' ? (
+                    <form className="a-inline-form" action={decideDevice}>
+                      <input type="hidden" name="deviceId" value={row.id} />
+                      <input type="hidden" name="decision" value="approve" />
+                      <button className="a-btn accent small" type="submit">
+                        Approve device
+                      </button>
+                    </form>
+                  ) : null}
                   {mayWrite && row.status !== 'banned' ? (
                     <form className="a-inline-form" action={actOnDevice.bind(null, userId)}>
                       <input type="hidden" name="deviceId" value={row.id} />

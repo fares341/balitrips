@@ -16,13 +16,14 @@
  */
 
 import dynamic from 'next/dynamic'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 
 import type { Locale } from '@/i18n/config'
 
 import { MapExplorer, type MapExplorerProps } from './map-explorer'
 import { MapFilterBar, useMapFilters } from './map-filters'
+import { MapResults } from './map-results'
 import type { ScenePin } from './map-3d'
 import { NodePanel } from './node-panel'
 import { pinColor, pinHaystack, projectLat, projectLon, type MapPin } from './projection'
@@ -111,6 +112,7 @@ const serverSurface = (): Surface => 'deciding'
 
 export function MapSurface(props: MapExplorerProps) {
   const locale = useLocale() as Locale
+  const t = useTranslations()
   /**
    * Build the pins once from the redacted payload.
    *
@@ -175,7 +177,7 @@ export function MapSurface(props: MapExplorerProps) {
     <div className="bt-mapwrap" style={{ marginTop: 0 }}>
       <div className="bt-mapframe is-3d" style={{ position: 'relative' }}>
         {surface === 'deciding' ? (
-          <SurfaceMessage text="Loading the island…" />
+          <SurfaceMessage text={t('map_loading_island')} />
         ) : (
           <Map3D pins={scenePins} onReady={onReady} onSelect={setSelectedSlug} />
         )}
@@ -209,11 +211,17 @@ export function MapSurface(props: MapExplorerProps) {
             backdropFilter: 'blur(6px)',
           }}
         >
-          Flat map
+          {t('map_flat')}
         </button>
 
-        {!ready && surface === '3d' ? <SurfaceMessage text="Loading the island…" /> : null}
+        {!ready && surface === '3d' ? <SurfaceMessage text={t('map_loading_island')} /> : null}
       </div>
+
+      <MapResults
+        pins={matched}
+        near={filters.near}
+        onShow={(pin) => setSelectedSlug(pin.place.slug)}
+      />
     </div>
   )
 }

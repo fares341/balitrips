@@ -39,6 +39,9 @@ import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH, fieldErrors } from '@/components/aut
 import { CART_HREF } from '@/components/layout/routes'
 import { defaultLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { isAPIError } from 'better-auth/api'
+
+import { normalizePhone } from '@/lib/auth/phone'
 import { auth } from '@/lib/auth/server'
 import { requireUser } from '@/lib/auth/session'
 import { activeUserOrNull, requireActiveUser } from '@/lib/security/require'
@@ -77,7 +80,8 @@ const profileSchema = z.object({
     // Loose on purpose: a WhatsApp number typed by a traveller from any
     // country. Anything stricter rejects valid numbers, and that costs a
     // booking.
-    .refine((value) => value === '' || /^[+0-9][0-9 ()./-]{4,}$/.test(value), 'auth_err_phone'),
+    // دولي (+ أو 00): الجوال مفتاح دخول (الوثيقة 3.2) ويجب أن يكون قابلاً للتوحيد.
+    .refine((value) => value === '' || normalizePhone(value) !== null, 'auth_err_phone_intl'),
   // `users.country` is varchar(2); the control is a select, so this only
   // fires on a tampered payload — where it would otherwise be a 500.
   country: z
@@ -126,6 +130,9 @@ export async function updateProfileAction(
       },
     })
   } catch (error) {
+    if (isAPIError(error) && error.body?.code === 'PHONE_TAKEN') {
+      return { status: 'error', errors: { phone: 'auth_err_phone_taken' }, formError: null }
+    }
     console.error('[account] profile update failed', error)
     return { status: 'error', errors: {}, formError: 'c_error' }
   }

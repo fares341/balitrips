@@ -46,6 +46,17 @@ test.describe('accounts', () => {
     expect(await isSignedIn(page), 'sign-in with correct credentials failed').toBe(true)
   })
 
+  test('a registered visitor can sign in with the mobile number (spec 3.2)', async ({ page }) => {
+    const credentials = newCredentials()
+    await register(page, credentials)
+    await signOut(page)
+
+    // نفس الحساب، بالجوال بدل البريد — بصيغة مختلفة (مسافات/00) ليُثبت التوحيد.
+    const spaced = credentials.phone.replace(/^\+/, '00').replace(/(\d{4})/g, '$1 ')
+    await signIn(page, { email: spaced, password: credentials.password })
+    expect(await isSignedIn(page)).toBe(true)
+  })
+
   test('a wrong password is rejected', async ({ page }) => {
     const credentials = newCredentials()
     await register(page, credentials)
@@ -55,7 +66,7 @@ test.describe('accounts', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     const dialog = page.getByRole('dialog')
-    await dialog.getByLabel('Email address').fill(credentials.email)
+    await dialog.getByLabel('Email or mobile number').fill(credentials.email)
     await dialog.getByLabel('Password', { exact: true }).fill('not-the-password-1A!')
     await dialog.getByRole('button', { name: 'Sign in', exact: true }).click()
 

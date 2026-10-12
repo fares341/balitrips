@@ -60,6 +60,11 @@ export const plans = pgTable(
     canSaveFavorites: boolean('can_save_favorites').notNull().default(true),
     /** الوثيقة 13.2: "هل يستطيع تحميل PDF؟" — false = عرض داخل الموقع فقط. */
     canDownloadPdf: boolean('can_download_pdf').notNull().default(true),
+    /**
+     * الباقة العائلية (الوثيقة 13.1/13.3/14.3): عدد المستخدمين الذين تشملهم
+     * الباقة **مع** صاحبها. 1 = صاحبها فقط. أكثر من 1 = يدعو أفراداً بالبريد.
+     */
+    maxMembers: integer('max_members').notNull().default(1),
 
     featured: boolean('featured').notNull().default(false),
     sortOrder: integer('sort_order').notNull().default(0),

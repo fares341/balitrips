@@ -40,7 +40,8 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
  */
 function safeNext(value: string | string[] | undefined): string | null {
   if (typeof value !== 'string') return null
-  if (!value.startsWith('/') || value.startsWith('//')) return null
+  // `/\evil.com` يطبّعه المتصفح إلى `//evil.com`.
+  if (!/^\/(?![/\\])/.test(value)) return null
   return value
 }
 

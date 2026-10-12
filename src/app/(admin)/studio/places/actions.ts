@@ -1,10 +1,13 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
+
 import { eq, inArray } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { mapPlaces, placeTags, tags } from '@/db/schema'
+import { isStorageConfigured, publicUrl, uploadPublic } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -81,8 +84,10 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       categoryId: fuuidOrNull(form, 'categoryId', 'Category'),
       detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
       videos: flines(form, 'videos')
-        .filter((url) => /^https?:\/\//.test(url))
+        .filter((url) => /^https:\/\//.test(url) || url.startsWith('/media/'))
         .slice(0, 10),
+      galleryImageIds: fmulti(form, 'galleryImageIds').filter(isUuid).slice(0, 24),
+      subCategoryIds: fmulti(form, 'subCategoryIds').filter(isUuid).slice(0, 10),
       internalNotes: fstr(form, 'internalNotes'),
       openingHours: fstr(form, 'openingHours'),
       rating: ratingTenths === null ? null : ratingTenths / 10,
@@ -242,4 +247,78 @@ export async function deletePlace(id: string): Promise<void> {
   }
 
   redirect(withOutcome(LIST, outcome))
+}
+
+/* --------------------------------------------------------------------------
+   رفع فيديو للمكان (الوثيقة 6.3، العقد: "إضافة الصور والفيديوهات للأماكن")
+   -------------------------------------------------------------------------- */
+
+const MAX_VIDEO_BYTES = 24 * 1024 * 1024
+const VIDEO_TYPES: Record<string, string> = { 'video/mp4': 'mp4', 'video/webm': 'webm' }
+
+/** يتحقق من التوقيع الفعلي للملف — الامتداد والنوع المعلن قد يكذبان. */
+function videoKind(bytes: Uint8Array): 'mp4' | 'webm' | null {
+  if (bytes.length > 12 && new TextDecoder().decode(bytes.slice(4, 8)) === 'ftyp') return 'mp4'
+  if (
+    bytes.length > 4 &&
+    bytes[0] === 0x1a &&
+    bytes[1] === 0x45 &&
+    bytes[2] === 0xdf &&
+    bytes[3] === 0xa3
+  )
+    return 'webm'
+  return null
+}
+
+export async function uploadPlaceVideo(id: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  let outcome: Outcome
+  try {
+    const file = form.get('file')
+    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a video to upload.')
+    if (file.size > MAX_VIDEO_BYTES) {
+      throw new Error('Videos up to 24 MB. For longer clips, upload to YouTube and paste the link.')
+    }
+    if (!(file.type in VIDEO_TYPES)) throw new Error('Upload an MP4 or WebM video.')
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const kind = videoKind(bytes)
+    if (kind === null) throw new Error('That file is not an MP4 or WebM video.')
+
+    const [before] = await db.select().from(mapPlaces).where(eq(mapPlaces.id, id)).limit(1)
+    if (!before) throw new Error('That place no longer exists')
+    if ((before.videos ?? []).length >= 10) throw new Error('A place can have at most 10 videos.')
+
+    const key = `media/videos/${id}/${randomUUID()}.${kind}`
+    let url: string
+    if (isStorageConfigured()) {
+      await uploadPublic({ key, body: bytes, contentType: `video/${kind}` })
+      url = publicUrl(key)
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Object storage is not configured; the video could not be stored.')
+      }
+      const { mkdir, writeFile } = await import('node:fs/promises')
+      const path = await import('node:path')
+      const target = path.join(process.cwd(), 'public', key)
+      await mkdir(path.dirname(target), { recursive: true })
+      await writeFile(target, bytes)
+      url = `/${key}`
+    }
+
+    const videos = [...(before.videos ?? []), url]
+    await db.update(mapPlaces).set({ videos }).where(eq(mapPlaces.id, id))
+    await writeAudit({
+      actor: session,
+      action: 'map_place.video_upload',
+      entityType: 'map_place',
+      entityId: id,
+      before: { videos: before.videos },
+      after: { videos, bytes: bytes.byteLength },
+    })
+    outcome = { ok: 'Video uploaded and added to the place.' }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(adminHref(`/places/${id}`), outcome))
 }

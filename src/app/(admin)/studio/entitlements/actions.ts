@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { entitlements, users } from '@/db/schema'
+import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -126,6 +127,8 @@ export async function revokeEntitlement(form: FormData): Promise<void> {
         .set({ revokedAt: new Date(), revokedReason: reason })
         .where(eq(entitlements.id, id))
         .returning()
+      // باقة عائلية: الأفراد يحملون نسخاً منفصلة — تُسحب معها.
+      await revokeFamilyMembersOf(tx, id, `owner revoked: ${reason}`)
 
       await writeAudit(
         {

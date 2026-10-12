@@ -1,6 +1,8 @@
 'use server'
 
-import { and, eq } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
+
+import { and, eq, inArray } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -15,6 +17,8 @@ import {
   statusAfterRefund,
   type OrderStatus,
 } from '@/lib/orders/state'
+import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { notifyOrderPaid } from '@/lib/notify/orders'
 import { revokeOrderEntitlements } from '@/lib/orders/webhook'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -303,5 +307,116 @@ export async function setLineFulfilment(
     outcome = { err: errorMessage(error) }
   }
 
+  redirect(withOutcome(detail(orderId), outcome))
+}
+
+/**
+ * تسجيل دفع خارج البوابة (تحويل بنكي، نقداً) — "تحديث حالة الطلب" و"ربط الدفع
+ * بالصلاحيات" من لوحة التحكم. للمدير فقط (`orders.refund`)، بمرجع إلزامي.
+ *
+ * نفس ما يفعله webhook الدفع: الطلب `pending → paid` وصف دفع `manual` ناجح،
+ * ومنح الباقات في نفس المعاملة، ثم الإشعارات وإيصال PDF بعد الالتزام.
+ */
+export async function markOrderPaidOffline(orderId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('orders.refund')
+  let outcome: Outcome
+  try {
+    const reference = (fstr(form, 'reference') ?? '').trim().slice(0, 128)
+    if (reference.length < 3) throw new Error('Enter the transfer or receipt reference.')
+
+    await db.transaction(async (tx) => {
+      const [order] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .for('update')
+        .limit(1)
+      if (!order) throw new Error('That order no longer exists')
+      const status = order.status as OrderStatus
+      if (status !== 'pending')
+        throw new Error(`Only pending orders can be marked paid (this one is ${status}).`)
+      assertTransition(status, 'paid')
+
+      await tx.update(orders).set({ status: 'paid' }).where(eq(orders.id, orderId))
+      // محاولات الدفع بالبطاقة المفتوحة لم تعد مطلوبة. إن دفع العميل بها رغم ذلك
+      // يسجّلها الـ webhook دفعة ثانية ناجحة تظهر في Payments لاستردادها.
+      await tx
+        .update(payments)
+        .set({ status: 'cancelled' })
+        .where(
+          and(
+            eq(payments.orderId, orderId),
+            inArray(payments.status, ['requires_action', 'processing']),
+          ),
+        )
+      await tx.insert(payments).values({
+        orderId,
+        provider: 'manual',
+        providerPaymentId: `manual:${reference}`,
+        status: 'succeeded',
+        amountMinor: order.totalMinor,
+        currency: order.presentmentCurrency,
+        idempotencyKey: `manual:${orderId}:${randomUUID()}`,
+        rawPayload: { reference, by: session.userId },
+      })
+      await grantOrderPlans(tx, orderId)
+      await writeAudit(
+        {
+          actor: session,
+          action: 'order.mark_paid_offline',
+          entityType: 'order',
+          entityId: orderId,
+          before: { status },
+          after: { status: 'paid', reference },
+        },
+        tx,
+      )
+    })
+
+    await notifyOrderPaid(orderId)
+    try {
+      const { enqueueEmail, enqueueVoucherPdf } = await import('@/worker/queues')
+      await enqueueEmail({ kind: 'order_confirmation', orderId })
+      await enqueueVoucherPdf(orderId)
+    } catch (error) {
+      console.error('[orders] follow-ups after offline payment failed', error)
+    }
+    outcome = { ok: 'Marked paid. Access granted, customer notified, receipt queued.' }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(detail(orderId), outcome))
+}
+
+/** إصدار/إعادة توليد إيصال PDF للطلب (الوثيقة: "إصدار إيصال"). */
+export async function issueReceipt(orderId: string): Promise<void> {
+  const session = await requireCapability('orders.fulfil')
+  let outcome: Outcome
+  try {
+    const [order] = await db
+      .select({ status: orders.status })
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1)
+    if (!order) throw new Error('That order no longer exists')
+    if (!['paid', 'confirmed', 'partially_refunded'].includes(order.status)) {
+      throw new Error('Receipts are issued for paid orders only.')
+    }
+    const { enqueueVoucherPdf } = await import('@/worker/queues')
+    await enqueueVoucherPdf(orderId)
+    await writeAudit({
+      actor: session,
+      action: 'order.receipt',
+      entityType: 'order',
+      entityId: orderId,
+      before: null,
+      after: { queued: true },
+    })
+    outcome = { ok: 'Receipt queued. It is ready to download in a minute.' }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
   redirect(withOutcome(detail(orderId), outcome))
 }

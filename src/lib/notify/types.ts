@@ -17,6 +17,15 @@ export const USER_NOTIFICATION_TYPES = {
   custom_completed: { email: true, whatsapp: true },
   /** سياسة "warn": جهاز جديد فوق حد الباقة — اقتراح الترقية (الوثيقة 14.2). */
   device_limit_warning: { email: true, whatsapp: false },
+  /** الإدارة وافقت على جهاز كان معلّقاً (سياسة require_approval). */
+  device_approved: { email: true, whatsapp: false },
+  /**
+   * رسالة يكتبها المدير (الوثيقة 2.5: "إرسال إشعارات"). القنوات يختارها المدير
+   * عند الإرسال؛ واتساب يصل فقط لمن وافق وبقالب `bali_admin_message`.
+   */
+  admin_message: { email: false, whatsapp: false },
+  /** أُضيف إلى باقة عائلية (الوثيقة 13.3). */
+  family_added: { email: true, whatsapp: false },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -27,6 +36,8 @@ export const STAFF_NOTIFICATION_TYPES = {
   staff_payment_failed: { email: true, whatsapp: false },
   /** الوثيقة 4.3: "دخول من جهاز جديد لمستخدم مدفوع". */
   staff_paid_new_device: { email: false, whatsapp: false },
+  /** جهاز جديد ينتظر موافقة الإدارة (الوثيقة 14.2). */
+  staff_device_approval: { email: true, whatsapp: false },
 } as const
 
 export type UserNotificationType = keyof typeof USER_NOTIFICATION_TYPES
@@ -46,6 +57,7 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   plan_expiring: ['plan', 'date'],
   custom_pdf_ready: ['name'],
   custom_completed: ['name'],
+  admin_message: ['body'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],
 }

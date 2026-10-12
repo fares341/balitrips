@@ -58,3 +58,17 @@ export function clientIp(headers: HeaderBag): string | null {
 
   return normalizeIp(headers.get('x-real-ip'))
 }
+
+/**
+ * الدولة التقريبية للطلب (الوثيقة 3.2: "الموقع التقريبي إن أمكن").
+ *
+ * بلا قاعدة GeoIP على الخادم: نقرأ رأس الدولة الذي يضيفه الـ CDN —
+ * `cf-ipcountry` لـ Cloudflare افتراضياً، أو ما يحدده `GEO_COUNTRY_HEADER`.
+ * معلومة للعرض والمراجعة فقط، لا لقرار أمني (يمكن تزويرها دون CDN أمام الخادم).
+ */
+export function requestCountry(headers: HeaderBag): string | null {
+  const name = process.env.GEO_COUNTRY_HEADER?.trim().toLowerCase() || 'cf-ipcountry'
+  const value = headers.get(name)?.trim().toUpperCase() ?? ''
+  // XX = غير معروف؛ T1 = شبكة Tor عند Cloudflare (يُحتفظ به — مفيد للمراجعة).
+  return /^[A-Z][A-Z0-9]$/.test(value) && value !== 'XX' ? value : null
+}

@@ -64,6 +64,13 @@
       "when": 1791900000000,
       "tag": "0008_production_fixes",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791990000000,
+      "tag": "0009_phase2_features",
+      "breakpoints": true
     }
   ]
 }

@@ -45,7 +45,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { accounts, sessions, users, verifications } from '@/db/schema'
@@ -53,9 +53,16 @@ import { defaultLocale, isLocale } from '@/i18n/config'
 
 import { logActivity } from '@/lib/security/activity'
 import { findActiveBan } from '@/lib/security/bans'
-import { DeviceBannedError, DeviceLimitError, registerSignInDevice } from '@/lib/security/devices'
+import {
+  DeviceApprovalPendingError,
+  DeviceBannedError,
+  DeviceLimitError,
+  registerSignInDevice,
+} from '@/lib/security/devices'
 import { DEVICE_COOKIE, deviceIdentity } from '@/lib/security/fingerprint'
-import { clientIp } from '@/lib/security/ip'
+import { clientIp, requestCountry } from '@/lib/security/ip'
+
+import { looksLikeEmail, normalizePhone } from './phone'
 
 import { sendPasswordResetEmail, toMailLocale } from './email'
 
@@ -305,6 +312,8 @@ export const auth = betterAuth({
         defaultValue: defaultLocale,
       },
       phone: { type: 'string', required: false, returned: true },
+      /** يُحسب في الخطاف أدناه من `phone`؛ لا يقبله أحد من جسم الطلب. */
+      phoneNormalized: { type: 'string', required: false, input: false, returned: false },
       country: { type: 'string', required: false, returned: true },
       /**
        * الحظر. `input: false` حتى لا يرسله أحد في جسم التسجيل؛ `returned`
@@ -405,6 +414,13 @@ export const auth = betterAuth({
                 code: 'DEVICE_LIMIT_REACHED',
               })
             }
+            if (error instanceof DeviceApprovalPendingError) {
+              // سُجّل في registerSignInDevice؛ هنا نعيد رسالة "بانتظار موافقة الإدارة".
+              throw APIError.from('FORBIDDEN', {
+                message: 'This device is waiting for approval.',
+                code: 'DEVICE_PENDING_APPROVAL',
+              })
+            }
             if (error instanceof DeviceBannedError) {
               await logActivity({
                 action: 'login_blocked',
@@ -426,7 +442,11 @@ export const auth = betterAuth({
             userId: String(session.userId),
             ip: (ctx?.headers ? clientIp(ctx.headers) : null) ?? asIp(session.ipAddress),
             deviceId: typeof session.deviceId === 'string' ? session.deviceId : null,
-            details: ctx?.path ? { via: ctx.path } : null,
+            // الوثيقة 3.2: "الموقع التقريبي إن أمكن" — الدولة من رأس الـ CDN إن وُجد.
+            details: {
+              ...(ctx?.path ? { via: ctx.path } : {}),
+              country: ctx?.headers ? requestCountry(ctx.headers) : null,
+            },
           })
         },
       },
@@ -453,15 +473,31 @@ export const auth = betterAuth({
          * bogus locale would silently break the reset email. Normalize here,
          * inside the transaction that creates the row.
          */
-        before: async (user) => {
+        before: async (user, ctx) => {
           const raw = user as Record<string, unknown>
           const rawLocale = raw.locale
           const rawPhone = raw.phone
           const rawCountry = raw.country
 
+          // الوثيقة 3.1: الجوال من بيانات التسجيل، وهو مفتاح دخول — فريد ودولي.
+          const phoneNormalized = typeof rawPhone === 'string' ? normalizePhone(rawPhone) : null
+          if (ctx?.path === '/sign-up/email' && phoneNormalized === null) {
+            throw APIError.from('BAD_REQUEST', {
+              message: 'A mobile number in international format is required.',
+              code: 'PHONE_REQUIRED',
+            })
+          }
+          if (phoneNormalized !== null && (await phoneTaken(phoneNormalized))) {
+            throw APIError.from('BAD_REQUEST', {
+              message: 'This mobile number is already registered.',
+              code: 'PHONE_TAKEN',
+            })
+          }
+
           return {
             data: {
               ...user,
+              phoneNormalized,
               locale:
                 typeof rawLocale === 'string' && isLocale(rawLocale) ? rawLocale : defaultLocale,
               phone:
@@ -494,7 +530,7 @@ export const auth = betterAuth({
        * الحقول مباشرة، فقيمة طويلة كانت تنتهي بخطأ 500 من Postgres.
        */
       update: {
-        before: async (user) => {
+        before: async (user, ctx) => {
           const raw = user as Record<string, unknown>
           const data: Record<string, unknown> = { ...user }
           if ('locale' in raw) {
@@ -506,6 +542,19 @@ export const auth = betterAuth({
               typeof raw.phone === 'string' && raw.phone.trim() !== ''
                 ? raw.phone.trim().slice(0, 32)
                 : null
+            const normalized = typeof raw.phone === 'string' ? normalizePhone(raw.phone) : null
+            // بيانات التعديل لا تحمل المعرّف؛ صاحب الجلسة هو من يعدّل حسابه.
+            const sessionUser = (
+              ctx?.context as { session?: { user?: { id?: unknown } } } | undefined
+            )?.session?.user
+            const self = typeof sessionUser?.id === 'string' ? sessionUser.id : undefined
+            if (normalized !== null && (await phoneTaken(normalized, self))) {
+              throw APIError.from('BAD_REQUEST', {
+                message: 'This mobile number is already registered.',
+                code: 'PHONE_TAKEN',
+              })
+            }
+            data.phoneNormalized = normalized
           }
           if ('country' in raw) {
             data.country =
@@ -522,6 +571,31 @@ export const auth = betterAuth({
   /* ---- Activity hooks -------------------------------------------------- */
 
   hooks: {
+    /**
+     * الدخول برقم الجوال (الوثيقة 3.2): خانة الدخول تقبل بريداً أو جوالاً.
+     * جوال ← نبحث عن الحساب بالرقم الموحّد ونمرّر بريده لنقطة الدخول العادية،
+     * فتبقى كل الحماية (حد المحاولات، الأجهزة، الحظر، السجل) كما هي.
+     * رقم بلا حساب ← عنوان لا يوجد، فتعود نفس رسالة "بيانات غير صحيحة" (لا كشف
+     * لوجود حساب).
+     */
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== '/sign-in/email') return
+      const body = (ctx.body ?? {}) as Record<string, unknown>
+      const identifier = typeof body.email === 'string' ? body.email.trim() : ''
+      if (identifier === '' || looksLikeEmail(identifier)) return
+      const normalized = normalizePhone(identifier)
+      const [owner] =
+        normalized === null
+          ? []
+          : await db
+              .select({ email: users.email })
+              .from(users)
+              .where(and(eq(users.phoneNormalized, normalized), isNull(users.deletedAt)))
+              .limit(1)
+      // نعيد الجزء المتغيّر فقط: Better Auth يدمج `context` المُعاد مع السياق الحالي.
+      return { context: { body: { ...body, email: owner?.email ?? PHONE_NOT_FOUND_EMAIL } } }
+    }),
+
     /**
      * محاولات الدخول الفاشلة. تُسجَّل مع البريد المُدخل (بأحرف صغيرة)، ومع
      * `user_id` إن كان الحساب موجوداً — وهو ما سيعدّه الحظر التلقائي.
@@ -554,6 +628,7 @@ export const auth = betterAuth({
       if (!isAPIError(returned)) return
       if (
         returned.body?.code === 'DEVICE_LIMIT_REACHED' ||
+        returned.body?.code === 'DEVICE_PENDING_APPROVAL' ||
         returned.body?.code === 'ACCOUNT_BANNED'
       ) {
         return // سُجّلت أعلاه بسببها الحقيقي
@@ -651,6 +726,19 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
+
+/** عنوان لا يملكه أحد: دخول برقم غير مسجّل يفشل كأي بيانات خاطئة. */
+const PHONE_NOT_FOUND_EMAIL = 'no-account@phone.invalid'
+
+/** هل الرقم الموحّد مستخدم لحساب آخر (غير محذوف)؟ */
+async function phoneTaken(normalized: string, exceptUserId?: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.phoneNormalized, normalized), isNull(users.deletedAt)))
+    .limit(2)
+  return rows.some((row) => row.id !== exceptUserId)
+}
 
 function trustedIpHeaders(): string[] {
   const trusted = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()

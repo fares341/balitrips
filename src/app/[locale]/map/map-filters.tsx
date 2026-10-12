@@ -87,7 +87,12 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
       if (filterTag !== null && !pin.place.tagKeys.includes(filterTag)) return false
       if (region !== null && pin.place.regionKey !== region && pin.place.parentRegionKey !== region)
         return false
-      if (category !== null && pin.place.categoryKey !== category) return false
+      if (
+        category !== null &&
+        pin.place.categoryKey !== category &&
+        !pin.place.subCategoryKeys.includes(category)
+      )
+        return false
       if (gemsOnly && !pin.place.isHiddenGem) return false
       if (near !== null && haversineKm(near, pin.place) > radiusKm) return false
       return needle === '' || pin.haystack.includes(needle)

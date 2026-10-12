@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { entitlements, orderItems, orders, payments, webhookEvents } from '@/db/schema'
@@ -116,6 +116,29 @@ export async function processWebhookEvent(
     if (isFailureEvent && from !== 'pending') {
       await markProcessed(tx, provider, event.providerEventId)
       return { handled: false, reason: 'no_transition' } as const
+    }
+
+    if (target === 'paid' && from === 'paid') {
+      // A second, real charge for an order already paid — typically one an
+      // admin marked paid offline while the customer's card checkout was still
+      // open. The money moved, so the row must say so: it shows as a second
+      // succeeded payment in Studio → Payments, to be refunded there.
+      const changed = await tx
+        .update(payments)
+        .set({ status: 'succeeded' })
+        .where(
+          and(
+            eq(payments.providerPaymentId, event.providerPaymentId),
+            ne(payments.status, 'succeeded'),
+          ),
+        )
+        .returning({ id: payments.id })
+      if (changed.length > 0) {
+        console.error('[webhook] second successful payment for a paid order', {
+          orderId: order.id,
+          providerPaymentId: event.providerPaymentId,
+        })
+      }
     }
 
     if (!canTransition(from, target)) {

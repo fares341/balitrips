@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { hasLocale } from 'next-intl'
 
 import { Footer, Header } from '@/components/layout'
+import { PageViewBeacon } from '@/components/layout/page-view-beacon'
 import { ToastProvider } from '@/components/shared'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
@@ -65,6 +66,7 @@ export default async function LocaleLayout({
             <Header />
             {children}
             <Footer />
+            <PageViewBeacon />
           </ToastProvider>
         </NextIntlClientProvider>
       </body>

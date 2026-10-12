@@ -47,7 +47,13 @@ const STATUS_VARIANT: Record<OrderStatus, TagVariant> = {
   partially_refunded: 'orange',
 }
 
-export default async function AccountInvoicesPage({ params }: { params: PageParams }) {
+export default async function AccountInvoicesPage({
+  params,
+  searchParams,
+}: {
+  params: PageParams
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { locale: raw } = await params
   const locale = toLocale(raw)
   setRequestLocale(locale)
@@ -55,6 +61,7 @@ export default async function AccountInvoicesPage({ params }: { params: PagePara
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
   const user = await requireActiveUser('account:invoices')
+  const receiptPending = (await searchParams).receipt === 'pending'
 
   const items = await listInvoices(user.id)
 
@@ -70,6 +77,12 @@ export default async function AccountInvoicesPage({ params }: { params: PagePara
           )}
         </h1>
       </div>
+
+      {receiptPending && (
+        <p role="status" className="muted" style={{ marginBlockEnd: 16 }}>
+          {t('acct_inv_receipt_pending')}
+        </p>
+      )}
 
       {items.length === 0 ? (
         <div className="bt-acct-empty">
@@ -130,9 +143,21 @@ export default async function AccountInvoicesPage({ params }: { params: PagePara
                         className="btn btn-ghost"
                         style={{ minHeight: 36, fontSize: 12.5, padding: '6px 12px' }}
                       >
-                        <Icon name="pdf" size={14} />
-                        {t('acct_inv_receipt')}
+                        {t('acct_inv_details')}
                       </Link>
+                      {(item.status === 'paid' ||
+                        item.status === 'confirmed' ||
+                        item.status === 'partially_refunded') && (
+                        // إيصال PDF (الوثيقة: "إصدار إيصال") — تحميل مباشر، لا صفحة.
+                        <a
+                          href={`/${locale}/account/invoices/${item.id}/receipt`}
+                          className="btn btn-ghost"
+                          style={{ minHeight: 36, fontSize: 12.5, padding: '6px 12px' }}
+                        >
+                          <Icon name="pdf" size={14} />
+                          {t('acct_inv_receipt')}
+                        </a>
+                      )}
                     </td>
                   </tr>
                 )

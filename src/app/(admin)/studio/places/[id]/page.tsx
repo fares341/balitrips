@@ -24,9 +24,9 @@ import {
   TextInput,
 } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
-import { OptionField } from '../../../_ui/select-field'
+import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
-import { deletePlace, savePlace } from '../actions'
+import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -279,6 +279,20 @@ export default async function PlaceEditorPage({
               )}
             </div>
           </div>
+          <OptionChecklist
+            name="subCategoryIds"
+            label="Sub-categories"
+            options={categoryList}
+            values={place?.subCategoryIds ?? []}
+            hint="Extra categories this place also belongs to (filters and search)."
+          />
+          <OptionChecklist
+            name="galleryImageIds"
+            label="Gallery images"
+            options={mediaList}
+            values={place?.galleryImageIds ?? []}
+            hint="Shown in the place panel after the hero image. Upload photos in the Media library."
+          />
           <Field label="Videos" htmlFor="videos" hint="One URL per line (YouTube, Vimeo or .mp4).">
             <TextArea
               id="videos"
@@ -309,14 +323,38 @@ export default async function PlaceEditorPage({
       </form>
 
       {place ? (
-        <form className="a-card" action={deletePlace.bind(null, place.id)}>
-          <h2>Archive</h2>
-          <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              Archive place
-            </button>
-          </div>
-        </form>
+        <>
+          <form
+            className="a-card a-row"
+            action={uploadPlaceVideo.bind(null, place.id)}
+            style={{ alignItems: 'end' }}
+          >
+            <h2 style={{ width: '100%', margin: 0 }}>Upload a video</h2>
+            <Field label="MP4 or WebM, up to 24 MB" htmlFor="video-file">
+              <input
+                className="a-input"
+                id="video-file"
+                name="file"
+                type="file"
+                accept="video/mp4,video/webm"
+                required
+              />
+            </Field>
+            <div className="a-actions">
+              <button className="a-btn accent" type="submit">
+                Upload video
+              </button>
+            </div>
+          </form>
+          <form className="a-card" action={deletePlace.bind(null, place.id)}>
+            <h2>Archive</h2>
+            <div className="a-actions" style={{ marginBlockStart: 12 }}>
+              <button className="a-btn danger" type="submit">
+                Archive place
+              </button>
+            </div>
+          </form>
+        </>
       ) : null}
     </>
   )

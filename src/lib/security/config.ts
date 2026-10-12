@@ -8,7 +8,12 @@
  * لا استيرادات هنا عمداً: يستورده كلٌّ من settings.ts وdevices.ts.
  */
 
-export const NEW_DEVICE_POLICIES = ['block', 'evict_oldest', 'warn'] as const
+/**
+ * الوثيقة 14.2 — إذا حاول المستخدم الدخول من جهاز جديد فوق الحد:
+ * يُمنع (`block`)، أو يُسجَّل خروج الجهاز القديم (`evict_oldest`)، أو يحتاج
+ * موافقة الإدارة (`require_approval`)، أو تظهر له رسالة للترقية (`warn`).
+ */
+export const NEW_DEVICE_POLICIES = ['block', 'evict_oldest', 'require_approval', 'warn'] as const
 export type NewDevicePolicy = (typeof NEW_DEVICE_POLICIES)[number]
 
 export const PDF_DOWNLOAD_MODES = ['allow', 'view_only'] as const

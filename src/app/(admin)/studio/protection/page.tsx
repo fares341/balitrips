@@ -124,7 +124,8 @@ export default async function ProtectionPage({
                 >
                   <option value="block">Refuse sign-in (user removes a device)</option>
                   <option value="evict_oldest">Sign out the oldest device</option>
-                  <option value="warn">Allow, but log it</option>
+                  <option value="require_approval">Needs admin approval</option>
+                  <option value="warn">Allow, and show an upgrade message</option>
                 </select>
               </Field>
               <Field label="PDF downloads" htmlFor="pdfDownloads">
