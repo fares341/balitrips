@@ -62,7 +62,7 @@ export function NodePanel({ pin, onClose }: NodePanelProps) {
     pickOptional(place.parentRegionLabel, locale),
   ]
     .filter((part): part is string => part !== null)
-    .join('، ')
+    .join(locale === 'ar' ? '، ' : ', ')
   // أسماء الوسوم المترجمة من لوحة التحكم (لا النص الإنجليزي القديم).
   const tags = place.tagList.slice(0, MAX_TAGS).map((tag) => pick(tag.label, locale, tag.key))
 

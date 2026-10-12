@@ -297,6 +297,20 @@ export class StripePaymentProvider implements PaymentProvider {
     }
   }
 
+  async cancelIntent(providerPaymentId: string): Promise<void> {
+    try {
+      await this.call(
+        'POST',
+        `/checkout/sessions/${encodeURIComponent(providerPaymentId)}/expire`,
+        {},
+      )
+    } catch (error) {
+      // Already complete or expired: Stripe answers 400 — nothing to close.
+      if (error instanceof PaymentProviderError && !error.retryable) return
+      throw error
+    }
+  }
+
   async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent> {
     verifyStripeSignature(
       rawBody,

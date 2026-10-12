@@ -70,6 +70,15 @@ import { sendPasswordResetEmail, sendVerificationEmail, toMailLocale } from './e
    Environment
    -------------------------------------------------------------------------- */
 
+/** نقاط تبدأ دخولاً أو تنشئ حساباً: IP المحظور يُرفض عندها قبل أي عمل. */
+const BAN_CHECKED_PATHS = new Set([
+  '/sign-in/email',
+  '/sign-up/email',
+  '/sign-in/social',
+  '/forget-password',
+  '/request-password-reset',
+])
+
 /** Public origin, no trailing slash. OAuth callbacks are built from this. */
 const BASE_URL = (
   process.env.BETTER_AUTH_URL ??
@@ -206,7 +215,10 @@ export const auth = betterAuth({
    */
   emailVerification: {
     sendOnSignUp: true,
-    autoSignInAfterVerification: true,
+    // لا دخول تلقائي من رابط البريد: الرابط يُفتح غالباً على جهاز آخر (الهاتف)
+    // بلا بصمة الجهاز، فيُسجَّل جهازاً "ضعيفاً" ويستهلك خانة من حد الأجهزة.
+    // بعد التأكيد يصل لصفحة الحساب ويدخل من النموذج المعتاد إن لزم.
+    autoSignInAfterVerification: false,
     expiresIn: DAY,
     sendVerificationEmail: async ({ user, token }) => {
       const locale = toMailLocale((user as { locale?: unknown }).locale)
@@ -375,6 +387,43 @@ export const auth = betterAuth({
 
   databaseHooks: {
     /**
+     * منع "الاستيلاء المسبق" على الحساب: مهاجم يسجّل ببريد الضحية وكلمة مرور
+     * يعرفها (التأكيد غير إلزامي)، ثم تدخل الضحية بـ Google فيُربط حسابها بحسابه
+     * وتبقى كلمة مروره صالحة. عند ربط مزوّد اجتماعي (يثبت ملكية البريد) بحساب
+     * بريده غير مؤكَّد: تُحذف كلمة المرور الموجودة وتُنهى كل الجلسات، ويُعلَّم
+     * البريد مؤكَّداً. صاحب البريد الحقيقي يعيّن كلمة مرور جديدة بـ"نسيت كلمة المرور".
+     */
+    account: {
+      create: {
+        after: async (account) => {
+          if (account.providerId === 'credential') return
+          const userId = String(account.userId)
+          const [owner] = await db
+            .select({ verifiedAt: users.emailVerifiedAt })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1)
+          if (!owner || owner.verifiedAt !== null) return
+          const removed = await db
+            .delete(accounts)
+            .where(and(eq(accounts.userId, userId), eq(accounts.providerId, 'credential')))
+            .returning({ id: accounts.id })
+          await db.delete(sessions).where(eq(sessions.userId, userId))
+          await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, userId))
+          if (removed.length > 0) {
+            await logActivity({
+              action: 'change_password',
+              userId,
+              details: {
+                reason: 'credential_removed_on_social_link',
+                provider: account.providerId,
+              },
+            })
+          }
+        },
+      },
+    },
+    /**
      * الأمان عند تسجيل الدخول — انظر src/lib/security.
      *
      * كل جلسة جديدة (بريد/كلمة مرور، Google، Apple، أو الدخول التلقائي بعد
@@ -522,6 +571,8 @@ export const auth = betterAuth({
           return {
             data: {
               ...user,
+              // `users.name` هو varchar(128) و Better Auth لا يحدّه: اسم أطول كان خطأ 500.
+              name: typeof user.name === 'string' ? user.name.trim().slice(0, 128) : user.name,
               phoneNormalized,
               locale:
                 typeof rawLocale === 'string' && isLocale(rawLocale) ? rawLocale : defaultLocale,
@@ -563,6 +614,7 @@ export const auth = betterAuth({
         before: async (user, ctx) => {
           const raw = user as Record<string, unknown>
           const data: Record<string, unknown> = { ...user }
+          if (typeof raw.name === 'string') data.name = raw.name.trim().slice(0, 128)
           if ('locale' in raw) {
             data.locale =
               typeof raw.locale === 'string' && isLocale(raw.locale) ? raw.locale : defaultLocale
@@ -609,6 +661,23 @@ export const auth = betterAuth({
      * لوجود حساب).
      */
     before: createAuthMiddleware(async (ctx) => {
+      // IP محظور: يُرفض قبل أي فحص لكلمة المرور أو إنشاء حساب. كان الفحص بعد
+      // التحقق من كلمة المرور فقط، فالمحظور يواصل التخمين، والرد المختلف
+      // (ACCOUNT_BANNED بدل "بيانات غير صحيحة") يكشف له أن الكلمة صحيحة.
+      if (BAN_CHECKED_PATHS.has(ctx.path)) {
+        const ip = ctx.headers ? clientIp(ctx.headers) : null
+        if (ip !== null && (await findActiveBan({ ip })) !== null) {
+          await logActivity({
+            action: 'login_blocked',
+            ip,
+            details: { why: 'banned_ip', path: ctx.path },
+          })
+          throw APIError.from('FORBIDDEN', {
+            message: 'This account cannot sign in.',
+            code: 'ACCOUNT_BANNED',
+          })
+        }
+      }
       if (ctx.path !== '/sign-in/email') return
       const body = (ctx.body ?? {}) as Record<string, unknown>
       const identifier = typeof body.email === 'string' ? body.email.trim() : ''

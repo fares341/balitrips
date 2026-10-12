@@ -402,7 +402,11 @@ export const favorites = pgTable(
     refId: uuid('ref_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('favorites_unique').on(t.userId, t.kind, t.refId)],
+  (t) => [
+    uniqueIndex('favorites_unique').on(t.userId, t.kind, t.refId),
+    // "الأكثر حفظاً" في البحث ولوحة التحكم يعدّ حسب العنصر لا المستخدم.
+    index('favorites_ref_idx').on(t.kind, t.refId),
+  ],
 )
 
 // ---------------------------------------------------------------------------

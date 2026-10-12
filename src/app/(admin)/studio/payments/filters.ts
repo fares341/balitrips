@@ -10,6 +10,7 @@ export const PAYMENT_STATUSES = [
   'succeeded',
   'failed',
   'cancelled',
+  'refunded',
 ] as const
 
 type Params = Record<string, string | string[] | undefined>

@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gt, isNull, or } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -62,6 +62,8 @@ export async function grantEntitlement(form: FormData): Promise<void> {
             eq(entitlements.userId, user.id),
             eq(entitlements.kind, kind),
             isNull(entitlements.revokedAt),
+            // منتهية الصلاحية لا تمنع منحاً جديداً.
+            or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, new Date())),
           ),
         )
         .limit(1)

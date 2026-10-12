@@ -453,12 +453,20 @@ function sameBooking(row: CartItemRow, input: AddItemInput): boolean {
   )
 }
 
-export async function addItem(input: AddItemInput): Promise<AddItemResult> {
+export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   // One guard covers addToCartAction, addFavoriteToTripAction and
   // createTripFromFavoritesAction: the latter two import addItem directly and
   // never pass through cart/actions.ts. Above getOrCreateCart() so a closed
   // site does not mint an empty cart row per refused attempt.
   assertBookingsOpen('addItem')
+
+  // عدد الضيوف من العميل: عدد صحيح ≥ 1 أو لا شيء. كان `guests: 0` يُخزَّن كما هو،
+  // فتُسعَّر باقة "للفرد" بصفر (الكمية = الضيوف) وتدخل الطلب مجاناً.
+  const guestsIn =
+    rawInput.guests === undefined || rawInput.guests === null
+      ? null
+      : clampQuantity(rawInput.guests, CART_MAX_QUANTITY)
+  const input: AddItemInput = { ...rawInput, guests: guestsIn }
 
   const cart = await getOrCreateCart()
   const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))

@@ -1,4 +1,4 @@
-import { and, eq, like } from 'drizzle-orm'
+import { and, eq, like, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { users, verifications } from '@/db/schema'
@@ -207,6 +207,53 @@ export async function consumeRecoveryCode(userId: string, code: string): Promise
     FAR_FUTURE,
   )
   return true
+}
+
+/* --------------------------------------------------------------------------
+   Failed-attempt limit
+   -------------------------------------------------------------------------- */
+
+/**
+ * محاولات خاطئة متتالية قبل القفل. التحدي Server Action، فحدود Better Auth
+ * (على /api/auth فقط) لا تشمله: بلا هذا الحد يخمّن من سرق كلمة المرور الرمز
+ * المكوّن من 6 أرقام بلا توقف.
+ */
+export const MAX_CHALLENGE_FAILURES = 5
+export const CHALLENGE_LOCK_MINUTES = 15
+const FAIL_PREFIX = 'two-factor:fail:'
+
+async function readFailures(runner: Tx | typeof db, userId: string): Promise<number> {
+  const [row] = await runner
+    .select({ value: verifications.value, expiresAt: verifications.expiresAt })
+    .from(verifications)
+    .where(eq(verifications.identifier, `${FAIL_PREFIX}${userId}`))
+    .limit(1)
+  if (!row || row.expiresAt.getTime() < Date.now()) return 0
+  return Number.parseInt(row.value, 10) || 0
+}
+
+export async function challengeLocked(userId: string): Promise<boolean> {
+  return (await readFailures(db, userId)) >= MAX_CHALLENGE_FAILURES
+}
+
+/** يزيد العدّاد ذرّياً ويعيد العدد الجديد. النافذة تتجدد مع كل خطأ. */
+export async function recordChallengeFailure(userId: string): Promise<number> {
+  const identifier = `${FAIL_PREFIX}${userId}`
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${identifier}))`)
+    const next = (await readFailures(tx, userId)) + 1
+    await writeValue(
+      identifier,
+      String(next),
+      new Date(Date.now() + CHALLENGE_LOCK_MINUTES * 60_000),
+      tx,
+    )
+    return next
+  })
+}
+
+export async function clearChallengeFailures(userId: string): Promise<void> {
+  await clearValue(`${FAIL_PREFIX}${userId}`)
 }
 
 /* --------------------------------------------------------------------------

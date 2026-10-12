@@ -134,6 +134,53 @@ async function grantMember(
   return row.id
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type Entitlement = typeof entitlements.$inferSelect
+
+/**
+ * فترات الصاحب على نفس الباقة: الحالية (إن وُجدت) ثم التجديدات المؤجَّلة.
+ * الفرد يُضاف لكلها، فلا يخرج عند بدء التجديد ولا يدخل التجديد خلسةً بعد إزالته.
+ */
+async function ownerTerms(tx: Tx, ownerUserId: string, planId: string, now: Date) {
+  return tx
+    .select()
+    .from(entitlements)
+    .where(
+      and(
+        eq(entitlements.userId, ownerUserId),
+        eq(entitlements.planId, planId),
+        isNull(entitlements.sharedByUserId),
+        isNull(entitlements.revokedAt),
+        or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+      ),
+    )
+    .orderBy(entitlements.startsAt)
+}
+
+/** يضيف الفرد لتجديدات الصاحب المؤجَّلة (بعد `current`). */
+async function grantLaterTerms(
+  tx: Tx,
+  current: Entitlement,
+  memberUserId: string,
+  email: string,
+  now: Date,
+): Promise<void> {
+  if (current.planId === null) return
+  const terms = await ownerTerms(tx, current.userId, current.planId, now)
+  for (const term of terms) {
+    if (term.id === current.id || term.startsAt <= now) continue
+    const memberEntitlementId = await grantMember(tx, term, memberUserId)
+    await tx.insert(planMembers).values({
+      ownerEntitlementId: term.id,
+      ownerUserId: current.userId,
+      inviteEmail: email,
+      memberUserId,
+      memberEntitlementId,
+      status: 'active',
+    })
+  }
+}
+
 export async function inviteFamilyMember(
   ownerUserId: string,
   ownerEntitlementId: string,
@@ -205,6 +252,7 @@ export async function inviteFamilyMember(
         memberEntitlementId,
         status: 'active',
       })
+      await grantLaterTerms(tx, owner.entitlement, member.id, email, now)
       return {
         ok: true as const,
         status: 'active' as const,
@@ -278,18 +326,34 @@ export async function acceptFamilyInvite(
     if (row.invite.inviteEmail !== userEmail.trim().toLowerCase()) {
       return { ok: false as const, error: 'wrong_account' as const, email: row.invite.inviteEmail }
     }
-    const ownerLive =
+    if (row.owner.userId === userId) return { ok: false as const, error: 'invalid' as const }
+
+    // الدعوة مرتبطة بفترة الصاحب التي كانت حيّة عند الإرسال. إن جُدّدت الباقة
+    // منذ ذلك، تُقبل على الفترة الحيّة الآن لنفس الباقة.
+    let current: Entitlement | undefined =
       row.owner.revokedAt === null &&
       row.owner.startsAt <= now &&
       (row.owner.expiresAt === null || row.owner.expiresAt > now)
-    if (!ownerLive) return { ok: false as const, error: 'expired' as const }
-    if (row.owner.userId === userId) return { ok: false as const, error: 'invalid' as const }
+        ? row.owner
+        : undefined
+    if (current === undefined && row.owner.planId !== null && row.owner.revokedAt === null) {
+      const terms = await ownerTerms(tx, row.owner.userId, row.owner.planId, now)
+      current = terms.find((term) => term.startsAt <= now)
+    }
+    if (current === undefined) return { ok: false as const, error: 'expired' as const }
 
-    const memberEntitlementId = await grantMember(tx, row.owner, userId)
+    const memberEntitlementId = await grantMember(tx, current, userId)
     await tx
       .update(planMembers)
-      .set({ status: 'active', memberUserId: userId, memberEntitlementId, tokenHash: null })
+      .set({
+        status: 'active',
+        ownerEntitlementId: current.id,
+        memberUserId: userId,
+        memberEntitlementId,
+        tokenHash: null,
+      })
       .where(eq(planMembers.id, row.invite.id))
+    await grantLaterTerms(tx, current, userId, row.invite.inviteEmail, now)
     return { ok: true as const, owner: row.ownerEmail }
   })
   if (!result.ok) return result
@@ -331,9 +395,10 @@ export async function removeFamilyMember(
   memberRowId: string,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const [row] = await tx
-      .update(planMembers)
-      .set({ status: 'removed', tokenHash: null })
+    const [target] = await tx
+      .select({ email: planMembers.inviteEmail, planId: entitlements.planId })
+      .from(planMembers)
+      .innerJoin(entitlements, eq(entitlements.id, planMembers.ownerEntitlementId))
       .where(
         and(
           eq(planMembers.id, memberRowId),
@@ -341,13 +406,47 @@ export async function removeFamilyMember(
           ne(planMembers.status, 'removed'),
         ),
       )
+      .limit(1)
+    if (!target) return false
+
+    // الإزالة تشمل نسخه على تجديدات الصاحب المؤجَّلة لنفس الباقة — وإلا بقي
+    // يدخل بنسخة التجديد ويُضاف غيره مكانه (أكثر من عدد المقاعد).
+    const termIds =
+      target.planId === null
+        ? []
+        : (
+            await tx
+              .select({ id: entitlements.id })
+              .from(entitlements)
+              .where(
+                and(
+                  eq(entitlements.userId, ownerUserId),
+                  eq(entitlements.planId, target.planId),
+                  isNull(entitlements.sharedByUserId),
+                ),
+              )
+          ).map((row) => row.id)
+
+    const rows = await tx
+      .update(planMembers)
+      .set({ status: 'removed', tokenHash: null })
+      .where(
+        and(
+          eq(planMembers.ownerUserId, ownerUserId),
+          eq(planMembers.inviteEmail, target.email),
+          ne(planMembers.status, 'removed'),
+          termIds.length > 0
+            ? or(eq(planMembers.id, memberRowId), inArray(planMembers.ownerEntitlementId, termIds))
+            : eq(planMembers.id, memberRowId),
+        ),
+      )
       .returning({ memberEntitlementId: planMembers.memberEntitlementId })
-    if (!row) return false
-    if (row.memberEntitlementId) {
+    const ids = rows.flatMap((row) => (row.memberEntitlementId ? [row.memberEntitlementId] : []))
+    if (ids.length > 0) {
       await tx
         .update(entitlements)
         .set({ revokedAt: new Date(), revokedReason: 'removed from family plan by owner' })
-        .where(and(eq(entitlements.id, row.memberEntitlementId), isNull(entitlements.revokedAt)))
+        .where(and(inArray(entitlements.id, ids), isNull(entitlements.revokedAt)))
     }
     return true
   })
@@ -355,9 +454,8 @@ export async function removeFamilyMember(
 
 /**
  * تجديد باقة عائلية: صلاحية الصاحب الجديدة صف جديد، فينقل إليه أفراده (الوثيقة
- * 13.3). الأعضاء الفعّالون يحصلون على نسخة بمدة التجديد نفسها، والدعوات
- * المعلّقة تُنقل للصف الجديد (فيبقى رابطها صالحاً). يحترم حد الأفراد الحالي
- * للباقة. داخل معاملة الدفع نفسها — لا لحظة يكون فيها الصاحب مجدِّداً والأفراد خارجها.
+ * 13.3). الأعضاء الفعّالون يحصلون على نسخة بمدة التجديد نفسها. يحترم حد
+ * الأفراد الحالي للباقة. داخل معاملة الدفع نفسها — لا لحظة يكون فيها الصاحب مجدِّداً والأفراد خارجها.
  */
 export async function carryOverFamily(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
@@ -391,17 +489,14 @@ export async function carryOverFamily(
   const members = await tx
     .select()
     .from(planMembers)
-    .where(and(eq(planMembers.ownerEntitlementId, previous.id), ne(planMembers.status, 'removed')))
-    .orderBy(sql`${planMembers.status} = 'active' desc`, planMembers.createdAt)
+    .where(and(eq(planMembers.ownerEntitlementId, previous.id), eq(planMembers.status, 'active')))
+    .orderBy(planMembers.createdAt)
 
   let moved = 0
   for (const member of members.slice(0, plan.maxMembers - 1)) {
-    if (member.status === 'invited') {
-      await tx
-        .update(planMembers)
-        .set({ ownerEntitlementId: renewal.id })
-        .where(eq(planMembers.id, member.id))
-    } else if (member.memberUserId !== null) {
+    // الدعوات المعلّقة تبقى على فترتها: القبول يجد الفترة الحيّة لنفس الباقة،
+    // ويضيف الفرد للتجديدات المؤجَّلة أيضاً (`grantLaterTerms`).
+    if (member.status === 'active' && member.memberUserId !== null) {
       const memberEntitlementId = await grantMember(tx, renewal, member.memberUserId)
       await tx.insert(planMembers).values({
         ownerEntitlementId: renewal.id,

@@ -41,7 +41,7 @@ export interface RuleSpec {
   /** على من نعدّ. */
   by: 'user' | 'ip'
   /** `distinct_ip` يعدّ عناوين IP مختلفة بدل عدد الأحداث. */
-  measure: 'events' | 'distinct_ip'
+  measure: 'events' | 'distinct_ip' | 'distinct_device'
   windowMs: number
   threshold: number
   severity: Severity
@@ -78,15 +78,33 @@ export const RULES: readonly RuleSpec[] = [
     label: 'Many failed sign-ins on one account',
   },
   {
+    /**
+     * أجهزة مختلفة سُجّلت فعلاً خلال أسبوع. كانت القاعدة تعدّ كل حدث (أول جهاز
+     * عند التسجيل، كل طرد، كل محاولة مرفوضة) فيُحظر مستخدم عادي غيّر هاتفه
+     * وضغط "دخول" أربع مرات — ومعه يضيع طريق إزالة الجهاز القديم. الآن: 6
+     * أجهزة مختلفة في أسبوع = مشاركة حساب حقيقية.
+     */
     id: 'device_churn',
-    counts: ['new_device', 'device_evicted', 'device_limit_blocked'],
+    counts: ['new_device'],
     by: 'user',
-    measure: 'events',
+    measure: 'distinct_device',
     windowMs: 7 * DAY,
     threshold: 6,
     severity: 'high',
     autoAction: 'ban_user_24h',
     label: 'Account keeps switching devices (likely shared)',
+  },
+  {
+    // محاولات متكررة من أجهزة فوق الحد: تنبيه للمراجعة فقط، بلا حظر تلقائي.
+    id: 'device_limit_hits',
+    counts: ['device_limit_blocked', 'device_pending'],
+    by: 'user',
+    measure: 'events',
+    windowMs: DAY,
+    threshold: 10,
+    severity: 'medium',
+    autoAction: null,
+    label: 'Repeated sign-ins from devices over the limit',
   },
   {
     id: 'ip_spread',
@@ -108,7 +126,7 @@ export const RULES: readonly RuleSpec[] = [
     threshold: 15,
     severity: 'medium',
     autoAction: null,
-    why: ['not_entitled', 'download_limit', 'device_revoked'],
+    why: ['not_entitled', 'download_limit', 'view_limit', 'device_revoked'],
     label: 'Repeated attempts to open content the account does not own',
   },
 ]
@@ -137,7 +155,11 @@ async function measure(rule: RuleSpec, subject: { userId?: string | null; ip?: s
   const [row] = await db
     .select({
       value:
-        rule.measure === 'distinct_ip' ? countDistinct(activityLog.ip) : sql<number>`count(*)::int`,
+        rule.measure === 'distinct_ip'
+          ? countDistinct(activityLog.ip)
+          : rule.measure === 'distinct_device'
+            ? countDistinct(activityLog.deviceId)
+            : sql<number>`count(*)::int`,
     })
     .from(activityLog)
     .where(and(...conditions))

@@ -419,8 +419,12 @@ export async function listSchedules(userId: string, locale: Locale): Promise<Sch
     )
     .orderBy(desc(orders.placedAt))
 
+  // نفس شرط `resolveScheduleDocument`: سطر ملغى أو مسترد لا يُعرض بأزرار تعطي 404.
   const usable = rows.filter(
-    ({ item }) => item.refId !== null && item.fulfilmentStatus !== 'refunded',
+    ({ item }) =>
+      item.refId !== null &&
+      item.fulfilmentStatus !== 'refunded' &&
+      item.fulfilmentStatus !== 'cancelled',
   )
   if (usable.length === 0) return []
 
@@ -461,7 +465,11 @@ export async function listSchedules(userId: string, locale: Locale): Promise<Sch
       imageUrl: image.url,
       imageAlt: image.alt,
       version,
+      // PDF رفعته الإدارة يُسلَّم قبل المولَّد (انظر resolveScheduleDocument).
       documentReady:
+        Boolean(
+          itinerary?.uploadedPdfKeys?.[locale] ?? itinerary?.uploadedPdfKeys?.[defaultLocale],
+        ) ||
         documentKeys.has(`${itineraryId}:${version}:${locale}`) ||
         documentKeys.has(`${itineraryId}:${version}:${defaultLocale}`),
       purchasedAt: placedAt ?? createdAt,

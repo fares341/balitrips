@@ -30,7 +30,13 @@ import {
  * that must learn about it.
  */
 export type CartItemKind =
-  'activity' | 'activity_tier' | 'driver' | 'itinerary' | 'package' | 'place' | 'plan'
+  | 'activity'
+  | 'activity_tier'
+  | 'driver'
+  | 'itinerary'
+  | 'package'
+  | 'place'
+  | 'plan'
 
 export interface QuoteRequestItem {
   id: string
@@ -142,6 +148,11 @@ export function buildQuote(
 
   for (const item of items) {
     if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      issues.push({ itemId: item.id, code: 'invalid_quantity' })
+      continue
+    }
+    // الضيوف يحددون الكمية في التسعير "للفرد": صفر أو سالب = سطر مجاني.
+    if (item.guests !== null && (!Number.isInteger(item.guests) || item.guests < 1)) {
       issues.push({ itemId: item.id, code: 'invalid_quantity' })
       continue
     }

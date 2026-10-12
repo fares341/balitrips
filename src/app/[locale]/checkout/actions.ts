@@ -168,6 +168,19 @@ export async function startCheckoutAction(
       return { error: 'bookings_closed' }
     }
 
+    if (error instanceof CheckoutError && error.code === 'duplicate') {
+      // ضغطة ثانية متزامنة بنفس المفتاح: الأولى أنشأت الطلب — نذهب إليه.
+      const [placed] = await db
+        .select({ orderNumber: orders.orderNumber })
+        .from(payments)
+        .innerJoin(orders, eq(orders.id, payments.orderId))
+        .where(eq(payments.idempotencyKey, idempotencyKey))
+        .limit(1)
+      if (placed) {
+        redirect(getPathname({ href: `${CONFIRMATION_HREF}/${placed.orderNumber}`, locale }))
+      }
+      return { error: 'unknown' }
+    }
     if (error instanceof CheckoutError) {
       switch (error.code) {
         case 'empty_cart':

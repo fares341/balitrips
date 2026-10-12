@@ -153,7 +153,7 @@ export function mediaUrl(objectKey: string): string {
   return CDN_BASE === '' ? `/${key}` : `${CDN_BASE}/${key}`
 }
 
-function toMedia(row: MediaRow | null | undefined): MediaDto | null {
+export function toMedia(row: MediaRow | null | undefined): MediaDto | null {
   // A soft-deleted image is treated as no image rather than a dead URL: the
   // FK is nullable and `<Photo>` already renders a neutral placeholder.
   if (!row || row.deletedAt !== null) return null

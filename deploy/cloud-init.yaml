@@ -301,6 +301,9 @@ write_files:
     content: |
       SITE_DOMAIN=example.com
       ACME_EMAIL=ops@example.com
+      # Must equal ADMIN_BASE_PATH in .env.production. Without it Caddy falls back
+      # to /studio-8f2a and the real admin path gets public cache headers.
+      ADMIN_BASE_PATH=/studio-CHANGE_ME
 
   - path: /opt/bali/backup.env
     owner: root:root

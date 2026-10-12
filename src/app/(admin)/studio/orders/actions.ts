@@ -2,11 +2,11 @@
 
 import { randomUUID } from 'node:crypto'
 
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { orderItems, orders, payments, refunds } from '@/db/schema'
+import { entitlements, orderItems, orders, payments, planMembers, refunds } from '@/db/schema'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
@@ -90,30 +90,43 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
       const nextStatus = statusAfterRefund(status, order.totalMinor, alreadyRefunded, amountMinor)
       assertTransition(status, nextStatus)
 
+      // الدفعة التي سدّدت الطلب: أول دفعة ناجحة. (دفعة ثانية مكررة — تحويل بنكي ثم
+      // بطاقة — تُسترد من صفحة Payments ولا تمسّ حساب الطلب.)
       const [payment] = await tx
         .select()
         .from(payments)
         .where(and(eq(payments.orderId, orderId), eq(payments.status, 'succeeded')))
+        .orderBy(asc(payments.createdAt))
         .limit(1)
 
       if (!payment?.providerPaymentId) {
         throw new Error('No settled payment found for this order, so there is nothing to refund.')
       }
 
-      const provider = getPaymentProvider()
-
-      // Derived from the line and the amount already refunded, so a retried
-      // submit resolves to the same key and the provider refuses to refund
-      // twice.
-      const idempotencyKey = `refund:${orderItemId}:${line.refundedMinor}:${amountMinor}`
-
-      const result = await provider.refund({
-        providerPaymentId: payment.providerPaymentId,
-        amountMinor,
-        currency: payment.currency,
-        reason: reason ?? undefined,
-        idempotencyKey,
-      })
+      let result: { providerRefundId: string | null; status: string }
+      if (payment.provider === 'manual') {
+        // دُفع بتحويل بنكي: لا مزوّد يُستدعى. المبلغ يُعاد يدوياً بالطريقة نفسها،
+        // والسجل هنا يثبت الاسترداد ويسحب الصلاحيات كأي استرداد آخر.
+        result = { providerRefundId: null, status: 'succeeded' }
+      } else {
+        const provider = getPaymentProvider()
+        if (provider.name !== payment.provider) {
+          throw new Error(
+            `This order was paid through ${payment.provider}, but the active provider is ${provider.name}. Refund it in the ${payment.provider} dashboard.`,
+          )
+        }
+        // Derived from the line and the amount already refunded, so a retried
+        // submit resolves to the same key and the provider refuses to refund
+        // twice.
+        const idempotencyKey = `refund:${orderItemId}:${line.refundedMinor}:${amountMinor}`
+        result = await provider.refund({
+          providerPaymentId: payment.providerPaymentId,
+          amountMinor,
+          currency: payment.currency,
+          reason: reason ?? undefined,
+          idempotencyKey,
+        })
+      }
 
       await tx.insert(refunds).values({
         paymentId: payment.id,
@@ -150,7 +163,43 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
       if (shouldRevokeEntitlements(nextStatus)) {
         await revokeOrderEntitlements(tx, orderId, `order ${nextStatus} by ${session.email}`)
       } else if (soldAccess && lineRefunded >= line.lineTotalMinor) {
-        await revokeOrderEntitlements(tx, orderId, `line refunded by ${session.email}`)
+        // استرداد سطر واحد يسحب ما منحه هذا السطر فقط: باقة → صفوفها (ونسخ
+        // أفراد عائلتها، نفس plan_id)؛ جدول/مكان → الوصول للخريطة بلا باقة.
+        // كان يسحب كل صلاحيات الطلب، ومنها خريطة جدولٍ آخر مدفوع.
+        await tx
+          .update(entitlements)
+          .set({ revokedAt: new Date(), revokedReason: `line refunded by ${session.email}` })
+          .where(
+            and(
+              eq(entitlements.grantedByOrderId, orderId),
+              isNull(entitlements.revokedAt),
+              line.kind === 'plan' && line.refId
+                ? eq(entitlements.planId, line.refId)
+                : isNull(entitlements.planId),
+            ),
+          )
+        if (line.kind === 'plan' && line.refId) {
+          await tx
+            .update(planMembers)
+            .set({ status: 'removed', tokenHash: null })
+            .where(
+              and(
+                ne(planMembers.status, 'removed'),
+                inArray(
+                  planMembers.ownerEntitlementId,
+                  tx
+                    .select({ id: entitlements.id })
+                    .from(entitlements)
+                    .where(
+                      and(
+                        eq(entitlements.grantedByOrderId, orderId),
+                        eq(entitlements.planId, line.refId),
+                      ),
+                    ),
+                ),
+              ),
+            )
+        }
       }
 
       // A fully refunded driver line must give its fleet days back, or the
@@ -191,11 +240,11 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         tx,
       )
 
-      return { nextStatus, currency: payment.currency }
+      return { nextStatus, currency: payment.currency, manual: payment.provider === 'manual' }
     })
 
     outcome = {
-      ok: `Refunded ${amountMinor} ${summary.currency} minor units. Order is now ${summary.nextStatus.replace(/_/g, ' ')}.`,
+      ok: `Refunded ${amountMinor} ${summary.currency} minor units. Order is now ${summary.nextStatus.replace(/_/g, ' ')}.${summary.manual ? ' This order was paid by bank transfer: send the money back the same way.' : ''}`,
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -373,8 +422,10 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
       )
     })
 
-    await notifyOrderPaid(orderId)
+    // الطلب مدفوع فعلاً هنا: فشل الإشعار أو الطابور لا يُظهر خطأً للمشغّل
+    // (كان يعيد المحاولة فيُرفض "الطلب ليس معلّقاً" ولا يصل التأكيد أبداً).
     try {
+      await notifyOrderPaid(orderId)
       const { enqueueEmail, enqueueVoucherPdf } = await import('@/worker/queues')
       await enqueueEmail({ kind: 'order_confirmation', orderId })
       await enqueueVoucherPdf(orderId)

@@ -176,7 +176,9 @@
 	# paywall renders gated places' names and coordinates only for entitled
 	# users: edge-caching one visitor's copy would either leak paid content
 	# to anonymous visitors or serve the blurred version to paying ones.
-	@privatePage path_regexp priv ^/(?:en|ar|id)/(?:cart|checkout|map|reset-password)(?:/|$)
+	# /account (invoices, devices, subscriptions, schedules) and /plans ("buy" vs
+	# "you own this") read the session: never cacheable at the edge.
+	@privatePage path_regexp priv ^/(?:en|ar|id)/(?:account|plans|cart|checkout|map|reset-password)(?:/|$)
 
 	# Localised HTML. Split in two so the locale home page is not tagged with
 	# an empty section.

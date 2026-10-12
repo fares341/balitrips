@@ -15,7 +15,7 @@
  *  - `warn`          يُقبل ويُسجَّل في السجل كتجاوز للمراجعة.
  */
 
-import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { devices, entitlements, sessions, users } from '@/db/schema'
@@ -109,6 +109,7 @@ async function liveDeviceLimits(userId: string): Promise<(number | null)[]> {
         eq(entitlements.userId, userId),
         isNull(entitlements.revokedAt),
         or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+        lte(entitlements.startsAt, now),
       ),
     )
   return rows.map((row) => row.limit)
@@ -371,13 +372,23 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
  */
 export async function revokeDevice(
   deviceId: string,
-  options: { userId?: string; status?: 'revoked' | 'banned'; reason: string },
+  options: {
+    userId?: string
+    status?: 'revoked' | 'banned'
+    reason: string
+    /**
+     * يقصر التعديل على جهاز فعّال (إزالة المستخدم لجهازه). بدونه كان المستخدم
+     * يستطيع "إزالة" جهاز حظرته الإدارة، فيتحول من banned إلى revoked ويدخل به.
+     */
+    onlyActive?: boolean
+  },
 ): Promise<{ sessionsEnded: number } | null> {
   return db.transaction(async (tx) => {
-    const where =
-      options.userId === undefined
-        ? eq(devices.id, deviceId)
-        : and(eq(devices.id, deviceId), eq(devices.userId, options.userId))
+    const where = and(
+      eq(devices.id, deviceId),
+      options.userId === undefined ? undefined : eq(devices.userId, options.userId),
+      options.onlyActive === true ? eq(devices.status, 'active') : undefined,
+    )
 
     const [updated] = await tx
       .update(devices)

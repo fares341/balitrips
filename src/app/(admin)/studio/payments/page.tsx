@@ -1,7 +1,8 @@
-import { count, desc, eq } from 'drizzle-orm'
+import { count, desc, eq, sql } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
+import { can } from '@/lib/auth/roles'
 import { orders, payments, users } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
 
@@ -11,6 +12,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
+import { refundDuplicatePayment } from './actions'
 import { PAYMENT_STATUSES, paymentFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
@@ -27,7 +29,9 @@ export default async function PaymentsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('payments.read')
+  const session = await requireCapability('payments.read')
+  const mayRefund = can(session.role, 'orders.refund')
+  const mayExport = can(session.role, 'customers.export')
   const params = await searchParams
   const page = pageParam(params)
   const { q, status, provider, from, to, where } = paymentFilters(params)
@@ -51,6 +55,14 @@ export default async function PaymentsPage({
         orderNumber: orders.orderNumber,
         orderStatus: orders.status,
         email: users.email,
+        // دفعة ناجحة سبقتها دفعة ناجحة أخرى للطلب نفسه = دفعة مكررة.
+        duplicate: sql<boolean>`${payments.status} = 'succeeded' and exists (
+          select 1 from ${payments} p2
+          where p2.order_id = ${payments.orderId}
+            and p2.status in ('succeeded', 'refunded')
+            and p2.created_at < ${payments.createdAt}
+            and p2.id <> ${payments.id}
+        )`,
       })
       .from(payments)
       .innerJoin(orders, eq(orders.id, payments.orderId))
@@ -121,10 +133,12 @@ export default async function PaymentsPage({
           <Link className="a-btn ghost" href={LIST}>
             Reset
           </Link>
-          {/* Route handler, not a page: a plain <a> so the browser downloads it. */}
-          <a className="a-btn ghost" href={`${adminHref('/payments/export')}?${exportQuery}`}>
-            Export CSV
-          </a>
+          {mayExport ? (
+            // Route handler, not a page: a plain <a> so the browser downloads it.
+            <a className="a-btn ghost" href={`${adminHref('/payments/export')}?${exportQuery}`}>
+              Export CSV
+            </a>
+          ) : null}
         </div>
       </form>
 
@@ -141,6 +155,7 @@ export default async function PaymentsPage({
               <th>Payment</th>
               <th>Order status</th>
               <th className="num">Amount</th>
+              <th />
             </tr>
           </thead>
           <tbody>
@@ -166,7 +181,9 @@ export default async function PaymentsPage({
                     tone={
                       row.status === 'succeeded'
                         ? 'good'
-                        : row.status === 'failed' || row.status === 'cancelled'
+                        : row.status === 'failed' ||
+                            row.status === 'cancelled' ||
+                            row.status === 'refunded'
                           ? 'bad'
                           : 'warn'
                     }
@@ -178,6 +195,21 @@ export default async function PaymentsPage({
                   <OrderStatusPill status={row.orderStatus} />
                 </td>
                 <td className="num">{formatMoney(row.amountMinor, row.currency, 'en')}</td>
+                <td>
+                  {row.duplicate ? (
+                    <>
+                      <Pill tone="warn">duplicate</Pill>
+                      {mayRefund ? (
+                        <form className="a-inline-form" action={refundDuplicatePayment}>
+                          <input type="hidden" name="paymentId" value={row.id} />
+                          <button className="a-btn danger small" type="submit">
+                            Refund duplicate
+                          </button>
+                        </form>
+                      ) : null}
+                    </>
+                  ) : null}
+                </td>
               </tr>
             ))}
           </tbody>

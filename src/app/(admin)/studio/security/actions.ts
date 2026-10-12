@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { users } from '@/db/schema'
+import { sessions, users } from '@/db/schema'
 import { generateRecoveryCodes, generateSecret, sealSecret } from '@/lib/auth/totp'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -13,9 +13,14 @@ import { freq } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireElevated } from '../../_lib/session'
 import {
+  CHALLENGE_LOCK_MINUTES,
+  challengeLocked,
+  clearChallengeFailures,
   consumeRecoveryCode,
   markSessionVerified,
+  MAX_CHALLENGE_FAILURES,
   readSecret,
+  recordChallengeFailure,
   storeRecoveryCodes,
   twoFactorStatus,
   verifyCodeOnce,
@@ -176,13 +181,37 @@ export async function answerChallenge(form: FormData): Promise<void> {
       throw new Error('Two-factor is not set up on this account yet.')
     }
 
+    if (await challengeLocked(session.userId)) {
+      throw new Error(
+        `Too many wrong codes. Try again in ${CHALLENGE_LOCK_MINUTES} minutes. Use a recovery code once the lock ends if your phone is unavailable.`,
+      )
+    }
+
     const submitted = freq(form, 'code', 'Code')
     const looksLikeRecovery = /[A-Za-z]/.test(submitted)
 
+    // خطأ في الرمز: يُعدّ. عند بلوغ الحد تُنهى هذه الجلسة ويُسجَّل القفل.
+    const failed = async (message: string): Promise<never> => {
+      const count = await recordChallengeFailure(session.userId)
+      if (count >= MAX_CHALLENGE_FAILURES) {
+        await db.delete(sessions).where(eq(sessions.id, session.sessionId))
+        await writeAudit({
+          actor: session,
+          action: 'two_factor.locked',
+          entityType: 'user',
+          entityId: session.userId,
+          before: null,
+          after: { failures: count, lockMinutes: CHALLENGE_LOCK_MINUTES },
+        })
+      }
+      throw new Error(message)
+    }
+
     if (looksLikeRecovery) {
       const accepted = await consumeRecoveryCode(session.userId, submitted)
-      if (!accepted)
-        throw new Error('That recovery code is not valid, or it has already been used.')
+      if (!accepted) {
+        await failed('That recovery code is not valid, or it has already been used.')
+      }
 
       await writeAudit({
         actor: session,
@@ -194,9 +223,10 @@ export async function answerChallenge(form: FormData): Promise<void> {
       })
     } else {
       const verified = await verifyCodeOnce(session.userId, secret, submitted)
-      if (!verified.ok) throw new Error(verified.reason)
+      if (!verified.ok) await failed(verified.reason)
     }
 
+    await clearChallengeFailures(session.userId)
     await markSessionVerified(session.sessionId, session.userId)
 
     await writeAudit({

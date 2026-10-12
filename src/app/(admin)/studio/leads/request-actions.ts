@@ -61,14 +61,28 @@ export async function saveRequestNotes(id: string, form: FormData): Promise<void
 }
 
 /**
- * ربط طلب ضيف بحساب. بالبريد، مطابقة تامة (بأحرف صغيرة). صاحب البريد هو
- * صاحب الطلب: لا خطر في تسليم الملف لصاحب العنوان الذي طُلب منه.
+ * ربط طلب ضيف بحساب: فقط بالحساب الذي يحمل بريد الطلب نفسه (مطابقة بأحرف
+ * صغيرة)، وفقط إن لم يُربط بعد. صاحب البريد هو صاحب الطلب.
  */
 export async function linkRequestToUser(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
   await run(detail(id), async () => {
     const email = (fstr(form, 'email') ?? '').trim().toLowerCase()
     if (!email.includes('@')) throw new Error('Enter the account e-mail.')
+    // الطلب موجود، غير مربوط بعد، وبريده هو البريد المُدخل. غير ذلك كان يربط
+    // خطة رحلة شخص (اسمه وتواريخه) بحساب آخر بخطأ كتابة واحد.
+    const [request] = await db
+      .select({ userId: customTripRequests.userId, email: customTripRequests.email })
+      .from(customTripRequests)
+      .where(eq(customTripRequests.id, id))
+      .limit(1)
+    if (!request) throw new Error('That request no longer exists.')
+    if (request.userId !== null) throw new Error('This request is already linked to an account.')
+    if ((request.email ?? '').trim().toLowerCase() !== email) {
+      throw new Error(
+        `The request was sent from ${request.email ?? 'no e-mail'}. Link it only to the account with that same address.`,
+      )
+    }
     const [user] = await db
       .select({ id: users.id })
       .from(users)
@@ -78,16 +92,18 @@ export async function linkRequestToUser(id: string, form: FormData): Promise<voi
       throw new Error(
         `No account with ${email}. Ask the traveller to sign up with that address first.`,
       )
-    await db
+    const linked = await db
       .update(customTripRequests)
       .set({ userId: user.id })
-      .where(eq(customTripRequests.id, id))
+      .where(and(eq(customTripRequests.id, id), isNull(customTripRequests.userId)))
+      .returning({ id: customTripRequests.id })
+    if (linked.length === 0) throw new Error('This request was linked meanwhile.')
     await writeAudit({
       actor,
       action: 'custom_trip_request.link',
       entityType: 'custom_trip_request',
       entityId: id,
-      before: null,
+      before: { userId: null },
       after: { userId: user.id, email },
     })
     return `Linked to ${email}. Uploaded plans now appear in their account.`

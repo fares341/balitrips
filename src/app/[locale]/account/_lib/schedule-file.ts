@@ -14,7 +14,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, gte, isNull, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
@@ -76,18 +76,59 @@ async function loadSource(objectKey: string): Promise<Uint8Array | null> {
   }
 }
 
-async function downloadsSoFar(userId: string, orderItemId: string): Promise<number> {
-  const [row] = await db
-    .select({ value: sql<number>`count(*)::int` })
-    .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.userId, userId),
-        eq(activityLog.action, 'download_pdf'),
-        sql`${activityLog.details}->>'orderItemId' = ${orderItemId}`,
-      ),
+/**
+ * مرات الفتح للعارض في اليوم لكل جدول. العارض يجلب الملف كاملاً (PDF.js في
+ * المتصفح)، فحتى في "عرض فقط" يمكن لمستخدم متمرّس حفظ ما وصل للمتصفح — الوثيقة
+ * 16.3 تقرّ بأن المنع 100% مستحيل على الويب. هذا الحد يمنع السحب الآلي المتكرر،
+ * وكل نسخة تحمل بريد المستخدم ورقم الطلب ورمز التسليم، وكل فتح مسجّل.
+ */
+const VIEWS_PER_DAY = 20
+
+/**
+ * يحجز تسليماً واحداً ذرّياً: قفل استشاري لكل (مستخدم، بند) ثم العدّ ثم تسجيل
+ * التسليم — في معاملة واحدة. كان العدّ يسبق الختم البطيء والتسجيل يليه، فعشرة
+ * طلبات متوازية كانت تمر كلها من حد "3 تحميلات".
+ */
+async function reserveDelivery(input: {
+  userId: string
+  orderItemId: string
+  mode: DeliveryMode
+  limit: number
+  windowMs: number | null
+  ip: string | null
+  deviceId: string | null
+  details: Record<string, unknown>
+}): Promise<boolean> {
+  const action = input.mode === 'download' ? 'download_pdf' : 'view_pdf'
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`${input.userId}:${input.orderItemId}`}))`,
     )
-  return row?.value ?? 0
+    if (input.limit > 0) {
+      const [row] = await tx
+        .select({ value: sql<number>`count(*)::int` })
+        .from(activityLog)
+        .where(
+          and(
+            eq(activityLog.userId, input.userId),
+            eq(activityLog.action, action),
+            sql`${activityLog.details}->>'orderItemId' = ${input.orderItemId}`,
+            input.windowMs === null
+              ? undefined
+              : gte(activityLog.createdAt, new Date(Date.now() - input.windowMs)),
+          ),
+        )
+      if ((row?.value ?? 0) >= input.limit) return false
+    }
+    await tx.insert(activityLog).values({
+      action,
+      userId: input.userId,
+      ip: input.ip,
+      deviceId: input.deviceId,
+      details: { ...input.details, orderItemId: input.orderItemId },
+    })
+    return true
+  })
 }
 
 function toAccountRedirect(request: Request, locale: Locale, query?: Record<string, string>) {
@@ -196,19 +237,31 @@ export async function deliverSchedule(
     if (policy.pdfDownloads === 'view_only' || !permissions.canDownloadPdf) {
       return toAccountRedirect(request, locale, { doc: 'view-only' })
     }
-    if (
-      policy.maxDownloadsPerItem > 0 &&
-      (await downloadsSoFar(user.id, itemId)) >= policy.maxDownloadsPerItem
-    ) {
-      await logActivity({
-        action: 'unauthorized_access',
-        userId: user.id,
-        ip: access.ip,
-        deviceId: access.deviceId,
-        details: { resource, why: 'download_limit', limit: policy.maxDownloadsPerItem },
-      })
-      return toAccountRedirect(request, locale, { doc: 'limit' })
-    }
+  }
+
+  const deliveryId = randomUUID()
+  const reserved = await reserveDelivery({
+    userId: user.id,
+    orderItemId: itemId,
+    mode,
+    limit:
+      mode === 'download' ? (await readSetting('security')).maxDownloadsPerItem : VIEWS_PER_DAY,
+    windowMs: mode === 'download' ? null : 24 * 60 * 60 * 1000,
+    ip: access.ip,
+    deviceId: access.deviceId,
+    details: { orderNumber: resolved.orderNumber, deliveryId, locale },
+  })
+  if (!reserved) {
+    await logActivity({
+      action: 'unauthorized_access',
+      userId: user.id,
+      ip: access.ip,
+      deviceId: access.deviceId,
+      details: { resource, why: mode === 'download' ? 'download_limit' : 'view_limit' },
+    })
+    return mode === 'download'
+      ? toAccountRedirect(request, locale, { doc: 'limit' })
+      : new NextResponse(null, { status: 429, headers: NO_STORE })
   }
 
   const source = await loadSource(resolved.objectKey)
@@ -217,7 +270,6 @@ export async function deliverSchedule(
     return new NextResponse(null, { status: 503, headers: NO_STORE })
   }
 
-  const deliveryId = randomUUID()
   let stamped: Uint8Array
   try {
     stamped = await stampPdf(source, {
@@ -231,14 +283,6 @@ export async function deliverSchedule(
     console.error('[schedules] watermarking failed', resolved.objectKey, error)
     return new NextResponse(null, { status: 503, headers: NO_STORE })
   }
-
-  await logActivity({
-    action: mode === 'download' ? 'download_pdf' : 'view_pdf',
-    userId: user.id,
-    ip: access.ip,
-    deviceId: access.deviceId,
-    details: { orderItemId: itemId, orderNumber: resolved.orderNumber, deliveryId, locale },
-  })
 
   const filename = `${resolved.slug}-${resolved.orderNumber}.pdf`
   if (mode === 'view') {

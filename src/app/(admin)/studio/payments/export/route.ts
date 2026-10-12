@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { orders, payments, users } from '@/db/schema'
 
+import { writeAudit } from '../../../_lib/audit'
 import { CSV_MAX_ROWS, csvResponse } from '../../../_lib/csv'
 import { requireCapability } from '../../../_lib/session'
 import { paymentFilters } from '../filters'
@@ -14,7 +15,8 @@ import { paymentFilters } from '../filters'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  await requireCapability('payments.read')
+  // فيه بريد كل العملاء الدافعين: تصدير بيانات شخصية → للمدير فقط، ومسجَّل.
+  const session = await requireCapability('customers.export')
   const params = Object.fromEntries(new URL(request.url).searchParams)
   const { where } = paymentFilters(params)
 
@@ -36,6 +38,15 @@ export async function GET(request: Request) {
     .where(where)
     .orderBy(desc(payments.createdAt))
     .limit(CSV_MAX_ROWS)
+
+  await writeAudit({
+    actor: session,
+    action: 'payments.export_csv',
+    entityType: 'user',
+    entityId: session.userId,
+    before: null,
+    after: { rows: rows.length, filters: params },
+  })
 
   return csvResponse(
     'payments',

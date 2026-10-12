@@ -703,6 +703,7 @@
   "mail_welcome_t": "Akun Anda siap",
   "mail_welcome_verify_b": "Konfirmasikan alamat email Anda agar kami dapat mengirim konfirmasi pemesanan dan dokumen perjalanan Anda.",
   "mail_welcome_verify_cta": "Konfirmasi email saya",
+  "map_3d_failed": "Peta 3D tidak dapat dimulai — menampilkan peta datar.",
   "map_add": "Tambah ke trip",
   "map_add_trip": "Tambah ke perjalanan",
   "map_category": "Kategori",

@@ -37,7 +37,7 @@ import {
   type EntitlementSet,
 } from '@/lib/entitlements'
 import { boundingBox, haversineKm, isInBali, type LatLon } from '@/lib/geo'
-import { mediaUrl } from '@/lib/content/queries'
+import { toMedia } from '@/lib/content/queries'
 
 import { normalizeSearch } from './normalize'
 
@@ -241,7 +241,7 @@ export async function searchPlaces(
   const rows = await db
     .select({
       place: mapPlaces,
-      heroKey: media.objectKey,
+      hero: media,
       regionKey: regions.key,
       parentKey: parentRegion.key,
       regionLabel: regions.label,
@@ -318,7 +318,8 @@ export async function searchPlaces(
             ? pick(row.place.category, locale)
             : null,
         region: row.regionLabel ? pick(row.regionLabel, locale) : null,
-        heroImageUrl: row.heroKey ? mediaUrl(row.heroKey) : null,
+        // نسخة مصغّرة (لا الأصل 1-1.6MB)، والصورة المحذوفة لا تُعرض.
+        heroImageUrl: toMedia(row.hero)?.url ?? null,
         isHiddenGem: row.place.isHiddenGem,
         isVip: access.requiredEntitlement === 'vip' && !access.isFree,
         distanceKm: distanceKm === null ? null : Math.round(distanceKm * 10) / 10,

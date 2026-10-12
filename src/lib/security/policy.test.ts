@@ -92,6 +92,12 @@ describe('rules', async () => {
   it('only ever auto-bans temporarily', () => {
     for (const rule of RULES) expect([null, 'ban_ip_1h', 'ban_user_24h']).toContain(rule.autoAction)
   })
+  it('never auto-bans for sign-in attempts from devices over the limit', () => {
+    const churn = RULES.find((r) => r.id === 'device_churn')
+    expect(churn?.counts).toEqual(['new_device'])
+    expect(churn?.measure).toBe('distinct_device')
+    expect(RULES.find((r) => r.id === 'device_limit_hits')?.autoAction).toBeNull()
+  })
   it('keeps the trigger list in activity.ts in sync with the rules', async () => {
     const { RULE_TRIGGERS } = await import('./activity')
     expect([...RULE_TRIGGERS].sort()).toEqual([...TRIGGER_ACTIONS].sort())

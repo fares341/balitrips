@@ -45,17 +45,17 @@
  * the paywall bar.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
-import { LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { MapPlaceForClient } from '@/lib/entitlements'
 
 import { MapFilterBar, useMapFilters } from './map-filters'
+import { MapAccessBar } from './map-access-bar'
 import { MapResults } from './map-results'
 import { NodePanel } from './node-panel'
 import {
@@ -71,7 +71,6 @@ import {
 } from './projection'
 
 /** Where an unentitled visitor goes to buy access. */
-const PLANS_HREF = '/plans'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 5
@@ -151,6 +150,18 @@ export type MapExplorerProps = {
   initialSlug: string | null
 }
 
+const wideQuery = () => `(min-width: ${HOVER_CARD_MIN_WIDTH}px)`
+
+function subscribeWide(onChange: () => void): () => void {
+  const media = window.matchMedia(wideQuery())
+  media.addEventListener('change', onChange)
+  return () => media.removeEventListener('change', onChange)
+}
+
+function readWide(): boolean {
+  return window.matchMedia(wideQuery()).matches
+}
+
 export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapExplorerProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
@@ -170,7 +181,8 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
   const [frame, setFrame] = useState({ w: 0, h: 0 })
   const [dragging, setDragging] = useState(false)
   const [wheelZoom, setWheelZoom] = useState(false)
-  const [wideEnough, setWideEnough] = useState(false)
+  // Read from the browser before paint, not set from an effect.
+  const wideEnough = useSyncExternalStore(subscribeWide, readWide, () => false)
   const [paywallHeight, setPaywallHeight] = useState(0)
 
   const frameRef = useRef<HTMLDivElement>(null)
@@ -364,7 +376,8 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
       setView(clampView({ s, x: w / 2 - nx * w * s, y: h / 2 - ny * h * s }))
     }
 
-    measure()
+    // ResizeObserver يستدعي `measure` فور المراقبة (القياس الأول) ثم عند كل تغيير —
+    // لا استدعاء متزامن داخل التأثير (react-hooks/set-state-in-effect).
     const observer = new ResizeObserver(measure)
     observer.observe(element)
     return () => observer.disconnect()
@@ -374,25 +387,14 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
   // the paywall restacks into a column under 560px. Measure it rather than
   // guessing an offset that is wrong at one of the two breakpoints.
   useEffect(() => {
+    // مفتوح: لا شريط، والإزاحة لا تقرأ `paywallHeight` أصلاً (انظر bt-zoom).
     const element = paywallRef.current
-    if (element === null) {
-      setPaywallHeight(0)
-      return
-    }
+    if (element === null) return
     const measure = () => setPaywallHeight(element.offsetHeight)
-    measure()
     const observer = new ResizeObserver(measure)
     observer.observe(element)
     return () => observer.disconnect()
   }, [unlocked])
-
-  useEffect(() => {
-    const media = window.matchMedia(`(min-width: ${HOVER_CARD_MIN_WIDTH}px)`)
-    const sync = () => setWideEnough(media.matches)
-    sync()
-    media.addEventListener('change', sync)
-    return () => media.removeEventListener('change', sync)
-  }, [])
 
   // -------------------------------------------------------------------------
   // Wheel
@@ -730,29 +732,7 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
           </button>
         </div>
 
-        {unlocked ? (
-          <div
-            className="bt-mapcount"
-            style={{ background: 'var(--palm)', color: 'var(--forest-deep)' }}
-          >
-            <Icon name="check" size={13} color="var(--forest-deep)" /> {t('mp_unlocked')}
-          </div>
-        ) : (
-          <div className="bt-paywall" ref={paywallRef}>
-            <span className="bt-paywall-ic">
-              <Icon name="lock" size={20} color="#fff" />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>{t('mp_locked')}</div>
-              <div style={{ fontSize: 12.5, opacity: 0.85 }}>
-                {format.number(lockedCount)} · {t('mp_locked_b')}
-              </div>
-            </div>
-            <LinkButton href={PLANS_HREF} variant="orange" size="sm">
-              {t('mp_unlock')}
-            </LinkButton>
-          </div>
-        )}
+        <MapAccessBar unlocked={unlocked} lockedCount={lockedCount} barRef={paywallRef} />
 
         {activePin !== null && <NodePanel pin={activePin} onClose={closePanel} />}
       </div>

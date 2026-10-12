@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import type { IslandHandle, IslandPin } from './island-scene'
 
@@ -33,9 +34,12 @@ export type Map3DProps = {
   onReady?: () => void
   /** Slug of the place a visitor tapped, for the detail panel. */
   onSelect?: (slug: string) => void
+  /** WebGL failed after the capability check: the parent swaps in the flat map. */
+  onFailed?: () => void
 }
 
-export default function Map3D({ pins, onReady, onSelect }: Map3DProps) {
+export default function Map3D({ pins, onReady, onSelect, onFailed }: Map3DProps) {
+  const t = useTranslations()
   const containerRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<IslandHandle | null>(null)
   const [failed, setFailed] = useState(false)
@@ -58,6 +62,7 @@ export default function Map3D({ pins, onReady, onSelect }: Map3DProps) {
    */
   const onSelectRef = useRef(onSelect)
   const onReadyRef = useRef(onReady)
+  const onFailedRef = useRef(onFailed)
 
   // Updated in an effect, not during render: writing a ref while rendering is
   // a tearing hazard under concurrent rendering, because the render may be
@@ -65,6 +70,7 @@ export default function Map3D({ pins, onReady, onSelect }: Map3DProps) {
   useEffect(() => {
     onSelectRef.current = onSelect
     onReadyRef.current = onReady
+    onFailedRef.current = onFailed
   })
 
   useEffect(() => {
@@ -92,7 +98,10 @@ export default function Map3D({ pins, onReady, onSelect }: Map3DProps) {
         // a driver reset, or too many live contexts on the page. Surfacing it
         // lets map-surface fall back to the flat map instead of leaving a
         // visitor staring at an empty blue rectangle.
-        if (!cancelled) setFailed(true)
+        if (!cancelled) {
+          setFailed(true)
+          onFailedRef.current?.()
+        }
       }
     })()
 
@@ -122,7 +131,7 @@ export default function Map3D({ pins, onReady, onSelect }: Map3DProps) {
           fontSize: 14,
         }}
       >
-        Could not start the 3D map.
+        {t('map_3d_failed')}
       </div>
     )
   }

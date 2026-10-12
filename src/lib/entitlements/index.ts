@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, or } from 'drizzle-orm'
+import { and, eq, gt, isNull, lte, or } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { entitlements } from '@/db/schema'
@@ -36,6 +36,8 @@ export async function loadEntitlements(userId: string | null): Promise<Entitleme
         // describes ("yours for the whole trip"). A date makes the same
         // table serve recurring plans with no schema change.
         or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, new Date())),
+        // تجديد مؤجَّل (يبدأ عند نهاية الحالية) لا يمنح شيئاً قبل موعده.
+        lte(entitlements.startsAt, new Date()),
       ),
     )
 

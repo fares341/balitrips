@@ -21,6 +21,7 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 
 import type { Locale } from '@/i18n/config'
 
+import { MapAccessBar } from './map-access-bar'
 import { MapExplorer, type MapExplorerProps } from './map-explorer'
 import { MapFilterBar, useMapFilters } from './map-filters'
 import { MapResults } from './map-results'
@@ -138,7 +139,9 @@ export function MapSurface(props: MapExplorerProps) {
     [props.places, locale],
   )
 
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  // `/map?place=<slug>` (بحث الموقع، المفضلة، رحلتي) يفتح لوحة المكان هنا أيضاً.
+  // مكان مقفل لا يُطابق أي دبوس، فلا تُفتح لوحة له.
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(() => props.initialSlug)
   const filters = useMapFilters(pins, (pin) => setSelectedSlug(pin.place.slug))
   const { matched } = filters
 
@@ -170,6 +173,8 @@ export function MapSurface(props: MapExplorerProps) {
   const surface: Surface = forcedFlat ? '2d' : detected
 
   const onReady = useCallback(() => setReady(true), [])
+  // WebGL رُفض بعد فحص القدرة (إعادة تشغيل المعالج، سياقات كثيرة): الخريطة المسطحة.
+  const onFailed = useCallback(() => setForcedFlat(true), [])
 
   if (surface === '2d') return <MapExplorer {...props} />
 
@@ -179,7 +184,12 @@ export function MapSurface(props: MapExplorerProps) {
         {surface === 'deciding' ? (
           <SurfaceMessage text={t('map_loading_island')} />
         ) : (
-          <Map3D pins={scenePins} onReady={onReady} onSelect={setSelectedSlug} />
+          <Map3D
+            pins={scenePins}
+            onReady={onReady}
+            onSelect={setSelectedSlug}
+            onFailed={onFailed}
+          />
         )}
 
         {/* The same panel the flat map uses. Reused rather than rebuilt: it
@@ -191,6 +201,10 @@ export function MapSurface(props: MapExplorerProps) {
             new styles would give the site two map UIs that drift apart. */}
         <MapFilterBar f={filters} />
 
+        {/* Same access bar as the flat map: "unlocked", or the locked count and
+            the way to buy. The 3D view had no upsell at all. */}
+        <MapAccessBar unlocked={props.unlocked} lockedCount={props.lockedCount} />
+
         {/* An explicit way back to the flat map. Some people simply prefer it,
             and a 3D view with no exit is a trap rather than a feature. */}
         <button
@@ -199,7 +213,7 @@ export function MapSurface(props: MapExplorerProps) {
           style={{
             position: 'absolute',
             insetInlineEnd: 12,
-            bottom: 12,
+            bottom: props.unlocked ? 12 : 92,
             zIndex: 2,
             border: '1px solid rgba(255,255,255,.28)',
             background: 'rgba(8,26,38,.72)',

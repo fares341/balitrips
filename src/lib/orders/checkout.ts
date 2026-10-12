@@ -19,6 +19,7 @@ import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
 import { getPaymentProvider } from '@/lib/payments'
+import { cancelUnpaidOrder } from '@/lib/orders/expire'
 import {
   buildQuote,
   quoteMatchesExpectation,
@@ -265,7 +266,13 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     )
   }
 
+  // جلسة دفع واحدة مفتوحة لكل عميل: الرجوع للدفع (زر "رجوع" أو تبويب ثانٍ) كان
+  // يُنشئ جلسة Stripe جديدة بينما القديمة ما زالت قابلة للدفع 35 دقيقة — فيُدفع
+  // الطلب مرتين. نغلق جلسات طلباته المعلّقة السابقة أولاً.
+  await closeOpenCheckouts(input.userId)
+
   const orderNumber = await nextOrderNumber()
+  const provider = getPaymentProvider()
 
   const { orderId } = await db.transaction(async (tx) => {
     // Capacity first: it is the only step that can fail on someone else's
@@ -332,34 +339,62 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       }),
     )
 
+    /**
+     * المفتاح يُحجز داخل معاملة الطلب نفسها: ضغطتان متزامنتان بنفس المفتاح
+     * كانتا تمرّان من فحص "هل يوجد طلب؟" معاً وتُنشئان طلبين وتحجزان السعة
+     * مرتين. الآن الثانية تصطدم بالفهرس الفريد وتُرفض المعاملة كلها.
+     */
+    try {
+      await tx.insert(payments).values({
+        orderId: order.id,
+        provider: provider.name,
+        providerPaymentId: null,
+        status: 'requires_action',
+        amountMinor: quote.totalMinor,
+        currency: quote.currency,
+        idempotencyKey: input.idempotencyKey,
+      })
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new CheckoutError('This checkout was already submitted', 'duplicate')
+      }
+      throw error
+    }
+
     return { orderId: order.id }
   })
 
   // Only now, with the order durably written and capacity held, do we ask
   // the provider for money. The reverse order would risk a charge with no
   // order behind it.
-  const provider = getPaymentProvider()
-  const intent = await provider.createIntent({
-    orderId,
-    orderNumber,
-    amountMinor: quote.totalMinor,
-    currency: quote.currency,
-    idempotencyKey: input.idempotencyKey,
-    customer: input.customer,
-    returnUrl: input.returnUrl,
-    statementDescriptor: 'BALI TRIPS',
-  })
+  let intent
+  try {
+    intent = await provider.createIntent({
+      orderId,
+      orderNumber,
+      amountMinor: quote.totalMinor,
+      currency: quote.currency,
+      idempotencyKey: input.idempotencyKey,
+      customer: input.customer,
+      returnUrl: input.returnUrl,
+      statementDescriptor: 'BALI TRIPS',
+    })
+  } catch (error) {
+    await db
+      .update(payments)
+      .set({ status: 'failed' })
+      .where(eq(payments.idempotencyKey, input.idempotencyKey))
+    throw error
+  }
 
-  await db.insert(payments).values({
-    orderId,
-    provider: provider.name,
-    providerPaymentId: intent.providerPaymentId,
-    status: intent.status,
-    amountMinor: quote.totalMinor,
-    currency: quote.currency,
-    idempotencyKey: input.idempotencyKey,
-    rawPayload: intent.raw as object,
-  })
+  await db
+    .update(payments)
+    .set({
+      providerPaymentId: intent.providerPaymentId,
+      status: intent.status,
+      rawPayload: intent.raw as object,
+    })
+    .where(eq(payments.idempotencyKey, input.idempotencyKey))
 
   return {
     orderId,
@@ -436,4 +471,56 @@ async function nextOrderNumber(): Promise<string> {
     throw new CheckoutError('Could not allocate an order number', 'order_number_failed')
   }
   return `BT-${year}-${String(raw).padStart(4, '0')}`
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  const code = (error as { code?: unknown; cause?: { code?: unknown } } | null)?.code
+  const causeCode = (error as { cause?: { code?: unknown } } | null)?.cause?.code
+  return code === '23505' || causeCode === '23505'
+}
+
+/**
+ * يغلق جلسات الدفع غير المدفوعة لطلبات العميل المعلّقة. أفضل جهد: فشل الإغلاق
+ * لا يمنع الدفع الجديد (الطلب القديم ينتهي وحده بمهمة capacity.release-expired).
+ */
+async function closeOpenCheckouts(userId: string): Promise<void> {
+  const open = await db
+    .select({
+      id: payments.id,
+      provider: payments.provider,
+      providerPaymentId: payments.providerPaymentId,
+      orderId: orders.id,
+      orderNumber: orders.orderNumber,
+    })
+    .from(payments)
+    .innerJoin(orders, eq(orders.id, payments.orderId))
+    .where(
+      and(
+        eq(orders.userId, userId),
+        eq(orders.status, 'pending'),
+        inArray(payments.status, ['requires_action', 'processing']),
+      ),
+    )
+  if (open.length === 0) return
+  const provider = getPaymentProvider()
+  for (const row of open) {
+    if (row.providerPaymentId === null || row.provider !== provider.name) continue
+    try {
+      await provider.cancelIntent?.(row.providerPaymentId)
+      await db.update(payments).set({ status: 'cancelled' }).where(eq(payments.id, row.id))
+      // الطلب القديم يُلغى فوراً وتعود سعته — فيصل إشعار انتهاء الجلسة من
+      // المزوّد على طلب ملغى أصلاً، فلا "فشل الدفع" مضلّل للعميل.
+      await cancelUnpaidOrder(
+        row.orderId,
+        row.orderNumber,
+        'superseded by a newer checkout',
+        'order.superseded',
+      )
+    } catch (error) {
+      console.error('[checkout] could not close an earlier payment session', {
+        paymentId: row.id,
+        error,
+      })
+    }
+  }
 }

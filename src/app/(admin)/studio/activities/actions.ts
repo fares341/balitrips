@@ -253,7 +253,6 @@ function normaliseTimeSlots(lines: readonly string[]): string[] {
   return [...new Set(out)].sort()
 }
 
-
 // ---------------------------------------------------------------------------
 // Service tiers
 // ---------------------------------------------------------------------------
@@ -358,6 +357,14 @@ export async function addActivityTier(activityId: string, form: FormData): Promi
   redirect(withOutcome(tierEditor(activityId), outcome))
 }
 
+/** الفئة داخل نشاطها، وغير محذوفة — لا تُعدَّل فئة نشاط آخر ولا فئة محذوفة. */
+const tierOf = (activityId: string, tierId: string) =>
+  and(
+    eq(activityTiers.id, tierId),
+    eq(activityTiers.activityId, activityId),
+    isNull(activityTiers.deletedAt),
+  )
+
 export async function saveActivityTier(
   activityId: string,
   tierId: string,
@@ -373,7 +380,7 @@ export async function saveActivityTier(
       const [before] = await tx
         .select()
         .from(activityTiers)
-        .where(eq(activityTiers.id, tierId))
+        .where(tierOf(activityId, tierId))
         .limit(1)
       if (!before) throw new Error('That tier no longer exists.')
 
@@ -381,11 +388,10 @@ export async function saveActivityTier(
         .update(activityTiers)
         .set({
           ...values,
-          publishedAt:
-            values.status === 'published' ? (before.publishedAt ?? new Date()) : null,
+          publishedAt: values.status === 'published' ? (before.publishedAt ?? new Date()) : null,
           updatedAt: new Date(),
         })
-        .where(eq(activityTiers.id, tierId))
+        .where(tierOf(activityId, tierId))
         .returning()
 
       if (values.isPopular) await clearOtherPopular(tx, activityId, tierId)

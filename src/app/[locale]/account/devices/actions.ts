@@ -15,6 +15,7 @@ import { redirect } from '@/i18n/routing'
 import { getSession } from '@/lib/auth/session'
 import { logActivity } from '@/lib/security/activity'
 import { revokeDevice } from '@/lib/security/devices'
+import { activeUserOrNull } from '@/lib/security/require'
 import { clientIp } from '@/lib/security/ip'
 
 import { currentDeviceId } from './queries'
@@ -23,8 +24,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export async function removeMyDevice(form: FormData): Promise<void> {
   const locale = await getLocale()
-  const session = await getSession()
-  if (session === null) {
+  // الفحص الكامل (جلسة من قاعدة البيانات، جهاز، حظر) — لا كاش الكوكي.
+  const user = await activeUserOrNull('account:devices')
+  const session = user === null ? null : await getSession()
+  if (user === null || session === null) {
     redirect({ href: '/account', locale })
     return
   }
@@ -36,14 +39,15 @@ export async function removeMyDevice(form: FormData): Promise<void> {
   if (deviceId !== null && deviceId !== (await currentDeviceId(session.sessionId))) {
     // مقيّد بـ userId داخل الاستعلام: معرّف مزوّر لجهاز شخص آخر لا يطابق شيئاً.
     const result = await revokeDevice(deviceId, {
-      userId: session.user.id,
+      userId: user.id,
       reason: 'removed_by_user',
+      onlyActive: true,
     })
     if (result !== null) {
       outcome = 'removed'
       await logActivity({
         action: 'device_revoked',
-        userId: session.user.id,
+        userId: user.id,
         ip: clientIp(await headers()),
         deviceId,
         details: { by: 'user', sessionsEnded: result.sessionsEnded },

@@ -703,6 +703,7 @@
   "mail_welcome_t": "Your account is ready",
   "mail_welcome_verify_b": "Confirm your email address so we can send you booking confirmations and your travel documents.",
   "mail_welcome_verify_cta": "Confirm my email",
+  "map_3d_failed": "Could not start the 3D map — showing the flat map.",
   "map_add": "Add to trip",
   "map_add_trip": "Add to my trip",
   "map_category": "Category",

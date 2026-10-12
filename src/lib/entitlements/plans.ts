@@ -11,7 +11,7 @@
  *     (مطابقة على `granted_by_order_id`).
  */
 
-import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { entitlements, itineraries, orderItems, orders, plans } from '@/db/schema'
@@ -117,6 +117,8 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
           and(
             eq(entitlements.userId, owner.userId),
             eq(entitlements.planId, plan.id),
+            // نسخة من باقة عائلية لشخص آخر لا تؤجّل باقة اشتراها هو.
+            isNull(entitlements.sharedByUserId),
             isNull(entitlements.revokedAt),
             gt(entitlements.expiresAt, now),
           ),
@@ -212,6 +214,7 @@ export async function loadPermissions(userId: string | null): Promise<Permission
         eq(entitlements.userId, userId),
         isNull(entitlements.revokedAt),
         or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+        lte(entitlements.startsAt, now),
       ),
     )
   return combinePermissions(rows)

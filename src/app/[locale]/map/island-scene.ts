@@ -414,7 +414,13 @@ export async function createIslandScene(
   const steam: Sprite[] = []
   for (let i = 0; i < 46; i++) {
     const s = new Sprite(
-      new SpriteMaterial({ map: puff, color: 0xf4f0ea, transparent: true, depthWrite: false, opacity: 0 }),
+      new SpriteMaterial({
+        map: puff,
+        color: 0xf4f0ea,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0,
+      }),
     )
     s.userData.life = Math.random()
     s.userData.seed = Math.random() * 10
@@ -438,11 +444,21 @@ export async function createIslandScene(
     const g = new Group()
     for (let i = 0; i < 9; i++) {
       const s = new Sprite(
-        new SpriteMaterial({ map: puff, color: 0xfff6ec, transparent: true, depthWrite: false, opacity: 0.8 }),
+        new SpriteMaterial({
+          map: puff,
+          color: 0xfff6ec,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.8,
+        }),
       )
       const sc = 8 + Math.random() * 9
       s.scale.set(sc, sc * 0.65, 1)
-      s.position.set((Math.random() - 0.5) * 16, (Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 9)
+      s.position.set(
+        (Math.random() - 0.5) * 16,
+        (Math.random() - 0.5) * 2.5,
+        (Math.random() - 0.5) * 9,
+      )
       g.add(s)
     }
     g.position.set(cx, cy, cz)
@@ -633,7 +649,14 @@ export async function createIslandScene(
     }
 
     for (const b of boats) {
-      const u = b.userData as { cx: number; cz: number; dir: number; len: number; ph: number; sp: number }
+      const u = b.userData as {
+        cx: number
+        cz: number
+        dir: number
+        len: number
+        ph: number
+        sp: number
+      }
       const s = Math.sin(t * u.sp + u.ph)
       const ds = Math.cos(t * u.sp + u.ph)
       b.position.set(u.cx + Math.cos(u.dir) * u.len * s, 0, u.cz + Math.sin(u.dir) * u.len * s)

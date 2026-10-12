@@ -137,5 +137,6 @@ export const tripItems = pgTable(
   (t) => [
     uniqueIndex('trip_items_user_place_unique').on(t.userId, t.placeId),
     index('trip_items_user_order_idx').on(t.userId, t.dayNumber, t.position),
+    index('trip_items_place_idx').on(t.placeId),
   ],
 )

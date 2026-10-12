@@ -83,7 +83,11 @@ export interface RefundResult {
 export interface WebhookEvent {
   providerEventId: string
   type:
-    'payment.succeeded' | 'payment.failed' | 'payment.cancelled' | 'refund.succeeded' | 'unknown'
+    | 'payment.succeeded'
+    | 'payment.failed'
+    | 'payment.cancelled'
+    | 'refund.succeeded'
+    | 'unknown'
   providerPaymentId: string | null
   amountMinor: number | null
   currency: string | null
@@ -99,6 +103,14 @@ export interface PaymentProvider {
   getIntent(providerPaymentId: string): Promise<PaymentIntent>
 
   refund(input: RefundInput): Promise<RefundResult>
+
+  /**
+   * Close an unpaid intent so it can no longer be paid. Best effort: an intent
+   * that already settled or expired is left alone (no throw). Used when the
+   * same customer starts a new checkout, so two open payment pages for one
+   * cart cannot both be paid.
+   */
+  cancelIntent?(providerPaymentId: string): Promise<void>
 
   /**
    * Verify the signature and parse. MUST throw on an invalid signature —

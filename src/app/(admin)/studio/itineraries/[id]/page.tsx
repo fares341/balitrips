@@ -318,7 +318,7 @@ export default async function ItineraryEditorPage({
                   ))}
                 </select>
               </Field>
-              <Field label="PDF (max 30 MB)" htmlFor="pdf-file">
+              <Field label="PDF (max 24 MB)" htmlFor="pdf-file">
                 <input
                   className="a-input"
                   id="pdf-file"

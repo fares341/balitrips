@@ -578,7 +578,8 @@ async function syncDayCount(tx: Tx, itineraryId: string): Promise<void> {
 // PDF مرفوع للجدول (الوثيقة 4.2: "ملف PDF مرتبط بالجدول"، لوحة التحكم: "رفع PDF")
 // ---------------------------------------------------------------------------
 
-const MAX_ITINERARY_PDF_BYTES = 30 * 1024 * 1024
+// أقل من حد جسم Server Action (25mb في next.config) مع هامش لترميز multipart.
+const MAX_ITINERARY_PDF_BYTES = 24 * 1024 * 1024
 
 function looksLikePdf(bytes: Uint8Array): boolean {
   return bytes.length > 5 && new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-'
@@ -596,7 +597,7 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
     if (!isLocale(rawLocale)) throw new Error('Pick a language for this PDF.')
     const file = form.get('file')
     if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
-    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error('That PDF is larger than 30 MB.')
+    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error('That PDF is larger than 24 MB.')
     if (!isStorageConfigured() && process.env.NODE_ENV === 'production') {
       throw new Error('Object storage is not configured; the file could not be delivered.')
     }

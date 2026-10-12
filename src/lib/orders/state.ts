@@ -92,7 +92,11 @@ export function statusAfterRefund(
  */
 export function statusForWebhook(
   eventType:
-    'payment.succeeded' | 'payment.failed' | 'payment.cancelled' | 'refund.succeeded' | 'unknown',
+    | 'payment.succeeded'
+    | 'payment.failed'
+    | 'payment.cancelled'
+    | 'refund.succeeded'
+    | 'unknown',
 ): OrderStatus | null {
   switch (eventType) {
     case 'payment.succeeded':

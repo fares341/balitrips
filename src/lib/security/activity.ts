@@ -90,8 +90,8 @@ export async function logActivity(entry: ActivityEntry): Promise<void> {
 export const RULE_TRIGGERS: ReadonlySet<ActivityAction> = new Set<ActivityAction>([
   'login_failed',
   'new_device',
-  'device_evicted',
   'device_limit_blocked',
+  'device_pending',
   'login',
   'unauthorized_access',
 ])

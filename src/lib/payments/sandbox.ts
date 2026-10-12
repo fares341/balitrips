@@ -90,6 +90,10 @@ export class SandboxPaymentProvider implements PaymentProvider {
     }
   }
 
+  async cancelIntent(): Promise<void> {
+    // Sandbox intents have no server-side state to close.
+  }
+
   async parseWebhook(rawBody: string, headers: Record<string, string>): Promise<WebhookEvent> {
     const provided = headers['x-sandbox-signature'] ?? headers['X-Sandbox-Signature']
     if (!provided) {

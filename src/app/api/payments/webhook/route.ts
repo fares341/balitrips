@@ -71,7 +71,9 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const outcome = await processWebhookEvent(provider.name, event)
 
-    if (outcome.handled && outcome.to === 'paid') {
+    // `from !== to`: دفعة ثانية على طلب مدفوع (دُفع بتحويل ثم بالبطاقة) تُسجَّل
+    // لكن لا تُفرغ سلة العميل الحالية ولا تعيد إشعار "تم الدفع".
+    if (outcome.handled && outcome.to === 'paid' && outcome.from !== outcome.to) {
       // Best effort, and deliberately outside the state transaction: a cart
       // that fails to empty must never roll back a confirmed payment.
       await releaseCartFor(outcome.orderId)

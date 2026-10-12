@@ -292,6 +292,25 @@ describe('package pricing', () => {
     expect(q.lines[0]?.lineTotalMinor).toBe(48_000)
   })
 
+  it('refuses zero guests instead of pricing a per-guest package at nothing', () => {
+    const q = buildQuote(
+      [
+        item({
+          id: 'p0',
+          kind: 'package',
+          refId: 'pk_family',
+          quantity: 1,
+          guests: 0,
+          travelTime: null,
+        }),
+      ],
+      catalog(),
+      NOW,
+    )
+    expect(q.lines).toHaveLength(0)
+    expect(q.issues[0]?.code).toBe('invalid_quantity')
+  })
+
   it('enforces the package guest cap', () => {
     const q = buildQuote(
       [
