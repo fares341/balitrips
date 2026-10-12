@@ -30,7 +30,12 @@ import { HOME_HREF } from '@/components/layout'
 import type { IconName } from '@/components/ui'
 import { isLocale, locales, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
-import { listActivities, listCategories, listDriverVehicles } from '@/lib/content/queries'
+import {
+  listActivities,
+  listCategories,
+  listDriverVehicles,
+  listRegions,
+} from '@/lib/content/queries'
 import type { CategoryDto } from '@/lib/content/types'
 
 import { pageMetadata } from '../_meta'
@@ -97,12 +102,14 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, categories, activities, vehicles] = await Promise.all([
+  const [t, categories, activities, vehicles, regionRows] = await Promise.all([
     getTranslations({ locale }),
     listCategories(),
     listActivities({ locale, limit: SAMPLE_LIMIT }),
     listDriverVehicles(),
+    listRegions({ includeAreas: true }),
   ])
+  const areas = regionRows.map((row) => ({ key: row.key, label: pick(row.label, locale, row.key) }))
 
   const interests = interestOptions(categories, locale)
   const available = new Set(interests.map((one) => one.key))
@@ -125,6 +132,7 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
         <div className="wrap" style={{ maxWidth: 900 }}>
           <CustomTripForm
             interests={interests}
+            areas={areas}
             defaultInterests={defaults}
             currency={catalogueCurrency(vehicles, activities)}
           />

@@ -13,6 +13,10 @@ export const USER_NOTIFICATION_TYPES = {
   plan_expiring: { email: true, whatsapp: true },
   custom_status: { email: true, whatsapp: false },
   custom_pdf_ready: { email: true, whatsapp: true },
+  /** الوثيقة 5.4: "إرسال رسالة واتساب عند اكتمال الجدول". */
+  custom_completed: { email: true, whatsapp: true },
+  /** سياسة "warn": جهاز جديد فوق حد الباقة — اقتراح الترقية (الوثيقة 14.2). */
+  device_limit_warning: { email: true, whatsapp: false },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -21,6 +25,8 @@ export const STAFF_NOTIFICATION_TYPES = {
   staff_contact_message: { email: true, whatsapp: false },
   staff_security_alert: { email: true, whatsapp: true },
   staff_payment_failed: { email: true, whatsapp: false },
+  /** الوثيقة 4.3: "دخول من جهاز جديد لمستخدم مدفوع". */
+  staff_paid_new_device: { email: false, whatsapp: false },
 } as const
 
 export type UserNotificationType = keyof typeof USER_NOTIFICATION_TYPES
@@ -39,6 +45,7 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   plan_activated: ['plan'],
   plan_expiring: ['plan', 'date'],
   custom_pdf_ready: ['name'],
+  custom_completed: ['name'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],
 }

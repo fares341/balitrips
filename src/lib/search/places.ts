@@ -8,11 +8,14 @@
  *   4. ما يستطيع المستخدم فتحه قبل ما هو مقفل عليه
  *   5. الأكثر حفظاً (مفضلة + رحلتي)
  *
- * النتائج المقفلة تمرّ بنفس قاعدة الإخفاء التي تطبقها الخريطة: يعرف الزائر
- * أن هناك مكاناً مقفلاً يطابق، لكن لا اسمه ولا موقعه ولا صورته.
+ * الأماكن المقفلة: النص والموقع لا يُطبَّقان عليها أبداً، ولا تُعاد بمعرّف.
+ * لو طُبّقا لأمكن إعادة بناء الاسم حرفاً حرفاً، والإحداثيات بتضييق الدائرة
+ * (ثغرة سابقة). يُعاد فقط عددها ضمن الفلاتر العامة (منطقة/تصنيف/وسم/Gems)،
+ * وهي نفس المعلومة الظاهرة على الخريطة كـ "N أماكن مقفلة".
  */
 
-import { and, asc, eq, gte, isNull, lte, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, gte, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 
 import { db } from '@/db'
 import {
@@ -36,6 +39,11 @@ import {
 import { boundingBox, haversineKm, isInBali, type LatLon } from '@/lib/geo'
 import { mediaUrl } from '@/lib/content/queries'
 
+import { normalizeSearch } from './normalize'
+
+/** المنطقة العامة للحي: فلترة "جنوب بالي" تشمل Kuta وSeminyak… */
+const parentRegion = alias(regions, 'parent_region')
+
 export const DEFAULT_NEARBY_KM = 5
 export const MAX_NEARBY_KM = 60
 const MAX_RESULTS = 60
@@ -51,34 +59,70 @@ export interface PlaceSearchInput {
   limit?: number
 }
 
-export type PlaceSearchHit =
-  | {
-      locked: false
-      id: string
-      slug: string
-      name: string
-      category: string | null
-      region: string | null
-      heroImageUrl: string | null
-      isHiddenGem: boolean
-      isVip: boolean
-      distanceKm: number | null
-      lat: number
-      lon: number
-      canFavorite: boolean
-      canAddToTrip: boolean
-    }
-  | { locked: true; id: string; requiredEntitlement: EntitlementKind; distanceKm: null }
+export type PlaceSearchHit = {
+  locked: false
+  id: string
+  slug: string
+  name: string
+  category: string | null
+  region: string | null
+  heroImageUrl: string | null
+  isHiddenGem: boolean
+  isVip: boolean
+  distanceKm: number | null
+  lat: number
+  lon: number
+  canFavorite: boolean
+  canAddToTrip: boolean
+}
 
 export interface PlaceSearchResult {
   hits: PlaceSearchHit[]
+  /** أماكن مقفلة تطابق الفلاتر العامة فقط (بلا نص ولا موقع) — عدد بلا معرّفات. */
   lockedCount: number
+  /** أعلى صلاحية مطلوبة بين المقفلة: لزر "افتح" المناسب. */
+  lockedRequires: EntitlementKind | null
   /** هل استُخدم الموقع؟ (خارج بالي أو غير صالح → لا). */
   usedLocation: boolean
 }
 
 function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (ch) => `\\${ch}`)
+}
+
+export { normalizeSearch }
+
+function normSql(expr: SQL): SQL {
+  return sql`translate(regexp_replace(lower(${expr}), '[\u064B-\u065F\u0670]', '', 'g'), 'أإآٱةىـ', 'ااااهي')`
+}
+
+/**
+ * يطابق قيم نص مترجم (jsonb {en, ar, id}) فقط — لا مفاتيحه.
+ * المطابقة على `::text` كانت تجعل "ar" أو "en" يطابق كل صف.
+ */
+function localizedLike(column: unknown, like: string): SQL {
+  return sql`exists (
+    select 1 from jsonb_each_text(
+      case when jsonb_typeof(${column}) = 'object' then ${column} else '{}'::jsonb end
+    ) as lv(k, v)
+    where ${normSql(sql`lv.v`)} like ${like}
+  )`
+}
+
+/** "Cafes in Kuta" / "كافيهات في كوتا" / "kafe di Kuta" ← [ما, أين]. */
+export function splitPlacePhrase(needle: string): { what: string; where: string } | null {
+  const match = /^(.+?)\s+(?:in|at|near|في|فى|بـ?|di|dekat)\s+(.+)$/iu.exec(needle.trim())
+  if (match === null) return null
+  const what = match[1]?.trim() ?? ''
+  const where = match[2]?.trim() ?? ''
+  return what.length >= 2 && where.length >= 2 ? { what, where } : null
+}
+
+/** "cafes" ← "cafe"، "restaurants" ← "restaurant": جذر تقريبي للجمع الإنجليزي. */
+function singular(word: string): string {
+  if (word.length > 4 && word.endsWith('es')) return word.slice(0, -1)
+  if (word.length > 3 && word.endsWith('s')) return word.slice(0, -1)
+  return word
 }
 
 /** مقارنة الترتيب، مفصولة للاختبار. */
@@ -108,41 +152,77 @@ export async function searchPlaces(
   held: EntitlementSet,
   locale: Locale,
 ): Promise<PlaceSearchResult> {
-  const filters: SQL[] = [
+  /** فلاتر عامة: تُطبَّق على الكل، ويُحتسب بها عدد المقفلة. */
+  const publicFilters: SQL[] = [
     eq(mapPlaces.status, 'published'),
     isNull(mapPlaces.deletedAt),
     eq(mapPlaces.isHidden, false),
   ]
 
-  const needle = input.q?.trim().slice(0, 80) ?? ''
-  if (needle !== '') {
-    const like = `%${escapeLike(needle.toLowerCase())}%`
-    // كل اللغات: من يكتب "Kuta" في الواجهة العربية يجب أن يجده.
-    const text = or(
-      sql`lower(${mapPlaces.name}::text) like ${like}`,
-      sql`lower(coalesce(${mapPlaces.category}::text, '')) like ${like}`,
-      sql`lower(coalesce(${regions.label}::text, '')) like ${like}`,
-      sql`lower(coalesce(${categories.label}::text, '')) like ${like}`,
-      sql`exists (select 1 from ${placeTags} pt join ${tags} t on t.id = pt.tag_id
-                  where pt.place_id = ${mapPlaces.id} and lower(t.label::text) like ${like})`,
-    )
-    if (text) filters.push(text)
+  let needle = normalizeSearch(input.q?.slice(0, 80) ?? '')
+  let regionKey = input.region ?? null
+
+  // "كافيهات في Kuta": المنطقة من الجملة نفسها إن لم تُختر صراحة.
+  const phrase = needle === '' ? null : splitPlacePhrase(needle)
+  if (phrase !== null && regionKey === null) {
+    const whereLike = `%${escapeLike(phrase.where)}%`
+    const [hit] = await db
+      .select({ key: regions.key })
+      .from(regions)
+      .where(
+        and(
+          eq(regions.status, 'active'),
+          or(localizedLike(regions.label, whereLike), sql`lower(${regions.key}) like ${whereLike}`),
+        ),
+      )
+      .orderBy(asc(regions.sortOrder))
+      .limit(1)
+    if (hit) {
+      regionKey = hit.key
+      needle = phrase.what
+    }
   }
-  if (input.region) filters.push(eq(regions.key, input.region))
-  if (input.category) filters.push(eq(categories.key, input.category))
-  if (input.gemsOnly) filters.push(eq(mapPlaces.isHiddenGem, true))
+
+  if (regionKey) {
+    const inRegion = or(eq(regions.key, regionKey), eq(parentRegion.key, regionKey))
+    if (inRegion) publicFilters.push(inRegion)
+  }
+  if (input.category) publicFilters.push(eq(categories.key, input.category))
+  if (input.gemsOnly) publicFilters.push(eq(mapPlaces.isHiddenGem, true))
   for (const tagKey of input.tags ?? []) {
-    filters.push(
+    publicFilters.push(
       sql`exists (select 1 from ${placeTags} pt join ${tags} t on t.id = pt.tag_id
-                  where pt.place_id = ${mapPlaces.id} and t.key = ${tagKey})`,
+                  where pt.place_id = ${mapPlaces.id} and t.key = ${tagKey} and t.status = 'active')`,
     )
+  }
+
+  /** فلاتر خاصة: نص وموقع — على المرئي فقط. */
+  const privateFilters: SQL[] = []
+  if (needle !== '') {
+    const likes = [...new Set([needle, singular(needle)])].map((n) => `%${escapeLike(n)}%`)
+    const text = or(
+      ...likes.flatMap((like) => [
+        localizedLike(mapPlaces.name, like),
+        sql`lower(${mapPlaces.slug}) like ${like}`,
+        localizedLike(mapPlaces.category, like),
+        localizedLike(regions.label, like),
+        localizedLike(parentRegion.label, like),
+        sql`lower(coalesce(${regions.key}, '')) like ${like}`,
+        localizedLike(categories.label, like),
+        sql`exists (select 1 from ${placeTags} pt join ${tags} t on t.id = pt.tag_id
+                    where pt.place_id = ${mapPlaces.id} and t.status = 'active'
+                      and exists (select 1 from jsonb_each_text(t.label) tl(k, v)
+                                  where ${normSql(sql`tl.v`)} like ${like}))`,
+      ]),
+    )
+    if (text) privateFilters.push(text)
   }
 
   const near = input.near && isInBali(input.near) ? input.near : null
   const radius = Math.min(Math.max(input.radiusKm ?? DEFAULT_NEARBY_KM, 0.2), MAX_NEARBY_KM)
   if (near !== null) {
     const box = boundingBox(near, radius)
-    filters.push(
+    privateFilters.push(
       gte(mapPlaces.lat, box.minLat),
       lte(mapPlaces.lat, box.maxLat),
       gte(mapPlaces.lon, box.minLon),
@@ -155,6 +235,7 @@ export async function searchPlaces(
       place: mapPlaces,
       heroKey: media.objectKey,
       regionKey: regions.key,
+      parentKey: parentRegion.key,
       regionLabel: regions.label,
       categoryLabel: categories.label,
       saves: sql<number>`(
@@ -165,23 +246,48 @@ export async function searchPlaces(
     .from(mapPlaces)
     .leftJoin(media, eq(media.id, mapPlaces.heroImageId))
     .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
+    .leftJoin(parentRegion, eq(parentRegion.id, regions.parentId))
     .leftJoin(categories, eq(categories.id, mapPlaces.categoryId))
-    .where(and(...filters))
+    .where(and(...publicFilters))
     .orderBy(asc(mapPlaces.sortOrder))
-    .limit(500)
+    .limit(1000)
 
-  const ranked = rows
+  // المقفل يُعدّ على الفلاتر العامة وحدها، ثم يُستبعد من النتائج.
+  const lockedRows = rows.filter((row) => !canSeePlace(row.place, held))
+  const lockedCount = lockedRows.length
+  const lockedRequires: EntitlementKind | null =
+    lockedRows.length === 0
+      ? null
+      : lockedRows.some((row) => placeAccess(row.place).requiredEntitlement === 'vip')
+        ? 'vip'
+        : 'map_access'
+
+  // الفلاتر الخاصة تُعاد في SQL على المرئي فقط — لا يُقيَّم نص أو موقع على مقفل.
+  let visibleRows = rows.filter((row) => canSeePlace(row.place, held))
+  if (privateFilters.length > 0 && visibleRows.length > 0) {
+    const ids = visibleRows.map((row) => row.place.id)
+    const matched = await db
+      .select({ id: mapPlaces.id })
+      .from(mapPlaces)
+      .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
+      .leftJoin(parentRegion, eq(parentRegion.id, regions.parentId))
+      .leftJoin(categories, eq(categories.id, mapPlaces.categoryId))
+      .where(and(inArray(mapPlaces.id, ids), ...privateFilters))
+    const keep = new Set(matched.map((row) => row.id))
+    visibleRows = visibleRows.filter((row) => keep.has(row.place.id))
+  }
+
+  const hits: PlaceSearchHit[] = visibleRows
     .map((row) => {
       const distanceKm = near === null ? null : haversineKm(near, row.place)
       return {
         row,
         distanceKm,
-        visible: canSeePlace(row.place, held),
         sort: {
           distanceKm,
-          inRegion: input.region ? row.regionKey === input.region : false,
+          inRegion: regionKey ? row.regionKey === regionKey || row.parentKey === regionKey : false,
           priority: row.place.priority,
-          visible: canSeePlace(row.place, held),
+          visible: true,
           saves: row.saves,
           name: pick(row.place.name, locale, row.place.slug),
         },
@@ -191,42 +297,31 @@ export async function searchPlaces(
     .filter((item) => item.distanceKm === null || item.distanceKm <= radius)
     .sort((a, b) => compareHits(a.sort, b.sort))
     .slice(0, Math.min(input.limit ?? 30, MAX_RESULTS))
-
-  let lockedCount = 0
-  const hits: PlaceSearchHit[] = ranked.map(({ row, distanceKm, visible }) => {
-    const access = placeAccess(row.place)
-    if (!visible) {
-      lockedCount += 1
+    .map(({ row, distanceKm }) => {
+      const access = placeAccess(row.place)
       return {
-        locked: true,
+        locked: false as const,
         id: row.place.id,
-        requiredEntitlement: access.requiredEntitlement,
-        distanceKm: null,
+        slug: row.place.slug,
+        name: pick(row.place.name, locale, row.place.slug),
+        category: row.categoryLabel
+          ? pick(row.categoryLabel, locale)
+          : row.place.category
+            ? pick(row.place.category, locale)
+            : null,
+        region: row.regionLabel ? pick(row.regionLabel, locale) : null,
+        heroImageUrl: row.heroKey ? mediaUrl(row.heroKey) : null,
+        isHiddenGem: row.place.isHiddenGem,
+        isVip: access.requiredEntitlement === 'vip' && !access.isFree,
+        distanceKm: distanceKm === null ? null : Math.round(distanceKm * 10) / 10,
+        lat: row.place.lat,
+        lon: row.place.lon,
+        canFavorite: row.place.canFavorite,
+        canAddToTrip: row.place.canAddToTrip,
       }
-    }
-    return {
-      locked: false,
-      id: row.place.id,
-      slug: row.place.slug,
-      name: pick(row.place.name, locale, row.place.slug),
-      category: row.categoryLabel
-        ? pick(row.categoryLabel, locale)
-        : row.place.category
-          ? pick(row.place.category, locale)
-          : null,
-      region: row.regionLabel ? pick(row.regionLabel, locale) : null,
-      heroImageUrl: row.heroKey ? mediaUrl(row.heroKey) : null,
-      isHiddenGem: row.place.isHiddenGem,
-      isVip: access.requiredEntitlement === 'vip' && !access.isFree,
-      distanceKm: distanceKm === null ? null : Math.round(distanceKm * 10) / 10,
-      lat: row.place.lat,
-      lon: row.place.lon,
-      canFavorite: row.place.canFavorite,
-      canAddToTrip: row.place.canAddToTrip,
-    }
-  })
+    })
 
-  return { hits, lockedCount, usedLocation: near !== null }
+  return { hits, lockedCount, lockedRequires, usedLocation: near !== null }
 }
 
 /* --------------------------------------------------------------------------
@@ -250,7 +345,7 @@ export async function suggest(
   locale: Locale,
   phrases: { inRegion: (category: string, region: string) => string },
 ): Promise<Suggestion[]> {
-  const needle = q.trim().toLowerCase().slice(0, 40)
+  const needle = normalizeSearch(q.slice(0, 40))
   if (needle.length < 2) return []
   const like = `%${escapeLike(needle)}%`
 
@@ -259,9 +354,9 @@ export async function suggest(
       .select({ key: regions.key, label: regions.label })
       .from(regions)
       .where(
-        or(
-          sql`lower(${regions.label}::text) like ${like}`,
-          sql`lower(${regions.key}) like ${like}`,
+        and(
+          eq(regions.status, 'active'),
+          or(localizedLike(regions.label, like), sql`lower(${regions.key}) like ${like}`),
         ),
       )
       .orderBy(asc(regions.sortOrder))
@@ -269,13 +364,13 @@ export async function suggest(
     db
       .select({ key: categories.key, label: categories.label })
       .from(categories)
-      .where(sql`lower(${categories.label}::text) like ${like}`)
+      .where(and(eq(categories.status, 'active'), localizedLike(categories.label, like)))
       .orderBy(asc(categories.sortOrder))
       .limit(3),
     db
       .select({ key: tags.key, label: tags.label })
       .from(tags)
-      .where(and(eq(tags.status, 'active'), sql`lower(${tags.label}::text) like ${like}`))
+      .where(and(eq(tags.status, 'active'), localizedLike(tags.label, like)))
       .limit(3),
     db
       .select({
@@ -291,10 +386,11 @@ export async function suggest(
           eq(mapPlaces.status, 'published'),
           isNull(mapPlaces.deletedAt),
           eq(mapPlaces.isHidden, false),
-          sql`lower(${mapPlaces.name}::text) like ${like}`,
+          or(localizedLike(mapPlaces.name, like), sql`lower(${mapPlaces.slug}) like ${like}`),
         ),
       )
-      .limit(10),
+      // المقفل يُستبعد بعد الاستعلام؛ هامش كي لا تدفع الأماكن المقفلة المرئية خارج القائمة.
+      .limit(60),
   ])
 
   const out: Suggestion[] = []
@@ -307,11 +403,14 @@ export async function suggest(
       .from(mapPlaces)
       .innerJoin(categories, eq(categories.id, mapPlaces.categoryId))
       .innerJoin(regions, eq(regions.id, mapPlaces.regionId))
+      .leftJoin(parentRegion, eq(parentRegion.id, regions.parentId))
       .where(
         and(
-          eq(regions.key, region.key),
+          // "مطاعم في جنوب بالي" تشمل أحياءها (Kuta، Seminyak…).
+          or(eq(regions.key, region.key), eq(parentRegion.key, region.key)),
           eq(mapPlaces.status, 'published'),
           isNull(mapPlaces.deletedAt),
+          eq(mapPlaces.isHidden, false),
         ),
       )
       .groupBy(categories.key, categories.label)

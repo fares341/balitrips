@@ -11,10 +11,17 @@
 #     -e ACME_EMAIL=ops@example.com -e ADMIN_BASE_PATH=/studio-8f2a \
 #     caddy:2.10-alpine caddy validate --config /cfg/Caddyfile --adapter caddyfile
 #
-# Cloudflare sits in front of this (proxied / orange cloud). That split is
-# deliberate: Cloudflare owns the global cache, and Caddy owns origin TLS,
-# compression, and — the part that matters most here — deciding which
-# container is allowed to receive traffic.
+# Default topology: NOTHING in front — Caddy terminates TLS on the public
+# interface, so the TCP peer is the visitor (see trusted_proxies below).
+#
+# If Cloudflare proxying (orange cloud) is turned on later, two things MUST
+# change together, or every visitor shares one Cloudflare edge address — the
+# sign-in rate limit becomes global and the automatic IP ban locks out
+# everyone behind that edge:
+#   1. TRUSTED_IP_HEADER=cf-connecting-ip in app.env (app + worker).
+#   2. The droplet firewall accepts 80/443 ONLY from Cloudflare's ranges
+#      (https://www.cloudflare.com/ips/), so nobody can send that header
+#      directly to the origin.
 # ---------------------------------------------------------------------------
 {
 	email {$ACME_EMAIL}
@@ -122,7 +129,7 @@
 		X-Frame-Options DENY
 		Cross-Origin-Opener-Policy same-origin
 		Cross-Origin-Resource-Policy same-origin
-		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=(), geolocation=(self), browsing-topics=()"
+		Permissions-Policy `accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), fullscreen=(self "https://www.youtube-nocookie.com" "https://player.vimeo.com"), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=(), geolocation=(self), browsing-topics=()`
 
 		# No default-src / script-src here, on purpose. Next.js emits inline
 		# bootstrap scripts, so a script-src without per-request nonces would

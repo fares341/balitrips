@@ -13,12 +13,21 @@ import { notifyUser } from '@/lib/notify'
 export async function notifyRequestStatus(requestId: string, status: string): Promise<void> {
   if (status === 'new') return
   const [row] = await db
-    .select({ userId: customTripRequests.userId, locale: users.locale })
+    .select({
+      userId: customTripRequests.userId,
+      locale: users.locale,
+      name: customTripRequests.name,
+    })
     .from(customTripRequests)
     .leftJoin(users, eq(users.id, customTripRequests.userId))
     .where(eq(customTripRequests.id, requestId))
     .limit(1)
   if (!row?.userId) return
+  if (status === 'completed') {
+    // اكتمال الجدول: داخل الموقع + بريد + واتساب (لمن وافق).
+    await notifyUser(row.userId, 'custom_completed', { name: row.name ?? '' }, '/account/schedules')
+    return
+  }
   const t = translator(toMailLocale(row.locale)) as unknown as (key: string) => string
   let label = status
   try {

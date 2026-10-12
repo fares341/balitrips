@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Button } from '@/components/shared'
 import { Icon } from '@/components/ui'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { pick } from '@/lib/content/localize'
 
 import { toLocale } from '../../_seo-hreflang'
@@ -30,7 +30,7 @@ export default async function ReviewsPage({
   const locale = toLocale(raw)
   setRequestLocale(locale)
   const t = await getTranslations({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:reviews')
   const query = await searchParams
   const items = await reviewableActivities(user.id)
 

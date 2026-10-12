@@ -1,7 +1,7 @@
 import { asc, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { activities, articleCategories, categories, media, regions } from '@/db/schema'
+import { activities, articleCategories, categories, mapPlaces, media, regions } from '@/db/schema'
 import type { Localized } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 
@@ -79,4 +79,14 @@ export async function mediaOptions(): Promise<Option[]> {
 function labelForMedia(objectKey: string, alt: Localized | null): string {
   const altText = pick(alt, 'en')
   return altText === '' ? objectKey : `${objectKey} — ${altText}`
+}
+
+/** أماكن الخريطة (غير المحذوفة) — لربطها بجدول. */
+export async function placeOptions(): Promise<Option[]> {
+  const rows = await db
+    .select({ id: mapPlaces.id, slug: mapPlaces.slug, name: mapPlaces.name })
+    .from(mapPlaces)
+    .where(isNull(mapPlaces.deletedAt))
+    .orderBy(asc(mapPlaces.slug))
+  return rows.map((row) => ({ value: row.id, label: pick(row.name, 'en', row.slug) }))
 }

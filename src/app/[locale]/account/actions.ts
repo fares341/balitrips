@@ -41,10 +41,12 @@ import { defaultLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { auth } from '@/lib/auth/server'
 import { requireUser } from '@/lib/auth/session'
+import { activeUserOrNull, requireActiveUser } from '@/lib/security/require'
 import { addItem } from '@/lib/cart'
 
 import type { FavoriteActionState, ProfileFormState } from './_lib/contract'
 import { isFavoriteKind, type FavoriteKind } from './_lib/queries'
+import { addPlaceToTrip } from '../_actions/places'
 
 /**
  * Every account route reads the session, so all of them are dynamic; this
@@ -157,7 +159,8 @@ export async function addFavoriteToTripAction(
   _previous: FavoriteActionState,
   formData: FormData,
 ): Promise<FavoriteActionState> {
-  const user = await requireUser()
+  const user = await activeUserOrNull('favorite:add_to_trip')
+  if (user === null) return { status: 'error', refId: null, messageKey: 'map_need_signin' }
   const ref = readFavoriteRef(formData)
   if (ref === null) return { status: 'error', refId: null, messageKey: 'c_error' }
 
@@ -176,6 +179,18 @@ export async function addFavoriteToTripAction(
     .limit(1)
 
   if (owned[0] === undefined) return { status: 'error', refId: ref.refId, messageKey: 'c_error' }
+
+  // مكان من الخريطة يذهب إلى "رحلتي" (trip_items) بنفس فحوص الخريطة —
+  // لا إلى السلة كبند بسعر صفر كما كان.
+  if (ref.kind === 'place') {
+    const result = await addPlaceToTrip(ref.refId)
+    if (!result.ok) {
+      const key = result.reason === 'upgrade' ? 'map_need_plan' : 'map_not_allowed'
+      return { status: 'error', refId: ref.refId, messageKey: key }
+    }
+    revalidateAccount()
+    return { status: 'planned', refId: ref.refId, messageKey: null }
+  }
 
   try {
     await addItem({ kind: ref.kind, refId: ref.refId })
@@ -201,7 +216,8 @@ export async function addFavoriteToTripAction(
  * anything twice.
  */
 export async function createTripFromFavoritesAction(formData: FormData): Promise<never> {
-  const user = await requireUser()
+  // يعيد توجيهاً: محظور/جهاز مُزال ← صفحة الحساب مع السبب، غير مسجّل ← تسجيل الدخول.
+  const user = await requireActiveUser('favorite:create_trip')
   const rawLocale = text(formData.get('locale'))
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
 
@@ -210,10 +226,16 @@ export async function createTripFromFavoritesAction(formData: FormData): Promise
     .from(favorites)
     .where(eq(favorites.userId, user.id))
 
+  let carted = 0
   for (const row of rows) {
     if (!isFavoriteKind(row.kind)) continue
     try {
+      if (row.kind === 'place') {
+        await addPlaceToTrip(row.refId)
+        continue
+      }
       await addItem({ kind: row.kind, refId: row.refId })
+      carted += 1
     } catch (error) {
       // One withdrawn place must not abandon the other eleven.
       console.error('[account] could not add favorite to trip', row.refId, error)
@@ -225,14 +247,16 @@ export async function createTripFromFavoritesAction(formData: FormData): Promise
   // `getPathname` is the only thing that knows how `localePrefix: 'as-needed'`
   // maps a route to a path; it is typed `never`, which ends the action for the
   // compiler as well as at runtime.
-  redirect(getPathname({ href: CART_HREF, locale }))
+  // أماكن فقط → "رحلتي"؛ أي شيء قابل للحجز → السلة.
+  redirect(getPathname({ href: carted > 0 ? CART_HREF : '/account/trip', locale }))
 }
 
 export async function removeFavoriteAction(
   _previous: FavoriteActionState,
   formData: FormData,
 ): Promise<FavoriteActionState> {
-  const user = await requireUser()
+  const user = await activeUserOrNull('favorite:remove')
+  if (user === null) return { status: 'error', refId: null, messageKey: 'map_need_signin' }
   const ref = readFavoriteRef(formData)
   if (ref === null) return { status: 'error', refId: null, messageKey: 'c_error' }
 

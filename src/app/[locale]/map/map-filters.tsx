@@ -22,9 +22,10 @@ import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
+import { normalizeSearch } from '@/lib/search/normalize'
 import type { Suggestion } from '@/lib/search/places'
 
-import { MAP_FILTERS, type MapPin } from './projection'
+import type { MapPin } from './projection'
 
 const DEFAULT_RADIUS_KM = 5
 const RADIUS_CHOICES = [2, 5, 10, 25] as const
@@ -48,22 +49,44 @@ export function useMapFilters(pins: readonly MapPin[], onPickPlace: (pin: MapPin
   const suggestions = trimmed.length >= 2 && fetched.q === trimmed ? fetched.items : []
 
   const facets = useMemo(() => {
-    const regions = new Map<string, string>()
+    // المنطقة العامة أولاً ثم أحياؤها: "جنوب بالي" ثم "— Kuta"، "— Seminyak".
+    const parents = new Map<string, string>()
+    const children = new Map<string, { label: string; parent: string | null }>()
     const categories = new Map<string, string>()
+    // الوسوم من لوحة التحكم (الموجودة على الأماكن المرئية) — لا قائمة ثابتة.
+    const tagChips = new Map<string, string>()
     for (const pin of pins) {
-      const { regionKey, regionLabel, categoryKey, categoryLabel } = pin.place
-      if (regionKey !== null) regions.set(regionKey, pick(regionLabel, locale, regionKey))
+      const { regionKey, regionLabel, parentRegionKey, parentRegionLabel } = pin.place
+      const { categoryKey, categoryLabel, tagList } = pin.place
+      if (parentRegionKey !== null)
+        parents.set(parentRegionKey, pick(parentRegionLabel, locale, parentRegionKey))
+      if (regionKey !== null)
+        children.set(regionKey, {
+          label: pick(regionLabel, locale, regionKey),
+          parent: parentRegionKey,
+        })
       if (categoryKey !== null)
         categories.set(categoryKey, pick(categoryLabel, locale, categoryKey))
+      for (const tag of tagList) tagChips.set(tag.key, pick(tag.label, locale, tag.key))
     }
-    return { regions: [...regions], categories: [...categories] }
+    const regions: [string, string][] = []
+    const topLevel = new Map(parents)
+    for (const [key, child] of children) if (child.parent === null) topLevel.set(key, child.label)
+    for (const [key, label] of topLevel) {
+      regions.push([key, label])
+      for (const [childKey, child] of children) {
+        if (child.parent === key) regions.push([childKey, `— ${child.label}`])
+      }
+    }
+    return { regions, categories: [...categories], tags: [...tagChips] }
   }, [pins, locale])
 
   const matched = useMemo(() => {
-    const needle = query.trim().toLowerCase()
+    const needle = normalizeSearch(query)
     const out = pins.filter((pin) => {
       if (filterTag !== null && !pin.place.tagKeys.includes(filterTag)) return false
-      if (region !== null && pin.place.regionKey !== region) return false
+      if (region !== null && pin.place.regionKey !== region && pin.place.parentRegionKey !== region)
+        return false
       if (category !== null && pin.place.categoryKey !== category) return false
       if (gemsOnly && !pin.place.isHiddenGem) return false
       if (near !== null && haversineKm(near, pin.place) > radiusKm) return false
@@ -191,17 +214,25 @@ export function MapFilterBar({ f }: { f: MapFilters }) {
       )}
 
       <div className="bt-mapchips">
-        {MAP_FILTERS.map((filter) => {
-          const on = filter.tag === f.filterTag
+        <button
+          type="button"
+          className={f.filterTag === null ? 'bt-mchip on' : 'bt-mchip'}
+          aria-pressed={f.filterTag === null}
+          onClick={() => f.setFilterTag(null)}
+        >
+          {t('map_f_all')}
+        </button>
+        {f.facets.tags.map(([key, label]) => {
+          const on = key === f.filterTag
           return (
             <button
-              key={filter.labelKey}
+              key={key}
               type="button"
               className={on ? 'bt-mchip on' : 'bt-mchip'}
               aria-pressed={on}
-              onClick={() => f.setFilterTag(filter.tag)}
+              onClick={() => f.setFilterTag(on ? null : key)}
             >
-              {t(filter.labelKey)}
+              <bdi>{label}</bdi>
             </button>
           )
         })}

@@ -1,8 +1,21 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
-import { contactMessages, customTripRequests, orders, users } from '@/db/schema'
+import {
+  activityLog,
+  contactMessages,
+  customTripRequests,
+  entitlements,
+  favorites,
+  mapPlaces,
+  orderItems,
+  orders,
+  securityAlerts,
+  users,
+} from '@/db/schema'
+import { pick } from '@/lib/content/localize'
+import { liveModeWarnings } from '@/lib/live-mode'
 import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
@@ -32,6 +45,91 @@ export default async function DashboardPage({
 
   const mayReadOrders = can(session.role, 'orders.read')
   const mayReadLeads = can(session.role, 'leads.read')
+  const mayReadCustomers = can(session.role, 'customers.read')
+  const mayReadSecurity = can(session.role, 'security.read')
+
+  // الوثيقة (لوحة التحكم 1): عدد المستخدمين، الجداول المباعة، مستخدمو الخريطة،
+  // أكثر الأماكن مشاهدة وحفظاً، أحدث المستخدمين، تنبيهات الأمان.
+  const PAID = ['paid', 'confirmed', 'partially_refunded']
+  const now = new Date()
+  const [
+    userCountRows,
+    itinerariesSoldRows,
+    mapUserRows,
+    openAlertRows,
+    topViewed,
+    topSaved,
+    latestUsers,
+  ] = await Promise.all([
+    mayReadCustomers
+      ? db
+          .select({ value: sql<number>`count(*)::int` })
+          .from(users)
+          .where(isNull(users.deletedAt))
+      : [],
+    mayReadOrders
+      ? db
+          .select({ value: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int` })
+          .from(orderItems)
+          .innerJoin(orders, eq(orders.id, orderItems.orderId))
+          .where(and(eq(orderItems.kind, 'itinerary'), inArray(orders.status, PAID)))
+      : [],
+    mayReadCustomers
+      ? db
+          .select({ value: sql<number>`count(distinct ${entitlements.userId})::int` })
+          .from(entitlements)
+          .where(
+            and(
+              isNull(entitlements.revokedAt),
+              or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+            ),
+          )
+      : [],
+    mayReadSecurity
+      ? db
+          .select({ value: sql<number>`count(*)::int` })
+          .from(securityAlerts)
+          .where(eq(securityAlerts.status, 'open'))
+      : [],
+    db
+      .select({
+        name: mapPlaces.name,
+        slug: mapPlaces.slug,
+        hits: sql<number>`count(*)::int`,
+      })
+      .from(activityLog)
+      .innerJoin(mapPlaces, sql`${mapPlaces.id}::text = ${activityLog.details}->>'placeId'`)
+      .where(eq(activityLog.action, 'view_place'))
+      .groupBy(mapPlaces.id, mapPlaces.name, mapPlaces.slug)
+      .orderBy(sql`count(*) desc`)
+      .limit(5),
+    db
+      .select({
+        name: mapPlaces.name,
+        slug: mapPlaces.slug,
+        hits: sql<number>`count(*)::int`,
+      })
+      .from(favorites)
+      .innerJoin(mapPlaces, eq(mapPlaces.id, favorites.refId))
+      .where(eq(favorites.kind, 'place'))
+      .groupBy(mapPlaces.id, mapPlaces.name, mapPlaces.slug)
+      .orderBy(sql`count(*) desc`)
+      .limit(5),
+    mayReadCustomers
+      ? db
+          .select({
+            id: users.id,
+            email: users.email,
+            name: users.name,
+            createdAt: users.createdAt,
+          })
+          .from(users)
+          .where(isNull(users.deletedAt))
+          .orderBy(desc(users.createdAt))
+          .limit(6)
+      : [],
+  ])
+  const configWarnings = liveModeWarnings()
 
   const byStatus = mayReadOrders
     ? await db
@@ -39,7 +137,7 @@ export default async function DashboardPage({
           status: orders.status,
           currency: orders.presentmentCurrency,
           orderCount: sql<number>`count(*)::int`,
-          revenueMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::int`,
+          revenueMinor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8`,
         })
         .from(orders)
         .groupBy(orders.status, orders.presentmentCurrency)
@@ -113,6 +211,108 @@ export default async function DashboardPage({
         description="Order volume, settled revenue by currency, and the newest leads."
       />
       <Flash searchParams={params} />
+
+      {configWarnings.length > 0 ? (
+        <div className="a-card" role="alert">
+          <h2>Production configuration</h2>
+          <ul>
+            {configWarnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="a-grid">
+        {mayReadCustomers ? (
+          <div className="a-stat">
+            <span>Users</span>
+            <b>{userCountRows[0]?.value ?? 0}</b>
+          </div>
+        ) : null}
+        {mayReadOrders ? (
+          <div className="a-stat">
+            <span>Itineraries sold</span>
+            <b>{itinerariesSoldRows[0]?.value ?? 0}</b>
+          </div>
+        ) : null}
+        {mayReadCustomers ? (
+          <div className="a-stat">
+            <span>Map users (active plans)</span>
+            <b>{mapUserRows[0]?.value ?? 0}</b>
+          </div>
+        ) : null}
+        {mayReadSecurity ? (
+          <div className="a-stat">
+            <span>Open security alerts</span>
+            <b>
+              <Link href={adminHref('/protection/alerts')}>{openAlertRows[0]?.value ?? 0}</Link>
+            </b>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="a-cols">
+        <div className="a-card">
+          <h2>Most viewed places</h2>
+          {topViewed.length === 0 ? (
+            <Empty>No place views yet.</Empty>
+          ) : (
+            <Table>
+              <tbody>
+                {topViewed.map((row) => (
+                  <tr key={row.slug}>
+                    <td>{pick(row.name, 'en', row.slug)}</td>
+                    <td className="num">{row.hits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </div>
+        <div className="a-card">
+          <h2>Most saved places</h2>
+          {topSaved.length === 0 ? (
+            <Empty>No saved places yet.</Empty>
+          ) : (
+            <Table>
+              <tbody>
+                {topSaved.map((row) => (
+                  <tr key={row.slug}>
+                    <td>{pick(row.name, 'en', row.slug)}</td>
+                    <td className="num">{row.hits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </div>
+      </div>
+
+      {mayReadCustomers ? (
+        <div className="a-card">
+          <h2>Newest users</h2>
+          {latestUsers.length === 0 ? (
+            <Empty>No users yet.</Empty>
+          ) : (
+            <Table>
+              <tbody>
+                {latestUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td>
+                      <Link href={adminHref(`/customers/${user.id}`)}>{user.email}</Link>
+                    </td>
+                    <td>{user.name ?? <span className="a-muted">—</span>}</td>
+                    <td>
+                      <When value={user.createdAt} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </div>
+      ) : null}
 
       {mayReadOrders ? (
         <>

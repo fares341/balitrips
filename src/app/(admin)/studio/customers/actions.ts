@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -374,6 +374,94 @@ export async function restoreCustomer(userId: string): Promise<void> {
 
     outcome = {
       ok: 'Account restored. Its name, phone and e-mail were pseudonymised on deletion and cannot be recovered — the customer must set them again.',
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(detail(userId), outcome))
+}
+
+/**
+ * تعديل بيانات العميل من لوحة التحكم (الوثيقة: "تحديث بيانات المستخدم").
+ * للمدير فقط. تغيير البريد يتحقق من عدم تكراره، ويُنهي الجلسات لأن البريد هو
+ * هوية الدخول.
+ */
+export async function updateCustomerProfile(userId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('roles.write')
+  let outcome: Outcome
+
+  try {
+    const name = (fstr(form, 'name') ?? '').trim().slice(0, 128)
+    const email = freq(form, 'email', 'Email').trim().toLowerCase()
+    const phoneRaw = (fstr(form, 'phone') ?? '').trim()
+    const countryRaw = (fstr(form, 'country') ?? '').trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 256) {
+      throw new Error('Enter a valid e-mail address.')
+    }
+    if (phoneRaw !== '' && !/^[+0-9][0-9 ()./-]{4,31}$/.test(phoneRaw)) {
+      throw new Error('Enter the phone in international format, e.g. +971 50 123 4567.')
+    }
+    if (countryRaw !== '' && !/^[A-Za-z]{2}$/.test(countryRaw)) {
+      throw new Error('Country must be a two-letter code, e.g. AE.')
+    }
+
+    const revoked = await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
+      if (!before) throw new Error('That account no longer exists')
+
+      if (email !== before.email) {
+        const [taken] = await tx
+          .select({ id: users.id })
+          .from(users)
+          .where(and(sql`lower(${users.email}) = ${email}`, ne(users.id, userId)))
+          .limit(1)
+        if (taken) throw new Error('Another account already uses that e-mail.')
+      }
+
+      const next = {
+        name: name === '' ? null : name,
+        email,
+        phone: phoneRaw === '' ? null : phoneRaw,
+        country: countryRaw === '' ? null : countryRaw.toUpperCase(),
+      }
+      await tx.update(users).set(next).where(eq(users.id, userId))
+
+      let killed = 0
+      if (email !== before.email) {
+        const rows = await tx
+          .delete(sessions)
+          .where(eq(sessions.userId, userId))
+          .returning({ id: sessions.id })
+        killed = rows.length
+        await clearAllVerifications(userId, tx)
+      }
+
+      await writeAudit(
+        {
+          actor: session,
+          action: 'user.profile',
+          entityType: 'user',
+          entityId: userId,
+          before: {
+            name: before.name,
+            email: before.email,
+            phone: before.phone,
+            country: before.country,
+          },
+          after: { ...next, sessionsRevoked: killed },
+        },
+        tx,
+      )
+      return killed
+    })
+
+    outcome = {
+      ok:
+        revoked > 0
+          ? `Profile updated. E-mail changed, so ${revoked} session(s) were signed out.`
+          : 'Profile updated.',
     }
   } catch (error) {
     if (isRedirectError(error)) throw error

@@ -6,22 +6,32 @@ import { db } from '@/db'
 import { itineraries, itineraryDays, itineraryRegions } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
+import { locales, localeConfig } from '@/i18n/config'
 
 import { adminHref } from '../../../_lib/admin-path'
-import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
+import { activityOptions, mediaOptions, placeOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import {
+  Checkbox,
   Field,
   LocalizedField,
   LocalizedListField,
   MoneyField,
+  TextArea,
   TextInput,
 } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { Pill } from '../../../_ui/table'
-import { deleteItinerary, publishItinerary, saveItinerary, unpublishItinerary } from '../actions'
+import {
+  deleteItinerary,
+  publishItinerary,
+  removeItineraryPdf,
+  saveItinerary,
+  unpublishItinerary,
+  uploadItineraryPdf,
+} from '../actions'
 import { DayPlan } from './day-plan'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +61,7 @@ export default async function ItineraryEditorPage({
 
   if (!isNew && !itinerary) notFound()
 
-  const [regions, mediaList, activities, days, selectedRegions] = await Promise.all([
+  const [regions, mediaList, activities, days, selectedRegions, places] = await Promise.all([
     regionOptions(),
     mediaOptions(),
     activityOptions(),
@@ -75,6 +85,7 @@ export default async function ItineraryEditorPage({
           .from(itineraryRegions)
           .where(eq(itineraryRegions.itineraryId, itinerary.id))
       : Promise.resolve([]),
+    placeOptions(),
   ])
 
   const title = itinerary ? pick(itinerary.name, 'en', itinerary.slug) : 'New itinerary'
@@ -154,6 +165,50 @@ export default async function ItineraryEditorPage({
             values={itinerary?.audience}
             hint="One audience per line."
           />
+          <LocalizedField
+            name="detailedDescription"
+            label="Detailed description"
+            value={itinerary?.detailedDescription}
+            rows={6}
+          />
+        </div>
+
+        <div className="a-card">
+          <h2>Access & internal</h2>
+          <div className="a-row">
+            <Checkbox
+              name="includesMap"
+              label="Includes the map"
+              defaultChecked={itinerary?.includesMap ?? false}
+              hint="Buying this itinerary unlocks the interactive map (lifetime)."
+            />
+            <Checkbox
+              name="isVip"
+              label="VIP itinerary"
+              defaultChecked={itinerary?.isVip ?? false}
+              hint="With “Includes the map”, grants VIP map access (Hidden Gems)."
+            />
+          </div>
+          <Field label="Internal notes" htmlFor="internalNotes" hint="Never shown to customers.">
+            <TextArea
+              id="internalNotes"
+              name="internalNotes"
+              rows={3}
+              defaultValue={itinerary?.internalNotes ?? ''}
+            />
+          </Field>
+          <OptionChecklist
+            name="galleryImageIds"
+            label="Gallery images"
+            options={mediaList}
+            values={itinerary?.galleryImageIds ?? []}
+          />
+          <OptionChecklist
+            name="linkedPlaceIds"
+            label="Linked map places"
+            options={places}
+            values={itinerary?.linkedPlaceIds ?? []}
+          />
         </div>
 
         <div className="a-card">
@@ -219,6 +274,66 @@ export default async function ItineraryEditorPage({
                 <span className="a-hint">Your role cannot publish.</span>
               )}
             </div>
+          </div>
+
+          <div className="a-card">
+            <h2>PDF file</h2>
+            <p className="a-hint">
+              Upload a ready-made PDF per language. It replaces the automatically generated PDF for
+              every customer who bought this itinerary, with the same watermark, viewer and download
+              rules. Remove it to go back to the generated file.
+            </p>
+            <ul>
+              {locales.map((locale) => (
+                <li key={locale}>
+                  {localeConfig[locale].label}:{' '}
+                  {itinerary.uploadedPdfKeys?.[locale] ? (
+                    <form
+                      className="a-inline-form"
+                      action={removeItineraryPdf.bind(null, itinerary.id)}
+                    >
+                      <input type="hidden" name="locale" value={locale} />
+                      <strong>uploaded</strong>{' '}
+                      <button className="a-btn ghost small" type="submit">
+                        Remove
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="a-muted">generated automatically</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <form
+              className="a-row"
+              action={uploadItineraryPdf.bind(null, itinerary.id)}
+              style={{ marginBlockStart: 12 }}
+            >
+              <Field label="Language" htmlFor="pdf-locale">
+                <select className="a-select" id="pdf-locale" name="locale" defaultValue="ar">
+                  {locales.map((locale) => (
+                    <option key={locale} value={locale}>
+                      {localeConfig[locale].label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="PDF (max 30 MB)" htmlFor="pdf-file">
+                <input
+                  className="a-input"
+                  id="pdf-file"
+                  name="file"
+                  type="file"
+                  accept="application/pdf"
+                  required
+                />
+              </Field>
+              <div className="a-actions">
+                <button className="a-btn accent" type="submit">
+                  Upload PDF
+                </button>
+              </div>
+            </form>
           </div>
 
           <form className="a-card" action={deleteItinerary.bind(null, itinerary.id)}>

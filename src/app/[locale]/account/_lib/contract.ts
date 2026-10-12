@@ -25,7 +25,8 @@ export const IDLE_PROFILE_STATE: ProfileFormState = {
 }
 
 export interface FavoriteActionState {
-  status: 'idle' | 'added' | 'removed' | 'error'
+  /** `added` = في السلة، `planned` = في "رحلتي" (مكان من الخريطة). */
+  status: 'idle' | 'added' | 'planned' | 'removed' | 'error'
   /** Which favorite the outcome belongs to, so one card cannot flash another. */
   refId: string | null
   /** Message key when `status` is `error`. */

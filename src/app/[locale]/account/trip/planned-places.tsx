@@ -37,8 +37,20 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
       .from(tripItems)
       .innerJoin(mapPlaces, eq(mapPlaces.id, tripItems.placeId))
       .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
-      .where(and(eq(tripItems.userId, userId), isNull(mapPlaces.deletedAt)))
-      .orderBy(sql`${tripItems.dayNumber} asc nulls last`, asc(tripItems.position)),
+      .where(
+        and(
+          eq(tripItems.userId, userId),
+          isNull(mapPlaces.deletedAt),
+          // مسودة أو مخفي من الإدارة لا يظهر — كما في الخريطة.
+          eq(mapPlaces.status, 'published'),
+          eq(mapPlaces.isHidden, false),
+        ),
+      )
+      .orderBy(
+        sql`${tripItems.dayNumber} asc nulls last`,
+        asc(tripItems.position),
+        asc(tripItems.createdAt),
+      ),
     loadPermissions(userId),
   ])
 
@@ -119,7 +131,7 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
                     variant="ghost"
                     size="sm"
                     aria-label={t('acct_plan_up')}
-                    disabled={index === 0}
+                    disabled={index === 0 || rows[index - 1]?.dayNumber !== row.dayNumber}
                   >
                     ↑
                   </Button>
@@ -132,7 +144,9 @@ export async function PlannedPlaces({ userId, locale }: { userId: string; locale
                     variant="ghost"
                     size="sm"
                     aria-label={t('acct_plan_down')}
-                    disabled={index === rows.length - 1}
+                    disabled={
+                      index === rows.length - 1 || rows[index + 1]?.dayNumber !== row.dayNumber
+                    }
                   >
                     ↓
                   </Button>

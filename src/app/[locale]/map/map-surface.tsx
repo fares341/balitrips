@@ -20,13 +20,12 @@ import { useLocale } from 'next-intl'
 import { useCallback, useMemo, useState, useSyncExternalStore } from 'react'
 
 import type { Locale } from '@/i18n/config'
-import { searchableText } from '@/lib/content/localize'
 
 import { MapExplorer, type MapExplorerProps } from './map-explorer'
 import { MapFilterBar, useMapFilters } from './map-filters'
 import type { ScenePin } from './map-3d'
 import { NodePanel } from './node-panel'
-import { pinColor, projectLat, projectLon, type MapPin } from './projection'
+import { pinColor, pinHaystack, projectLat, projectLon, type MapPin } from './projection'
 
 /**
  * ssr:false is required, not stylistic: three.js touches `window` and
@@ -132,14 +131,7 @@ export function MapSurface(props: MapExplorerProps) {
           // Identical to the flat map's, so a query that finds a place there
           // finds it here. Built from the localized name and category, not the
           // raw JSON, or an Arabic search would never match.
-          haystack: [
-            searchableText(place.name, locale),
-            searchableText(place.category, locale),
-            place.slug,
-            (place.tags ?? []).join(' '),
-          ]
-            .join(' ')
-            .toLowerCase(),
+          haystack: pinHaystack(place, locale),
         })),
     [props.places, locale],
   )

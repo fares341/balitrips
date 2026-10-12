@@ -1,7 +1,7 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { devices, sessions } from '@/db/schema'
+import { activityLog, devices, sessions } from '@/db/schema'
 
 export async function currentDeviceId(sessionId: string): Promise<string | null> {
   const [row] = await db
@@ -25,4 +25,30 @@ export async function listMyDevices(userId: string) {
     .from(devices)
     .where(and(eq(devices.userId, userId), eq(devices.status, 'active')))
     .orderBy(desc(devices.lastSeenAt))
+}
+
+/**
+ * آخر عمليات تسجيل الدخول (الوثيقة 3.3): الوقت، الحالة، الجهاز، IP.
+ * الفاشلة تظهر أيضاً — من يرى محاولات لم يقم بها يعرف أن عليه تغيير كلمة المرور.
+ */
+export async function listMyLogins(userId: string, limit = 10) {
+  return db
+    .select({
+      id: activityLog.id,
+      action: activityLog.action,
+      ip: activityLog.ip,
+      at: activityLog.createdAt,
+      browser: devices.browser,
+      os: devices.os,
+    })
+    .from(activityLog)
+    .leftJoin(devices, eq(devices.id, activityLog.deviceId))
+    .where(
+      and(
+        eq(activityLog.userId, userId),
+        inArray(activityLog.action, ['login', 'login_failed', 'login_blocked']),
+      ),
+    )
+    .orderBy(desc(activityLog.createdAt))
+    .limit(limit)
 }

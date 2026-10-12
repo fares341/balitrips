@@ -30,7 +30,16 @@ interface TaxonomyRow {
   label: Localized
   sortOrder: number
   icon?: string | null
+  description?: Localized | null
+  status?: string
+  parentId?: string | null
+  centerLat?: number | null
+  centerLon?: number | null
+  radiusKm?: number | null
 }
+
+/** حقول إضافية: الوصف والحالة (تصنيف ومنطقة)، والأب والمركز ونصف القطر (منطقة). */
+type Extra = { kind: 'category' } | { kind: 'region'; parents: { id: string; label: string }[] }
 
 export default async function TaxonomyPage({
   searchParams,
@@ -48,6 +57,8 @@ export default async function TaxonomyPage({
         label: categories.label,
         icon: categories.icon,
         sortOrder: categories.sortOrder,
+        description: categories.description,
+        status: categories.status,
       })
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.key)),
@@ -57,6 +68,12 @@ export default async function TaxonomyPage({
         key: regions.key,
         label: regions.label,
         sortOrder: regions.sortOrder,
+        description: regions.description,
+        status: regions.status,
+        parentId: regions.parentId,
+        centerLat: regions.centerLat,
+        centerLon: regions.centerLon,
+        radiusKm: regions.radiusKm,
       })
       .from(regions)
       .orderBy(asc(regions.sortOrder), asc(regions.key)),
@@ -84,13 +101,25 @@ export default async function TaxonomyPage({
       <Flash searchParams={params} />
 
       <TaxonomySection
-        title="Activity categories"
+        title="Categories (activities & map places)"
         rows={categoryRows}
         withIcon
         save={saveCategory}
         remove={deleteCategory}
+        extra={{ kind: 'category' }}
       />
-      <TaxonomySection title="Regions" rows={regionRows} save={saveRegion} remove={deleteRegion} />
+      <TaxonomySection
+        title="Areas & neighbourhoods"
+        rows={regionRows}
+        save={saveRegion}
+        remove={deleteRegion}
+        extra={{
+          kind: 'region',
+          parents: regionRows
+            .filter((row) => row.parentId === null)
+            .map((row) => ({ id: row.id, label: row.label.en || row.key })),
+        }}
+      />
       <TaxonomySection title="Map place tags" rows={tagRows} save={saveTag} remove={deleteTag} />
       <TaxonomySection
         title="Article categories"
@@ -102,18 +131,121 @@ export default async function TaxonomyPage({
   )
 }
 
+function ExtraFields({
+  extra,
+  row,
+  idPrefix,
+}: {
+  extra: Extra
+  row?: TaxonomyRow
+  idPrefix: string
+}) {
+  return (
+    <>
+      <div className="a-row">
+        <div className="a-field">
+          <label htmlFor={`${idPrefix}-status`}>Status</label>
+          <select
+            className="a-input"
+            id={`${idPrefix}-status`}
+            name="status"
+            defaultValue={row?.status ?? 'active'}
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        {extra.kind === 'region' ? (
+          <>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-parent`}>Inside region (for neighbourhoods)</label>
+              <select
+                className="a-input"
+                id={`${idPrefix}-parent`}
+                name="parentId"
+                defaultValue={row?.parentId ?? ''}
+              >
+                <option value="">— Top-level region —</option>
+                {extra.parents
+                  .filter((parent) => parent.id !== row?.id)
+                  .map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-lat`}>Centre latitude</label>
+              <input
+                className="a-input"
+                id={`${idPrefix}-lat`}
+                name="centerLat"
+                inputMode="decimal"
+                defaultValue={row?.centerLat ?? ''}
+                placeholder="-8.7180"
+              />
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-lon`}>Centre longitude</label>
+              <input
+                className="a-input"
+                id={`${idPrefix}-lon`}
+                name="centerLon"
+                inputMode="decimal"
+                defaultValue={row?.centerLon ?? ''}
+                placeholder="115.1686"
+              />
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-radius`}>Approx. radius (km)</label>
+              <input
+                className="a-input"
+                id={`${idPrefix}-radius`}
+                name="radiusKm"
+                inputMode="decimal"
+                defaultValue={row?.radiusKm ?? ''}
+              />
+            </div>
+          </>
+        ) : null}
+      </div>
+      <div className="a-l10n">
+        {locales.map((locale) => (
+          <div className="a-field" key={locale}>
+            <label htmlFor={`${idPrefix}-desc-${locale}`}>
+              Description · {localeConfig[locale].label}
+            </label>
+            <textarea
+              className="a-input"
+              id={`${idPrefix}-desc-${locale}`}
+              name={`description_${locale}`}
+              rows={2}
+              defaultValue={row?.description?.[locale] ?? ''}
+              lang={locale}
+              dir={localeConfig[locale].dir}
+            />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 function TaxonomySection({
   title,
   rows,
   withIcon,
   save,
   remove,
+  extra,
 }: {
   title: string
   rows: readonly TaxonomyRow[]
   withIcon?: boolean
   save: SaveAction
   remove: DeleteAction
+  extra?: Extra
 }) {
   return (
     <div className="a-card">
@@ -172,6 +304,8 @@ function TaxonomySection({
                 </div>
               ))}
             </div>
+
+            {extra ? <ExtraFields extra={extra} row={row} idPrefix={`x-${row.id}`} /> : null}
 
             <div className="a-actions">
               <button className="a-btn ghost small" type="submit">
@@ -238,6 +372,7 @@ function TaxonomySection({
             </div>
           ))}
         </div>
+        {extra ? <ExtraFields extra={extra} idPrefix={`x-new-${title}`} /> : null}
         <div className="a-actions">
           <button className="a-btn accent small" type="submit">
             Create

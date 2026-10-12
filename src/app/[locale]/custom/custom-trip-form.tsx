@@ -39,6 +39,7 @@ import { formatMoney, minorUnitExponent } from '@/lib/money'
 
 import { submitCustomTrip } from './actions'
 import {
+  AREAS_MAX,
   BUDGET_DEFAULT,
   BUDGET_MAX,
   BUDGET_MIN,
@@ -50,6 +51,7 @@ import {
   PAX_MIN,
   PHONE_MAX,
   THEMES,
+  type AreaOption,
   type CustomTripState,
   type InterestOption,
   type ThemeKey,
@@ -71,13 +73,20 @@ export type CustomTripFormProps = {
    * label-less chip on the prototype's screen.
    */
   interests: readonly InterestOption[]
+  /** المناطق المفعّلة (الوثيقة 5.2: المناطق المفضلة)، مترجمة على الخادم. */
+  areas: readonly AreaOption[]
   /** Which of them start selected. Server-chosen, so it is a real key. */
   defaultInterests: readonly string[]
   /** Currency the budget slider quotes in, from the catalogue. */
   currency: string
 }
 
-export function CustomTripForm({ interests, defaultInterests, currency }: CustomTripFormProps) {
+export function CustomTripForm({
+  interests,
+  areas,
+  defaultInterests,
+  currency,
+}: CustomTripFormProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -96,6 +105,7 @@ export function CustomTripForm({ interests, defaultInterests, currency }: Custom
     interests.filter((one) => defaultInterests.includes(one.key)).map((one) => one.key),
   )
   const [wantsDriver, setWantsDriver] = useState(true)
+  const [pickedAreas, setPickedAreas] = useState<string[]>([])
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
 
@@ -110,6 +120,15 @@ export function CustomTripForm({ interests, defaultInterests, currency }: Custom
 
   const done = state.status === 'done' && state.requestId !== dismissed
   const errors = state.status === 'error' ? (state.fields ?? {}) : {}
+
+  const toggleArea = (key: string) =>
+    setPickedAreas((previous) =>
+      previous.includes(key)
+        ? previous.filter((one) => one !== key)
+        : previous.length >= AREAS_MAX
+          ? previous
+          : [...previous, key],
+    )
 
   const toggleInterest = (key: string) =>
     setSelected((previous) =>
@@ -338,6 +357,34 @@ export function CustomTripForm({ interests, defaultInterests, currency }: Custom
         )}
       </div>
 
+      {/* ---------------- preferred areas (spec 5.2) ---------------- */}
+      {areas.length > 0 && (
+        <div>
+          <h2 className="bt-form-q" id={`${baseId}-areas`}>
+            {t('cp_areas')}
+          </h2>
+          <div className="bt-ct-row" role="group" aria-labelledby={`${baseId}-areas`}>
+            {areas.map((option) => {
+              const on = pickedAreas.includes(option.key)
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={on}
+                  className={on ? 'bt-ct-pick on' : 'bt-ct-pick'}
+                  onClick={() => toggleArea(option.key)}
+                >
+                  <bdi>{option.label}</bdi>
+                </button>
+              )
+            })}
+          </div>
+          {pickedAreas.map((key) => (
+            <input key={key} type="hidden" name="areas" value={key} />
+          ))}
+        </div>
+      )}
+
       {/* ---------------- driver ---------------- */}
       <div>
         <button
@@ -376,6 +423,18 @@ export function CustomTripForm({ interests, defaultInterests, currency }: Custom
           style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
         >
           <input type="checkbox" name="wantsVipMap" /> {t('cp_vipmap')}
+        </label>
+        <label
+          className="row"
+          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+        >
+          <input type="checkbox" name="wantsLuxuryDining" /> {t('cp_luxury_dining')}
+        </label>
+        <label
+          className="row"
+          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+        >
+          <input type="checkbox" name="wantsAdventure" /> {t('cp_adventure')}
         </label>
       </div>
 

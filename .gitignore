@@ -40,6 +40,11 @@ app.env
 caddy.env
 postgres.env
 
+# Database dumps at the repo root: they hold password hashes and live session
+# tokens. Root-only (leading slash) — drizzle/*.sql migrations must stay tracked.
+/*.sql
+/*.sql.gz
+/*.dump
 # payload
 /media
 .payload/

@@ -127,6 +127,7 @@ export default async function ItineraryDetailPage({
 
   const name = pick(itinerary.name, locale, itinerary.slug)
   const blurb = pickOptional(itinerary.blurb, locale)
+  const details = pickOptional(itinerary.detailedDescription, locale)
   const audience = pickList(itinerary.audience, locale)
 
   /**
@@ -183,6 +184,55 @@ export default async function ItineraryDetailPage({
               <p className="lede" style={{ fontSize: 16 }}>
                 {blurb}
               </p>
+            </div>
+          )}
+
+          {(itinerary.includesMap || itinerary.isVip) && (
+            <div className="row" style={{ gap: 8, marginBlockStart: 12 }}>
+              {itinerary.isVip && <span className="tag tag-orange">VIP</span>}
+              {itinerary.includesMap && (
+                <span className="tag tag-forest">
+                  <Icon name="pin" size={13} /> {t('id_includes_map')}
+                </span>
+              )}
+            </div>
+          )}
+
+          {details !== null && (
+            <div className="bt-detail-block">
+              <h2 className="bt-detail-h">{t('id_details')}</h2>
+              <p style={{ fontSize: 15.5, lineHeight: 1.75, whiteSpace: 'pre-line' }}>{details}</p>
+            </div>
+          )}
+
+          {itinerary.gallery.length > 0 && (
+            <div className="bt-detail-block">
+              <h2 className="bt-detail-h">{t('id_gallery')}</h2>
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 10,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                }}
+              >
+                {itinerary.gallery.map((image) => (
+                  <div
+                    key={image.url}
+                    style={{
+                      position: 'relative',
+                      aspectRatio: '4 / 3',
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Photo
+                      src={image.url}
+                      alt={pick(image.alt, locale)}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

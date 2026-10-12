@@ -9,6 +9,7 @@ import {
   type RefundResult,
   type WebhookEvent,
 } from './types'
+import { sandboxPaymentsAllowed } from '@/lib/live-mode'
 
 /**
  * Sandbox provider.
@@ -33,7 +34,7 @@ export class SandboxPaymentProvider implements PaymentProvider {
     // Same reasoning as the registry: NODE_ENV is inlined at build time, so
     // a check against it here is decided by the compiler rather than the
     // deployment. getPaymentProvider() owns the runtime gate.
-    if (process.env.ALLOW_SANDBOX_PAYMENTS !== 'true') {
+    if (!sandboxPaymentsAllowed()) {
       throw new Error(
         'SandboxPaymentProvider requires ALLOW_SANDBOX_PAYMENTS=true. It must never ' +
           'be reachable on a server that takes real money.',

@@ -10,7 +10,7 @@ import { Button, LinkButton } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import { db } from '@/db'
 import { notifications, users } from '@/db/schema'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
@@ -29,7 +29,7 @@ export default async function NotificationsPage({ params }: { params: PageParams
   setRequestLocale(locale)
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:notifications')
 
   const [prefs] = await db
     .select({ whatsappOptIn: users.whatsappOptIn, phone: users.phone })

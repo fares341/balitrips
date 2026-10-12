@@ -19,6 +19,13 @@ design
 .env.production
 *.env
 !.env.example
+# Database dumps: hold password hashes and live session tokens. The worker
+# stage runs `COPY . .`, so a dump in the tree would ship inside the image.
+# .dockerignore patterns without `**` match the context root only, so
+# drizzle/*.sql migrations are still copied.
+/*.sql
+/*.sql.gz
+/*.dump
 coverage
 test-results
 playwright-report

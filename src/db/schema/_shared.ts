@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { integer, jsonb, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { bigint, jsonb, timestamp, varchar } from 'drizzle-orm/pg-core'
 
 import type { Locale } from '@/i18n/config'
 
@@ -24,8 +24,13 @@ export const localized = (name: string) => jsonb(name).$type<Localized>()
  *
  * Note minor-unit exponent varies: USD/EUR are 2, JPY is 0, BHD/KWD/OMR
  * are 3. Formatting must derive it from the currency, not assume 100.
+ *
+ * bigint, not integer: int32 tops out at 2,147,483,647 minor units — only
+ * 21.4M IDR (about USD 1,300), less than one villa package. Read back as a JS
+ * number (`mode: 'number'`), exact up to 2^53.
  */
-export const priceMinor = (name = 'price_minor') => integer(name).notNull()
+export const moneyMinor = (name: string) => bigint(name, { mode: 'number' })
+export const priceMinor = (name = 'price_minor') => moneyMinor(name).notNull()
 export const currency = (name = 'currency') => varchar(name, { length: 3 }).notNull()
 
 /** Timestamps every table carries. */

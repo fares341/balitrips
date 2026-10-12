@@ -19,7 +19,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { LinkButton, Tag } from '@/components/shared'
 import { TRIP_KIND_ICON } from '@/components/trip'
 import { Icon } from '@/components/ui'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { pick } from '@/lib/content/localize'
 import type { CartItemKind } from '@/lib/pricing/quote'
 
@@ -46,7 +46,7 @@ export default async function AccountTripPage({ params }: { params: PageParams }
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:trip')
 
   const days = await listTripDays(user.id)
 

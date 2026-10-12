@@ -40,13 +40,20 @@ import {
   isValidDateRange,
   vehicleForPassengers,
 } from '@/lib/booking-rules'
-import { listActivities, listCategories, listDriverVehicles } from '@/lib/content/queries'
+import {
+  listActivities,
+  listCategories,
+  listDriverVehicles,
+  listRegions,
+} from '@/lib/content/queries'
 
 import { notifyStaff } from '@/lib/notify'
+import { logActivity } from '@/lib/security/activity'
 
 import { currentUserId } from '../_viewer/session'
 import { catalogueCurrency, rankActivities, toMinorUnits } from './match'
 import {
+  AREAS_MAX,
   BUDGET_MAX,
   BUDGET_MIN,
   BUDGET_STEP,
@@ -88,6 +95,9 @@ const schema = z.object({
   wantsDriver: z.boolean(),
   hasChildren: z.boolean(),
   wantsVipMap: z.boolean(),
+  wantsLuxuryDining: z.boolean(),
+  wantsAdventure: z.boolean(),
+  preferredAreas: z.array(z.string().trim().max(64)).max(AREAS_MAX),
   notes: z.string().trim().max(NOTES_MAX),
 })
 
@@ -109,6 +119,9 @@ export async function submitCustomTrip(
     wantsDriver: formData.get('wantsDriver') !== null,
     hasChildren: formData.get('hasChildren') !== null,
     wantsVipMap: formData.get('wantsVipMap') !== null,
+    wantsLuxuryDining: formData.get('wantsLuxuryDining') !== null,
+    wantsAdventure: formData.get('wantsAdventure') !== null,
+    preferredAreas: formData.getAll('areas').map(String).slice(0, AREAS_MAX),
     notes: formData.get('notes') ?? '',
   })
 
@@ -160,7 +173,15 @@ export async function submitCustomTrip(
   // Interests, against the real taxonomy
   // -------------------------------------------------------------------
 
-  const [categories, vehicles] = await Promise.all([listCategories(), listDriverVehicles()])
+  const [categories, vehicles, regionRows] = await Promise.all([
+    listCategories(),
+    listDriverVehicles(),
+    listRegions({ includeAreas: true }),
+  ])
+
+  // مفاتيح مناطق حقيقية فقط؛ المجهول يُسقط بدل تخزينه.
+  const regionKeys = new Set(regionRows.map((row) => row.key))
+  const preferredAreas = [...new Set(input.preferredAreas)].filter((key) => regionKeys.has(key))
 
   const validKeys = new Set(
     categories.map((category) => category.key).filter((key) => key !== ALL_CATEGORY_KEY),
@@ -243,12 +264,24 @@ export async function submitCustomTrip(
         wantsDriver: input.wantsDriver,
         hasChildren: input.hasChildren,
         wantsVipMap: input.wantsVipMap,
+        wantsLuxuryDining: input.wantsLuxuryDining,
+        wantsAdventure: input.wantsAdventure,
+        preferredAreas: preferredAreas.length > 0 ? preferredAreas : null,
         notes: notes === '' ? null : notes,
       })
       .returning({ id: customTripRequests.id })
 
     const requestId = inserted[0]?.id
     if (requestId === undefined) return { status: 'error', reason: 'server' }
+
+    // سجل النشاط: "تحديث الطلبات" (الوثيقة 15.1) — للطلبات من حساب مسجّل.
+    if (userId !== null) {
+      await logActivity({
+        action: 'update_request',
+        userId,
+        details: { requestId, kind: 'custom_trip', event: 'created' },
+      })
+    }
 
     await notifyStaff(
       'staff_custom_request',

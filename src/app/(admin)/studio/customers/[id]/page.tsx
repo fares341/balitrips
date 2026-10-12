@@ -16,6 +16,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
 import {
   changeRole,
+  updateCustomerProfile,
   deleteCustomer,
   restoreCustomer,
   revokeAllSessions,
@@ -187,6 +188,58 @@ export default async function CustomerPage({
           ) : null}
         </dl>
       </div>
+
+      {mayChangeRole ? (
+        <form className="a-card a-form" action={updateCustomerProfile.bind(null, account.id)}>
+          <h2>Edit details</h2>
+          <div className="a-row">
+            <Field label="Name" htmlFor="p-name">
+              <input
+                className="a-input"
+                id="p-name"
+                name="name"
+                defaultValue={account.name ?? ''}
+              />
+            </Field>
+            <Field
+              label="E-mail"
+              htmlFor="p-email"
+              hint="Changing the e-mail signs the account out everywhere."
+            >
+              <input
+                className="a-input"
+                id="p-email"
+                name="email"
+                type="email"
+                required
+                defaultValue={account.email}
+              />
+            </Field>
+            <Field label="Phone" htmlFor="p-phone">
+              <input
+                className="a-input"
+                id="p-phone"
+                name="phone"
+                defaultValue={account.phone ?? ''}
+              />
+            </Field>
+            <Field label="Country (2 letters)" htmlFor="p-country">
+              <input
+                className="a-input"
+                id="p-country"
+                name="country"
+                maxLength={2}
+                defaultValue={account.country ?? ''}
+              />
+            </Field>
+          </div>
+          <div className="a-actions">
+            <button className="a-btn accent" type="submit">
+              Save details
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       <div className="a-cols">
         <div className="a-card">

@@ -27,6 +27,7 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   activities,
+  categories,
   entitlements,
   favorites,
   itineraries,
@@ -36,9 +37,10 @@ import {
   orderItems,
   orders,
   packages,
+  regions,
 } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
-import { defaultLocale, type Locale } from '@/i18n/config'
+import { defaultLocale, locales, type Locale } from '@/i18n/config'
 import { mediaUrl } from '@/lib/content/queries'
 import { entityHref } from '@/lib/content/types'
 import { canSeePlace, loadEntitlements } from '@/lib/entitlements'
@@ -70,6 +72,20 @@ function imageOf(row: MediaRow | null): { url: string | null; alt: Localized | n
 // ---------------------------------------------------------------------------
 // Favorites
 // ---------------------------------------------------------------------------
+
+/** "مطاعم · Seminyak" بكل لغة؛ ما ينقص يُترك. */
+function joinLabels(...parts: (Localized | null | undefined)[]): Localized | null {
+  const present = parts.filter((part): part is Localized => part !== null && part !== undefined)
+  if (present.length === 0) return null
+  const out = {} as Localized
+  for (const locale of locales) {
+    out[locale] = present
+      .map((part) => part[locale] || part.en || '')
+      .filter((value) => value !== '')
+      .join(' · ')
+  }
+  return out
+}
 
 export const FAVORITE_KINDS = ['activity', 'place', 'itinerary', 'package'] as const
 export type FavoriteKind = (typeof FAVORITE_KINDS)[number]
@@ -141,14 +157,23 @@ export async function listFavorites(userId: string): Promise<FavoriteView[]> {
     placeIds.length === 0
       ? []
       : db
-          .select({ row: mapPlaces, hero: media })
+          .select({
+            row: mapPlaces,
+            hero: media,
+            categoryLabel: categories.label,
+            regionLabel: regions.label,
+          })
           .from(mapPlaces)
           .leftJoin(media, eq(media.id, mapPlaces.heroImageId))
+          .leftJoin(categories, eq(categories.id, mapPlaces.categoryId))
+          .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
           .where(
             and(
               inArray(mapPlaces.id, placeIds),
               eq(mapPlaces.status, PUBLISHED),
               isNull(mapPlaces.deletedAt),
+              // مخفي من الإدارة = غير متاح، كما في الخريطة والبحث.
+              eq(mapPlaces.isHidden, false),
             ),
           ),
     itineraryIds.length === 0
@@ -195,12 +220,13 @@ export async function listFavorites(userId: string): Promise<FavoriteView[]> {
     })
   }
 
-  for (const { row, hero } of placeRows) {
+  for (const { row, hero, categoryLabel, regionLabel } of placeRows) {
     const visible = canSeePlace(row, held)
     const image = imageOf(hero)
     resolved.set(`place:${row.id}`, {
       title: visible ? row.name : null,
-      subtitle: visible ? row.category : null,
+      // الوثيقة 11.2: التصنيف + المنطقة لكل مكان محفوظ.
+      subtitle: visible ? joinLabels(categoryLabel ?? row.category, regionLabel) : null,
       href: visible ? entityHref('place', row.slug) : null,
       imageUrl: visible ? image.url : null,
       imageAlt: visible ? image.alt : null,
@@ -480,6 +506,17 @@ export async function resolveScheduleDocument(
 
   const itineraryId = row.item.refId
   const version = row.item.refVersion ?? row.itinerary?.version ?? 1
+
+  // ملف رفعه المدير لهذا الجدول (الوثيقة 4.2) يتقدّم على المولّد تلقائياً.
+  const uploaded = row.itinerary?.uploadedPdfKeys ?? null
+  const uploadedKey = uploaded?.[locale] ?? uploaded?.[defaultLocale] ?? null
+  if (uploadedKey) {
+    return {
+      objectKey: uploadedKey,
+      orderNumber: row.orderNumber,
+      slug: row.itinerary?.slug ?? 'itinerary',
+    }
+  }
 
   const docs = await db
     .select({ objectKey: itineraryDocuments.objectKey, locale: itineraryDocuments.locale })

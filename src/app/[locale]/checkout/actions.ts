@@ -49,6 +49,7 @@ import {
   TERMS_VERSION,
   type CheckoutState,
 } from './constants'
+import { activeUserOrNull } from '@/lib/security/require'
 
 function localeOf(value: FormDataEntryValue | null): Locale {
   return typeof value === 'string' && isLocale(value) ? value : defaultLocale
@@ -91,6 +92,8 @@ export async function startCheckoutAction(
 
   const user = await getSessionUser()
   if (!user) return { error: 'sign_in' }
+  // جهاز مُزال أو IP/جهاز محظور لا يشتري — نفس فحص المحتوى المدفوع.
+  if ((await activeUserOrNull('checkout')) === null) return { error: 'sign_in' }
 
   // Signing up mid-flow is the normal path; fold the anonymous trip in before
   // pricing it, or the account checks out with an empty cart.

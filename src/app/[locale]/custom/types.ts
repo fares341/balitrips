@@ -15,11 +15,16 @@ import type { ActivitySummary } from '@/lib/content/types'
 // Questionnaire vocabulary
 // ---------------------------------------------------------------------------
 
-/** The four theme pills, in the design's order. */
+/**
+ * أنواع الرحلة كما في الوثيقة (5.2): عائلية / شهر عسل / شباب / فاخرة / اقتصادية،
+ * و"فردية" من التصميم الأصلي (طلبات قديمة تحملها).
+ */
 export const THEMES = [
   { key: 'family', labelKey: 'ct_type_family' },
   { key: 'honey', labelKey: 'ct_type_honey' },
   { key: 'youth', labelKey: 'ct_type_youth' },
+  { key: 'luxury', labelKey: 'ct_type_luxury' },
+  { key: 'budget', labelKey: 'ct_type_budget' },
   { key: 'solo', labelKey: 'ct_type_solo' },
 ] as const
 
@@ -43,6 +48,16 @@ export const PAX_DEFAULT = 2
 
 /** Longest note we will store. The column is `text`; this is a sanity bound. */
 export const NOTES_MAX = 2000
+
+/** منطقة يختارها المسافر (الوثيقة 5.2: المناطق المفضلة). */
+export interface AreaOption {
+  key: string
+  /** Already resolved for the active locale. */
+  label: string
+}
+
+/** Most areas a request may name — a hand-crafted post cannot store hundreds. */
+export const AREAS_MAX = 12
 
 /**
  * One interest toggle.
@@ -128,4 +143,5 @@ export type CustomTripState =
     }
 
 export type AddToTripResult =
-  { ok: true; itemCount: number } | { ok: false; reason: 'validation' | 'server' }
+  | { ok: true; itemCount: number }
+  | { ok: false; reason: 'validation' | 'server' }

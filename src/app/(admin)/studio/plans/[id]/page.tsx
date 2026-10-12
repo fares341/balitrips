@@ -148,6 +148,11 @@ export default async function PlanEditPage({
               defaultChecked={plan?.canSaveFavorites ?? true}
             />
             <Checkbox
+              name="canDownloadPdf"
+              label="Can download PDFs (off = view in site only)"
+              defaultChecked={plan?.canDownloadPdf ?? true}
+            />
+            <Checkbox
               name="featured"
               label="Featured (“best value” badge)"
               defaultChecked={plan?.featured ?? false}

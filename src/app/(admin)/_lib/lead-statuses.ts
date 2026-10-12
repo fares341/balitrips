@@ -1,12 +1,15 @@
-/** حالات الطلب المخصص (الوثيقة، القسم 8) ورسائل التواصل. */
-
+/**
+ * حالات الطلب المخصص — كما في الوثيقة (5.3) حرفياً:
+ * جديد، تحت المراجعة، قيد التنفيذ، بانتظار رد العميل، مكتمل، ملغي.
+ * الهجرة 0008 تنقل القديمة (waiting_approval → waiting_customer، rejected → cancelled).
+ */
 export const TRIP_STATUSES = [
   'new',
   'under_review',
   'in_progress',
-  'waiting_approval',
+  'waiting_customer',
   'completed',
-  'rejected',
+  'cancelled',
 ] as const
 export type TripStatus = (typeof TRIP_STATUSES)[number]
 
@@ -17,9 +20,9 @@ export const LEAD_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'i
   new: 'warn',
   under_review: 'info',
   in_progress: 'info',
-  waiting_approval: 'warn',
+  waiting_customer: 'warn',
   completed: 'good',
-  rejected: 'bad',
+  cancelled: 'bad',
   read: 'neutral',
   replied: 'good',
   closed: 'neutral',

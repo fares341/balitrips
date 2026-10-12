@@ -16,13 +16,14 @@ import { FormNotice } from '@/components/auth'
 import { LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { getPathname } from '@/i18n/routing'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { pick } from '@/lib/content/localize'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { listSchedules } from '../_lib/queries'
 import { CustomPlans } from './custom-plans'
+import { loadPermissions } from '@/lib/entitlements/plans'
 
 const ITINERARIES_HREF = '/itineraries'
 
@@ -47,8 +48,13 @@ export default async function AccountSchedulesPage({
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
-  const downloadsAllowed = (await readSetting('security')).pdfDownloads === 'allow'
+  const user = await requireActiveUser('account:schedules')
+  const [policy, permissions] = await Promise.all([
+    readSetting('security'),
+    loadPermissions(user.id),
+  ])
+  // السياسة العامة + صلاحية التحميل في باقات المستخدم (الوثيقة 13.2).
+  const downloadsAllowed = policy.pdfDownloads === 'allow' && permissions.canDownloadPdf
 
   const [items, query] = await Promise.all([listSchedules(user.id, locale), searchParams])
 

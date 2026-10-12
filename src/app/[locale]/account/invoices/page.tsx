@@ -18,7 +18,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { LinkButton, Tag, type TagVariant } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import { Link } from '@/i18n/routing'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import type { OrderStatus } from '@/lib/orders/state'
@@ -54,7 +54,7 @@ export default async function AccountInvoicesPage({ params }: { params: PagePara
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:invoices')
 
   const items = await listInvoices(user.id)
 

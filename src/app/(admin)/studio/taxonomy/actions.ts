@@ -21,12 +21,33 @@ import { isIconName } from '@/components/ui/icon'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { fint, flocalizedRequired, freq, fstr } from '../../_lib/form'
+import {
+  fenum,
+  fint,
+  flocalizedOrNull,
+  flocalizedRequired,
+  freq,
+  fstr,
+  fuuidOrNull,
+} from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
 
 const LIST = adminHref('/taxonomy')
+
+const STATUSES = ['active', 'inactive'] as const
+
+/** رقم عشري اختياري ضمن حدود، وإلا خطأ واضح. */
+function optionalNumber(form: FormData, name: string, label: string, min: number, max: number) {
+  const value = fstr(form, name)
+  if (value === null) return null
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${label} must be a number between ${min} and ${max}`)
+  }
+  return parsed
+}
 
 type Outcome = { ok: string } | { err: string }
 
@@ -49,6 +70,8 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
     const values = {
       key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
       label: flocalizedRequired(form, 'label', 'Label'),
+      description: flocalizedOrNull(form, 'description'),
+      status: fenum(form, 'status', STATUSES, 'active'),
       icon,
       sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
     }
@@ -143,13 +166,37 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
   let outcome: Outcome
 
   try {
+    const parentId = fuuidOrNull(form, 'parentId', 'Parent area')
+    if (parentId !== null && parentId === id) throw new Error('An area cannot be its own parent')
     const values = {
       key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
       label: flocalizedRequired(form, 'label', 'Label'),
+      description: flocalizedOrNull(form, 'description'),
+      status: fenum(form, 'status', STATUSES, 'active'),
+      parentId,
+      centerLat: optionalNumber(form, 'centerLat', 'Centre latitude', -9.2, -7.7),
+      centerLon: optionalNumber(form, 'centerLon', 'Centre longitude', 114.4, 115.8),
+      radiusKm: optionalNumber(form, 'radiusKm', 'Radius', 0.2, 80),
       sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
     }
 
     await db.transaction(async (tx) => {
+      if (parentId !== null) {
+        // مستويان فقط: الأب يجب أن يكون منطقة عامة بلا أب.
+        const [parent] = await tx.select().from(regions).where(eq(regions.id, parentId)).limit(1)
+        if (!parent) throw new Error('The parent area no longer exists')
+        if (parent.parentId !== null) throw new Error('Pick a top-level region as the parent')
+        if (id !== 'new') {
+          const [child] = await tx
+            .select({ id: regions.id })
+            .from(regions)
+            .where(eq(regions.parentId, id))
+            .limit(1)
+          if (child) {
+            throw new Error('This region has neighbourhoods inside it, so it cannot be nested.')
+          }
+        }
+      }
       const before =
         id === 'new'
           ? null

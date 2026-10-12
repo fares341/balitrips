@@ -69,6 +69,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       deviceLimit,
       canUseTrip: fbool(form, 'canUseTrip'),
       canSaveFavorites: fbool(form, 'canSaveFavorites'),
+      canDownloadPdf: fbool(form, 'canDownloadPdf'),
       featured: fbool(form, 'featured'),
       sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
       status,

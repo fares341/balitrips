@@ -11,10 +11,10 @@
  *     (مطابقة على `granted_by_order_id`).
  */
 
-import { and, asc, eq, gt, inArray, isNull, or } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, plans } from '@/db/schema'
+import { entitlements, itineraries, orderItems, orders, plans } from '@/db/schema'
 
 import { isEntitlementKind, makeEntitlementSet, type EntitlementSet } from './redaction'
 
@@ -71,10 +71,24 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
     .innerJoin(plans, eq(plans.id, orderItems.refId))
     .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'plan')))
 
-  if (lines.length === 0) return 0
+  // الوثيقة 4.2: "هل يشمل الخريطة؟" — جدول يشمل الخريطة يمنح الوصول لها عند الدفع
+  // (VIP إن كان جدول VIP). كان شراء الجدول لا يفتح الخريطة أبداً.
+  const mapItineraries = await tx
+    .select({ includesMap: itineraries.includesMap, isVip: itineraries.isVip })
+    .from(orderItems)
+    .innerJoin(itineraries, eq(itineraries.id, orderItems.refId))
+    .where(
+      and(
+        eq(orderItems.orderId, orderId),
+        eq(orderItems.kind, 'itinerary'),
+        eq(itineraries.includesMap, true),
+      ),
+    )
+
+  if (lines.length === 0 && mapItineraries.length === 0) return 0
 
   const existing = await tx
-    .select({ planId: entitlements.planId })
+    .select({ planId: entitlements.planId, kind: entitlements.kind })
     .from(entitlements)
     .where(eq(entitlements.grantedByOrderId, orderId))
   const already = new Set(existing.map((row) => row.planId))
@@ -91,14 +105,47 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
   for (const { plan } of lines) {
     if (already.has(plan.id)) continue
     if (!isEntitlementKind(plan.entitlementKind)) continue
+    // تجديد باقة بمدة قبل انتهائها: المدة الجديدة تبدأ من نهاية الحالية،
+    // لا من اليوم — كي لا يخسر العميل الأيام المتبقية التي دفع ثمنها.
+    let startsAt = now
+    if (plan.durationDays !== null && plan.durationDays > 0) {
+      const [current] = await tx
+        .select({ until: sql<Date | null>`max(${entitlements.expiresAt})` })
+        .from(entitlements)
+        .where(
+          and(
+            eq(entitlements.userId, owner.userId),
+            eq(entitlements.planId, plan.id),
+            isNull(entitlements.revokedAt),
+            gt(entitlements.expiresAt, now),
+          ),
+        )
+      const until = current?.until ? new Date(current.until) : null
+      if (until !== null && until.getTime() > now.getTime()) startsAt = until
+    }
     await tx.insert(entitlements).values({
       userId: owner.userId,
       kind: plan.entitlementKind,
       grantedByOrderId: orderId,
       planId: plan.id,
-      startsAt: now,
-      expiresAt: planExpiry(plan.durationDays, now),
+      startsAt,
+      expiresAt: planExpiry(plan.durationDays, startsAt),
       deviceLimit: plan.deviceLimit,
+    })
+    granted += 1
+  }
+
+  const itineraryKinds = new Set(
+    mapItineraries.map((row) => (row.isVip ? ('vip' as const) : ('map_access' as const))),
+  )
+  for (const kind of itineraryKinds) {
+    if (existing.some((row) => row.planId === null && row.kind === kind)) continue
+    await tx.insert(entitlements).values({
+      userId: owner.userId,
+      kind,
+      grantedByOrderId: orderId,
+      startsAt: now,
+      expiresAt: null,
     })
     granted += 1
   }
@@ -115,6 +162,12 @@ export interface Permissions {
   canUseTrip: boolean
   /** المفضلة متاحة لكل مستخدم مسجّل ما لم تمنعها كل باقاته الحيّة صراحةً. */
   canSaveFavorites: boolean
+  /**
+   * تحميل PDF (الوثيقة 13.2): مسموح ما لم تكن لدى المستخدم باقات حيّة كلها
+   * تمنعه — عندها العرض داخل الموقع فقط. من اشترى جدولاً بلا باقة يتبع
+   * السياسة العامة في Studio → Protection.
+   */
+  canDownloadPdf: boolean
   hasAnyPlan: boolean
 }
 
@@ -123,6 +176,7 @@ export function combinePermissions(
     kind: string
     canUseTrip: boolean | null
     canSaveFavorites: boolean | null
+    canDownloadPdf?: boolean | null
   }[],
 ): Permissions {
   const kinds = rows.map((row) => row.kind).filter(isEntitlementKind)
@@ -130,6 +184,7 @@ export function combinePermissions(
     entitlements: makeEntitlementSet(kinds),
     canUseTrip: rows.some((row) => row.canUseTrip ?? true),
     canSaveFavorites: rows.length === 0 || rows.some((row) => row.canSaveFavorites ?? true),
+    canDownloadPdf: rows.length === 0 || rows.some((row) => row.canDownloadPdf ?? true),
     hasAnyPlan: rows.length > 0,
   }
 }
@@ -142,6 +197,7 @@ export async function loadPermissions(userId: string | null): Promise<Permission
       kind: entitlements.kind,
       canUseTrip: plans.canUseTrip,
       canSaveFavorites: plans.canSaveFavorites,
+      canDownloadPdf: plans.canDownloadPdf,
     })
     .from(entitlements)
     .leftJoin(plans, eq(plans.id, entitlements.planId))

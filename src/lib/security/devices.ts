@@ -8,7 +8,7 @@
  * أي نظام بصمة في المتصفح، والتخفيف منها مهمة الحظر التلقائي (تغيّر IP
  * والمتصفح على نفس الجلسة) في الدفعة الثانية.
  *
- * سياسة الجهاز الجديد عند بلوغ الحد (`SECURITY_NEW_DEVICE_POLICY`):
+ * سياسة الجهاز الجديد عند بلوغ الحد (Studio → Protection، وإلا `SECURITY_NEW_DEVICE_POLICY`):
  *  - `block`         (الافتراضي) يُرفض الدخول، ويُطلب من المستخدم إزالة جهاز
  *                     من صفحة "أجهزتي" على جهاز مسجّل، أو التواصل مع الدعم.
  *  - `evict_oldest`  يُسجَّل خروج أقدم جهاز استخداماً ويُقبل الجديد.
@@ -23,7 +23,7 @@ import { isElevated, isRole } from '@/lib/auth/roles'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
 
-import { notifyUser } from '@/lib/notify'
+import { notifyStaff, notifyUser } from '@/lib/notify'
 
 import { logActivity } from './activity'
 import {
@@ -123,6 +123,7 @@ export interface RegisterInput {
  */
 export async function registerSignInDevice(input: RegisterInput): Promise<string> {
   const { userId, identity } = input
+  const settings = await currentPolicy()
   const result = await db.transaction(async (tx) => {
     const [owner] = await tx
       .select({ role: users.role })
@@ -161,13 +162,15 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
       .where(and(eq(devices.userId, userId), eq(devices.status, 'active')))
       .orderBy(asc(devices.lastSeenAt))
 
+    // الإعدادات من Studio → Protection (وإلا من env). كانت تُقرأ من env فقط،
+    // فلم يكن لتغييرها من لوحة التحكم أي أثر عند تسجيل الدخول.
     const limit = elevated
       ? Number.POSITIVE_INFINITY
-      : effectiveDeviceLimit(await liveDeviceLimits(userId), defaultDeviceLimit())
+      : effectiveDeviceLimit(await liveDeviceLimits(userId), settings.fallbackLimit)
     const decision = decideNewDevice({
       activeCount: active.length,
       limit,
-      policy: newDevicePolicy(),
+      policy: settings.policy,
     })
 
     if (decision === 'block') throw new DeviceLimitError(limit, active.length)
@@ -236,6 +239,30 @@ export async function registerSignInDevice(input: RegisterInput): Promise<string
           when: new Date().toISOString().replace('T', ' ').slice(0, 16) + ' UTC',
         },
         '/account/devices',
+      )
+    }
+    const device = `${identity.browser} · ${identity.os}`
+    // سياسة "warn": قُبل الجهاز فوق الحد — المستخدم يرى رسالة الترقية (الوثيقة 14.2)،
+    // لا سطراً في السجل فقط.
+    if (result.event.decision === 'warn' && result.event.limit !== null) {
+      await notifyUser(
+        userId,
+        'device_limit_warning',
+        { device, limit: result.event.limit },
+        '/account/devices',
+      )
+    }
+    // الوثيقة 4.3: تنبيه الإدارة عند دخول مستخدم مدفوع من جهاز جديد.
+    if (result.event.active > 0 && (await liveDeviceLimits(userId)).length > 0) {
+      const [owner] = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1)
+      await notifyStaff(
+        'staff_paid_new_device',
+        { email: owner?.email ?? userId, device, active: result.event.active + 1 },
+        `/customers/${userId}`,
       )
     }
     if (result.event.evictedId !== null) {

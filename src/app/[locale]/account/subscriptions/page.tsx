@@ -17,7 +17,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { LinkButton, Tag } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import type { IconName } from '@/components/ui/icon'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
@@ -52,7 +52,7 @@ export default async function AccountSubscriptionsPage({ params }: { params: Pag
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:subscriptions')
 
   const items = await listSubscriptions(user.id)
 

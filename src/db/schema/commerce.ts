@@ -14,7 +14,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 
-import { currency, localized, priceMinor, timestamps, type Localized } from './_shared'
+import { currency, localized, moneyMinor, priceMinor, timestamps, type Localized } from './_shared'
 import { plans } from './product'
 import { users } from './auth'
 
@@ -106,7 +106,7 @@ export const orders = pgTable(
 
     /** What actually settled. May differ; refunds reconcile against it. */
     settlementCurrency: varchar('settlement_currency', { length: 3 }),
-    settlementTotalMinor: integer('settlement_total_minor'),
+    settlementTotalMinor: moneyMinor('settlement_total_minor'),
     exchangeRate: varchar('exchange_rate', { length: 32 }),
 
     /** Contact details frozen at purchase. */
@@ -163,7 +163,7 @@ export const orderItems = pgTable(
 
     /** pending | confirmed | delivered | cancelled | refunded */
     fulfilmentStatus: varchar('fulfilment_status', { length: 24 }).notNull().default('pending'),
-    refundedMinor: integer('refunded_minor').notNull().default(0),
+    refundedMinor: moneyMinor('refunded_minor').notNull().default(0),
 
     parentItemId: uuid('parent_item_id'),
     ...timestamps,
@@ -353,17 +353,23 @@ export const customTripRequests = pgTable('custom_trip_requests', {
   endDate: date('end_date'),
   travellers: integer('travellers'),
   theme: varchar('theme', { length: 32 }),
-  budgetPerPersonMinor: integer('budget_per_person_minor'),
+  budgetPerPersonMinor: moneyMinor('budget_per_person_minor'),
   currency: varchar('currency', { length: 3 }),
   interests: jsonb('interests').$type<string[]>(),
   wantsDriver: boolean('wants_driver'),
   hasChildren: boolean('has_children'),
   wantsVipMap: boolean('wants_vip_map'),
+  /** الوثيقة 5.2: المناطق المفضلة (مفاتيح `regions.key`). */
+  preferredAreas: jsonb('preferred_areas').$type<string[]>(),
+  /** الوثيقة 5.2: هل يريد مطاعم فاخرة؟ */
+  wantsLuxuryDining: boolean('wants_luxury_dining'),
+  /** قائمة المهام (checklist): هل يريد مغامرة؟ */
+  wantsAdventure: boolean('wants_adventure'),
   notes: text('notes'),
 
   /**
-   * 'new' | 'under_review' | 'in_progress' | 'waiting_approval' | 'completed' | 'rejected'
-   * (الوثيقة 8). الهجرة 0007 تنقل الحالات القديمة (contacted, quoted, won…).
+   * 'new' | 'under_review' | 'in_progress' | 'waiting_customer' | 'completed' | 'cancelled'
+   * (الوثيقة 5.3). الهجرتان 0007 و0008 تنقلان الحالات القديمة.
    */
   status: varchar('status', { length: 24 }).notNull().default('new'),
   /** ملاحظات الفريق الداخلية — لا تُعرض للعميل. */

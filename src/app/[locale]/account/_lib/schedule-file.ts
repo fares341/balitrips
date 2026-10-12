@@ -22,6 +22,7 @@ import { db } from '@/db'
 import { activityLog, customTripDocuments, customTripRequests } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { loadPermissions } from '@/lib/entitlements/plans'
 import { stampPdf } from '@/lib/pdf/watermark'
 import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -36,6 +37,16 @@ export const NO_STORE = {
 } as const
 
 export type DeliveryMode = 'view' | 'download'
+
+/** ترويسة يرسلها العارض وحده؛ التنقل المباشر للرابط لا يستطيع إرسالها. */
+export const VIEWER_HEADER = 'x-bt-viewer'
+
+function isViewerFetch(request: Request): boolean {
+  if (request.headers.get(VIEWER_HEADER) !== '1') return false
+  const dest = request.headers.get('sec-fetch-dest')
+  // متصفح حديث: fetch = "empty". تنقل/iframe/embed = غير ذلك.
+  return dest === null || dest === 'empty'
+}
 
 /** أقصى حجم نقبله من التخزين — جداول الرحلات بضعة ميغابايتات. */
 const MAX_SOURCE_BYTES = 30 * 1024 * 1024
@@ -157,9 +168,32 @@ export async function deliverSchedule(
   }
   if (resolved === 'not-ready') return toAccountRedirect(request, locale, { doc: 'pending' })
 
+  if (mode === 'view' && !isViewerFetch(request)) {
+    // فتح `/file` مباشرة في المتصفح كان يعطي الملف كاملاً قابلاً للحفظ والطباعة،
+    // متجاوزاً "عرض فقط" وحد التحميلات. العارض وحده يجلب الملف.
+    await logActivity({
+      action: 'unauthorized_access',
+      userId: user.id,
+      ip: access.ip,
+      deviceId: access.deviceId,
+      details: { resource, why: 'direct_file_open' },
+    })
+    const viewPath =
+      kind === 'custom'
+        ? `/account/custom/${encodeURIComponent(itemId)}/view`
+        : `/account/schedules/${encodeURIComponent(itemId)}/view`
+    return NextResponse.redirect(new URL(getPathname({ href: viewPath, locale }), request.url), {
+      headers: NO_STORE,
+    })
+  }
+
   if (mode === 'download') {
-    const policy = await readSetting('security')
-    if (policy.pdfDownloads === 'view_only') {
+    const [policy, permissions] = await Promise.all([
+      readSetting('security'),
+      loadPermissions(user.id),
+    ])
+    // السياسة العامة، أو باقات المستخدم كلها تمنع التحميل (الوثيقة 13.2).
+    if (policy.pdfDownloads === 'view_only' || !permissions.canDownloadPdf) {
       return toAccountRedirect(request, locale, { doc: 'view-only' })
     }
     if (
@@ -207,10 +241,18 @@ export async function deliverSchedule(
   })
 
   const filename = `${resolved.slug}-${resolved.orderNumber}.pdf`
-  const disposition =
-    mode === 'download'
-      ? contentDisposition(filename)
-      : contentDisposition(filename).replace(/^attachment/, 'inline')
+  if (mode === 'view') {
+    // بايتات للعارض فقط: نوع عام بلا اسم ملف، فلا يعرضه المتصفح كـ PDF قابل للحفظ.
+    return new NextResponse(Buffer.from(stamped), {
+      status: 200,
+      headers: {
+        ...NO_STORE,
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(stamped.byteLength),
+        'Content-Disposition': 'inline',
+      },
+    })
+  }
 
   return new NextResponse(Buffer.from(stamped), {
     status: 200,
@@ -218,7 +260,7 @@ export async function deliverSchedule(
       ...NO_STORE,
       'Content-Type': 'application/pdf',
       'Content-Length': String(stamped.byteLength),
-      'Content-Disposition': disposition,
+      'Content-Disposition': contentDisposition(filename),
     },
   })
 }

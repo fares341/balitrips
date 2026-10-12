@@ -10,13 +10,14 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { Button } from '@/components/shared'
 import { Icon } from '@/components/ui'
-import { getSession, requireUser } from '@/lib/auth/session'
+import { getSession } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { deviceLimitFor } from '@/lib/security/devices'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { removeMyDevice } from './actions'
-import { currentDeviceId, listMyDevices } from './queries'
+import { currentDeviceId, listMyDevices, listMyLogins } from './queries'
 
 type PageParams = Promise<{ locale: string }>
 type SearchParams = Promise<Record<string, string | string[] | undefined>>
@@ -39,14 +40,15 @@ export default async function AccountDevicesPage({
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:devices')
   const session = await getSession()
   const query = await searchParams
 
-  const [items, limit, current] = await Promise.all([
+  const [items, limit, current, logins] = await Promise.all([
     listMyDevices(user.id),
     deviceLimitFor(user.id),
     session === null ? null : currentDeviceId(session.sessionId),
+    listMyLogins(user.id),
   ])
 
   const result = query.r === 'removed' ? 'removed' : query.r === 'error' ? 'error' : null
@@ -112,6 +114,38 @@ export default async function AccountDevicesPage({
                         </Button>
                       </form>
                     )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {logins.length > 0 && (
+        <div className="card bt-acct-tablewrap" style={{ marginBlockStart: 24 }}>
+          <table className="bt-acct-table">
+            <caption style={{ textAlign: 'start', fontWeight: 700, padding: '12px 14px' }}>
+              {t('acct_logins_t')}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">{t('acct_logins_when')}</th>
+                <th scope="col">{t('acct_logins_result')}</th>
+                <th scope="col">{t('acct_dev_device')}</th>
+                <th scope="col">IP</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logins.map((row) => (
+                <tr key={row.id}>
+                  <td>{format.dateTime(row.at, { dateStyle: 'medium', timeStyle: 'short' })}</td>
+                  <td>{t(row.action === 'login' ? 'acct_logins_ok' : 'acct_logins_failed')}</td>
+                  <td>
+                    <bdi>{row.browser ? `${row.browser} · ${row.os ?? '—'}` : '—'}</bdi>
+                  </td>
+                  <td>
+                    <bdi>{row.ip ?? '—'}</bdi>
                   </td>
                 </tr>
               ))}

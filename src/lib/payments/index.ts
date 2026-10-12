@@ -1,6 +1,7 @@
 import { SandboxPaymentProvider } from './sandbox'
 import { StripePaymentProvider } from './stripe'
 import type { PaymentProvider } from './types'
+import { sandboxPaymentsAllowed } from '@/lib/live-mode'
 
 export * from './types'
 export { SandboxPaymentProvider } from './sandbox'
@@ -36,7 +37,7 @@ export function getPaymentProvider(): PaymentProvider {
        * only where someone deliberately allowed it. Absent, it refuses —
        * which is the behaviour that actually matters on a real server.
        */
-      if (process.env.ALLOW_SANDBOX_PAYMENTS !== 'true') {
+      if (!sandboxPaymentsAllowed()) {
         throw new Error(
           'PAYMENT_PROVIDER is not configured for real payments. Set ' +
             'ALLOW_SANDBOX_PAYMENTS=true to use the sandbox, or configure a real ' +

@@ -58,6 +58,8 @@ export const plans = pgTable(
     deviceLimit: integer('device_limit').notNull().default(2),
     canUseTrip: boolean('can_use_trip').notNull().default(true),
     canSaveFavorites: boolean('can_save_favorites').notNull().default(true),
+    /** الوثيقة 13.2: "هل يستطيع تحميل PDF؟" — false = عرض داخل الموقع فقط. */
+    canDownloadPdf: boolean('can_download_pdf').notNull().default(true),
 
     featured: boolean('featured').notNull().default(false),
     sortOrder: integer('sort_order').notNull().default(0),

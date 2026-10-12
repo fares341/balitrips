@@ -69,9 +69,17 @@ export interface FullMapPlace {
   isHiddenGem: boolean
   regionKey: string | null
   regionLabel: Record<string, string> | null
+  /** المنطقة العامة للحي (Kuta ← south)، لفلترة "جنوب بالي" بأحيائها. */
+  parentRegionKey: string | null
+  parentRegionLabel: Record<string, string> | null
   categoryKey: string | null
   categoryLabel: Record<string, string> | null
   tagKeys: string[]
+  /** الوسوم بأسمائها المترجمة — من لوحة التحكم، لا قائمة ثابتة. */
+  tagList: { key: string; label: Record<string, string> }[]
+  detailedDescription: Record<string, string> | null
+  /** روابط فيديو https (YouTube/Vimeo/mp4) — مُرشَّحة على الخادم. */
+  videos: string[]
   canFavorite: boolean
   canAddToTrip: boolean
   priority: number

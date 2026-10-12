@@ -45,14 +45,20 @@ export function FavoriteControls({ kind, refId, available }: FavoriteControlsPro
   )
 
   useEffect(() => {
-    if (addState.status !== 'added' || addState.refId !== refId) return
-    window.dispatchEvent(new Event(CART_CHANGED_EVENT))
-    toast(t('cart_added'))
+    if (addState.refId !== refId) return
+    if (addState.status === 'added') {
+      window.dispatchEvent(new Event(CART_CHANGED_EVENT))
+      toast(t('cart_added'))
+    } else if (addState.status === 'planned') {
+      toast(t('map_trip_added'))
+    } else if (addState.status === 'error') {
+      toast(t(addState.messageKey ?? 'c_error'))
+    }
   }, [addState, refId, toast, t])
 
   useEffect(() => {
     if (removeState.status !== 'error') return
-    toast(t('c_error'))
+    toast(t(removeState.messageKey ?? 'c_error'))
   }, [removeState, toast, t])
 
   const busy = adding || removing

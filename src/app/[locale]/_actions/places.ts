@@ -136,3 +136,44 @@ export async function addPlaceToTrip(placeId: string): Promise<PlaceActionResult
   revalidatePath('/[locale]/account/trip', 'page')
   return { ok: true, state: inserted.length > 0 ? 'added' : 'already' }
 }
+
+/**
+ * حالة المكان للمستخدم الحالي — كي يعرض زر "احفظ" حالته الحقيقية.
+ * بدونه كان الزر يقول "احفظ" دائماً، والضغط على مكان محفوظ يحذفه بصمت.
+ */
+export async function placeUserState(
+  placeId: string,
+): Promise<{ saved: boolean; inTrip: boolean } | null> {
+  if (!UUID.test(placeId)) return null
+  // يُستدعى عند فتح لوحة المكان، فهو أيضاً موضع تسجيل "مشاهدة مكان" (الوثيقة 15.1).
+  const ready = await prepare(placeId, `place:${placeId}`)
+  if (ready.error !== null) return null
+  const { access } = ready
+  const user = access.user
+  await logActivity({
+    action: 'view_place',
+    userId: user.id,
+    ip: access.ip,
+    deviceId: access.deviceId,
+    details: { placeId, slug: ready.place.slug },
+  })
+  const [saved, trip] = await Promise.all([
+    db
+      .select({ refId: favorites.refId })
+      .from(favorites)
+      .where(
+        and(
+          eq(favorites.userId, user.id),
+          eq(favorites.kind, 'place'),
+          eq(favorites.refId, placeId),
+        ),
+      )
+      .limit(1),
+    db
+      .select({ id: tripItems.id })
+      .from(tripItems)
+      .where(and(eq(tripItems.userId, user.id), eq(tripItems.placeId, placeId)))
+      .limit(1),
+  ])
+  return { saved: saved.length > 0, inTrip: trip.length > 0 }
+}

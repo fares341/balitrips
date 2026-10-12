@@ -149,11 +149,11 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
       })
       .returning({ id: customTripDocuments.id, version: customTripDocuments.version })
 
-    // رفع النسخة يعني أن الجدول بانتظار موافقة العميل، ما لم يكن مكتملاً.
+    // رفع النسخة يعني أن الجدول بانتظار رد العميل، ما لم يكن مكتملاً.
     if (request.status !== 'completed') {
       await db
         .update(customTripRequests)
-        .set({ status: 'waiting_approval' })
+        .set({ status: 'waiting_customer' })
         .where(eq(customTripRequests.id, id))
     }
     await writeAudit({

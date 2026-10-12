@@ -13,7 +13,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { Button, LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 import { pick, pickOptional } from '@/lib/content/localize'
 
 import { toLocale } from '../../_seo-hreflang'
@@ -38,7 +38,7 @@ export default async function AccountFavoritesPage({ params }: { params: PagePar
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:favorites')
 
   const items = await listFavorites(user.id)
   const addable = items.filter((item) => item.available)

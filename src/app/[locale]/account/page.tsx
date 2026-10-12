@@ -57,10 +57,29 @@ export default async function AccountProfilePage({
 
   const t = await getTranslations({ locale })
   const user = await getUser()
+  const query = await searchParams
+
+  // تحويل من `requireActiveUser()`: جهاز مُزال، أو حظر جهاز/IP/حساب، أو جلسة أنهتها الإدارة.
+  const blocked =
+    query.blocked === 'banned' ||
+    query.blocked === 'device-revoked' ||
+    query.blocked === 'session-ended'
+      ? query.blocked
+      : null
+  const blockedNotice =
+    blocked === null ? null : (
+      <div role="alert" className="card" style={{ padding: 14, marginBottom: 18 }}>
+        {t(blocked === 'banned' ? 'acct_blocked_banned' : 'acct_blocked_device')}
+      </div>
+    )
 
   if (user === null) {
-    const query = await searchParams
-    return <SignedOutPane providers={enabledSocialProviders()} next={safeNext(query.next)} />
+    return (
+      <>
+        {blockedNotice}
+        <SignedOutPane providers={enabledSocialProviders()} next={safeNext(query.next)} />
+      </>
+    )
   }
 
   const format = await getFormatter({ locale })
@@ -80,6 +99,7 @@ export default async function AccountProfilePage({
 
   return (
     <section aria-labelledby="bt-acct-profile-h">
+      {blockedNotice}
       <div className="bt-acct-sechead">
         <h1 id="bt-acct-profile-h">{t('acct_profile_t')}</h1>
       </div>

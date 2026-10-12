@@ -7,13 +7,18 @@
  * تسمح، ويعرض ما يعيده الخادم — بما في ذلك "سجّل الدخول" أو "رقِّ باقتك".
  */
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button, LinkButton } from '@/components/shared'
 import { Icon } from '@/components/ui'
 
-import { addPlaceToTrip, toggleFavoritePlace, type PlaceActionResult } from '../_actions/places'
+import {
+  addPlaceToTrip,
+  placeUserState,
+  toggleFavoritePlace,
+  type PlaceActionResult,
+} from '../_actions/places'
 
 const MESSAGE: Record<string, string> = {
   saved: 'map_saved',
@@ -38,11 +43,33 @@ export function PlaceActions({
   const t = useTranslations()
   const [pending, startTransition] = useTransition()
   const [result, setResult] = useState<PlaceActionResult | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [inTrip, setInTrip] = useState(false)
+
+  // الحالة الحقيقية من الخادم: الزر يعرض "محفوظ" لمكان محفوظ، فلا يحذفه أحد بالخطأ.
+  // المكوّن يُعاد تركيبه لكل مكان (`key={place.id}` في اللوحة)، فلا حالة قديمة تُصفَّر هنا.
+  useEffect(() => {
+    let live = true
+    void placeUserState(placeId).then((state) => {
+      if (!live || state === null) return
+      setSaved(state.saved)
+      setInTrip(state.inTrip)
+    })
+    return () => {
+      live = false
+    }
+  }, [placeId])
 
   if (!canFavorite && !canAddToTrip) return null
 
   const run = (action: (id: string) => Promise<PlaceActionResult>) =>
-    startTransition(async () => setResult(await action(placeId)))
+    startTransition(async () => {
+      const next = await action(placeId)
+      setResult(next)
+      if (next.ok && next.state === 'saved') setSaved(true)
+      if (next.ok && next.state === 'removed') setSaved(false)
+      if (next.ok && (next.state === 'added' || next.state === 'already')) setInTrip(true)
+    })
 
   const key = result === null ? null : MESSAGE[result.ok ? result.state : result.reason]
 
@@ -54,14 +81,21 @@ export function PlaceActions({
             variant="ghost"
             size="sm"
             disabled={pending}
+            aria-pressed={saved}
             onClick={() => run(toggleFavoritePlace)}
           >
-            <Icon name="heart" size={15} /> {t('map_save')}
+            <Icon name="heart" size={15} /> {saved ? t('mp_faved') : t('map_save')}
           </Button>
         )}
         {canAddToTrip && (
-          <Button variant="forest" size="sm" disabled={pending} onClick={() => run(addPlaceToTrip)}>
-            <Icon name="route" size={15} color="#fff" /> {t('map_add_trip')}
+          <Button
+            variant="forest"
+            size="sm"
+            disabled={pending || inTrip}
+            onClick={() => run(addPlaceToTrip)}
+          >
+            <Icon name="route" size={15} color="#fff" />{' '}
+            {inTrip ? t('map_trip_already') : t('map_add_trip')}
           </Button>
         )}
       </div>

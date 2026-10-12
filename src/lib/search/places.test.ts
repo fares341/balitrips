@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/db', () => ({ db: {} }))
 
-const { compareHits } = await import('./places')
+const { compareHits, normalizeSearch, splitPlacePhrase } = await import('./places')
 const { combinePermissions, planExpiry } = await import('@/lib/entitlements/plans')
 
 const base = { distanceKm: null, inRegion: false, priority: 0, visible: true, saves: 0, name: 'A' }
@@ -45,5 +45,20 @@ describe('plans', () => {
     ])
     expect(both.canUseTrip).toBe(true)
     expect(both.entitlements.has('vip')).toBe(true)
+  })
+})
+
+describe('search text', () => {
+  it('normalises Arabic letter variants, diacritics and case', () => {
+    expect(normalizeSearch('  أوبود  ')).toBe('اوبود')
+    expect(normalizeSearch('إطلالة')).toBe('اطلاله')
+    expect(normalizeSearch('مَقهى')).toBe('مقهي')
+    expect(normalizeSearch('KUTA')).toBe('kuta')
+  })
+  it('splits "X in Y" phrases in all three languages', () => {
+    expect(splitPlacePhrase('cafes in kuta')).toEqual({ what: 'cafes', where: 'kuta' })
+    expect(splitPlacePhrase('كافيهات في كوتا')).toEqual({ what: 'كافيهات', where: 'كوتا' })
+    expect(splitPlacePhrase('kafe di canggu')).toEqual({ what: 'kafe', where: 'canggu' })
+    expect(splitPlacePhrase('pizza')).toBeNull()
   })
 })

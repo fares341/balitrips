@@ -10,7 +10,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LinkButton } from '@/components/shared'
 import { getPathname } from '@/i18n/routing'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
 import { accountMetadata } from '../../../_lib/meta'
@@ -31,7 +31,7 @@ export default async function ScheduleViewPage({ params }: { params: PageParams 
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:schedule_view')
 
   const src = getPathname({ href: `/account/schedules/${encodeURIComponent(itemId)}/file`, locale })
   // تاريخ ISO لا محلي: التاريخ العربي داخل سطر لاتيني يتبعثر بسبب اتجاه النص.

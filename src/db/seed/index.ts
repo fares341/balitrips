@@ -30,7 +30,7 @@
  * separately.
  */
 
-import { inArray } from 'drizzle-orm'
+import { inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
@@ -48,8 +48,10 @@ import {
   packageActivities,
   packageRegions,
   packages,
+  placeTags,
   regions,
   reviews,
+  tags,
   translations,
   type Localized,
 } from '@/db/schema'
@@ -73,6 +75,127 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
 
 /** One timestamp for the whole run, so a seeded row set shares a publish time. */
 const SEEDED_AT = new Date()
+
+/** الأحياء التي تسميها الوثيقة (7.2)، داخل مناطق التصميم العامة. */
+const SPEC_AREAS: readonly {
+  key: string
+  parent: string
+  label: Localized
+  lat: number
+  lon: number
+  radiusKm: number
+}[] = [
+  {
+    key: 'kuta',
+    parent: 'south',
+    label: { en: 'Kuta', ar: 'كوتا', id: 'Kuta' },
+    lat: -8.718,
+    lon: 115.1686,
+    radiusKm: 3,
+  },
+  {
+    key: 'seminyak',
+    parent: 'south',
+    label: { en: 'Seminyak', ar: 'سمينياك', id: 'Seminyak' },
+    lat: -8.6913,
+    lon: 115.1683,
+    radiusKm: 2.5,
+  },
+  {
+    key: 'canggu',
+    parent: 'south',
+    label: { en: 'Canggu', ar: 'تشانغو', id: 'Canggu' },
+    lat: -8.6478,
+    lon: 115.1385,
+    radiusKm: 4,
+  },
+  {
+    key: 'uluwatu',
+    parent: 'south',
+    label: { en: 'Uluwatu', ar: 'أولواتو', id: 'Uluwatu' },
+    lat: -8.8291,
+    lon: 115.0849,
+    radiusKm: 6,
+  },
+  {
+    key: 'nusa-dua',
+    parent: 'south',
+    label: { en: 'Nusa Dua', ar: 'نوسا دوا', id: 'Nusa Dua' },
+    lat: -8.8008,
+    lon: 115.2317,
+    radiusKm: 4,
+  },
+  {
+    key: 'sanur',
+    parent: 'south',
+    label: { en: 'Sanur', ar: 'سانور', id: 'Sanur' },
+    lat: -8.6878,
+    lon: 115.262,
+    radiusKm: 3,
+  },
+  {
+    key: 'ubud',
+    parent: 'central',
+    label: { en: 'Ubud', ar: 'أوبود', id: 'Ubud' },
+    lat: -8.5069,
+    lon: 115.2625,
+    radiusKm: 6,
+  },
+]
+
+/** تصنيفات الخريطة من الوثيقة (6.2، 10.1) التي لا تغطيها تصنيفات الأنشطة. */
+const SPEC_PLACE_CATEGORIES: readonly { key: string; label: Localized }[] = [
+  { key: 'activities', label: { en: 'Activities', ar: 'أنشطة', id: 'Aktivitas' } },
+  { key: 'sights', label: { en: 'Sights', ar: 'أماكن سياحية', id: 'Tempat Wisata' } },
+  { key: 'market', label: { en: 'Markets', ar: 'أسواق', id: 'Pasar' } },
+  { key: 'shopping', label: { en: 'Shopping', ar: 'تسوق', id: 'Belanja' } },
+  { key: 'events', label: { en: 'Events', ar: 'فعاليات', id: 'Acara' } },
+  { key: 'hospital', label: { en: 'Hospitals', ar: 'مستشفيات', id: 'Rumah Sakit' } },
+]
+
+/** وسوم الوثيقة (10.2). */
+const SPEC_TAGS: readonly { key: string; label: Localized }[] = [
+  {
+    key: 'specialty-coffee',
+    label: { en: 'Specialty Coffee', ar: 'قهوة مختصة', id: 'Kopi Spesialti' },
+  },
+  { key: 'burger', label: { en: 'Burger', ar: 'برجر', id: 'Burger' } },
+  { key: 'pizza', label: { en: 'Pizza', ar: 'بيتزا', id: 'Pizza' } },
+  { key: 'romantic', label: { en: 'Romantic', ar: 'رومانسي', id: 'Romantis' } },
+  { key: 'family', label: { en: 'Family', ar: 'عائلي', id: 'Keluarga' } },
+  { key: 'luxury', label: { en: 'Luxury', ar: 'فاخر', id: 'Mewah' } },
+  { key: 'budget', label: { en: 'Budget', ar: 'اقتصادي', id: 'Hemat' } },
+  { key: 'adventure', label: { en: 'Adventure', ar: 'مغامرة', id: 'Petualangan' } },
+  {
+    key: 'hidden-gems',
+    label: { en: 'Hidden Gems', ar: 'جواهر مخفية', id: 'Permata Tersembunyi' },
+  },
+  {
+    key: 'luxury-stays',
+    label: { en: 'Luxury Stays', ar: 'إقامات فاخرة', id: 'Penginapan Mewah' },
+  },
+]
+
+/** أماكن التصميم داخل أحيائها (المفتاح = معرّف التصميم). */
+const PLACE_AREA: Record<string, string> = {
+  canggu: 'canggu',
+  uluwatu: 'uluwatu',
+  ubud: 'ubud',
+  tega: 'ubud',
+}
+
+/** التصنيف الرئيسي لكل مكان من التصميم — كي تعمل فلترة التصنيف من أول تنصيب. */
+const PLACE_CATEGORY: Record<string, string> = {
+  batur: 'nature',
+  tega: 'sights',
+  ubud: 'culture',
+  canggu: 'beach',
+  uluwatu: 'sights',
+  lempuyang: 'culture',
+  penida: 'beach',
+  diamond: 'beach',
+  sekumpul: 'nature',
+}
 
 /**
  * Bookable start times.
@@ -175,6 +298,28 @@ async function seed(): Promise<Map<string, number>> {
     const regionId = new Map(insertedRegions.map((row) => [row.key, row.id]))
     counts.set('regions', insertedRegions.length)
 
+    // الأحياء التي تسميها الوثيقة (7.2) داخل المناطق العامة — أماكن الخريطة
+    // تُربط بها، وفلترة "جنوب بالي" تشملها.
+    const areaRows = SPEC_AREAS.map((area, index) => ({
+      key: area.key,
+      label: area.label,
+      parentId: must(regionId, area.parent, 'area parent'),
+      centerLat: area.lat,
+      centerLon: area.lon,
+      radiusKm: area.radiusKm,
+      sortOrder: 10 + index,
+    }))
+    const insertedAreas = await tx
+      .insert(regions)
+      .values(areaRows)
+      .onConflictDoUpdate({
+        target: regions.key,
+        set: overwrite(regions, ['label', 'parentId', 'centerLat', 'centerLon', 'radiusKm']),
+      })
+      .returning({ id: regions.id, key: regions.key })
+    for (const row of insertedAreas) regionId.set(row.key, row.id)
+    counts.set('areas', insertedAreas.length)
+
     // The "Travelers love" collections are the only place the handoff pairs a
     // category with an icon, so that mapping lands on the category itself.
     const categoryIcons = new Map(content.LOVED.map((c) => [c.key, c.ic]))
@@ -194,6 +339,20 @@ async function seed(): Promise<Map<string, number>> {
       .returning({ id: categories.id, key: categories.key })
     const categoryId = new Map(insertedCategories.map((row) => [row.key, row.id]))
     counts.set('categories', insertedCategories.length)
+
+    // تصنيفات الخريطة من الوثيقة (6.2، 10.1) غير الموجودة في تصنيفات الأنشطة.
+    const insertedPlaceCategories = await tx
+      .insert(categories)
+      .values(
+        SPEC_PLACE_CATEGORIES.map((cat, index) => ({
+          key: cat.key,
+          label: cat.label,
+          sortOrder: 20 + index,
+        })),
+      )
+      .onConflictDoUpdate({ target: categories.key, set: overwrite(categories, ['label']) })
+      .returning({ id: categories.id, key: categories.key })
+    for (const row of insertedPlaceCategories) categoryId.set(row.key, row.id)
 
     // -----------------------------------------------------------------------
     // Activities
@@ -470,23 +629,27 @@ async function seed(): Promise<Map<string, number>> {
       (m) => m.name.en,
       (m) => m.id,
     )
-    const mapPlaceRows = content.MAP_PLACES.map((m) => ({
-      slug: must(mapPlaceSlugs, m.id, 'map place slug'),
-      legacyId: m.id,
-      name: m.name,
-      category: m.cat,
-      lat: m.lat,
-      lon: m.lon,
-      regionId: must(regionId, m.region, 'region'),
-      activityId: must(activityId, m.actId, 'activity'),
-      isFree: m.free,
-      requiredEntitlement: 'map_access',
-      tags: m.tags,
-      openingHours: m.hours,
-      rating: m.rating,
-      status: 'published',
-      publishedAt: SEEDED_AT,
-    }))
+    const mapPlaceRows = content.MAP_PLACES.map((m) => {
+      const placeCategory = PLACE_CATEGORY[m.id]
+      return {
+        slug: must(mapPlaceSlugs, m.id, 'map place slug'),
+        legacyId: m.id,
+        name: m.name,
+        category: m.cat,
+        lat: m.lat,
+        lon: m.lon,
+        regionId: must(regionId, PLACE_AREA[m.id] ?? m.region, 'region'),
+        categoryId: placeCategory ? must(categoryId, placeCategory, 'place category') : null,
+        activityId: must(activityId, m.actId, 'activity'),
+        isFree: m.free,
+        requiredEntitlement: 'map_access',
+        tags: m.tags,
+        openingHours: m.hours,
+        rating: m.rating,
+        status: 'published',
+        publishedAt: SEEDED_AT,
+      }
+    })
     const insertedMapPlaces = await tx
       .insert(mapPlaces)
       .values(mapPlaceRows)
@@ -499,6 +662,7 @@ async function seed(): Promise<Map<string, number>> {
           'lat',
           'lon',
           'regionId',
+          'categoryId',
           'activityId',
           'isFree',
           'tags',
@@ -506,8 +670,48 @@ async function seed(): Promise<Map<string, number>> {
           'rating',
         ]),
       })
-      .returning({ id: mapPlaces.id })
+      .returning({ id: mapPlaces.id, legacyId: mapPlaces.legacyId })
     counts.set('map_places', insertedMapPlaces.length)
+
+    // الوسوم في جدولها (place_tags). كانت الهجرة 0006 تنقلها من أماكن موجودة
+    // قبل الـ seed فقط، فكان كل تنصيب جديد بلا وسوم وفلتر الوسوم فارغاً.
+    const tagKeyOf = (value: string) =>
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    const tagLabels = new Map<string, Localized>()
+    for (const filter of content.MAP_FILTERS) {
+      if (filter.key !== 'All') tagLabels.set(tagKeyOf(filter.key), filter.label)
+    }
+    for (const tag of SPEC_TAGS) tagLabels.set(tag.key, tag.label)
+    for (const m of content.MAP_PLACES) {
+      for (const value of m.tags) {
+        const key = tagKeyOf(value)
+        if (key !== '' && !tagLabels.has(key))
+          tagLabels.set(key, { en: value, ar: value, id: value })
+      }
+    }
+    const insertedTags = await tx
+      .insert(tags)
+      .values([...tagLabels].map(([key, label], index) => ({ key, label, sortOrder: index })))
+      .onConflictDoUpdate({ target: tags.key, set: { label: sql`excluded.label` } })
+      .returning({ id: tags.id, key: tags.key })
+    const tagId = new Map(insertedTags.map((row) => [row.key, row.id]))
+    const placeId = new Map<string, string>()
+    for (const row of insertedMapPlaces)
+      if (row.legacyId !== null) placeId.set(row.legacyId, row.id)
+    const placeTagRows = content.MAP_PLACES.flatMap((m) =>
+      m.tags.map((value) => ({
+        placeId: must(placeId, m.id, 'map place id'),
+        tagId: must(tagId, tagKeyOf(value), 'tag id'),
+      })),
+    )
+    if (placeTagRows.length > 0) {
+      await tx.insert(placeTags).values(placeTagRows).onConflictDoNothing()
+    }
+    counts.set('tags', insertedTags.length)
+    counts.set('place_tags', placeTagRows.length)
     counts.set('map_places (free)', mapPlaceRows.filter((m) => m.isFree).length)
 
     // -----------------------------------------------------------------------

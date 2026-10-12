@@ -222,6 +222,11 @@ export interface ItineraryDayDto {
 
 export interface ItineraryDetail extends ItinerarySummary {
   dayPlans: ItineraryDayDto[]
+  /** الوثيقة 4.2: وصف تفصيلي ومعرض صور، وهل يشمل الخريطة / VIP. */
+  detailedDescription: LocalizedText | null
+  gallery: MediaDto[]
+  includesMap: boolean
+  isVip: boolean
 }
 
 // ---------------------------------------------------------------------------

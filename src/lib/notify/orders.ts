@@ -10,6 +10,7 @@ import { orderItems, orders, plans, users } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale } from '@/lib/email'
 import { formatMoney } from '@/lib/money'
+import { logActivity } from '@/lib/security/activity'
 
 import { notifyStaff, notifyUser } from './index'
 
@@ -38,6 +39,18 @@ export async function notifyOrderPaid(orderId: string): Promise<void> {
       `/orders/${orderId}`,
     )
     if (!order.userId) return
+
+    // سجل النشاط: "عمليات الشراء" (الوثيقة 15.1).
+    await logActivity({
+      action: 'purchase',
+      userId: order.userId,
+      details: {
+        orderId,
+        orderNumber: order.orderNumber,
+        totalMinor: order.totalMinor,
+        currency: order.currency,
+      },
+    })
 
     await notifyUser(
       order.userId,

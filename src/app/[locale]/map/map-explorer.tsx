@@ -52,7 +52,7 @@ import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
-import { pick, pickOptional, searchableText } from '@/lib/content/localize'
+import { pick, pickOptional } from '@/lib/content/localize'
 import type { MapPlaceForClient } from '@/lib/entitlements'
 
 import { MapFilterBar, useMapFilters } from './map-filters'
@@ -62,6 +62,7 @@ import {
   MAP_IMAGE_AVIF,
   MAP_IMAGE_SRC,
   pinColor,
+  pinHaystack,
   projectLat,
   projectLon,
   type MapPin,
@@ -198,14 +199,7 @@ export function MapExplorer({ places, lockedCount, unlocked, initialSlug }: MapE
         nx: projectLon(place.lon),
         ny: projectLat(place.lat),
         color: pinColor(place.tags),
-        haystack: [
-          searchableText(place.name, locale),
-          searchableText(place.category, locale),
-          place.slug,
-          (place.tags ?? []).join(' '),
-        ]
-          .join(' ')
-          .toLowerCase(),
+        haystack: pinHaystack(place, locale),
       })),
     [places, locale],
   )

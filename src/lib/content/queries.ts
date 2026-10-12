@@ -24,6 +24,8 @@
 
 import { and, asc, desc, eq, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
+import { alias } from 'drizzle-orm/pg-core'
+
 import { db } from '@/db'
 import {
   activities,
@@ -99,6 +101,24 @@ const LIVE_PLACE = and(
   isNull(mapPlaces.deletedAt),
   eq(mapPlaces.isHidden, false),
 )
+/** المنطقة العامة التي يقع فيها الحي (Kuta ← جنوب بالي). */
+const parentRegion = alias(regions, 'parent_region')
+
+/** روابط فيديو https فقط من مصادر تُضمَّن (YouTube/Vimeo) أو ملف mp4/webm. */
+function isSafeVideoUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:') return false
+    return (
+      /(^|\.)(youtube\.com|youtu\.be|vimeo\.com)$/.test(url.hostname) ||
+      /\.(mp4|webm)$/i.test(url.pathname)
+    )
+  } catch {
+    return false
+  }
+}
+
 const LIVE_REVIEW = and(eq(reviews.isPublished, true), isNull(reviews.deletedAt))
 
 /** Default page size for the catalogue lists. */
@@ -412,8 +432,21 @@ async function activitySummariesByIds(
 // Taxonomy
 // ---------------------------------------------------------------------------
 
-export async function listRegions(): Promise<RegionDto[]> {
-  const rows = await db.select().from(regions).orderBy(asc(regions.sortOrder), asc(regions.key))
+/**
+ * المناطق المفعّلة فقط — المعطّلة من لوحة التحكم لا تظهر للزوار.
+ * افتراضياً المناطق العامة وحدها (تبويبات الرئيسية، استكشف)؛ `includeAreas`
+ * يضيف الأحياء (Kuta، Seminyak…) لنموذج الطلب المخصص.
+ */
+export async function listRegions(options: { includeAreas?: boolean } = {}): Promise<RegionDto[]> {
+  const rows = await db
+    .select()
+    .from(regions)
+    .where(
+      options.includeAreas === true
+        ? eq(regions.status, 'active')
+        : and(eq(regions.status, 'active'), isNull(regions.parentId)),
+    )
+    .orderBy(asc(regions.sortOrder), asc(regions.key))
 
   return rows.map((row) => ({
     id: row.id,
@@ -738,7 +771,24 @@ export async function getItineraryBySlug(slug: string): Promise<ItineraryDetail 
     activity: day.activityId === null ? null : (activityMap.get(day.activityId) ?? null),
   }))
 
-  return { ...summary, dayPlans }
+  const galleryIds = (row.itinerary.galleryImageIds ?? []).filter((id) => typeof id === 'string')
+  const galleryRows =
+    galleryIds.length === 0
+      ? []
+      : await db.select().from(media).where(inArray(media.id, galleryIds))
+  const galleryById = new Map(galleryRows.map((item) => [item.id, item]))
+  const gallery = galleryIds
+    .map((id) => toMedia(galleryById.get(id)))
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+
+  return {
+    ...summary,
+    dayPlans,
+    detailedDescription: row.itinerary.detailedDescription ?? null,
+    gallery,
+    includesMap: row.itinerary.includesMap,
+    isVip: row.itinerary.isVip,
+  }
 }
 
 export async function itinerariesWithActivity(activityId: string): Promise<ItinerarySummary[]> {
@@ -973,6 +1023,8 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
       activitySlug: activities.slug,
       regionKey: regions.key,
       regionLabel: regions.label,
+      parentRegionKey: parentRegion.key,
+      parentRegionLabel: parentRegion.label,
       categoryKey: categories.key,
       categoryLabel: categories.label,
     })
@@ -980,6 +1032,7 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
     .leftJoin(media, eq(media.id, mapPlaces.heroImageId))
     .leftJoin(activities, and(eq(activities.id, mapPlaces.activityId), LIVE_ACTIVITY))
     .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
+    .leftJoin(parentRegion, eq(parentRegion.id, regions.parentId))
     .leftJoin(categories, eq(categories.id, mapPlaces.categoryId))
     .where(LIVE_PLACE)
     // الأعلى أولوية أولاً، ثم الترتيب اليدوي من لوحة التحكم.
@@ -989,7 +1042,7 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
     rows.length === 0
       ? []
       : await db
-          .select({ placeId: placeTags.placeId, key: tags.key })
+          .select({ placeId: placeTags.placeId, key: tags.key, label: tags.label })
           .from(placeTags)
           .innerJoin(tags, and(eq(tags.id, placeTags.tagId), eq(tags.status, 'active')))
           .where(
@@ -998,15 +1051,25 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
               rows.map((row) => row.place.id),
             ),
           )
-  const tagsByPlace = new Map<string, string[]>()
+  const tagsByPlace = new Map<string, { key: string; label: LocalizedText }[]>()
   for (const row of tagRows) {
     const list = tagsByPlace.get(row.placeId) ?? []
-    list.push(row.key)
+    list.push({ key: row.key, label: row.label })
     tagsByPlace.set(row.placeId, list)
   }
 
   return rows.map(
-    ({ place, hero, activitySlug, regionKey, regionLabel, categoryKey, categoryLabel }) => ({
+    ({
+      place,
+      hero,
+      activitySlug,
+      regionKey,
+      regionLabel,
+      parentRegionKey,
+      parentRegionLabel,
+      categoryKey,
+      categoryLabel,
+    }) => ({
       id: place.id,
       slug: place.slug,
       name: place.name,
@@ -1023,9 +1086,14 @@ export async function listMapPlaces(): Promise<FullMapPlace[]> {
       isHiddenGem: place.isHiddenGem,
       regionKey,
       regionLabel,
+      parentRegionKey,
+      parentRegionLabel,
       categoryKey,
       categoryLabel,
-      tagKeys: tagsByPlace.get(place.id) ?? [],
+      tagKeys: (tagsByPlace.get(place.id) ?? []).map((tag) => tag.key),
+      tagList: tagsByPlace.get(place.id) ?? [],
+      detailedDescription: place.detailedDescription,
+      videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
       canFavorite: place.canFavorite,
       canAddToTrip: place.canAddToTrip,
       priority: place.priority,

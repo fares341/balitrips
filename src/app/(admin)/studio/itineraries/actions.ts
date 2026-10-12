@@ -1,10 +1,14 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
+
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { itineraries, itineraryDays, itineraryRegions } from '@/db/schema'
+import { locales, isLocale } from '@/i18n/config'
+import { isStorageConfigured, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit, type Tx } from '../../_lib/audit'
@@ -20,6 +24,7 @@ import {
   freq,
   fstr,
   fuuidOrNull,
+  isUuid,
 } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -52,6 +57,13 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       priceMinor: fminor(form, 'priceMinor', 'Price'),
       currency: fcurrency(form, 'currency'),
       heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      // الوثيقة 4.2
+      detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
+      includesMap: fbool(form, 'includesMap'),
+      isVip: fbool(form, 'isVip'),
+      internalNotes: fstr(form, 'internalNotes')?.slice(0, 5000) ?? null,
+      galleryImageIds: fmulti(form, 'galleryImageIds').filter(isUuid).slice(0, 24),
+      linkedPlaceIds: fmulti(form, 'linkedPlaceIds').filter(isUuid).slice(0, 100),
     }
 
     const regionIds = fmulti(form, 'regionIds')
@@ -560,4 +572,98 @@ async function syncDayCount(tx: Tx, itineraryId: string): Promise<void> {
     .where(eq(itineraryDays.itineraryId, itineraryId))
 
   await tx.update(itineraries).set({ days: rows.length }).where(eq(itineraries.id, itineraryId))
+}
+
+// ---------------------------------------------------------------------------
+// PDF مرفوع للجدول (الوثيقة 4.2: "ملف PDF مرتبط بالجدول"، لوحة التحكم: "رفع PDF")
+// ---------------------------------------------------------------------------
+
+const MAX_ITINERARY_PDF_BYTES = 30 * 1024 * 1024
+
+function looksLikePdf(bytes: Uint8Array): boolean {
+  return bytes.length > 5 && new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-'
+}
+
+/**
+ * يرفع PDF جاهزاً لهذا الجدول بلغة معيّنة إلى التخزين الخاص. يُسلَّم للعملاء
+ * بدل الملف المولّد تلقائياً، وبنفس الحماية (علامة مائية، عارض، سجل).
+ */
+export async function uploadItineraryPdf(id: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  let outcome: Outcome
+  try {
+    const rawLocale = freq(form, 'locale', 'Language')
+    if (!isLocale(rawLocale)) throw new Error('Pick a language for this PDF.')
+    const file = form.get('file')
+    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
+    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error('That PDF is larger than 30 MB.')
+    if (!isStorageConfigured() && process.env.NODE_ENV === 'production') {
+      throw new Error('Object storage is not configured; the file could not be delivered.')
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    if (!looksLikePdf(bytes)) throw new Error('That file is not a PDF.')
+
+    const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
+    if (!before) throw new Error('That itinerary no longer exists')
+
+    // مفتاح لا يُخمَّن: الملف الأصلي لا يُكشف أبداً (يُسلَّم مختوماً عبر الحساب).
+    const objectKey = `itineraries/${id}/uploaded/${rawLocale}-${randomUUID()}.pdf`
+    if (isStorageConfigured()) {
+      await uploadPrivate({ key: objectKey, body: bytes, contentType: 'application/pdf' })
+    } else {
+      // تطوير محلي فقط (الإنتاج بلا تخزين مرفوض أعلاه)، كما في الجداول المخصصة.
+      const { mkdir, writeFile } = await import('node:fs/promises')
+      const path = await import('node:path')
+      const target = path.join(process.cwd(), 'public', objectKey)
+      await mkdir(path.dirname(target), { recursive: true })
+      await writeFile(target, bytes)
+    }
+
+    const keys = { ...(before.uploadedPdfKeys ?? {}), [rawLocale]: objectKey }
+    await db.update(itineraries).set({ uploadedPdfKeys: keys }).where(eq(itineraries.id, id))
+    await writeAudit({
+      actor: session,
+      action: 'itinerary.pdf_upload',
+      entityType: 'itinerary',
+      entityId: id,
+      before: { uploadedPdfKeys: before.uploadedPdfKeys },
+      after: { uploadedPdfKeys: keys, bytes: bytes.byteLength },
+    })
+    outcome = { ok: `PDF (${rawLocale.toUpperCase()}) uploaded. Customers now receive this file.` }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(id), outcome))
+}
+
+/** يزيل الملف المرفوع للغة — يعود التسليم إلى الملف المولّد تلقائياً. */
+export async function removeItineraryPdf(id: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  let outcome: Outcome
+  try {
+    const rawLocale = freq(form, 'locale', 'Language')
+    if (!(locales as readonly string[]).includes(rawLocale)) throw new Error('Unknown language')
+    const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
+    if (!before) throw new Error('That itinerary no longer exists')
+    const keys = { ...(before.uploadedPdfKeys ?? {}) }
+    delete keys[rawLocale]
+    await db
+      .update(itineraries)
+      .set({ uploadedPdfKeys: Object.keys(keys).length > 0 ? keys : null })
+      .where(eq(itineraries.id, id))
+    await writeAudit({
+      actor: session,
+      action: 'itinerary.pdf_remove',
+      entityType: 'itinerary',
+      entityId: id,
+      before: { uploadedPdfKeys: before.uploadedPdfKeys },
+      after: { uploadedPdfKeys: keys },
+    })
+    outcome = { ok: 'Uploaded PDF removed; customers receive the generated PDF again.' }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(id), outcome))
 }

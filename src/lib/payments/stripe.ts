@@ -207,8 +207,10 @@ export class StripePaymentProvider implements PaymentProvider {
         locale: STRIPE_LOCALES.has(input.customer.locale) ? input.customer.locale : 'auto',
         success_url: input.returnUrl,
         cancel_url: input.returnUrl,
-        // 30 دقيقة: نفس نافذة حجز السعة في worker (capacity.release-expired).
-        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+        // 35 دقيقة. حد Stripe الأدنى 30 دقيقة **من وقت استلامه الطلب**، فـ 30 بالضبط
+        // تُرفض مع أي تأخير شبكة أو فرق ساعة. حجز السعة في worker ساعة كاملة
+        // (capacity.release-expired)، فالجلسة تنتهي قبله دائماً.
+        expires_at: Math.floor(Date.now() / 1000) + 35 * 60,
         line_items: [
           {
             quantity: 1,

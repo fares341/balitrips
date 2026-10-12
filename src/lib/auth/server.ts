@@ -475,6 +475,46 @@ export const auth = betterAuth({
             },
           }
         },
+        /**
+         * رسالة الترحيب عند إنشاء حساب (الوثيقة: إشعار عند إنشاء حساب جديد).
+         * القالب والمهمة موجودان منذ البداية لكن لا شيء كان يضعها في الطابور.
+         * فشل الطابور لا يُفشل التسجيل.
+         */
+        after: async (user) => {
+          try {
+            const { enqueueEmail } = await import('@/worker/queues')
+            await enqueueEmail({ kind: 'welcome', userId: String(user.id) })
+          } catch (error) {
+            console.error('[auth] could not queue the welcome email', error)
+          }
+        },
+      },
+      /**
+       * نفس التنقية عند التعديل: نقطة `update-user` في Better Auth تقبل هذه
+       * الحقول مباشرة، فقيمة طويلة كانت تنتهي بخطأ 500 من Postgres.
+       */
+      update: {
+        before: async (user) => {
+          const raw = user as Record<string, unknown>
+          const data: Record<string, unknown> = { ...user }
+          if ('locale' in raw) {
+            data.locale =
+              typeof raw.locale === 'string' && isLocale(raw.locale) ? raw.locale : defaultLocale
+          }
+          if ('phone' in raw) {
+            data.phone =
+              typeof raw.phone === 'string' && raw.phone.trim() !== ''
+                ? raw.phone.trim().slice(0, 32)
+                : null
+          }
+          if ('country' in raw) {
+            data.country =
+              typeof raw.country === 'string' && /^[A-Za-z]{2}$/.test(raw.country)
+                ? raw.country.toUpperCase()
+                : null
+          }
+          return { data: data as typeof user }
+        },
       },
     },
   },
@@ -488,6 +528,27 @@ export const auth = betterAuth({
      * لا شيء من هذا يصل للعميل؛ رسالة الخطأ تبقى موحّدة (انظر client.ts).
      */
     after: createAuthMiddleware(async (ctx) => {
+      // تغيير كلمة المرور من الحساب (الوثيقة 15.1).
+      if (ctx.path === '/change-password') {
+        const userId = ctx.context.session?.user.id ?? ctx.context.newSession?.user.id
+        if (userId !== undefined && !isAPIError(ctx.context.returned)) {
+          await logActivity({
+            action: 'change_password',
+            userId: String(userId),
+            ip: ctx.headers ? clientIp(ctx.headers) : null,
+            details: { via: 'account' },
+          })
+        }
+        return
+      }
+      if (ctx.path === '/reset-password' && !isAPIError(ctx.context.returned)) {
+        await logActivity({
+          action: 'change_password',
+          ip: ctx.headers ? clientIp(ctx.headers) : null,
+          details: { via: 'reset_link' },
+        })
+        return
+      }
       if (ctx.path !== '/sign-in/email') return
       const returned = ctx.context.returned
       if (!isAPIError(returned)) return
@@ -575,7 +636,9 @@ export const auth = betterAuth({
        * a client can set is a header a client can rotate to get a fresh
        * bucket per request.
        */
-      ipAddressHeaders: ['x-forwarded-for'],
+      // نفس مصدر src/lib/security/ip.ts: خلف Cloudflare يكون `cf-connecting-ip`،
+      // وإلا تحسب كل الزيارات عنوان حافة Cloudflare نفسه ويتشارك الكل حداً واحداً.
+      ipAddressHeaders: trustedIpHeaders(),
     },
   },
 
@@ -588,6 +651,11 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
+
+function trustedIpHeaders(): string[] {
+  const trusted = process.env.TRUSTED_IP_HEADER?.trim().toLowerCase()
+  return trusted ? [trusted, 'x-forwarded-for'] : ['x-forwarded-for']
+}
 
 function asIp(value: unknown): string | null {
   return typeof value === 'string' && value !== '' ? value.slice(0, 64) : null

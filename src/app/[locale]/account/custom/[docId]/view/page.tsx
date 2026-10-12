@@ -5,7 +5,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LinkButton } from '@/components/shared'
 import { getPathname } from '@/i18n/routing'
-import { requireUser } from '@/lib/auth/session'
+import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../../../_seo-hreflang'
 import { accountMetadata } from '../../../_lib/meta'
@@ -25,7 +25,7 @@ export default async function CustomPlanViewPage({ params }: { params: PageParam
   const locale = toLocale(raw)
   setRequestLocale(locale)
   const t = await getTranslations({ locale })
-  const user = await requireUser()
+  const user = await requireActiveUser('account:custom_view')
 
   const src = getPathname({ href: `/account/custom/${encodeURIComponent(docId)}/file`, locale })
   const watermark = `${user.email} · ${new Date().toISOString().slice(0, 10)}`

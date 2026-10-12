@@ -53,6 +53,18 @@ Better Auth, Payload and webhook secrets were generated *on the box* with
 The GitHub deploy key is read-only and scoped to this repository, so a
 compromised droplet cannot push code.
 
+## Production switch (batch 5)
+
+Set `LIVE_MODE=true` on the real server (see `.env.production.example`). It
+forces admin 2FA on and refuses sandbox payments whatever else the env file
+says, and the Studio dashboard lists any remaining configuration gaps.
+
+**Rotate every secret.** The previous `.env.production`, `app.env`,
+`postgres.env` and a database dump (admin password hash, live sessions) were
+shipped inside the project archive. Generate new `POSTGRES_PASSWORD`,
+`BETTER_AUTH_SECRET`, `PAYMENT_WEBHOOK_SECRET`, change the admin password, and
+treat the old values as public.
+
 ## Not production-ready
 
 - `PAYMENT_PROVIDER=sandbox` with `ALLOW_SANDBOX_PAYMENTS=true`. **Cannot take

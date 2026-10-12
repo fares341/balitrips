@@ -81,6 +81,8 @@ export const THEME_AFFINITY: Record<ThemeKey, readonly string[]> = {
   honey: ['romantic', 'spa', 'photo', 'beach'],
   youth: ['adv', 'marine', 'beach', 'photo'],
   solo: ['culture', 'nature', 'cafe', 'photo'],
+  luxury: ['spa', 'romantic', 'food', 'photo'],
+  budget: ['nature', 'beach', 'culture', 'cafe'],
 }
 
 /** Party sizes at which the group-size heuristics switch on. */

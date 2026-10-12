@@ -35,6 +35,7 @@ import { db } from '@/db'
 import { payments } from '@/db/schema'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { minorUnitExponent } from '@/lib/money'
+import { sandboxPaymentsAllowed } from '@/lib/live-mode'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -47,7 +48,7 @@ function forbiddenInProduction(): Response | null {
   // Runtime gate, not NODE_ENV: Next inlines NODE_ENV at build time, so this
   // constant-folded into an unconditional 404 and the 3-D Secure stand-in did
   // not exist in any standalone build, including local ones.
-  if (process.env.ALLOW_SANDBOX_PAYMENTS !== 'true') {
+  if (!sandboxPaymentsAllowed()) {
     return new NextResponse('Not found', { status: 404 })
   }
 

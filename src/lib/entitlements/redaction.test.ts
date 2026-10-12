@@ -28,9 +28,14 @@ function place(over: Partial<FullMapPlace> = {}): FullMapPlace {
     isHiddenGem: false,
     regionKey: 'south',
     regionLabel: { en: 'South Bali', ar: 'جنوب بالي', id: 'Bali Selatan' },
+    parentRegionKey: null,
+    parentRegionLabel: null,
     categoryKey: null,
     categoryLabel: null,
     tagKeys: ['temples'],
+    tagList: [{ key: 'temples', label: { en: 'Temples', ar: 'المعابد', id: 'Pura' } }],
+    detailedDescription: { en: 'Secret cove access', ar: 'مدخل سري', id: 'Akses rahasia' },
+    videos: ['https://www.youtube.com/watch?v=abc'],
     canFavorite: true,
     canAddToTrip: true,
     priority: 0,
@@ -72,6 +77,8 @@ describe('redaction', () => {
     expect(serialised).not.toContain('cdn.example.com')
     expect(serialised).not.toContain('uluwatu-sunset')
     expect(serialised).not.toContain('4.8')
+    expect(serialised).not.toContain('Secret cove')
+    expect(serialised).not.toContain('youtube')
 
     expect(Object.keys(result).sort()).toEqual(['id', 'locked', 'requiredEntitlement'])
   })

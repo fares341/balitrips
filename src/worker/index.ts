@@ -75,6 +75,7 @@ import {
   type PdfJob,
   type QueueName,
 } from './queues'
+import { liveModeWarnings } from '@/lib/live-mode'
 
 /** Shows up in `pg_stat_activity`, which is how you tell the roles apart. */
 const APPLICATION_NAME = 'bali-worker'
@@ -536,6 +537,7 @@ async function shutdown(boss: PgBoss, reason: string): Promise<void> {
    -------------------------------------------------------------------------- */
 
 async function main(): Promise<void> {
+  for (const warning of liveModeWarnings()) console.error(`[worker] LIVE_MODE config: ${warning}`)
   // The environment was already checked, and a fatal gap already exited the
   // process, while `./config` was being imported. See the note there.
   const boss = createBoss({ applicationName: APPLICATION_NAME, role: 'worker' })

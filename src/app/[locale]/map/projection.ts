@@ -14,7 +14,10 @@
  * unit-tested) without React or a database.
  */
 
+import type { Locale } from '@/i18n/config'
+import { searchableText } from '@/lib/content/localize'
 import type { FullMapPlace } from '@/lib/entitlements'
+import { normalizeSearch } from '@/lib/search/normalize'
 
 /**
  * Geographic extent of the satellite raster, from the handoff (`MAP_BBOX`).
@@ -111,34 +114,25 @@ export function pinColor(tags: readonly string[] | null): string {
   return DEFAULT_PIN_COLOR
 }
 
-export interface MapFilter {
-  /** `tags.key` to match, or null for "no filter". */
-  tag: string | null
-  /** Key in messages/{en,ar,id}.json. */
-  labelKey: string
-}
-
 /**
- * Category chips, ported from the handoff's `MAP_FILTERS`.
- *
- * The handoff stored the English label as the filter key and compared it
- * against `p.tags`, then rendered a separately translated label — so the two
- * could drift. The tag is the stored value and the label is a message key;
- * neither is derived from the other.
- *
- * `as const satisfies` rather than a plain annotation, so `labelKey` keeps its
- * literal type and next-intl can check each one against messages/en.json at
- * compile time instead of accepting any string.
+ * نص البحث داخل الخريطة لكل دبوس: الاسم، التصنيف، المنطقة والحي، والوسوم —
+ * بلغة الزائر والإنجليزية، مطبّعاً (أ/ا، ة/ه…) كي يجد "أوبود" و"اوبود" نفس المكان.
+ * مصدر واحد للخريطتين المسطحة والثلاثية.
  */
-export const MAP_FILTERS = [
-  { tag: null, labelKey: 'map_f_all' },
-  // `tags.key` (place_tags) since the tags table landed — not English labels.
-  { tag: 'beaches', labelKey: 'map_f_beaches' },
-  { tag: 'temples', labelKey: 'map_f_temples' },
-  { tag: 'hiking', labelKey: 'map_f_hiking' },
-  { tag: 'popular', labelKey: 'map_f_popular' },
-  { tag: 'luxury-stays', labelKey: 'map_f_luxury' },
-] as const satisfies readonly MapFilter[]
+export function pinHaystack(place: OpenMapPlace, locale: Locale): string {
+  return normalizeSearch(
+    [
+      searchableText(place.name, locale),
+      searchableText(place.category, locale),
+      searchableText(place.categoryLabel, locale),
+      searchableText(place.regionLabel, locale),
+      searchableText(place.parentRegionLabel, locale),
+      place.regionKey ?? '',
+      place.slug,
+      ...place.tagList.map((tag) => searchableText(tag.label, locale)),
+    ].join(' '),
+  )
+}
 
 /** Clamp helper shared by the zoom and the translation clamp. */
 export function clamp(value: number, min: number, max: number): number {

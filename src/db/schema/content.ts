@@ -1,5 +1,6 @@
 import { relations } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   boolean,
   doublePrecision,
   index,
@@ -28,10 +29,24 @@ import {
 // Taxonomy
 // ---------------------------------------------------------------------------
 
+/**
+ * المناطق والأحياء (الوثيقة 7). مستويان:
+ *  - مناطق عامة (جنوب بالي، وسط بالي…) تستخدمها الجداول والباقات.
+ *  - أحياء داخلها (Kuta، Seminyak، Ubud…) `parent_id` ← المنطقة العامة،
+ *    تُربط بها أماكن الخريطة. فلترة منطقة عامة تشمل أحياءها.
+ * `center_lat/lon` + `radius_km` = "حدود أو إحداثيات تقريبية".
+ */
 export const regions = pgTable('regions', {
   id: uuid('id').primaryKey().defaultRandom(),
   key: varchar('key', { length: 64 }).notNull().unique(),
   label: localized('label').notNull(),
+  description: localized('description'),
+  /** active | inactive — غير المفعّلة لا تظهر في فلاتر الخريطة والاقتراحات. */
+  status: varchar('status', { length: 16 }).notNull().default('active'),
+  parentId: uuid('parent_id').references((): AnyPgColumn => regions.id, { onDelete: 'set null' }),
+  centerLat: doublePrecision('center_lat'),
+  centerLon: doublePrecision('center_lon'),
+  radiusKm: real('radius_km'),
   sortOrder: integer('sort_order').notNull().default(0),
   ...timestamps,
 })
@@ -40,6 +55,9 @@ export const categories = pgTable('categories', {
   id: uuid('id').primaryKey().defaultRandom(),
   key: varchar('key', { length: 64 }).notNull().unique(),
   label: localized('label').notNull(),
+  description: localized('description'),
+  /** active | inactive (الوثيقة: الحالة). */
+  status: varchar('status', { length: 16 }).notNull().default('active'),
   /** Icon name from the design's ~45-glyph set. */
   icon: varchar('icon', { length: 32 }),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -253,6 +271,24 @@ export const itineraries = pgTable('itineraries', {
   currency: currency(),
 
   heroImageId: uuid('hero_image_id').references(() => media.id),
+
+  /** الوثيقة 4.2: وصف تفصيلي. */
+  detailedDescription: localized('detailed_description'),
+  /** الوثيقة 4.2: معرض صور (معرّفات media بالترتيب). */
+  galleryImageIds: jsonb('gallery_image_ids').$type<string[]>(),
+  /** الوثيقة 4.2: هل يشمل الخريطة؟ شراؤه يمنح الوصول للخريطة. */
+  includesMap: boolean('includes_map').notNull().default(false),
+  /** الوثيقة 4.2: جدول عادي أم VIP؟ (VIP + يشمل الخريطة ← صلاحية VIP). */
+  isVip: boolean('is_vip').notNull().default(false),
+  /** الوثيقة 4.2: ملاحظات داخلية للإدارة — لا تُرسل للعميل. */
+  internalNotes: text('internal_notes'),
+  /** الوثيقة 4.2: الأماكن المرتبطة بالجدول (معرّفات map_places). */
+  linkedPlaceIds: jsonb('linked_place_ids').$type<string[]>(),
+  /**
+   * الوثيقة 4.2/2: "ملف PDF مرتبط بالجدول" يرفعه المدير. مفتاح تخزين خاص لكل
+   * لغة؛ إن وُجد يُسلَّم بدل الملف المولّد تلقائياً (بنفس العلامة المائية).
+   */
+  uploadedPdfKeys: jsonb('uploaded_pdf_keys').$type<Partial<Record<string, string>>>(),
 
   /**
    * Bumped on every publish that changes the plan. An order pins the

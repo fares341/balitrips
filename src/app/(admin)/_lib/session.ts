@@ -7,6 +7,7 @@ import { getSession } from '@/lib/auth/session'
 
 import { adminHref } from './admin-path'
 import { isSessionVerified, twoFactorStatus } from './two-factor'
+import { clientIp } from '@/lib/security/ip'
 
 /**
  * The admin's authorization gate.
@@ -52,15 +53,6 @@ export interface AdminSession {
   ipAddress: string | null
 }
 
-function clientIp(headerList: Headers): string | null {
-  const forwarded = headerList.get('x-forwarded-for')
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim()
-    if (first) return first.slice(0, 64)
-  }
-  return headerList.get('x-real-ip')?.slice(0, 64) ?? null
-}
-
 /** The caller, or null when there is no live elevated session. */
 export async function getAdminSession(): Promise<AdminSession | null> {
   const session = await getSession()
@@ -72,6 +64,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
     name: session.user.name,
     role: session.user.role,
     sessionId: session.sessionId,
+    // نفس محلّل الحارس: قيمة واحدة موحّدة في سجل المراجعة وفحص "حظر IP نفسك".
     ipAddress: clientIp(await headers()),
   }
 }

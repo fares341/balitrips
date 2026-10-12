@@ -68,6 +68,9 @@ export default async function LeadDetailPage({
     ['Wants driver', request.wantsDriver ? 'yes' : 'no'],
     ['Children', request.hasChildren ? 'yes' : 'no'],
     ['Wants VIP map', request.wantsVipMap ? 'yes' : 'no'],
+    ['Luxury restaurants', request.wantsLuxuryDining ? 'yes' : 'no'],
+    ['Adventure', request.wantsAdventure ? 'yes' : 'no'],
+    ['Preferred areas', (request.preferredAreas ?? []).join(', ') || '—'],
   ]
 
   return (

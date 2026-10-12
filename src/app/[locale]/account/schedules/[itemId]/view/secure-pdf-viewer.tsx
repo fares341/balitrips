@@ -52,7 +52,11 @@ export function SecurePdfViewer({
           import.meta.url,
         ).toString()
 
-        const response = await fetch(src, { credentials: 'same-origin', cache: 'no-store' })
+        const response = await fetch(src, {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'x-bt-viewer': '1' },
+        })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const data = new Uint8Array(await response.arrayBuffer())
 
