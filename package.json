@@ -1,0 +1,70 @@
+{
+  "name": "bali-travels",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bali Trips — trilingual (EN/AR/ID) travel booking platform",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test --config playwright.a11y.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/db/seed/index.ts",
+    "worker": "tsx src/worker/index.ts",
+    "start:standalone": "node scripts/serve-standalone.mjs",
+    "db:seed:media": "node scripts/seed-media.mjs"
+  },
+  "dependencies": {
+    "better-auth": "1.6.26",
+    "drizzle-orm": "0.45.2",
+    "nanoid": "6.0.1",
+    "next": "16.3.0",
+    "next-intl": "4.13.5",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "5.4.296",
+    "pg-boss": "12.27.0",
+    "postgres": "3.4.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "^0.35.4",
+    "three": "^0.186.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
+    "@playwright/test": "1.62.1",
+    "@types/node": "22.18.8",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.1",
+    "@types/three": "^0.186.0",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.37.0",
+    "eslint-config-next": "16.3.0",
+    "prettier": "3.9.6",
+    "tsx": "4.23.11",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

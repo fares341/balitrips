@@ -1,0 +1,1793 @@
+{
+  "ACT_CATS": [
+    {
+      "key": "all",
+      "label": {
+        "en": "All",
+        "ar": "الكل",
+        "id": "Semua"
+      }
+    },
+    {
+      "key": "adv",
+      "label": {
+        "en": "Adventures",
+        "ar": "المغامرات",
+        "id": "Petualangan"
+      }
+    },
+    {
+      "key": "beach",
+      "label": {
+        "en": "Beaches",
+        "ar": "الشواطئ",
+        "id": "Pantai"
+      }
+    },
+    {
+      "key": "food",
+      "label": {
+        "en": "Restaurants",
+        "ar": "المطاعم",
+        "id": "Restoran"
+      }
+    },
+    {
+      "key": "cafe",
+      "label": {
+        "en": "Cafés",
+        "ar": "الكافيهات",
+        "id": "Kafe"
+      }
+    },
+    {
+      "key": "nature",
+      "label": {
+        "en": "Nature",
+        "ar": "الطبيعة",
+        "id": "Alam"
+      }
+    },
+    {
+      "key": "family",
+      "label": {
+        "en": "Families",
+        "ar": "العائلات",
+        "id": "Keluarga"
+      }
+    },
+    {
+      "key": "kids",
+      "label": {
+        "en": "Kids",
+        "ar": "الأطفال",
+        "id": "Anak"
+      }
+    },
+    {
+      "key": "photo",
+      "label": {
+        "en": "Photography",
+        "ar": "التصوير",
+        "id": "Fotografi"
+      }
+    },
+    {
+      "key": "culture",
+      "label": {
+        "en": "Culture",
+        "ar": "الثقافة",
+        "id": "Budaya"
+      }
+    },
+    {
+      "key": "marine",
+      "label": {
+        "en": "Marine",
+        "ar": "بحرية",
+        "id": "Bahari"
+      }
+    },
+    {
+      "key": "spa",
+      "label": {
+        "en": "Spa & Relaxation",
+        "ar": "السبا والاسترخاء",
+        "id": "Spa & Relaksasi"
+      }
+    },
+    {
+      "key": "romantic",
+      "label": {
+        "en": "Romantic",
+        "ar": "رومانسية",
+        "id": "Romantis"
+      }
+    }
+  ],
+  "ACT_SORTS": [
+    {
+      "key": "top",
+      "label": {
+        "en": "Top rated",
+        "ar": "الأعلى تقييماً",
+        "id": "Terbaik"
+      }
+    },
+    {
+      "key": "price",
+      "label": {
+        "en": "By price",
+        "ar": "حسب السعر",
+        "id": "Harga"
+      }
+    },
+    {
+      "key": "region",
+      "label": {
+        "en": "By region",
+        "ar": "حسب المنطقة",
+        "id": "Wilayah"
+      }
+    }
+  ],
+  "REGIONS": {
+    "south": {
+      "en": "South Bali",
+      "ar": "جنوب بالي",
+      "id": "Bali Selatan"
+    },
+    "central": {
+      "en": "Central Bali",
+      "ar": "وسط بالي",
+      "id": "Bali Tengah"
+    },
+    "east": {
+      "en": "East Bali",
+      "ar": "شرق بالي",
+      "id": "Bali Timur"
+    },
+    "north": {
+      "en": "North Bali",
+      "ar": "شمال بالي",
+      "id": "Bali Utara"
+    },
+    "islands": {
+      "en": "The Islands",
+      "ar": "الجزر",
+      "id": "Kepulauan"
+    }
+  },
+  "ACTIVITIES": [
+    {
+      "id": "batur",
+      "cats": ["adv", "nature", "photo"],
+      "region": "north",
+      "name": {
+        "en": "Mount Batur Sunrise Hike",
+        "ar": "مشي شروق جبل باتور",
+        "id": "Pendakian Matahari Terbit Gunung Batur"
+      },
+      "area": {
+        "en": "Kintamani",
+        "ar": "كينتاماني",
+        "id": "Kintamani"
+      },
+      "flickr": "mount-batur,volcano",
+      "gallery": ["mount-batur,volcano", "bali,sunrise", "bali,mountain", "kintamani,lake"],
+      "rating": 4.8,
+      "reviews": 1240,
+      "price": 55,
+      "dur": {
+        "en": "6 hours",
+        "ar": "6 ساعات",
+        "id": "6 jam"
+      },
+      "desc": {
+        "en": "Summit an active volcano before dawn and watch the sun rise over Lake Batur and the caldera — the most iconic morning in Bali.",
+        "ar": "تسلّق بركانًا نشطًا قبل الفجر وشاهد الشمس تشرق فوق بحيرة باتور والفوهة — أجمل صباح في بالي.",
+        "id": "Daki gunung berapi aktif sebelum fajar dan saksikan matahari terbit di atas Danau Batur — pagi paling ikonik di Bali."
+      }
+    },
+    {
+      "id": "sekumpul",
+      "cats": ["adv", "nature"],
+      "region": "north",
+      "name": {
+        "en": "Sekumpul Waterfall Trek",
+        "ar": "رحلة شلال سيكومبول",
+        "id": "Trek Air Terjun Sekumpul"
+      },
+      "area": {
+        "en": "North Bali",
+        "ar": "شمال بالي",
+        "id": "Bali Utara"
+      },
+      "flickr": "sekumpul,waterfall",
+      "gallery": ["sekumpul,waterfall", "bali,waterfall", "bali,jungle", "bali,river"],
+      "rating": 4.9,
+      "reviews": 610,
+      "price": 40,
+      "dur": {
+        "en": "5 hours",
+        "ar": "5 ساعات",
+        "id": "5 jam"
+      },
+      "desc": {
+        "en": "A guided trek through jungle and rivers to Bali's most powerful waterfall cluster — remote, green and unforgettable.",
+        "ar": "رحلة مع مرشد عبر الأدغال والأنهار إلى أقوى مجموعة شلالات في بالي — بعيدة وخضراء لا تُنسى.",
+        "id": "Trek berpemandu melewati hutan dan sungai ke gugusan air terjun terkuat di Bali — terpencil dan hijau."
+      }
+    },
+    {
+      "id": "penida",
+      "cats": ["adv", "beach", "photo"],
+      "region": "islands",
+      "name": {
+        "en": "Nusa Penida Day Tour",
+        "ar": "جولة نوسا بنيدا",
+        "id": "Tur Sehari Nusa Penida"
+      },
+      "area": {
+        "en": "Nusa Penida",
+        "ar": "نوسا بنيدا",
+        "id": "Nusa Penida"
+      },
+      "flickr": "nusa-penida,beach",
+      "gallery": ["nusa-penida,beach", "nusa-penida,cliff", "bali,island", "bali,snorkel"],
+      "rating": 4.7,
+      "reviews": 980,
+      "price": 75,
+      "dur": {
+        "en": "Full day",
+        "ar": "يوم كامل",
+        "id": "Seharian"
+      },
+      "desc": {
+        "en": "Fast-boat across to Bali's wild sister island for Kelingking cliff, Angel's Billabong and Broken Beach.",
+        "ar": "قارب سريع إلى الجزيرة الشقيقة البرية لبالي لرؤية منحدر كيلينغكينغ وأنجلز بيلابونغ.",
+        "id": "Naik kapal cepat ke pulau liar tetangga Bali untuk tebing Kelingking dan Angel's Billabong."
+      }
+    },
+    {
+      "id": "padang",
+      "cats": ["beach"],
+      "region": "south",
+      "name": {
+        "en": "Padang Padang Beach",
+        "ar": "شاطئ بادانغ بادانغ",
+        "id": "Pantai Padang Padang"
+      },
+      "area": {
+        "en": "Uluwatu",
+        "ar": "أولواتو",
+        "id": "Uluwatu"
+      },
+      "flickr": "uluwatu,beach",
+      "gallery": ["uluwatu,beach", "bali,surf", "uluwatu,cliff", "bali,beach"],
+      "rating": 4.6,
+      "reviews": 720,
+      "price": 20,
+      "dur": {
+        "en": "Half day",
+        "ar": "نصف يوم",
+        "id": "Setengah hari"
+      },
+      "desc": {
+        "en": "A hidden cove reached through a rock crevice — turquoise water, golden sand and world-class surf.",
+        "ar": "خليج مخفي يُدخل عبر شق صخري — مياه فيروزية ورمال ذهبية وأمواج عالمية.",
+        "id": "Teluk tersembunyi lewat celah batu — air biru, pasir emas, dan ombak kelas dunia."
+      }
+    },
+    {
+      "id": "diamond",
+      "cats": ["beach", "photo"],
+      "region": "islands",
+      "name": {
+        "en": "Diamond Beach",
+        "ar": "شاطئ دايموند",
+        "id": "Pantai Diamond"
+      },
+      "area": {
+        "en": "Nusa Penida",
+        "ar": "نوسا بنيدا",
+        "id": "Nusa Penida"
+      },
+      "flickr": "nusa-penida,cliff",
+      "gallery": ["nusa-penida,cliff", "bali,beach", "bali,ocean", "nusa-penida,beach"],
+      "rating": 4.8,
+      "reviews": 540,
+      "price": 25,
+      "dur": {
+        "en": "Half day",
+        "ar": "نصف يوم",
+        "id": "Setengah hari"
+      },
+      "desc": {
+        "en": "Sculpted white cliffs and a staircase down to one of the most photographed beaches in Indonesia.",
+        "ar": "منحدرات بيضاء منحوتة ودرج ينزل إلى أحد أكثر الشواطئ تصويرًا في إندونيسيا.",
+        "id": "Tebing putih terukir dan tangga menuju salah satu pantai paling difoto di Indonesia."
+      }
+    },
+    {
+      "id": "kecak",
+      "cats": ["culture"],
+      "region": "south",
+      "name": {
+        "en": "Uluwatu Kecak Fire Dance",
+        "ar": "رقصة النار كيتشاك",
+        "id": "Tari Api Kecak Uluwatu"
+      },
+      "area": {
+        "en": "Uluwatu",
+        "ar": "أولواتو",
+        "id": "Uluwatu"
+      },
+      "flickr": "uluwatu,temple",
+      "gallery": ["uluwatu,temple", "bali,dance", "bali,sunset", "uluwatu,cliff"],
+      "rating": 4.8,
+      "reviews": 1500,
+      "price": 15,
+      "dur": {
+        "en": "2 hours",
+        "ar": "ساعتان",
+        "id": "2 jam"
+      },
+      "desc": {
+        "en": "A hundred chanting voices, a cliff-top temple and a fire dance performed against the Indian Ocean sunset.",
+        "ar": "مئة صوت منشد ومعبد على حافة منحدر ورقصة نار أمام غروب المحيط الهندي.",
+        "id": "Seratus suara paduan, pura di atas tebing, dan tari api di depan matahari terbenam."
+      }
+    },
+    {
+      "id": "artmarket",
+      "cats": ["culture"],
+      "region": "central",
+      "name": {
+        "en": "Ubud Art Market",
+        "ar": "سوق أوبود للفنون",
+        "id": "Pasar Seni Ubud"
+      },
+      "area": {
+        "en": "Ubud",
+        "ar": "أوبود",
+        "id": "Ubud"
+      },
+      "flickr": "ubud,market",
+      "gallery": ["ubud,market", "ubud,bali", "bali,craft", "ubud,art"],
+      "rating": 4.5,
+      "reviews": 430,
+      "price": 10,
+      "dur": {
+        "en": "2 hours",
+        "ar": "ساعتان",
+        "id": "2 jam"
+      },
+      "desc": {
+        "en": "Hand-woven baskets, batik and silver from Balinese artisans in the cultural heart of the island.",
+        "ar": "سلال منسوجة يدويًا وباتيك وفضة من حرفيي بالي في القلب الثقافي للجزيرة.",
+        "id": "Keranjang tenun, batik, dan perak dari perajin Bali di jantung budaya pulau."
+      }
+    },
+    {
+      "id": "crate",
+      "cats": ["cafe", "food"],
+      "region": "south",
+      "name": {
+        "en": "Crate Café Canggu",
+        "ar": "كرايت كافيه تشانغو",
+        "id": "Crate Café Canggu"
+      },
+      "area": {
+        "en": "Canggu",
+        "ar": "تشانغو",
+        "id": "Canggu"
+      },
+      "flickr": "canggu,cafe",
+      "gallery": ["canggu,cafe", "bali,coffee", "canggu,beach", "bali,brunch"],
+      "rating": 4.7,
+      "reviews": 2100,
+      "price": 12,
+      "dur": {
+        "en": "1–2 hours",
+        "ar": "1–2 ساعة",
+        "id": "1–2 jam"
+      },
+      "desc": {
+        "en": "The definitive Canggu brunch — bold specialty coffee, big bowls, and the surf crowd that made Bali's café scene.",
+        "ar": "فطور تشانغو المميز — قهوة مختصة جريئة وأطباق كبيرة ورواد الأمواج.",
+        "id": "Brunch khas Canggu — kopi spesialti, mangkuk besar, dan komunitas peselancar."
+      }
+    },
+    {
+      "id": "locavore",
+      "cats": ["food"],
+      "region": "central",
+      "name": {
+        "en": "Locavore Ubud",
+        "ar": "لوكافور أوبود",
+        "id": "Locavore Ubud"
+      },
+      "area": {
+        "en": "Ubud",
+        "ar": "أوبود",
+        "id": "Ubud"
+      },
+      "flickr": "bali,restaurant",
+      "gallery": ["bali,restaurant", "bali,food", "ubud,dining", "bali,gourmet"],
+      "rating": 4.9,
+      "reviews": 860,
+      "price": 120,
+      "dur": {
+        "en": "3 hours",
+        "ar": "3 ساعات",
+        "id": "3 jam"
+      },
+      "desc": {
+        "en": "A tasting-menu institution — Indonesia's most awarded restaurant, built entirely on local produce.",
+        "ar": "مؤسسة قوائم التذوق — أكثر مطاعم إندونيسيا حصدًا للجوائز، مبني على المنتجات المحلية.",
+        "id": "Ikon menu degustasi — restoran paling banyak penghargaan di Indonesia dari bahan lokal."
+      }
+    },
+    {
+      "id": "safari",
+      "cats": ["family", "kids"],
+      "region": "central",
+      "name": {
+        "en": "Bali Safari Park",
+        "ar": "حديقة بالي سفاري",
+        "id": "Bali Safari Park"
+      },
+      "area": {
+        "en": "Gianyar",
+        "ar": "غيانيار",
+        "id": "Gianyar"
+      },
+      "flickr": "bali,safari",
+      "gallery": ["bali,safari", "bali,animal", "safari,elephant", "bali,zoo"],
+      "rating": 4.6,
+      "reviews": 1320,
+      "price": 45,
+      "dur": {
+        "en": "Full day",
+        "ar": "يوم كامل",
+        "id": "Seharian"
+      },
+      "desc": {
+        "en": "A full family day of safari rides, animal encounters and shows — easy, shaded and stroller-friendly.",
+        "ar": "يوم عائلي كامل من جولات السفاري ولقاءات الحيوانات والعروض — سهل ومظلّل.",
+        "id": "Sehari penuh keluarga: safari, satwa, dan pertunjukan — mudah dan teduh."
+      }
+    },
+    {
+      "id": "waterbom",
+      "cats": ["family", "kids"],
+      "region": "south",
+      "name": {
+        "en": "Waterbom Bali",
+        "ar": "ووتربوم بالي",
+        "id": "Waterbom Bali"
+      },
+      "area": {
+        "en": "Kuta",
+        "ar": "كوتا",
+        "id": "Kuta"
+      },
+      "flickr": "bali,waterpark",
+      "gallery": ["bali,waterpark", "bali,pool", "waterpark,slide", "bali,kids"],
+      "rating": 4.8,
+      "reviews": 3400,
+      "price": 38,
+      "dur": {
+        "en": "Full day",
+        "ar": "يوم كامل",
+        "id": "Seharian"
+      },
+      "desc": {
+        "en": "Asia's top-ranked water park — slides for every age, lush gardens and cabanas, minutes from the airport.",
+        "ar": "أفضل حديقة مائية في آسيا — منزلقات لكل الأعمار وحدائق غنّاء، على دقائق من المطار.",
+        "id": "Taman air peringkat teratas Asia — seluncuran untuk segala usia, dekat bandara."
+      }
+    },
+    {
+      "id": "snorkel",
+      "cats": ["marine", "adv", "family"],
+      "region": "islands",
+      "name": {
+        "en": "Blue Lagoon Snorkeling",
+        "ar": "غطس البحيرة الزرقاء",
+        "id": "Snorkeling Blue Lagoon"
+      },
+      "area": {
+        "en": "Padang Bai",
+        "ar": "بادانغ باي",
+        "id": "Padang Bai"
+      },
+      "flickr": "bali,snorkel",
+      "gallery": ["bali,snorkel", "bali,ocean", "bali,coral", "bali,boat"],
+      "rating": 4.7,
+      "reviews": 820,
+      "price": 35,
+      "dur": {
+        "en": "4 hours",
+        "ar": "4 ساعات",
+        "id": "4 jam"
+      },
+      "desc": {
+        "en": "Warm, clear water and a reef busy with fish — the easiest great snorkel on the island, good for beginners and kids.",
+        "ar": "مياه دافئة صافية وشعاب مرجانية مليئة بالأسماك — أسهل تجربة غطس رائعة في الجزيرة، مناسبة للمبتدئين والأطفال.",
+        "id": "Air hangat jernih dan terumbu penuh ikan — snorkeling terbaik yang mudah, cocok untuk pemula dan anak."
+      }
+    },
+    {
+      "id": "spa",
+      "cats": ["spa", "romantic", "family"],
+      "region": "central",
+      "name": {
+        "en": "Ubud Jungle Spa Ritual",
+        "ar": "طقوس سبا أدغال أوبود",
+        "id": "Ritual Spa Hutan Ubud"
+      },
+      "area": {
+        "en": "Ubud",
+        "ar": "أوبود",
+        "id": "Ubud"
+      },
+      "flickr": "bali,spa",
+      "gallery": ["bali,spa", "bali,massage", "ubud,jungle", "bali,flowers"],
+      "rating": 4.9,
+      "reviews": 1150,
+      "price": 60,
+      "dur": {
+        "en": "3 hours",
+        "ar": "3 ساعات",
+        "id": "3 jam"
+      },
+      "desc": {
+        "en": "A two-hour Balinese massage, flower bath and herbal tea in an open pavilion above the jungle.",
+        "ar": "مساج بالي لساعتين وحمّام الزهور وشاي الأعشاب في جناح مفتوح فوق الأدغال.",
+        "id": "Pijat Bali dua jam, mandi bunga, dan teh herbal di paviliun terbuka di atas hutan."
+      }
+    },
+    {
+      "id": "sunsetdine",
+      "cats": ["romantic", "food", "beach"],
+      "region": "south",
+      "name": {
+        "en": "Cliffside Sunset Dinner",
+        "ar": "عشاء الغروب على المنحدر",
+        "id": "Makan Malam Tebing Senja"
+      },
+      "area": {
+        "en": "Jimbaran",
+        "ar": "جيمباران",
+        "id": "Jimbaran"
+      },
+      "flickr": "bali,sunset,dinner",
+      "gallery": ["bali,sunset,dinner", "jimbaran,beach", "bali,seafood", "bali,sunset"],
+      "rating": 4.8,
+      "reviews": 640,
+      "price": 85,
+      "dur": {
+        "en": "3 hours",
+        "ar": "3 ساعات",
+        "id": "3 jam"
+      },
+      "desc": {
+        "en": "A private table on the sand as the sun drops into the Indian Ocean — grilled seafood, candles and nothing else to do.",
+        "ar": "طاولة خاصة على الرمال بينما تغرب الشمس في المحيط الهندي — مأكولات بحرية مشوية وشموع ولا شيء آخر.",
+        "id": "Meja privat di pasir saat matahari tenggelam — seafood bakar, lilin, dan tak ada lagi yang perlu dilakukan."
+      }
+    },
+    {
+      "id": "lempuyang",
+      "cats": ["culture", "photo"],
+      "region": "east",
+      "name": {
+        "en": "Lempuyang 'Gates of Heaven'",
+        "ar": "بوابة السماء ليمبويانغ",
+        "id": "Gerbang Surga Lempuyang"
+      },
+      "area": {
+        "en": "East Bali",
+        "ar": "شرق بالي",
+        "id": "Bali Timur"
+      },
+      "flickr": "lempuyang,temple",
+      "gallery": ["lempuyang,temple", "bali,temple", "bali,mountain", "lempuyang,gate"],
+      "rating": 4.7,
+      "reviews": 990,
+      "price": 30,
+      "dur": {
+        "en": "Full day",
+        "ar": "يوم كامل",
+        "id": "Seharian"
+      },
+      "desc": {
+        "en": "The split gate framing Mount Agung — Bali's most famous photo, with an early start to beat the crowds.",
+        "ar": "البوابة المنقسمة التي تؤطّر جبل أغونغ — أشهر صورة في بالي، مع انطلاقة مبكرة لتفادي الزحام.",
+        "id": "Gerbang terbelah membingkai Gunung Agung — foto paling terkenal di Bali."
+      }
+    }
+  ],
+  "ITINERARIES": [
+    {
+      "id": "it5",
+      "days": 5,
+      "price": 59,
+      "flickr": "tegallalang,rice",
+      "region": "central",
+      "spots": 14,
+      "type": {
+        "en": "Culture & nature",
+        "ar": "ثقافية وطبيعية",
+        "id": "Budaya & alam"
+      },
+      "regions": ["south", "central"],
+      "name": {
+        "en": "5-Day Itinerary",
+        "ar": "جدول 5 أيام",
+        "id": "Itinerari 5 Hari"
+      },
+      "blurb": {
+        "en": "Ubud, rice terraces, a volcano sunrise and the south coast.",
+        "ar": "أوبود ومدرّجات الأرز وشروق البركان والساحل الجنوبي.",
+        "id": "Ubud, sawah, matahari terbit gunung, dan pantai selatan."
+      },
+      "audience": [
+        {
+          "en": "First-timers",
+          "ar": "للزيارة الأولى",
+          "id": "Pemula"
+        },
+        {
+          "en": "Couples",
+          "ar": "الأزواج",
+          "id": "Pasangan"
+        }
+      ],
+      "acts": ["artmarket", "batur", "padang", "kecak", "crate"]
+    },
+    {
+      "id": "it7",
+      "days": 7,
+      "price": 79,
+      "flickr": "lempuyang,temple",
+      "region": "east",
+      "spots": 19,
+      "type": {
+        "en": "Complete tour",
+        "ar": "جولة كاملة",
+        "id": "Tur lengkap"
+      },
+      "regions": ["south", "central", "east"],
+      "name": {
+        "en": "7-Day Itinerary",
+        "ar": "جدول 7 أيام",
+        "id": "Itinerari 7 Hari"
+      },
+      "blurb": {
+        "en": "South to east — one full week with no backtracking.",
+        "ar": "من الجنوب إلى الشرق — أسبوع كامل بلا تكرار.",
+        "id": "Selatan ke timur — sepekan penuh tanpa mengulang."
+      },
+      "audience": [
+        {
+          "en": "Explorers",
+          "ar": "المستكشفون",
+          "id": "Penjelajah"
+        },
+        {
+          "en": "Groups",
+          "ar": "المجموعات",
+          "id": "Grup"
+        }
+      ],
+      "acts": ["padang", "kecak", "batur", "lempuyang", "penida", "locavore"]
+    },
+    {
+      "id": "it8",
+      "days": 8,
+      "price": 89,
+      "flickr": "sekumpul,waterfall",
+      "region": "north",
+      "spots": 22,
+      "type": {
+        "en": "Island-wide",
+        "ar": "شاملة للجزيرة",
+        "id": "Seluruh pulau"
+      },
+      "regions": ["south", "central", "north", "east"],
+      "name": {
+        "en": "8-Day Itinerary",
+        "ar": "جدول 8 أيام",
+        "id": "Itinerari 8 Hari"
+      },
+      "blurb": {
+        "en": "Add the green north — waterfalls, lakes and cool highland air.",
+        "ar": "أضف الشمال الأخضر — شلالات وبحيرات وهواء مرتفعات بارد.",
+        "id": "Tambahkan utara yang hijau — air terjun, danau, udara sejuk."
+      },
+      "audience": [
+        {
+          "en": "Slow travel",
+          "ar": "السفر المتأنّي",
+          "id": "Perjalanan santai"
+        },
+        {
+          "en": "Photographers",
+          "ar": "المصوّرون",
+          "id": "Fotografer"
+        }
+      ],
+      "acts": ["batur", "sekumpul", "lempuyang", "artmarket", "padang", "snorkel"]
+    },
+    {
+      "id": "it10",
+      "days": 10,
+      "price": 99,
+      "flickr": "bali,waterfall",
+      "region": "north",
+      "spots": 28,
+      "type": {
+        "en": "No repeats",
+        "ar": "بلا تكرار",
+        "id": "Tanpa ulang"
+      },
+      "regions": ["south", "central", "north", "east", "islands"],
+      "name": {
+        "en": "10-Day Itinerary",
+        "ar": "جدول 10 أيام",
+        "id": "Itinerari 10 Hari"
+      },
+      "blurb": {
+        "en": "The whole island including hidden gems and the outer islands.",
+        "ar": "الجزيرة كاملة بما فيها الكنوز الخفية والجزر الخارجية.",
+        "id": "Seluruh pulau termasuk permata tersembunyi dan pulau luar."
+      },
+      "audience": [
+        {
+          "en": "Slow travel",
+          "ar": "السفر المتأنّي",
+          "id": "Perjalanan santai"
+        },
+        {
+          "en": "Complete tour",
+          "ar": "جولة كاملة",
+          "id": "Tur lengkap"
+        }
+      ],
+      "acts": [
+        "batur",
+        "sekumpul",
+        "penida",
+        "diamond",
+        "lempuyang",
+        "locavore",
+        "artmarket",
+        "padang"
+      ]
+    },
+    {
+      "id": "it_honey",
+      "days": 6,
+      "price": 89,
+      "flickr": "bali,sunset,dinner",
+      "region": "south",
+      "spots": 12,
+      "type": {
+        "en": "Honeymoon",
+        "ar": "شهر العسل",
+        "id": "Bulan madu"
+      },
+      "regions": ["south", "central"],
+      "name": {
+        "en": "Honeymoon Itinerary",
+        "ar": "جدول شهر العسل",
+        "id": "Itinerari Bulan Madu"
+      },
+      "blurb": {
+        "en": "Private, slow and romantic — sunsets, spas and cliff dinners.",
+        "ar": "خاص وهادئ ورومانسي — غروب وسبا وعشاء على المنحدرات.",
+        "id": "Privat, santai, romantis — senja, spa, makan malam tebing."
+      },
+      "audience": [
+        {
+          "en": "Couples",
+          "ar": "الأزواج",
+          "id": "Pasangan"
+        },
+        {
+          "en": "Newlyweds",
+          "ar": "المتزوجون حديثاً",
+          "id": "Pengantin baru"
+        }
+      ],
+      "acts": ["sunsetdine", "spa", "kecak", "padang", "locavore"]
+    },
+    {
+      "id": "it_family",
+      "days": 6,
+      "price": 79,
+      "flickr": "bali,waterpark",
+      "region": "south",
+      "spots": 15,
+      "type": {
+        "en": "Families",
+        "ar": "العائلات",
+        "id": "Keluarga"
+      },
+      "regions": ["south", "central"],
+      "name": {
+        "en": "Family Itinerary",
+        "ar": "جدول العائلات",
+        "id": "Itinerari Keluarga"
+      },
+      "blurb": {
+        "en": "Short drives, big days out and something for every age.",
+        "ar": "مسافات قصيرة وأيام ممتعة وما يناسب كل الأعمار.",
+        "id": "Perjalanan singkat, hari seru, cocok segala usia."
+      },
+      "audience": [
+        {
+          "en": "Families",
+          "ar": "العائلات",
+          "id": "Keluarga"
+        },
+        {
+          "en": "With kids",
+          "ar": "مع الأطفال",
+          "id": "Dengan anak"
+        }
+      ],
+      "acts": ["waterbom", "safari", "snorkel", "crate", "artmarket"]
+    },
+    {
+      "id": "it_adv",
+      "days": 7,
+      "price": 85,
+      "flickr": "mount-batur,volcano",
+      "region": "north",
+      "spots": 17,
+      "type": {
+        "en": "Adventure",
+        "ar": "مغامرات",
+        "id": "Petualangan"
+      },
+      "regions": ["north", "east", "islands"],
+      "name": {
+        "en": "Adventure Itinerary",
+        "ar": "جدول المغامرات",
+        "id": "Itinerari Petualangan"
+      },
+      "blurb": {
+        "en": "Volcanoes, waterfalls, reefs and cliffs — an active week.",
+        "ar": "براكين وشلالات وشعاب ومنحدرات — أسبوع نشط.",
+        "id": "Gunung, air terjun, terumbu, tebing — sepekan aktif."
+      },
+      "audience": [
+        {
+          "en": "Adventurers",
+          "ar": "المغامرون",
+          "id": "Petualang"
+        },
+        {
+          "en": "Youth groups",
+          "ar": "مجموعات الشباب",
+          "id": "Grup muda"
+        }
+      ],
+      "acts": ["batur", "sekumpul", "penida", "snorkel", "diamond"]
+    },
+    {
+      "id": "it_relax",
+      "days": 5,
+      "price": 69,
+      "flickr": "bali,spa",
+      "region": "central",
+      "spots": 11,
+      "type": {
+        "en": "Relaxation",
+        "ar": "استرخاء",
+        "id": "Relaksasi"
+      },
+      "regions": ["central", "south"],
+      "name": {
+        "en": "Relaxation Itinerary",
+        "ar": "جدول الاسترخاء",
+        "id": "Itinerari Relaksasi"
+      },
+      "blurb": {
+        "en": "Spas, quiet beaches and long slow mornings. Nothing rushed.",
+        "ar": "سبا وشواطئ هادئة وصباحات طويلة هادئة. دون استعجال.",
+        "id": "Spa, pantai tenang, pagi panjang. Tanpa terburu."
+      },
+      "audience": [
+        {
+          "en": "Wellness",
+          "ar": "العافية",
+          "id": "Kesehatan"
+        },
+        {
+          "en": "Solo travel",
+          "ar": "السفر المنفرد",
+          "id": "Solo"
+        }
+      ],
+      "acts": ["spa", "crate", "padang", "artmarket"]
+    }
+  ],
+  "PACKAGES": [
+    {
+      "id": "pk_drv_itin",
+      "price": 420,
+      "days": 5,
+      "maxGuests": 6,
+      "flickr": "bali,road,jungle",
+      "driver": true,
+      "name": {
+        "en": "Driver + Itinerary",
+        "ar": "باقة سائق مع جدول سياحي",
+        "id": "Sopir + Itinerari"
+      },
+      "blurb": {
+        "en": "A ready day-by-day plan with a private driver to run it for you.",
+        "ar": "خطة جاهزة يومًا بيوم مع سائق خاص ينفّذها معك.",
+        "id": "Rencana harian siap pakai dengan sopir pribadi."
+      },
+      "regions": ["south", "central"],
+      "amenities": ["car", "cal", "pin", "compass"],
+      "acts": ["batur", "artmarket", "padang"]
+    },
+    {
+      "id": "pk_drv_events",
+      "price": 480,
+      "days": 5,
+      "maxGuests": 6,
+      "flickr": "uluwatu,temple",
+      "driver": true,
+      "name": {
+        "en": "Driver + Activities",
+        "ar": "باقة سائق مع فعاليات",
+        "id": "Sopir + Aktivitas"
+      },
+      "blurb": {
+        "en": "Your driver plus a set of booked experiences — tickets handled.",
+        "ar": "سائقك مع مجموعة تجارب محجوزة — التذاكر علينا.",
+        "id": "Sopir plus rangkaian pengalaman terpesan — tiket diurus."
+      },
+      "regions": ["south", "central", "east"],
+      "amenities": ["car", "compass", "star", "users"],
+      "acts": ["kecak", "snorkel", "batur"]
+    },
+    {
+      "id": "pk_honey",
+      "price": 690,
+      "days": 6,
+      "maxGuests": 2,
+      "flickr": "bali,sunset,dinner",
+      "driver": true,
+      "name": {
+        "en": "Honeymoon Package",
+        "ar": "باقة شهر العسل",
+        "id": "Paket Bulan Madu"
+      },
+      "blurb": {
+        "en": "Private villas, cliff dinners and the island's most romantic corners.",
+        "ar": "فلل خاصة وعشاء على المنحدرات وأكثر زوايا الجزيرة رومانسية.",
+        "id": "Vila privat, makan malam tebing, sudut paling romantis."
+      },
+      "regions": ["south", "central"],
+      "amenities": ["heart", "car", "star", "coffee"],
+      "acts": ["sunsetdine", "spa", "kecak", "locavore"]
+    },
+    {
+      "id": "pk_family",
+      "price": 620,
+      "days": 5,
+      "maxGuests": 6,
+      "flickr": "bali,waterpark",
+      "driver": true,
+      "name": {
+        "en": "Family Package",
+        "ar": "باقة العائلة",
+        "id": "Paket Keluarga"
+      },
+      "blurb": {
+        "en": "Safe, easy days with something for every age — no long drives.",
+        "ar": "أيام آمنة وسهلة فيها ما يناسب كل الأعمار — دون قيادة طويلة.",
+        "id": "Hari-hari aman untuk segala usia — tanpa perjalanan jauh."
+      },
+      "regions": ["south", "central"],
+      "amenities": ["users", "car", "wave", "coffee"],
+      "acts": ["safari", "waterbom", "snorkel", "crate"]
+    },
+    {
+      "id": "pk_adv",
+      "price": 540,
+      "days": 6,
+      "maxGuests": 8,
+      "flickr": "mount-batur,volcano",
+      "driver": true,
+      "name": {
+        "en": "Adventure Package",
+        "ar": "باقة المغامرة",
+        "id": "Paket Petualangan"
+      },
+      "blurb": {
+        "en": "Volcano sunrises, waterfalls and island-hopping with everything booked.",
+        "ar": "شروق البراكين والشلالات والتنقّل بين الجزر مع حجز كل شيء.",
+        "id": "Matahari terbit gunung, air terjun, island-hopping."
+      },
+      "regions": ["north", "east", "islands"],
+      "amenities": ["mountain", "car", "compass", "users"],
+      "acts": ["batur", "sekumpul", "penida", "snorkel"]
+    },
+    {
+      "id": "pk_relax",
+      "price": 580,
+      "days": 5,
+      "maxGuests": 4,
+      "flickr": "bali,spa",
+      "driver": true,
+      "name": {
+        "en": "Relaxation Package",
+        "ar": "باقة الاسترخاء",
+        "id": "Paket Relaksasi"
+      },
+      "blurb": {
+        "en": "Spa rituals, quiet beaches and slow mornings — nothing on the clock.",
+        "ar": "طقوس سبا وشواطئ هادئة وصباحات بطيئة — بلا مواعيد.",
+        "id": "Ritual spa, pantai tenang, pagi santai — tanpa jadwal ketat."
+      },
+      "regions": ["central", "south"],
+      "amenities": ["sparkle", "car", "coffee", "heart"],
+      "acts": ["spa", "padang", "crate", "locavore"]
+    }
+  ],
+  "LOVED": [
+    {
+      "key": "food",
+      "ic": "coffee",
+      "label": {
+        "en": "Best restaurants",
+        "ar": "أفضل المطاعم",
+        "id": "Restoran terbaik"
+      }
+    },
+    {
+      "key": "cafe",
+      "ic": "coffee",
+      "label": {
+        "en": "Best cafés",
+        "ar": "أفضل المقاهي",
+        "id": "Kafe terbaik"
+      }
+    },
+    {
+      "key": "beach",
+      "ic": "wave",
+      "label": {
+        "en": "Best beaches",
+        "ar": "أفضل الشواطئ",
+        "id": "Pantai terbaik"
+      }
+    },
+    {
+      "key": "adv",
+      "ic": "compass",
+      "label": {
+        "en": "Best activities",
+        "ar": "أفضل الأنشطة",
+        "id": "Aktivitas terbaik"
+      }
+    },
+    {
+      "key": "family",
+      "ic": "users",
+      "label": {
+        "en": "For families",
+        "ar": "أماكن العائلات",
+        "id": "Untuk keluarga"
+      }
+    },
+    {
+      "key": "romantic",
+      "ic": "heart",
+      "label": {
+        "en": "For honeymoons",
+        "ar": "أماكن شهر العسل",
+        "id": "Untuk bulan madu"
+      }
+    }
+  ],
+  "LANDMARKS": [
+    {
+      "id": "lm_uluwatu",
+      "region": "south",
+      "flickr": "uluwatu,temple",
+      "actId": "kecak",
+      "name": {
+        "en": "Uluwatu Temple",
+        "ar": "معبد أولواتو",
+        "id": "Pura Uluwatu"
+      },
+      "type": {
+        "en": "Temple & cliffs",
+        "ar": "معبد ومنحدرات",
+        "id": "Pura & tebing"
+      },
+      "blurb": {
+        "en": "A sea temple on a 70-metre cliff, famous for its sunset fire dance.",
+        "ar": "معبد بحري على منحدر بارتفاع 70 مترًا، مشهور برقصة النار عند الغروب.",
+        "id": "Pura laut di tebing 70 meter, terkenal dengan tari api senja."
+      }
+    },
+    {
+      "id": "lm_tega",
+      "region": "central",
+      "flickr": "tegallalang,rice",
+      "actId": "artmarket",
+      "name": {
+        "en": "Tegallalang Rice Terraces",
+        "ar": "مدرّجات تيغالالانغ",
+        "id": "Sawah Tegallalang"
+      },
+      "type": {
+        "en": "Scenic nature",
+        "ar": "طبيعة خلاّبة",
+        "id": "Alam"
+      },
+      "blurb": {
+        "en": "Sculpted green terraces stepping down a valley — Bali's signature view.",
+        "ar": "مدرّجات خضراء منحوتة تنحدر في الوادي — أشهر مناظر بالي.",
+        "id": "Terasering hijau menuruni lembah — pemandangan khas Bali."
+      }
+    },
+    {
+      "id": "lm_batur",
+      "region": "north",
+      "flickr": "mount-batur,volcano",
+      "actId": "batur",
+      "name": {
+        "en": "Mount Batur",
+        "ar": "جبل باتور",
+        "id": "Gunung Batur"
+      },
+      "type": {
+        "en": "Volcano & lake",
+        "ar": "بركان وبحيرة",
+        "id": "Gunung & danau"
+      },
+      "blurb": {
+        "en": "An active volcano above a caldera lake — Bali's classic sunrise hike.",
+        "ar": "بركان نشط يعلو بحيرة فوهة — رحلة شروق بالي الكلاسيكية.",
+        "id": "Gunung aktif di atas danau kaldera — pendakian matahari terbit klasik."
+      }
+    },
+    {
+      "id": "lm_lempuyang",
+      "region": "east",
+      "flickr": "lempuyang,temple",
+      "actId": "lempuyang",
+      "name": {
+        "en": "Lempuyang Temple",
+        "ar": "معبد ليمبويانغ",
+        "id": "Pura Lempuyang"
+      },
+      "type": {
+        "en": "Temple & views",
+        "ar": "معبد وإطلالات",
+        "id": "Pura & panorama"
+      },
+      "blurb": {
+        "en": "The split 'Gates of Heaven' framing Mount Agung on a clear morning.",
+        "ar": "بوابة السماء المنقسمة التي تؤطّر جبل أغونغ في صباح صافٍ.",
+        "id": "Gerbang Surga yang membingkai Gunung Agung di pagi cerah."
+      }
+    },
+    {
+      "id": "lm_penida",
+      "region": "islands",
+      "flickr": "nusa-penida,cliff",
+      "actId": "penida",
+      "name": {
+        "en": "Nusa Penida",
+        "ar": "نوسا بنيدا",
+        "id": "Nusa Penida"
+      },
+      "type": {
+        "en": "Island & cliffs",
+        "ar": "جزيرة ومنحدرات",
+        "id": "Pulau & tebing"
+      },
+      "blurb": {
+        "en": "Bali's wild sister island — Kelingking cliff, lagoons and empty beaches.",
+        "ar": "الجزيرة الشقيقة البرية لبالي — منحدر كيلينغكينغ والبحيرات وشواطئ خالية.",
+        "id": "Pulau liar tetangga Bali — tebing Kelingking, laguna, pantai sepi."
+      }
+    },
+    {
+      "id": "lm_ubud",
+      "region": "central",
+      "flickr": "ubud,bali",
+      "actId": "locavore",
+      "name": {
+        "en": "Ubud",
+        "ar": "أوبود",
+        "id": "Ubud"
+      },
+      "type": {
+        "en": "Culture & arts",
+        "ar": "ثقافة وفنون",
+        "id": "Budaya & seni"
+      },
+      "blurb": {
+        "en": "The island's cultural heart — galleries, temples, jungle and food.",
+        "ar": "قلب الجزيرة الثقافي — معارض ومعابد وأدغال وطعام.",
+        "id": "Jantung budaya pulau — galeri, pura, hutan, kuliner."
+      }
+    },
+    {
+      "id": "lm_canggu",
+      "region": "south",
+      "flickr": "canggu,beach",
+      "actId": "crate",
+      "name": {
+        "en": "Canggu",
+        "ar": "تشانغو",
+        "id": "Canggu"
+      },
+      "type": {
+        "en": "Beach & cafés",
+        "ar": "شاطئ ومقاهي",
+        "id": "Pantai & kafe"
+      },
+      "blurb": {
+        "en": "Black-sand surf breaks, beach clubs and the island's best coffee.",
+        "ar": "أمواج على رمال سوداء ونوادٍ شاطئية وأفضل قهوة في الجزيرة.",
+        "id": "Ombak pasir hitam, beach club, dan kopi terbaik pulau."
+      }
+    },
+    {
+      "id": "lm_sekumpul",
+      "region": "north",
+      "flickr": "sekumpul,waterfall",
+      "actId": "sekumpul",
+      "name": {
+        "en": "Sekumpul Waterfall",
+        "ar": "شلال سيكومبول",
+        "id": "Air Terjun Sekumpul"
+      },
+      "type": {
+        "en": "Waterfall & jungle",
+        "ar": "شلال وأدغال",
+        "id": "Air terjun & hutan"
+      },
+      "blurb": {
+        "en": "Seven falls in a green amphitheatre — the island's most powerful water.",
+        "ar": "سبعة شلالات في مدرج أخضر — أقوى مياه في الجزيرة.",
+        "id": "Tujuh air terjun di amfiteater hijau — air terkuat di pulau."
+      }
+    }
+  ],
+  "BLOG_CATS": [
+    {
+      "key": "all",
+      "label": {
+        "en": "All",
+        "ar": "الكل",
+        "id": "Semua"
+      }
+    },
+    {
+      "key": "guides",
+      "label": {
+        "en": "Guides",
+        "ar": "أدلّة",
+        "id": "Panduan"
+      }
+    },
+    {
+      "key": "food",
+      "label": {
+        "en": "Food",
+        "ar": "طعام",
+        "id": "Kuliner"
+      }
+    },
+    {
+      "key": "nature",
+      "label": {
+        "en": "Nature",
+        "ar": "طبيعة",
+        "id": "Alam"
+      }
+    },
+    {
+      "key": "culture",
+      "label": {
+        "en": "Culture",
+        "ar": "ثقافة",
+        "id": "Budaya"
+      }
+    }
+  ],
+  "ARTICLES": [
+    {
+      "id": "a1",
+      "cat": "guides",
+      "read": "6 min",
+      "flickr": "canggu,beach",
+      "bridge": "map",
+      "title": {
+        "en": "First time in Bali? Start in these 3 areas.",
+        "ar": "أول مرة في بالي؟ ابدأ من هذه المناطق الثلاث.",
+        "id": "Pertama kali ke Bali? Mulai dari 3 area ini."
+      },
+      "excerpt": {
+        "en": "Where to base yourself for beaches, culture and everything in between.",
+        "ar": "أين تقيم للشواطئ والثقافة وكل ما بينهما.",
+        "id": "Di mana menginap untuk pantai, budaya, dan semuanya."
+      },
+      "related": ["a2", "a4"]
+    },
+    {
+      "id": "a2",
+      "cat": "food",
+      "read": "4 min",
+      "flickr": "ubud,cafe",
+      "bridge": "activities",
+      "title": {
+        "en": "The specialty coffee trail through Canggu & Ubud.",
+        "ar": "مسار القهوة المختصة بين تشانغو وأوبود.",
+        "id": "Jejak kopi spesialti dari Canggu ke Ubud."
+      },
+      "excerpt": {
+        "en": "Ten roasters and cafés worth planning a morning around.",
+        "ar": "عشرة محامص وكافيهات تستحق تخطيط صباحك حولها.",
+        "id": "Sepuluh roaster dan kafe untuk merencanakan pagimu."
+      },
+      "related": ["a1", "a5"]
+    },
+    {
+      "id": "a3",
+      "cat": "nature",
+      "read": "5 min",
+      "flickr": "munduk,waterfall",
+      "bridge": "map",
+      "title": {
+        "en": "Chasing waterfalls in the Munduk highlands.",
+        "ar": "مطاردة الشلالات في مرتفعات موندوك.",
+        "id": "Mengejar air terjun di dataran tinggi Munduk."
+      },
+      "excerpt": {
+        "en": "The cool, green north where the crowds never reach.",
+        "ar": "الشمال البارد الأخضر حيث لا يصل الزحام.",
+        "id": "Utara yang sejuk dan hijau, tanpa keramaian."
+      },
+      "related": ["a6", "a4"]
+    },
+    {
+      "id": "a4",
+      "cat": "culture",
+      "read": "7 min",
+      "flickr": "lempuyang,temple",
+      "bridge": "map",
+      "title": {
+        "en": "A respectful guide to Bali's temples.",
+        "ar": "دليل محترم لمعابد بالي.",
+        "id": "Panduan sopan ke pura-pura Bali."
+      },
+      "excerpt": {
+        "en": "What to wear, when to go and the etiquette that matters.",
+        "ar": "ماذا ترتدي ومتى تذهب وآداب مهمة.",
+        "id": "Pakaian, waktu, dan etika yang penting."
+      },
+      "related": ["a1", "a3"]
+    },
+    {
+      "id": "a5",
+      "cat": "guides",
+      "read": "5 min",
+      "flickr": "bali,road",
+      "bridge": "driver",
+      "title": {
+        "en": "Getting around Bali: driver, scooter or taxi?",
+        "ar": "التنقّل في بالي: سائق أم سكوتر أم تاكسي؟",
+        "id": "Berkeliling Bali: sopir, skuter, atau taksi?"
+      },
+      "excerpt": {
+        "en": "Honest trade-offs so you pick the right way to move.",
+        "ar": "مقارنات صادقة لتختار الطريقة الأنسب للتنقّل.",
+        "id": "Perbandingan jujur untuk memilih cara terbaik."
+      },
+      "related": ["a1", "a6"]
+    },
+    {
+      "id": "a6",
+      "cat": "nature",
+      "read": "6 min",
+      "flickr": "nusa-penida,beach",
+      "bridge": "activities",
+      "title": {
+        "en": "Nusa Penida in a day — is it worth it?",
+        "ar": "نوسا بنيدا في يوم — هل تستحق؟",
+        "id": "Nusa Penida dalam sehari — layakkah?"
+      },
+      "excerpt": {
+        "en": "How to see the big three without the burnout.",
+        "ar": "كيف ترى المعالم الثلاثة الكبرى دون إرهاق.",
+        "id": "Cara melihat tiga tempat utama tanpa kelelahan."
+      },
+      "related": ["a3", "a5"]
+    }
+  ],
+  "MAP_BBOX": {
+    "w": 114.05,
+    "e": 116.1,
+    "n": -7.75,
+    "s": -9.15
+  },
+  "MAP_PLACES": [
+    {
+      "id": "batur",
+      "actId": "batur",
+      "free": true,
+      "tags": ["Hiking", "Popular"],
+      "flickr": "mount-batur,volcano",
+      "name": {
+        "en": "Mount Batur",
+        "ar": "جبل باتور",
+        "id": "Gunung Batur"
+      },
+      "cat": {
+        "en": "Nature & Volcanos",
+        "ar": "طبيعة وبراكين",
+        "id": "Alam & Gunung"
+      },
+      "region": "north",
+      "hours": "04:00 – 12:00",
+      "rating": 4.8,
+      "lat": -8.242,
+      "lon": 115.375,
+      "ax": 75,
+      "ay": 17,
+      "side": "right"
+    },
+    {
+      "id": "tega",
+      "actId": "artmarket",
+      "free": true,
+      "tags": ["Hiking", "Popular"],
+      "flickr": "tegallalang,rice",
+      "name": {
+        "en": "Tegallalang Rice Terraces",
+        "ar": "مدرّجات تيغالالانغ",
+        "id": "Sawah Tegallalang"
+      },
+      "cat": {
+        "en": "Scenic Views",
+        "ar": "إطلالات خلّابة",
+        "id": "Pemandangan"
+      },
+      "region": "central",
+      "hours": "08:00 – 18:00",
+      "rating": 4.9,
+      "lat": -8.431,
+      "lon": 115.279,
+      "ax": 70,
+      "ay": 44,
+      "side": "right"
+    },
+    {
+      "id": "ubud",
+      "actId": "locavore",
+      "free": true,
+      "tags": ["Popular", "Luxury Stays"],
+      "flickr": "ubud,bali",
+      "name": {
+        "en": "Ubud",
+        "ar": "أوبود",
+        "id": "Ubud"
+      },
+      "cat": {
+        "en": "Nature & Arts",
+        "ar": "طبيعة وفنون",
+        "id": "Alam & Seni"
+      },
+      "region": "central",
+      "hours": "09:00 – 22:00",
+      "rating": 4.8,
+      "lat": -8.507,
+      "lon": 115.263,
+      "ax": 58,
+      "ay": 56,
+      "side": "left"
+    },
+    {
+      "id": "canggu",
+      "actId": "crate",
+      "free": true,
+      "tags": ["Beaches", "Luxury Stays", "Popular"],
+      "flickr": "canggu,beach",
+      "name": {
+        "en": "Canggu",
+        "ar": "تشانغو",
+        "id": "Canggu"
+      },
+      "cat": {
+        "en": "Beaches & Surfing",
+        "ar": "شواطئ وأمواج",
+        "id": "Pantai & Selancar"
+      },
+      "region": "south",
+      "hours": "24 hours",
+      "rating": 4.6,
+      "lat": -8.648,
+      "lon": 115.138,
+      "ax": 49,
+      "ay": 69,
+      "side": "left"
+    },
+    {
+      "id": "uluwatu",
+      "actId": "kecak",
+      "free": false,
+      "tags": ["Temples", "Beaches", "Popular"],
+      "flickr": "uluwatu,temple",
+      "name": {
+        "en": "Uluwatu Temple",
+        "ar": "معبد أولواتو",
+        "id": "Pura Uluwatu"
+      },
+      "cat": {
+        "en": "Cliffs & Temples",
+        "ar": "منحدرات ومعابد",
+        "id": "Tebing & Pura"
+      },
+      "region": "south",
+      "hours": "07:00 – 19:00",
+      "rating": 4.9,
+      "lat": -8.829,
+      "lon": 115.085,
+      "ax": 44,
+      "ay": 92,
+      "side": "left"
+    },
+    {
+      "id": "lempuyang",
+      "actId": "lempuyang",
+      "free": false,
+      "tags": ["Temples", "Popular"],
+      "flickr": "lempuyang,temple",
+      "name": {
+        "en": "Lempuyang Temple",
+        "ar": "معبد ليمبويانغ",
+        "id": "Pura Lempuyang"
+      },
+      "cat": {
+        "en": "Culture & History",
+        "ar": "ثقافة وتاريخ",
+        "id": "Budaya & Sejarah"
+      },
+      "region": "east",
+      "hours": "06:00 – 18:00",
+      "rating": 4.7,
+      "lat": -8.392,
+      "lon": 115.631,
+      "ax": 99,
+      "ay": 34,
+      "side": "left"
+    },
+    {
+      "id": "penida",
+      "actId": "penida",
+      "free": false,
+      "tags": ["Beaches", "Popular"],
+      "flickr": "nusa-penida,beach",
+      "name": {
+        "en": "Nusa Penida",
+        "ar": "نوسا بنيدا",
+        "id": "Nusa Penida"
+      },
+      "cat": {
+        "en": "Scenic Views",
+        "ar": "إطلالات خلّابة",
+        "id": "Pemandangan"
+      },
+      "region": "islands",
+      "hours": "07:00 – 17:00",
+      "rating": 4.8,
+      "lat": -8.727,
+      "lon": 115.544,
+      "ax": 86,
+      "ay": 70,
+      "side": "left"
+    },
+    {
+      "id": "diamond",
+      "actId": "diamond",
+      "free": false,
+      "tags": ["Beaches"],
+      "flickr": "nusa-penida,cliff",
+      "name": {
+        "en": "Diamond Beach",
+        "ar": "شاطئ دايموند",
+        "id": "Pantai Diamond"
+      },
+      "cat": {
+        "en": "Scenic Views",
+        "ar": "إطلالات خلّابة",
+        "id": "Pemandangan"
+      },
+      "region": "islands",
+      "hours": "24 hours",
+      "rating": 4.7,
+      "lat": -8.795,
+      "lon": 115.595,
+      "ax": 99,
+      "ay": 90,
+      "side": "left"
+    },
+    {
+      "id": "sekumpul",
+      "actId": "sekumpul",
+      "free": false,
+      "tags": ["Hiking", "Popular"],
+      "flickr": "sekumpul,waterfall",
+      "name": {
+        "en": "Sekumpul Waterfall",
+        "ar": "شلال سيكومبول",
+        "id": "Air Terjun Sekumpul"
+      },
+      "cat": {
+        "en": "Nature & Waterfalls",
+        "ar": "طبيعة وشلالات",
+        "id": "Alam & Air Terjun"
+      },
+      "region": "north",
+      "hours": "07:00 – 17:00",
+      "rating": 4.9,
+      "lat": -8.16,
+      "lon": 115.16,
+      "ax": 40,
+      "ay": 12,
+      "side": "right"
+    }
+  ],
+  "MAP_FILTERS": [
+    {
+      "key": "All",
+      "label": {
+        "en": "All",
+        "ar": "الكل",
+        "id": "Semua"
+      }
+    },
+    {
+      "key": "Beaches",
+      "label": {
+        "en": "Beaches",
+        "ar": "الشواطئ",
+        "id": "Pantai"
+      }
+    },
+    {
+      "key": "Temples",
+      "label": {
+        "en": "Temples",
+        "ar": "المعابد",
+        "id": "Pura"
+      }
+    },
+    {
+      "key": "Hiking",
+      "label": {
+        "en": "Hiking",
+        "ar": "المشي الجبلي",
+        "id": "Pendakian"
+      }
+    },
+    {
+      "key": "Popular",
+      "label": {
+        "en": "Popular",
+        "ar": "الأكثر زيارة",
+        "id": "Populer"
+      }
+    }
+  ],
+  "REVIEW_POOL": [
+    {
+      "name": "Sarah M.",
+      "from": {
+        "en": "Dubai, UAE",
+        "ar": "دبي، الإمارات",
+        "id": "Dubai, UEA"
+      },
+      "stars": 5,
+      "tags": ["batur", "penida", "adv", "nature"],
+      "text": {
+        "en": "Absolutely worth the 3am start — our guide was brilliant and the sunrise was unreal.",
+        "ar": "يستحق الاستيقاظ الساعة 3 فجرًا — كان مرشدنا رائعًا والشروق لا يُصدّق.",
+        "id": "Sepadan bangun jam 3 pagi — pemandu hebat dan matahari terbitnya luar biasa."
+      }
+    },
+    {
+      "name": "Ahmed K.",
+      "from": {
+        "en": "Riyadh, KSA",
+        "ar": "الرياض، السعودية",
+        "id": "Riyadh"
+      },
+      "stars": 5,
+      "tags": ["safari", "waterbom", "family", "kids"],
+      "text": {
+        "en": "Perfect for the kids — easy day, everything organized, no stress at all.",
+        "ar": "مثالي للأطفال — يوم سهل ومنظّم بلا أي توتر.",
+        "id": "Sempurna untuk anak — hari mudah, semua teratur, tanpa stres."
+      }
+    },
+    {
+      "name": "Lena R.",
+      "from": {
+        "en": "Berlin, DE",
+        "ar": "برلين، ألمانيا",
+        "id": "Berlin"
+      },
+      "stars": 5,
+      "tags": ["sekumpul", "penida", "nature", "adv"],
+      "text": {
+        "en": "Remote and green and barely anyone there. Felt like a real adventure.",
+        "ar": "بعيد وأخضر وبالكاد يوجد أحد. شعرت بمغامرة حقيقية.",
+        "id": "Terpencil, hijau, hampir tanpa orang. Terasa petualangan nyata."
+      }
+    },
+    {
+      "name": "Yusuf A.",
+      "from": {
+        "en": "Jeddah, KSA",
+        "ar": "جدة، السعودية",
+        "id": "Jeddah"
+      },
+      "stars": 4,
+      "tags": ["crate", "locavore", "food", "cafe"],
+      "text": {
+        "en": "Great food and finally an easy booking flow in Arabic. Will use again.",
+        "ar": "طعام رائع وأخيرًا حجز سهل بالعربية. سأستخدمه مجددًا.",
+        "id": "Makanan enak dan alur pemesanan mudah. Akan pakai lagi."
+      }
+    },
+    {
+      "name": "Maya P.",
+      "from": {
+        "en": "Singapore",
+        "ar": "سنغافورة",
+        "id": "Singapura"
+      },
+      "stars": 5,
+      "tags": ["kecak", "lempuyang", "culture", "photo"],
+      "text": {
+        "en": "The dance at sunset gave me chills. Get there early for a good seat.",
+        "ar": "الرقصة عند الغروب أصابتني بالقشعريرة. اذهب مبكرًا لمقعد جيد.",
+        "id": "Tarian saat senja bikin merinding. Datang lebih awal untuk tempat bagus."
+      }
+    },
+    {
+      "name": "Tom B.",
+      "from": {
+        "en": "London, UK",
+        "ar": "لندن",
+        "id": "London"
+      },
+      "stars": 5,
+      "tags": ["padang", "diamond", "beach"],
+      "text": {
+        "en": "Water like glass and the drive there was half the fun with our driver.",
+        "ar": "مياه كالزجاج والطريق كان نصف المتعة مع سائقنا.",
+        "id": "Air sebening kaca dan perjalanannya setengah keseruan bersama sopir."
+      }
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+node_modules
+.next
+.git
+.github
+design
+*.md
+!README.md
+.env
+.env*.local
+
+# Every env file the deploy generates beside docker-compose.prod.yml.
+# The builder stage runs `COPY . .` over this directory, so without these
+# patterns POSTGRES_PASSWORD, BETTER_AUTH_SECRET, PAYLOAD_SECRET and the
+# payment webhook secret are baked into an image layer -- readable by anyone
+# who can pull the image, and contradicting the Dockerfile's own promise that
+# "real secrets are injected at runtime, never baked into a layer".
+# .env*.local did not cover .env.production, app.env, caddy.env or
+# postgres.env.
+.env.production
+*.env
+!.env.example
+coverage
+test-results
+playwright-report
+Dockerfile
+docker-compose*.yml
+.vscode
+.idea

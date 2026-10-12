@@ -1,0 +1,367 @@
+# ---------------------------------------------------------------------------
+# Bali Trips — edge configuration.
+#
+# Deployed to /opt/bali/caddy/Caddyfile and bind-mounted read-only into the
+# caddy container. Reload without dropping a connection:
+#
+#   docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+#
+# Validate a change BEFORE it reaches the droplet:
+#   docker run --rm -v "$PWD/deploy:/cfg:ro" -e SITE_DOMAIN=example.com \
+#     -e ACME_EMAIL=ops@example.com -e ADMIN_BASE_PATH=/studio-8f2a \
+#     caddy:2.10-alpine caddy validate --config /cfg/Caddyfile --adapter caddyfile
+#
+# Cloudflare sits in front of this (proxied / orange cloud). That split is
+# deliberate: Cloudflare owns the global cache, and Caddy owns origin TLS,
+# compression, and — the part that matters most here — deciding which
+# container is allowed to receive traffic.
+# ---------------------------------------------------------------------------
+{
+	email {$ACME_EMAIL}
+
+	# Certificates come from Let's Encrypt over HTTP-01 through Cloudflare.
+	# That works even with "Always Use HTTPS" enabled, because Cloudflare
+	# explicitly exempts /.well-known/acme-challenge/ from that redirect. The
+	# issued certificate is what makes Cloudflare's "Full (strict)" SSL mode
+	# possible; "Flexible" would leave Cloudflare -> origin in plaintext.
+
+	servers {
+		# HTTP/3 is on by default in Caddy 2.6+; stating it makes the intent
+		# reviewable, and it pairs with the 443/udp publish in
+		# docker-compose.prod.yml and the `ufw allow 443/udp` in cloud-init.
+		protocols h1 h2 h3
+
+		# NO trusted_proxies, deliberately.
+		#
+		# Caddy terminates TLS directly on the public interface here -- there is
+		# no CDN in front -- so the TCP peer address IS the visitor, and Caddy's
+		# default of trusting nothing is correct.
+		#
+		# This block previously trusted Cloudflare's published ranges and read
+		# Cf-Connecting-Ip / X-Forwarded-For from them, carried over from a design
+		# where Cloudflare proxied the origin. With nothing actually in front,
+		# that was an IP-spoofing hole rather than dead configuration: anyone can
+		# route a request through Cloudflare's network -- a Worker is enough --
+		# and arrive from an address in those ranges. Caddy would then trust the
+		# forwarding headers in that request, which the sender fully controls,
+		# and `{client_ip}` would become whatever they chose. Better Auth's rate
+		# limiter keys on that value (src/lib/auth/server.ts), so brute-force
+		# throttling could be bypassed by rotating a header, and every audit row
+		# would record an attacker-chosen address.
+		#
+		# If a CDN is ever put in front of this origin, restore BOTH lines
+		# together -- trusted_proxies limited to that CDN's ranges, and
+		# client_ip_headers naming the header it sets -- and lock the origin down
+		# so it only accepts connections from the CDN. Adding the headers without
+		# the address restriction recreates exactly this hole.
+	}
+}
+
+# NOTE ON `defer`
+# Caddy applies `header` operations when the directive runs, which is BEFORE
+# reverse_proxy writes the upstream's own headers. Without `defer`, setting a
+# header the app also sets does not replace it -- both go out, and the client
+# combines them. Next emits `Cache-Control: s-maxage=31536000` on prerendered
+# HTML, so /en went out as
+#   public, max-age=0, must-revalidate, s-maxage=31536000
+# which tells any shared cache to hold the page for a YEAR, and /en/activities
+# went out with `public` and `no-store` fighting in the same field. `defer`
+# moves these operations after the response is written, so they replace.
+
+# HTML cache policy, shared by the three HTML handles below. A snippet so the
+# two headers cannot drift apart between them. Snippets must be defined before
+# the block that imports them.
+(html_cache) {
+	header {
+		defer
+		Cache-Control "public, max-age=0, must-revalidate"
+		Cloudflare-CDN-Cache-Control "public, max-age=300, stale-while-revalidate=604800, stale-if-error=604800"
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Apex
+# ---------------------------------------------------------------------------
+{$SITE_DOMAIN} {
+	# zstd first: modern browsers advertise it, and it beats gzip on HTML at
+	# a lower CPU cost. Brotli is absent on purpose — it needs a plugin in
+	# the Caddy build, and Cloudflare already brotli-encodes to the visitor.
+	encode zstd gzip
+
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+
+	# --- Security headers, every response ---------------------------------
+	# next.config.ts sets four of these too. Setting them here as well is not
+	# redundant: Caddy's own responses (a 502 during a failed swap, an ACME
+	# challenge, a request that never reaches Next) would otherwise carry
+	# none of them. `header` replaces rather than appends, so there is
+	# exactly one of each on the wire.
+	header {
+		defer
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+
+		# PRE-LAUNCH ONLY -- remove when bookings open.
+		#
+		# A new certificate is published to public Certificate Transparency logs,
+		# which crawlers scrape, so this domain becomes discoverable within hours
+		# of issuance whether or not anyone is told the URL. Until checkout works,
+		# indexing would put "bookings open soon" pages into search results, and
+		# removing them afterwards takes far longer than keeping them out.
+		#
+		# A header, not robots.txt: robots.txt asks a crawler not to FETCH, which
+		# does not stop a URL discovered elsewhere from being listed. X-Robots-Tag
+		# refuses INDEXING of a page that was fetched, which is the guarantee
+		# wanted here.
+		X-Robots-Tag "noindex, nofollow"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Resource-Policy same-origin
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=(), xr-spatial-tracking=(), geolocation=(self), browsing-topics=()"
+
+		# No default-src / script-src here, on purpose. Next.js emits inline
+		# bootstrap scripts, so a script-src without per-request nonces would
+		# need 'unsafe-inline' — and a CSP that permits inline script is
+		# theatre. Everything below is strictly enforceable today; tightening
+		# script-src needs nonce wiring in the app (next.config.ts plus the
+		# root layout), which this file cannot do on its own. See
+		# docs/deployment.md.
+		Content-Security-Policy "base-uri 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
+
+		-Server
+		-X-Powered-By
+	}
+
+	# --- Matchers ---------------------------------------------------------
+
+	# Content-hashed build output. Safe to cache forever, by definition: the
+	# URL cannot outlive its bytes.
+	@buildAsset path /_next/static/*
+
+	# Files served straight out of /public. Not content-hashed.
+	@publicAsset path_regexp pubasset \.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf|webmanifest|map)$
+
+	# The 3D island's data files.
+	#
+	# Matched by PATH, not extension: the matcher above is a list of image and
+	# font suffixes, so island-height.gz and island-meta.json fell through it
+	# to the HTML rule and were served `max-age=0, must-revalidate`. A 402 kB
+	# heightmap was therefore revalidated on every single visit to the map --
+	# a round trip before a byte of terrain could be decoded, which on a slow
+	# connection is exactly where the wait came from.
+	#
+	# Cached hard because the URLs carry an explicit ?v= set in
+	# island-scene.ts. Replacing a model means bumping that version; without
+	# it, `immutable` would strand every returning visitor on the old island.
+	@islandAsset path_regexp island ^/map/island-[a-z]+\.(?:gz|json|webp)$
+
+	# API routes, auth callbacks, payment webhooks — and the admin, whose
+	# path is configuration (ADMIN_BASE_PATH) and must match what the app and
+	# src/proxy.ts were given. If it is rotated, rotate it here too.
+	@neverCache path /api/* {$ADMIN_BASE_PATH:/studio-8f2a} {$ADMIN_BASE_PATH:/studio-8f2a}/*
+
+	# Pages whose HTML differs per visitor. /map is on this list because the
+	# paywall renders gated places' names and coordinates only for entitled
+	# users: edge-caching one visitor's copy would either leak paid content
+	# to anonymous visitors or serve the blurred version to paying ones.
+	@privatePage path_regexp priv ^/(?:en|ar|id)/(?:cart|checkout|map|reset-password)(?:/|$)
+
+	# Localised HTML. Split in two so the locale home page is not tagged with
+	# an empty section.
+	@htmlSection path_regexp htmlsec ^/(en|ar|id)/([^/]+)
+	@htmlHome path_regexp htmlhome ^/(en|ar|id)/?$
+
+	# --- Cache policy -----------------------------------------------------
+	#
+	# These `handle` blocks set headers and deliberately do NOT respond; the
+	# request falls through to the single `reverse_proxy` below. One upstream
+	# pool means one active health checker rather than one per route class.
+	#
+	# `route` forces written order. Left at the top level of the site block,
+	# Caddy would sort the handles by path specificity and the private-page
+	# rule could end up behind the generic HTML rule — which is the
+	# difference between a paywall and a leak.
+	#
+	# Cache-Tag is always set with `?` (set-if-absent), so an app-emitted
+	# entity-level tag always wins over the coarse one inferred from the URL.
+	route {
+		# 1. Never cached, anywhere, by anyone. `-Cache-Tag` removes any tag
+		#    the app set, so these can never be reached by a tag purge —
+		#    they were never in a shared cache to begin with.
+		handle @neverCache {
+			header {
+				defer
+				Cache-Control "no-store, no-cache, must-revalidate, private"
+				Cloudflare-CDN-Cache-Control "no-store"
+				Pragma no-cache
+				-Cache-Tag
+			}
+		}
+
+		# 2. Per-visitor pages.
+		handle @privatePage {
+			header {
+				defer
+				Cache-Control "no-store, must-revalidate, private"
+				Cloudflare-CDN-Cache-Control "no-store"
+				-Cache-Tag
+			}
+		}
+
+		# 3. Immutable build output.
+		handle @buildAsset {
+			header {
+				defer
+				Cache-Control "public, max-age=31536000, immutable"
+				Cloudflare-CDN-Cache-Control "public, max-age=31536000, immutable"
+			}
+			header ?Cache-Tag "static"
+		}
+
+		# 3b. The island's data. Versioned in the URL, so it can be held for
+		#     a year and never revalidated.
+		handle @islandAsset {
+			header {
+				defer
+				Cache-Control "public, max-age=31536000, immutable"
+				Cloudflare-CDN-Cache-Control "public, max-age=31536000, immutable"
+			}
+			header ?Cache-Tag "island"
+		}
+
+		# 4. /public assets: a day in the browser, a month at the edge,
+		#    purgeable by tag when one is replaced under the same name.
+		handle @publicAsset {
+			header {
+				defer
+				Cache-Control "public, max-age=86400"
+				Cloudflare-CDN-Cache-Control "public, max-age=2592000, stale-while-revalidate=86400"
+			}
+			header ?Cache-Tag "asset"
+		}
+
+		# 5-7. HTML.
+		#
+		# Browsers revalidate on every navigation; the edge is what actually
+		# absorbs the traffic. Keeping max-age at 0 for the browser means a
+		# purge is visible immediately rather than after some private cache
+		# happens to expire.
+		#
+		# Cloudflare-CDN-Cache-Control, NOT s-maxage. Cloudflare documents
+		# that the presence of `s-maxage` disables stale-while-revalidate, so
+		# the obvious-looking `public, s-maxage=300, stale-while-revalidate=
+		# 86400` quietly buys the opposite of what it promises: every request
+		# after 300s becomes a blocking origin fetch instead of a background
+		# refresh. This header is Cloudflare-specific, takes precedence at
+		# their edge over both CDN-Cache-Control and Cache-Control, and is
+		# ignored by browsers — so the two lines cannot fight.
+		#
+		# NOTE on RSC: App Router soft navigations request the same paths with
+		# a `?_rsc=<hash>` query and get a flight payload rather than HTML.
+		# Next appends that parameter precisely so a CDN keyed on the URL
+		# does not confuse the two — which matters here because Cloudflare
+		# honours `Vary` only for Accept-Encoding. Do not strip `_rsc` in a
+		# cache rule.
+		handle @htmlSection {
+			import html_cache
+			header ?Cache-Tag "html,locale:{re.htmlsec.1},section:{re.htmlsec.2}"
+		}
+
+		handle @htmlHome {
+			import html_cache
+			header ?Cache-Tag "html,locale:{re.htmlhome.1},section:home"
+		}
+
+		# Everything else that reaches the app: `/` before the locale
+		# redirect, sitemap, robots, 404s.
+		handle {
+			import html_cache
+			header ?Cache-Tag "html"
+		}
+	}
+
+	# --- Upstream: blue/green with active health checks -------------------
+	#
+	# This is what makes a container swap zero-downtime. Both colours are
+	# always listed; `lb_policy first` means Caddy uses the first upstream
+	# that is currently healthy, so at any instant either all traffic is on
+	# blue or all of it is on green — never a mix. That matters more than it
+	# sounds: a mixed window serves HTML from one build referencing
+	# /_next/static hashes that only the other build has, and the browser
+	# 404s on its own JavaScript.
+	#
+	# The deploy workflow starts the idle colour and waits for it to report
+	# healthy — at which point Caddy has either already moved traffic to it,
+	# or will the moment the old container stops. If the new colour never
+	# goes healthy, Caddy never routes to it, and the rollback is invisible
+	# to visitors.
+	#
+	# A colour that is not running does not resolve in Docker's DNS; the
+	# health checker marks it down and logs, which is the expected steady
+	# state between deploys.
+	reverse_proxy app-blue:3000 app-green:3000 {
+		lb_policy first
+
+		# If the only healthy upstream blips mid-swap, hold the request and
+		# retry rather than handing the visitor a 502.
+		lb_try_duration 10s
+		lb_try_interval 250ms
+
+		# Active checks. /api/health deliberately does not touch Postgres
+		# (src/app/api/health/route.ts) — a slow database must not pull
+		# healthy web containers out of rotation.
+		health_uri /api/health
+		health_interval 5s
+		health_timeout 2s
+		health_status 200
+
+		# Passive checks, for failures the active probe cannot see.
+		fail_duration 15s
+		max_fails 3
+		unhealthy_status 5xx
+		unhealthy_latency 10s
+
+		# Collapse the forwarding chain to the one address we actually trust.
+		# Cloudflare *appends* to any X-Forwarded-For the client sent, so a
+		# visitor can prepend a fake hop; `{client_ip}` resolves it correctly
+		# against trusted_proxies, and writing a single value means it no
+		# longer matters whether a consumer reads the first element or the
+		# last. (X-Forwarded-Proto and -Host are already set by Caddy.)
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Real-IP {client_ip}
+
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 30s
+			# Long enough for a slow report, short enough that a hung
+			# upstream cannot pin a connection forever.
+			read_timeout 120s
+			keepalive 90s
+			keepalive_idle_conns 32
+		}
+	}
+
+	# A bare 502 is indistinguishable from DNS pointing at the wrong place.
+	# Say which it is, and make sure no cache keeps the answer.
+	handle_errors {
+		header Cache-Control "no-store"
+		header Cloudflare-CDN-Cache-Control "no-store"
+		@gateway expression {err.status_code} >= 500
+		header @gateway Retry-After 15
+		respond "{err.status_code} {err.status_text}" {err.status_code}
+	}
+}
+
+# ---------------------------------------------------------------------------
+# www -> apex. One canonical origin; 308 preserves the method, and search
+# engines treat it as permanent.
+# ---------------------------------------------------------------------------
+www.{$SITE_DOMAIN} {
+	header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+	redir https://{$SITE_DOMAIN}{uri} 308
+}

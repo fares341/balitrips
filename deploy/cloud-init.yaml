@@ -1,0 +1,415 @@
+#cloud-config
+# ---------------------------------------------------------------------------
+# Bali Trips — first-boot provisioning for the DigitalOcean droplet.
+#
+# Target: Ubuntu 24.04 LTS, 2 vCPU / 4 GiB (s-2vcpu-4gb), region sgp1.
+#
+# Paste this into the droplet's "User data" field at creation time. It runs
+# ONCE, on first boot, before anything is deployed. It does not deploy the
+# application — see .github/workflows/deploy.yml for that and
+# docs/deployment.md for the surrounding manual steps (reserved IP, cloud
+# firewall, DNS, Cloudflare).
+#
+# WARNING — lockout risk. This creates exactly one login (`deploy`), disables
+# the root account, disables password authentication, and restricts sshd to
+# that single user. If the public key below is wrong you cannot SSH in at all.
+# The break-glass is the DigitalOcean *Recovery Console*, which attaches to the
+# virtual serial port and does not go through sshd. Verify SSH works from a
+# second terminal BEFORE closing the one you provisioned from.
+# ---------------------------------------------------------------------------
+
+hostname: bali-web-01
+# Times below (backup window, unattended-upgrades reboot) are LOCAL, so the
+# machine has to agree with the business about what "night" means.
+timezone: Asia/Makassar
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - gnupg
+  - jq
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - logrotate
+  # Spaces is S3-compatible; backup.sh and restore.sh drive it through the
+  # AWS CLI with --endpoint-url. Works with both the v1 and v2 CLI.
+  - awscli
+  # Optional client-side encryption of database dumps before they leave the
+  # box (see BACKUP_PASSPHRASE_FILE in scripts/backup.sh).
+  - gpg
+  - htop
+  - ncdu
+
+# --- Accounts --------------------------------------------------------------
+# No `- default` entry: the distro's `ubuntu` user is deliberately not created.
+# One account, one key, one purpose.
+users:
+  - name: deploy
+    gecos: Bali Trips deploy
+    shell: /bin/bash
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    # No password at all, rather than a locked hash: there is nothing to
+    # brute-force and nothing to leak.
+    lock_passwd: true
+    ssh_authorized_keys:
+      # REPLACE. This must be the PUBLIC half of the key GitHub Actions holds
+      # in the DEPLOY_SSH_KEY secret. Generate with:
+      #   ssh-keygen -t ed25519 -C 'github-actions@bali' -f ./bali_deploy
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIREPLACE_THIS_WITH_YOUR_PUBLIC_KEY deploy@bali
+
+disable_root: true
+ssh_pwauth: false
+
+# --- Swap ------------------------------------------------------------------
+# DigitalOcean droplets ship with none. 4 GiB is not a lot of headroom for
+# Postgres + a Chromium render + two app containers during a blue/green swap,
+# and the failure mode without swap is the OOM killer choosing Postgres.
+# Swap is a shock absorber here, not extra memory: vm.swappiness is turned
+# down to 10 so it is only touched under real pressure.
+swap:
+  filename: /swapfile
+  size: 2147483648
+  maxsize: 2147483648
+
+write_files:
+  # --- sshd hardening ------------------------------------------------------
+  # Filename starts with 00- on purpose. sshd_config uses the FIRST obtained
+  # value for each keyword, and the Include glob is read in sorted order, so
+  # a file named 99-hardening.conf would silently lose every conflict with
+  # cloud-init's own 50-cloud-init.conf. 00- wins.
+  - path: /etc/ssh/sshd_config.d/00-bali-hardening.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      PermitEmptyPasswords no
+      AuthenticationMethods publickey
+      AllowUsers deploy
+      MaxAuthTries 3
+      MaxSessions 4
+      LoginGraceTime 20
+      X11Forwarding no
+      AllowAgentForwarding no
+      AllowTcpForwarding no
+      PermitUserEnvironment no
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+
+  # --- Kernel tuning -------------------------------------------------------
+  - path: /etc/sysctl.d/60-bali.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      # Swap is an emergency buffer, not a tier of memory. A swapping
+      # Postgres is worse than a restarting one.
+      vm.swappiness = 10
+      vm.vfs_cache_pressure = 50
+
+      # HTTP/3. quic-go (which Caddy uses) warns and degrades when the UDP
+      # socket buffers are at the 208 KiB default; it asks for 7.5 MB.
+      net.core.rmem_max = 7500000
+      net.core.wmem_max = 7500000
+
+      # Modest accept-queue headroom for the reverse proxy.
+      net.core.somaxconn = 1024
+      net.ipv4.tcp_max_syn_backlog = 2048
+
+      # Basic anti-spoofing / ICMP hygiene.
+      net.ipv4.conf.all.rp_filter = 1
+      net.ipv4.conf.default.rp_filter = 1
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.icmp_echo_ignore_broadcasts = 1
+      net.ipv4.tcp_syncookies = 1
+
+  # --- Docker daemon -------------------------------------------------------
+  # Written before Docker is installed; the package picks it up on first
+  # start. Log rotation lives here rather than in logrotate because the
+  # json-file driver writes through dockerd, not through syslog, and an
+  # unrotated container log is the classic way to fill a 80 GiB disk.
+  - path: /etc/docker/daemon.json
+    owner: root:root
+    permissions: '0644'
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        },
+        "live-restore": true,
+        "userland-proxy": false,
+        "default-address-pools": [
+          { "base": "172.20.0.0/16", "size": 24 }
+        ]
+      }
+
+  # --- fail2ban ------------------------------------------------------------
+  # backend = systemd is not optional on Ubuntu 24.04: there is no
+  # /var/log/auth.log any more, so the stock sshd jail watches a file that
+  # never appears and bans nobody while looking perfectly healthy.
+  - path: /etc/fail2ban/jail.local
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [DEFAULT]
+      backend = systemd
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+      # Never lock the deploy pipeline out of its own box.
+      ignoreip = 127.0.0.1/8 ::1
+
+      [sshd]
+      enabled = true
+      mode = aggressive
+      maxretry = 4
+      bantime = 4h
+
+  # --- Unattended upgrades -------------------------------------------------
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root:root
+    permissions: '0644'
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::Download-Upgradeable-Packages "1";
+      APT::Periodic::AutocleanInterval "7";
+
+  - path: /etc/apt/apt.conf.d/52unattended-upgrades-bali
+    owner: root:root
+    permissions: '0644'
+    content: |
+      // Security updates only. Feature updates on a single-box production
+      // host are a self-inflicted outage waiting for a quiet night.
+      Unattended-Upgrade::Allowed-Origins {
+              "${distro_id}:${distro_codename}-security";
+              "${distro_id}ESMApps:${distro_codename}-apps-security";
+              "${distro_id}ESM:${distro_codename}-infra-security";
+      };
+
+      // Docker's repo is excluded on purpose: an unattended dockerd upgrade
+      // restarts the daemon. live-restore keeps containers alive across that,
+      // but the upgrade should still be a decision, not a surprise.
+      Unattended-Upgrade::Package-Blacklist {
+              "docker-ce";
+              "docker-ce-cli";
+              "containerd.io";
+      };
+
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+      // Kernel/libc updates only take effect after a reboot, and a box that
+      // never reboots is running patched packages on an unpatched kernel.
+      // 03:30 local (Asia/Makassar) is the quiet hour; the nightly backup at
+      // 02:30 has finished by then.
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
+      Unattended-Upgrade::Automatic-Reboot-Time "03:30";
+
+      Unattended-Upgrade::SyslogEnable "true";
+
+  # --- Log rotation for our own logs ---------------------------------------
+  # Container logs are rotated by dockerd (daemon.json above). This covers the
+  # backup/restore logs, which are written by cron to the host filesystem.
+  - path: /etc/logrotate.d/bali
+    owner: root:root
+    permissions: '0644'
+    content: |
+      /var/log/bali/*.log {
+          daily
+          rotate 30
+          missingok
+          notifempty
+          compress
+          delaycompress
+          copytruncate
+          su root adm
+          create 0640 root adm
+      }
+
+  # --- journald ------------------------------------------------------------
+  - path: /etc/systemd/journald.conf.d/60-bali.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Journal]
+      SystemMaxUse=300M
+      SystemMaxFileSize=50M
+      MaxRetentionSec=1month
+
+  # --- Nightly backup schedule ---------------------------------------------
+  # Deliberately cron, NOT a pg-boss job. pg-boss stores its queue in the very
+  # Postgres instance being backed up, so the one situation where the backup
+  # matters most — Postgres unhealthy, corrupt, or full — is exactly the
+  # situation in which a pg-boss-scheduled backup cannot be dequeued. The
+  # backup scheduler must live outside the thing it protects.
+  #
+  # No dot in the filename: cron ignores files in /etc/cron.d whose names
+  # contain one.
+  - path: /etc/cron.d/bali-backup
+    owner: root:root
+    permissions: '0644'
+    content: |
+      SHELL=/bin/bash
+      PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      MAILTO=""
+
+      # 02:30 local, nightly.
+      30 2 * * * root /opt/bali/scripts/backup.sh >>/var/log/bali/backup.log 2>&1
+
+      # 03:10 on the 1st of each month: restore the newest backup into a
+      # throwaway database and diff the row counts. A backup that has never
+      # been restored is not a backup. See docs/runbook.md.
+      10 3 1 * * root /opt/bali/scripts/restore.sh --latest --target verify >>/var/log/bali/restore-drill.log 2>&1
+
+  # --- Placeholder secret files -------------------------------------------
+  # Real values are filled in by hand, once, after provisioning. They are
+  # root-owned and group-readable by `deploy` so `docker compose` can read
+  # them without sudo, and are never in the image, the repo, or a build arg.
+  - path: /opt/bali/app.env
+    owner: root:deploy
+    permissions: '0640'
+    defer: true
+    content: |
+      # Runtime environment for the app and worker containers.
+      # Fill from .env.example. See docs/deployment.md.
+      NODE_ENV=production
+
+  - path: /opt/bali/postgres.env
+    owner: root:deploy
+    permissions: '0640'
+    defer: true
+    content: |
+      POSTGRES_USER=bali
+      POSTGRES_DB=bali
+      # openssl rand -base64 36 | tr -d '/+=' | cut -c1-40
+      POSTGRES_PASSWORD=CHANGE_ME
+
+  - path: /opt/bali/caddy.env
+    owner: root:deploy
+    permissions: '0640'
+    defer: true
+    content: |
+      SITE_DOMAIN=example.com
+      ACME_EMAIL=ops@example.com
+
+  - path: /opt/bali/backup.env
+    owner: root:root
+    permissions: '0600'
+    defer: true
+    content: |
+      # Read by scripts/backup.sh and scripts/restore.sh (root only).
+      SPACES_ENDPOINT=https://sgp1.digitaloceanspaces.com
+      SPACES_REGION=sgp1
+      SPACES_PRIVATE_BUCKET=bali-private
+      SPACES_KEY=CHANGE_ME
+      SPACES_SECRET=CHANGE_ME
+      BACKUP_PREFIX=db-backups
+      BACKUP_RETENTION_DAYS=30
+      # Optional: a dead-man's-switch URL pinged on success (healthchecks.io,
+      # Better Stack, ...). A backup that fails silently is worse than none,
+      # because it buys false confidence.
+      BACKUP_HEARTBEAT_URL=
+      # Optional: path to a file holding a passphrase. When set, dumps are
+      # symmetrically encrypted with GnuPG before they leave the box.
+      BACKUP_PASSPHRASE_FILE=
+
+  # --- Compose interpolation variables ------------------------------------
+  # Not secrets — image references only. Rewritten by the deploy workflow.
+  - path: /opt/bali/.env
+    owner: root:deploy
+    permissions: '0664'
+    defer: true
+    content: |
+      # Which image each colour runs. The deploy workflow rewrites exactly
+      # one of these lines per release; keeping the other pinned to the
+      # previous tag is what makes an instant rollback possible.
+      APP_IMAGE_BLUE=ghcr.io/OWNER/bali-app:bootstrap
+      APP_IMAGE_GREEN=ghcr.io/OWNER/bali-app:bootstrap
+      WORKER_IMAGE=ghcr.io/OWNER/bali-worker:bootstrap
+
+runcmd:
+  # --- Docker, from the official repository --------------------------------
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - >-
+    printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.asc]
+    https://download.docker.com/linux/ubuntu %s stable\n'
+    "$(dpkg --print-architecture)"
+    "$(. /etc/os-release && echo "$VERSION_CODENAME")"
+    > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - >-
+    DEBIAN_FRONTEND=noninteractive apt-get install -y
+    docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  # Membership of `docker` is root-equivalent — the socket can bind-mount / into
+  # a privileged container. It is granted here only because `deploy` already has
+  # passwordless sudo; it is not a privilege reduction, it is a convenience.
+  - usermod -aG docker deploy
+  - systemctl enable --now docker
+
+  # --- Firewall ------------------------------------------------------------
+  # NOTE: this is the second of two firewalls. The DigitalOcean cloud firewall
+  # (docs/deployment.md) filters before packets reach the box and is the one
+  # that matters, because Docker's own iptables rules for published ports are
+  # inserted ahead of UFW's chain — UFW cannot block a published container
+  # port. Nothing in docker-compose.prod.yml publishes a port except Caddy on
+  # 80/443, which is exactly what we want open, so the two agree.
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  # `limit` rate-limits repeated connections from one source (6 in 30s).
+  - ufw limit 22/tcp comment 'ssh'
+  - ufw allow 80/tcp comment 'http + acme http-01'
+  - ufw allow 443/tcp comment 'https'
+  # HTTP/3 is QUIC over UDP. Omitting this does not break the site; it
+  # silently disables h3 and is very hard to notice.
+  - ufw allow 443/udp comment 'https h3 / quic'
+  - ufw --force enable
+
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+
+  # --- Directories ---------------------------------------------------------
+  - install -d -o deploy -g deploy -m 0755 /opt/bali
+  - install -d -o deploy -g deploy -m 0755 /opt/bali/scripts
+  - install -d -o deploy -g deploy -m 0755 /opt/bali/caddy
+  - install -d -o root -g adm -m 0750 /var/log/bali
+  - install -d -o root -g root -m 0700 /var/backups/bali
+
+  # --- Swap fallback -------------------------------------------------------
+  # The cloud-init swap module has historically been a no-op on some images.
+  # Verify rather than assume; this block is a no-op when it already worked.
+  - >-
+    if [ -z "$(swapon --show --noheadings)" ]; then
+    fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048;
+    chmod 600 /swapfile;
+    mkswap /swapfile;
+    swapon /swapfile;
+    grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab;
+    fi
+
+  - sysctl --system
+  - systemctl restart systemd-journald
+  - systemctl restart ssh
+
+  # A visible, greppable marker that first boot completed all of the above.
+  - touch /var/log/bali/cloud-init-complete
+
+final_message: |
+  Bali Trips droplet provisioned in $UPTIME seconds.
+
+  Verify BEFORE closing your current session:
+    ssh deploy@<reserved-ip> 'docker --version && docker compose version && sudo ufw status verbose && swapon --show'
+
+  Then follow docs/deployment.md: reserved IP, cloud firewall on the role:web
+  tag, DNS, Cloudflare, fill /opt/bali/*.env, first deploy, first admin.

@@ -1,0 +1,96 @@
+/* ===========================================================================
+   Base / reset. Ported from design/handoff/bt-styles.css.
+
+   RTL note: the handoff drives direction from `document.documentElement.dir`
+   and uses CSS logical properties throughout. Keep it that way — every new
+   rule must use padding-inline / margin-inline / inset-inline-* rather than
+   left/right, or Arabic layouts rot silently.
+   =========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--scroll-pad);
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  background: var(--ivory);
+  color: var(--forest);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+[dir='rtl'] body,
+[dir='rtl'] {
+  font-family: var(--arabic);
+}
+
+/* Directional icons (chevrons, arrows) carry .flip and mirror in RTL. */
+[dir='rtl'] .flip {
+  transform: scaleX(-1);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+/* Page container. */
+.wrap {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Visible focus for keyboard users — the handoff had none. */
+:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced-motion. The map pin pulse and card hovers are decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

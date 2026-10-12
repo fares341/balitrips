@@ -1,0 +1,98 @@
+/* ===========================================================================
+   Bali Trips — design tokens.
+
+   Ported verbatim from design/handoff/bt-styles.css :root, which is the
+   source of truth. The handoff README's token table is STALE and disagrees
+   with the CSS on fonts (it says Poppins; the CSS uses Outfit), on several
+   hex values, and on the wrap width. Trust this file, not the README.
+
+   Additions beyond the handoff, flagged inline: z-index and spacing scales,
+   and sticky offsets derived from --nav-h. The original hard-coded five
+   different sticky offsets that drifted out of sync with the header height.
+   =========================================================================== */
+
+:root {
+  /* --- Brand ------------------------------------------------------------ */
+  --forest: #26552e;
+  --forest-deep: #1b3f22;
+  --forest-soft: #3c6e45;
+  --palm: #71ff85;
+  --palm-soft: #c9f7cf;
+  --orange: #ff9000;
+  --orange-deep: #e07e00;
+  --ivory: #fffbf8;
+  --ivory-2: #f4efe9;
+
+  /* --- Neutrals --------------------------------------------------------- */
+  --ink: #1c2a1f;
+  --muted: #6e7b6f;
+  --line: rgba(38, 85, 46, 0.14);
+  --line-soft: rgba(38, 85, 46, 0.08);
+  --white: #ffffff;
+
+  /* --- Type ------------------------------------------------------------- */
+  /* Font families are injected by next/font in the root layout, which
+     supplies the hashed --font-outfit / --font-noor variables. */
+  --sans: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --arabic: var(--font-noor), var(--font-tajawal), var(--font-outfit), sans-serif;
+
+  /* --- Radii ------------------------------------------------------------ */
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+
+  /* --- Shadows ---------------------------------------------------------- */
+  --shadow-sm: 0 2px 8px rgba(38, 85, 46, 0.08);
+  --shadow-md: 0 12px 32px -12px rgba(38, 85, 46, 0.22);
+  --shadow-lg: 0 28px 60px -24px rgba(27, 63, 34, 0.4);
+  --shadow-orange: 0 12px 28px -10px rgba(255, 144, 0, 0.5);
+
+  /* --- Layout ----------------------------------------------------------- */
+  --maxw: 1240px;
+  --gutter: 20px;
+  --nav-h: 64px;
+
+  /* --- ADDED: sticky offsets, derived rather than hard-coded ------------ */
+  --sticky-gap: 12px;
+  --sticky-top: calc(var(--nav-h) + var(--sticky-gap));
+  --scroll-pad: calc(var(--nav-h) + 16px);
+
+  /* --- ADDED: z-index scale --------------------------------------------- */
+  /* The handoff scattered 20 raw z-index values from 5 to 300 with no
+     system. Named layers so new components have somewhere to belong. */
+  --z-base: 1;
+  --z-raised: 10;
+  --z-sticky: 50;
+  --z-header: 60;
+  --z-dropdown: 70;
+  --z-scrim: 200;
+  --z-modal: 210;
+  --z-toast: 300;
+
+  /* --- ADDED: spacing scale --------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* --- ADDED: motion ---------------------------------------------------- */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --dur-fast: 180ms;
+  --dur-base: 220ms;
+  --dur-slow: 400ms;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 40px;
+    --nav-h: 76px;
+  }
+}

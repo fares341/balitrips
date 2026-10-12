@@ -1,0 +1,284 @@
+/* ===========================================================================
+   Account area.
+
+   components.css already carries the whole account skin — .bt-acct-grid,
+   .bt-acct-side, .bt-acct-user, .bt-acct-nav, .bt-acct-main, .bt-acctmenu —
+   and it is not this slice's file to edit. Two things are needed on top of it,
+   and only two:
+
+   1. The handoff's tabs were <button onClick={setTab}>, so every rule in
+      .bt-acct-nav is written against `button`. Here each tab is a real <Link>
+      to a real URL, which no `button` selector can reach. .bt-acct-navlink
+      restates those rules for an <a> — same metrics, same breakpoint, same
+      RTL box-shadow mirror — rather than editing a file another agent owns.
+
+   2. Page chrome the overlay never needed. .bt-acct-scrim is `position:
+      fixed` and would cover the site header if this were reused as a page, so
+      the account area is a normal document with its own heading bar instead.
+
+   Loaded by ./layout.tsx, so it only ships on /account routes.
+   =========================================================================== */
+
+.bt-acct-page {
+  padding-block: 24px 56px;
+}
+
+/* Heading bar. The overlay's .bt-acct-top is sticky and carries a close
+   button for a dialog that no longer exists. */
+.bt-acct-pagehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: var(--maxw);
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+@media (min-width: 880px) {
+  .bt-acct-pagehead {
+    padding-inline: 28px;
+  }
+}
+
+/* --- Tabs, as links ------------------------------------------------------ */
+
+.bt-acct-navlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 11px 16px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--forest);
+  text-decoration: none;
+  min-height: 44px;
+  font-family: inherit;
+}
+
+.bt-acct-navlink.on {
+  background: var(--forest);
+  color: var(--ivory);
+  border-color: var(--forest);
+}
+
+.bt-acct-navlink.on svg {
+  stroke: var(--ivory);
+}
+
+@media (min-width: 880px) {
+  .bt-acct-navlink {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 12px;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .bt-acct-navlink:hover {
+    background: var(--ivory-2);
+  }
+
+  .bt-acct-navlink.on {
+    background: var(--ivory-2);
+    color: var(--forest);
+    border-color: transparent;
+    box-shadow: inset 3px 0 0 var(--orange);
+  }
+
+  /* box-shadow has no logical form; mirror the active bar for Arabic. */
+  [dir='rtl'] .bt-acct-navlink.on {
+    box-shadow: inset -3px 0 0 var(--orange);
+  }
+
+  .bt-acct-navlink.on svg {
+    stroke: var(--orange-deep);
+  }
+}
+
+/* --- Section heading ----------------------------------------------------- */
+
+.bt-acct-sechead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.bt-acct-sechead h1 {
+  font-size: 24px;
+}
+
+/* --- Grids --------------------------------------------------------------- */
+
+.bt-acct-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.bt-acct-cards-wide {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.bt-acct-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  max-width: 640px;
+}
+
+.bt-acct-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
+}
+
+.bt-acct-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+
+.bt-acct-rowicon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+/* --- Day cards ----------------------------------------------------------- */
+
+.bt-acct-daynum {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.bt-acct-dayline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--ivory-2);
+  border-radius: 10px;
+  font-size: 14.5px;
+}
+
+.bt-acct-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--forest-soft);
+  flex-shrink: 0;
+}
+
+/* --- Invoice table ------------------------------------------------------- */
+
+.bt-acct-tablewrap {
+  overflow-x: auto;
+}
+
+.bt-acct-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.bt-acct-table th {
+  text-align: start;
+  padding: 14px 16px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.bt-acct-table td {
+  padding: 14px 16px;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+
+.bt-acct-table .num {
+  text-align: end;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* Off-screen but readable by assistive tech. src/styles carries no `.sr-only`
+   utility and is owned elsewhere; `inset-inline-start` hides it off the
+   correct edge under both directions. */
+.bt-acct-sr {
+  position: absolute;
+  inset-inline-start: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* --- Empty state --------------------------------------------------------- */
+
+.bt-acct-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted);
+}
+
+/* --- Header dropdown ----------------------------------------------------- */
+
+/* .bt-acctmenu is `position: absolute`; it needs a positioned ancestor, and
+   the overlay it was written for supplied one implicitly. */
+.bt-acctmenu-anchor {
+  position: relative;
+}
+
+/* The dropdown's rows are `button` in components.css; the items here are
+   links to real URLs. */
+.bt-acctmenu-list a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--forest);
+  text-align: start;
+  text-decoration: none;
+}
+
+.bt-acctmenu-list a:hover {
+  background: var(--ivory-2);
+}

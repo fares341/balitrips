@@ -1,0 +1,107 @@
+# ---------------------------------------------------------------------------
+# Local development stack.
+#
+# The app itself runs on the host (`pnpm dev`) for fast HMR; this file
+# provides the backing services. See docker-compose.prod.yml for the droplet.
+# ---------------------------------------------------------------------------
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bali-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bali
+      POSTGRES_PASSWORD: bali
+      POSTGRES_DB: bali
+      # C collation keeps index behaviour predictable across machines.
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+    ports:
+      # 5433 on the host, not 5432: developers commonly already have a
+      # native Postgres on the default port, and a silent collision means
+      # migrations and seeds run against the wrong database. Explicit port,
+      # no ambiguity.
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bali -d bali']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Chromium-backed PDF rendering. The only engine that lays out mixed
+  # Arabic/English correctly — @react-pdf/renderer has had broken RTL/BiDi
+  # since 2019. Memory-capped because a render peaks around 1.5 GiB and this
+  # must never be able to starve Postgres.
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: bali-gotenberg
+    restart: unless-stopped
+    command:
+      - 'gotenberg'
+      - '--chromium-disable-javascript=false'
+      - '--chromium-allow-list=file:///tmp/.*'
+    ports:
+      - '3001:3000'
+    mem_limit: 1536m
+
+  # ---------------------------------------------------------------------
+  # The background worker: mail, Chromium, payment reconciliation, capacity
+  # expiry. `src/worker/index.ts`.
+  #
+  # OPT-IN, via a profile. The normal loop is `pnpm worker` on the host, next
+  # to `pnpm dev`, because a bind-mounted node_modules is a Windows/macOS
+  # install being read by Linux — esbuild, tsx and sharp all ship native
+  # binaries and none of them are the right ones. This service therefore
+  # keeps its own `node_modules` in a named volume and installs into it, so
+  # it costs an install the first time and nothing after that.
+  #
+  #   docker compose --profile worker up worker
+  #
+  # Use it to check the thing an app-on-the-host setup cannot: that the
+  # worker talks to Postgres and Gotenberg over the compose network, and
+  # that it shuts down cleanly when the container is stopped.
+  # ---------------------------------------------------------------------
+  worker:
+    profiles: ['worker']
+    image: node:22-bookworm-slim
+    container_name: bali-worker
+    restart: unless-stopped
+    working_dir: /app
+    # corepack pins pnpm from package.json's `packageManager` field, so the
+    # container cannot drift to a different resolver than the host.
+    command:
+      - 'sh'
+      - '-c'
+      - 'corepack enable && pnpm install --frozen-lockfile && pnpm worker'
+    environment:
+      # Service names, not localhost: inside the network Postgres is on its
+      # own 5432 and Gotenberg on its own 3000, whatever they are published
+      # as on the host. These win over .env.local, which the worker reads for
+      # itself from the bind mount — see src/worker/env.ts.
+      DATABASE_URL: postgresql://bali:bali@postgres:5432/bali
+      GOTENBERG_URL: http://gotenberg:3000
+      NODE_ENV: development
+    volumes:
+      - .:/app
+      - worker_node_modules:/app/node_modules
+      # Keep the host's build output out of the container and vice versa.
+      - worker_next:/app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    # MUST exceed WORKER_SHUTDOWN_TIMEOUT_MS (30s by default), or Docker
+    # SIGKILLs the process in the middle of the drain it was given time for
+    # and every in-flight job is failed back to the queue. The default is 10s.
+    stop_grace_period: 45s
+    # Chromium lives in the gotenberg container, so this process is small:
+    # a Node heap, a pg pool and whatever a handler is holding.
+    mem_limit: 768m
+
+volumes:
+  pgdata:
+  worker_node_modules:
+  worker_next:

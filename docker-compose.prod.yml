@@ -1,0 +1,324 @@
+# ---------------------------------------------------------------------------
+# Bali Trips — production stack for the DigitalOcean droplet.
+#
+# Lives at /opt/bali/docker-compose.prod.yml. See docker-compose.yml for the
+# local development stack (which runs only the backing services, because the
+# app itself runs on the host under `next dev`).
+#
+# Run it as:
+#   docker compose -f docker-compose.prod.yml up -d
+# The deploy workflow sets COMPOSE_FILE so the -f can be omitted on the box.
+#
+# MEMORY BUDGET — the box is 2 vCPU / 4 GiB and the limits below are chosen to
+# add up, not to be generous:
+#
+#   postgres   1024 MiB   swap disabled for it (memswap == mem)
+#   gotenberg  1536 MiB   a single Chromium render peaks near this
+#   app-*       512 MiB   one colour live at a time
+#   worker      448 MiB
+#   caddy       128 MiB
+#   ---------------------
+#   subtotal   3648 MiB   + ~250 MiB host = ~3.9 GiB of 4 GiB
+#
+# During a blue/green swap both colours are up, which transiently overshoots
+# by 512 MiB. That is what the 2 GiB swapfile is for. Gotenberg's 1536 MiB is
+# a ceiling for one render, not a reservation — it idles under 80 MiB — so the
+# steady state has real headroom. The number that must never be exceeded is
+# Postgres's: it has memswap_limit == mem_limit, so it is OOM-killed rather
+# than allowed to swap, because a swapping database is worse than a
+# restarting one.
+#
+# SECRETS are never baked into an image and never written into this file.
+# Everything sensitive arrives through env_file, from root-owned 0640 files
+# that exist only on the droplet.
+# ---------------------------------------------------------------------------
+
+name: bali
+
+# Belt and braces with /etc/docker/daemon.json: if the daemon config is ever
+# reset, container logs still cannot fill the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+# Both app colours are identical apart from the image they run. Defining them
+# from one anchor is the only way to guarantee they cannot drift — and a
+# blue/green pair that has drifted is a rollback that does not roll back.
+# Pull-only: there is deliberately no `build:` key anywhere in this file. The
+# droplet has no source tree and `next build` peaks at 1.5-3 GB, which on a
+# 4 GiB box means the OOM killer takes Postgres and a deploy becomes a
+# database outage. Images are built in CI and pulled from the registry.
+x-app: &app
+  env_file:
+    - ./app.env
+  environment:
+    NODE_ENV: production
+    PORT: '3000'
+    HOSTNAME: '0.0.0.0'
+    # Node's default heap on a 4 GiB box is ~2 GiB, which is four times the
+    # container limit: without this the process is OOM-killed by the kernel
+    # (exit 137, no stack) instead of throwing a heap error it can log.
+    NODE_OPTIONS: '--max-old-space-size=384'
+  # Uploaded media, when Spaces is not configured.
+  #
+  # The image pipeline falls back to writing under public/ whenever the
+  # SPACES_* set is absent (see _lib/image/pipeline.ts). public/ is baked into
+  # the image, so without this volume every upload lives only inside the
+  # container that received it: it would vanish on the next deploy, and during
+  # a blue/green swap the other colour would 404 on images the live one had
+  # just written. Mounted on BOTH colours so they share one library.
+  #
+  # Only media/ is mounted, never the whole of public/ -- shadowing that would
+  # hide the build's own static assets behind an empty directory.
+  volumes:
+    - media_data:/app/public/media
+  restart: unless-stopped
+  # Long enough for in-flight requests to drain when the old colour is
+  # retired. Next's server closes its listener immediately on SIGTERM.
+  stop_grace_period: 30s
+  mem_limit: 512m
+  memswap_limit: 512m
+  cpus: 1.0
+  # The image already declares a HEALTHCHECK; this only tightens the cadence
+  # so `docker compose up --wait` returns in seconds rather than a minute
+  # during a deploy. The command must stay identical to the Dockerfile's.
+  healthcheck:
+    test:
+      [
+        'CMD',
+        'node',
+        '-e',
+        "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+      ]
+    interval: 5s
+    timeout: 3s
+    start_period: 15s
+    retries: 3
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    # Reachable from Caddy, and able to reach Postgres. NOT on `render`:
+    # the web process must not be able to talk to Gotenberg at all.
+    - edge
+    - backend
+  logging: *logging
+
+services:
+  # --- Reverse proxy / TLS -------------------------------------------------
+  # The only container that publishes a port. No depends_on: Caddy must come
+  # up even when the app is down, so it can answer with a 502 it controls and
+  # so certificate renewal never waits on the application.
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: bali-caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      # QUIC. Without the UDP publish, HTTP/3 is advertised via Alt-Svc and
+      # then silently unreachable, which is worse than not advertising it.
+      - '443:443/udp'
+    env_file:
+      - ./caddy.env
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # MUST be a named volume. caddy_data holds the ACME account key and the
+      # issued certificates; losing it on every container recreate means
+      # re-issuing on every deploy and hitting Let's Encrypt's 5-per-week
+      # duplicate-certificate limit within a fortnight.
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:2019/config/']
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    mem_limit: 128m
+    cpus: 0.5
+    networks:
+      - edge
+    logging: *logging
+
+  # --- Application, blue/green --------------------------------------------
+  # Exactly one colour serves traffic at a time. Caddy lists both as upstreams
+  # with active health checks and `lb_policy first`, so the flip happens the
+  # moment the new colour reports healthy (or the moment the old one stops),
+  # never as a gradual mix of two builds — which would serve HTML referencing
+  # asset hashes the other container has never heard of.
+  app-blue:
+    <<: *app
+    image: ${APP_IMAGE_BLUE:-bali-app:local}
+    container_name: bali-app-blue
+
+  app-green:
+    <<: *app
+    image: ${APP_IMAGE_GREEN:-bali-app:local}
+    container_name: bali-app-green
+
+  # --- Background worker ---------------------------------------------------
+  # Email, PDF generation, webhook retries, reconciliation. Separate container
+  # so a stuck Gotenberg render cannot take the web process down with it, and
+  # so a deploy can restart it independently — pg-boss jobs are durable rows,
+  # so a few seconds of worker downtime loses nothing.
+  worker:
+    image: ${WORKER_IMAGE:-bali-worker:local}
+    container_name: bali-worker
+    restart: unless-stopped
+    env_file:
+      - ./app.env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: '--max-old-space-size=320'
+      # Service name on the `render` network. The web app cannot resolve this
+      # host at all, which is the point.
+      GOTENBERG_URL: http://gotenberg:3000
+    # tsx spawns a child process; without an init the container accumulates
+    # zombies and SIGTERM is not forwarded, so every deploy waits the full
+    # stop_grace_period.
+    init: true
+    stop_grace_period: 45s
+    mem_limit: 448m
+    cpus: 1.0
+    # Liveness only. There is no HTTP surface to probe, and job-level health
+    # (queue depth, failed jobs, dead letters) is a monitoring concern with
+    # its own queries — see docs/runbook.md.
+    healthcheck:
+      test: ['CMD-SHELL', "pgrep -f 'src/worker/index.ts' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # service_started, not service_healthy: the worker also sends email and
+      # retries webhooks, and none of that should be blocked because the PDF
+      # renderer is slow to warm up.
+      gotenberg:
+        condition: service_started
+    networks:
+      - backend
+      - render
+    logging: *logging
+
+  # --- Database ------------------------------------------------------------
+  # No `ports:` — Postgres is not published to the host, and therefore not to
+  # the internet. Docker's published-port rules bypass UFW, so "the firewall
+  # will catch it" would have been false. Reach it with
+  # `docker compose exec postgres psql -U bali -d bali`.
+  postgres:
+    image: postgres:17-alpine
+    container_name: bali-postgres
+    restart: unless-stopped
+    env_file:
+      - ./postgres.env
+    environment:
+      # Matches the development stack so index behaviour and collation-
+      # dependent ordering are identical in both places.
+      POSTGRES_INITDB_ARGS: '--locale=C --encoding=UTF8'
+    command:
+      - postgres
+      # Tuned for a 1 GiB container on a 4 GiB box, not for the defaults'
+      # assumption of a dedicated machine.
+      - '-c'
+      - 'shared_buffers=256MB'
+      - '-c'
+      - 'effective_cache_size=768MB'
+      - '-c'
+      - 'maintenance_work_mem=64MB'
+      - '-c'
+      - 'work_mem=8MB'
+      - '-c'
+      - 'max_connections=60'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'effective_io_concurrency=200'
+      - '-c'
+      - 'wal_compression=on'
+      - '-c'
+      - 'max_wal_size=1GB'
+      - '-c'
+      - 'min_wal_size=128MB'
+      # Every statement over 500 ms is logged. This is how a slow query is
+      # found after the fact instead of guessed at.
+      - '-c'
+      - 'log_min_duration_statement=500'
+      - '-c'
+      - 'log_checkpoints=on'
+      - '-c'
+      - 'log_lock_waits=on'
+      - '-c'
+      - 'log_line_prefix=%m [%p] %q%u@%d '
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # The 64 MiB default is not enough for parallel query workers; they fail
+    # with "could not resize shared memory segment".
+    shm_size: 256mb
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+    mem_limit: 1g
+    # Equal to mem_limit: swap is disabled for this container. See the header.
+    memswap_limit: 1g
+    cpus: 1.5
+    networks:
+      - backend
+    logging: *logging
+
+  # --- PDF rendering -------------------------------------------------------
+  # Chromium-backed because it is the only engine that lays out mixed
+  # Arabic/English correctly. Attached ONLY to `render`, which is an internal
+  # network: Gotenberg can be reached by the worker and by nothing else, and
+  # it has no route to the internet — a headless browser that can be handed a
+  # URL and has egress is an SSRF pivot.
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: bali-gotenberg
+    restart: unless-stopped
+    command:
+      - 'gotenberg'
+      - '--chromium-disable-javascript=false'
+      - '--chromium-allow-list=file:///tmp/.*'
+      - '--api-timeout=60s'
+    healthcheck:
+      test: ['CMD', 'curl', '--silent', '--fail', 'http://localhost:3000/health']
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    mem_limit: 1536m
+    cpus: 1.5
+    # Chromium needs more than the 64 MiB default or renders crash the tab.
+    shm_size: 256mb
+    networks:
+      - render
+    logging: *logging
+
+networks:
+  # Caddy <-> app only.
+  edge:
+    driver: bridge
+  # app/worker <-> Postgres. Not internal: the worker needs egress for Resend
+  # and Spaces, and a container attached only to internal networks has no
+  # default route at all.
+  backend:
+    driver: bridge
+  # worker -> gotenberg. internal: true removes the gateway, so nothing on
+  # this network can reach — or be reached from — anywhere else.
+  render:
+    driver: bridge
+    internal: true
+
+volumes:
+  pgdata:
+  media_data:
+  caddy_data:
+  caddy_config:

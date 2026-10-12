@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#BDE8C4"/>
+      <stop offset="100%" stop-color="#EAF7EA"/>
+    </linearGradient>
+    <linearGradient id="land" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3C6E45"/>
+      <stop offset="100%" stop-color="#26552E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <circle cx="214" cy="373" r="58" fill="#71FF85" opacity="0.9"/>
+  <path d="M0,490.235294117647 L264,348.99999999999994 L504,450.235294117647 L720,251.4705882352941 L983.9999999999999,430.235294117647 L1200,350.235294117647 L1200,800 L0,800 Z" fill="url(#land)" opacity="0.85"/>
+  <path d="M0,550.2352941176471 L360,470.235294117647 L660,570.2352941176471 L936,480.235294117647 L1200,560.2352941176471 L1200,800 L0,800 Z" fill="#26552E" opacity="0.55"/>
+</svg>

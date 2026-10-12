@@ -1,0 +1,818 @@
+/* ===========================================================================
+   Layout — section rhythm, grids, page shells, sticky sidebars.
+
+   Ported from design/handoff/bt-styles.css. Visual styling (colour, type,
+   borders, shadows) lives in components.css; this file carries the structural
+   rules — display/grid/flex, gaps, block padding, and the breakpoint ladder.
+   Sidebar containers live here even when they carry surface styling, because
+   their job is placement.
+
+   Deliberate deviations from the handoff, all flagged inline:
+   - Sticky sidebar offsets derive from --sticky-top instead of the five
+     unrelated hard-coded values the original used (0 / 88px / 96px / 150px /
+     150px). --sticky-top is calc(--nav-h + --sticky-gap) = 88px on desktop,
+     which is what .bt-acct-side already used; the other three were drifted.
+   - Inline-axis margins/paddings are expressed with logical properties.
+     Symmetric two/three-value shorthands (`padding: 24px 20px`) are already
+     direction-neutral and are kept verbatim.
+   - The empty `.bt-ct-group {}` rule from the handoff is dropped.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Section rhythm
+   --------------------------------------------------------------------------- */
+/**
+ * Full-width page BANDS — the alternating .bg-ivory / .bg-forest stripes that
+ * make up a landing page.
+ *
+ * This padding is for those. Nested content sections inside a page (a detail
+ * page's "About", "Gallery" or FAQ block) are also <section> elements and were
+ * silently inheriting it: 96px top and bottom each on desktop, 192px per
+ * block, roughly 770px of dead space on a single activity page. The gaps read
+ * as "something failed to load here" rather than as separation. They opt out
+ * below.
+ */
+section {
+  padding-block: 64px;
+  position: relative;
+}
+
+/**
+ * Nested content sections set their own rhythm with margin.
+ *
+ * Listed explicitly rather than inverted (e.g. `section section`) because the
+ * band stripes do contain sections in a couple of places, and a descendant
+ * selector would strip the padding from those too.
+ */
+.bt-detail-block,
+.bt-related,
+.bt-tiers-sec {
+  padding-block: 0;
+}
+
+.section-head {
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+/* Handoff used margin-left/right: auto. */
+.section-head.center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  section {
+    padding-block: 96px;
+  }
+
+  .section-head {
+    margin-bottom: 52px;
+  }
+}
+
+/* Section head with a trailing action ("see all"). */
+.bt-sec-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.bt-sec-head .section-head {
+  margin-bottom: 0;
+}
+
+.bt-seeall {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Flex / grid primitives
+   --------------------------------------------------------------------------- */
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+}
+
+/* Horizontal scrollers — mobile carousels and wide tables. */
+.hscroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+}
+
+.hscroll > * {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+.hscroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.hscroll::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 99px;
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive scale-ups. These modifiers carry no `display: grid` of their own —
+   they are always combined with `.grid`, exactly as in the handoff.
+   --------------------------------------------------------------------------- */
+@media (min-width: 720px) {
+  .bt-grid-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .bt-places-grid {
+    gap: 18px;
+  }
+
+  .bt-foot-top {
+    grid-template-columns: 1.4fr 1fr !important;
+    gap: 56px !important;
+  }
+}
+
+@media (min-width: 860px) {
+  .bt-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .bt-about-grid {
+    grid-template-columns: 1.05fr 0.95fr !important;
+    align-items: center;
+  }
+
+  .bt-map-grid {
+    grid-template-columns: 1.5fr 1fr !important;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1100px) {
+  .bt-grid-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .bt-places-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+/* On wide screens let the "big" place tiles span 2 of 3 columns cleanly. */
+@media (min-width: 1100px) {
+  .bt-places-grid > a:nth-child(1),
+  .bt-places-grid > a:nth-child(5) {
+    grid-column: span 1 !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Named grids
+   --------------------------------------------------------------------------- */
+
+/* Services — 5 cards. */
+.bt-grid-5 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .bt-grid-5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 980px) {
+  .bt-grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .bt-grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Tour packages. */
+.bt-grid-tp {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .bt-grid-tp {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1080px) {
+  .bt-grid-tp {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Generic auto grids. */
+.bt-grid-3auto {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .bt-grid-3auto {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 980px) {
+  .bt-grid-3auto {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.bt-grid-2 {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .bt-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Five platform sections. */
+.bt-fivegrid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .bt-fivegrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1040px) {
+  .bt-fivegrid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .bt-fivegrid .bt-svc-card h3 {
+    font-size: 17px;
+  }
+
+  .bt-fivegrid .bt-svc-card p {
+    font-size: 13px;
+  }
+}
+
+/* Start-planning hub. */
+.bt-hub-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 620px) {
+  .bt-hub-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .bt-hub-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Stat rows. */
+.bt-statrow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 28px;
+}
+
+@media (min-width: 720px) {
+  .bt-statrow {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.bt-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 40px;
+  max-width: 680px;
+}
+
+@media (min-width: 700px) {
+  .bt-hero-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Adventure quick grid. */
+.bt-advgrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .bt-advgrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 980px) {
+  .bt-advgrid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+/* Value props. */
+.bt-vpgrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 520px) {
+  .bt-vpgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 860px) {
+  .bt-vpgrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* How it works. */
+.bt-howgrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+@media (min-width: 560px) {
+  .bt-howgrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 980px) {
+  .bt-howgrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Map category chips. */
+.bt-mapcats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+@media (min-width: 620px) {
+  .bt-mapcats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .bt-mapcats {
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+/* Time slots. */
+.bt-timeslots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 400px) {
+  .bt-timeslots {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Gallery + included/excluded. */
+.bt-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.bt-incexc {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+@media (min-width: 640px) {
+  .bt-incexc {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* About page. */
+.bt-about2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+
+@media (min-width: 900px) {
+  .bt-about2 {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: start;
+  }
+}
+
+.bt-about2-wall {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.bt-vm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+/* Subscription plans. */
+.bt-plangrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 720px) {
+  .bt-plangrid {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+}
+
+/* Driver teaser. */
+.bt-driverteaser {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.bt-driverteaser-feats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.bt-driverteaser-media {
+  position: relative;
+  min-height: 300px;
+  border-radius: 20px;
+  overflow: hidden;
+  order: -1;
+}
+
+@media (min-width: 900px) {
+  .bt-driverteaser {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+
+  .bt-driverteaser-media {
+    order: 0;
+  }
+}
+
+/* Home driver block. */
+.bt-hdriver {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (min-width: 940px) {
+  .bt-hdriver {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 44px;
+  }
+}
+
+/* Contact. */
+.bt-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .bt-contact-grid {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 36px;
+  }
+}
+
+.bt-contact-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Page shells
+   --------------------------------------------------------------------------- */
+
+/* Custom trip page. */
+.bt-ct-wrap {
+  flex: 1;
+  max-width: 920px;
+  width: 100%;
+  margin-inline: auto;
+  padding: 24px 20px 60px;
+}
+
+.bt-ct-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.bt-ct-head {
+  margin-bottom: 4px;
+}
+
+.bt-ct-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (min-width: 880px) {
+  .bt-ct-wrap {
+    padding: 40px 20px 80px;
+  }
+}
+
+/* Start-planning hub shell. */
+.bt-hub-wrap {
+  flex: 1;
+  max-width: 1080px;
+  width: 100%;
+  margin-inline: auto;
+  padding: 32px 20px 60px;
+}
+
+/* Detail overlay shell. */
+.bt-dt-wrap {
+  flex: 1;
+  max-width: 1100px;
+  width: 100%;
+  margin-inline: auto;
+  padding-block: 0 60px;
+}
+
+.bt-dt-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding: 24px 20px;
+}
+
+@media (min-width: 880px) {
+  .bt-dt-grid {
+    grid-template-columns: 1fr 320px;
+    padding: 32px;
+    gap: 32px;
+  }
+}
+
+/* Detail page. */
+.bt-detailwrap {
+  padding-block: 24px 64px;
+  background: var(--ivory);
+}
+
+.bt-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 8px;
+}
+
+@media (min-width: 960px) {
+  .bt-detail-grid {
+    grid-template-columns: 1fr 360px;
+    gap: 36px;
+  }
+}
+
+.bt-detail-main {
+  min-width: 0;
+}
+
+.bt-detail-head {
+  margin-top: 22px;
+}
+
+.bt-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  align-items: center;
+}
+
+.bt-detail-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/**
+ * Section rhythm on every detail page.
+ *
+ * Tightened from 32/48. With six or seven stacked sections the old values
+ * added about 100px of dead space to a page nobody reads end to end, and the
+ * gaps read as "something is missing here" rather than as separation.
+ * Shared by activities, packages, itineraries and blog posts, so this is
+ * deliberately a modest trim rather than a redesign of one page.
+ */
+.bt-detail-block {
+  margin-top: 32px;
+}
+
+.bt-detail-h {
+  font-size: 22px;
+  margin-bottom: 14px;
+}
+
+.bt-related {
+  margin-top: 48px;
+}
+
+.bt-related-h {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Blog index. */
+.bt-blog-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 960px) {
+  .bt-blog-grid {
+    grid-template-columns: 1fr 300px;
+  }
+}
+
+/* Cart page. */
+.bt-cart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 24px;
+}
+
+@media (min-width: 900px) {
+  .bt-cart-grid {
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+  }
+}
+
+.bt-cart-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Account panel shell. The panel chrome itself lives in components.css. */
+.bt-acct-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 1240px;
+  width: 100%;
+  margin-inline: auto;
+  padding: 20px;
+  gap: 20px;
+}
+
+@media (min-width: 880px) {
+  .bt-acct-grid {
+    grid-template-columns: 248px 1fr;
+    padding: 28px;
+    gap: 28px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Sticky sidebars
+
+   The handoff pinned these to 88px / 96px / 150px / 150px — four different
+   offsets for the same header. All four now derive from --sticky-top
+   (--nav-h + --sticky-gap), so they stay correct when the header resizes at
+   the 768px breakpoint.
+   --------------------------------------------------------------------------- */
+
+/* Tour/service booking box. */
+.bt-booking {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 22px;
+  align-self: start;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 960px) {
+  .bt-booking {
+    position: sticky;
+    top: var(--sticky-top);
+  }
+}
+
+/* Blog sidebar. */
+.bt-blog-side {
+  align-self: start;
+}
+
+@media (min-width: 960px) {
+  .bt-blog-side {
+    position: sticky;
+    top: var(--sticky-top);
+  }
+}
+
+/* Detail-overlay purchase box. */
+.bt-dt-buy {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  align-self: start;
+}
+
+@media (min-width: 880px) {
+  .bt-dt-buy {
+    position: sticky;
+    top: var(--sticky-top);
+  }
+}
+
+/* Account sidebar. */
+.bt-acct-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 880px) {
+  .bt-acct-side {
+    position: sticky;
+    top: var(--sticky-top);
+    align-self: start;
+  }
+}

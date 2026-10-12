@@ -1,0 +1,89 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# next.js
+.next/
+out/
+build/
+next-env.d.ts
+
+# production
+dist/
+
+# testing
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# env — never commit real secrets
+.env
+.env*.local
+.env.production
+!.env.example
+
+# Derived env files, written beside docker-compose.prod.yml on the server.
+# They hold POSTGRES_PASSWORD, BETTER_AUTH_SECRET, PAYLOAD_SECRET and the
+# payment webhook secret in plaintext. They sit inside the working tree only
+# because the compose file must reference them as ./app.env — so without
+# these three lines, one `git add -A` run on the box publishes every secret
+# in the deployment to GitHub.
+app.env
+caddy.env
+postgres.env
+
+# payload
+/media
+.payload/
+
+# drizzle
+drizzle/meta/_journal.json.bak
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# misc
+*.pem
+.vercel
+.turbo
+tsconfig.tsbuildinfo
+
+# local scratch
+/tmp/
+/scratch/
+
+# per-developer tool settings (absolute paths, machine-specific)
+.claude/settings.local.json
+
+# portable toolchain (local only)
+.tools/
+
+# crash dumps
+*.stackdump
+
+# workflow scratch output
+plan.md
+
+# generated calibration evidence
+scripts/.calibration-preview.png
