@@ -1,0 +1,68 @@
+<!--title: Bali Trips — حالة الطلب|page: confirmation|section: trip-->
+<style>
+.cf { max-width: 780px; margin-inline: auto; padding-block: 24px 72px; display: flex; flex-direction: column; gap: 22px; }
+.hero-st { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 36px 20px; border-radius: var(--r-xl); position: relative; overflow: hidden; }
+.hero-st.success { background: var(--forest); color: rgba(255,255,255,.88); }
+.hero-st.success h1 { color: #fff; }
+.hero-st.failed { background: var(--err-bg); } .hero-st.failed h1 { color: #8C1D17; }
+.hero-st.processing, .hero-st.transfer { background: var(--ivory-2); }
+.st-ic { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; }
+.success .st-ic { background: var(--palm); color: var(--forest-ink); }
+.failed .st-ic { background: #fff; color: var(--err); }
+.processing .st-ic, .transfer .st-ic { background: var(--white); color: var(--forest); }
+.draw path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .6s .25s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.pop { animation: pop .5s var(--ease) both; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } }
+.spin { animation: spin 1.1s linear infinite; }
+.oi { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 14px; border-radius: 16px; background: var(--white); border: 1px solid var(--line-soft); }
+.oi img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
+.bank { display: grid; gap: 8px; } .bank div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--white); font-size: 14px; }
+.bank b { font-family: var(--f-en); color: var(--forest); }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: -10px; width: 8px; height: 14px; border-radius: 2px; animation: fall 2.4s ease-in forwards; }
+@keyframes fall { to { transform: translateY(420px) rotate(540deg); opacity: 0; } }
+</style>
+<main id="main"><div class="wrap"><div class="cf" id="root"></div></div></main>
+<script>
+BT.boot();
+(function () {
+const { t, L, icon, money, esc, img, numAr } = BT;
+const state = BT.hashId() || "success";
+const o = BT.store.get("lastOrder", null);
+const root = document.getElementById("root");
+if (!o) { root.innerHTML = `<div class="panel empty"><span class="ill">${icon("doc", 36)}</span><h1 class="h3">${L("لا يوجد طلب حديث", "No recent order")}</h1><p class="muted">${L("ستجد كل طلباتك في حسابك.", "You'll find all your orders in your account.")}</p><div class="row" style="justify-content:center"><a class="btn btn-forest" href="account.html#bookings">${L("حجوزاتي", "My bookings")}</a><a class="btn btn-ghost" href="home.html">${L("الرئيسية", "Home")}</a></div></div>`; return; }
+const itemStatus = (i) => {
+  if (state === "failed") return ["tag-err", L("لم يُدفع", "Unpaid")];
+  if (state === "processing" || state === "transfer") return ["tag-warn", state === "transfer" ? L("بانتظار الحوالة", "Awaiting transfer") : L("قيد المعالجة", "Processing")];
+  if (i.type === "itinerary") return ["tag-ok", L("جاهز للتحميل", "Ready to download")];
+  if (i.type === "map") return ["tag-ok", L("مفعّلة", "Unlocked")];
+  return ["tag-warn", L("بانتظار تأكيد المزود", "Awaiting provider confirmation")];
+};
+const H = {
+  success: { ic: `<svg class="draw" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`, h: L("تم الدفع بنجاح", "Payment successful"), p: L(`رقم طلبك ${o.id}. أرسلنا التفاصيل إلى ${o.customer.email}.`, `Your order is ${o.id}. Details were sent to ${o.customer.email}.`) },
+  failed: { ic: icon("x", 40, 2.6), h: L("لم يكتمل الدفع", "Payment didn't go through"), p: L("رفض البنك العملية ولم يُخصم أي مبلغ. يمكنك المحاولة مرة أخرى بنفس الطلب دون تكراره.", "Your bank declined the payment and nothing was charged. Try again on the same order — it won't be duplicated.") },
+  processing: { ic: `<span class="spin" style="display:grid">${icon("refresh", 38, 2.2)}</span>`, h: L("الدفع قيد المعالجة", "Payment processing"), p: L("نتحقق من العملية مع البنك. لا تُعد الدفع — سنحدّث حالة الطلب خلال دقائق ونرسل لك إشعارًا.", "We're verifying with your bank. Don't pay again — we'll update the status within minutes and notify you.") },
+  transfer: { ic: icon("doc", 38), h: L("طلبك محجوز بانتظار الحوالة", "Order placed — awaiting transfer"), p: L("حوّل المبلغ خلال ٢٤ ساعة مع كتابة رقم الطلب في ملاحظة التحويل، ثم أرفق الإيصال من حسابك.", "Transfer within 24 hours with your order number as reference, then upload the receipt in your account.") },
+}[state] || {};
+root.innerHTML = `
+  <section class="hero-st ${state}" aria-live="polite">${state === "success" ? '<div class="confetti" id="cft"></div>' : ""}
+    <span class="st-ic pop">${H.ic}</span><h1 class="h2">${H.h}</h1><p style="max-width:52ch">${H.p}</p>
+    <div class="row" style="justify-content:center">
+      ${state === "failed" ? `<a class="btn btn-primary btn-lg" href="checkout.html#pay">${L("أعد المحاولة", "Try again")}</a><a class="btn btn-ghost" href="contact.html">${L("تواصل مع الدعم", "Contact support")}</a>` : ""}
+      ${state === "success" ? `<a class="btn btn-primary" href="account.html#bookings">${L("عرض حجوزاتي", "View my bookings")}</a><a class="btn btn-glass" href="home.html">${L("العودة للرئيسية", "Back home")}</a>` : ""}
+      ${state === "processing" ? `<a class="btn btn-forest" href="account.html#bookings">${L("تابع الحالة من حسابي", "Track it in my account")}</a>` : ""}
+    </div>
+  </section>
+  ${state === "transfer" ? `<section class="panel stack"><h2 class="h3">${L("بيانات التحويل", "Transfer details")}</h2><div class="bank"><div><span>${L("اسم المستفيد", "Beneficiary")}</span><b>Bali Trips LLC</b></div><div><span>${L("البنك", "Bank")}</span><b>[BANK NAME]</b></div><div><span>IBAN</span><b>[IBAN — يُضاف من الإعدادات]</b></div><div><span>${L("المبلغ", "Amount")}</span><b>${money(o.total)}</b></div><div><span>${L("المرجع", "Reference")}</span><b>${o.id}</b></div></div><button class="btn btn-ghost btn-sm" id="up" style="align-self:flex-start">${icon("download", 16)} ${L("أرفق إيصال التحويل", "Upload transfer receipt")}</button></section>` : ""}
+  <section class="stack" style="gap:12px"><div class="row between"><h2 class="h3">${L("عناصر الطلب", "Order items")}</h2><span class="tag tag-forest num">${o.id}</span></div>
+    ${o.items.map(i => { const [c, s] = itemStatus(i); return `<div class="oi"><img src="${img(i.img)}" alt=""><span class="minw0"><b style="color:var(--forest)">${esc(t(i.title))}</b><br><small class="muted">${i.date ? BT.fmtDate(i.date) + (i.time ? " · " + i.time : "") : L("منتج رقمي", "Digital product")}</small><br><span class="tag ${c}" style="margin-top:4px">${s}</span></span><span class="stack" style="gap:6px;align-items:flex-end"><b class="price" style="color:var(--forest)">${money(i.total)}</b>${state === "success" && i.type === "itinerary" ? `<button class="btn btn-forest btn-sm" data-dl="${i.ref}">${icon("download", 15)} PDF</button>` : ""}${state === "success" && i.type === "map" ? `<a class="btn btn-forest btn-sm" href="map.html">${L("افتح", "Open")}</a>` : ""}</span></div>`; }).join("")}
+    <div class="sum-total"><span>${state === "failed" ? L("المبلغ المستحق", "Amount due") : L("المبلغ المدفوع", "Amount paid")}</span><b class="price">${money(o.total)}</b></div>
+  </section>
+  ${state === "success" ? `<section class="panel stack"><h2 class="h3">${L("ماذا بعد؟", "What's next?")}</h2><ol class="tl-list"><li><b>${L("تم الدفع", "Paid")}</b><br><small class="muted">${L("الآن", "Just now")}</small></li><li class="now"><b>${L("تأكيد المزود للأنشطة والسائق", "Provider confirms activities & driver")}</b><br><small class="muted">${L("عادةً خلال ٢٤ ساعة — لن نعرض «حجز مؤكد» قبله", "Usually within 24h — we won't show 'Confirmed' before that")}</small></li><li class="pending"><b>${L("استلام القسيمة وتفاصيل السائق", "Voucher and driver details")}</b><br><small class="muted">${L("بالبريد وواتساب وفي حسابك", "By email, WhatsApp and in your account")}</small></li></ol></section>` : ""}`;
+document.querySelectorAll("[data-dl]").forEach(b => b.onclick = () => BT.toast(L("في النسخة الفعلية يبدأ تحميل ملف PDF هنا", "In production the PDF download starts here")));
+const up = document.getElementById("up"); if (up) up.onclick = () => location.href = "account.html#bookings";
+const cft = document.getElementById("cft");
+if (cft && !matchMedia("(prefers-reduced-motion: reduce)").matches) cft.innerHTML = Array.from({ length: 36 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${["#71FF85", "#FF9000", "#FFFBF8"][i % 3]};animation-delay:${Math.random() * .6}s"></i>`).join("");
+})();
+</script>

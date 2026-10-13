@@ -52,7 +52,7 @@ export function AdminLink() {
   if (href === null) return null
 
   return (
-    <a href={href} className="bt-iconbtn bt-adminlink" aria-label={t('nav_studio')} title={t('nav_studio')}>
+    <a href={href} className="icon-btn" aria-label={t('nav_studio')} title={t('nav_studio')}>
       <Icon name="shield" size={18} />
     </a>
   )

@@ -1,0 +1,267 @@
+<title>Bali Trips UX Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+/* Project hub — a working document for client review and developer handoff. Single committed light brand look. */
+html { direction: rtl; }
+body { background: var(--ivory); }
+.hub-top { background: var(--forest-deep); color: rgba(255,251,248,.85); position: relative; overflow: hidden; }
+.hub-top .wrap { padding-block: 28px 40px; display: flex; flex-direction: column; gap: 18px; position: relative; z-index: 1; }
+.hub-top h1 { color: #fff; font-size: clamp(30px, 4.4vw, 52px); }
+.hub-top .arc { width: 760px; height: 760px; inset-inline-start: -300px; top: -420px; opacity: .35; }
+.hub-nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; background: rgba(255,251,248,.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.hub-nav .tabs { border: 0; }
+.kpis { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+.kpis div { padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+.kpis b { display: block; font: 800 26px var(--f-en); color: var(--palm); }
+.hsec { padding-block: 48px; border-bottom: 1px solid var(--line-soft); scroll-margin-top: 60px; }
+.hsec > .wrap { display: flex; flex-direction: column; gap: 20px; }
+.hsec h2 { font-size: clamp(24px, 3vw, 34px); }
+.cols2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
+.keep li, .improve li { margin-bottom: 8px; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--white); }
+.tbl { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 720px; }
+.tbl th, .tbl td { padding: 12px 14px; text-align: start; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.tbl thead th { background: var(--ivory-2); color: var(--forest); font-size: 13.5px; position: sticky; top: 0; }
+.tbl td:first-child { font-weight: 700; color: var(--forest); width: 28%; }
+.cls-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.q { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 16px; border-radius: 16px; background: var(--white); border: 1px solid var(--line-soft); }
+.q .n { width: 34px; height: 34px; border-radius: 50%; background: var(--orange); color: var(--forest-ink); font: 800 14px var(--f-en); display: grid; place-items: center; }
+.q b { color: var(--forest); }
+/* sitemap */
+.smap { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.sm-g { background: var(--white); border: 1px solid var(--line-soft); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.sm-g h3 { font-size: 16px; display: flex; gap: 8px; align-items: center; }
+.sm-g a, .sm-g span.pl { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; font-size: 14px; color: var(--text); }
+.sm-g a:hover { background: var(--palm-soft); color: var(--forest); }
+.st { font: 700 10.5px var(--f); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.st.ok { background: var(--ok-bg); color: var(--ok); } .st.nx { background: var(--ivory-3); color: var(--muted); }
+/* flows */
+.flow { display: flex; flex-direction: column; gap: 10px; padding: 18px; background: var(--white); border: 1px solid var(--line-soft); border-radius: 18px; }
+.flow h3 { font-size: 17px; }
+.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.nd { padding: 7px 12px; border-radius: 10px; background: var(--ivory-2); color: var(--forest); font-size: 13.5px; font-weight: 600; }
+.nd.dec { background: var(--orange-soft); color: #7A4300; border: 1.5px dashed #E6A44D; }
+.nd.end { background: var(--forest); color: var(--ivory); }
+.nd.sys { background: var(--info-bg); color: var(--info); }
+.ar { color: var(--muted); font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; color: var(--muted); align-items: center; }
+.phase { display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 14px; padding: 16px; border-radius: 16px; background: var(--white); border: 1px solid var(--line-soft); }
+.phase .pn { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; font: 800 18px var(--f-en); background: var(--ivory-2); color: var(--forest); }
+.phase.done .pn { background: var(--forest); color: var(--palm); }
+.phase.now .pn { background: var(--orange); color: var(--forest-ink); }
+.launch { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.launch a { display: flex; flex-direction: column; gap: 6px; padding: 18px; border-radius: 18px; background: var(--white); border: 1px solid var(--line-soft); box-shadow: var(--sh-1); transition: transform var(--d-base) var(--ease), box-shadow var(--d-base); }
+.launch a:hover { transform: translateY(-3px); box-shadow: var(--sh-2); }
+.launch b { color: var(--forest); font-size: 16px; }
+.launch small { color: var(--muted); }
+</style>
+
+<header class="hub-top">
+  <div class="arc" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="row between"><img src="assets/logo-light.png" alt="Bali Trips" style="height:40px;width:auto"><span class="tag" style="background:rgba(255,255,255,.12);color:#fff">UI/UX v2 · أكتوبر ٢٠٢٦</span></div>
+    <span class="eyebrow" style="color:var(--palm)">مشروع UI/UX متكامل — للعرض والاعتماد ثم التسليم للمبرمج</span>
+    <h1>Bali Trips — تصور المنصة الكامل</h1>
+    <p style="max-width:70ch;font-size:17px">هذه الصفحة هي مدخل المشروع: فهمنا للمنصة، وتحليل الملفات المرجعية، وتصنيف المتطلبات، وخريطة الصفحات، ومسارات المستخدم، وحالة كل مرحلة. النموذج التفاعلي نفسه قابل للتجربة: الروابط تعمل، والأسعار تتحدث لحظيًا، والحجز يمر بكل حالاته.</p>
+    <div class="row"><a class="btn btn-primary btn-lg" href="home.html">افتح النموذج التفاعلي</a><a class="btn btn-glass" href="map.html">الخريطة التفاعلية</a><a class="btn btn-glass" href="activity.html#water-sports">مثال حجز فعالية</a></div>
+    <div class="kpis" id="kpis"></div>
+  </div>
+</header>
+<nav class="hub-nav" aria-label="أقسام المستند"><div class="wrap"><div class="tabs" id="htabs">
+  <a href="#understand">فهم المشروع</a><a href="#refs">تحليل المراجع</a><a href="#reqs">تصنيف المتطلبات</a><a href="#open">نقاط تحتاج تأكيدًا</a><a href="#sitemap">خريطة الصفحات</a><a href="#flows">مسارات المستخدم</a><a href="#phases">المراحل</a><a href="#try">جرّب النموذج</a>
+</div></div></nav>
+
+<main id="main">
+<section class="hsec" id="understand"><div class="wrap">
+  <span class="eyebrow">١ · فهم المشروع</span>
+  <h2>منصة تخطيط لبالي، لا موقع عروض سياحية</h2>
+  <div class="cols2">
+    <div class="panel stack"><b style="color:var(--forest)">ما هي Bali Trips</b><p>منصة رقمية متخصصة في جزيرة بالي فقط، مبنية على خبرة الأستاذ سعيد المحلية. تساعد المسافر العربي على اكتشاف الجزيرة، وتخطيط رحلته، وحجز الأنشطة والخدمات من مكان واحد.</p>
+      <b style="color:var(--forest)">الميزة المفرّقة (USP)</b><p>الخريطة التفاعلية بهوية خاصة: لا تعرض إلا أماكن اختارها الفريق، وتكشف المزيد مع التكبير، وجزء منها مجاني والباقي يُفتح بالشراء.</p></div>
+    <div class="panel stack"><b style="color:var(--forest)">الرحلة التي نصممها للمستخدم</b>
+      <div class="chain"><span class="nd">يكتشف بالخريطة</span><span class="ar">←</span><span class="nd">يختار الأنشطة</span><span class="ar">←</span><span class="nd">يضيف السائق</span><span class="ar">←</span><span class="nd">يختار جدولًا أو باقة</span><span class="ar">←</span><span class="nd end">يراجع كل شيء في «رحلتي» ويدفع مرة واحدة</span></div>
+      <p class="muted">هذا هو «الهدف النهائي» كما ورد حرفيًا في ملف التعديلات، وكل صفحة في النموذج مربوطة به: أي كارت يُضغط، وأي خدمة لها صفحة مستقلة وزر «أضف إلى رحلتي».</p>
+      <b style="color:var(--forest)">الجمهور</b><p class="muted">مسافرون عرب (عائلات، أزواج وشهر عسل، مغامرون)، يصل كثير منهم من منصات التواصل على الجوال — لذلك الخريطة والحجز واختيار التاريخ مصممة للجوال أولًا.</p></div>
+  </div>
+</div></section>
+
+<section class="hsec" id="refs"><div class="wrap">
+  <span class="eyebrow">٢ · تحليل الملفات المرجعية</span>
+  <h2>ما نحافظ عليه، وما نطوّره</h2>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>الملف</th><th>ما استخرجناه منه</th></tr></thead><tbody>
+    <tr><td>دليل الهوية (Brand Guideline)</td><td>الألوان الرسمية: Tropical Forest <span class="num">#26552E</span> (أساسي)، Bali Palm Green <span class="num">#71FF85</span>، Sunset Orange <span class="num">#FF9000</span>، Ivory Sand <span class="num">#FFFBF8</span>. الخطوط: Outfit للاتيني وNoor للعربي. الشعار الأفقي والعمودي وقواعد عدم تغيير ألوانه أو نسبه. أسلوب الصور: طبيعة بالي، سيارة Bali Trips المغلفة، مسافرات عربيات.</td></tr>
+    <tr><td>البروفايل (Company Profile)</td><td>الرؤية والرسالة وما يميز المنصة. موتيف «القوس الأخضر» المتكرر. <b>التصور الأول للخريطة</b> (صفحة ٩): صورة قمر صناعي بتضاريس واضحة، بحث علوي، تصنيفات زجاجية، وبطاقات أماكن زجاجية بخطوط ربط — اعتمدناه مرجعًا مباشرًا للخريطة الجديدة.</td></tr>
+    <tr><td>HTML المعتمد سابقًا</td><td>هيكل الهيدر بصفين وشعار في الوسط، خلفية Ivory، عناوين خضراء، أزرار برتقالية دائرية، كروت بزوايا ٢٤px، قسم الخريطة الداكن، ترتيب الأقسام، والدعم الثلاثي للغات. وجدنا داخله خطوط Noor الأصلية وصورة القمر الصناعي لبالي واستخدمناهما.</td></tr>
+    <tr><td>آخر التعديلات (PDF)</td><td>لها الأولوية عند التعارض: صفحات مستقلة لكل خدمة، تعديل الهيدر، صفحة «خدماتنا»، خريطة أقرب للتصور الأول مع جزء مجاني وBlur، ترتيب جديد للرئيسية، فلاتر وكروت الأنشطة، نموذج حجز موحد، منطق السائق، صفحة «رحلتي»، الفوتر الجديد، وقائمة الاقتراحات الإضافية.</td></tr>
+    <tr><td>البريف الشامل</td><td>هيكل المنصة الكامل، نظام الباقات والإضافات وقواعده، حالات الدفع والحجز، حساب المسافر، لوحة التحكم، المميزات المقترحة، ونظام الحركة.</td></tr>
+    <tr><td>الموقع الحالي balitrips.co</td><td>المحتوى والأسعار الحالية للأنشطة والجداول والباقات (استخدمناها كبيانات عرض)، وطرق الدفع المعروضة. لاحظنا أرقامًا في الهيرو (عدد الأماكن والتقييم والرحلات) غير موثقة، فاستبدلناها بعناصر ثقة حقيقية.</td></tr>
+  </tbody></table></div>
+  <div class="cols2">
+    <div class="panel keep"><b style="color:var(--ok);display:block;margin-bottom:10px">نحافظ عليه</b><ul>
+      <li>الهوية كما هي: الألوان والخطوط والشعار دون تعديل.</li><li>هيكل الهيدر المعتمد (شعار في الوسط، روابط في صف ثانٍ).</li><li>لغة الكروت والأزرار والوسوم البرتقالية فوق العناوين.</li><li>قسم الخريطة الداكن في الرئيسية وبطاقاتها الزجاجية.</li><li>الفوتر الأخضر الداكن.</li></ul></div>
+    <div class="panel improve"><b style="color:var(--orange-deep);display:block;margin-bottom:10px">نطوّره</b><ul>
+      <li>صور حقيقية من ملفات الهوية بدل الصور العشوائية التي كانت تفشل في التحميل.</li><li>خط Noor للعربية بدل Tajawal، كما في الهوية.</li><li>هيرو بنوافذ على شكل بوابات بالي، وقوس البروفايل كعنصر بصري.</li><li>نص الأزرار البرتقالية بالأخضر الداكن بدل الأبيض (تباين ٧:١ بدل ٢:١ — متطلب وصول).</li><li>كل تفاصيل كانت تظهر في نافذة منبثقة أصبحت صفحة مستقلة.</li><li>إزالة الأرقام والتقييمات غير الموثقة.</li><li>شريط تنقل سفلي على الجوال (الرئيسية، الخريطة، الأنشطة، رحلتي، حسابي).</li></ul></div>
+  </div>
+</div></section>
+
+<section class="hsec" id="reqs"><div class="wrap">
+  <span class="eyebrow">٣ · تصنيف الوظائف</span>
+  <h2>متطلبات أصلية، تعديلات معتمدة، مميزات مقترحة</h2>
+  <p class="muted">لا نفترض أن أي ميزة مقترحة معتمدة للتنفيذ. المقترح مصمم في النموذج ومعلَّم بوضوح، وينتظر قراركم.</p>
+  <div class="cls-tabs" role="tablist" id="cls-tabs"></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>الوظيفة</th><th>التفاصيل</th><th style="width:140px">في النموذج</th></tr></thead><tbody id="cls-body"></tbody></table></div>
+</div></section>
+
+<section class="hsec" id="open"><div class="wrap">
+  <span class="eyebrow">٤ · نقاط تحتاج تأكيدًا</span>
+  <h2>تعارضات وبيانات ناقصة</h2>
+  <p class="muted">أكملنا التصميم بقرارات افتراضية واضحة في كل نقطة، ويمكن تغييرها دون إعادة بناء.</p>
+  <div class="stack" style="gap:10px" id="qs"></div>
+</div></section>
+
+<section class="hsec" id="sitemap"><div class="wrap">
+  <span class="eyebrow">٥ · Sitemap</span>
+  <h2>كل صفحات المنصة</h2>
+  <div class="legend"><span class="st ok">جاهزة للتجربة</span><span class="st nx">المرحلة التالية</span><span>كل الصفحات مربوطة فعليًا — اضغط لفتحها.</span></div>
+  <div class="smap" id="smap"></div>
+</div></section>
+
+<section class="hsec" id="flows"><div class="wrap">
+  <span class="eyebrow">٦ · User Flows</span>
+  <h2>مسارات المستخدم الأساسية</h2>
+  <div class="legend"><span class="nd">خطوة</span><span class="nd dec">قرار</span><span class="nd sys">النظام</span><span class="nd end">النتيجة</span></div>
+  <div class="cols2" id="flows-list"></div>
+</div></section>
+
+<section class="hsec" id="phases"><div class="wrap">
+  <span class="eyebrow">٧ · المراحل</span>
+  <h2>خطة التنفيذ وحالتها</h2>
+  <div class="stack" style="gap:10px" id="ph"></div>
+</div></section>
+
+<section class="hsec" id="try" style="border:0"><div class="wrap">
+  <span class="eyebrow">٨ · جرّب النموذج</span>
+  <h2>سيناريوهات جاهزة للتجربة</h2>
+  <div class="launch">
+    <a href="map.html"><b>استكشف الخريطة</b><small>اختر منطقة، صفِّ المطاعم حسب المطبخ، قرّب، جرّب 3D والجولة الافتراضية، واضغط مكانًا مقفلًا.</small></a>
+    <a href="activity.html#water-sports"><b>احجز فعالية بالباقات والإضافات</b><small>غيّر الباقة وشاهد البانانا بوت تصبح «مشمولة»، فعّل GoPro التي تتطلب التصوير، وأضف سائقًا.</small></a>
+    <a href="activities.html"><b>تصفح الأنشطة بالفلاتر</b><small>تصنيفات، منطقة، سعر، مدة، ترتيب، عرض شبكة أو قائمة، وحالة «لا نتائج».</small></a>
+    <a href="my-trip.html"><b>رحلتي ثم الدفع</b><small>أضف عناصر، جرّب كود BALI10، ثم أكمل الدفع واختر نتيجة: ناجح، مرفوض، أو قيد المعالجة.</small></a>
+    <a href="home.html#en"><b>English (LTR)</b><small>بدّل اللغة من الهيدر: كل الصفحات تنعكس من اليمين لليسار.</small></a>
+  </div>
+  <p class="muted" style="font-size:13px">الحالة (رحلتي، المفضلة، الدخول) تُحفظ في متصفحك فقط لأغراض العرض. الأسعار والتقييمات بيانات تجريبية، والأسعار المأخوذة من الموقع الحالي معلّمة في ملف البيانات.</p>
+</div></section>
+</main>
+<footer class="ftr"><div class="wrap ftr-bottom"><img src="assets/logo-light.png" alt="Bali Trips" style="height:26px;width:auto"><span>Bali Trips — UI/UX Prototype v2</span><a href="home.html" style="color:var(--palm)">افتح الموقع</a></div></footer>
+
+<script>
+document.documentElement.lang = "ar"; document.documentElement.dir = "rtl";
+(function () {
+const PAGES = [
+  ["الصفحات الرئيسية", [["الرئيسية", "home.html", 1], ["خدماتنا (ابدأ التخطيط)", "services.html", 1], ["نتائج البحث + لا توجد نتائج", "search.html", 1]]],
+  ["الخريطة التفاعلية", [["صفحة الخريطة (2D / 3D / جولة)", "map.html", 1], ["تفاصيل المكان", "place.html#locavore", 1], ["فتح الخريطة الكاملة (شراء)", "map.html", 1]]],
+  ["الأنشطة والفعاليات", [["كل الأنشطة + الفلاتر", "activities.html", 1], ["تفاصيل الفعالية + الباقات + الإضافات + السائق", "activity.html#water-sports", 1], ["مقارنة الباقات", "activity.html#water-sports", 1]]],
+  ["الجداول السياحية", [["كل الجداول", "itineraries.html", 1], ["تفاصيل الجدول + الشراء", "itinerary.html#5-days", 1]]],
+  ["الباقات السياحية", [["كل الباقات", "packages.html", 1], ["تفاصيل الباقة + الحجز", "package.html#honeymoon", 1]]],
+  ["السائق", [["صفحة السائق + حجز بنطاق تواريخ", "driver.html", 1]]],
+  ["الرحلة المخصصة", [["الشرح + النموذج متعدد الخطوات", "custom-trip.html", 1]]],
+  ["استكشف بالي", [["المناطق", "explore.html", 1], ["تفاصيل المنطقة", "region.html#ubud", 1]]],
+  ["رحلتي والحجز", [["رحلتي (الكارت)", "my-trip.html", 1], ["إتمام الحجز (٣ خطوات)", "checkout.html", 1], ["دفع ناجح", "confirmation.html#success", 1], ["دفع مرفوض", "confirmation.html#failed", 1], ["قيد المعالجة", "confirmation.html#processing", 1], ["بانتظار التحويل", "confirmation.html#transfer", 1]]],
+  ["حساب المسافر", [["لوحة الحساب", "account.html", 1], ["حجوزاتي + تفاصيل الحجز", "account.html#bookings", 1], ["جداولي وملفاتي", "account.html#files", 1], ["المفضلة", "account.html#favorites", 1], ["الإشعارات", "account.html#notifications", 1], ["تسجيل الدخول", "login.html", 1], ["إنشاء حساب", "register.html", 1], ["استعادة كلمة المرور", "forgot.html", 1]]],
+  ["المحتوى والمساعدة", [["المقالات", "articles.html", 1], ["تفاصيل المقال", "article.html#first-time", 1], ["من نحن", "about.html", 1], ["تواصل معنا", "contact.html", 1], ["الأسئلة الشائعة", "faq.html", 1], ["مركز المساعدة", "help.html", 1]]],
+  ["السياسات", [["الخصوصية", "policy.html#privacy", 1], ["الشروط والأحكام", "policy.html#terms", 1], ["الإلغاء والاسترجاع", "policy.html#cancellation", 1], ["استخدام المنصة", "policy.html#platform", 1], ["استخدام الخريطة", "policy.html#map", 1]]],
+  ["الحالات والأخطاء", [["404", "404.html", 1], ["التحميل، الأخطاء، الفراغ، انقطاع الاتصال", "states.html", 1]]],
+  ["لوحة التحكم", [["الرئيسية والمؤشرات", "admin.html", 1], ["الفعاليات والباقات والإضافات", "admin.html#activities", 1], ["إدارة الخريطة", "admin.html#map", 1], ["الحجوزات والعملاء والمدفوعات", "admin.html#bookings", 1], ["المحتوى والعروض والإعدادات والصلاحيات", "admin.html#settings", 1]]],
+  ["التوثيق", [["Design System", "design-system.html", 1], ["Motion + Developer Handoff", "handoff.html", 1]]],
+];
+let ready = 0, all = 0;
+document.getElementById("smap").innerHTML = PAGES.map(([g, ps]) => `<div class="sm-g"><h3>${g}</h3>${ps.map(([n, h, ok]) => { all++; if (ok) ready++; return ok ? `<a href="${h}">${n}<span class="st ok">جاهزة</span></a>` : `<span class="pl">${n}<span class="st nx">التالية</span></span>`; }).join("")}</div>`).join("");
+document.getElementById("kpis").innerHTML = [[all, "صفحة وحالة في الخريطة"], [ready, "جاهزة للتجربة الآن"], ["2", "لغتان: عربي RTL وإنجليزي LTR"], ["3", "مقاسات: 390 · 768 · 1440"]].map(([n, l]) => `<div><b>${n}</b>${l}</div>`).join("");
+
+const CLS = {
+  orig: ["متطلبات أصلية", [
+    ["الجداول السياحية الجاهزة", "شراء وتحميل جدول حسب عدد الأيام والمناطق، والاحتفاظ به على الجوال.", "جاهزة"],
+    ["الخريطة التفاعلية بهوية خاصة", "أماكن تضيفها الإدارة فقط، الأقرب مني، اقتراحات حسب التكبير، تصنيفات (فاخرة، إيطالية، هندية، كافيهات، فعاليات، أماكن سياحية).", "جاهزة"],
+    ["استعراض الأنشطة والفعاليات", "قائمة وتفاصيل وحجز.", "جاهزة"],
+    ["تجربة Premium وMobile First", "صور قوية، أقل عدد خطوات، إبراز الخريطة والجداول.", "جاهزة"],
+    ["لوحة تحكم للمحتوى والأماكن والجداول", "إدارة كاملة من الإدارة.", "جاهزة"],
+    ["الدفع مرن", "قد يبدأ بالتحويل البنكي ثم بوابة دفع لاحقًا.", "جاهزة"],
+  ]],
+  rev: ["تعديلات معتمدة", [
+    ["صفحات مستقلة لكل خدمة وزر", "لا Pop-up ولا Scroll بديلًا عن الصفحة. كل كارت يفتح صفحة تفاصيله.", "جاهزة"],
+    ["الهيدر", "أيقونة الحساب، أيقونة اللغة، زر «ابدأ التخطيط»، أيقونة رحلتي، والروابط السبعة.", "جاهزة"],
+    ["صفحة خدماتنا", "ست خدمات في كروت: أيقونة، صورة، اسم، وصف، زر.", "جاهزة"],
+    ["الخريطة أقرب للتصور الأول", "ليست Google Maps، تفضيل 3D، جزء مجاني والباقي Blur، زر شراء/فتح، وبطاقة مكان بالاسم والصور والنبذة والتصنيف والمنطقة والتقييم والمفضلة ورحلتي.", "جاهزة"],
+    ["ترتيب أقسام الرئيسية", "١٣ قسمًا، و«اعثر على ما تفعله» قبل الجداول والباقات.", "جاهزة"],
+    ["فلاتر وكروت الأنشطة", "الكل، المغامرات، الشواطئ، المطاعم، الكافيهات، الطبيعة، العائلات، الأطفال، التصوير، الثقافة، الأعلى تقييمًا، السعر، المنطقة.", "جاهزة"],
+    ["نموذج حجز الفعالية", "تاريخ، وقت، أفراد، أيام متعددة للممتدة، إضافة سائق بنفس التاريخ والعدد ونوع سيارة تلقائي، ملخص، منع الحجز قبل اكتمال البيانات.", "جاهزة"],
+    ["صفحة السائق", "الاسم «السائق» فقط، حذف الحقول القديمة، نطاق تواريخ مثل Booking، منطق السيارة ١–٤ / ٥–٧ / ٨+، آلية حجز من ٥ خطوات.", "جاهزة"],
+    ["الجداول والباقات", "٣–٤ جداول (٣، ٥، ٧، ١٠ أيام)، ٣–٤ باقات، صفحات تفاصيل وشراء/حجز.", "جاهزة"],
+    ["الرحلة المخصصة", "شرح + نموذج (تواريخ، أشخاص، نوع، ميزانية، أنشطة، سائق، ملاحظات).", "جاهزة"],
+    ["رحلتي", "إضافة فعالية/سائق/جدول/باقة/مكان، والإجمالي وإتمام الحجز.", "جاهزة"],
+    ["الفوتر", "نبذة، روابط سريعة، السياسات الخمس، معلومات عامة وطرق الدفع، الشعار والحقوق ونسخة الموقع.", "جاهزة"],
+    ["الاقتراحات الإضافية", "أنشطة مشابهة، باقات مقترحة، جداول مرتبطة، اقتراح السائق قبل الدفع، Breadcrumb، مشاركة، تقييمات الخدمة فقط، بحث شامل.", "جاهزة"],
+  ]],
+  prop: ["مميزات مقترحة", [
+    ["Smart Trip Planner", "مخطط ذكي يحول الأيام والميزانية والاهتمامات إلى تصور مبدئي ثم طلب جدول مخصص.", "مقترح"],
+    ["My Trip Board", "ترتيب العناصر حسب الأيام وتنبيه تعارض المواعيد — مطبق كتجربة داخل «رحلتي».", "مطبّق كتجربة"],
+    ["المفضلة للزائر", "حفظ قبل إنشاء حساب ثم نقلها للحساب.", "مطبّق كتجربة"],
+    ["مساعد المسافر (Chat)", "يجيب من بيانات المنصة فقط ويحوّل للفريق.", "مقترح"],
+    ["مقارنة الباقات", "جدول فروق مع إبراز المختلف — مطبق في صفحة الفعالية.", "مطبّق كتجربة"],
+    ["مشاركة الرحلة", "رابط عرض فقط للعائلة والأصدقاء.", "مطبّق كتجربة"],
+    ["خريطة 3D وجولة افتراضية", "مستوى متقدم (ميل الكاميرا) ومستوى استعراضي (سيارة على مسار) — كنموذج بصري فقط.", "مطبّق كتجربة"],
+    ["أكواد الخصم", "تطبيق كود في «رحلتي» (جرّب BALI10).", "مطبّق كتجربة"],
+  ]],
+};
+const tabs = document.getElementById("cls-tabs"); let curC = "rev";
+function renderCls() { tabs.innerHTML = Object.entries(CLS).map(([k, [n, l]]) => `<button class="chip" role="tab" aria-selected="${k === curC}" aria-pressed="${k === curC}" data-k="${k}">${n} <span class="ct">${l.length}</span></button>`).join("");
+  document.getElementById("cls-body").innerHTML = CLS[curC][1].map(([a, b, s]) => `<tr><td>${a}</td><td>${b}</td><td><span class="st ${/جاهزة|مطبّق/.test(s) ? "ok" : "nx"}">${s}</span></td></tr>`).join(""); }
+tabs.onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) { curC = b.dataset.k; renderCls(); } }; renderCls();
+
+const QS = [
+  ["العملة", "الموقع الحالي بالدولار، وأمثلة البريف بالريال. اعتمدنا الدولار في النموذج مع إمكانية إضافة محوّل عملات من الإعدادات."],
+  ["طرق الدفع", "مرتبطة بالسجل التجاري. صممنا البطاقة وApple Pay والتحويل البنكي، مع حالة «بانتظار الحوالة». ما الطريقة التي نبدأ بها فعليًا؟"],
+  ["تسعير الخريطة الكاملة والمنطقة المجانية", "افترضنا أوبود مجانية، والفتح بمبلغ لمرة واحدة ($19 تجريبي). هل تُفتح تلقائيًا مع شراء جدول أو باقة؟ وكم مدة الوصول؟"],
+  ["الجداول: عددها ومنطقها", "البريف الأصلي: ٥/٨/١٠/١٥ يومًا مع اختيار المناطق وسعر حسب الاختيار. التعديلات: ٣/٥/٧/١٠. اعتمدنا التعديلات. هل يبقى اختيار المناطق داخل الجدول؟"],
+  ["مصطلح «الباقة»", "يُستخدم لمعنيين: الباقات السياحية متعددة الأيام، وباقات الفعالية الواحدة. نقترح الإبقاء على الاسمين مع فصلهما بصريًا. هل توافقون؟"],
+  ["التقييمات", "لا توجد تقييمات موثقة حاليًا. صممنا أماكنها معلّمة كنموذج. هل نخفي القسم حتى تتوفر تقييمات حقيقية؟"],
+  ["أسعار السائق", "الأسعار اليومية لكل فئة سيارة، ساعات اليوم، ورسوم المناطق البعيدة غير متوفرة. استخدمنا أسعارًا تجريبية."],
+  ["سياسة الإلغاء", "لكل مزود سياسته. نعرض نصًا تجريبيًا ونحتاج السياسة الفعلية لكل مزود قبل النشر."],
+  ["اللغة الإندونيسية", "أُضيفت في قائمة اللغات للموقع العام بحالة «قريبًا». هل هي ضمن المرحلة الأولى؟"],
+  ["الحساب عند الدفع", "صممنا الدفع كضيف مع خيار إنشاء الحساب تلقائيًا. هل الحساب إلزامي؟"],
+  ["تأكيد مزود الخدمة", "هل يؤكد المزود من لوحة خاصة به، أم يؤكد فريق Bali Trips يدويًا من لوحة التحكم؟ صممنا الثاني."],
+  ["ملفات الجداول", "عدد مرات التحميل المسموح، وهل يحصل المشتري على التحديثات اللاحقة للملف؟"],
+  ["الصور", "استخدمنا صور ملفات الهوية والبروفايل. صور الأنشطة والمطاعم الفعلية تأتي من المزودين وحقوقها مطلوبة."],
+];
+document.getElementById("qs").innerHTML = QS.map(([a, b], i) => `<div class="q"><span class="n">${i + 1}</span><span><b>${a}</b><br><span class="muted">${b}</span></span></div>`).join("");
+
+const N = (x) => `<span class="nd">${x}</span>`, Dc = (x) => `<span class="nd dec">${x}</span>`, Sy = (x) => `<span class="nd sys">${x}</span>`, E = (x) => `<span class="nd end">${x}</span>`, A = '<span class="ar">←</span>';
+const FL = [
+  ["أ · الاكتشاف عبر الخريطة", [N("الرئيسية"), N("الخريطة"), N("اختيار منطقة"), Sy("تتحرك الكاميرا وتظهر النقاط"), N("تصنيف"), N("مكان"), Dc("مقفل؟"), N("بطاقة المكان"), N("أضف إلى رحلتي"), E("رحلتي")], "map.html"],
+  ["ب · حجز فعالية", [N("الأنشطة"), N("فلتر"), N("تفاصيل الفعالية"), N("الباقة"), N("التاريخ"), N("الوقت"), N("الأفراد"), N("الإضافات"), Dc("سائق؟"), Sy("اقتراح السائق قبل الدفع"), N("احجز الآن"), N("بياناتك ← مراجعة ← دفع"), E("بانتظار تأكيد المزود")], "activity.html#water-sports"],
+  ["ج · شراء جدول جاهز", [N("الجداول"), N("تفاصيل ومعاينة الأيام"), N("شراء"), N("الدفع"), Sy("تفعيل فوري"), E("تحميل من صفحة الطلب وحسابي")], "itineraries.html"],
+  ["د · حجز السائق", [N("صفحة السائق"), N("نطاق تواريخ"), N("عدد الأشخاص"), Sy("نوع السيارة تلقائيًا"), Sy("السعر النهائي"), Dc("رحلتي أم احجز الآن"), E("طلب ← تأكيد التفاصيل ← تواصل")], "driver.html"],
+  ["هـ · رحلة مخصصة", [N("شرح الخدمة"), N("نموذج ٩ خطوات"), N("مراجعة"), N("إرسال"), Sy("عرض سعر من الفريق"), Dc("موافقة؟"), E("دفع وتأكيد")], "custom-trip.html"],
+  ["و · فتح الخريطة الكاملة", [N("المنطقة المجانية"), N("مكان مقفل"), N("افتح الخريطة"), N("رحلتي"), N("الدفع"), E("الخريطة مفعّلة في حسابي")], "map.html"],
+  ["ز · الدفع وحالاته", [N("الدفع"), Dc("النتيجة"), E("ناجح"), Sy("مرفوض ← إعادة بنفس الطلب"), Sy("قيد المعالجة ← إشعار"), Sy("تحويل ← رفع الإيصال")], "checkout.html"],
+  ["ح · الإدارة: إضافة مكان للخريطة", [N("لوحة التحكم"), N("الخريطة"), N("نقطة جديدة"), N("الموقع والتصنيف والصور"), N("ربط بمنطقة أو فعالية"), N("معاينة"), E("نشر")], "admin.html#map"],
+];
+document.getElementById("flows-list").innerHTML = FL.map(([h, ch, l]) => `<div class="flow"><h3>${h}</h3><div class="chain">${ch.join(A)}</div><a class="link" href="${l}" style="align-self:flex-start;font-size:14px">جرّب المسار</a></div>`).join("");
+
+const PH = [
+  ["done", "١", "تحليل المشروع والمراجع", "قراءة كل الملفات، استخراج الهوية والمكونات المعتمدة، تصنيف المتطلبات، وتحديد التعارضات والبيانات الناقصة."],
+  ["done", "٢", "الهيكل وتجربة المستخدم", "Sitemap ومسارات المستخدم والعلاقات بين الصفحات."],
+  ["done", "٣", "التصميم المرئي", "Design System وكل الصفحات الرئيسية والداخلية وصفحات الحالات."],
+  ["done", "٤", "التفاعلات والموشن", "الخريطة (2D/3D/جولة)، الباقات والإضافات، تحديث السعر، الحجز والدفع، لوحة التحكم، ومواصفات الحركة."],
+  ["now", "٥", "المراجعة والتسليم", "توثيق المطور جاهز. بانتظار مراجعتكم والإجابة عن النقاط المفتوحة قبل التسليم النهائي."],
+];
+document.getElementById("ph").innerHTML = PH.map(([c, n, h, d]) => `<div class="phase ${c}"><span class="pn">${n}</span><span><b style="color:var(--forest)">${h}</b> ${c === "done" ? '<span class="st ok">مكتملة</span>' : c === "now" ? '<span class="st" style="background:var(--orange-soft);color:#7A4300">قيد التنفيذ</span>' : '<span class="st nx">قادمة</span>'}<br><span class="muted">${d}</span></span></div>`).join("");
+
+/* tab highlight */
+const links = [...document.querySelectorAll("#htabs a")];
+const io = new IntersectionObserver((es) => es.forEach(en => { if (en.isIntersecting) links.forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href") === "#" + en.target.id)); }), { rootMargin: "-30% 0px -60% 0px" });
+document.querySelectorAll(".hsec").forEach(s => io.observe(s));
+})();
+</script>

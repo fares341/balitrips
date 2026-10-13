@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — تفاصيل المكان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.pl-gal { display: grid; gap: 8px; grid-template-columns: 2fr 1fr; grid-template-rows: 200px 200px; border-radius: var(--r-xl); overflow: hidden; }
+.pl-gal img { width: 100%; height: 100%; object-fit: cover; } .pl-gal img:first-child { grid-row: span 2; }
+@media (max-width: 760px) { .pl-gal { grid-template-columns: 1fr; grid-template-rows: 260px; } .pl-gal img:not(:first-child) { display: none; } }
+.dlay { display: grid; gap: 32px; align-items: start; padding-block: 24px 64px; }
+@media (min-width: 1024px) { .dlay { grid-template-columns: minmax(0,1fr) 360px; gap: 48px; } }
+.minimap { position: relative; height: 260px; border-radius: 20px; overflow: hidden; background: #0b2f45; }
+.minimap img { position: absolute; max-width: none; }
+.minimap .mk { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px; border-radius: 50%; background: var(--orange); border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(255,144,0,.35); }
+.near { display: grid; grid-template-columns: 60px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px; border-radius: 14px; }
+.near:hover { background: var(--white); }
+.near img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; }
+</style>
+</head>
+<body data-page="place" data-section="map">
+<div id="hdr"></div>
+<main id="main"><div class="wrap" id="root"></div></main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, img, byId, Trip, Fav, toast, MapAccess, esc } = BT;
+const p = byId(D.PLACES, BT.hashId()); const root = document.getElementById("root");
+if (!p) { root.innerHTML = `<div class="empty" style="padding-block:80px"><span class="ill">${icon("pin", 40)}</span><h1 class="h2">${L("لم نجد هذا المكان", "Place not found")}</h1><a class="btn btn-forest" href="map.html">${L("العودة للخريطة", "Back to the map")}</a></div>`; return; }
+const inFree = (x, y) => { const pts = D.FREE_ZONE; let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { if (((pts[i][1] > y) !== (pts[j][1] > y)) && (x < (pts[j][0] - pts[i][0]) * (y - pts[i][1]) / (pts[j][1] - pts[i][1]) + pts[i][0])) c = !c; } return c; };
+const locked = !MapAccess.unlocked() && !inFree(p.x, p.y);
+const c = byId(D.CATS, p.cat), R = BT.region(p.region);
+document.title = "Bali Trips — " + t(p.name);
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const nearby = D.PLACES.filter(x => x.id !== p.id).sort((a, b) => dist(a, p) - dist(b, p)).slice(0, 4);
+root.innerHTML = `${BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الخريطة التفاعلية", "Interactive Map"), "map.html"], [t(R.name), "map.html#region-" + R.id], [locked ? L("مكان مقفل", "Locked place") : t(p.name), "#"]])}
+  ${locked ? `<div class="panel empty" style="margin-bottom:64px"><span class="ill">${icon("lock", 38)}</span><h1 class="h2">${L("هذا المكان ضمن الخريطة الكاملة", "This place is in the full map")}</h1><p class="muted" style="max-width:50ch">${L(`يقع في ${t(R.name)}. افتح الخريطة الكاملة لترى التفاصيل والصور والاتجاهات.`, `It's in ${t(R.name)}. Unlock the full map for details, photos and directions.`)}</p><div class="row" style="justify-content:center"><a class="btn btn-primary" href="map.html">${L("افتح الخريطة الكاملة", "Unlock full map")}</a><a class="btn btn-ghost" href="map.html#region-ubud">${L("استكشف المنطقة المجانية", "Explore the free area")}</a></div></div>` : `
+  <div class="pl-gal"><img src="${img(p.img)}" alt=""><img src="${R.img}" alt=""><img src="${img(p.cat === "restaurants" ? "flatlay" : p.cat === "beaches" ? "beach-palms" : "jungle")}" alt=""></div>
+  <div class="dlay">
+    <div class="stack minw0" style="gap:22px">
+      <div class="stack" style="gap:8px"><div class="row" style="gap:6px"><span class="tag tag-palm">${icon(c.icon, 14)} ${t(c.name)}${p.sub ? " · " + t(c.subs.find(s => s[0] === p.sub)[1]) : ""}</span>${p.tags.map(tg => `<span class="tag tag-forest">${t(D.TAGS.find(x => x[0] === tg)[1])}</span>`).join("")}${p.price ? `<span class="tag tag-orange num">${p.price}</span>` : ""}</div>
+        <h1 class="h1" style="font-size:clamp(28px,3.6vw,44px)">${esc(t(p.name))}</h1><div class="row" style="gap:14px;color:var(--muted)"><span>${icon("pin", 16)} ${t(R.name)}</span>${BT.stars(p.rating)}</div></div>
+      <p style="font-size:17px">${t(p.desc)}</p>
+      <p class="muted">${L("لماذا اخترناه: ملاحظة يكتبها فريق Bali Trips عن تجربة المكان، وأفضل وقت للزيارة، وما يناسب العائلات أو الأزواج.", "Why we picked it: a note from the Bali Trips team on the experience, best time to visit, and who it suits.")}</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">${[["clock", L("أفضل وقت", "Best time"), L("الصباح الباكر أو الغروب", "Early morning or sunset")], ["users", L("مناسب لـ", "Good for"), p.tags.length ? p.tags.map(tg => t(D.TAGS.find(x => x[0] === tg)[1])).join(L("، ", ", ")) : L("الجميع", "Everyone")], ["info", L("ملاحظة", "Note"), p.cat === "landmarks" ? L("لباس محتشم في المعابد", "Modest dress at temples") : L("يفضل الحجز المسبق", "Booking ahead recommended")]].map(([i, k, v]) => `<div class="panel panel-ivory" style="padding:14px"><small class="muted" style="display:flex;gap:6px;align-items:center">${icon(i, 14)} ${k}</small><b style="color:var(--forest)">${v}</b></div>`).join("")}</div>
+      <div class="minimap"><img src="assets/img/bali-sat.jpg" alt="" id="mmi"><span class="mk"></span></div>
+      ${p.activity ? `<a class="panel row between" href="activity.html#${p.activity}" style="gap:14px"><span class="row" style="gap:12px">${icon("bolt", 22)}<span><b style="color:var(--forest)">${L("نشاط قابل للحجز هنا", "Bookable activity here")}</b><br><small class="muted">${t(byId(D.ACTIVITIES, p.activity).title)}</small></span></span><span class="btn btn-forest btn-sm">${L("احجز", "Book")}</span></a>` : ""}
+      <div class="stack" style="gap:8px"><h2 class="h3">${L("أماكن قريبة", "Nearby places")}</h2>${nearby.map(n => `<a class="near" href="place.html#${n.id}"><img src="${img(n.img)}" alt=""><span><b style="color:var(--forest)">${esc(t(n.name))}</b><br><small class="muted">${t(byId(D.CATS, n.cat).name)} · ${t(BT.region(n.region).name)}</small></span><span class="flip">${icon("chev", 18)}</span></a>`).join("")}</div>
+    </div>
+    <aside class="panel stack" style="gap:10px;position:sticky;top:calc(var(--hdr-h) + 16px)">
+      <a class="btn btn-forest btn-block" href="map.html#place-${p.id}">${icon("map", 18)} ${L("اعرضه على الخريطة", "Show on the map")}</a>
+      <button class="btn btn-primary btn-block" id="add">${icon("plus", 18)} ${L("أضف إلى رحلتي", "Add to My Trip")}</button>
+      <button class="btn btn-ghost btn-block" data-fav="plc:${p.id}" aria-pressed="${Fav.has("plc:" + p.id)}">${icon("heart", 18)} ${L("المفضلة", "Favorite")}</button>
+      <a class="btn btn-ghost btn-block" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}" target="_blank" rel="noopener">${icon("route", 18)} ${L("الاتجاهات", "Directions")}</a>
+      <button class="btn btn-ghost btn-block" id="share">${icon("share", 18)} ${L("مشاركة", "Share")}</button>
+    </aside>
+  </div>`}`;
+if (locked) return;
+const mm = document.getElementById("mmi"), box = mm.parentElement; const s = 1.4;
+const pos = () => { mm.style.width = 2048 * s + "px"; mm.style.height = 1399 * s + "px"; mm.style.left = (box.clientWidth / 2 - p.x * s) + "px"; mm.style.top = (box.clientHeight / 2 - p.y * s) + "px"; }; pos(); addEventListener("resize", pos);
+document.getElementById("add").onclick = () => { if (Trip.items().some(i => i.type === "place" && i.ref === p.id)) return toast(L("المكان موجود في رحلتك", "Already in your trip")); Trip.add({ type: "place", ref: p.id, title: p.name, img: p.img, lines: [], total: 0, meta: { region: p.region } }); toast(L("أُضيف إلى رحلتي", "Added to My Trip"), { link: [L("رحلتي", "My Trip"), "my-trip.html"] }); };
+document.getElementById("share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast(L("نُسخ الرابط", "Link copied")); } catch (e) { toast(L("انسخ الرابط من شريط العنوان", "Copy the link from the address bar")); } };
+})();
+</script>
+</body>
+</html>

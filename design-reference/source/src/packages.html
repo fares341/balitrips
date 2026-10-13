@@ -1,0 +1,44 @@
+<!--title: Bali Trips — الباقات السياحية|page: packages|section: services-->
+<style>
+.pk-intro { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.pk-intro div { padding: 18px; border-radius: 18px; background: var(--white); border: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 6px; }
+.pk-intro b { color: var(--forest); }
+.cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+.cmp { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+.cmp th, .cmp td { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); text-align: center; }
+.cmp th:first-child, .cmp td:first-child { text-align: start; color: var(--forest); font-weight: 700; }
+.cmp thead th { background: var(--ivory-2); color: var(--forest); }
+</style>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/green-dress.jpg" alt="" style="object-position:30% 50%">
+    <div class="wrap"><div id="crumbs"></div>
+      <span class="eyebrow" style="color:var(--palm)" data-en="Tour packages">الباقات السياحية</span>
+      <h1 data-en="Ready-made Bali programs">برامج بالي الجاهزة</h1>
+      <p data-en="A package combines activities, a day plan and, in most cases, a driver — for a set number of days and travelers.">الباقة تجمع الأنشطة وجدول الأيام، والسائق في أغلبها — لعدد محدد من الأيام والأشخاص.</p>
+    </div></section>
+  <section class="sec-tight"><div class="wrap pk-intro">
+    <div><b data-en="Package vs itinerary">الباقة أم الجدول؟</b><span class="muted" data-en="An itinerary is a file to guide you. A package is booked services: activities, transport and a plan.">الجدول ملف يرشدك. الباقة خدمات محجوزة: أنشطة وتنقل وخطة.</span></div>
+    <div><b data-en="Fixed price for your group">سعر ثابت لمجموعتك</b><span class="muted" data-en="The price covers up to the stated number of people.">السعر يغطي حتى عدد الأشخاص المذكور.</span></div>
+    <div><b data-en="Pick your start date">اختر تاريخ البداية</b><span class="muted" data-en="We confirm each service with its provider after booking.">نؤكد كل خدمة مع مزودها بعد الحجز.</span></div>
+  </div></section>
+  <section class="sec-tight" style="padding-top:0"><div class="wrap stack" style="gap:24px">
+    <div class="grid g4" id="grid"></div>
+    <div class="stack" style="gap:12px"><h2 class="h3" data-en="Compare packages">قارن الباقات</h2><div class="cmp-wrap" id="cmp"></div></div>
+  </div></section>
+</main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, mount, packageCard, byId } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("الباقات السياحية", "Tour packages"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+mount("#grid", D.PACKAGES.map(packageCard).join(""));
+const P = D.PACKAGES; const yes = icon("check", 18, 2.4), no = `<span style="color:#B0B7B1">${icon("minus", 18, 2.4)}</span>`;
+document.getElementById("cmp").innerHTML = `<table class="cmp"><thead><tr><th></th>${P.map(p => `<th>${t(p.name)}</th>`).join("")}</tr></thead><tbody>
+  <tr><td>${L("السعر يبدأ من", "From")}</td>${P.map(p => `<td class="num"><b>${money(p.price)}</b></td>`).join("")}</tr>
+  <tr><td>${L("عدد الأيام", "Days")}</td>${P.map(p => `<td class="num">${p.days}</td>`).join("")}</tr>
+  <tr><td>${L("حتى عدد أشخاص", "Up to")}</td>${P.map(p => `<td class="num">${p.people}</td>`).join("")}</tr>
+  <tr><td>${L("يشمل السائق", "Driver")}</td>${P.map(p => `<td style="color:var(--ok)">${p.driver ? yes : no}</td>`).join("")}</tr>
+  <tr><td>${L("عدد الأنشطة", "Activities")}</td>${P.map(p => `<td class="num">${p.acts.length}</td>`).join("")}</tr>
+  <tr><td></td>${P.map(p => `<td><a class="btn btn-forest btn-sm" href="package.html#${p.id}">${L("التفاصيل", "Details")}</a></td>`).join("")}</tr></tbody></table>`;
+})();
+</script>

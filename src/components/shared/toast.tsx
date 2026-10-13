@@ -24,18 +24,28 @@
  *     restarts the countdown and re-announces, instead of leaving the first
  *     timer to dismiss a message the user just triggered again.
  *
- * `.bt-toast` is `position: fixed`, so the provider can sit anywhere in the
- * tree — normally just inside the locale layout, wrapping the app.
+ * v3 (bt.css "Toast"): a deep-forest card above the mobile tab bar and at
+ * the bottom centre on desktop, 3.6s, with a check (or an alert for
+ * `error`) and an optional trailing link ("View", "My Trip"). The host is
+ * `.toasts`, always mounted as the live region.
  */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { Icon } from '@/components/ui'
+import { Link } from '@/i18n/routing'
+
+export type ToastOptions = {
+  /** Error styling (dark red) and an alert icon. */
+  error?: boolean
+  /** Trailing link, e.g. { href: '/cart', label: t('bt_my_trip') }. */
+  link?: { href: string; label: string }
+}
 
 export type ToastApi = {
   /** Show a message. Already translated — this component holds no copy. */
-  toast: (message: string) => void
+  toast: (message: string, options?: ToastOptions) => void
   /** Dismiss the current message early. */
   dismiss: () => void
 }
@@ -43,7 +53,7 @@ export type ToastApi = {
 const ToastContext = createContext<ToastApi | null>(null)
 
 /** Matches the 2400ms in bt-app.jsx. */
-const DEFAULT_DURATION = 2400
+const DEFAULT_DURATION = 3600
 
 export type ToastProviderProps = {
   children: ReactNode
@@ -51,7 +61,7 @@ export type ToastProviderProps = {
   duration?: number
 }
 
-type ToastState = { key: number; message: string } | null
+type ToastState = { key: number; message: string; options: ToastOptions } | null
 
 export function ToastProvider({ children, duration = DEFAULT_DURATION }: ToastProviderProps) {
   const [current, setCurrent] = useState<ToastState>(null)
@@ -71,10 +81,10 @@ export function ToastProvider({ children, duration = DEFAULT_DURATION }: ToastPr
   }, [clearTimer])
 
   const toast = useCallback(
-    (message: string) => {
+    (message: string, options: ToastOptions = {}) => {
       clearTimer()
       nextKey.current += 1
-      setCurrent({ key: nextKey.current, message })
+      setCurrent({ key: nextKey.current, message, options })
       timer.current = setTimeout(() => {
         timer.current = null
         setCurrent(null)
@@ -91,12 +101,17 @@ export function ToastProvider({ children, duration = DEFAULT_DURATION }: ToastPr
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {/* Zero-height wrapper: the pill inside is position: fixed. */}
-      <div role="status" aria-live="polite" aria-atomic="true">
+      {/* The host is fixed and ignores the pointer; only the card takes it. */}
+      <div className="toasts" role="status" aria-live="polite" aria-atomic="true">
         {current && (
-          <div key={current.key} className="bt-toast">
-            <Icon name="check" size={18} color="#fff" />
-            {current.message}
+          <div key={current.key} className={current.options.error ? 'toast err' : 'toast'}>
+            <Icon name={current.options.error ? 'alert' : 'check'} size={20} stroke={2.2} />
+            <span className="toast-msg">{current.message}</span>
+            {current.options.link !== undefined && (
+              <Link href={current.options.link.href} onClick={dismiss}>
+                {current.options.link.label}
+              </Link>
+            )}
           </div>
         )}
       </div>

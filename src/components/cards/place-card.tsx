@@ -1,30 +1,32 @@
 /**
- * PlaceCard.
+ * PlaceCard — v3 `placeCard` (bt.js): places and restaurants.
  *
- * The list-view counterpart to a map pin, built from the `.bt-pcard` floating
- * card in design/handoff/sections-bt/page-map.jsx but on the shared `.card`
- * shell so it drops into any grid.
- *
- * The important difference from the handoff: a locked place is *not* a normal
- * card with a CSS blur over it. The prototype shipped the name, coordinates,
- * rating and image of every gated place to every browser and masked them with
- * `filter: blur(4px)` and a string of bullets, so the paywall was one devtools
- * panel away from irrelevant. This component's locked branch has nothing to
- * leak — `redactPlace()` strips the fields server-side, so the type itself
- * makes them unreachable.
+ * Image 4:3 with the category as a glass chip and the heart; area with the
+ * real rating at the end; name; description. A locked place (not in the
+ * visitor's plan) renders a lock card that leads to the plans instead — its
+ * name and photo are never sent to the browser.
  */
 
-import { useFormatter, useLocale, useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
-import { LinkButton, Tag } from '@/components/shared'
-import { Icon, Photo } from '@/components/ui'
-import { Link } from '@/i18n/routing'
+import { LinkButton } from '@/components/bt/button'
+import {
+  Card,
+  CardBody,
+  CardMedia,
+  CardMeta,
+  CardText,
+  CardTitle,
+  Stars,
+} from '@/components/bt/card'
+import { Tag } from '@/components/bt/chip'
+import { FavButton } from '@/components/bt/fav-button'
+import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { entityHref } from '@/lib/content/types'
 import type { MapPlaceForClient } from '@/lib/entitlements/redaction'
 
-/** Where an unentitled visitor goes to buy access. */
 const PLANS_HREF = '/plans'
 
 export type PlaceCardProps = {
@@ -35,99 +37,53 @@ export type PlaceCardProps = {
 export function PlaceCard({ place, priority = false }: PlaceCardProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
-  const format = useFormatter()
 
   if (place.locked) {
     return (
-      <article
-        className="card bt-cardhover"
-        style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
-      >
-        <div
-          className="card-pad"
-          style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}
-        >
-          <span className="bt-paywall-ic">
-            <Icon name="lock" size={20} color="#fff" />
+      <Card hoverable={false}>
+        <div className="empty" style={{ flex: 1 }}>
+          <span className="ill">
+            <Icon name="lock" size={34} />
           </span>
-          <h3 style={{ fontSize: 17, textAlign: 'center' }}>{t('mp_locked')}</h3>
-          <p
-            className="muted"
-            style={{ fontSize: 13, margin: 0, textAlign: 'center', lineHeight: 1.6 }}
-          >
-            {t('mp_locked_b')}
-          </p>
-          <LinkButton href={PLANS_HREF} variant="orange" size="sm" block>
+          <b>{t('mp_locked')}</b>
+          <p className="card-text">{t('mp_locked_b')}</p>
+          <LinkButton href={PLANS_HREF} variant="primary" size="sm">
             {t('mp_unlock')}
           </LinkButton>
         </div>
-      </article>
+      </Card>
     )
   }
 
   const name = pick(place.name, locale, place.slug)
   const category = pickOptional(place.category, locale)
   const description = pickOptional(place.description, locale)
+  const area = pickOptional(place.regionLabel, locale)
   const href = entityHref('place', place.slug)
 
   return (
-    <article className="card bt-cardhover" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Link href={href} className="bt-card-media" aria-label={name} tabIndex={-1}>
-        <Photo src={place.heroImageUrl} alt="" priority={priority} style={{ height: 180 }} />
-        {place.isFree && <span className="bt-card-badge">{t('mp_free')}</span>}
-        {place.rating !== null && (
-          <span className="bt-card-rate">
-            ★ {format.number(place.rating, { maximumFractionDigits: 1 })}
-          </span>
-        )}
-      </Link>
-
-      <div
-        className="card-pad"
-        style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}
-      >
-        <h3 style={{ fontSize: 18, color: 'var(--forest)' }}>
-          <Link href={href}>{name}</Link>
-        </h3>
-
-        {category !== null && (
-          <Tag variant="palm" style={{ width: 'fit-content' }}>
-            {category}
-          </Tag>
-        )}
-
-        {description !== null && (
-          <p className="muted" style={{ fontSize: 13.5, margin: 0, flex: 1 }}>
-            {description}
-          </p>
-        )}
-
-        {place.openingHours !== null && (
-          <div
-            className="muted"
-            style={{ fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
-          >
-            <Icon name="clock" size={13} color="var(--muted)" /> {t('map_hours')}:{' '}
-            {place.openingHours}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 8 }}>
-          <LinkButton href={href} variant="forest" size="sm" style={{ flex: 1 }}>
-            {t('map_view')}
-          </LinkButton>
-          {place.activitySlug !== null && (
-            <LinkButton
-              href={entityHref('activity', place.activitySlug)}
-              variant="ghost"
-              size="sm"
-              style={{ flex: 1 }}
-            >
-              {t('mp_detail')}
-            </LinkButton>
-          )}
-        </div>
-      </div>
-    </article>
+    <Card>
+      <CardMedia
+        src={place.heroImageUrl}
+        priority={priority}
+        badges={
+          category !== null || place.isFree ? (
+            <>
+              {category !== null && <Tag variant="glass">{category}</Tag>}
+              {place.isFree && <Tag variant="sun">{t('mp_free')}</Tag>}
+            </>
+          ) : null
+        }
+        fav={<FavButton kind="place" refId={place.id} />}
+      />
+      <CardBody>
+        <CardMeta
+          items={area === null ? [] : [{ icon: 'pin', label: area }]}
+          end={<Stars value={place.rating} />}
+        />
+        <CardTitle href={href}>{name}</CardTitle>
+        {description !== null && <CardText>{description}</CardText>}
+      </CardBody>
+    </Card>
   )
 }

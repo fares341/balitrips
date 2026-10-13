@@ -1,0 +1,79 @@
+<!--title: Bali Trips — تفاصيل الجدول|page: itinerary|section: services-->
+<style>
+.dlay { display: grid; gap: 32px; align-items: start; padding-block: 32px 64px; }
+@media (min-width: 1024px) { .dlay { grid-template-columns: minmax(0,1fr) 380px; gap: 48px; } }
+.info { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.info div { padding: 14px; border-radius: 16px; background: var(--ivory-2); display: flex; flex-direction: column; gap: 4px; }
+.info small { color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.info b { color: var(--forest); }
+.day { border: 1px solid var(--line-soft); border-radius: 16px; background: var(--white); overflow: hidden; }
+.day summary { list-style: none; display: grid; grid-template-columns: 52px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 14px 16px; cursor: pointer; }
+.day summary::-webkit-details-marker { display: none; }
+.day .dn { width: 52px; height: 52px; border-radius: 14px; background: var(--forest); color: var(--palm); display: grid; place-items: center; text-align: center; line-height: 1.1; font-size: 11px; font-weight: 700; }
+.day .dn b { font: 800 20px var(--f-en); display: block; }
+.day .db { padding: 0 16px 16px; display: grid; gap: 8px; }
+.day .stop { display: grid; grid-template-columns: 60px minmax(0,1fr); gap: 10px; font-size: 14.5px; }
+.day .stop .tm { font: 700 13px var(--f-en); color: var(--orange-deep); }
+.day.locked summary { opacity: .9; }
+.day.locked .blur { filter: blur(5px); user-select: none; pointer-events: none; }
+.lockrow { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--forest); color: rgba(255,255,255,.88); font-size: 13.5px; }
+.buy { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); }
+.buy .pr { font: 800 40px var(--f-en); color: var(--forest); line-height: 1; }
+.getlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; }
+.getlist li { display: flex; gap: 10px; } .getlist svg { color: var(--ok); flex-shrink: 0; margin-top: 3px; }
+.file-mock { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 14px; background: var(--ivory-2); }
+.file-mock .pdf { width: 46px; height: 56px; border-radius: 8px; background: #fff; border: 1px solid var(--line); display: grid; place-items: end center; font: 800 10px var(--f-en); color: var(--err); padding-bottom: 6px; position: relative; }
+</style>
+<main id="main"><div id="root"></div></main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, img, byId, Trip, toast } = BT;
+const it = byId(D.ITINERARIES, BT.hashId());
+const root = document.getElementById("root");
+if (!it) { root.innerHTML = `<div class="wrap empty" style="padding-block:80px"><span class="ill">${icon("doc", 40)}</span><h1 class="h2">${L("لم نجد هذا الجدول", "Itinerary not found")}</h1><a class="btn btn-forest" href="itineraries.html">${L("كل الجداول", "All itineraries")}</a></div>`; return; }
+document.title = "Bali Trips — " + t(it.name);
+const plans = D.DAY_PLANS[BT.LANG] || D.DAY_PLANS.ar;
+const owned = BT.store.get("orders", []).some(o => o.items.some(i => i.type === "itinerary" && i.ref === it.id) && o.state === "success");
+const free = 2;
+const stops = (d) => { const p = plans[(d) % plans.length].split(" + "); return [["08:00", p[0]], ["12:30", p[1] || L("غداء في مطعم مقترح قريب", "Lunch at a nearby pick")], ["16:00", p[2] || L("وقت حر واستكشاف المنطقة", "Free time to explore")], ["19:00", L("عشاء مقترح + طريقة العودة للفندق", "Dinner pick + how to get back")]]; };
+root.innerHTML = `
+<section class="banner"><img class="bg" src="${img(it.img)}" alt="">
+  <div class="wrap">${BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الجداول السياحية", "Itineraries"), "itineraries.html"], [t(it.name), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"')}
+    <div class="row" style="gap:6px"><span class="tag tag-glass">${icon("cal", 14)} ${BT.cnt(it.days, "d")}</span><span class="tag tag-glass">PDF</span>${it.popular ? `<span class="tag" style="background:var(--orange);color:var(--forest-ink)">${L("مقترح للزيارة الأولى", "Best first trip")}</span>` : ""}</div>
+    <h1>${t(it.name)}</h1><p>${t(it.short)}</p>
+  </div></section>
+<div class="wrap dlay">
+  <div class="stack minw0" style="gap:32px">
+    <div class="info">
+      <div><small>${icon("cal", 14)} ${L("المدة", "Length")}</small><b>${BT.cnt(it.days, "d")}</b></div>
+      <div><small>${icon("pin", 14)} ${L("المناطق", "Areas")}</small><b>${it.regions.map(r => t(BT.region(r).name)).join(L("، ", ", "))}</b></div>
+      <div><small>${icon("users", 14)} ${L("لمن يناسب", "Best for")}</small><b>${t(it.fit)}</b></div>
+      <div><small>${icon("doc", 14)} ${L("الصيغة", "Format")}</small><b>PDF · ${L("عربي وإنجليزي", "Arabic & English")}</b></div>
+    </div>
+    <section class="stack" style="gap:12px"><h2 class="h3">${L("عن الجدول", "About this itinerary")}</h2><p>${L("جدول متوازن يبدأ بالطبيعة والثقافة في أوبود ثم ينتقل إلى الجنوب للشواطئ والغروب. كل يوم مرتب جغرافيًا لتقليل وقت الطريق، مع بدائل للأيام الماطرة واقتراحات مطاعم حلال قريبة.", "A balanced plan that starts with nature and culture in Ubud, then heads south for beaches and sunsets. Each day is ordered geographically to cut road time, with rainy-day alternatives and nearby halal dining picks.")}</p></section>
+    <section class="stack" style="gap:12px"><div class="row between"><h2 class="h3">${L("ملخص يومي", "Day by day")}</h2>${owned ? `<span class="tag tag-ok">${L("اشتريت هذا الجدول", "You own this itinerary")}</span>` : `<span class="tag tag-palm">${L(`أول ${numAr(free)} أيام متاحة للمعاينة`, `First ${free} days free to preview`)}</span>`}</div>
+      ${Array.from({ length: it.days }, (_, d) => { const lk = !owned && d >= free; return `<details class="day ${lk ? "locked" : ""}" ${d === 0 ? "open" : ""}><summary><span class="dn">${L("اليوم", "Day")}<b>${d + 1}</b></span><span class="minw0"><b style="color:var(--forest)">${plans[d % plans.length].split(" + ")[0]}</b><br><small class="muted">${lk ? L("التفاصيل الكاملة بعد الشراء", "Full details after purchase") : L("٤ محطات · روابط خريطة", "4 stops · map links")}</small></span><span class="pm" style="width:30px;height:30px;border-radius:50%;background:var(--ivory-2);display:grid;place-items:center">${icon(lk ? "lock" : "chevd", 16)}</span></summary>
+        <div class="db">${lk ? `<div class="blur">${stops(d).map(([tm, s]) => `<div class="stop"><span class="tm">${tm}</span><span>${s}</span></div>`).join("")}</div><div class="lockrow">${icon("lock", 18)} ${L("يظهر هذا اليوم كاملًا في الملف بعد الشراء.", "This day is fully shown in the file after purchase.")}</div>` : stops(d).map(([tm, s]) => `<div class="stop"><span class="tm">${tm}</span><span>${s}</span></div>`).join("")}</div></details>`; }).join("")}
+    </section>
+    <section class="stack" style="gap:12px"><h2 class="h3">${L("ماذا تحصل عليه بعد الشراء؟", "What do you get?")}</h2>
+      <ul class="getlist">${[L("ملف PDF بكل الأيام والمحطات والتوقيتات", "A PDF with every day, stop and timing"), L("رابط خريطة لكل محطة يفتح الاتجاهات مباشرة", "A map link per stop that opens directions"), L("مطاعم وكافيهات مقترحة بالقرب من كل محطة", "Suggested restaurants and cafés near each stop"), L("بدائل للأيام الماطرة ونصائح الملابس والمعابد", "Rainy-day alternatives, dress and temple tips"), L("خصم على حجز السائق لنفس الأيام (اختياري)", "Optional driver for the same days")].map(x => `<li>${icon("check", 18, 2.4)}<span>${x}</span></li>`).join("")}</ul>
+      <div class="file-mock"><span class="pdf">PDF</span><span><b style="color:var(--forest)">Bali-Trips_${it.days}-days.pdf</b><br><small class="muted">${L("يُحمّل من صفحة الطلب ومن «جداولي» في حسابك. التحميل متاح حتى ٥ مرات خلال سنة (افتراضي — يُعتمد من الإعدادات).", "Download from your order page and 'My itineraries'. Up to 5 downloads in a year (default — set in settings).")}</small></span></div>
+    </section>
+    <section class="stack" style="gap:10px"><h2 class="h3">${L("الأسئلة الشائعة", "FAQ")}</h2><div class="acc">${[[L("هل يمكنني تعديل الجدول؟", "Can I change the itinerary?"), L("الجدول الجاهز ثابت. لتعديل الأيام أو المناطق اطلب رحلة مخصصة.", "Ready itineraries are fixed. For changes, request a custom trip.")], [L("هل يشمل الجدول الحجوزات؟", "Does it include bookings?"), L("لا. الجدول دليل للتخطيط، ويمكنك حجز الأنشطة والسائق من المنصة.", "No. It's a planning guide; book activities and the driver on the platform.")], [L("هل يُسترد المبلغ؟", "Is it refundable?"), L("منتج رقمي غير قابل للاسترداد بعد التحميل، وفق سياسة الإلغاء.", "A digital product, non-refundable after download per the policy.")]].map(([q, a], i) => `<details ${i ? "" : "open"}><summary>${q}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${a}</div></details>`).join("")}</div></section>
+  </div>
+  <aside class="buy panel stack" style="gap:14px">
+    <span class="muted">${L("سعر الجدول", "Itinerary price")}</span><span class="pr">${BT.money(it.price)}</span>
+    <small class="muted">${L("دفعة واحدة · ملف لكل المسافرين", "One payment · one file for your group")}</small>
+    ${owned ? `<a class="btn btn-forest btn-lg btn-block" href="account.html#files">${icon("download", 18)} ${L("حمّل الجدول", "Download")}</a>` : `<button class="btn btn-primary btn-lg btn-block" id="buy">${L("شراء الجدول", "Buy itinerary")}</button><button class="btn btn-ghost btn-block" id="add">${icon("suitcase", 18)} ${L("أضف إلى رحلتي", "Add to My Trip")}</button>`}
+    <button class="btn btn-ghost btn-sm" id="share" style="align-self:flex-start">${icon("share", 16)} ${L("مشاركة", "Share")}</button>
+    <div class="alert alert-info">${icon("car", 18)}<span>${L("تحتاج سائقًا لهذه الأيام؟", "Need a driver for these days?")} <a class="link" href="driver.html">${L("احجز السائق", "Book a driver")}</a></span></div>
+  </aside>
+</div>
+<section class="sec-tight bg-ivory2"><div class="wrap stack" style="gap:18px"><h2 class="h2">${L("جداول أخرى", "Other itineraries")}</h2><div class="grid g3" id="others"></div></div></section>`;
+BT.mount("#others", D.ITINERARIES.filter(x => x.id !== it.id).map(BT.itineraryCard).join(""));
+const b = document.getElementById("buy"); if (b) b.onclick = () => { BT.addItinerary(it); const k = Trip.items().find(i => i.type === "itinerary" && i.ref === it.id).key; BT.store.set("checkout", [k]); location.href = "checkout.html"; };
+const a = document.getElementById("add"); if (a) a.onclick = () => BT.addItinerary(it);
+document.getElementById("share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast(L("نُسخ الرابط", "Link copied")); } catch (e) { toast(L("انسخ الرابط من شريط العنوان", "Copy the link from the address bar")); } };
+})();
+</script>

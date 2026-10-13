@@ -1,21 +1,17 @@
 /**
- * ArticleCard.
+ * ArticleCard — v3 `articleCard` (bt.js).
  *
- * Ported from `ArticleCard` in design/handoff/bt-ui.jsx (lines 233-262),
- * including the `compact` variant used by the blog sidebar's "most read" list.
- *
- * The handoff printed a hard-coded English reading time (`a.read`, literally
- * `"6 min"`) into all three locales. There is no reading-time column — it was
- * never real data — so the meta line carries the publication date instead,
- * formatted for the active locale.
+ * Image 16:10; category tag and date; title; excerpt; "Read article →".
+ * `compact` is the thumbnail row used in sidebars.
  */
 
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
-import { Tag } from '@/components/shared'
+import { Card, CardBody, CardMedia, CardText, CardTitle } from '@/components/bt/card'
+import { Tag } from '@/components/bt/chip'
 import { Icon, Photo } from '@/components/ui'
-import { Link } from '@/i18n/routing'
 import type { Locale } from '@/i18n/config'
+import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { ArticleSummary } from '@/lib/content/types'
 
@@ -35,7 +31,6 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
   const excerpt = pickOptional(article.excerpt, locale)
   const categoryLabel =
     article.category === null ? null : pick(article.category.label, locale, article.category.key)
-
   const published = article.publishedAt === null ? null : new Date(article.publishedAt)
   const publishedLabel =
     published === null ? null : format.dateTime(published, { dateStyle: 'medium' })
@@ -50,19 +45,11 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
           style={{ width: 64, height: 64, flexShrink: 0 }}
         />
         <span style={{ textAlign: 'start' }}>
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 13.5,
-              lineHeight: 1.3,
-              display: 'block',
-              color: 'var(--forest)',
-            }}
-          >
+          <span className="card-title" style={{ fontSize: 14, display: 'block' }}>
             {title}
           </span>
           {publishedLabel !== null && (
-            <span className="muted" style={{ fontSize: 12 }}>
+            <span className="muted" style={{ fontSize: 12.5 }}>
               {publishedLabel}
             </span>
           )}
@@ -72,60 +59,37 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
   }
 
   return (
-    <article className="card bt-cardhover" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Link href={article.href} className="bt-card-media" aria-label={title} tabIndex={-1}>
-        <Photo
-          src={article.hero?.url}
-          alt={pick(article.hero?.alt, locale)}
-          priority={priority}
-          style={{ height: 190 }}
-        />
-      </Link>
-
-      <div
-        className="card-pad"
-        style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}
-      >
+    <Card>
+      <CardMedia
+        src={article.hero?.url}
+        alt={pick(article.hero?.alt, locale)}
+        srcSetAvif={article.hero?.srcSetAvif}
+        srcSetWebp={article.hero?.srcSetWebp}
+        ratio="16/10"
+        priority={priority}
+      />
+      <CardBody>
         {(categoryLabel !== null || publishedLabel !== null) && (
-          <div className="row" style={{ gap: 10 }}>
+          <div className="row" style={{ gap: 8 }}>
             {categoryLabel !== null && <Tag variant="palm">{categoryLabel}</Tag>}
             {publishedLabel !== null && (
-              <span className="muted" style={{ fontSize: 12.5 }}>
+              <span className="muted" style={{ fontSize: 13 }}>
                 {publishedLabel}
               </span>
             )}
           </div>
         )}
-
-        <h3 style={{ fontSize: 20, lineHeight: 1.2, color: 'var(--forest)' }}>
-          <Link href={article.href}>{title}</Link>
-        </h3>
-
-        {excerpt !== null && (
-          <p className="muted" style={{ fontSize: 13.5, margin: 0, flex: 1 }}>
-            {excerpt}
-          </p>
-        )}
-
-        {/*
-          Presentational, not a second link: the whole title is already an
-          anchor to the same article, and a duplicate link adds a tab stop
-          that reads "Read article" with no context.
-        */}
+        <CardTitle href={article.href}>{title}</CardTitle>
+        {excerpt !== null && <CardText>{excerpt}</CardText>}
+        {/* Presentational: the stretched title link already opens the article. */}
         <span
+          className="link"
           aria-hidden="true"
-          style={{
-            color: 'var(--orange-ink)',
-            fontWeight: 700,
-            fontSize: 14,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
+          style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
         >
-          {t('bh_read')} <Icon name="arrow" size={15} color="var(--orange-ink)" className="flip" />
+          {t('bt_read_article')} <Icon name="arrow" size={15} className="flip" />
         </span>
-      </div>
-    </article>
+      </CardBody>
+    </Card>
   )
 }

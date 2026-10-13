@@ -1,0 +1,31 @@
+<!--title: Bali Trips — استكشف بالي|page: explore|section: explore-->
+<style>
+.rg { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.rg .region-card { aspect-ratio: 4/5 !important; }
+.compare { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+.compare table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 14px; }
+.compare th, .compare td { padding: 12px 14px; text-align: start; border-bottom: 1px solid var(--line-soft); }
+.compare thead th { background: var(--ivory-2); color: var(--forest); }
+.compare td:first-child { font-weight: 700; color: var(--forest); }
+.dots { display: inline-flex; gap: 3px; } .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--ivory-3); } .dots i.on { background: var(--forest); }
+</style>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/aerial-cliff.jpg" alt="">
+    <div class="wrap"><div id="crumbs"></div><span class="eyebrow" style="color:var(--palm)" data-en="Explore Bali">استكشف بالي</span>
+      <h1 data-en="Which part of Bali suits you?">أي جزء من بالي يناسبك؟</h1>
+      <p data-en="Each area has its own character. Compare them, then open an area to see its activities, restaurants and itineraries.">لكل منطقة طابعها. قارن بينها، ثم افتح المنطقة لترى أنشطتها ومطاعمها والجداول التي تشملها.</p></div></section>
+  <section class="sec"><div class="wrap stack" style="gap:28px"><div class="rg" id="rg"></div>
+    <div class="stack" style="gap:12px"><h2 class="h3" data-en="Compare areas">قارن المناطق</h2><div class="compare" id="cmp"></div><small class="muted" data-en="Ratings are the editorial team's guide, not user reviews.">التقديرات دليل من فريق التحرير وليست تقييمات مستخدمين.</small></div>
+  </div></section>
+</main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, mount, regionCard } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("استكشف بالي", "Explore Bali"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+mount("#rg", D.REGIONS.map(r => regionCard(r)).join(""));
+const sc = { ubud: [5, 2, 4, 3], canggu: [2, 4, 3, 4], seminyak: [2, 4, 4, 5], uluwatu: [3, 5, 3, 3], "nusa-penida": [5, 4, 2, 1], kintamani: [5, 1, 3, 1], "east-bali": [4, 2, 3, 1] };
+const dots = (n) => `<span class="dots" aria-label="${n}/5">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? "on" : ""}"></i>`).join("")}</span>`;
+document.getElementById("cmp").innerHTML = `<table><thead><tr><th>${L("المنطقة", "Area")}</th><th>${L("الطبيعة", "Nature")}</th><th>${L("الشواطئ", "Beaches")}</th><th>${L("للعائلات", "Families")}</th><th>${L("المطاعم والتسوق", "Dining & shops")}</th><th>${L("مدة مقترحة", "Suggested stay")}</th></tr></thead><tbody>${D.REGIONS.map(r => `<tr><td><a href="region.html#${r.id}">${t(r.name)}</a></td>${sc[r.id].map(d => `<td>${dots(d)}</td>`).join("")}<td>${t(r.best)}</td></tr>`).join("")}</tbody></table>`;
+})();
+</script>

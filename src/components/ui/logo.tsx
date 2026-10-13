@@ -34,6 +34,11 @@ export type LogoProps = {
    * localized string if a locale ever needs one.
    */
   alt?: string
+  /**
+   * `light` uses the package's light wordmark (public/brand/logo-light.png),
+   * drawn for the forest footer. The default is the colour mark.
+   */
+  variant?: 'color' | 'light'
   /** Set on the header instance — it is above the fold on every page. */
   priority?: boolean
   className?: string
@@ -43,6 +48,7 @@ export function Logo({
   height = 34,
   onLight = true,
   alt = 'Bali Trips',
+  variant = 'color',
   priority = false,
   className,
 }: LogoProps) {
@@ -50,7 +56,7 @@ export function Logo({
 
   return (
     <Image
-      src="/bt-logo.png"
+      src={variant === 'light' ? '/brand/logo-light.png' : '/bt-logo.png'}
       alt={alt}
       width={width}
       height={height}
@@ -63,7 +69,8 @@ export function Logo({
         // about a single modified dimension.
         width: 'auto',
         display: 'block',
-        filter: onLight ? 'none' : 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25))',
+        filter:
+          onLight || variant === 'light' ? 'none' : 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25))',
       }}
     />
   )

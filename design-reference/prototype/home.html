@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — الرئيسية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+/* ---- Hero: arch windows (Balinese gate silhouette) ---- */
+.hero { position: relative; overflow: hidden; padding-block: 28px 40px; }
+.hero-grid { display: grid; gap: 28px; align-items: center; }
+.hero-copy { display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 2; min-width: 0; }
+.hero-copy .display em { font-style: normal; color: var(--orange-deep); }
+.arches { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; align-items: end; height: 230px; order: -1; }
+.arch { position: relative; border-radius: 999px 999px 18px 18px; overflow: hidden; height: 100%; background: var(--ivory-3); box-shadow: var(--sh-2); }
+.arch video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vid-toggle { position: absolute; z-index: 2; top: 0; inset-inline-end: 0; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.5); background: rgba(19,48,26,.55); color: #fff; display: grid; place-items: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.vid-toggle:hover { background: rgba(19,48,26,.8); }
+.arch:nth-child(1) { height: 78%; } .arch:nth-child(2) { height: 100%; } .arch:nth-child(3) { height: 88%; } .arch:nth-child(4) { height: 70%; }
+
+.arch figcaption { position: absolute; inset-inline: 0; bottom: 0; padding: 26px 10px 10px; font-size: 12px; font-weight: 700; color: #fff; text-align: center; background: linear-gradient(transparent, rgba(19,48,26,.75)); }
+@keyframes kb { from { transform: scale(1.02); } to { transform: scale(1.14) translateY(-2%); } }
+.hero .arc { width: 720px; height: 720px; top: 40px; inset-inline-end: -120px; opacity: .55; }
+.hsearch { display: flex; align-items: stretch; gap: 6px; padding: 6px; background: var(--white); border: 1.5px solid var(--line); border-radius: 22px; box-shadow: var(--sh-2); flex-wrap: wrap; }
+.hsearch label { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; padding: 6px 12px; min-width: 0; }
+.hsearch input { border: 0; outline: 0; background: transparent; width: 100%; min-height: 40px; font-size: 15.5px; color: var(--ink); }
+.hsearch select { border: 0; background: var(--ivory-2); border-radius: 14px; padding: 0 14px; font-weight: 600; color: var(--forest); min-height: 48px; flex: 0 1 auto; }
+.trust { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 14px; color: var(--forest-soft); font-weight: 600; }
+.trust span { display: inline-flex; align-items: center; gap: 8px; }
+.trust svg { color: var(--ok); }
+.scroll-cue { display: none; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.scroll-cue i { width: 22px; height: 34px; border: 2px solid var(--line); border-radius: 12px; position: relative; }
+.scroll-cue i::after { content: ""; position: absolute; left: 50%; top: 6px; width: 4px; height: 7px; margin-left: -2px; border-radius: 2px; background: var(--orange); animation: cue 1.6s var(--ease) infinite; }
+@keyframes cue { 60% { transform: translateY(10px); opacity: 0; } }
+@media (min-width: 900px) {
+  .hero { padding-block: 48px 64px; }
+  .hero-grid { grid-template-columns: 1.05fr 1fr; gap: 48px; }
+  .arches { height: 520px; gap: 14px; order: 0; }
+  .scroll-cue { display: inline-flex; }
+}
+/* quick discovery */
+/* find something to do: rows of two (mobile + tablet), one row of four on wide desktop */
+.fs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 599px) {
+  .fs-grid .card-body { padding: 12px; gap: 6px; }
+  .fs-grid .card-title { font-size: 15px; line-height: 1.35; }
+  .fs-grid .card-body p.muted { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px !important; }
+  .fs-grid .card-meta { font-size: 12px; }
+  .fs-grid .card-body > .row { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .fs-grid .card-media .tl .tag { font-size: 11px; padding: 4px 8px; }
+}
+@media (min-width: 600px) { .fs-grid { gap: var(--s5); } }
+@media (min-width: 1200px) { .fs-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.qd-head { margin-bottom: 16px; }
+.qd-title { margin: 0 0 4px; font-size: clamp(20px, 2.2vw, 26px); color: var(--forest); font-weight: 800; }
+.qd-head p { margin: 0; font-size: 14.5px; }
+.qd { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.qd a { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--white); border: 1px solid var(--line-soft); border-radius: 18px; font-weight: 700; color: var(--forest); box-shadow: var(--sh-1); transition: transform var(--d-base) var(--ease), box-shadow var(--d-base), border-color var(--d-base); min-width: 0; }
+.qd a:hover { transform: translateY(-3px); box-shadow: var(--sh-2); border-color: var(--palm-mid); }
+.qd .ic { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--palm-soft); color: var(--forest); flex-shrink: 0; }
+.qd a:nth-child(2) .ic, .qd a:nth-child(5) .ic { background: var(--orange-soft); color: #8A4B00; }
+.qd small { display: block; font-weight: 500; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+@media (min-width: 700px) { .qd { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .qd { grid-template-columns: repeat(6, 1fr); } .qd a { flex-direction: column; align-items: flex-start; } }
+/* about */
+.about-grid { display: grid; gap: 32px; align-items: center; }
+.about-media { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; height: 380px; overflow: hidden; border-radius: var(--r-lg);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 12%, #000 88%, transparent 100%); }
+.mq-col { overflow: hidden; height: 100%; }
+.mq-track { display: flex; flex-direction: column; gap: 12px; will-change: transform; animation: mq-up 34s linear infinite; }
+.mq-col.down .mq-track { animation-name: mq-down; animation-duration: 40s; }
+.mq-track img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: var(--r-lg); display: block; flex-shrink: 0; }
+.mq-col.down .mq-track img { aspect-ratio: 4/5; }
+/* track = 2 identical halves; shift by half incl. one gap for a seamless loop */
+@keyframes mq-up { from { transform: translateY(0); } to { transform: translateY(calc(-50% - 6px)); } }
+@keyframes mq-down { from { transform: translateY(calc(-50% - 6px)); } to { transform: translateY(0); } }
+.about-media:hover .mq-track, .about-media.paused .mq-track { animation-play-state: paused; }
+.mq-toggle { position: absolute; bottom: 14px; inset-inline-end: 14px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(19,48,26,.72); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); }
+.mq-toggle:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.mq-toggle .i-play, .about-media.paused .mq-toggle .i-pause { display: none; }
+.about-media.paused .mq-toggle .i-play { display: block; }
+@media (min-width: 900px) { .about-media { height: 560px; } }
+@media (prefers-reduced-motion: reduce) { .mq-track { animation: none; } .mq-toggle { display: none; } }
+.vals { display: grid; gap: 14px; }
+.vals > div { display: flex; gap: 14px; align-items: flex-start; }
+.vals .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--forest); color: var(--palm); display: grid; place-items: center; flex-shrink: 0; }
+.vals b { color: var(--forest); display: block; }
+@media (min-width: 900px) { .about-grid { grid-template-columns: 1fr 1.1fr; gap: 64px; } }
+/* map preview */
+.mp { position: relative; border-radius: var(--r-xl); overflow: hidden; aspect-ratio: 4/3; background: #0b2f45; box-shadow: var(--sh-3); display: block; isolation: isolate; }
+@media (min-width: 768px) { .mp { aspect-ratio: 16/8.4; } }
+.mp > img { position: absolute; width: 190%; max-width: none; left: 50%; top: 50%; transform: translate(-50%, -52%); transition: transform 1.6s var(--ease); }
+@media (min-width: 768px) { .mp > img { width: 128%; } }
+.mp:hover > img { transform: translate(-50%, -52%) scale(1.04); }
+.mp::after { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 0%, rgba(7,42,62,.4), transparent 45%), radial-gradient(120% 80% at 50% 100%, rgba(7,42,62,.55), transparent 50%); z-index: 1; }
+.mp-ui { position: absolute; z-index: 3; top: 16px; inset-inline: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mp-search { width: min(100%, 460px); display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: rgba(255,255,255,.94); border-radius: 99px; color: var(--muted); font-size: 14.5px; box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+.mp-chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.mp-chips span { padding: 6px 13px; border-radius: 99px; background: rgba(19,48,26,.5); border: 1px solid rgba(255,255,255,.35); color: #fff; font-size: 12.5px; font-weight: 600; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.mp-chips span:first-child { background: var(--orange); border-color: var(--orange); color: var(--forest-ink); }
+.gcard { position: absolute; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 7px; padding-inline-end: 14px; border-radius: 14px; background: rgba(22,52,38,.55); border: 1px solid rgba(255,255,255,.25); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 14px 30px -12px rgba(0,0,0,.5); animation: floaty 6s ease-in-out infinite; }
+.gcard img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+.gcard b { display: block; font-size: 13.5px; line-height: 1.2; }
+.gcard small { font-size: 11.5px; opacity: .85; }
+.gcard::before { content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--orange); inset-inline-start: -22px; top: 50%; margin-top: -6px; box-shadow: 0 0 0 4px rgba(255,144,0,.3); }
+.gcard:nth-child(odd) { animation-delay: -3s; }
+@keyframes floaty { 50% { transform: translateY(-6px); } }
+.mp-cta { position: absolute; z-index: 3; bottom: 18px; inset-inline: 16px; display: flex; justify-content: center; }
+.mp-arc { position: absolute; z-index: 1; border-radius: 50%; border: 1.5px solid rgba(113,255,133,.45); pointer-events: none; }
+@media (max-width: 767px) { .gcard.hide-m { display: none; } }
+.map-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; margin-top: 28px; }
+@media (max-width: 599px) { .map-points div { gap: 8px; font-size: 13px; line-height: 1.5; } .map-points b { font-size: 14px; margin-bottom: 2px; } .map-points svg { width: 18px; height: 18px; } }
+.map-points div { display: flex; gap: 12px; align-items: flex-start; color: rgba(255,251,248,.85); font-size: 14.5px; }
+.map-points svg { color: var(--palm); flex-shrink: 0; margin-top: 3px; }
+.map-points b { color: #fff; display: block; }
+@media (min-width: 800px) { .map-points { grid-template-columns: repeat(4, 1fr); } }
+/* driver block */
+.drv { display: grid; gap: 28px; align-items: center; }
+.drv-media { position: relative; border-radius: var(--r-xl); overflow: hidden; aspect-ratio: 16/10; box-shadow: var(--sh-2); }
+.drv-media img { width: 100%; height: 100%; object-fit: cover; }
+.mini-book { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.mini-book .full { grid-column: 1 / -1; }
+.auto-car { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--palm-soft); color: var(--forest); font-size: 14px; }
+@media (min-width: 960px) { .drv { grid-template-columns: 1.1fr 1fr; gap: 56px; } }
+/* custom trip */
+.ct { position: relative; overflow: hidden; border-radius: var(--r-xl); background: var(--forest); color: rgba(255,251,248,.86); display: grid; }
+.ct img { width: 100%; height: 100%; object-fit: cover; min-height: 240px; }
+.ct-copy { padding: 32px 24px; display: flex; flex-direction: column; gap: 16px; position: relative; z-index: 1; }
+.ct-copy h2 { color: #fff; }
+@media (min-width: 900px) { .ct { grid-template-columns: 1.1fr 1fr; } .ct-copy { padding: 56px; justify-content: center; } }
+/* regions */
+.reg-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 900px) { .reg-grid { grid-template-columns: repeat(4, 1fr); } .reg-grid > :first-child { grid-row: span 2; aspect-ratio: auto !important; } }
+/* reviews */
+.rev { min-width: min(86vw, 360px); max-width: 380px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.rev .av { width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: var(--palm); display: grid; place-items: center; font-weight: 700; }
+.final { position: relative; overflow: hidden; border-radius: var(--r-xl); padding: 48px 24px; text-align: center; background: var(--orange); color: var(--forest-ink); }
+.final h2 { color: var(--forest-ink); }
+.final .arc { width: 560px; height: 560px; inset-inline-start: -200px; bottom: -380px; opacity: .5; }
+</style>
+</head>
+<body data-page="index">
+<div id="hdr"></div>
+<main id="main">
+
+<!-- 1. HERO -->
+<section class="hero" aria-labelledby="hero-h">
+  <div class="arc" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow" data-en="Your travel companion in Bali">رفيقك السياحي في بالي</span>
+      <h1 class="display" id="hero-h" data-en="Bali, as you've <em>never explored</em> it">بالي كما <em>لم تكتشفها</em> من قبل</h1>
+      <p class="lede" data-en="Ready itineraries, an interactive map of hand-picked places, and activities you can book in a few steps — curated by a local team that knows what Arab travelers look for.">جداول سياحية جاهزة، وخريطة تفاعلية لأماكن مختارة بعناية، وأنشطة تحجزها بخطوات قليلة — من فريق محلي يعرف ما يبحث عنه المسافر العربي.</p>
+      <form class="hsearch" action="search.html" role="search" id="hsearch">
+        <label for="hq">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" style="color:var(--forest)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span class="sr-only" data-en="Search">ابحث</span>
+          <input id="hq" name="q" type="search" placeholder="ابحث عن منطقة، نشاط، مطعم أو جدول…" data-en-ph="Search an area, activity, restaurant or itinerary…" autocomplete="off">
+        </label>
+        <select id="htype" aria-label="نوع النتيجة" data-en-aria="Result type">
+          <option value="all" data-en="Everything">الكل</option><option value="activities" data-en="Activities">الأنشطة</option><option value="places" data-en="Places">الأماكن</option><option value="itineraries" data-en="Itineraries">الجداول</option>
+        </select>
+        <button class="btn btn-forest" type="submit" data-en="Search">ابحث</button>
+      </form>
+      <div class="row">
+        <a class="btn btn-primary btn-lg" href="map.html"><span data-en="Explore Bali">استكشف بالي</span> <svg class="flip" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost btn-lg" href="services.html" data-en="Plan your trip">خطط رحلتك</a>
+      </div>
+      <div class="trust" aria-label="لماذا Bali Trips">
+        <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Places picked by a local team">أماكن يختارها فريق محلي</span></span>
+        <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Arabic support before & during your trip">دعم بالعربية قبل الرحلة وأثناءها</span></span>
+        <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Final price shown before you pay">السعر النهائي واضح قبل الدفع</span></span>
+      </div>
+      <span class="scroll-cue" aria-hidden="true"><i></i><span data-en="Scroll to explore">مرّر للاستكشاف</span></span>
+    </div>
+    <div class="arches">
+      <figure class="arch" style="margin:0" aria-hidden="true"><video muted loop playsinline preload="metadata" poster="assets/img/rice-walk.jpg" data-name="arch-ubud"></video><figcaption>Ubud</figcaption></figure>
+      <figure class="arch" style="margin:0" aria-hidden="true"><video muted loop playsinline preload="metadata" poster="assets/img/kelingking.jpg" data-name="arch-penida"></video><figcaption>Nusa Penida</figcaption></figure>
+      <figure class="arch" style="margin:0" aria-hidden="true"><video muted loop playsinline preload="metadata" poster="assets/img/lempuyang.jpg" data-name="arch-lempuyang"></video><figcaption>Lempuyang</figcaption></figure>
+      <figure class="arch" style="margin:0" aria-hidden="true"><video muted loop playsinline preload="metadata" poster="assets/img/cliff-beach.jpg" data-name="arch-uluwatu"></video><figcaption>Uluwatu</figcaption></figure>
+      <button class="vid-toggle" id="vid-toggle" type="button" aria-pressed="false" aria-label="إيقاف الفيديو مؤقتًا" data-en-aria="Pause video"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/><path class="i-play" d="M8 5.5v13l10.5-6.5z" style="display:none"/></svg></button>
+    </div>
+  </div>
+  <div class="wrap" style="margin-top:36px">
+    <div class="qd-head">
+      <h2 class="qd-title" id="qd-h" data-en="What are you planning today?">ماذا تخطط اليوم؟</h2>
+      <p class="muted" data-en="Pick a service to get started — each one opens its own page.">اختر الخدمة التي تحتاجها وابدأ مباشرة، كل خدمة لها صفحتها الخاصة.</p>
+    </div>
+    <nav class="qd" aria-labelledby="qd-h">
+      <a href="map.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 4-5.5 2v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/><path d="M9 4v14M15 6v14"/></svg></span><span><span data-en="Interactive map">الخريطة التفاعلية</span><small data-en="Hand-picked places">أماكن مختارة</small></span></a>
+      <a href="activities.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 5-4.8 2 2.2-5 4.8-2Z"/></svg></span><span><span data-en="Activities">الأنشطة والفعاليات</span><small data-en="Book with packages">احجز مع الباقات</small></span></a>
+      <a href="itineraries.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span><span><span data-en="Itineraries">الجداول السياحية</span><small data-en="Ready PDF by days">ملف جاهز حسب الأيام</small></span></a>
+      <a href="packages.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span><span><span data-en="Tour packages">الباقات السياحية</span><small data-en="Multi-day bundles">برامج متكاملة</small></span></a>
+      <a href="driver.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 16.5V12l1.8-4.6A2 2 0 0 1 8.2 6h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4.5"/><path d="M3.5 12h17v4.5h-17z"/><circle cx="7.5" cy="16.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/></svg></span><span><span data-en="Private driver">السائق الخاص</span><small data-en="By day, A/C car">بالأيام، سيارة مكيفة</small></span></a>
+      <a href="custom-trip.html"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 20 11-11M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z"/></svg></span><span><span data-en="Custom trip">الرحلة المخصصة</span><small data-en="Built around you">نصممها لك</small></span></a>
+    </nav>
+  </div>
+</section>
+
+<!-- 2. ABOUT (brief) -->
+<section class="sec bg-ivory2" aria-labelledby="ab-h">
+  <div class="wrap about-grid">
+    <div class="about-media rv">
+      <div aria-hidden="true" class="mq-col up"><div class="mq-track"><img src="assets/img/green-dress.jpg" alt="" loading="lazy"><img src="assets/img/temple-gate.jpg" alt="" loading="lazy"><img src="assets/img/rice-walk.jpg" alt="" loading="lazy"><img src="assets/img/swing.jpg" alt="" loading="lazy"><img src="assets/img/ulun-danu.jpg" alt="" loading="lazy"><img src="assets/img/green-dress.jpg" alt="" loading="lazy"><img src="assets/img/temple-gate.jpg" alt="" loading="lazy"><img src="assets/img/rice-walk.jpg" alt="" loading="lazy"><img src="assets/img/swing.jpg" alt="" loading="lazy"><img src="assets/img/ulun-danu.jpg" alt="" loading="lazy"></div></div>
+      <div aria-hidden="true" class="mq-col down"><div class="mq-track"><img src="assets/img/penida-cove.jpg" alt="" loading="lazy"><img src="assets/img/kelingking.jpg" alt="" loading="lazy"><img src="assets/img/jungle-pool.jpg" alt="" loading="lazy"><img src="assets/img/lempuyang.jpg" alt="" loading="lazy"><img src="assets/img/beach-palms.jpg" alt="" loading="lazy"><img src="assets/img/penida-cove.jpg" alt="" loading="lazy"><img src="assets/img/kelingking.jpg" alt="" loading="lazy"><img src="assets/img/jungle-pool.jpg" alt="" loading="lazy"><img src="assets/img/lempuyang.jpg" alt="" loading="lazy"><img src="assets/img/beach-palms.jpg" alt="" loading="lazy"></div></div>
+      <button class="mq-toggle" id="mq-toggle" type="button" aria-pressed="false" aria-label="إيقاف الحركة مؤقتًا" data-en-aria="Pause motion"><svg class="i-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><svg class="i-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7Z"/></svg></button>
+    </div>
+    <div class="stack" style="gap:20px">
+      <span class="eyebrow" data-en="Who we are">من نحن</span>
+      <h2 class="h2" id="ab-h" data-en="A digital guide built for Bali — and only Bali">دليل رقمي مصمم لبالي فقط</h2>
+      <p class="lede" data-en="Instead of searching across dozens of sites and apps, Bali Trips brings trusted information, distinctive places and simple planning tools into one organized experience — shaped by Mr. Saeed's years of local experience in Bali.">بدل البحث في عشرات المواقع والتطبيقات، تجمع Bali Trips المعلومات الموثوقة والأماكن المميزة وأدوات التخطيط في تجربة واحدة منظمة — مبنية على خبرة الأستاذ سعيد المحلية في بالي.</p>
+      <div class="vals">
+        <div><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s7-6.6 7-12.5A7 7 0 0 0 5 9.5C5 15.4 12 22 12 22Z"/><circle cx="12" cy="9.5" r="2.6"/></svg></span><div><b data-en="Curated, not crowded">مختار بعناية، لا مكدّس</b><span class="muted" data-en="Every place on the map is added by our team.">كل مكان على الخريطة يضيفه فريقنا بعد تجربة ومراجعة.</span></div></div>
+        <div><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8l-4 1.5Z"/></svg></span><div><b data-en="Made for Arab travelers">مصمم للمسافر العربي</b><span class="muted" data-en="Halal dining, family-friendly picks and Arabic support.">مطاعم حلال، خيارات عائلية، ودعم بالعربية.</span></div></div>
+        <div><span class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 5 6v5.5c0 4.3 3 7.9 7 9.5 4-1.6 7-5.2 7-9.5V6l-7-3Z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg></span><div><b data-en="Clear prices, clear status">أسعار واضحة وحالة طلب واضحة</b><span class="muted" data-en="No hidden fees; you always know where your booking stands.">بلا رسوم مخفية، وتعرف دائمًا أين وصل حجزك.</span></div></div>
+      </div>
+      <a class="link" href="about.html" style="align-self:flex-start"><span data-en="More about Bali Trips">المزيد عن Bali Trips</span> <svg class="flip" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- 3. INTERACTIVE MAP PREVIEW -->
+<section class="sec bg-forest" aria-labelledby="mp-h" style="overflow:hidden">
+  <div class="arc" style="width:900px;height:900px;inset-inline-start:-420px;top:-520px;opacity:.25" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="eyebrow" style="color:var(--palm)" data-en="The interactive map">الخريطة التفاعلية</span>
+        <h2 class="h2" id="mp-h" data-en="Explore Bali place by place">استكشف بالي مكانًا بمكان</h2>
+        <p class="lede" style="color:rgba(255,251,248,.78)" data-en="A Bali map with its own identity. It shows only places chosen by the Bali Trips team — restaurants, cafés, beaches, waterfalls and activities — and reveals more as you zoom in.">خريطة لبالي بهوية خاصة، لا تعرض إلا الأماكن التي اختارها فريق Bali Trips — مطاعم وكافيهات وشواطئ وشلالات وأنشطة — وتكشف المزيد كلما اقتربت.</p>
+      </div>
+      <a class="btn btn-primary btn-lg" href="map.html" data-en="Open the interactive map">افتح الخريطة التفاعلية</a>
+    </div>
+    <a class="mp rv" href="map.html" aria-label="افتح الخريطة التفاعلية" data-en-aria="Open the interactive map">
+      <img src="assets/img/bali-sat.jpg" alt="">
+      <span class="mp-arc" style="width:70%;aspect-ratio:1;inset-inline-end:-30%;top:-10%"></span>
+      <span class="mp-arc" style="width:95%;aspect-ratio:1;inset-inline-end:-50%;top:-25%"></span>
+      <div class="mp-ui" aria-hidden="true">
+        <div class="mp-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span data-en="Where are you going in Bali?">إلى أين تريد الذهاب في بالي؟</span></div>
+        <div class="mp-chips"><span data-en="All">الكل</span><span data-en="Restaurants">مطاعم</span><span data-en="Beaches">شواطئ</span><span data-en="Waterfalls">شلالات</span><span data-en="Activities">أنشطة</span></div>
+      </div>
+      <span class="gcard" style="top:40%;left:57%"><img src="assets/img/aerial-cliff.jpg" alt=""><span><b>Mount Batur</b><small data-en="Volcano & sunrise">بركان وشروق</small></span></span>
+      <span class="gcard" style="top:55%;left:44%"><img src="assets/img/rice-walk.jpg" alt=""><span><b>Ubud</b><small data-en="Nature & art">طبيعة وفنون</small></span></span>
+      <span class="gcard hide-m" style="top:47%;left:72%"><img src="assets/img/lempuyang.jpg" alt=""><span><b>Lempuyang</b><small data-en="Culture & history">ثقافة وتاريخ</small></span></span>
+      <span class="gcard" style="top:70%;left:62%"><img src="assets/img/kelingking.jpg" alt=""><span><b>Nusa Penida</b><small data-en="Scenic views">إطلالات</small></span></span>
+      <span class="gcard hide-m" style="top:68%;left:26%"><img src="assets/img/cliff-beach.jpg" alt=""><span><b>Uluwatu</b><small data-en="Cliffs & temple">منحدرات ومعبد</small></span></span>
+      <div class="mp-cta"><span class="btn btn-light"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 4-5.5 2v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/></svg><span data-en="Tap to open the full map">اضغط لفتح الخريطة</span></span></div>
+    </a>
+    <div class="map-points">
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Pick an area">اختر منطقة</b><span data-en="The map flies to Ubud, Seminyak or Uluwatu.">تنتقل الخريطة إلى أوبود أو سيمينياك أو أولواتو.</span></span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Filter by type">صفِّ حسب النوع</b><span data-en="Fine dining, Italian, Indian, cafés, events…">مطاعم فاخرة، إيطالية، هندية، كافيهات، فعاليات…</span></span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Near me">قريب مني</b><span data-en="After you allow location access.">بعد موافقتك على مشاركة الموقع.</span></span></div>
+      <div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Save & add to trip">احفظ وأضف لرحلتك</b><span data-en="Favorites and My Trip in one tap.">المفضلة ورحلتي بضغطة واحدة.</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. FIND SOMETHING TO DO -->
+<section class="sec" aria-labelledby="fs-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Find something to do">اعثر على ما تفعله</span>
+      <h2 class="h2" id="fs-h" data-en="What are you in the mood for?">ماذا تريد أن تجرّب اليوم؟</h2>
+      <p class="lede" data-en="Pick a type to see hand-picked places across Bali.">اختر نوعًا لترى أماكن مختارة في أنحاء بالي.</p></div>
+      <a class="btn btn-ghost" href="map.html" data-en="See them on the map">اعرضها على الخريطة</a>
+    </div>
+    <div class="chips scroll" id="fs-chips" role="group" aria-label="التصنيفات" data-en-aria="Categories"></div>
+    <div class="grid fs-grid" id="fs-grid" style="margin-top:20px" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5. ACTIVITIES -->
+<section class="sec bg-ivory2" aria-labelledby="ac-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Activities & events">الأنشطة والفعاليات</span>
+      <h2 class="h2" id="ac-h" data-en="Book the experiences Bali is known for">احجز التجارب التي تشتهر بها بالي</h2>
+      <p class="lede" data-en="Choose a package, add extras, and see the final price before paying.">اختر الباقة، أضف ما تحتاجه، وشاهد السعر النهائي قبل الدفع.</p></div>
+      <a class="btn btn-forest" href="activities.html" data-en="All activities">كل الأنشطة</a>
+    </div>
+    <div class="grid g4" id="ac-grid"></div>
+  </div>
+</section>
+
+<!-- 6. ITINERARIES -->
+<section class="sec" aria-labelledby="it-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Ready itineraries">الجداول السياحية</span>
+      <h2 class="h2" id="it-h" data-en="A day-by-day plan, ready on your phone">جدول يومي جاهز على جوالك</h2>
+      <p class="lede" data-en="Buy once, download the file and keep it for the whole trip. Each day lists places, timing and how to move between them.">اشترِ مرة واحدة، حمّل الملف، واحتفظ به طوال الرحلة. كل يوم يوضح الأماكن والتوقيت وطريقة التنقل بينها.</p></div>
+      <a class="btn btn-ghost" href="itineraries.html" data-en="All itineraries">كل الجداول</a>
+    </div>
+    <div class="grid g4" id="it-grid"></div>
+  </div>
+</section>
+
+<!-- 7. PACKAGES -->
+<section class="sec bg-ivory2" aria-labelledby="pk-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Tour packages">الباقات السياحية</span>
+      <h2 class="h2" id="pk-h" data-en="Packages for every kind of trip">باقات لكل نوع من الرحلات</h2>
+      <p class="lede" data-en="Bundles that combine activities, a schedule and a driver for a fixed number of days.">برامج تجمع الأنشطة والجدول والسائق لعدد أيام محدد.</p></div>
+      <a class="btn btn-ghost" href="packages.html" data-en="All packages">كل الباقات</a>
+    </div>
+    <div class="grid g4" id="pk-grid"></div>
+  </div>
+</section>
+
+<!-- 8. DRIVER -->
+<section class="sec" aria-labelledby="dr-h">
+  <div class="wrap drv">
+    <div class="drv-media rv"><img src="assets/img/driver-car.jpg" alt="سيارة Bali Trips في مدرجات الأرز" data-en-aria="A Bali Trips car by the rice terraces" loading="lazy"></div>
+    <div class="stack" style="gap:18px">
+      <span class="eyebrow" data-en="Private driver">السائق الخاص</span>
+      <h2 class="h2" id="dr-h" data-en="A private car and a driver who knows Bali">سيارة خاصة وسائق يعرف بالي</h2>
+      <p class="lede" data-en="Air-conditioned, family-friendly, and priced by the day. The right car is chosen automatically from the number of travelers.">سيارة مكيفة ومناسبة للعائلات بسعر يومي. يتحدد نوع السيارة تلقائيًا حسب عدد المسافرين.</p>
+      <form class="panel mini-book" id="mini-drv" action="driver.html">
+        <div class="field"><label for="md-from" data-en="From">من</label><input class="input" type="date" id="md-from"></div>
+        <div class="field"><label for="md-to" data-en="To">إلى</label><input class="input" type="date" id="md-to"></div>
+        <div class="field full"><span class="label" id="md-pl" data-en="Travelers">عدد الأشخاص</span>
+          <div class="row between"><div class="stepper" role="group" aria-labelledby="md-pl"><button type="button" id="md-m" aria-label="إنقاص" data-en-aria="Decrease"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button><output id="md-n">2</output><button type="button" id="md-p" aria-label="زيادة" data-en-aria="Increase"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="from" style="text-align:end"><small id="md-days">—</small><b class="price" id="md-price">—</b></div></div></div>
+        <div class="auto-car full" id="md-car"></div>
+        <button class="btn btn-primary btn-block full" type="submit" data-en="Continue booking">تابع الحجز</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- 9. CUSTOM TRIP -->
+<section class="sec-tight" aria-labelledby="ct-h">
+  <div class="wrap">
+    <div class="ct rv">
+      <img src="assets/img/consultant.jpg" alt="" loading="lazy" style="object-position:30% 30%">
+      <div class="ct-copy">
+        <span class="eyebrow" style="color:var(--palm)" data-en="Custom trip">الرحلة المخصصة</span>
+        <h2 class="h2" id="ct-h" data-en="Tell us how you travel. We'll build the trip around you.">أخبرنا كيف تحب أن تسافر، ونصمم الرحلة حولك</h2>
+        <p data-en="Dates, travelers, budget and interests — our team replies with a proposed plan and a quote. No final price until you approve it.">التواريخ وعدد المسافرين والميزانية والاهتمامات — يرد فريقنا بخطة مقترحة وعرض سعر، ولا سعر نهائي قبل موافقتك.</p>
+        <div class="row"><a class="btn btn-primary" href="custom-trip.html" data-en="Request a custom trip">اطلب رحلة مخصصة</a><a class="btn btn-glass" href="contact.html" data-en="Talk to us">تحدث معنا</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. BALI HIGHLIGHTS -->
+<section class="sec" aria-labelledby="rg-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Bali highlights">أبرز معالم بالي</span>
+      <h2 class="h2" id="rg-h" data-en="The island's areas, at a glance">مناطق الجزيرة في لمحة</h2></div>
+      <a class="btn btn-ghost" href="explore.html" data-en="Explore Bali">استكشف بالي</a>
+    </div>
+    <div class="reg-grid" id="rg-grid"></div>
+  </div>
+</section>
+
+<!-- 11. REVIEWS -->
+<section class="sec bg-ivory2" aria-labelledby="rv-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Traveler stories">تجارب المسافرين</span>
+      <h2 class="h2" id="rv-h" data-en="In travelers' own words">بكلمات المسافرين أنفسهم</h2></div>
+      <span class="demo-note" data-en="Sample slots — real, verified reviews only, published with permission">أماكن نموذجية — تُنشر التقييمات الحقيقية الموثقة فقط وبإذن أصحابها</span>
+    </div>
+    <div class="hscroll" id="rv-list"></div>
+  </div>
+</section>
+
+<!-- 12. ARTICLES -->
+<section class="sec" aria-labelledby="ar-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="eyebrow" data-en="Travel guide">دليل السفر</span>
+      <h2 class="h2" id="ar-h" data-en="Read before you go">اقرأ قبل أن تسافر</h2></div>
+      <a class="btn btn-ghost" href="articles.html" data-en="All articles">كل المقالات</a>
+    </div>
+    <div class="grid g3" id="ar-grid"></div>
+  </div>
+</section>
+
+<!-- FAQ + FINAL CTA -->
+<section class="sec bg-ivory2" aria-labelledby="fq-h">
+  <div class="wrap" style="display:grid;gap:40px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:40px;align-items:start">
+      <div class="stack"><span class="eyebrow" data-en="FAQ">أسئلة شائعة</span><h2 class="h2" id="fq-h" data-en="Before you book">قبل أن تحجز</h2><p class="muted" data-en="Can't find your answer?">لم تجد إجابتك؟</p><div class="row"><a class="btn btn-ghost btn-sm" href="faq.html" data-en="All questions">كل الأسئلة</a><a class="btn btn-ghost btn-sm" href="contact.html" data-en="Contact us">تواصل معنا</a></div></div>
+      <div class="acc" id="fq-list"></div>
+    </div>
+    <div class="final rv">
+      <div class="arc" aria-hidden="true"></div>
+      <div class="stack" style="align-items:center;position:relative">
+        <h2 class="h2" data-en="Your Bali journey starts here">رحلتك إلى بالي تبدأ من هنا</h2>
+        <p style="max-width:52ch" data-en="Start with the map, pick a ready itinerary, or let us design the whole trip.">ابدأ بالخريطة، أو اختر جدولًا جاهزًا، أو دعنا نصمم الرحلة كاملة.</p>
+        <div class="row" style="justify-content:center"><a class="btn btn-forest btn-lg" href="services.html" data-en="Start planning">ابدأ التخطيط</a><a class="btn btn-light btn-lg" href="map.html" data-en="Open the map">افتح الخريطة</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+  const { D, t, L, mount, activityCard, itineraryCard, packageCard, regionCard, articleCard, placeCard, icon, money, numAr } = BT;
+  // 4. Find something to do (map categories → places)
+  const fsCats = [["restaurants", L("المطاعم", "Restaurants")], ["cafes", L("الكافيهات", "Cafés")], ["beaches", L("الشواطئ", "Beaches")], ["landmarks", L("أماكن سياحية", "Landmarks")], ["waterfalls", L("الشلالات", "Waterfalls")], ["family", L("للعائلات", "Family")], ["romantic", L("رومانسية", "Romantic")]];
+  const chipHost = document.getElementById("fs-chips");
+  chipHost.innerHTML = fsCats.map(([k, n], i) => `<button class="chip" aria-pressed="${i === 0}" data-k="${k}">${n}</button>`).join("");
+  function showFs(k) {
+    const list = D.PLACES.filter(p => p.cat === k || p.tags.includes(k)).slice(0, 4);
+    const g = document.getElementById("fs-grid"); g.style.opacity = 0;
+    setTimeout(() => { g.innerHTML = list.map(placeCard).join(""); g.style.transition = "opacity .35s"; g.style.opacity = 1; }, 140);
+  }
+  chipHost.onclick = (e) => { const b = e.target.closest(".chip"); if (!b) return; chipHost.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", c === b)); showFs(b.dataset.k); };
+  showFs("restaurants");
+  mount("#ac-grid", ["water-sports", "atv-ubud", "penida-day", "batur-sunrise"].map(id => activityCard(BT.byId(D.ACTIVITIES, id))).join(""));
+  mount("#it-grid", D.ITINERARIES.map(itineraryCard).join(""));
+  mount("#pk-grid", D.PACKAGES.map(packageCard).join(""));
+  mount("#rg-grid", D.REGIONS.slice(0, 7).map((r, i) => regionCard(r, i === 0)).join(""));
+  mount("#ar-grid", D.ARTICLES.slice(0, 3).map(articleCard).join(""));
+  mount("#rv-list", D.REVIEWS.map(r => `<figure class="card rev" style="margin:0"><div class="row between"><span class="stars">${BT.starIcon(14).repeat(r.s)}</span><span class="tag tag-palm">${t(r.svc)}</span></div><blockquote style="margin:0;color:var(--text)">${t(r.t)}</blockquote><figcaption class="row"><span class="av">${r.i}</span><span><b style="color:var(--forest)">${t(r.n)}</b><br><small class="muted">${L("تقييم موثق مرتبط بحجز", "Verified booking review")}</small></span></figcaption></figure>`).join(""));
+  const faqs = [
+    [L("هل أحتاج إلى حساب لاستكشاف الموقع؟", "Do I need an account to browse?"), L("لا. يمكنك تصفح الخريطة والأنشطة والجداول دون تسجيل. نطلب الحساب فقط عند إتمام الدفع لحفظ حجوزاتك وملفاتك.", "No. Browse the map, activities and itineraries freely. We only ask for an account at checkout to keep your bookings and files.")],
+    [L("كيف أستلم الجدول السياحي بعد الشراء؟", "How do I get my itinerary after buying?"), L("يظهر الملف فورًا في صفحة الطلب وفي «جداولي» داخل حسابك، ويمكنك تحميله وإعادة تحميله حسب سياسة الوصول.", "The file appears on your order page and under 'My itineraries' in your account, ready to download again per the access policy.")],
+    [L("هل الحجز مؤكد بمجرد الدفع؟", "Is my booking confirmed once I pay?"), L("بعض الأنشطة تحتاج تأكيدًا من مزود الخدمة. ستظهر حالة الحجز «بانتظار التأكيد» حتى يصل التأكيد النهائي، ونبلغك فورًا.", "Some activities need provider confirmation. Your booking shows 'Awaiting confirmation' until it's final, and we notify you right away.")],
+    [L("ما العملة وطرق الدفع المتاحة؟", "Which currency and payment methods?"), L("الأسعار في النموذج بالدولار الأمريكي. طرق الدفع النهائية تُحدد بعد استكمال السجل التجاري، وقد نبدأ بالتحويل البنكي.", "Prototype prices are in USD. Final payment methods depend on business registration; bank transfer may come first.")],
+    [L("هل يمكن إضافة سائق إلى نشاط محجوز؟", "Can I add a driver to an activity?"), L("نعم، من نموذج الحجز داخل صفحة الفعالية. يأخذ السائق نفس التاريخ وعدد الأشخاص ويُضاف سعره إلى الإجمالي.", "Yes, from the activity's booking form. The driver takes the same date and party size, and the price is added to your total.")],
+  ];
+  mount("#fq-list", faqs.map(([q, a], i) => `<details ${i === 0 ? "open" : ""}><summary>${q}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${a}</div></details>`).join(""));
+
+  // mini driver booking
+  const today = new Date(); const iso = (d) => d.toISOString().slice(0, 10);
+  const f = document.getElementById("md-from"), to = document.getElementById("md-to");
+  const d1 = new Date(today); d1.setDate(d1.getDate() + 14); const d2 = new Date(d1); d2.setDate(d2.getDate() + 2);
+  f.value = iso(d1); to.value = iso(d2); f.min = iso(today); to.min = f.value;
+  let n = 2;
+  function upd() {
+    document.getElementById("md-n").textContent = n;
+    document.getElementById("md-m").disabled = n <= 1; document.getElementById("md-p").disabled = n >= 14;
+    const v = D.VEHICLES.find(v => n >= v.min && n <= v.max) || D.VEHICLES[2];
+    const days = Math.max(1, Math.round((new Date(to.value) - new Date(f.value)) / 864e5) + 1);
+    document.getElementById("md-car").innerHTML = `${icon("car", 22)}<span><b>${t(v.name)}</b> — ${t(v.ex)}<br><small class="muted">${L("اختيرت تلقائيًا لـ", "Auto-selected for")} ${BT.cnt(n, "p")}</small></span>`;
+    document.getElementById("md-days").textContent = `${BT.cnt(days, "d")} × ${money(v.perDay)}`;
+    const p = document.getElementById("md-price"); p.textContent = money(days * v.perDay); p.classList.remove("bump"); void p.offsetWidth; p.classList.add("bump");
+  }
+  document.getElementById("md-m").onclick = () => { n = Math.max(1, n - 1); upd(); };
+  document.getElementById("md-p").onclick = () => { n = Math.min(14, n + 1); upd(); };
+  f.onchange = () => { to.min = f.value; if (to.value < f.value) to.value = f.value; upd(); }; to.onchange = upd; upd();
+  document.getElementById("mini-drv").onsubmit = (e) => { e.preventDefault(); BT.store.set("drvDraft", { from: f.value, to: to.value, n }); location.href = "driver.html#book"; };
+
+  // Hero video arches: play when visible, respect reduced motion, pause control (WCAG 2.2.2)
+  (function () {
+    const vids = [...document.querySelectorAll(".arch video")], btn = document.getElementById("vid-toggle");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let paused = reduce;
+    vids.forEach((v, i) => { v.innerHTML = `<source src="assets/img/${v.dataset.name}.webm" type="video/webm"><source src="assets/img/${v.dataset.name}.mp4" type="video/mp4">`; v.load(); v.addEventListener("loadeddata", () => { try { v.currentTime = (i * 2.7) % (v.duration || 11); } catch (e) {} }, { once: true }); });
+    const setUI = () => { btn.setAttribute("aria-pressed", paused); btn.setAttribute("aria-label", paused ? L("تشغيل الفيديو", "Play video") : L("إيقاف الفيديو مؤقتًا", "Pause video")); btn.querySelector(".i-pause").style.display = paused ? "none" : ""; btn.querySelector(".i-play").style.display = paused ? "" : "none"; };
+    const apply = (visible) => vids.forEach(v => { if (!paused && visible) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause(); });
+    let vis = true;
+    if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => { vis = e.isIntersecting; apply(vis); }, { threshold: .15 }).observe(document.querySelector(".arches"));
+    btn.onclick = () => { paused = !paused; setUI(); apply(vis); };
+    setUI(); apply(true);
+  })();
+  document.getElementById("hsearch").onsubmit = (e) => { e.preventDefault(); BT.store.set("q", { q: document.getElementById("hq").value, type: document.getElementById("htype").value }); location.href = "search.html"; };
+})();
+
+// about: infinite vertical marquee pause toggle
+(function(){const m=document.querySelector('.about-media'),b=document.getElementById('mq-toggle');if(!m||!b)return;
+b.addEventListener('click',()=>{const p=m.classList.toggle('paused');b.setAttribute('aria-pressed',p);b.setAttribute('aria-label',p?BT.L('تشغيل الحركة','Play motion'):BT.L('إيقاف الحركة مؤقتًا','Pause motion'));});})();
+</script>
+</body>
+</html>

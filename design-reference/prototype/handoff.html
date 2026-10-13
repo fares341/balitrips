@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — Developer Handoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.ho { display: grid; gap: 32px; align-items: start; padding-block: 8px 80px; }
+@media (min-width: 1100px) { .ho { grid-template-columns: 230px minmax(0,1fr); gap: 48px; } }
+.honav { position: sticky; top: calc(var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.honav a { padding: 7px 12px; border-radius: 10px; color: var(--forest-soft); font-weight: 600; } .honav a:hover { background: var(--palm-soft); }
+@media (max-width: 1099px) { .honav { position: static; flex-direction: row; overflow-x: auto; } .honav a { white-space: nowrap; } }
+.hs2 { display: flex; flex-direction: column; gap: 14px; padding-bottom: 40px; border-bottom: 1px solid var(--line-soft); scroll-margin-top: calc(var(--hdr-h) + 20px); }
+.hs2 > h2 { font-size: 26px; }
+.tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--white); }
+.tw table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 680px; }
+.tw th { text-align: start; background: var(--ivory-2); color: var(--forest); padding: 10px 12px; font-size: 13px; }
+.tw td { padding: 10px 12px; border-top: 1px solid var(--line-soft); vertical-align: top; }
+.tw code, .hs2 p code, .hs2 li code { font: 600 12.5px var(--f-en); background: var(--ivory-2); padding: 1px 6px; border-radius: 5px; color: var(--forest); direction: ltr; unicode-bidi: isolate; }
+pre.code { direction: ltr; text-align: left; background: var(--forest-ink); color: #D7F5DC; padding: 16px 18px; border-radius: 14px; overflow-x: auto; font: 500 13px/1.6 ui-monospace, Menlo, monospace; margin: 0; }
+.sm-flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; direction: ltr; justify-content: flex-end; }
+.sm-flow span { padding: 6px 10px; border-radius: 9px; font: 600 12.5px var(--f-en); background: var(--ivory-2); color: var(--forest); }
+.sm-flow span.e { background: var(--forest); color: var(--palm); } .sm-flow span.x { background: var(--err-bg); color: var(--err); } .sm-flow i { color: var(--muted); font-style: normal; }
+.lvl { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.lvl div { padding: 18px; border-radius: 18px; background: var(--white); border: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px; }
+.lvl b { color: var(--forest); }
+.motion-demo { display: flex; gap: 10px; flex-wrap: wrap; } .motion-demo button { min-width: 120px; }
+.ball { width: 28px; height: 28px; border-radius: 50%; background: var(--orange); }
+</style>
+</head>
+<body data-page="handoff" data-section="x">
+<div id="hdr"></div>
+<main id="main"><div class="wrap">
+  <div id="crumbs"></div>
+  <div class="stack" style="gap:10px;padding-bottom:20px;max-width:780px"><span class="eyebrow">Developer Handoff</span><h1 class="h1">التوثيق للمبرمج</h1><p class="lede">المرجع الوظيفي للنموذج: الصفحات والمسارات، نموذج البيانات، قواعد التسعير والإضافات، حالات الحجز، مستويات الخريطة، مواصفات الحركة، والوصول والأداء.</p></div>
+  <div class="ho"><nav class="honav" aria-label="أقسام التوثيق"><a href="#arch">البنية المقترحة</a><a href="#routes">الصفحات والمسارات</a><a href="#data">نموذج البيانات</a><a href="#price">التسعير والإضافات</a><a href="#states">حالات الحجز</a><a href="#map">الخريطة</a><a href="#motion">مواصفات الحركة</a><a href="#a11y">الوصول والأداء</a><a href="#i18n">اللغات</a><a href="#events">الأحداث والتحليلات</a></nav>
+  <div class="stack" style="gap:40px;min-width:0">
+    <section class="hs2" id="arch"><h2>البنية المقترحة</h2>
+      <ul><li>واجهة: <code>Next.js</code> (App Router) مع SSR لصفحات المحتوى (SEO) و<code>next-intl</code> للعربية/الإنجليزية/الإندونيسية.</li><li>تنسيق: التوكنز الموجودة في <code>assets/bt.css</code> تتحول إلى CSS variables أو Tailwind theme دون تغيير القيم.</li><li>الخريطة: <code>MapLibre GL JS</code> بطبقة قمر صناعي ونمط مخصص، ونقاط من API الإدارة (انظر قسم الخريطة).</li><li>الخلفية واللوحة: أي CMS/Backend يدعم الأدوار (مثل Laravel + Filament أو Strapi)، ببوابة دفع تُحدد بعد السجل التجاري.</li><li>النموذج الحالي مكتوب HTML/CSS/JS بلا إطار ليكون مرجعًا بصريًا وسلوكيًا مستقلًا. الملفات: <code>assets/bt.js</code> (المكونات المشتركة)، <code>assets/booking.js</code> (التقويم والعداد)، <code>assets/data.js</code> (البيانات التجريبية).</li></ul></section>
+    <section class="hs2" id="routes"><h2>الصفحات والمسارات</h2><div class="tw"><table><thead><tr><th>الصفحة</th><th>المسار المقترح</th><th>ملف النموذج</th><th>ملاحظات</th></tr></thead><tbody id="rt"></tbody></table></div></section>
+    <section class="hs2" id="data"><h2>نموذج البيانات</h2><div class="tw"><table><thead><tr><th>الكيان</th><th>حقول أساسية</th><th>علاقات</th></tr></thead><tbody>
+      <tr><td><b>Activity</b></td><td><code>id, title{ar,en,id}, slug, region_id, provider_id, short, body, gallery[], duration_h, slots[], multi_day:bool, min_age, requirements, cancel_policy, faq[], seo, status</code></td><td>has many Package, Addon · belongs to Region, Provider · has one Place</td></tr>
+      <tr><td><b>Package</b></td><td><code>id, activity_id, name, price, pricing: per_person|per_group, group_max, includes[], excludes[], includes_addons[], availability</code></td><td>belongs to Activity</td></tr>
+      <tr><td><b>Addon</b></td><td><code>id, activity_id, name, price, pricing: per_person|per_booking|per_qty, max_qty, only_packages[], requires_addon_id, available</code></td><td>belongs to Activity</td></tr>
+      <tr><td><b>Itinerary</b></td><td><code>id, name, days, regions[], trip_types[], price, preview_days, file_versions[], download_limit</code></td><td>has many Order items</td></tr>
+      <tr><td><b>TourPackage</b></td><td><code>id, name, theme, days, max_people, price, includes_driver, activity_ids[]</code></td><td>many-to-many Activity</td></tr>
+      <tr><td><b>Place</b> (الخريطة)</td><td><code>id, name, category_id, sub_category, region_id, lat, lng, images[], desc, tags[family,romantic,photo], price_level, activity_id?, in_free_zone, status</code></td><td>belongs to Category, Region</td></tr>
+      <tr><td><b>Region</b></td><td><code>id, name, tagline, about, hero, center{lat,lng}, suggested_stay</code></td><td>has many Place, Activity</td></tr>
+      <tr><td><b>Vehicle</b></td><td><code>id, name, min_people, max_people, price_per_day</code></td><td>— (منطق السائق)</td></tr>
+      <tr><td><b>Order</b></td><td><code>id(BT-YYYY-####), user_id?, guest_contact, items[], subtotal, discount, total, currency, payment_method, payment_status, created_at</code></td><td>has many OrderItem, Payment</td></tr>
+      <tr><td><b>OrderItem</b></td><td><code>type: activity|driver|package|itinerary|map, ref_id, date, date_end, time, people, package_id, addons[{id,qty}], driver{vehicle,days}, lines[], total, status</code></td><td>belongs to Order</td></tr>
+      <tr><td><b>CustomRequest</b></td><td><code>id(CT-####), dates|flexible_days, adults, kids_ages[], regions[], type, interests[], budget, services[], contact, status, quote</code></td><td>belongs to User</td></tr>
+      <tr><td><b>MapAccess</b></td><td><code>user_id, granted_at, source: purchase|bundle|promo, expires_at?</code></td><td>belongs to User</td></tr>
+    </tbody></table></div></section>
+    <section class="hs2" id="price"><h2>التسعير وقواعد الإضافات</h2>
+      <pre class="code">total = packageCost + Σ addonCost + driverCost
+packageCost = pkg.pricing == "per_group"
+  ? ceil(people / pkg.group_max) * pkg.price
+  : people * pkg.price
+addonCost(a, qty) = a.pricing == "per_person" ? a.price * people
+                  : a.pricing == "per_qty"    ? a.price * min(qty, a.max_qty)
+                  : a.price                    // per_booking
+driverCost = vehicleFor(people).price_per_day * days   // days = 1 for single-day activities
+vehicleFor(n) = n <= 4 ? "sedan" : n <= 7 ? "suv" : "van"</pre>
+      <ul><li>إضافة موجودة في <code>pkg.includes_addons</code> → تظهر «مشمولة في باقتك» مقفلة، ولا تُحسب.</li><li><code>only_packages</code> لا تشمل الباقة المختارة → معطّلة مع السبب.</li><li><code>requires_addon_id</code> غير مختار → معطّلة؛ وإلغاء الشرط يلغي التابعة تلقائيًا.</li><li>تغيير الباقة يعيد تقييم كل الإضافات ويحدث السعر فورًا مع حركة <code>bump</code>.</li><li>السعر المعروض قبل الدفع = المبلغ المخصوم. لا رسوم مخفية. أي خصم يظهر في «رحلتي» قبل الدفع.</li><li>الحجز لا يُرسل دون: تاريخ، وقت (للأنشطة)، وعدد أفراد. الأخطاء تظهر تحت كل حقل ويُمرر للأول.</li></ul></section>
+    <section class="hs2" id="states"><h2>حالات الحجز والدفع</h2>
+      <p>الدفع:</p><div class="sm-flow"><span>pending</span><i>→</i><span>processing</span><i>→</i><span class="e">paid</span><i>|</i><span class="x">failed</span><i>|</i><span>awaiting_transfer</span><i>→</i><span class="e">paid</span></div>
+      <p>عنصر الحجز:</p><div class="sm-flow"><span>created</span><i>→</i><span>sent_to_provider</span><i>→</i><span class="e">confirmed</span><i>→</i><span class="e">completed</span><i>·</i><span>cancel_requested</span><i>→</i><span class="x">cancelled</span><i>→</i><span>refunded</span></div>
+      <ul><li>«مؤكد» يُعرض فقط عند <code>confirmed</code> من المزود، وليس عند <code>paid</code>.</li><li>إعادة محاولة الدفع تستخدم نفس <code>Order.id</code> (idempotency key) فلا يتكرر الطلب.</li><li>المنتجات الرقمية (الجدول والخريطة) تصبح <code>completed</code> فور <code>paid</code>.</li><li>كل تغيير حالة يُسجّل في Timeline ويرسل إشعارًا (بريد + واتساب) إذا اختار المسؤول ذلك.</li></ul></section>
+    <section class="hs2" id="map"><h2>الخريطة: مستويات التنفيذ</h2><div class="lvl">
+      <div><span class="tag tag-ok" style="align-self:flex-start">المرحلة الأولى</span><b>أساسي — خريطة مخصصة</b><span class="muted">MapLibre + طبقة قمر صناعي (مثل MapTiler Satellite) بتدرج ألوان الهوية، علامات ببطاقات زجاجية، تجميع حسب الزوم (مناطق ← أماكن ← بطاقات)، فلاتر، الأقرب مني، منطقة مجانية بقناع Blur خارجها.</span></div>
+      <div><span class="tag tag-warn" style="align-self:flex-start">بعد الإطلاق</span><b>متقدم — 3D</b><span class="muted">تفعيل <code>terrain</code> و<code>pitch</code> وانتقالات <code>flyTo</code>، علامات قائمة. لا يَعِد بمجسمات لكل مبنى.</span></div>
+      <div><span class="tag tag-forest" style="align-self:flex-start">استعراضي — بعد دراسة</span><b>جولة افتراضية</b><span class="muted">مسار متحرك بسيارة/شخصية على طرق حقيقية. يحتاج بيانات طرق وتكلفة رسوميات؛ معروض في النموذج كمفهوم فقط.</span></div></div>
+      <ul><li>تفاعلات: <code>flyTo(region)</code> ٨٥٠ms، تحديث النتائج حسب حدود الشاشة بعد توقف السحب (debounce ١٨٠ms)، النقر على نقطة يفتح بطاقة جانبية/Bottom Sheet ولا يغادر الصفحة، وصفحة تفاصيل المكان مستقلة.</li><li>الأماكن خارج المنطقة المجانية تُرسل من الخادم بدون اسم أو صور أو إحداثيات دقيقة حتى يملك المستخدم <code>MapAccess</code> (حماية فعلية لا تكتفي بإخفاء الواجهة).</li><li>«الأقرب مني» يطلب الإذن بعد شرح، ولا يحفظ الموقع.</li></ul></section>
+    <section class="hs2" id="motion"><h2>مواصفات الحركة</h2>
+      <div class="tw"><table><thead><tr><th>العنصر</th><th>المحفز</th><th>الحركة</th><th>المدة / المنحنى</th><th>تقليل الحركة</th></tr></thead><tbody>
+        <tr><td>Hero</td><td>تحميل</td><td>نوافذ البوابات Ken Burns بطيء متناوب</td><td>18s / ease-in-out</td><td>صورة ثابتة</td></tr>
+        <tr><td>Navbar</td><td>تمرير > 8px</td><td>ظهور ظل وخلفية ضبابية</td><td>240ms</td><td>بدون انتقال</td></tr>
+        <tr><td>الكروت</td><td>Hover</td><td>رفع 4px + ظل sh-2 + تكبير الصورة 1.05</td><td>240 / 520ms · <code>cubic-bezier(.22,.8,.24,1)</code></td><td>تغيير الظل فقط</td></tr>
+        <tr><td>ظهور الأقسام</td><td>دخول الشاشة</td><td>من opacity .45 وإزاحة 22px</td><td>Scroll-driven</td><td>معطل</td></tr>
+        <tr><td>الفلاتر</td><td>تغيير</td><td>Skeleton ثم ظهور النتائج</td><td>260ms</td><td>فوري</td></tr>
+        <tr><td>الباقات</td><td>اختيار</td><td>إطار أخضر + رفع 2px + نبضة scale .97→1</td><td>260ms</td><td>الإطار فقط</td></tr>
+        <tr><td>السعر</td><td>تغير القيمة</td><td><code>bump</code>: تكبير 1.08 وتلوين برتقالي</td><td>450ms</td><td>بدون</td></tr>
+        <tr><td>الخريطة</td><td>اختيار منطقة/مكان</td><td>flyTo + نبض النقطة + ظهور البطاقة</td><td>850ms / easeInOutCubic</td><td>قفز مباشر</td></tr>
+        <tr><td>Checkout</td><td>الخطوة التالية</td><td>انزلاق أفقي باتجاه القراءة + شريط تقدم</td><td>520ms</td><td>تبديل مباشر</td></tr>
+        <tr><td>النجاح</td><td>دفع ناجح</td><td>رسم علامة ✓ + قصاصات بألوان الهوية</td><td>600ms + 2.4s</td><td>العلامة فقط</td></tr>
+        <tr><td>Toast</td><td>إجراء</td><td>صعود 16px مع تلاشي</td><td>520ms، يبقى 3.6s</td><td>تلاشي</td></tr></tbody></table></div>
+      <div class="motion-demo"><button class="btn btn-ghost btn-sm" data-m="ease">منحنى الأساس</button><button class="btn btn-ghost btn-sm" data-m="io">In-out (الخريطة)</button><div class="ball" id="ball"></div></div></section>
+    <section class="hs2" id="a11y"><h2>الوصول والأداء</h2><ul>
+      <li>تباين النص ≥ 4.5:1 (انظر Design System). البرتقالي لا يحمل نصًا أبيض.</li><li>كل عنصر تفاعلي <code>button</code> أو <code>a</code> حقيقي، بحجم لمس ≥ 44px، وحلقة تركيز ظاهرة.</li><li>الخريطة: <code>role="application"</code> + تحكم بالأسهم و+/−، والنتائج متاحة كقائمة نصية بجانبها.</li><li>رسائل الأخطاء والنتائج ضمن <code>aria-live</code>. Modals تحصر التركيز وتغلق بـ Esc.</li><li>الصور: <code>loading="lazy"</code> لما تحت الطية، و<code>srcset</code> بأحجام 480/960/1600 بصيغة WebP/AVIF في الإنتاج.</li><li>ميزانية: LCP &lt; 2.5s على 4G، الخريطة تُحمّل عند الحاجة (dynamic import)، وخطوط Noor بـ <code>font-display: swap</code> وsubset.</li></ul></section>
+    <section class="hs2" id="i18n"><h2>اللغات والاتجاه</h2><ul><li>العربية افتراضية RTL، الإنجليزية LTR، الإندونيسية للموقع العام فقط (حسب الاعتماد). لوحة التحكم عربي/إنجليزي.</li><li>كل المحتوى القابل للترجمة حقول لكل لغة في الكيانات (<code>title.ar/en/id</code>)؛ صفحة بلا ترجمة تعرض العربية مع تنبيه.</li><li>CSS بخصائص منطقية فقط؛ الأسهم الاتجاهية تُعكس؛ الأرقام والأسعار والهواتف <code>dir="ltr"</code>.</li><li>الروابط تحمل اللغة: <code>/ar/…</code>، <code>/en/…</code>، مع <code>hreflang</code>.</li></ul></section>
+    <section class="hs2" id="events" style="border:0"><h2>الأحداث والتحليلات المقترحة</h2><div class="tw"><table><thead><tr><th>الحدث</th><th>متى</th><th>خصائص</th></tr></thead><tbody>
+      <tr><td><code>map_region_select</code></td><td>اختيار منطقة</td><td>region</td></tr><tr><td><code>map_place_open</code></td><td>فتح مكان</td><td>place, locked</td></tr><tr><td><code>map_unlock_click</code></td><td>زر فتح الخريطة</td><td>source</td></tr>
+      <tr><td><code>activity_package_select</code></td><td>تغيير الباقة</td><td>activity, package</td></tr><tr><td><code>addon_toggle</code></td><td>إضافة/إزالة</td><td>addon, on</td></tr><tr><td><code>driver_suggest_response</code></td><td>نافذة اقتراح السائق</td><td>accepted</td></tr>
+      <tr><td><code>trip_add</code></td><td>إضافة لرحلتي</td><td>type, ref, total</td></tr><tr><td><code>checkout_step</code></td><td>كل خطوة</td><td>step, items</td></tr><tr><td><code>payment_result</code></td><td>نتيجة الدفع</td><td>state, method</td></tr></tbody></table></div></section>
+  </div></div>
+</div></main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+document.getElementById("crumbs").outerHTML = BT.crumbs([["صفحة المشروع", "index.html"], ["Developer Handoff", "#"]]);
+const R = [["الرئيسية", "/", "home.html", "١٣ قسمًا بالترتيب المعتمد"], ["خدماتنا", "/services", "services.html", "زر «ابدأ التخطيط»"], ["الخريطة", "/map", "map.html", "#region-x, #cat-x, #place-x"], ["تفاصيل مكان", "/places/:slug", "place.html", "مقفل إن خارج المجاني"], ["الأنشطة", "/activities", "activities.html", "فلاتر في query string"], ["تفاصيل الفعالية", "/activities/:slug", "activity.html", "/book و /edit/:itemKey"], ["الجداول", "/itineraries", "itineraries.html", ""], ["تفاصيل الجدول", "/itineraries/:slug", "itinerary.html", "معاينة أول يومين"], ["الباقات", "/packages", "packages.html", "مقارنة"], ["تفاصيل الباقة", "/packages/:slug", "package.html", ""], ["السائق", "/driver", "driver.html", "نطاق تواريخ"], ["الرحلة المخصصة", "/custom-trip", "custom-trip.html", "٨ خطوات + مراجعة"], ["استكشف بالي", "/explore", "explore.html", ""], ["المنطقة", "/explore/:slug", "region.html", ""], ["رحلتي", "/trip", "my-trip.html", "الكارت"], ["الدفع", "/checkout", "checkout.html", "٣ خطوات"], ["حالة الطلب", "/orders/:id", "confirmation.html", "success|failed|processing|transfer"], ["الحساب", "/account/*", "account.html", "bookings, files, custom, favorites…"], ["المقالات", "/journal", "articles.html", ""], ["المقال", "/journal/:slug", "article.html", ""], ["من نحن / تواصل / FAQ / مساعدة", "/about …", "about.html …", ""], ["السياسات", "/legal/:slug", "policy.html", "٥ سياسات"], ["الدخول والتسجيل", "/login, /register, /forgot", "login.html …", ""], ["البحث", "/search?q=", "search.html", "بحث شامل"], ["لوحة التحكم", "/admin/*", "admin.html", "أدوار وصلاحيات"]];
+document.getElementById("rt").innerHTML = R.map(([a, b, c, d]) => `<tr><td><b style="color:var(--forest)">${a}</b></td><td><code>${b}</code></td><td><a class="link" href="${c.split(" ")[0]}">${c}</a></td><td class="muted">${d}</td></tr>`).join("");
+const ball = document.getElementById("ball");
+document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { const e = b.dataset.m === "ease" ? "cubic-bezier(.22,.8,.24,1)" : "cubic-bezier(.65,0,.35,1)"; const dx = document.documentElement.dir === "rtl" ? -220 : 220; ball.animate([{ transform: "translateX(0)" }, { transform: `translateX(${dx}px)` }], { duration: b.dataset.m === "ease" ? 520 : 850, easing: e, fill: "forwards" }); });
+})();
+</script>
+</body>
+</html>

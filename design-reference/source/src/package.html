@@ -1,0 +1,60 @@
+<!--title: Bali Trips — تفاصيل الباقة|page: package|section: services|scripts: booking-->
+<style>
+.dlay { display: grid; gap: 32px; align-items: start; padding-block: 32px 64px; }
+@media (min-width: 1024px) { .dlay { grid-template-columns: minmax(0,1fr) 400px; gap: 48px; } }
+.info { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.info div { padding: 14px; border-radius: 16px; background: var(--ivory-2); display: flex; flex-direction: column; gap: 4px; }
+.info small { color: var(--muted); display: flex; gap: 6px; align-items: center; } .info b { color: var(--forest); }
+.ie { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.ie ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; } .ie li { display: flex; gap: 10px; }
+.act-row { display: grid; grid-template-columns: 72px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--white); border: 1px solid var(--line-soft); }
+.act-row img { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; }
+.bkp { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 16px; }
+.bkp .err-box { display: none; color: var(--err); font-weight: 600; font-size: 13px; } .has-error .err-box { display: flex; gap: 6px; align-items: center; }
+@media (max-width: 1023px) { .bkp { position: static; } }
+</style>
+<main id="main"><div id="root"></div></main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, img, byId, Trip, toast } = BT;
+const p = byId(D.PACKAGES, BT.hashId()); const root = document.getElementById("root");
+if (!p) { root.innerHTML = `<div class="wrap empty" style="padding-block:80px"><span class="ill">${icon("box", 40)}</span><h1 class="h2">${L("لم نجد هذه الباقة", "Package not found")}</h1><a class="btn btn-forest" href="packages.html">${L("كل الباقات", "All packages")}</a></div>`; return; }
+document.title = "Bali Trips — " + t(p.name);
+const acts = p.acts.map(id => byId(D.ACTIVITIES, id));
+root.innerHTML = `
+<section class="banner"><img class="bg" src="${img(p.img)}" alt="">
+  <div class="wrap">${BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الباقات السياحية", "Tour packages"), "packages.html"], [t(p.name), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"')}
+    <span class="tag tag-glass" style="align-self:flex-start">${t(p.theme)}</span><h1>${t(p.name)}</h1><p>${t(p.short)}</p></div></section>
+<div class="wrap dlay">
+  <div class="stack minw0" style="gap:32px">
+    <div class="info"><div><small>${icon("cal", 14)} ${L("المدة", "Length")}</small><b>${BT.cnt(p.days, "d")}</b></div><div><small>${icon("users", 14)} ${L("الأشخاص", "Travelers")}</small><b>${L("حتى", "Up to")} ${numAr(p.people)}</b></div><div><small>${icon("car", 14)} ${L("السائق", "Driver")}</small><b>${p.driver ? L("مشمول طوال الأيام", "Included all days") : L("غير مشمول — يمكن إضافته", "Not included — can be added")}</b></div><div><small>${icon("compass", 14)} ${L("الأنشطة", "Activities")}</small><b>${numAr(acts.length)} ${L("أنشطة", "activities")}</b></div></div>
+    <section class="stack" style="gap:10px"><h2 class="h3">${L("عن الباقة", "About the package")}</h2><p>${L("برنامج متكامل مصمم لهذا النوع من الرحلات: الأيام مرتبة جغرافيًا، والأنشطة محجوزة مع مزوديها، والتنقل بين الأماكن محسوب. نؤكد كل خدمة بعد الحجز ونرسل لك جدول الأيام النهائي.", "A complete program built for this type of trip: days ordered geographically, activities booked with providers, and transport planned. We confirm each service after booking and send your final day plan.")}</p></section>
+    <section class="stack" style="gap:12px"><h2 class="h3">${L("الأنشطة داخل الباقة", "Activities in this package")}</h2>${acts.map(a => `<a class="act-row" href="activity.html#${a.id}"><img src="${img(a.img)}" alt=""><span class="minw0"><b style="color:var(--forest)">${t(a.title)}</b><br><small class="muted">${t(BT.region(a.region).name)} · ${t(a.duration)}</small></span><span class="flip">${icon("chev", 18)}</span></a>`).join("")}</section>
+    <section class="ie"><div class="panel" style="padding:18px"><b style="color:var(--ok);display:flex;gap:8px;margin-bottom:10px">${icon("check", 18, 2.4)} ${L("ما تشمله الباقة", "Included")}</b><ul>${[L("الأنشطة المذكورة بباقاتها الأساسية", "Listed activities (standard options)"), L("جدول يومي PDF", "A day-by-day PDF plan"), p.driver ? L("سائق خاص وسيارة مكيفة", "Private driver & A/C car") : null, L("دعم بالعربية طوال الرحلة", "Arabic support throughout")].filter(Boolean).map(x => `<li>${icon("check", 16, 2)} ${x}</li>`).join("")}</ul></div>
+      <div class="panel" style="padding:18px"><b style="color:var(--err);display:flex;gap:8px;margin-bottom:10px">${icon("x", 18, 2.4)} ${L("ما لا تشمله", "Not included")}</b><ul>${[L("تذاكر الطيران", "Flights"), L("الإقامة (يمكن طلبها في رحلة مخصصة)", "Accommodation (ask via a custom trip)"), L("الوجبات غير المذكورة", "Meals not listed"), !p.driver ? L("السائق", "Driver") : null].filter(Boolean).map(x => `<li class="muted">${icon("x", 16, 2)} ${x}</li>`).join("")}</ul></div></section>
+    <section class="stack" style="gap:10px"><h2 class="h3">${L("الأسئلة الشائعة", "FAQ")}</h2><div class="acc">${[[L("هل يمكن تغيير نشاط داخل الباقة؟", "Can I swap an activity?"), L("نعم بنشاط بنفس الفئة السعرية، أو اطلب رحلة مخصصة لتعديلات أكبر.", "Yes, for one in the same price range — or request a custom trip.")], [L("ماذا لو كنا أكثر من العدد؟", "What if we're more people?"), L("للمجموعات الأكبر اطلب عرض سعر من صفحة الرحلة المخصصة.", "For larger groups, request a quote via a custom trip.")]].map(([q, a], i) => `<details ${i ? "" : "open"}><summary>${q}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${a}</div></details>`).join("")}</div></section>
+  </div>
+  <aside class="bkp"><form class="panel stack" style="gap:16px" id="f" novalidate>
+    <div class="row between"><span class="muted">${L("سعر الباقة", "Package price")}<br><small>${L(`حتى ${numAr(p.people)} أشخاص`, `up to ${p.people} people`)}</small></span><b style="font:800 32px var(--f-en);color:var(--forest)">${money(p.price)}</b></div>
+    <div class="stack" style="gap:8px" id="b-date"><b style="color:var(--forest)">${L("تاريخ البداية", "Start date")}</b><div id="cal"></div><small class="muted" id="range"></small><span class="err-box" role="alert">${icon("alert", 15)} ${L("اختر تاريخ بداية الباقة.", "Choose a start date.")}</span></div>
+    <div class="stack" style="gap:8px"><b style="color:var(--forest)">${L("عدد الأشخاص", "Travelers")}</b><div class="row between"><div id="ppl"></div><small class="muted">${L("الحد", "Max")} ${numAr(p.people)}</small></div><div class="alert alert-warn" id="over" hidden>${icon("info", 18)}<span>${L("للمجموعات الأكبر", "For larger groups")} <a class="link" href="custom-trip.html">${L("اطلب رحلة مخصصة", "request a custom trip")}</a></span></div></div>
+    <div class="sum-total"><span>${L("الإجمالي", "Total")}</span><b class="price">${money(p.price)}</b></div>
+    <button class="btn btn-primary btn-lg btn-block" type="submit">${L("احجز الباقة", "Book package")}</button>
+    <button class="btn btn-ghost btn-block" type="button" id="add">${icon("suitcase", 18)} ${L("أضف إلى رحلتي", "Add to My Trip")}</button>
+    <button class="btn btn-ghost btn-sm" type="button" id="share" style="align-self:flex-start">${icon("share", 16)} ${L("مشاركة", "Share")}</button>
+  </form></aside>
+</div>
+<section class="sec-tight bg-ivory2"><div class="wrap stack" style="gap:18px"><h2 class="h2">${L("باقات أخرى", "Other packages")}</h2><div class="grid g3" id="others"></div></div></section>`;
+BT.mount("#others", D.PACKAGES.filter(x => x.id !== p.id).map(BT.packageCard).join(""));
+const st = { date: null, n: Math.min(2, p.people) };
+const end = (d) => { const e = BT.parseDate(d); e.setDate(e.getDate() + p.days - 1); return BT.iso(e); };
+BT.Calendar(document.getElementById("cal"), { mode: "single", unavailable: BT.demoUnavailable(3), onChange: (d) => { st.date = d; document.getElementById("b-date").classList.remove("has-error"); document.getElementById("range").textContent = L(`من ${BT.fmtDate(d)} إلى ${BT.fmtDate(end(d))}`, `From ${BT.fmtDate(d)} to ${BT.fmtDate(end(d))}`); } });
+BT.Stepper(document.getElementById("ppl"), { value: st.n, min: 1, max: p.people + 1, label: L("الأشخاص", "travelers"), onChange: (v) => { st.n = v; document.getElementById("over").hidden = v <= p.people; } });
+const item = () => ({ type: "package", ref: p.id, title: p.name, img: p.img, date: st.date, dateEnd: end(st.date), people: st.n, lines: [{ l: { ar: `${p.name.ar} (${p.days} أيام)`, en: `${p.name.en} (${p.days} days)` }, v: p.price }], total: p.price, meta: { needsProvider: true } });
+const ok = () => { if (!st.date) { document.getElementById("b-date").classList.add("has-error"); toast(L("اختر تاريخ البداية.", "Choose a start date."), { err: true }); return false; } if (st.n > p.people) { toast(L("العدد أكبر من حد الباقة.", "Too many travelers for this package."), { err: true }); return false; } return true; };
+document.getElementById("f").onsubmit = (e) => { e.preventDefault(); if (!ok()) return; const it = Trip.add(item()); BT.store.set("checkout", [it.key]); location.href = "checkout.html"; };
+document.getElementById("add").onclick = () => { if (!ok()) return; Trip.add(item()); toast(L("أُضيفت الباقة إلى رحلتي", "Package added to My Trip"), { link: [L("رحلتي", "My Trip"), "my-trip.html"] }); };
+document.getElementById("share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast(L("نُسخ الرابط", "Link copied")); } catch (e) { toast(L("انسخ الرابط من شريط العنوان", "Copy the link from the address bar")); } };
+})();
+</script>

@@ -24,12 +24,11 @@
  *
  * Two presentations:
  *
- *  - `segmented` (default): every language visible at once as a pill of
- *    links, the current one filled. A Gulf visitor who lands on English sees
- *    the word "عربي" in the header without opening anything — the globe-and-
- *    code trigger it replaces hid the one control a bilingual site most needs
- *    to make obvious. Indonesian stays a single tap away.
- *  - `menu`: a globe icon button with a dropdown, used in the header bar.
+ *  - `segmented` (default): every language visible at once as a segmented
+ *    control of links (`.seg`), the current one raised — used in the mobile
+ *    drawer (v3 package).
+ *  - `menu`: the header's language pill (`.lang-btn`: globe + "ع"/"EN") with
+ *    a dropdown (`.lang-pop`).
  *    A proper menu button: ArrowDown/ArrowUp open it on the current/last
  *    item, the arrow keys, Home and End move between languages, Escape
  *    closes it and returns focus to the globe, and Tab closes it and moves on.
@@ -50,13 +49,12 @@ export type LanguageSwitcherProps = {
 }
 
 /**
- * What each option says in the segmented control. Written in the language it
- * names (an endonym), so it needs no translation key. `localeConfig.short`
- * carries "ع" for Arabic, which is too cryptic to be the only signpost.
+ * The code on the header's language pill (v3 package: globe + "ع" / "EN").
+ * The accessible name is the full endonym from `localeConfig`.
  */
-const SEGMENT_LABEL: Record<Locale, string> = {
+const PILL_LABEL: Record<Locale, string> = {
   en: 'EN',
-  ar: 'عربي',
+  ar: 'ع',
   id: 'ID',
 }
 
@@ -178,7 +176,7 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
   if (variant === 'segmented') {
     return (
       <nav
-        className={['bt-langseg', className].filter(Boolean).join(' ')}
+        className={['seg', className].filter(Boolean).join(' ')}
         /*
          * Named by the current language's endonym, as the menu trigger is:
          * it reads correctly to a screen reader in all three locales without
@@ -195,14 +193,13 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
               locale={candidate}
               hrefLang={candidate}
               lang={candidate}
-              className={current ? 'bt-langseg-opt on' : 'bt-langseg-opt'}
               aria-current={current ? 'true' : undefined}
               // The visible text is a code ("EN"); the accessible name is the
               // full endonym ("English", "العربية", "Indonesia").
               aria-label={localeConfig[candidate].label}
               onClick={switchTo(candidate)}
             >
-              {SEGMENT_LABEL[candidate]}
+              {localeConfig[candidate].label}
             </Link>
           )
         })}
@@ -211,11 +208,11 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
   }
 
   return (
-    <div ref={containerRef} className={className} style={{ position: 'relative' }}>
+    <div ref={containerRef} className={['lang-menu', className].filter(Boolean).join(' ')}>
       <button
         ref={triggerRef}
         type="button"
-        className="bt-iconbtn bt-langbtn"
+        className="lang-btn"
         /*
          * The accessible name is the current language's *endonym* — "English",
          * "العربية", "Indonesia". Language names are written in their own
@@ -234,7 +231,8 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
         }}
         onKeyDown={onTriggerKeyDown}
       >
-        <Icon name="globe" size={19} />
+        <Icon name="globe" size={16} />
+        <span aria-hidden="true">{PILL_LABEL[activeLocale]}</span>
       </button>
 
       {open && (
@@ -243,7 +241,7 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
           id={menuId}
           role="menu"
           aria-label={localeConfig[activeLocale].label}
-          className="bt-langmenu"
+          className="lang-pop"
           onKeyDown={onMenuKeyDown}
         >
           {locales.map((candidate) => {
@@ -261,10 +259,9 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
                 tabIndex={-1}
                 data-current={current ? 'true' : undefined}
                 onClick={switchTo(candidate)}
-                className={current ? 'bt-langmenu-item on' : 'bt-langmenu-item'}
               >
                 <span>{localeConfig[candidate].label}</span>
-                {current && <Icon name="check" size={16} color="var(--orange-ink)" />}
+                {current && <Icon name="check" size={16} />}
               </Link>
             )
           })}

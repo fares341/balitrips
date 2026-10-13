@@ -4,7 +4,7 @@ import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server
 import { notFound } from 'next/navigation'
 import { hasLocale } from 'next-intl'
 
-import { Footer, Header } from '@/components/layout'
+import { Footer, Header, Tabbar } from '@/components/layout'
 import { PageViewBeacon } from '@/components/layout/page-view-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { ToastProvider } from '@/components/shared'
@@ -25,6 +25,9 @@ import '@/styles/components.css'
 import '@/styles/premium.css'
 // The home hero's living map (only the home page renders `.lmh`).
 import '@/styles/hero.css'
+// v3 design system (design-reference/prototype/assets/bt.css). Last: it is
+// the authority wherever it shares a class name with the sheets above.
+import '@/styles/bt.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -82,6 +85,10 @@ export default async function LocaleLayout({
             <Footer />
             <WhatsAppFab />
             <PageViewBeacon />
+            {/* Mobile bottom tab bar. Must stay a direct child of <body>
+                (providers render no DOM): bt.css reserves its height with
+                `body:has(> .tabbar)`. */}
+            <Tabbar />
           </ToastProvider>
         </NextIntlClientProvider>
       </body>

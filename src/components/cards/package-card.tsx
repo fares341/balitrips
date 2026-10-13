@@ -1,32 +1,36 @@
 /**
- * PackageCard.
+ * PackageCard — v3 `packageCard` (bt.js).
  *
- * Ported from `PackageCard` in design/handoff/bt-ui.jsx (lines 196-231).
- *
- * The title sits over the image inside the same anchor, as the design has it,
- * but it is an `<h3>` rather than a floating `<span>` so the card has a real
- * heading in the document outline.
- *
- * The handoff rendered amenity glyphs straight from the data (`<Icon
- * name={am} />`) and drew nothing when the name was not in the icon set. The
- * DTO filters unknown names out upstream, so the row only ever holds glyphs
- * that exist.
+ * Image 16:11 with the heart (and the first region as a glass chip); title;
+ * meta row (days, guests, driver); blurb; then "From $X" and "Details →".
+ * `action` adds a control before "Details".
  */
 
 import type { ReactNode } from 'react'
-import { useTranslations, useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
-import { LinkButton, Tag } from '@/components/shared'
-import { Icon, Photo } from '@/components/ui'
-import { Link } from '@/i18n/routing'
+import { LinkButton } from '@/components/bt/button'
+import {
+  Card,
+  CardActions,
+  CardBody,
+  CardFoot,
+  CardMedia,
+  CardMeta,
+  CardText,
+  CardTitle,
+  formatPrice,
+  PriceFrom,
+} from '@/components/bt/card'
+import { Tag } from '@/components/bt/chip'
+import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { PackageSummary } from '@/lib/content/types'
-import { formatMoney } from '@/lib/money'
 
 export type PackageCardProps = {
   pkg: PackageSummary
-  /** Optional extra CTA — normally an add-to-trip button. */
+  /** Optional extra control before "Details" — e.g. add to trip. */
   action?: ReactNode
   priority?: boolean
 }
@@ -37,105 +41,54 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
 
   const name = pick(pkg.name, locale, pkg.slug)
   const blurb = pickOptional(pkg.blurb, locale)
+  const region = pkg.regions[0]
 
   return (
-    <article className="card bt-cardhover" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Link href={pkg.href} className="bt-card-media">
-        <Photo
-          src={pkg.hero?.url}
-          alt={pick(pkg.hero?.alt, locale)}
-          priority={priority}
-          style={{ height: 200 }}
+    <Card>
+      <CardMedia
+        src={pkg.hero?.url}
+        alt={pick(pkg.hero?.alt, locale)}
+        srcSetAvif={pkg.hero?.srcSetAvif}
+        srcSetWebp={pkg.hero?.srcSetWebp}
+        ratio="16/11"
+        priority={priority}
+        badges={
+          region !== undefined ? (
+            <Tag variant="glass">{pick(region.label, locale, region.key)}</Tag>
+          ) : null
+        }
+        fav={<FavButton kind="package" refId={pkg.id} />}
+      />
+      <CardBody>
+        <CardTitle href={pkg.href}>{name}</CardTitle>
+        <CardMeta
+          items={[
+            { icon: 'cal', label: t('c_days_n', { n: pkg.days }) },
+            { icon: 'users', label: t('bt_up_to_people', { n: pkg.maxGuests }) },
+            { icon: 'car', label: t(pkg.driverIncluded ? 'bt_driver_included' : 'bt_no_driver') },
+          ]}
         />
-        <span className="bt-card-veil2" />
-        <h3
-          style={{
-            position: 'absolute',
-            insetInlineStart: 16,
-            bottom: 14,
-            color: '#fff',
-            fontSize: 22,
-            fontWeight: 800,
-          }}
-        >
-          {name}
-        </h3>
-      </Link>
-
-      <div
-        className="card-pad"
-        style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}
-      >
-        {blurb !== null && (
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-            {blurb}
-          </p>
-        )}
-
-        <div className="row" style={{ gap: 8 }}>
-          <Tag variant="forest">
-            <Icon name="cal" size={13} /> {t('c_days_n', { n: pkg.days })}
-          </Tag>
-          <Tag variant="palm">
-            <Icon name="users" size={13} /> {t('ph_maxg')} {pkg.maxGuests}
-          </Tag>
-          {pkg.driverIncluded && (
-            <Tag variant="orange">
-              <Icon name="car" size={13} /> {t('dp_title')}
-            </Tag>
-          )}
-        </div>
-
-        {pkg.regions.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>
-              {t('hp_regions')}:
-            </span>
-            <span className="muted" style={{ fontSize: 12.5 }}>
-              {pkg.regions.map((region) => pick(region.label, locale, region.key)).join(' · ')}
-            </span>
-          </div>
-        )}
-
-        {pkg.amenities.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>
-              {t('hp_services')}:
-            </span>
-            <span style={{ display: 'flex', gap: 6 }}>
-              {pkg.amenities.map((amenity) => (
-                <span key={amenity} className="bt-amen">
-                  <Icon name={amenity} size={14} color="var(--forest)" />
-                </span>
-              ))}
-            </span>
-          </div>
-        )}
-
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 10,
-            marginTop: 'auto',
-            paddingTop: 8,
-          }}
-        >
-          <div className="bt-card-price">
-            <span className="bt-card-price-l">{t('c_from')}</span>
-            <span className="bt-card-price-v bt-money">
-              {formatMoney(pkg.priceMinor, pkg.currency, locale)}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+        {blurb !== null && <CardText>{blurb}</CardText>}
+        <CardFoot>
+          <PriceFrom
+            label={t('bt_from')}
+            amount={formatPrice(pkg.priceMinor, pkg.currency, locale)}
+          />
+          <CardActions>
             {action}
-            <LinkButton href={pkg.href} variant="forest" size="sm">
-              {t('hp_view')}
+            <LinkButton
+              href={pkg.href}
+              variant="secondary"
+              size="sm"
+              iconEnd="arrow"
+              tabIndex={-1}
+              aria-hidden="true"
+            >
+              {t('bt_details')}
             </LinkButton>
-          </div>
-        </div>
-      </div>
-    </article>
+          </CardActions>
+        </CardFoot>
+      </CardBody>
+    </Card>
   )
 }

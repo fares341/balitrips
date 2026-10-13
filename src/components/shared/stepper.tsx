@@ -43,9 +43,8 @@ export type StepperProps = {
   /**
    * Accessible names for the two buttons.
    *
-   * There is no message key for "decrease" / "increase" in messages/*.json, so
-   * these fall back to the mathematical symbols (U+2212, U+002B) rather than
-   * hard-coded English. Pass translated strings once keys exist.
+   * Default to the translated "Decrease" / "Increase" (bt_decrease /
+   * bt_increase); pass more specific names ("Fewer adults") where useful.
    */
   decreaseLabel?: string
   increaseLabel?: string
@@ -61,8 +60,8 @@ export function Stepper({
   max,
   size = 'md',
   label,
-  decreaseLabel = '−',
-  increaseLabel = '+',
+  decreaseLabel,
+  increaseLabel,
   disabled = false,
   className,
 }: StepperProps) {
@@ -108,13 +107,11 @@ export function Stepper({
   }
 
   const groupLabel = label ?? t('cart_qty')
-  const iconSize = size === 'sm' ? 13 : 16
+  const iconSize = size === 'sm' ? 16 : 18
 
   return (
     <div
-      className={['bt-stepper', size === 'sm' ? 'bt-stepper-sm' : null, className]
-        .filter(Boolean)
-        .join(' ')}
+      className={['stepper', size === 'sm' ? 'sm' : null, className].filter(Boolean).join(' ')}
       role="group"
       aria-label={groupLabel}
     >
@@ -122,7 +119,7 @@ export function Stepper({
         type="button"
         onClick={() => commit(value - 1)}
         disabled={disabled || atMin}
-        aria-label={decreaseLabel}
+        aria-label={decreaseLabel ?? t('bt_decrease')}
       >
         <Icon name="minus" size={iconSize} />
       </button>
@@ -137,6 +134,7 @@ export function Stepper({
         aria-valuetext={format.number(value)}
         aria-disabled={disabled || undefined}
         onKeyDown={onKeyDown}
+        dir="ltr"
       >
         {format.number(value)}
       </span>
@@ -145,7 +143,7 @@ export function Stepper({
         type="button"
         onClick={() => commit(value + 1)}
         disabled={disabled || atMax}
-        aria-label={increaseLabel}
+        aria-label={increaseLabel ?? t('bt_increase')}
       >
         <Icon name="plus" size={iconSize} />
       </button>

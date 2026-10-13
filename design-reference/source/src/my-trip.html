@@ -1,0 +1,117 @@
+<!--title: Bali Trips — رحلتي|page: trip|section: trip-->
+<style>
+.trip-grid { display: grid; gap: 28px; align-items: start; padding-block: 8px 72px; }
+@media (min-width: 1024px) { .trip-grid { grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; } }
+.grp { display: flex; flex-direction: column; gap: 12px; }
+.grp h2 { font-size: 19px; display: flex; gap: 10px; align-items: center; }
+.grp h2 .ct { font: 700 12px var(--f-en); background: var(--ivory-3); color: var(--forest); padding: 2px 9px; border-radius: 99px; }
+.ti { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding: 14px; border-radius: 20px; background: var(--white); border: 1px solid var(--line-soft); box-shadow: var(--sh-1); }
+.ti > img { width: 112px; height: 112px; border-radius: 14px; object-fit: cover; }
+.ti .tbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ti .ttop { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.ti .tname { font-weight: 700; color: var(--forest); font-size: 16.5px; line-height: 1.35; }
+.ti .tprice { font: 800 19px var(--f-en); color: var(--forest); white-space: nowrap; }
+.ti details summary { cursor: pointer; font-size: 13px; color: var(--forest-soft); font-weight: 700; list-style: none; }
+.ti details summary::-webkit-details-marker { display: none; }
+.ti .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+@media (max-width: 560px) { .ti { grid-template-columns: 76px minmax(0,1fr); } .ti > img { width: 76px; height: 76px; } }
+.side-sum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 14px; }
+.daybar { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+.daybar div { flex: 0 0 auto; min-width: 116px; padding: 10px 12px; border-radius: 14px; background: var(--white); border: 1px solid var(--line-soft); font-size: 12.5px; }
+.daybar b { display: block; color: var(--forest); font-size: 13.5px; }
+.daybar .dots { display: flex; gap: 4px; margin-top: 6px; }
+.daybar .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.daybar .dots i.d { background: var(--forest); }
+.code { display: flex; gap: 8px; }
+.code .input { min-height: 44px; }
+</style>
+<main id="main">
+  <div class="wrap">
+    <div id="crumbs"></div>
+    <div class="row between" style="padding-bottom:18px;gap:14px">
+      <div class="stack" style="gap:6px"><h1 class="h1" style="font-size:clamp(28px,3.6vw,42px)" data-en="My Trip">رحلتي</h1><p class="muted" data-en="Everything you've added before booking: activities, driver, itineraries, packages and saved places.">كل ما أضفته قبل إتمام الحجز: الأنشطة والسائق والجداول والباقات والأماكن المحفوظة.</p></div>
+      <div class="row" id="top-actions"></div>
+    </div>
+    <div id="root"></div>
+  </div>
+</main>
+<div class="modal-scrim" id="cf" role="dialog" aria-modal="true" aria-labelledby="cf-h"><div class="modal stack" style="gap:14px"><h2 class="h3" id="cf-h" data-en="Remove this item?">إزالة هذا العنصر؟</h2><p class="muted" id="cf-t"></p><div class="row"><button class="btn btn-forest" id="cf-yes" data-en="Remove">إزالة</button><button class="btn btn-ghost" id="cf-no" data-en="Keep it">إبقاء</button></div></div></div>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, esc, img, Trip, toast, byId } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("رحلتي", "My Trip"), "my-trip.html"]]);
+const GROUPS = [
+  ["activity", L("الأنشطة والفعاليات", "Activities"), "compass"], ["driver", L("السائق", "Driver"), "car"], ["package", L("الباقات السياحية", "Tour packages"), "box"],
+  ["itinerary", L("الجداول السياحية", "Itineraries"), "doc"], ["map", L("الخريطة التفاعلية", "Interactive map"), "map"], ["place", L("الأماكن المحفوظة", "Saved places"), "pin"],
+];
+const editHref = (i) => i.type === "activity" ? `activity.html#${i.ref}/edit-${i.key}` : i.type === "driver" ? `driver.html#edit-${i.key}` : i.type === "package" ? `package.html#${i.ref}` : i.type === "itinerary" ? `itinerary.html#${i.ref}` : i.type === "place" ? `place.html#${i.ref}` : "map.html";
+let discount = BT.store.get("disc", 0);
+function conflicts(items) {
+  const acts = items.filter(i => i.type === "activity" && i.date && i.time);
+  const out = [];
+  for (let a = 0; a < acts.length; a++) for (let b = a + 1; b < acts.length; b++) {
+    const x = acts[a], y = acts[b]; if (x.date !== y.date) continue;
+    const s1 = +x.time.slice(0, 2), s2 = +y.time.slice(0, 2), e1 = s1 + (x.meta.durH || 2), e2 = s2 + (y.meta.durH || 2);
+    if (s1 < e2 && s2 < e1) out.push([x, y]);
+  }
+  return out;
+}
+function render() {
+  const items = Trip.items(); const root = document.getElementById("root");
+  document.getElementById("top-actions").innerHTML = items.length ? `<button class="btn btn-ghost btn-sm" id="share-trip">${icon("share", 16)} ${L("شارك الرحلة", "Share trip")}</button><button class="btn btn-ghost btn-sm" id="clear">${icon("trash", 16)} ${L("إفراغ الرحلة", "Clear trip")}</button>` : "";
+  if (!items.length) {
+    root.innerHTML = `<div class="panel empty" style="margin-bottom:72px"><span class="ill">${icon("suitcase", 40)}</span><h2 class="h3">${L("رحلتك فارغة حتى الآن", "Your trip is empty for now")}</h2><p class="muted" style="max-width:46ch">${L("ابدأ من الخريطة أو الأنشطة، وأضف ما يعجبك إلى رحلتي لتراجعه وتحجزه مرة واحدة.", "Start from the map or activities and add what you like — then review and book it all at once.")}</p><div class="row" style="justify-content:center"><a class="btn btn-primary" href="map.html">${L("استكشف الخريطة", "Explore the map")}</a><a class="btn btn-ghost" href="activities.html">${L("تصفح الأنشطة", "Browse activities")}</a><a class="btn btn-ghost" href="itineraries.html">${L("الجداول الجاهزة", "Ready itineraries")}</a></div></div>`;
+    return;
+  }
+  const payable = items.filter(i => i.total > 0); const sub = payable.reduce((s, i) => s + i.total, 0); const disc = Math.round(sub * discount); const total = sub - disc;
+  const cf = conflicts(items);
+  // day overview
+  const dated = items.filter(i => i.date).sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
+  const days = [...new Set(dated.map(i => i.date))];
+  root.innerHTML = `<div class="trip-grid"><div class="stack" style="gap:28px">
+    ${cf.length ? `<div class="alert alert-warn">${icon("alert", 20)}<span><b>${L("تعارض في المواعيد", "Schedule conflict")}</b>${cf.map(([a, b]) => L(`«${t(a.title)}» و«${t(b.title)}» في نفس الوقت يوم ${BT.fmtDate(a.date)}.`, `"${t(a.title)}" and "${t(b.title)}" overlap on ${BT.fmtDate(a.date)}.`)).join("<br>")} ${L("عدّل الوقت أو التاريخ قبل الحجز.", "Change a time or date before booking.")}</span></div>` : ""}
+    ${days.length ? `<div class="stack" style="gap:10px"><b style="color:var(--forest)">${L("رحلتك حسب الأيام", "Your trip by day")}</b><div class="daybar">${days.map(d => { const its = dated.filter(i => i.date === d); return `<div><b>${BT.fmtDate(d)}</b>${its.map(i => `<span class="num">${i.time || ""}</span> ${esc(t(i.title)).slice(0, 18)}…`).join("<br>")}<span class="dots">${its.map(i => `<i class="${i.type === "driver" ? "d" : ""}"></i>`).join("")}</span></div>`; }).join("")}</div></div>` : ""}
+    ${GROUPS.map(([type, name, ic]) => { const g = items.filter(i => i.type === type); if (!g.length) return "";
+      return `<section class="grp"><h2>${icon(ic, 20)} ${name} <span class="ct">${g.length}</span></h2>${g.map(i => `
+        <article class="ti">
+          <img src="${img(i.img)}" alt="">
+          <div class="tbody">
+            <div class="ttop"><div class="minw0"><div class="tname">${esc(t(i.title))}</div>
+              <div class="card-meta" style="margin-top:4px">${i.date ? `<span>${icon("cal", 14)} ${BT.fmtDate(i.date)}${i.dateEnd ? " – " + BT.fmtDate(i.dateEnd) : ""}</span>` : ""}${i.time ? `<span class="num">${icon("clock", 14)} ${i.time}</span>` : ""}${i.people ? `<span>${icon("users", 14)} ${BT.cnt(i.people, "p")}</span>` : ""}${type === "place" ? `<span>${icon("pin", 14)} ${t(BT.region(i.meta.region).name)}</span>` : ""}</div></div>
+              <div class="tprice">${i.total ? money(i.total) : `<span class="tag tag-palm">${L("بدون تكلفة", "No cost")}</span>`}</div></div>
+            ${i.lines && i.lines.length ? `<details><summary>${L("تفاصيل السعر", "Price details")} ▾</summary><div style="padding-top:6px">${i.lines.map(l => `<div class="sum-row" style="padding-block:3px;font-size:13.5px"><span>${t(l.l)}</span><span class="price">${money(l.v)}</span></div>`).join("")}</div></details>` : ""}
+            ${type === "activity" ? `<span class="tag tag-info" style="align-self:flex-start">${icon("info", 13)} ${L("يحتاج تأكيد مزود الخدمة بعد الدفع", "Needs provider confirmation after payment")}</span>` : ""}
+            ${type === "place" ? `<small class="muted">${L("مكان محفوظ لتخطيط يومك — لا يحتاج حجزًا.", "A saved place for planning — no booking needed.")}</small>` : ""}
+            <div class="acts"><a class="btn btn-ghost btn-sm" href="${editHref(i)}">${icon(type === "place" ? "eye" : "edit", 15)} ${type === "place" || type === "itinerary" || type === "map" ? L("عرض", "View") : L("تعديل", "Edit")}</a><button class="btn btn-ghost btn-sm" data-rm="${i.key}">${icon("trash", 15)} ${L("إزالة", "Remove")}</button></div>
+          </div>
+        </article>`).join("")}</section>`; }).join("")}
+    <div class="panel panel-ivory row between" style="gap:14px"><span><b style="color:var(--forest)">${L("أكمل رحلتك", "Complete your trip")}</b><br><small class="muted">${L("أضف نشاطًا أو سائقًا أو جدولًا جاهزًا.", "Add an activity, a driver or a ready itinerary.")}</small></span><div class="row"><a class="btn btn-ghost btn-sm" href="activities.html">${L("الأنشطة", "Activities")}</a><a class="btn btn-ghost btn-sm" href="driver.html">${L("السائق", "Driver")}</a><a class="btn btn-ghost btn-sm" href="itineraries.html">${L("الجداول", "Itineraries")}</a></div></div>
+  </div>
+  <aside class="side-sum">
+    <div class="panel stack" style="gap:12px">
+      <h2 class="h3">${L("ملخص رحلتي", "Trip summary")}</h2>
+      ${payable.map(i => `<div class="sum-row"><span class="minw0" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t(i.title))}</span><span class="price">${money(i.total)}</span></div>`).join("")}
+      ${disc ? `<div class="sum-row" style="color:var(--ok)"><span>${L("خصم الكود", "Promo discount")}</span><span class="price" style="color:var(--ok)">−${money(disc)}</span></div>` : ""}
+      <form class="code" id="code"><label class="sr-only" for="code-in">${L("كود الخصم", "Promo code")}</label><input class="input" id="code-in" placeholder="${L("كود الخصم (جرّب BALI10)", "Promo code (try BALI10)")}" value="${discount ? "BALI10" : ""}"><button class="btn btn-ghost btn-sm" type="submit">${L("تطبيق", "Apply")}</button></form>
+      <div class="sum-total"><span>${L("الإجمالي", "Total")}</span><b class="price">${money(total)}</b></div>
+      <small class="muted">${L("السعر النهائي — لا رسوم مخفية في خطوة الدفع.", "Final price — no hidden fees at payment.")}</small>
+      <button class="btn btn-primary btn-lg btn-block" id="go" ${cf.length || !payable.length ? "disabled" : ""}>${L("إتمام الحجز", "Complete booking")}</button>
+      ${cf.length ? `<small style="color:var(--err);font-weight:600">${L("حل تعارض المواعيد أولًا.", "Resolve the schedule conflict first.")}</small>` : ""}
+      ${!payable.length ? `<small class="muted">${L("أضف خدمة قابلة للحجز لإتمام الطلب.", "Add a bookable service to check out.")}</small>` : ""}
+    </div>
+    <div class="panel panel-ivory stack" style="gap:6px;font-size:13.5px"><b style="color:var(--forest)">${icon("shield", 16)} ${L("ماذا يحدث بعد الدفع؟", "What happens after payment?")}</b><span class="muted">${L("الجداول والخريطة تُفعّل فورًا. الأنشطة والسائق تظهر «بانتظار التأكيد» حتى يؤكدها المزود، ونبلغك بالبريد وواتساب.", "Itineraries and the map unlock instantly. Activities and the driver show 'Awaiting confirmation' until the provider confirms; we notify you by email and WhatsApp.")}</span></div>
+  </aside></div>`;
+  document.getElementById("go").onclick = () => { BT.store.set("checkout", null); location.href = "checkout.html"; };
+  document.getElementById("code").onsubmit = (e) => { e.preventDefault(); const v = document.getElementById("code-in").value.trim().toUpperCase(); if (v === "BALI10") { discount = .1; BT.store.set("disc", .1); toast(L("طُبق خصم ١٠٪", "10% discount applied")); } else if (!v) { discount = 0; BT.store.set("disc", 0); } else { toast(L("الكود غير صالح أو منتهي.", "This code is invalid or expired."), { err: true }); } render(); };
+  const sh = document.getElementById("share-trip"); if (sh) sh.onclick = async () => { try { await navigator.clipboard.writeText(location.href.split("#")[0] + "#shared"); toast(L("نُسخ رابط المشاركة (عرض فقط)", "Share link copied (view only)")); } catch (e) { toast(L("تعذر النسخ تلقائيًا", "Couldn't copy automatically"), { err: true }); } };
+  const cl = document.getElementById("clear"); if (cl) cl.onclick = () => ask(L("سيتم حذف كل العناصر من رحلتي.", "All items will be removed from My Trip."), () => { Trip.clear(); render(); });
+}
+const cfm = document.getElementById("cf"); let onYes = null;
+function ask(txt, fn) { document.getElementById("cf-t").textContent = txt; onYes = fn; cfm.classList.add("open"); document.getElementById("cf-no").focus(); }
+document.getElementById("cf-yes").onclick = () => { cfm.classList.remove("open"); onYes && onYes(); };
+document.getElementById("cf-no").onclick = () => cfm.classList.remove("open");
+document.getElementById("root").addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (!b) return; const it = Trip.items().find(i => i.key === b.dataset.rm); ask(L(`ستُزال «${t(it.title)}» من رحلتي.`, `"${t(it.title)}" will be removed from My Trip.`), () => { Trip.remove(b.dataset.rm); render(); toast(L("أُزيل العنصر", "Item removed")); }); });
+render();
+})();
+</script>

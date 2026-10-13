@@ -1,0 +1,40 @@
+<!--title: Bali Trips — الأسئلة الشائعة|page: faq|section: faq-->
+<style>
+.fg { display: grid; gap: 32px; align-items: start; padding-block: 8px 72px; }
+@media (min-width: 960px) { .fg { grid-template-columns: 260px minmax(0,1fr); gap: 48px; } }
+.fnav { position: sticky; top: calc(var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 4px; }
+.fnav button { text-align: start; border: 0; background: transparent; padding: 10px 14px; border-radius: 12px; font-weight: 600; color: var(--forest-soft); }
+.fnav button[aria-pressed="true"] { background: var(--forest); color: #fff; }
+@media (max-width: 959px) { .fnav { position: static; flex-direction: row; overflow-x: auto; } .fnav button { white-space: nowrap; } }
+mark { background: var(--orange-soft); color: inherit; border-radius: 4px; }
+</style>
+<main id="main"><div class="wrap">
+  <div id="crumbs"></div>
+  <div class="stack" style="gap:14px;padding-bottom:24px;max-width:720px"><h1 class="h1" data-en="Frequently asked questions">الأسئلة الشائعة</h1>
+    <label class="msearch" style="display:flex;align-items:center;gap:8px;padding:0 16px;border-radius:99px;background:var(--white);border:1.5px solid var(--line)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr-only" data-en="Search questions">ابحث في الأسئلة</span><input id="q" type="search" style="border:0;outline:0;background:transparent;min-height:50px;flex:1" placeholder="اكتب سؤالك…" data-en-ph="Type your question…"></label></div>
+  <div class="fg"><nav class="fnav" id="fnav" aria-label="تصنيفات الأسئلة" data-en-aria="Question topics"></nav><div class="stack" style="gap:8px"><div class="acc" id="list"></div><div class="panel row between" style="margin-top:20px;gap:14px"><span><b style="color:var(--forest)" data-en="Still need help?">ما زلت تحتاج مساعدة؟</b><br><small class="muted" data-en="Our team replies in Arabic and English.">فريقنا يرد بالعربية والإنجليزية.</small></span><a class="btn btn-forest" href="contact.html" data-en="Contact us">تواصل معنا</a></div></div></div>
+</div></main>
+<script>
+BT.boot();
+(function () {
+const { L, icon, esc } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الأسئلة الشائعة", "FAQ"), "#"]]);
+const F = {
+  booking: [L("الحجز", "Booking"), [[L("هل يجب إنشاء حساب للتصفح؟", "Do I need an account to browse?"), L("لا، التصفح والخريطة المجانية متاحة للجميع. الحساب يُطلب عند الدفع فقط.", "No. Browsing and the free map are open to all; an account is only needed at checkout.")], [L("متى يصبح حجزي مؤكدًا؟", "When is my booking confirmed?"), L("بعد الدفع تظهر الأنشطة «بانتظار تأكيد المزود» حتى يصل التأكيد، ثم تتغير إلى «مؤكد».", "After payment activities show 'Awaiting provider' until confirmed, then 'Confirmed'.")], [L("هل يمكن تعديل الحجز؟", "Can I change a booking?"), L("يمكن تعديل العناصر في «رحلتي» قبل الدفع. بعد الدفع تواصل معنا حسب سياسة المزود.", "Edit items in My Trip before paying; after payment contact us per the provider's policy.")]]],
+  payment: [L("الدفع", "Payment"), [[L("ما طرق الدفع المتاحة؟", "Which payment methods?"), L("البطاقات، Apple Pay، والتحويل البنكي (حسب التفعيل).", "Cards, Apple Pay and bank transfer (as enabled).")], [L("هل توجد رسوم إضافية؟", "Are there extra fees?"), L("لا. السعر الظاهر قبل الدفع هو المبلغ النهائي.", "No. The price before payment is final.")], [L("ماذا لو فشل الدفع؟", "What if payment fails?"), L("لا يُخصم أي مبلغ، ويمكنك إعادة المحاولة بنفس الطلب دون تكراره.", "Nothing is charged; retry on the same order without duplicates.")]]],
+  map: [L("الخريطة", "Map"), [[L("ما الفرق بين الخريطة المجانية والكاملة؟", "Free vs full map?"), L("المجانية تعرض منطقة أوبود كاملة. الكاملة تفتح كل مناطق بالي ونوسا بينيدا.", "The free map covers Ubud; the full map opens every area including Nusa Penida.")], [L("هل تحتاج الخريطة إنترنت؟", "Does the map need internet?"), L("نعم في النسخة الحالية. روابط الاتجاهات تفتح تطبيق الخرائط في جوالك.", "Yes for now; direction links open your phone's maps app.")]]],
+  itineraries: [L("الجداول", "Itineraries"), [[L("كيف أستلم الجدول؟", "How do I receive it?"), L("فورًا في صفحة الطلب وفي «جداولي» داخل حسابك.", "Instantly on the order page and in 'My itineraries'.")], [L("هل يمكن استرداد ثمن الجدول؟", "Is it refundable?"), L("منتج رقمي غير قابل للاسترداد بعد التحميل.", "A digital product, non-refundable after download.")]]],
+  driver: [L("السائق", "Driver"), [[L("كيف يُحدد نوع السيارة؟", "How is the car chosen?"), L("تلقائيًا: ١–٤ أشخاص سيارة عادية، ٥–٧ سيارة أكبر، ٨ فأكثر فان أو حسب المتاح.", "Automatically: 1–4 standard, 5–7 larger car, 8+ a van or as available.")]]],
+};
+let cur = "all", q = "";
+function render() {
+  document.getElementById("fnav").innerHTML = [["all", L("الكل", "All")], ...Object.entries(F).map(([k, [n]]) => [k, n])].map(([k, n]) => `<button data-k="${k}" aria-pressed="${cur === k}">${n}</button>`).join("");
+  const hl = (s) => q ? s.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), m => `<mark>${m}</mark>`) : s;
+  const items = Object.entries(F).filter(([k]) => cur === "all" || k === cur).flatMap(([, [, l]]) => l).filter(([a, b]) => !q || (a + b).toLowerCase().includes(q.toLowerCase()));
+  document.getElementById("list").innerHTML = items.length ? items.map(([a, b], i) => `<details ${i === 0 ? "open" : ""}><summary>${hl(esc(a))}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${hl(esc(b))}</div></details>`).join("") : `<div class="empty"><span class="ill">${icon("search", 34)}</span><b style="color:var(--forest)">${L("لم نجد سؤالًا مطابقًا", "No matching question")}</b><a class="btn btn-ghost btn-sm" href="contact.html">${L("اسأل فريقنا", "Ask our team")}</a></div>`;
+}
+document.getElementById("fnav").onclick = (e) => { const b = e.target.closest("[data-k]"); if (b) { cur = b.dataset.k; render(); } };
+document.getElementById("q").oninput = (e) => { q = e.target.value.trim(); render(); };
+render();
+})();
+</script>

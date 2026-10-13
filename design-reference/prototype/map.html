@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — الخريطة التفاعلية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+/* ---------- Intro band ---------- */
+.mintro { background: var(--forest-deep); color: rgba(255,251,248,.84); position: relative; overflow: hidden; }
+.mintro .wrap { display: grid; gap: 18px; padding-block: 8px 24px; position: relative; z-index: 1; }
+.mintro h1 { color: #fff; font-size: clamp(26px, 3.6vw, 40px); }
+.mintro .arc { width: 640px; height: 640px; inset-inline-end: -240px; top: -380px; opacity: .35; }
+.cando { display: none; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+.cando div { display: flex; gap: 10px; font-size: 13.5px; line-height: 1.5; align-items: flex-start; }
+.cando svg { color: var(--palm); flex-shrink: 0; margin-top: 2px; }
+.cando b { color: #fff; display: block; font-size: 14px; }
+.howto-btn { color: var(--palm); background: none; border: 0; padding: 0; font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
+.mintro.show-howto .cando { display: grid; }
+@media (min-width: 1024px) {
+  .mintro .wrap { grid-template-columns: 1fr 1.25fr; align-items: end; padding-block: 4px 26px; gap: 40px; }
+  .cando { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .howto-btn { display: none; }
+}
+
+/* ---------- Map app ---------- */
+.mapapp { position: relative; height: calc(100svh - var(--hdr-h) - 64px - env(safe-area-inset-bottom, 0px)); min-height: 520px; display: grid; background: #0a2d40; }
+@media (min-width: 1024px) { .mapapp { grid-template-columns: 400px 1fr; height: max(560px, calc(100vh - var(--hdr-h) - 176px)); min-height: 560px; } }
+
+/* side panel / bottom sheet */
+.side { background: var(--ivory); display: flex; flex-direction: column; min-height: 0; z-index: 20; }
+.side-head { padding: 18px 18px 12px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line-soft); }
+.msearch { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 99px; background: var(--white); border: 1.5px solid var(--line); }
+.msearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; min-height: 46px; font-size: 15px; }
+.msearch:focus-within { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(113,255,133,.3); }
+.flabel { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.side .chips .chip { min-height: 36px; padding: 6px 12px; font-size: 13.5px; }
+.side-head .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -18px; padding-inline: 18px; }
+.side-head .chips::-webkit-scrollbar { display: none; }
+.m-unlock { display: none; }
+.subchips .chip { background: var(--palm-soft); border-color: transparent; }
+.subchips .chip[aria-pressed="true"] { background: var(--forest-soft); color: #fff; }
+.side-body { flex: 1; overflow-y: auto; padding: 8px 10px 20px; min-height: 0; }
+.res-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 8px 10px; font-size: 13.5px; color: var(--muted); }
+.res-head b { color: var(--forest); font-family: var(--f-en); }
+.res { display: flex; gap: 12px; align-items: center; width: 100%; padding: 10px; border-radius: 16px; border: 1.5px solid transparent; background: transparent; text-align: start; transition: background var(--d-fast), border-color var(--d-fast); }
+.res:hover { background: var(--white); border-color: var(--line-soft); }
+.res.on { background: var(--white); border-color: var(--orange); }
+.res img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+.res .rmeta { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.res .rname { font-weight: 700; color: var(--forest); font-size: 15px; line-height: 1.3; }
+.res .rsub { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+.res.locked img { filter: blur(3px) grayscale(.5); }
+.res .lk { color: var(--muted); }
+.detail { display: flex; flex-direction: column; gap: 14px; padding: 8px 8px 0; animation: slideIn var(--d-slow) var(--ease); }
+@keyframes slideIn { from { opacity: 0; transform: translateY(14px); } }
+.d-gal { display: grid; grid-template-columns: 2fr 1fr; gap: 6px; border-radius: 18px; overflow: hidden; height: 190px; }
+.d-gal img { width: 100%; height: 100%; object-fit: cover; }
+.d-gal div { display: grid; gap: 6px; }
+.d-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lockcard { padding: 18px; border-radius: 18px; background: var(--forest); color: rgba(255,251,248,.85); display: flex; flex-direction: column; gap: 10px; }
+.lockcard b { color: #fff; font-size: 17px; }
+
+/* map viewport */
+.mapcol { position: relative; min-width: 0; min-height: 0; }
+.mapcol > .mv { position: absolute; inset: 0; }
+.mv { position: relative; overflow: hidden; touch-action: none; cursor: grab; background: radial-gradient(120% 100% at 50% 40%, #0f3d57, #07263a); perspective: 1500px; perspective-origin: 50% 0%; user-select: none; -webkit-user-select: none; }
+.mv.grabbing { cursor: grabbing; }
+.tilt { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 50% 60%; transition: transform .9s var(--ease); }
+.mv.is3d .tilt { transform: rotateX(46deg) translateY(-4%) scale(1.05); }
+.stage { position: absolute; left: 0; top: 0; width: 2048px; height: 1399px; transform-origin: 0 0; will-change: transform; transform-style: preserve-3d; }
+.stage > img.base { position: absolute; inset: 0; width: 2048px; height: 1399px; max-width: none; pointer-events: none; }
+#pins { position: absolute; inset: 0; transform-style: preserve-3d; }
+.stage svg.ov { position: absolute; inset: 0; width: 2048px; height: 1399px; pointer-events: none; overflow: visible; }
+.sky { position: absolute; inset: 0 0 auto; height: 34%; pointer-events: none; z-index: 4; opacity: 0; transition: opacity .9s; background: linear-gradient(180deg, #E8F3EA 0%, rgba(214,238,226,.8) 30%, rgba(214,238,226,0)); }
+.mv.is3d .sky { opacity: 1; }
+.vignette { position: absolute; inset: 0; pointer-events: none; z-index: 3; background: radial-gradient(130% 90% at 50% 0%, rgba(7,42,62,.35), transparent 45%), radial-gradient(130% 80% at 50% 100%, rgba(7,42,62,.5), transparent 50%); }
+
+/* pins (live inside stage; counter-scaled) */
+.pin { position: absolute; width: 0; height: 0; transform: scale(var(--inv, 1)); transform-origin: 0 0; z-index: 5; transform-style: preserve-3d; }
+.mv.is3d .pin { transform: scale(var(--inv, 1)) rotateX(-46deg); }
+.pin .dot { position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%; border: 0; padding: 0; display: grid; place-items: center; background: #fff; color: var(--forest); box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 6px 14px rgba(0,0,0,.45); transition: transform var(--d-base) var(--ease), background var(--d-base); }
+.pin .dot:hover, .pin.on .dot { transform: scale(1.18); background: var(--orange); color: var(--forest-ink); }
+.pin.locked .dot { background: rgba(255,255,255,.55); color: #24412A; }
+.pin .lbl { position: absolute; top: -27px; inset-inline-start: 30px; display: flex; align-items: center; gap: 9px; padding: 6px; padding-inline-end: 13px; width: max-content; max-width: 230px; border-radius: 14px; background: rgba(22,52,38,.6); border: 1px solid rgba(255,255,255,.22); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 28px -10px rgba(0,0,0,.6); cursor: pointer; opacity: 0; transform: translateX(var(--lx, 8px)); pointer-events: none; transition: opacity var(--d-slow) var(--ease), transform var(--d-slow) var(--ease), border-color var(--d-base); text-align: start; font: inherit; }
+[dir="ltr"] .pin .lbl { --lx: -8px; }
+.pin .lbl::before { content: ""; position: absolute; inset-inline-start: -14px; top: 50%; width: 14px; height: 1.5px; background: rgba(255,255,255,.7); }
+.pin .lbl img { width: 40px; height: 40px; border-radius: 9px; object-fit: cover; }
+.pin .lbl b { display: block; font-size: 13.5px; line-height: 1.2; }
+.pin .lbl small { font-size: 11.5px; opacity: .85; }
+.mv.z3 .pin:not(.locked) .lbl, .pin.on .lbl, .pin:hover .lbl { opacity: 1; transform: none; pointer-events: auto; }
+.pin.on .lbl { border-color: var(--orange); background: rgba(19,48,26,.82); }
+.pin.on { z-index: 9; }
+.pin.dim { opacity: .25; }
+.mv.z1 .pin.place { display: none; }
+.pulse { position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; border-radius: 50%; background: var(--orange); opacity: .45; animation: pulse 2s ease-out infinite; pointer-events: none; }
+@keyframes pulse { 70% { transform: scale(2.6); opacity: 0; } 100% { opacity: 0; } }
+/* region bubbles */
+.rpin .rb { position: absolute; left: 0; top: 0; z-index: 2; width: max-content; transform: translate(calc(-50% + var(--ox, 0px)), calc(-50% + var(--oy, 0px))); display: flex; align-items: center; gap: 8px; padding: 5px; padding-inline-end: 14px; border-radius: 99px; background: rgba(255,251,248,.95); color: var(--forest); border: 0; box-shadow: 0 10px 26px -8px rgba(0,0,0,.55); white-space: nowrap; font: inherit; transition: box-shadow var(--d-base), background var(--d-base); cursor: pointer; }
+.rpin .rb:hover { background: #fff; box-shadow: 0 0 0 3px var(--palm), 0 10px 26px -8px rgba(0,0,0,.55); }
+.rpin .ld { position: absolute; left: 0; top: 0; height: 1.5px; width: var(--len, 0px); background: rgba(255,255,255,.9); transform-origin: 0 50%; transform: rotate(var(--ang, 0rad)); display: none; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.rpin .an { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(113,255,133,.45), 0 2px 6px rgba(0,0,0,.5); display: none; }
+.rpin.off .ld, .rpin.off .an { display: block; }
+.rpin .rb img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.rpin .rb b { font-size: 14px; }
+.rpin .rb span.n { font: 700 11px var(--f-en); background: var(--forest); color: var(--palm); border-radius: 99px; padding: 2px 7px; }
+.rpin .rb .lk { color: var(--muted); display: inline-flex; }
+.mv:not(.z1) .rpin { display: none; }
+@media (max-width: 1023px) { .rpin .rb { gap: 5px; padding: 3px 9px 3px 4px; padding-inline-start: 4px; } .rpin .rb img { width: 20px; height: 20px; } .rpin .rb b { font-size: 12px; } .rpin .rb span.n { font-size: 10px; padding: 1px 5px; } }
+.me { position: absolute; width: 0; height: 0; transform: scale(var(--inv,1)); z-index: 8; }
+.me i { position: absolute; left: -10px; top: -10px; width: 20px; height: 20px; border-radius: 50%; background: #2B7BE4; border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(43,123,228,.25); }
+.car { position: absolute; width: 0; height: 0; z-index: 10; transform: scale(var(--inv,1)); }
+.mv.is3d .car { transform: scale(var(--inv,1)) rotateX(-46deg); }
+.car span { position: absolute; left: -22px; top: -44px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--orange); color: var(--forest-ink); box-shadow: 0 0 0 6px rgba(255,144,0,.3), 0 10px 20px rgba(0,0,0,.5); }
+
+/* map overlay controls */
+.ctrl { position: absolute; z-index: 12; display: flex; gap: 8px; }
+.ctrl-zoom { inset-inline-end: 14px; bottom: 120px; flex-direction: column; }
+@media (min-width: 1024px) { .ctrl-zoom { bottom: 104px; } }
+.gbtn { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.3); background: rgba(19,48,26,.62); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: background var(--d-fast); }
+.gbtn:hover { background: rgba(19,48,26,.85); }
+.gbtn[aria-pressed="true"] { background: var(--orange); color: var(--forest-ink); border-color: var(--orange); }
+.ctrl-top { top: 14px; inset-inline: 14px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; pointer-events: none; }
+.ctrl-top > * { pointer-events: auto; }
+.gseg { display: inline-flex; padding: 4px; gap: 2px; border-radius: 99px; background: rgba(19,48,26,.62); border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.gseg button { border: 0; background: transparent; color: #fff; padding: 7px 14px; border-radius: 99px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
+.gseg button[aria-pressed="true"] { background: #fff; color: var(--forest); }
+.gpill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 99px; background: rgba(19,48,26,.7); color: #fff; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.unlockbar { position: absolute; z-index: 12; bottom: 16px; inset-inline: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding: 12px 14px; border-radius: 20px; background: rgba(255,251,248,.96); box-shadow: var(--sh-3); max-width: 720px; margin-inline: auto; }
+.unlockbar .ul-t { display: flex; gap: 12px; align-items: center; min-width: 0; flex: 1 1 260px; font-size: 13.5px; color: var(--muted); }
+.unlockbar .ul-t b { color: var(--forest); display: block; font-size: 14.5px; }
+.unlockbar .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--forest); color: var(--palm); display: grid; place-items: center; flex-shrink: 0; }
+.tourbar { position: absolute; z-index: 13; top: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 10px 12px 10px 16px; border-radius: 16px; background: rgba(19,48,26,.88); color: #fff; font-size: 13px; width: min(92%, 520px); }
+.tourbar .tag { background: var(--orange); color: var(--forest-ink); }
+.legend3d { position: absolute; z-index: 12; inset-inline-start: 14px; top: 66px; max-width: 290px; padding: 12px 14px; border-radius: 16px; background: rgba(19,48,26,.82); color: rgba(255,255,255,.9); font-size: 12.5px; line-height: 1.55; display: none; }
+.mv.is3d ~ .legend3d, .legend3d.show { display: block; }
+.legend3d b { color: var(--palm); }
+
+/* mobile: side becomes bottom sheet; filters float on map */
+@media (max-width: 1023px) {
+  .mapapp { display: block; }
+  .mapcol { position: absolute; inset: 0; }
+  .side { position: absolute; inset-inline: 0; bottom: 0; height: 46%; border-radius: 22px 22px 0 0; box-shadow: 0 -16px 40px -12px rgba(0,0,0,.45); transition: height var(--d-slow) var(--ease); }
+  .side.peek { height: 160px; }
+  .side.peek .grab { padding: 8px 0 0; }
+  .side.peek .side-head { gap: 8px; padding-bottom: 8px; }
+  .side.peek .m-unlock { padding: 6px 6px 6px 12px; padding-inline-start: 12px; padding-inline-end: 6px; }
+  .side.peek #m-sim { display: none; }
+  .side.peek .msearch { min-height: 44px; }
+  .side.full { height: 88%; }
+  .side .grab { display: block; width: 100%; padding: 10px 0 2px; background: none; border: 0; }
+  .side .grab i { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--ivory-3); margin: 0 auto; }
+  .side-head { padding: 4px 14px 10px; }
+  .side-head .desk-only { display: none; }
+  .m-filters { position: absolute; z-index: 14; top: 10px; inset-inline: 0; display: flex; flex-direction: column; gap: 8px; padding-inline: 12px; }
+  .m-filters .chips { padding-inline: 12px; margin-inline: -12px; }
+  .m-filters .chip { background: rgba(255,251,248,.95); border-color: transparent; box-shadow: 0 6px 16px -6px rgba(0,0,0,.4); min-height: 36px; padding: 6px 13px; font-size: 13px; }
+  .m-filters .chip[aria-pressed="true"] { background: var(--orange); color: var(--forest-ink); }
+  .ctrl-top { top: 56px; inset-inline-start: auto; inset-inline-end: 12px; flex-direction: column; align-items: center; }
+  .ctrl-top .gpill { display: none; }
+  .gseg { flex-direction: column; border-radius: 14px; padding: 3px; }
+  .gseg button { min-height: 34px; width: 34px; padding: 0; justify-content: center; border-radius: 11px; font-size: 12px; }
+  .gseg button svg { display: none; }
+  .ctrl-zoom { bottom: auto; top: 140px; inset-inline-end: 12px; }
+  .ctrl-zoom { gap: 6px; }
+  .ctrl-zoom .gbtn { width: 40px; height: 40px; border-radius: 12px; }
+  .ctrl-zoom #zin, .ctrl-zoom #zout { display: none; }
+  .unlockbar { display: none; }
+  .m-unlock { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--forest); color: rgba(255,255,255,.88); font-size: 13px; }
+  .m-unlock b { color: #fff; }
+  .legend3d { bottom: auto; top: 108px; inset-inline-start: 12px; max-width: 230px; font-size: 11.5px; }
+  .tourbar { top: 58px; }
+}
+@media (min-width: 1024px) { .side .grab, .m-filters { display: none; } }
+@media (max-width: 1023px) { .proto-pill { display: none; } #count { display: none; } }
+</style>
+</head>
+<body data-page="map" data-section="map">
+<div id="hdr"></div>
+<main id="main">
+  <section class="mintro" id="mintro" aria-labelledby="map-h">
+    <div class="arc" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="stack" style="gap:8px">
+        <div id="crumbs"></div>
+        <h1 id="map-h" data-en="Bali Trips interactive map">خريطة Bali Trips التفاعلية</h1>
+        <p style="max-width:58ch;font-size:15px" data-en="A custom Bali map showing only places our team has chosen. Ubud is free to explore — unlock the full island to see every area.">خريطة لبالي بتصميم خاص تعرض الأماكن التي اختارها فريقنا فقط. منطقة أوبود متاحة مجانًا — افتح الخريطة الكاملة لتستكشف كل المناطق.</p>
+        <button class="howto-btn" id="howto" aria-expanded="false"><span data-en="What can I do here?">ماذا يمكنني أن أفعل هنا؟</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+      </div>
+      <div class="cando">
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Pick an area">اختر منطقة</b><span data-en="The map flies there and shows its picks.">تنتقل الخريطة إليها وتعرض ترشيحاتها.</span></span></div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Filter by type">صفِّ حسب النوع</b><span data-en="Restaurants by cuisine, cafés, beaches…">مطاعم حسب المطبخ، كافيهات، شواطئ…</span></span></div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Zoom to discover">قرّب لتكتشف</b><span data-en="More suggestions appear as you zoom.">تظهر اقتراحات أكثر كلما قرّبت.</span></span></div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span><b data-en="Save & plan">احفظ وخطط</b><span data-en="Favorites, My Trip and directions.">المفضلة ورحلتي والاتجاهات.</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mapapp" aria-label="الخريطة" data-en-aria="Map">
+    <!-- Side panel / bottom sheet -->
+    <aside class="side" id="side" aria-label="نتائج الخريطة" data-en-aria="Map results">
+      <button class="grab" id="grab" aria-label="توسيع القائمة" data-en-aria="Expand list"><i></i></button>
+      <div class="side-head">
+        <div class="m-unlock" id="m-unlock"></div>
+        <label class="msearch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--forest)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr-only" data-en="Search the map">ابحث في الخريطة</span><input id="q" type="search" placeholder="إلى أين تريد الذهاب في بالي؟" data-en-ph="Where are you going in Bali?" autocomplete="off"></label>
+        <div class="stack desk-only" style="gap:6px"><span class="flabel" data-en="Area">المنطقة</span><div class="chips" id="regions"></div></div>
+        <div class="stack desk-only" style="gap:6px"><span class="flabel" data-en="Type">النوع</span><div class="chips" id="cats"></div><div class="chips subchips" id="subs" hidden></div><div class="chips" id="tags"></div></div>
+      </div>
+      <div class="side-body" id="side-body" aria-live="polite"></div>
+    </aside>
+
+    <!-- Map -->
+    <div class="mapcol">
+    <div class="mv z1" id="mv" role="application" aria-roledescription="خريطة تفاعلية" aria-label="خريطة بالي. اسحب للتنقل واستخدم أزرار التكبير." data-en-aria="Bali map. Drag to pan and use the zoom buttons.">
+      <div class="tilt" id="tilt">
+        <div class="stage" id="stage">
+          <img class="base" src="assets/img/bali-sat.jpg" alt="" draggable="false">
+          <svg class="ov" id="ov" viewBox="0 0 2048 1399" aria-hidden="true"></svg>
+          <div id="pins"></div>
+        </div>
+      </div>
+      <div class="sky" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
+    </div>
+    <div class="m-filters" id="mfilters"><div class="chips scroll" id="mcats"></div></div>
+    <div class="ctrl ctrl-top">
+      <div class="gseg" role="group" aria-label="نمط العرض" data-en-aria="View mode"><button id="v2d" aria-pressed="true">2D</button><button id="v3d" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/></svg>3D</button></div>
+      <span class="gpill" id="count"></span>
+    </div>
+    <div class="ctrl ctrl-zoom">
+      <button class="gbtn" id="zin" aria-label="تكبير" data-en-aria="Zoom in"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="gbtn" id="zout" aria-label="تصغير" data-en-aria="Zoom out"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14"/></svg></button>
+      <button class="gbtn" id="near" aria-label="الأماكن القريبة مني" data-en-aria="Near me" aria-pressed="false"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="7.5"/></svg></button>
+      <button class="gbtn" id="reset" aria-label="عرض الجزيرة كاملة" data-en-aria="Show whole island"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="gbtn" id="tour" aria-label="جولة افتراضية (مفهوم)" data-en-aria="Virtual tour (concept)" title="جولة افتراضية — مفهوم" data-en-title="Virtual tour — concept"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4.5 16.5V12l1.8-4.6A2 2 0 0 1 8.2 6h7.6a2 2 0 0 1 1.9 1.4l1.8 4.6v4.5"/><path d="M3.5 12h17v4.5h-17z"/></svg></button>
+    </div>
+    <div class="legend3d" id="legend3d"></div>
+    <div class="unlockbar" id="unlockbar"></div>
+    </div>
+  </section>
+</main>
+<div id="ftr"></div>
+
+<div class="modal-scrim" id="geo-modal" role="dialog" aria-modal="true" aria-labelledby="geo-h">
+  <div class="modal stack" style="gap:14px">
+    <span class="ill" style="width:64px;height:64px;border-radius:50%;background:var(--palm-soft);display:grid;place-items:center;color:var(--forest)"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="7.5"/></svg></span>
+    <h2 class="h3" id="geo-h" data-en="Show places near you?">نعرض الأماكن القريبة منك؟</h2>
+    <p class="muted" data-en="We use your location only to sort nearby places on the map. It isn't saved to your account. Your browser will ask for permission next.">نستخدم موقعك فقط لترتيب الأماكن القريبة على الخريطة، ولا نحفظه في حسابك. سيطلب المتصفح إذنك بعد ذلك.</p>
+    <div class="alert alert-info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/></svg><span data-en="Prototype: a sample location in Seminyak is used.">في النموذج الأولي: نستخدم موقعًا تجريبيًا في سيمينياك.</span></div>
+    <div class="row"><button class="btn btn-primary" id="geo-ok" data-en="Allow location">السماح بالموقع</button><button class="btn btn-ghost" id="geo-no" data-en="Not now">ليس الآن</button></div>
+  </div>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, esc, money, numAr, img, Fav, Trip, MapAccess, toast, byId } = BT;
+document.getElementById("crumbs").innerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("الخريطة التفاعلية", "Interactive Map"), "map.html"]]).replace('class="crumbs"', 'class="crumbs on-dark" style="padding-block:10px 0"');
+const intro = document.getElementById("mintro"); document.getElementById("howto").onclick = (e) => { const o = intro.classList.toggle("show-howto"); e.currentTarget.setAttribute("aria-expanded", o); fit(); };
+
+/* ---------- state ---------- */
+const S = { tx: 0, ty: 0, s: 1, s0: 1, cat: "all", sub: null, tag: null, region: null, q: "", sel: null, is3d: false, me: null, viewOnly: true };
+const mv = document.getElementById("mv"), stage = document.getElementById("stage"), pinsEl = document.getElementById("pins"), ov = document.getElementById("ov");
+const side = document.getElementById("side"), body = document.getElementById("side-body");
+const BALI = { x0: 370, y0: 300, x1: 1700, y1: 1120 };
+const inZone = (x, y) => { const p = D.FREE_ZONE; let c = false; for (let i = 0, j = p.length - 1; i < p.length; j = i++) { if (((p[i][1] > y) !== (p[j][1] > y)) && (x < (p[j][0] - p[i][0]) * (y - p[i][1]) / (p[j][1] - p[i][1]) + p[i][0])) c = !c; } return c; };
+const isLocked = (pl) => !MapAccess.unlocked() && !inZone(pl.x, pl.y);
+const catOf = (pl) => byId(D.CATS, pl.cat);
+
+/* ---------- overlay: locked layer + free zone ---------- */
+function smooth(pts) { const n = pts.length; let d = `M${pts[0][0]},${pts[0][1]}`; for (let i = 0; i < n; i++) { const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n]; const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6]; d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1]}`; } return d + 'Z'; }
+function drawOverlay() {
+  const zp = smooth(D.FREE_ZONE);
+  const unlocked = MapAccess.unlocked();
+  ov.innerHTML = `<defs><clipPath id="outside"><path clip-rule="evenodd" d="M-200,-200H2300V1600H-200Z ${zp}"/></clipPath>
+    <radialGradient id="zg"><stop offset="0" stop-color="#71FF85" stop-opacity=".12"/><stop offset="1" stop-color="#71FF85" stop-opacity="0"/></radialGradient></defs>
+    ${unlocked ? "" : `<image href="assets/img/bali-sat-locked.jpg" x="0" y="0" width="2048" height="1399" clip-path="url(#outside)" preserveAspectRatio="none"/>
+    <path d="${zp}" fill="url(#zg)" stroke="#71FF85" stroke-width="2.5" stroke-dasharray="8 7" vector-effect="non-scaling-stroke"/>`}
+    <g id="route"></g>`;
+}
+
+/* ---------- pins ---------- */
+function filtered() {
+  const q = S.q.trim().toLowerCase();
+  return D.PLACES.filter(p => (S.cat === "all" || p.cat === S.cat) && (!S.sub || p.sub === S.sub) && (!S.tag || p.tags.includes(S.tag)) &&
+    (!q || (p.name.ar + " " + p.name.en + " " + t(BT.region(p.region).name)).toLowerCase().includes(q)));
+}
+function renderPins() {
+  const list = filtered(); const ids = new Set(list.map(p => p.id));
+  const regionCounts = {}; list.forEach(p => regionCounts[p.region] = (regionCounts[p.region] || 0) + 1);
+  pinsEl.innerHTML = D.REGIONS.map(r => {
+    const locked = !MapAccess.unlocked() && !inZone(r.x, r.y);
+    return `<div class="pin rpin" style="left:${r.x}px;top:${r.y}px"><span class="ld"></span><span class="an"></span><button class="rb" data-region="${r.id}"><img src="${r.img}" alt=""><b>${t(r.name)}</b><span class="n">${regionCounts[r.id] || 0}</span>${locked ? `<span class="lk">${icon("lock", 14, 2)}</span>` : ""}</button></div>`;
+  }).join("") + D.PLACES.map(p => {
+    const c = catOf(p), lk = isLocked(p), on = S.sel === p.id;
+    return `<div class="pin place ${lk ? "locked" : ""} ${on ? "on" : ""} ${ids.has(p.id) ? "" : "dim"}" style="left:${p.x}px;top:${p.y}px;${ids.has(p.id) ? "" : "display:none"}" data-pid="${p.id}">
+      ${on ? '<span class="pulse"></span>' : ""}
+      <button class="dot" data-pid="${p.id}" aria-label="${esc(t(p.name))}${lk ? " — " + L("مقفل", "locked") : ""}">${icon(lk ? "lock" : c.icon, 17, 2)}</button>
+      ${lk ? "" : `<button class="lbl" data-pid="${p.id}" tabindex="-1"><img src="${img(p.img)}" alt=""><span><b>${esc(t(p.name))}</b><small>${t(c.name)} · ${t(BT.region(p.region).name)}</small></span></button>`}
+    </div>`;
+  }).join("") + (S.me ? `<div class="me" style="left:${S.me.x}px;top:${S.me.y}px"><i></i></div>` : "") + `<div class="car" id="car" hidden><span>${icon("car", 22, 2)}</span></div>`;
+  RP = [...pinsEl.querySelectorAll(".rpin")].map(el => { const b = el.querySelector(".rb"); return { el, b, mx: parseFloat(el.style.left), my: parseFloat(el.style.top), w: b.offsetWidth + 10, h: b.offsetHeight + 8 }; });
+  apply();
+}
+
+/* ---------- transform ---------- */
+function apply() {
+  stage.style.transform = `translate(${S.tx}px, ${S.ty}px) scale(${S.s})`;
+  stage.style.setProperty("--inv", (1 / S.s).toFixed(4));
+  const z = S.s / S.s0;
+  mv.classList.toggle("z1", z < 1.55); mv.classList.toggle("z3", z >= 2.35);
+  if (z < 1.55) declutter();
+  updateCount();
+}
+/* region bubbles: push overlapping bubbles apart in screen space; a leader line keeps them tied to the real spot */
+let RP = [];
+function declutter() {
+  RP.forEach(p => { if (!p.w && p.b.offsetWidth) { p.w = p.b.offsetWidth + 10; p.h = p.b.offsetHeight + 8; } });
+  if (!RP.length || !RP[0].w) return;
+  const it = RP.map(p => ({ ...p, x: p.mx * S.s, y: p.my * S.s, ox: 0, oy: 0 }));
+  for (let k = 0; k < 60; k++) {
+    let moved = false;
+    for (let i = 0; i < it.length; i++) for (let j = i + 1; j < it.length; j++) {
+      const a = it[i], b = it[j];
+      const dx = (b.x + b.ox) - (a.x + a.ox), dy = (b.y + b.oy) - (a.y + a.oy);
+      const ovx = (a.w + b.w) / 2 - Math.abs(dx), ovy = (a.h + b.h) / 2 - Math.abs(dy);
+      if (ovx > 0 && ovy > 0) {
+        moved = true;
+        if (ovx * 0.7 < ovy) {
+          const sx = dx === 0 ? (a.mx <= b.mx ? 1 : -1) : Math.sign(dx), push = ovx / 2 + 0.5;
+          a.ox -= sx * push; b.ox += sx * push;
+        } else {
+          const sy = dy === 0 ? (a.my <= b.my ? 1 : -1) : Math.sign(dy), push = ovy / 2 + 0.5;
+          a.oy -= sy * push; b.oy += sy * push;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  it.forEach(p => {
+    const off = Math.abs(p.oy) > 3 || Math.abs(p.ox) > 3;
+    p.el.classList.toggle("off", off);
+    p.b.style.setProperty("--ox", p.ox.toFixed(1) + "px"); p.b.style.setProperty("--oy", p.oy.toFixed(1) + "px");
+    if (off) { const ld = p.el.firstElementChild; ld.style.setProperty("--len", Math.hypot(p.ox, p.oy).toFixed(1) + "px"); ld.style.setProperty("--ang", Math.atan2(p.oy, p.ox).toFixed(3) + "rad"); }
+  });
+}
+function vp() { return mv.getBoundingClientRect(); }
+function safeArea() {
+  const r = vp(), mob = innerWidth < 1024, pad = mob ? 10 : 16;
+  const box = (sel) => { const e = document.querySelector(sel); if (!e || !e.offsetParent) return null; const b = e.getBoundingClientRect(); return b.width ? b : null; };
+  let t = pad, b = pad, l = pad, rr = pad;
+  const top = (mob ? [box("#mfilters .chips")] : [box(".ctrl-top .gseg"), box(".ctrl-top .gpill")]).filter(Boolean);
+  top.forEach(x => t = Math.max(t, x.bottom - r.top + 10));
+  const side = [box(".ctrl-zoom"), mob ? box(".ctrl-top .gseg") : null].filter(Boolean);
+  side.forEach(z => { if (z.left + z.width / 2 < r.left + r.width / 2) l = Math.max(l, z.right - r.left + 8); else rr = Math.max(rr, r.right - z.left + 8); });
+  const ub = box("#unlockbar"); if (ub) b = Math.max(b, r.bottom - ub.top + 12);
+  if (mob) { const sd = document.getElementById("side"); if (sd) b = Math.max(b, (sd.classList.contains("peek") ? 160 : sd.classList.contains("full") ? r.height * 0.88 : r.height * 0.46) + 12); }
+  return { l, r: rr, t, b, W: r.width, H: r.height };
+}
+function fit(animate) {
+  const a = safeArea();
+  const xs = D.REGIONS.map(r => r.x), ys = D.REGIONS.map(r => r.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const bw = RP.length ? Math.max(...RP.map(p => p.w)) : 150, bh = RP.length ? Math.max(...RP.map(p => p.h)) : 44;
+  const aw = Math.max(80, a.W - a.l - a.r - bw), ah = Math.max(80, a.H - a.t - a.b - bh * 1.2);
+  // never zoom further out than the whole island fits
+  const sIsland = Math.min((a.W - a.l - a.r) / (BALI.x1 - BALI.x0), (a.H - a.t - a.b) / (BALI.y1 - BALI.y0));
+  const sReg = Math.min(aw / (x1 - x0), ah / (y1 - y0));
+  // desktop: never zoom out past the whole island; mobile: zoom to the regions so the small map stays readable
+  S.s0 = innerWidth < 1024 ? Math.max(sReg, sIsland * 0.9) : Math.max(sIsland, sReg);
+  const s = S.s0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  go(a.l + (a.W - a.l - a.r) / 2 - cx * s, a.t + (a.H - a.t - a.b) / 2 - cy * s, s, animate);
+}
+function clampS(s) { return Math.max(S.s0 * 0.8, Math.min(S.s0 * 7, s)); }
+let anim = null;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function go(tx, ty, s, animate, done) {
+  cancelAnimationFrame(anim);
+  if (!animate || reduce) { S.tx = tx; S.ty = ty; S.s = s; apply(); done && done(); return; }
+  const a = { tx: S.tx, ty: S.ty, s: S.s }, t0 = performance.now(), dur = 850;
+  const ease = (x) => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  (function step(now) { const k = Math.min(1, (now - t0) / dur), e = ease(k);
+    S.tx = a.tx + (tx - a.tx) * e; S.ty = a.ty + (ty - a.ty) * e; S.s = a.s + (s - a.s) * e; apply();
+    if (k < 1) anim = requestAnimationFrame(step); else done && done(); })(t0);
+}
+function flyTo(x, y, z, done) {
+  const r = vp(); const s = clampS(S.s0 * z);
+  const offX = innerWidth < 1024 ? 0 : 0, offY = innerWidth < 1024 ? -r.height * 0.16 : 0;
+  go(r.width / 2 - x * s + offX, r.height / 2 - y * s + offY, s, true, done);
+}
+function zoomAt(px, py, f) {
+  const s = clampS(S.s * f); const k = s / S.s;
+  S.tx = px - (px - S.tx) * k; S.ty = py - (py - S.ty) * k; S.s = s; apply();
+}
+
+/* ---------- pointer: pan / pinch / wheel ---------- */
+const ptrs = new Map(); let last = null, moved = 0, pinch = null;
+mv.addEventListener("pointerdown", (e) => { if (!e.target.closest("button")) mv.setPointerCapture(e.pointerId); /* buttons: capture only once a drag starts, so taps still reach the pin */ ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); last = { x: e.clientX, y: e.clientY }; moved = 0; cancelAnimationFrame(anim);
+  if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) }; } mv.classList.add("grabbing"); });
+mv.addEventListener("pointermove", (e) => {
+  if (!ptrs.has(e.pointerId)) return; ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (ptrs.size === 2 && pinch) { const [a, b] = [...ptrs.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y); const r = vp(); zoomAt((a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top, d / pinch.d); pinch.d = d; moved += 10; return; }
+  const dx = e.clientX - last.x, dy = e.clientY - last.y; moved += Math.abs(dx) + Math.abs(dy);
+  if (moved > 6 && !mv.hasPointerCapture(e.pointerId)) mv.setPointerCapture(e.pointerId);
+  S.tx += dx; S.ty += dy / (S.is3d ? 0.7 : 1); last = { x: e.clientX, y: e.clientY }; apply(); });
+const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null; if (!ptrs.size) { mv.classList.remove("grabbing"); if (moved > 6) refreshList(); } };
+mv.addEventListener("pointerup", up); mv.addEventListener("pointercancel", up);
+mv.addEventListener("wheel", (e) => { e.preventDefault(); const r = vp(); zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0016)); clearTimeout(mv._wt); mv._wt = setTimeout(refreshList, 180); }, { passive: false });
+mv.addEventListener("click", (e) => {
+  if (moved > 6) return;
+  const rb = e.target.closest("[data-region]"); if (rb) { pickRegion(rb.dataset.region); return; }
+  const pb = e.target.closest("[data-pid]"); if (pb) select(pb.dataset.pid, true);
+});
+document.getElementById("zin").onclick = () => { const r = vp(); zoomAt(r.width / 2, r.height / 2, 1.5); refreshList(); };
+document.getElementById("zout").onclick = () => { const r = vp(); zoomAt(r.width / 2, r.height / 2, 1 / 1.5); refreshList(); };
+document.getElementById("reset").onclick = () => { S.region = null; renderChips(); fit(true); setTimeout(refreshList, 900); };
+mv.tabIndex = 0;
+mv.addEventListener("keydown", (e) => { const st = 60; const m = { ArrowLeft: [st, 0], ArrowRight: [-st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key];
+  if (m) { e.preventDefault(); S.tx += m[0]; S.ty += m[1]; apply(); } if (e.key === "+" || e.key === "=") document.getElementById("zin").click(); if (e.key === "-") document.getElementById("zout").click(); });
+
+/* ---------- visible-area results ---------- */
+function visibleRect() { const r = vp(); const m = S.is3d ? 1.6 : 1; return { x0: (-S.tx) / S.s, y0: (-S.ty) / S.s - (m - 1) * r.height / S.s, x1: (r.width - S.tx) / S.s, y1: (r.height - S.ty) / S.s }; }
+function inView(p) { const v = visibleRect(); return p.x >= v.x0 && p.x <= v.x1 && p.y >= v.y0 && p.y <= v.y1; }
+function updateCount() {
+  const list = filtered(), n = list.filter(inView).length;
+  document.getElementById("count").innerHTML = `${icon("pin", 15)} <span class="num">${n}</span> ${L("مكان في المنطقة الظاهرة", "places in view")}`;
+}
+
+/* ---------- side panel ---------- */
+function chip(k, label, on, attr) { return `<button class="chip" ${attr}="${k}" aria-pressed="${on}">${label}</button>`; }
+function renderChips() {
+  document.getElementById("regions").innerHTML = chip("", L("كل الجزيرة", "Whole island"), !S.region, "data-r") + D.REGIONS.map(r => chip(r.id, t(r.name), S.region === r.id, "data-r")).join("");
+  const cats = chip("all", L("الكل", "All"), S.cat === "all", "data-c") + D.CATS.map(c => chip(c.id, `${icon(c.icon, 15)} ${t(c.name)}`, S.cat === c.id, "data-c")).join("");
+  document.getElementById("cats").innerHTML = cats;
+  document.getElementById("mcats").innerHTML = cats + D.TAGS.map(([k, n]) => chip(k, t(n), S.tag === k, "data-t")).join("");
+  const subs = document.getElementById("subs"); const rc = byId(D.CATS, "restaurants");
+  subs.hidden = S.cat !== "restaurants";
+  subs.innerHTML = chip("", L("كل المطاعم", "All restaurants"), !S.sub, "data-s") + rc.subs.map(([k, n]) => chip(k, t(n), S.sub === k, "data-s")).join("");
+  document.getElementById("tags").innerHTML = D.TAGS.map(([k, n]) => chip(k, t(n), S.tag === k, "data-t")).join("");
+}
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-c]"), s = e.target.closest("[data-s]"), tg = e.target.closest("[data-t]"), r = e.target.closest("[data-r]");
+  if (c) { S.cat = c.dataset.c; S.sub = null; renderChips(); renderPins(); refreshList(); if (innerWidth < 1024) setSheet("half"); }
+  if (s) { S.sub = s.dataset.s || null; renderChips(); renderPins(); refreshList(); }
+  if (tg) { S.tag = S.tag === tg.dataset.t ? null : tg.dataset.t; renderChips(); renderPins(); refreshList(); }
+  if (r) { if (r.dataset.r) pickRegion(r.dataset.r); else document.getElementById("reset").click(); }
+});
+function pickRegion(id) { S.region = id; renderChips(); const rg = BT.region(id); flyTo(rg.x, rg.y, id === "nusa-penida" ? 2.6 : 2.5, refreshList); }
+document.getElementById("q").addEventListener("input", (e) => { S.q = e.target.value; renderPins(); refreshList(true); });
+
+function refreshList(all) {
+  if (S.sel) return; // keep detail open
+  let list = filtered();
+  const inv = list.filter(inView);
+  const useAll = all || S.q || inv.length === 0;
+  if (!useAll) list = inv;
+  if (S.me) list = list.slice().sort((a, b) => dist(a) - dist(b));
+  const lockedN = list.filter(isLocked).length;
+  body.innerHTML = `<div class="res-head"><span><b>${list.length}</b> ${useAll ? L("نتيجة في كل الجزيرة", "results across the island") : L("نتيجة في المنطقة الظاهرة", "results in view")}</span>${S.me ? `<span class="tag tag-info">${icon("locate", 13)} ${L("الأقرب أولًا", "Nearest first")}</span>` : ""}</div>` +
+    (list.length ? list.map(p => { const lk = isLocked(p), c = catOf(p);
+      return `<button class="res ${lk ? "locked" : ""}" data-sel="${p.id}"><img src="${img(p.img)}" alt=""><span class="rmeta"><span class="rname">${lk ? L("مكان في الخريطة الكاملة", "Full-map place") : esc(t(p.name))}</span><span class="rsub"><span>${t(c.name)}</span><span>· ${t(BT.region(p.region).name)}</span>${S.me ? `<span class="num">· ${dist(p).toFixed(1)} km</span>` : ""}</span>${lk ? "" : BT.stars(p.rating)}</span>${lk ? `<span class="lk">${icon("lock", 18)}</span>` : `<span class="lk flip">${icon("chev", 18)}</span>`}</button>`; }).join("")
+      : `<div class="empty"><span class="ill">${icon("search", 36)}</span><b style="color:var(--forest)">${L("لا توجد أماكن بهذه الفلاتر", "No places match these filters")}</b><p class="muted" style="font-size:14px">${L("جرّب نوعًا آخر أو اعرض كل الجزيرة.", "Try another type or view the whole island.")}</p><button class="btn btn-ghost btn-sm" id="clear-f">${L("مسح الفلاتر", "Clear filters")}</button></div>`) +
+    (lockedN && !MapAccess.unlocked() ? `<div class="lockcard" style="margin:12px 6px 0">${icon("lock", 22)}<b>${L(`${numAr(lockedN)} أماكن مقفلة في هذه النتائج`, `${lockedN} locked places in these results`)}</b><span style="font-size:14px">${L("افتح الخريطة الكاملة لترى أسماءها وتفاصيلها وتضيفها لرحلتك.", "Unlock the full map to see their names and details and add them to your trip.")}</span><button class="btn btn-primary btn-sm" data-unlock style="align-self:flex-start">${L("افتح الخريطة الكاملة", "Unlock full map")} — ${money(D.MAP_PRICE)}</button></div>` : "");
+  const cf = document.getElementById("clear-f"); if (cf) cf.onclick = () => { S.cat = "all"; S.sub = null; S.tag = null; S.q = ""; document.getElementById("q").value = ""; renderChips(); renderPins(); refreshList(true); };
+}
+body.addEventListener("click", (e) => { const b = e.target.closest("[data-sel]"); if (b) select(b.dataset.sel, true); });
+function select(id, fly) {
+  const p = byId(D.PLACES, id); S.sel = id; renderPins();
+  if (fly) flyTo(p.x, p.y, Math.max(S.s / S.s0, 2.8));
+  if (innerWidth < 1024) setSheet("half");
+  const lk = isLocked(p), c = catOf(p), rg = BT.region(p.region);
+  if (lk) {
+    body.innerHTML = `<div class="detail"><button class="btn btn-ghost btn-sm" id="back" style="align-self:flex-start">${icon("back", 16)} ${L("رجوع للنتائج", "Back to results")}</button>
+      <div class="d-gal" style="grid-template-columns:1fr;filter:blur(6px) grayscale(.4)"><img src="${img(p.img)}" alt=""></div>
+      <div class="lockcard">${icon("lock", 24)}<b>${L("هذا المكان ضمن الخريطة الكاملة", "This place is in the full map")}</b>
+      <span style="font-size:14px">${L(`في منطقة ${t(rg.name)}. افتح الخريطة الكاملة لترى الاسم والصور والوصف والاتجاهات لكل الأماكن في بالي.`, `In ${t(rg.name)}. Unlock the full map for names, photos, descriptions and directions everywhere in Bali.`)}</span>
+      <ul style="margin:0;padding-inline-start:18px;font-size:14px"><li>${L("كل مناطق بالي ونوسا بينيدا", "Every area incl. Nusa Penida")}</li><li>${L("تحديثات مستمرة للأماكن", "Ongoing place updates")}</li><li>${L("وصول من حسابك على الجوال", "Access from your phone account")}</li></ul>
+      <button class="btn btn-primary" data-unlock>${L("افتح الخريطة الكاملة", "Unlock full map")} — ${money(D.MAP_PRICE)}</button></div></div>`;
+  } else {
+    const fav = Fav.has("plc:" + p.id);
+    body.innerHTML = `<div class="detail"><button class="btn btn-ghost btn-sm" id="back" style="align-self:flex-start">${icon("back", 16)} ${L("رجوع للنتائج", "Back to results")}</button>
+      <div class="d-gal"><img src="${img(p.img)}" alt=""><div><img src="${rg.img}" alt=""><img src="${img(p.cat === "beaches" ? "beach-palms" : p.cat === "restaurants" ? "flatlay" : "jungle")}" alt=""></div></div>
+      <div class="stack" style="gap:6px"><div class="row" style="gap:6px"><span class="tag tag-palm">${icon(c.icon, 14)} ${t(c.name)}${p.sub ? " · " + t(c.subs.find(s => s[0] === p.sub)[1]) : ""}</span><span class="tag tag-forest">${icon("pin", 13)} ${t(rg.name)}</span>${p.price ? `<span class="tag tag-orange num">${p.price}</span>` : ""}</div>
+      <h2 class="h3">${esc(t(p.name))}</h2>${BT.stars(p.rating)}<p class="muted">${t(p.desc)}</p></div>
+      <div class="d-actions">
+        <a class="btn btn-forest btn-sm" href="place.html#${p.id}">${L("صفحة التفاصيل", "Details page")}</a>
+        <button class="btn btn-ghost btn-sm" data-fav="plc:${p.id}" aria-pressed="${fav}">${icon("heart", 16)} ${L("المفضلة", "Favorite")}</button>
+        <button class="btn btn-primary btn-sm" id="add-trip">${icon("plus", 16)} ${L("أضف إلى رحلتي", "Add to My Trip")}</button>
+        <a class="btn btn-ghost btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}" target="_blank" rel="noopener">${icon("route", 16)} ${L("الاتجاهات", "Directions")}</a>
+      </div>
+      ${p.activity ? `<a class="panel" href="activity.html#${p.activity}" style="display:flex;gap:12px;align-items:center;padding:14px">${icon("bolt", 20)}<span style="flex:1"><b style="color:var(--forest)">${L("نشاط قابل للحجز هنا", "Bookable activity here")}</b><br><small class="muted">${t(byId(D.ACTIVITIES, p.activity).title)}</small></span><span class="flip">${icon("chev", 18)}</span></a>` : ""}
+    </div>`;
+    document.getElementById("add-trip").onclick = () => { if (Trip.items().some(i => i.type === "place" && i.ref === p.id)) { toast(L("المكان موجود في رحلتك", "Already in your trip")); return; } Trip.add({ type: "place", ref: p.id, title: p.name, img: p.img, lines: [], total: 0, meta: { region: p.region } }); toast(L("أُضيف المكان إلى رحلتي", "Place added to My Trip"), { link: [L("رحلتي", "My Trip"), "my-trip.html"] }); };
+  }
+  document.getElementById("back").onclick = () => { S.sel = null; renderPins(); refreshList(); };
+  body.scrollTop = 0;
+}
+
+/* ---------- unlock (paid full map) ---------- */
+function renderUnlockBar() {
+  const ub = document.getElementById("unlockbar");
+  const mu = document.getElementById("m-unlock");
+  mu.innerHTML = MapAccess.unlocked() ? `<span>${icon("unlock", 16)} <b>${L("الخريطة الكاملة مفعّلة", "Full map unlocked")}</b></span><button class="btn btn-glass btn-sm" id="m-sim">${L("عرض كزائر", "Visitor view")}</button>` : `<span>${icon("lock", 16)} <b>${L("المجاني: أوبود", "Free: Ubud")}</b></span><span class="row" style="gap:6px"><button class="btn btn-primary btn-sm" data-unlock>${L("افتح الكل", "Unlock all")} · ${money(D.MAP_PRICE)}</button><button class="btn btn-glass btn-sm" id="m-sim">${L("محاكاة", "Simulate")}</button></span>`;
+  document.getElementById("m-sim").onclick = () => { MapAccess.set(!MapAccess.unlocked()); drawOverlay(); renderPins(); refreshList(); renderUnlockBar(); };
+  if (MapAccess.unlocked()) {
+    ub.innerHTML = `<span class="ul-t"><span class="ic">${icon("unlock", 20)}</span><span><b>${L("الخريطة الكاملة مفعّلة", "Full map unlocked")}</b><span class="muted-m">${L("كل مناطق بالي متاحة لك.", "Every area of Bali is open to you.")}</span></span></span><button class="btn btn-ghost btn-sm" id="sim-lock" title="Prototype">${L("محاكاة: عرض كزائر", "Simulate: visitor view")}</button>`;
+    document.getElementById("sim-lock").onclick = () => { MapAccess.set(false); drawOverlay(); renderPins(); refreshList(); renderUnlockBar(); };
+  } else {
+    ub.innerHTML = `<span class="ul-t"><span class="ic">${icon("lock", 20)}</span><span><b>${L("أنت تشاهد الجزء المجاني: أوبود", "You're viewing the free area: Ubud")}</b><span class="muted-m">${L("باقي الجزيرة مغطى. افتحها مرة واحدة واستخدمها طوال رحلتك.", "The rest is covered. Unlock once and use it for your whole trip.")}</span></span></span>
+      <span class="row" style="gap:6px"><button class="btn btn-primary btn-sm" data-unlock>${L("افتح الخريطة كاملة", "Unlock full map")} · ${money(D.MAP_PRICE)}</button><button class="btn btn-ghost btn-sm" id="sim-unlock" title="Prototype only">${L("محاكاة الشراء", "Simulate purchase")}</button></span>`;
+    document.getElementById("sim-unlock").onclick = () => { MapAccess.set(true); drawOverlay(); renderPins(); refreshList(); renderUnlockBar(); toast(L("محاكاة: تم فتح الخريطة الكاملة", "Simulated: full map unlocked")); };
+  }
+}
+document.addEventListener("click", (e) => { if (e.target.closest("[data-unlock]")) { if (!Trip.items().some(i => i.type === "map")) Trip.add({ type: "map", ref: "full-map", title: { ar: "الخريطة التفاعلية الكاملة", en: "Full interactive map" }, img: "bali-sat", lines: [{ l: { ar: "وصول كامل لكل مناطق بالي", en: "Access to every area of Bali" }, v: D.MAP_PRICE }], total: D.MAP_PRICE }); location.href = "my-trip.html"; } });
+
+/* ---------- near me ---------- */
+const gm = document.getElementById("geo-modal");
+function dist(p) { if (!S.me) return 0; const R = 6371, toR = (d) => d * Math.PI / 180; const dLa = toR(p.lat - S.me.lat), dLo = toR(p.lon - S.me.lon); const a = Math.sin(dLa / 2) ** 2 + Math.cos(toR(S.me.lat)) * Math.cos(toR(p.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(a)); }
+document.getElementById("near").onclick = (e) => { if (S.me) { S.me = null; e.currentTarget.setAttribute("aria-pressed", false); renderPins(); refreshList(); return; } gm.classList.add("open"); document.getElementById("geo-ok").focus(); };
+document.getElementById("geo-no").onclick = () => gm.classList.remove("open");
+gm.onclick = (e) => { if (e.target === gm) gm.classList.remove("open"); };
+document.getElementById("geo-ok").onclick = () => { gm.classList.remove("open"); const lat = -8.6905, lon = 115.1680; S.me = Object.assign({ lat, lon }, D.geo(lat, lon)); document.getElementById("near").setAttribute("aria-pressed", true); renderPins(); flyTo(S.me.x, S.me.y, 3, () => refreshList(true)); toast(L("نعرض الأماكن الأقرب إليك أولًا", "Showing the nearest places first")); };
+
+/* ---------- 2D / 3D ---------- */
+const legend = document.getElementById("legend3d");
+function set3d(on) {
+  S.is3d = on; mv.classList.toggle("is3d", on); legend.classList.toggle("show", on);
+  document.getElementById("v2d").setAttribute("aria-pressed", !on); document.getElementById("v3d").setAttribute("aria-pressed", on);
+  legend.innerHTML = `<b>${L("المستوى المتقدم (3D) — نموذج بصري", "Advanced level (3D) — visual prototype")}</b><br>${L("ميل الكاميرا ونقاط قائمة فوق الخريطة. التنفيذ الفعلي يحتاج خريطة تضاريس (مثل Mapbox/MapLibre terrain) ولا يَعِد بمجسمات لكل مبنى.", "Camera tilt and standing markers. Production needs a terrain map (e.g. Mapbox/MapLibre terrain) and doesn't promise per-building 3D.")}`;
+  setTimeout(refreshList, 900);
+}
+document.getElementById("v2d").onclick = () => set3d(false);
+document.getElementById("v3d").onclick = () => set3d(true);
+
+/* ---------- virtual tour (showcase concept) ---------- */
+let touring = false;
+document.getElementById("tour").onclick = () => {
+  if (touring) return stopTour();
+  touring = true; set3d(true); S.sel = null;
+  const stops = ["seminyak-beach", "tanah-lot", "monkey-forest", "tegallalang", "batur"].map(id => byId(D.PLACES, id));
+  const pts = stops.map(p => [p.x, p.y]);
+  const g = ov.querySelector("#route");
+  g.innerHTML = `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="#FF9000" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2 12" vector-effect="non-scaling-stroke"/>`;
+  const bar = document.createElement("div"); bar.className = "tourbar"; bar.id = "tourbar";
+  bar.innerHTML = `<span class="tag">${L("مفهوم استعراضي", "Showcase concept")}</span><span style="flex:1" id="tour-txt">${L("جولة افتراضية بالسيارة بين المحطات", "A virtual drive between stops")}</span><button class="btn btn-light btn-sm" id="tour-stop">${L("إيقاف", "Stop")}</button>`;
+  mv.parentElement.appendChild(bar); document.getElementById("tour-stop").onclick = stopTour;
+  const car = document.getElementById("car"); car.hidden = false;
+  const segs = []; let total = 0; for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); segs.push(d); total += d; }
+  const r = vp(); const s = clampS(S.s0 * 3.2); const t0 = performance.now(), dur = reduce ? 1 : 16000;
+  (function step(now) {
+    if (!touring) return;
+    const k = Math.min(1, (now - t0) / dur); let d = k * total, i = 0; while (i < segs.length - 1 && d > segs[i]) { d -= segs[i]; i++; }
+    const f = Math.min(1, d / segs[i]); const x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * f, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * f;
+    car.style.left = x + "px"; car.style.top = y + "px";
+    S.s = S.s + (s - S.s) * .05; S.tx = r.width / 2 - x * S.s; S.ty = r.height * .62 - y * S.s; apply();
+    document.getElementById("tour-txt").textContent = L("المحطة: ", "Stop: ") + t(stops[Math.min(stops.length - 1, f > .85 ? i + 1 : i)].name);
+    if (k < 1) anim = requestAnimationFrame(step); else setTimeout(stopTour, 1500);
+  })(t0);
+};
+function stopTour() { touring = false; cancelAnimationFrame(anim); const b = document.getElementById("tourbar"); if (b) b.remove(); const g = ov.querySelector("#route"); if (g) g.innerHTML = ""; const c = document.getElementById("car"); if (c) c.hidden = true; refreshList(); }
+
+/* ---------- mobile sheet ---------- */
+function setSheet(st) { side.classList.toggle("peek", st === "peek"); side.classList.toggle("full", st === "full"); }
+document.getElementById("grab").onclick = () => setSheet(side.classList.contains("peek") ? "half" : side.classList.contains("full") ? "peek" : "full");
+let sy = null; document.getElementById("grab").addEventListener("touchstart", e => sy = e.touches[0].clientY, { passive: true });
+document.getElementById("grab").addEventListener("touchend", e => { if (sy == null) return; const dy = e.changedTouches[0].clientY - sy; if (dy > 40) setSheet(side.classList.contains("full") ? "half" : "peek"); else if (dy < -40) setSheet(side.classList.contains("peek") ? "half" : "full"); sy = null; });
+
+/* ---------- init + deep links (#cat-x, #region-x, #place-x) ---------- */
+drawOverlay(); renderChips(); renderPins(); renderUnlockBar();
+requestAnimationFrame(() => { const h = BT.hashId(); if (innerWidth < 1024 && !h) setSheet("peek");
+  sizeApp(); fit(false); refreshList();
+  if (h.startsWith("cat-")) { S.cat = h.slice(4); renderChips(); renderPins(); refreshList(); }
+  else if (h.startsWith("region-")) pickRegion(h.slice(7));
+  else if (h.startsWith("place-")) select(h.slice(6), true);
+});
+function sizeApp() { const app = document.querySelector('.mapapp'); const top = app.getBoundingClientRect().top + scrollY; const tb = innerWidth < 1024 ? 64 : 0; app.style.height = Math.max(innerWidth < 1024 ? 480 : 560, innerHeight - top - tb) + 'px'; }
+sizeApp();
+addEventListener("resize", () => { clearTimeout(window._rz); window._rz = setTimeout(() => { sizeApp(); fit(false); refreshList(); }, 150); });
+})();
+</script>
+</body>
+</html>

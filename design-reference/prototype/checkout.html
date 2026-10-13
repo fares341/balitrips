@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — إتمام الحجز</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.ck { display: grid; gap: 28px; align-items: start; padding-block: 8px 72px; }
+@media (min-width: 1024px) { .ck { grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; } }
+.ck-step { display: none; flex-direction: column; gap: 18px; animation: slideIn var(--d-slow) var(--ease); }
+.ck-step.on { display: flex; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(var(--sx, -18px)); } }
+[dir="ltr"] .ck-step { --sx: 18px; }
+.two { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.phone { display: flex; gap: 8px; } .phone .select { width: 120px; flex-shrink: 0; }
+.pm { display: grid; gap: 10px; }
+.pm label { display: flex; gap: 14px; align-items: center; padding: 16px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--white); cursor: pointer; }
+.pm label:has(input:checked) { border-color: var(--forest); background: #F4FCF5; box-shadow: 0 0 0 4px rgba(113,255,133,.25); }
+.pm input { width: 20px; height: 20px; accent-color: var(--forest); }
+.pm b { color: var(--forest); display: block; }
+.mini-items { display: flex; flex-direction: column; gap: 10px; }
+.mini-items div { display: flex; gap: 10px; align-items: center; }
+.mini-items img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+.sim { border: 1.5px dashed #C9A15A; background: #FFFAF0; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.secure { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body data-page="checkout" data-section="trip" data-notabbar>
+<div id="hdr"></div>
+<main id="main">
+  <div class="wrap">
+    <div id="crumbs"></div>
+    <div class="stack" style="gap:16px;padding-bottom:18px">
+      <h1 class="h1" style="font-size:clamp(28px,3.6vw,40px)" data-en="Complete your booking">إتمام الحجز</h1>
+      <ol class="steps" id="steps" aria-label="مراحل الحجز" data-en-aria="Booking steps">
+        <li class="cur"><span data-en="1 · Your details">١ · بياناتك</span></li><li><span data-en="2 · Review">٢ · المراجعة</span></li><li><span data-en="3 · Payment">٣ · الدفع</span></li>
+      </ol>
+    </div>
+    <div id="root"></div>
+  </div>
+</main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, esc, img, Trip, toast, Auth } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("رحلتي", "My Trip"), "my-trip.html"], [L("إتمام الحجز", "Checkout"), "#"]]);
+const keys = BT.store.get("checkout", null);
+const items = Trip.items().filter(i => i.total > 0 && (!keys || keys.includes(i.key)));
+const root = document.getElementById("root");
+if (!items.length) { root.innerHTML = `<div class="panel empty" style="margin-bottom:72px"><span class="ill">${icon("suitcase", 40)}</span><h2 class="h3">${L("لا يوجد ما يمكن دفعه", "Nothing to pay for")}</h2><p class="muted">${L("رحلتك لا تحتوي خدمات قابلة للحجز.", "Your trip has no bookable services.")}</p><a class="btn btn-forest" href="my-trip.html">${L("العودة إلى رحلتي", "Back to My Trip")}</a></div>`; return; }
+const disc = BT.store.get("disc", 0);
+const sub = items.reduce((s, i) => s + i.total, 0), dsc = Math.round(sub * disc), total = sub - dsc;
+let order = BT.store.get("pendingOrder", null);
+if (!order || order.sig !== items.map(i => i.key).join()) { order = { id: "BT-" + new Date().getFullYear() + "-" + String(Math.floor(1000 + Math.random() * 9000)), sig: items.map(i => i.key).join(), tries: 0 }; BT.store.set("pendingOrder", order); }
+const u = Auth.user();
+const form = Object.assign({ name: u ? u.name : "", email: u ? u.email : "", cc: "+966", phone: "", notes: "", create: true, agree: false, method: "card", sim: "success" }, BT.store.get("ckForm", {}));
+
+root.innerHTML = `<div class="ck">
+  <form id="f" novalidate class="minw0">
+    <section class="ck-step on panel" data-step="1" aria-labelledby="s1h">
+      <h2 class="h3" id="s1h">${L("بيانات المسافر الرئيسي", "Lead traveler details")}</h2>
+      ${u ? `<div class="alert alert-ok">${icon("user", 18)}<span>${L("مسجل باسم", "Signed in as")} <b style="display:inline">${esc(u.name)}</b></span></div>` : `<div class="alert alert-info">${icon("info", 18)}<span>${L("لديك حساب؟", "Have an account?")} <a class="link" href="login.html#checkout">${L("سجّل الدخول", "Log in")}</a> ${L("أو تابع كضيف.", "or continue as a guest.")}</span></div>`}
+      <div class="two">
+        <div class="field"><label for="name">${L("الاسم الكامل", "Full name")}</label><input class="input" id="name" autocomplete="name" value="${esc(form.name)}"><span class="err">${icon("alert", 15)} ${L("اكتب الاسم كما في جواز السفر.", "Enter your name as on your passport.")}</span></div>
+        <div class="field"><label for="email">${L("البريد الإلكتروني", "Email")}</label><input class="input" id="email" type="email" autocomplete="email" dir="ltr" value="${esc(form.email)}"><span class="err">${icon("alert", 15)} ${L("أدخل بريدًا صحيحًا مثل name@mail.com", "Enter a valid email like name@mail.com")}</span></div>
+      </div>
+      <div class="field"><label for="phone">${L("رقم الجوال (واتساب)", "Mobile (WhatsApp)")}</label><div class="phone"><select class="select" id="cc" aria-label="${L("رمز الدولة", "Country code")}" dir="ltr">${["+966", "+971", "+965", "+974", "+973", "+968", "+20", "+962"].map(c => `<option ${c === form.cc ? "selected" : ""}>${c}</option>`).join("")}</select><input class="input" id="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel-national" value="${esc(form.phone)}" placeholder="5X XXX XXXX"></div><span class="hint">${L("نرسل تأكيد الحجز وتفاصيل السائق على هذا الرقم.", "We send confirmations and driver details here.")}</span><span class="err">${icon("alert", 15)} ${L("أدخل رقم جوال من ٨ إلى ١٢ رقمًا.", "Enter an 8–12 digit mobile number.")}</span></div>
+      <div class="field"><label for="notes">${L("ملاحظات للمزود (اختياري)", "Notes for the provider (optional)")}</label><textarea class="textarea" id="notes" placeholder="${L("مثال: اسم الفندق لنقطة الالتقاء، احتياجات خاصة…", "e.g. hotel name for pickup, special needs…")}">${esc(form.notes)}</textarea></div>
+      ${u ? "" : `<label class="check"><input type="checkbox" id="create" ${form.create ? "checked" : ""}><span><b style="color:var(--forest)">${L("أنشئ حسابي بهذه البيانات", "Create my account with these details")}</b><br><small class="muted">${L("لتصل إلى حجوزاتك وملفات الجداول من أي جهاز.", "To access bookings and itinerary files from any device.")}</small></span></label>`}
+      <div class="row between"><a class="btn btn-ghost" href="my-trip.html">${L("رجوع إلى رحلتي", "Back to My Trip")}</a><button class="btn btn-primary btn-lg" type="button" data-next="2">${L("متابعة للمراجعة", "Continue to review")}</button></div>
+    </section>
+
+    <section class="ck-step panel" data-step="2" aria-labelledby="s2h">
+      <h2 class="h3" id="s2h">${L("راجع طلبك", "Review your order")}</h2>
+      <div class="stack" style="gap:12px">${items.map(i => `<div style="display:flex;gap:12px;padding:12px;border-radius:16px;background:var(--ivory-2)"><img src="${img(i.img)}" alt="" style="width:72px;height:72px;border-radius:12px;object-fit:cover"><div class="minw0" style="flex:1"><div class="row between"><b style="color:var(--forest)">${esc(t(i.title))}</b><b class="price" style="color:var(--forest)">${money(i.total)}</b></div><div class="card-meta">${i.date ? `<span>${BT.fmtDate(i.date)}${i.dateEnd ? " – " + BT.fmtDate(i.dateEnd) : ""}</span>` : ""}${i.time ? `<span class="num">${i.time}</span>` : ""}${i.people ? `<span>${BT.cnt(i.people, "p")}</span>` : ""}</div>${(i.lines || []).map(l => `<div class="sum-row" style="padding-block:2px;font-size:13px"><span>${t(l.l)}</span><span class="price">${money(l.v)}</span></div>`).join("")}</div></div>`).join("")}</div>
+      <div class="alert alert-warn">${icon("info", 18)}<span><b>${L("السياسات المطبقة", "Policies that apply")}</b>${L("الأنشطة: إلغاء مجاني حتى ٤٨ ساعة قبل الموعد (حسب المزود). الجداول والخريطة: منتجات رقمية غير قابلة للاسترداد بعد التحميل.", "Activities: free cancellation up to 48h before (per provider). Itineraries and map: digital products, non-refundable after download.")} <a class="link" href="policy.html#cancellation" target="_blank">${L("اقرأ السياسة كاملة", "Read the full policy")}</a></span></div>
+      <div class="field" id="agree-f"><label class="check"><input type="checkbox" id="agree" ${form.agree ? "checked" : ""}><span>${L("قرأت وأوافق على", "I have read and agree to the")} <a class="link" href="policy.html#terms" target="_blank">${L("الشروط والأحكام", "Terms")}</a> ${L("و", "and")} <a class="link" href="policy.html#cancellation" target="_blank">${L("سياسة الإلغاء والاسترجاع", "Cancellation policy")}</a></span></label><span class="err">${icon("alert", 15)} ${L("يلزم الموافقة على الشروط لإتمام الحجز.", "You need to accept the terms to book.")}</span></div>
+      <div class="row between"><button class="btn btn-ghost" type="button" data-next="1">${L("رجوع", "Back")}</button><button class="btn btn-primary btn-lg" type="button" data-next="3">${L("متابعة للدفع", "Continue to payment")}</button></div>
+    </section>
+
+    <section class="ck-step panel" data-step="3" aria-labelledby="s3h">
+      <h2 class="h3" id="s3h">${L("طريقة الدفع", "Payment method")}</h2>
+      ${order.tries ? `<div class="alert alert-err">${icon("alert", 18)}<span><b>${L("لم تكتمل محاولة الدفع السابقة", "Your last payment attempt didn't go through")}</b>${L(`نفس الطلب ${order.id} — لن يتكرر الطلب أو يُخصم مرتين.`, `Same order ${order.id} — it won't be duplicated or charged twice.`)}</span></div>` : ""}
+      <div class="pm" role="radiogroup">
+        <label><input type="radio" name="pm" value="card" ${form.method === "card" ? "checked" : ""}><span style="flex:1"><b>${L("بطاقة بنكية", "Card")}</b><small class="muted">Visa · Mastercard · mada</small></span>${icon("card", 22)}</label>
+        <label><input type="radio" name="pm" value="apple" ${form.method === "apple" ? "checked" : ""}><span style="flex:1"><b>Apple Pay</b><small class="muted">${L("على الأجهزة المدعومة", "On supported devices")}</small></span><span class="num" style="font-weight:800"></span></label>
+        <label><input type="radio" name="pm" value="bank" ${form.method === "bank" ? "checked" : ""}><span style="flex:1"><b>${L("تحويل بنكي", "Bank transfer")}</b><small class="muted">${L("يُؤكد الطلب بعد استلام الحوالة (حتى يوم عمل)", "Confirmed once the transfer arrives (up to 1 business day)")}</small></span>${icon("doc", 22)}</label>
+      </div>
+      <div id="card-fields" class="stack" style="gap:14px">
+        <div class="field"><label for="cn">${L("رقم البطاقة", "Card number")}</label><input class="input" id="cn" inputmode="numeric" dir="ltr" autocomplete="cc-number" placeholder="4242 4242 4242 4242" maxlength="19"><span class="err">${icon("alert", 15)} ${L("رقم البطاقة غير مكتمل.", "Card number is incomplete.")}</span></div>
+        <div class="two"><div class="field"><label for="ce">${L("تاريخ الانتهاء", "Expiry")}</label><input class="input" id="ce" dir="ltr" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / YY" maxlength="7"><span class="err">${icon("alert", 15)} ${L("صيغة التاريخ MM/YY", "Use MM/YY")}</span></div><div class="field"><label for="cv">CVC</label><input class="input" id="cv" dir="ltr" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4"><span class="err">${icon("alert", 15)} ${L("٣ أو ٤ أرقام خلف البطاقة.", "3–4 digits on the back.")}</span></div></div>
+      </div>
+      <div class="sim"><b style="color:#7A5300;font-size:13.5px">${icon("settings", 15)} ${L("محاكاة نتيجة الدفع (للنموذج فقط)", "Simulate payment result (prototype only)")}</b><div class="seg" role="group" id="sim">${[["success", L("ناجح", "Success")], ["failed", L("مرفوض", "Declined")], ["processing", L("قيد المعالجة", "Processing")]].map(([k, n]) => `<button type="button" data-sim="${k}" aria-pressed="${form.sim === k}">${n}</button>`).join("")}</div></div>
+      <p class="secure">${icon("shield", 16)} ${L("مدفوعات مشفرة عبر بوابة دفع معتمدة. لا نحفظ بيانات بطاقتك.", "Encrypted via a certified payment gateway. We never store your card.")}</p>
+      <div class="row between"><button class="btn btn-ghost" type="button" data-next="2">${L("رجوع", "Back")}</button><button class="btn btn-primary btn-lg" type="submit" id="pay">${L("ادفع", "Pay")} ${money(total)}</button></div>
+    </section>
+  </form>
+
+  <aside class="panel stack" style="gap:12px;position:sticky;top:calc(var(--hdr-h) + 16px)">
+    <div class="row between"><h2 class="h3">${L("ملخص الطلب", "Order summary")}</h2><span class="tag tag-forest num">${order.id}</span></div>
+    <div class="mini-items">${items.map(i => `<div><img src="${img(i.img)}" alt=""><span class="minw0" style="flex:1;font-size:14px"><b style="color:var(--forest)">${esc(t(i.title))}</b><br><small class="muted">${i.date ? BT.fmtDate(i.date) : L("منتج رقمي", "Digital product")}</small></span><b class="price" style="color:var(--forest)">${money(i.total)}</b></div>`).join("")}</div>
+    <div class="sum-row"><span>${L("المجموع", "Subtotal")}</span><span class="price">${money(sub)}</span></div>
+    ${dsc ? `<div class="sum-row" style="color:var(--ok)"><span>${L("الخصم", "Discount")}</span><span class="price" style="color:var(--ok)">−${money(dsc)}</span></div>` : ""}
+    <div class="sum-row"><span>${L("رسوم الخدمة", "Service fees")}</span><span class="price">$0</span></div>
+    <div class="sum-total"><span>${L("الإجمالي النهائي", "Final total")}</span><b class="price">${money(total)}</b></div>
+    <small class="muted">${L("بالدولار الأمريكي (عملة تجريبية). نفس المبلغ الذي سيُخصم.", "In USD (demo currency). The exact amount you'll be charged.")}</small>
+  </aside></div>`;
+
+/* ---------- steps ---------- */
+const save = () => { Object.assign(form, { name: v("name"), email: v("email"), cc: v("cc"), phone: v("phone"), notes: v("notes"), create: !!(document.getElementById("create") || {}).checked, agree: document.getElementById("agree").checked }); BT.store.set("ckForm", form); };
+const v = (id) => (document.getElementById(id) || {}).value || "";
+const setErr = (id, bad) => { const f = document.getElementById(id).closest(".field"); f.classList.toggle("has-error", bad); f.classList.toggle("is-valid", !bad && v(id)); return bad; };
+function valid(step) {
+  let bad = [];
+  if (step === 1) { if (setErr("name", v("name").trim().length < 3)) bad.push("name"); if (setErr("email", !/^\S+@\S+\.\S+$/.test(v("email")))) bad.push("email"); if (setErr("phone", !/^\d{8,12}$/.test(v("phone").replace(/\s/g, "")))) bad.push("phone"); }
+  if (step === 2) { const ok = document.getElementById("agree").checked; document.getElementById("agree-f").classList.toggle("has-error", !ok); if (!ok) bad.push("agree"); }
+  if (step === 3 && form.method === "card") { if (setErr("cn", v("cn").replace(/\s/g, "").length < 15)) bad.push("cn"); if (setErr("ce", !/^(0[1-9]|1[0-2])\s?\/\s?\d{2}$/.test(v("ce")))) bad.push("ce"); if (setErr("cv", !/^\d{3,4}$/.test(v("cv")))) bad.push("cv"); }
+  if (bad.length) { const el = document.getElementById(bad[0]); el.focus(); }
+  return !bad.length;
+}
+let cur = 1;
+function go(n) { save(); if (n > cur && !valid(cur)) return; cur = n; document.querySelectorAll(".ck-step").forEach(s => s.classList.toggle("on", +s.dataset.step === n)); document.querySelectorAll("#steps li").forEach((li, i) => { li.className = i + 1 < n ? "done" : i + 1 === n ? "cur" : ""; }); window.scrollTo({ top: 0, behavior: "smooth" }); }
+root.addEventListener("click", (e) => { const b = e.target.closest("[data-next]"); if (b) go(+b.dataset.next); const s = e.target.closest("[data-sim]"); if (s) { form.sim = s.dataset.sim; document.querySelectorAll("[data-sim]").forEach(x => x.setAttribute("aria-pressed", x === s)); save(); } });
+root.addEventListener("input", (e) => { const f = e.target.closest(".field"); if (f && f.classList.contains("has-error")) f.classList.remove("has-error"); if (e.target.id === "cn") e.target.value = e.target.value.replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim(); if (e.target.id === "ce") { let x = e.target.value.replace(/\D/g, ""); e.target.value = x.length > 2 ? x.slice(0, 2) + " / " + x.slice(2, 4) : x; } });
+root.addEventListener("change", (e) => { if (e.target.name === "pm") { form.method = e.target.value; document.getElementById("card-fields").hidden = form.method !== "card"; document.getElementById("pay").innerHTML = form.method === "bank" ? L("أكد الطلب واحصل على بيانات التحويل", "Place order & get transfer details") : form.method === "apple" ? " Pay " + money(total) : L("ادفع", "Pay") + " " + money(total); save(); } });
+document.getElementById("card-fields").hidden = form.method !== "card";
+if (location.hash === "#pay") go(3);
+document.getElementById("f").onsubmit = (e) => {
+  e.preventDefault(); save(); if (!valid(3)) return;
+  const btn = document.getElementById("pay"); btn.classList.add("is-loading"); btn.setAttribute("aria-busy", "true");
+  setTimeout(() => {
+    const state = form.method === "bank" ? "transfer" : form.sim;
+    const snap = { id: order.id, date: new Date().toISOString(), items, total, method: form.method, state, customer: { name: form.name, email: form.email, phone: form.cc + " " + form.phone } };
+    BT.store.set("lastOrder", snap);
+    if (state === "failed") { order.tries++; BT.store.set("pendingOrder", order); }
+    else {
+      const orders = BT.store.get("orders", []).filter(o => o.id !== snap.id); orders.unshift(snap); BT.store.set("orders", orders);
+      const ks = items.map(i => i.key); Trip.save(Trip.items().filter(i => !ks.includes(i.key)));
+      if (items.some(i => i.type === "map") && state === "success") BT.MapAccess.set(true);
+      BT.store.set("pendingOrder", null); BT.store.set("checkout", null); BT.store.set("disc", 0);
+      if (!BT.Auth.user() && form.create) BT.Auth.login({ name: form.name, email: form.email });
+    }
+    location.href = "confirmation.html#" + state;
+  }, 1500);
+};
+})();
+</script>
+</body>
+</html>

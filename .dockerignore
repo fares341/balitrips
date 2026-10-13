@@ -44,3 +44,6 @@ test-accounts-*.txt
 /public/itineraries/
 /public/custom-trips/
 /storage/
+
+# v3 design package — reference for developers, never shipped in the image.
+design-reference

@@ -1,0 +1,32 @@
+<!--title: Bali Trips — السياسات|page: policy|section: policy-->
+<style>
+.pg { display: grid; gap: 32px; align-items: start; padding-block: 8px 72px; }
+@media (min-width: 960px) { .pg { grid-template-columns: 280px minmax(0,1fr); gap: 56px; } }
+.pnav { position: sticky; top: calc(var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 4px; }
+.pnav a { padding: 10px 14px; border-radius: 12px; font-weight: 600; color: var(--forest-soft); }
+.pnav a[aria-current="page"] { background: var(--forest); color: #fff; }
+@media (max-width: 959px) { .pnav { position: static; flex-direction: row; overflow-x: auto; } .pnav a { white-space: nowrap; } }
+</style>
+<main id="main"><div class="wrap"><div id="crumbs"></div><div class="pg"><nav class="pnav" id="pnav" aria-label="السياسات" data-en-aria="Policies"></nav><article class="prose" id="doc" style="max-width:72ch"></article></div></div></main>
+<script>
+BT.boot();
+(function () {
+const { L } = BT;
+const P = {
+  privacy: [L("سياسة الخصوصية", "Privacy policy"), [[L("البيانات التي نجمعها", "Data we collect"), L("الاسم، البريد، رقم الجوال، تفاصيل الحجز، وبيانات الاستخدام. لا نحفظ بيانات البطاقات؛ تعالجها بوابة الدفع.", "Name, email, phone, booking details and usage data. We never store card data; the payment gateway handles it.")], [L("الموقع الجغرافي", "Location"), L("نستخدمه فقط عند موافقتك لعرض الأماكن القريبة، ولا نحفظه في حسابك.", "Used only with your consent to show nearby places; not saved to your account.")], [L("حقوقك", "Your rights"), L("يمكنك طلب نسخة من بياناتك أو حذفها من صفحة الإعدادات أو بالتواصل معنا.", "Request a copy or deletion from settings or by contacting us.")]]],
+  terms: [L("الشروط والأحكام", "Terms & conditions"), [[L("دور المنصة", "Our role"), L("Bali Trips وسيط بينك وبين مزودي الخدمة المعتمدين، وتتحمل مسؤولية دقة المعلومات المعروضة.", "Bali Trips connects you with approved providers and is responsible for the accuracy of what it displays.")], [L("الأسعار", "Prices"), L("الأسعار المعروضة نهائية عند الدفع ولا تتضمن رسومًا مخفية.", "Displayed prices are final at payment with no hidden fees.")], [L("الحسابات", "Accounts"), L("أنت مسؤول عن صحة بياناتك والحفاظ على كلمة المرور.", "You're responsible for accurate details and your password.")]]],
+  cancellation: [L("سياسة الإلغاء والاسترجاع", "Cancellation & refunds"), [[L("الأنشطة والسائق", "Activities & driver"), L("حسب سياسة كل مزود، وتظهر في صفحة الخدمة قبل الحجز. افتراضيًا: إلغاء مجاني حتى ٤٨ ساعة قبل الموعد.", "Per each provider's policy, shown before booking. Default: free cancellation up to 48h before.")], [L("الجداول والخريطة", "Itineraries & map"), L("منتجات رقمية غير قابلة للاسترداد بعد التحميل أو التفعيل.", "Digital products, non-refundable after download or activation.")], [L("مدة الاسترداد", "Refund timing"), L("يُعاد المبلغ لنفس وسيلة الدفع خلال ٥–١٤ يوم عمل.", "Refunds go to the original method within 5–14 business days.")]]],
+  platform: [L("سياسة استخدام المنصة", "Platform use"), [[L("الاستخدام المسموح", "Acceptable use"), L("للاستخدام الشخصي في تخطيط الرحلات. يُمنع نسخ المحتوى أو إعادة بيعه.", "For personal trip planning. Copying or reselling content is not allowed.")], [L("التقييمات", "Reviews"), L("نقبل التقييمات المرتبطة بحجوزات حقيقية فقط.", "We accept reviews tied to real bookings only.")]]],
+  map: [L("سياسة استخدام الخريطة التفاعلية", "Interactive map use"), [[L("الوصول", "Access"), L("الخريطة الكاملة مرتبطة بحسابك ولا يجوز مشاركة بيانات الدخول.", "The full map is tied to your account; sharing login details isn't allowed.")], [L("دقة البيانات", "Accuracy"), L("نراجع الأماكن دوريًا، لكن ساعات العمل والأسعار قد تتغير لدى أصحابها.", "We review places regularly, but hours and prices may change.")], [L("المحتوى", "Content"), L("الأماكن والصور والأوصاف ملك Bali Trips أو مرخصة لها.", "Places, photos and descriptions belong to or are licensed by Bali Trips.")]]],
+};
+function render() {
+  const k = P[BT.hashId()] ? BT.hashId() : "privacy"; const [title, secs] = P[k];
+  document.title = "Bali Trips — " + title;
+  document.getElementById("crumbs").innerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("السياسات", "Policies"), "policy.html"], [title, "#"]]);
+  document.getElementById("pnav").innerHTML = Object.entries(P).map(([id, [n]]) => `<a href="#${id}" ${id === k ? 'aria-current="page"' : ""}>${n}</a>`).join("");
+  document.getElementById("doc").innerHTML = `<h1 class="h1" style="font-size:clamp(28px,3.4vw,40px)">${title}</h1><p class="muted">${L("آخر تحديث: ١٣ أكتوبر ٢٠٢٦ · نص تجريبي للتصميم، يُعتمد النص القانوني النهائي من المستشار القانوني.", "Last updated: 13 Oct 2026 · Placeholder text; the final legal text comes from legal counsel.")}</p>${secs.map(([h, b]) => `<h2>${h}</h2><p>${b}</p>`).join("")}<div class="panel row between" style="margin-top:2em;gap:12px"><span>${L("لديك سؤال عن هذه السياسة؟", "Questions about this policy?")}</span><a class="btn btn-ghost btn-sm" href="contact.html">${L("تواصل معنا", "Contact us")}</a></div>`;
+  scrollTo({ top: 0 });
+}
+addEventListener("hashchange", () => { if (P[BT.hashId()]) render(); }); render();
+})();
+</script>

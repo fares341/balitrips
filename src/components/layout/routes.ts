@@ -49,22 +49,39 @@ export const NAV_ROUTES: readonly NavRoute[] = [
 ]
 
 /**
- * The header's inline links, in the order the client specified. Below the
- * width where all seven fit they collapse into the Menu drawer, which renders
- * the whole of `NAV_ROUTES`, so nothing here can become unreachable.
- *
- * Events have no slot of their own: "Activities & events" leads to
- * /activities, which links on to /events, and the drawer and footer list
- * /events directly.
+ * The header's second row (v3 package, bt.js NAV): seven pills, the current
+ * section filled forest. Labels are the package's short ones (bt_nav_*).
+ * Below 1024px they move into the Menu drawer, followed by `DRAWER_EXTRA`.
  */
 export const HEADER_ROUTES: readonly NavRoute[] = [
-  { href: '/', key: 'navr_home' },
-  { href: '/services', key: 'navr_services' },
-  { href: '/map', key: 'navr_map' },
-  { href: '/activities', key: 'navr_act' },
-  { href: '/driver', key: 'navr_driver' },
-  { href: '/about', key: 'navr_about' },
-  { href: '/blog', key: 'navr_blog' },
+  { href: '/', key: 'bt_nav_home' },
+  { href: '/services', key: 'bt_nav_services' },
+  { href: '/map', key: 'bt_nav_map' },
+  { href: '/activities', key: 'bt_nav_activities' },
+  { href: '/driver', key: 'bt_nav_driver' },
+  { href: '/about', key: 'bt_nav_about' },
+  { href: '/blog', key: 'bt_nav_articles' },
+]
+
+/** The drawer's links after the seven above (bt.js drawer). */
+export const DRAWER_EXTRA: readonly NavRoute[] = [
+  { href: '/itineraries', key: 'navr_itin' },
+  { href: '/packages', key: 'navr_packages' },
+  { href: '/custom', key: 'svc_cust_t' },
+  { href: '/explore', key: 'navr_explore' },
+]
+
+/** The footer's "Quick links" column, in the package's order. */
+export const FOOTER_QUICK_ROUTES: readonly NavRoute[] = [
+  { href: '/', key: 'bt_nav_home' },
+  { href: '/services', key: 'bt_nav_services' },
+  { href: '/map', key: 'bt_nav_map' },
+  { href: '/activities', key: 'bt_nav_activities' },
+  { href: '/driver', key: 'bt_nav_driver' },
+  { href: '/itineraries', key: 'navr_itin' },
+  { href: '/packages', key: 'navr_packages' },
+  { href: '/blog', key: 'bt_nav_articles' },
+  { href: '/about', key: 'bt_nav_about' },
 ]
 
 /**
@@ -90,19 +107,20 @@ export const POLICY_ROUTES: readonly NavRoute[] = [
   { href: '/credits', key: 'ft_p_credits' },
 ]
 
-/** The footer's "General information" column. Social links are appended from config. */
+/** The footer's "General" column (payment marks and contact follow it). */
 export const INFO_ROUTES: readonly NavRoute[] = [
   { href: '/faq', key: 'faq_title' },
   { href: '/contact', key: 'navr_contact' },
-  { href: '/payment-methods', key: 'pm_title' },
 ]
 
 export const HOME_HREF = '/'
 export const SERVICES_HREF = '/services'
-/** Where the header's "Start planning" button leads: the custom-trip planner. */
-export const START_PLANNING_HREF = '/custom'
+/** Where "Start Planning" leads (v3 package: the services hub). */
+export const START_PLANNING_HREF = '/services'
 export const SEARCH_HREF = '/search'
+/** "My Trip" — the cart page until the /my-trip route exists. */
 export const CART_HREF = '/cart'
+export const FAVORITES_HREF = '/account/favorites'
 export const ACCOUNT_HREF = '/account'
 
 /**

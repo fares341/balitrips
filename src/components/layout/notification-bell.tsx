@@ -40,11 +40,13 @@ export function NotificationBell() {
   return (
     <Link
       href="/account/notifications"
-      className="bt-iconbtn"
+      className="icon-btn"
       aria-label={`${t('acct_nav_notifs')} (${unread})`}
     >
       <Icon name="mail" size={19} />
-      <span className="bt-iconbtn-badge">{unread > 9 ? '9+' : unread}</span>
+      <span className="badge" dir="ltr">
+        {unread > 9 ? '9+' : unread}
+      </span>
     </Link>
   )
 }

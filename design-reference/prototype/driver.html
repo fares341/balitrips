@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — السائق</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.dhero { position: relative; overflow: hidden; background: var(--forest-deep); color: rgba(255,251,248,.86); }
+.dhero .wrap { display: grid; gap: 24px; padding-block: 8px 40px; align-items: center; }
+.dhero h1 { color: #fff; font-size: var(--t-h1); }
+.dhero .car { border-radius: var(--r-xl); overflow: hidden; aspect-ratio: 16/10; box-shadow: var(--sh-3); }
+.dhero .car img { width: 100%; height: 100%; object-fit: cover; }
+.dhero .arc { width: 700px; height: 700px; inset-inline-start: -260px; bottom: -520px; opacity: .3; }
+@media (min-width: 960px) { .dhero .wrap { grid-template-columns: 1fr 1.1fr; gap: 48px; padding-block: 8px 56px; } }
+.feat { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+.feat div { display: flex; gap: 10px; align-items: center; font-size: 14.5px; }
+.feat svg { color: var(--palm); flex-shrink: 0; }
+.dlayout { display: grid; gap: 28px; align-items: start; padding-block: 48px 64px; }
+@media (min-width: 1024px) { .dlayout { grid-template-columns: minmax(0,1fr) 380px; gap: 44px; } }
+.vehs { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.veh { padding: 16px; border-radius: 18px; border: 2px solid var(--line); background: var(--white); display: flex; flex-direction: column; gap: 6px; transition: all var(--d-base) var(--ease); position: relative; }
+.veh.on { border-color: var(--forest); background: #F4FCF5; box-shadow: 0 0 0 4px rgba(113,255,133,.3); }
+.veh .auto { position: absolute; top: -10px; inset-inline-end: 12px; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--orange); color: var(--forest-ink); }
+.veh b { color: var(--forest); }
+.veh .cap { font-size: 13px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.veh .pd { font: 800 18px var(--f-en); color: var(--forest); }
+.how5 { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.how5 li { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 12px; align-items: center; padding: 12px 14px; border-radius: 14px; background: var(--white); border: 1px solid var(--line-soft); }
+.how5 .n { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--palm-soft); color: var(--forest); font: 800 15px var(--f-en); }
+.dsum { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 12px; }
+.blk2 { display: flex; flex-direction: column; gap: 12px; }
+.blk2 h2 { font-size: 22px; }
+.err-box { display: none; } .has-error .err-box { display: flex; }
+</style>
+</head>
+<body data-page="driver" data-section="driver">
+<div id="hdr"></div>
+<main id="main">
+  <section class="dhero"><div class="arc" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="stack" style="gap:16px;position:relative;z-index:1">
+        <div id="crumbs"></div>
+        <span class="eyebrow" style="color:var(--palm)" data-en="Private driver">السائق الخاص</span>
+        <h1 data-en="Your own car and driver in Bali">سيارتك وسائقك الخاص في بالي</h1>
+        <p style="font-size:17px;max-width:52ch" data-en="Pick your days and the number of travelers. We choose the right car automatically and show the final price before you book.">اختر أيامك وعدد المسافرين، ونختار السيارة المناسبة تلقائيًا ونعرض السعر النهائي قبل الحجز.</p>
+        <div class="feat">
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Private car">سيارة خاصة</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Air-conditioned">سيارة مكيفة</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Family friendly">مناسبة للعائلات</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Good for groups">مناسبة للمجموعات</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Knows the best spots">سائق يعرف أهم الأماكن</span></div>
+          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Comfortable around Bali">تنقل مريح داخل بالي</span></div>
+        </div>
+        <a class="btn btn-primary btn-lg" href="#book" style="align-self:flex-start" id="jump" data-en="Book the driver">احجز السائق</a>
+      </div>
+      <div class="car"><img src="assets/img/driver-car.jpg" alt="سيارة Bali Trips" data-en-aria="A Bali Trips car"></div>
+    </div>
+  </section>
+
+  <div class="wrap dlayout" id="book">
+    <form class="stack" style="gap:28px" id="df" novalidate>
+      <div class="blk2" id="b-dates"><h2 data-en="1. Choose your days">١. اختر الأيام</h2><p class="muted" data-en="Tap a start day, then an end day. One tap books a single day.">اضغط يوم البداية ثم يوم النهاية. ضغطة واحدة تعني يومًا واحدًا.</p><div id="cal"></div><span class="err-box err" style="color:var(--err);font-weight:600;gap:6px;align-items:center" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.5"/></svg><span data-en="Choose at least one day.">اختر يومًا واحدًا على الأقل.</span></span></div>
+      <div class="blk2"><h2 data-en="2. How many travelers?">٢. كم عدد الأشخاص؟</h2><div class="row between"><div id="ppl"></div><small class="muted" data-en="Children count as travelers.">الأطفال يُحسبون ضمن العدد.</small></div></div>
+      <div class="blk2"><h2 data-en="3. Your car (chosen automatically)">٣. سيارتك (تُختار تلقائيًا)</h2><div class="vehs" id="vehs" aria-live="polite"></div><small class="muted" data-en="Cars are examples; the final model depends on availability.">الطرازات أمثلة، والطراز النهائي حسب المتاح.</small></div>
+      <div class="blk2"><h2 data-en="What happens after booking?">ماذا يحدث بعد الحجز؟</h2>
+        <ol class="how5">
+          <li><span class="n">1</span><span data-en="You choose the dates and number of travelers.">تختار التاريخ وعدد الأشخاص.</span></li>
+          <li><span class="n">2</span><span data-en="The final price appears instantly.">يظهر السعر النهائي فورًا.</span></li>
+          <li><span class="n">3</span><span data-en="Your request is sent.">يتم إرسال الطلب.</span></li>
+          <li><span class="n">4</span><span data-en="We confirm the driver's details.">يتم تأكيد تفاصيل السائق.</span></li>
+          <li><span class="n">5</span><span data-en="We contact you with the final details.">نتواصل معك بالتفاصيل النهائية.</span></li>
+        </ol></div>
+      <div class="blk2"><h2 data-en="Frequently asked">أسئلة شائعة</h2><div class="acc" id="faq"></div></div>
+    </form>
+    <aside class="dsum">
+      <div class="panel stack" style="gap:12px">
+        <h2 class="h3" data-en="Booking summary">ملخص الحجز</h2>
+        <div id="sum" aria-live="polite"></div>
+        <div class="sum-total"><span data-en="Final price">السعر النهائي</span><b class="price" id="total">—</b></div>
+        <button class="btn btn-primary btn-lg btn-block" id="book-now" type="button" data-en="Book now">احجز الآن</button>
+        <button class="btn btn-ghost btn-block" id="add" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="16" height="13" rx="2.5"/><path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2"/></svg><span data-en="Add the driver to My Trip">أضف السائق إلى رحلتي</span></button>
+        <small class="muted" data-en="Driver hours, fuel and parking per the service policy. Prices are demo data.">ساعات العمل والوقود والمواقف حسب سياسة الخدمة. الأسعار تجريبية.</small>
+      </div>
+      <div class="panel panel-ivory stack" style="gap:8px"><b style="color:var(--forest)" data-en="Pair it with">أضفه مع</b><div id="rel" class="stack" style="gap:8px"></div></div>
+    </aside>
+  </div>
+  <section class="sec-tight bg-ivory2"><div class="wrap stack" style="gap:16px"><div class="row between"><h2 class="h2" data-en="Driver reviews">تقييمات خدمة السائق</h2><span class="demo-note" data-en="Sample — verified reviews only">نموذج — تقييمات موثقة فقط</span></div><div class="grid g2" id="revs"></div></div></section>
+</main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script src="assets/booking.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, img, Trip, toast } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("السائق", "Driver"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark" style="padding-block:14px 0"');
+const h = BT.hashId(); const editKey = h.startsWith("edit-") ? h.slice(5) : null; const editing = editKey ? Trip.items().find(i => i.key === editKey) : null;
+const draft = editing ? { from: editing.date, to: editing.dateEnd, n: editing.people } : BT.store.get("drvDraft", null);
+const st = { a: draft ? draft.from : null, b: draft ? draft.to : null, n: draft ? draft.n : 2 };
+if (st.a && BT.parseDate(st.a) < BT.today()) { st.a = st.b = null; }
+const unavailable = (k) => BT.parseDate(k).getDate() === 13;
+const cal = BT.Calendar(document.getElementById("cal"), { mode: "range", months: innerWidth > 760 ? 2 : 1, value: [st.a, st.b], unavailable, onChange: ([a, b]) => { st.a = a; st.b = b; document.getElementById("b-dates").classList.remove("has-error"); calc(); } });
+BT.Stepper(document.getElementById("ppl"), { value: st.n, min: 1, max: 14, label: L("عدد الأشخاص", "travelers"), onChange: (v) => { st.n = v; calc(); } });
+function days() { if (!st.a) return 0; return BT.daysBetween(st.a, st.b || st.a); }
+function calc() {
+  const v = BT.vehicleFor(st.n), d = days();
+  document.getElementById("vehs").innerHTML = D.VEHICLES.map(x => `<div class="veh ${x.id === v.id ? "on" : ""}">${x.id === v.id ? `<span class="auto">${L("مختارة تلقائيًا", "Auto-selected")}</span>` : ""}${icon("car", 26)}<b>${t(x.name)}</b><span class="cap">${icon("users", 14)} ${x.max > 10 ? L(`${numAr(x.min)}+ أشخاص`, `${x.min}+ people`) : L(`${numAr(x.min)}–${numAr(x.max)} أشخاص`, `${x.min}–${x.max} people`)}</span><small class="muted">${t(x.ex)}</small><span class="pd">${money(x.perDay)} <small class="muted" style="font:600 12px var(--f)">/ ${L("يوم", "day")}</small></span></div>`).join("");
+  document.getElementById("sum").innerHTML = `<div class="sum-row"><span>${L("الأيام", "Days")}</span><span>${st.a ? `${BT.fmtDate(st.a)}${st.b && st.b !== st.a ? " – " + BT.fmtDate(st.b) : ""}` : "—"}</span></div><div class="sum-row"><span>${L("عدد الأيام", "Number of days")}</span><b class="num">${d || "—"}</b></div><div class="sum-row"><span>${L("الأشخاص", "Travelers")}</span><b class="num">${st.n}</b></div><div class="sum-row"><span>${L("السيارة", "Car")}</span><b>${t(v.name)}</b></div><div class="sum-row"><span>${money(v.perDay)} × ${d || 0}</span><span class="price">${d ? money(v.perDay * d) : "—"}</span></div>`;
+  const el = document.getElementById("total"); el.textContent = d ? money(v.perDay * d) : "—"; el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+}
+function item() { const v = BT.vehicleFor(st.n), d = days(); return { type: "driver", ref: "driver", title: { ar: `سائق خاص — ${v.name.ar}`, en: `Private driver — ${v.name.en}` }, img: "driver-car", date: st.a, dateEnd: st.b && st.b !== st.a ? st.b : null, people: st.n, lines: [{ l: { ar: `${v.name.ar} × ${BT.cntAr(d, "d")}`, en: `${v.name.en} × ${d} day${d > 1 ? "s" : ""}` }, v: v.perDay * d }], total: v.perDay * d, meta: { vehicle: v.id, days: d, needsProvider: true } }; }
+function ok() { if (!st.a) { const b = document.getElementById("b-dates"); b.classList.add("has-error"); b.scrollIntoView({ behavior: "smooth", block: "center" }); toast(L("اختر أيام الحجز أولًا.", "Choose your days first."), { err: true }); return false; } return true; }
+document.getElementById("add").onclick = () => { if (!ok()) return; if (editing) { Trip.save(Trip.items().map(i => i.key === editKey ? Object.assign(item(), { key: editKey }) : i)); location.href = "my-trip.html"; return; } Trip.add(item()); toast(L("أُضيف السائق إلى رحلتي", "Driver added to My Trip"), { link: [L("رحلتي", "My Trip"), "my-trip.html"] }); };
+document.getElementById("book-now").onclick = () => { if (!ok()) return; const it = Trip.add(item()); BT.store.set("checkout", [it.key]); location.href = "checkout.html"; };
+if (editing) { document.getElementById("add").lastElementChild.textContent = L("حفظ التعديلات", "Save changes"); document.getElementById("book-now").hidden = true; }
+document.getElementById("jump").onclick = (e) => { e.preventDefault(); document.getElementById("book").scrollIntoView({ behavior: "smooth" }); };
+const faqs = [[L("كم ساعة في اليوم؟", "How many hours per day?"), L("تُحدد ساعات اليوم في سياسة الخدمة (مثال: ١٠ ساعات). الوقت الإضافي يُحسب حسب السياسة المعتمدة.", "Daily hours are set in the service policy (e.g. 10 hours). Overtime follows the approved policy.")], [L("هل يشمل السعر الوقود؟", "Is fuel included?"), L("يُوضح ذلك في سياسة الخدمة قبل الدفع، دون رسوم مخفية.", "This is stated in the service policy before payment, with no hidden fees.")], [L("هل يتحدث السائق العربية؟", "Does the driver speak Arabic?"), L("حسب التوفر. يمكنك كتابة طلبك في ملاحظات الحجز.", "Subject to availability. Add your request in the booking notes.")]];
+BT.mount("#faq", faqs.map(([q, a], i) => `<details ${i ? "" : "open"}><summary>${q}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${a}</div></details>`).join(""));
+BT.mount("#rel", [["activities.html", "compass", L("الأنشطة والفعاليات", "Activities")], ["itineraries.html", "doc", L("الجداول السياحية", "Itineraries")], ["packages.html", "box", L("الباقات السياحية", "Packages")]].map(([h, i, n]) => `<a href="${h}" class="row between" style="padding:10px 12px;border-radius:12px;background:var(--white)"><span class="row" style="gap:10px">${icon(i, 18)} <b style="color:var(--forest)">${n}</b></span><span class="flip">${icon("chev", 16)}</span></a>`).join(""));
+BT.mount("#revs", D.REVIEWS.filter(r => /سائق|driver/i.test(r.svc.ar + r.svc.en)).concat(D.REVIEWS.slice(0, 1)).map(r => `<figure class="panel" style="margin:0;display:flex;flex-direction:column;gap:10px"><span class="stars">${BT.starIcon(14).repeat(r.s)}</span><blockquote style="margin:0">${t(r.t)}</blockquote><figcaption class="muted" style="font-size:13px">${t(r.n)}</figcaption></figure>`).join(""));
+calc();
+if (location.hash === "#book") setTimeout(() => document.getElementById("book").scrollIntoView({ behavior: "smooth" }), 250);
+})();
+</script>
+</body>
+</html>

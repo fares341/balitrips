@@ -1,0 +1,43 @@
+<!--title: Bali Trips — المقال|page: article|section: articles-->
+<style>
+.ahero { aspect-ratio: 21/9; border-radius: var(--r-xl); overflow: hidden; } .ahero img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 700px) { .ahero { aspect-ratio: 4/3; } }
+.alay { display: grid; gap: 40px; align-items: start; padding-block: 28px 64px; }
+@media (min-width: 1024px) { .alay { grid-template-columns: minmax(0,1fr) 300px; } }
+.prose { font-size: 17.5px; line-height: 1.95; }
+html[lang="en"] .prose { line-height: 1.75; }
+.cta-box { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: space-between; padding: 22px; border-radius: 20px; background: var(--forest); color: rgba(255,255,255,.88); margin-block: 1.6em; }
+.cta-box b { color: #fff; font-size: 18px; display: block; }
+.toc { position: sticky; top: calc(var(--hdr-h) + 16px); }
+.toc a { display: block; padding: 8px 12px; border-radius: 10px; font-size: 14px; color: var(--forest-soft); }
+.toc a:hover { background: var(--palm-soft); }
+</style>
+<main id="main"><div class="wrap" id="root"></div></main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, img, byId, numAr, toast } = BT;
+const a = byId(D.ARTICLES, BT.hashId()); const root = document.getElementById("root");
+if (!a) { root.innerHTML = `<div class="empty" style="padding-block:80px"><h1 class="h2">${L("لم نجد المقال", "Article not found")}</h1><a class="btn btn-forest" href="articles.html">${L("كل المقالات", "All articles")}</a></div>`; return; }
+document.title = "Bali Trips — " + t(a.title);
+const link = { map: ["map.html", L("استكشف الخريطة التفاعلية", "Explore the interactive map"), L("شاهد كل الأماكن المذكورة على خريطة Bali Trips.", "See every place mentioned on the Bali Trips map.")], activity: ["activity.html#penida-day", L("احجز رحلة نوسا بينيدا", "Book the Nusa Penida trip"), L("يوم كامل بالقارب والجولة.", "A full day with boat and tour.")], packages: ["packages.html", L("شاهد باقة العائلة", "See the family package"), L("أنشطة مناسبة للصغار مع سائق.", "Kid-friendly activities with a driver.")], driver: ["driver.html", L("احجز السائق", "Book a driver"), L("سيارة خاصة بالأيام.", "A private car by the day.")], explore: ["explore.html", L("استكشف مناطق بالي", "Explore Bali's areas"), L("قارن المناطق واختر ما يناسبك.", "Compare areas and choose.")] }[a.link];
+const H = [L("قبل أن تبدأ", "Before you start"), L("الخيار الأول", "Option one"), L("نصائح عملية", "Practical tips")];
+root.innerHTML = `${BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("المقالات", "Articles"), "articles.html"], [t(a.title), "#"]])}
+<div class="stack" style="gap:14px;max-width:860px;padding-bottom:20px"><div class="row" style="gap:8px"><span class="tag tag-palm">${t(a.cat)}</span><span class="muted" style="font-size:14px">${BT.fmtDate(a.date)} · ${numAr(a.mins)} ${L("دقائق قراءة", "min read")}</span></div><h1 class="h1">${t(a.title)}</h1><p class="lede">${t(a.ex)}</p></div>
+<div class="ahero"><img src="${img(a.img)}" alt=""></div>
+<div class="alay"><article class="prose">
+  <h2 id="s1">${H[0]}</h2><p>${L("هذا نص تجريبي يوضح شكل المقال. يكتب فريق المحتوى المقال الحقيقي من لوحة التحكم، مع عناوين فرعية وصور وروابط مباشرة للخدمات المرتبطة داخل المنصة.", "This is sample text showing the article layout. The content team writes the real article in the dashboard, with subheadings, images and direct links to related services.")}</p>
+  <p>${L("نحرص على أن يكون المقال عمليًا: ماذا تفعل، ومتى، وكم يستغرق، وما الذي يجب تجنبه. وكل مكان يُذكر يرتبط بصفحته على الخريطة.", "Articles stay practical: what to do, when, how long it takes and what to avoid. Every place mentioned links to its page on the map.")}</p>
+  <div class="cta-box"><span><b>${link[1]}</b>${link[2]}</span><a class="btn btn-primary" href="${link[0]}">${link[1]}</a></div>
+  <h2 id="s2">${H[1]}</h2><p>${L("فقرة ثانية تشرح الخيار الأول بالتفصيل، مع صورة توضيحية وقائمة مختصرة.", "A second paragraph explaining the first option in detail, with an image and a short list.")}</p>
+  <ul><li>${L("أفضل وقت للزيارة", "Best time to visit")}</li><li>${L("ما تحتاج إحضاره", "What to bring")}</li><li>${L("التكلفة التقريبية", "Approximate cost")}</li></ul>
+  <h2 id="s3">${H[2]}</h2><p>${L("خاتمة بنصائح سريعة ورابط إلى خدمة مناسبة.", "A closing set of quick tips and a link to a matching service.")}</p>
+  <div class="row" style="margin-top:1.5em"><button class="btn btn-ghost btn-sm" id="share">${icon("share", 16)} ${L("شارك المقال", "Share")}</button></div>
+</article>
+<aside class="toc panel stack" style="gap:4px"><b style="color:var(--forest);padding:4px 12px">${L("في هذا المقال", "In this article")}</b>${H.map((h, i) => `<a href="#s${i + 1}">${h}</a>`).join("")}</aside></div>
+<section class="stack" style="gap:16px;padding-bottom:64px"><h2 class="h2">${L("مقالات مشابهة", "Similar articles")}</h2><div class="grid g3" id="sim"></div></section>`;
+BT.mount("#sim", D.ARTICLES.filter(x => x.id !== a.id).slice(0, 3).map(BT.articleCard).join(""));
+root.querySelectorAll(".toc a").forEach(l => l.onclick = (e) => { e.preventDefault(); document.querySelector(l.getAttribute("href")).scrollIntoView({ behavior: "smooth" }); });
+document.getElementById("share").onclick = async () => { try { await navigator.clipboard.writeText(location.href); toast(L("نُسخ الرابط", "Link copied")); } catch (e) { toast(L("انسخ الرابط من شريط العنوان", "Copy the link from the address bar")); } };
+})();
+</script>

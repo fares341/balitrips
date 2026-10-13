@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — البحث</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.sbar { display: flex; gap: 8px; align-items: center; padding: 6px; border-radius: 22px; background: var(--white); border: 1.5px solid var(--line); box-shadow: var(--sh-2); }
+.sbar input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; min-height: 50px; padding-inline: 12px; font-size: 17px; }
+.grp { display: flex; flex-direction: column; gap: 10px; }
+.grp h2 { font-size: 18px; display: flex; gap: 8px; align-items: center; }
+.r { display: grid; grid-template-columns: 64px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; background: var(--white); border: 1px solid var(--line-soft); }
+.r:hover { border-color: var(--palm-mid); }
+.r img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
+mark { background: var(--orange-soft); color: inherit; border-radius: 3px; padding: 0 2px; }
+</style>
+</head>
+<body data-page="search" data-section="search">
+<div id="hdr"></div>
+<main id="main"><div class="wrap stack" style="gap:20px;padding-bottom:72px">
+  <div id="crumbs"></div>
+  <h1 class="h2" data-en="Search Bali Trips">ابحث في Bali Trips</h1>
+  <form class="sbar" id="sf" role="search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--forest);margin-inline-start:10px"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><label class="sr-only" for="q" data-en="Search">بحث</label><input id="q" type="search" placeholder="أنشطة، أماكن، مطاعم، جداول، باقات، مقالات…" data-en-ph="Activities, places, restaurants, itineraries, packages, articles…" autocomplete="off"><button class="btn btn-forest" data-en="Search">بحث</button></form>
+  <div class="chips scroll" id="tabs"></div>
+  <div id="out" aria-live="polite" class="stack" style="gap:28px"></div>
+</div></main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, img, esc, money, numAr } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("البحث", "Search"), "#"]]);
+const init = BT.store.get("q", null) || {}; let q = init.q || "", tab = { activities: "activities", places: "places", itineraries: "itineraries" }[init.type] || "all";
+const qi = document.getElementById("q"); qi.value = q;
+const norm = (s) => s.toLowerCase();
+const hl = (s) => { s = esc(s); if (!q) return s; return s.replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), m => `<mark>${m}</mark>`); };
+const SRC = () => ({
+  activities: D.ACTIVITIES.map(a => ({ h: "activity.html#" + a.id, img: a.img, n: t(a.title), s: t(BT.region(a.region).name) + " · " + L("من ", "from ") + money(a.priceFrom), k: a.title.ar + a.title.en + a.short.ar + a.short.en })),
+  places: D.PLACES.filter(p => p.cat !== "restaurants" && p.cat !== "cafes").map(p => ({ h: "place.html#" + p.id, img: p.img, n: t(p.name), s: t(BT.byId(D.CATS, p.cat).name) + " · " + t(BT.region(p.region).name), k: p.name.ar + p.name.en + p.desc.ar + p.desc.en + p.region })),
+  restaurants: D.PLACES.filter(p => p.cat === "restaurants" || p.cat === "cafes").map(p => ({ h: "place.html#" + p.id, img: p.img, n: t(p.name), s: t(BT.byId(D.CATS, p.cat).name) + " · " + t(BT.region(p.region).name), k: p.name.ar + p.name.en + p.desc.ar + p.desc.en + (p.sub || "") + " مطعم restaurant cafe" })),
+  itineraries: D.ITINERARIES.map(i => ({ h: "itinerary.html#" + i.id, img: i.img, n: t(i.name), s: numAr(i.days) + " " + L("أيام", "days") + " · " + money(i.price), k: i.name.ar + i.name.en + i.short.ar + i.short.en + " جدول itinerary" })),
+  packages: D.PACKAGES.map(p => ({ h: "package.html#" + p.id, img: p.img, n: t(p.name), s: numAr(p.days) + " " + L("أيام", "days") + " · " + money(p.price), k: p.name.ar + p.name.en + p.short.ar + p.short.en + " باقة package" })),
+  articles: D.ARTICLES.map(a => ({ h: "article.html#" + a.id, img: a.img, n: t(a.title), s: t(a.cat) + " · " + numAr(a.mins) + " " + L("دقائق", "min"), k: a.title.ar + a.title.en + a.ex.ar + a.ex.en })),
+});
+const NAMES = { all: L("الكل", "All"), activities: L("الأنشطة", "Activities"), places: L("الأماكن", "Places"), restaurants: L("المطاعم والكافيهات", "Restaurants & cafés"), itineraries: L("الجداول", "Itineraries"), packages: L("الباقات", "Packages"), articles: L("المقالات", "Articles") };
+const ICONS = { activities: "compass", places: "pin", restaurants: "food", itineraries: "doc", packages: "box", articles: "chat" };
+function run() {
+  const src = SRC(); const res = {}; let total = 0;
+  Object.entries(src).forEach(([k, l]) => { res[k] = q ? l.filter(x => norm(x.k + x.n).includes(norm(q))) : []; total += res[k].length; });
+  document.getElementById("tabs").innerHTML = Object.keys(NAMES).map(k => `<button class="chip" data-t="${k}" aria-pressed="${tab === k}">${NAMES[k]}${q ? ` <span class="ct">${k === "all" ? total : res[k].length}</span>` : ""}</button>`).join("");
+  const out = document.getElementById("out");
+  if (!q) { const recent = BT.store.get("recentQ", []); out.innerHTML = `${recent.length ? `<div class="stack" style="gap:10px"><b style="color:var(--forest)">${L("عمليات بحث سابقة", "Recent searches")}</b><div class="chips">${recent.map(r => `<button class="chip" data-q="${esc(r)}">${icon("clock", 14)} ${esc(r)}</button>`).join("")}</div></div>` : ""}<div class="stack" style="gap:10px"><b style="color:var(--forest)">${L("عمليات بحث شائعة", "Popular searches")}</b><div class="chips">${[L("أوبود", "Ubud"), L("مطعم حلال", "Halal"), L("شلال", "Waterfall"), L("نوسا بينيدا", "Nusa Penida"), L("عائلة", "Family"), L("شهر العسل", "Honeymoon")].map(r => `<button class="chip" data-q="${r}">${r}</button>`).join("")}</div></div>`; return; }
+  const keys = tab === "all" ? Object.keys(src) : [tab];
+  const html = keys.filter(k => res[k].length).map(k => `<section class="grp"><h2>${icon(ICONS[k], 20)} ${NAMES[k]} <span class="tag tag-forest num">${res[k].length}</span></h2>${res[k].slice(0, tab === "all" ? 4 : 50).map(x => `<a class="r" href="${x.h}"><img src="${img(x.img)}" alt=""><span class="minw0"><b style="color:var(--forest)">${hl(x.n)}</b><br><small class="muted">${x.s}</small></span><span class="flip">${icon("chev", 18)}</span></a>`).join("")}${tab === "all" && res[k].length > 4 ? `<button class="btn btn-ghost btn-sm" data-t="${k}" style="align-self:flex-start">${L("عرض الكل", "See all")} (${res[k].length})</button>` : ""}</section>`).join("");
+  out.innerHTML = html || `<div class="panel empty"><span class="ill">${icon("search", 40)}</span><h2 class="h3">${L(`لا توجد نتائج لـ «${esc(q)}»`, `No results for "${esc(q)}"`)}</h2><p class="muted" style="max-width:46ch">${L("تأكد من الكتابة، أو جرّب كلمة أعم مثل اسم المنطقة. يمكنك أيضًا تصفح الخريطة أو طلب رحلة مخصصة.", "Check the spelling or try a broader word like an area name. You can also browse the map or request a custom trip.")}</p><div class="row" style="justify-content:center"><a class="btn btn-forest" href="map.html">${L("تصفح الخريطة", "Browse the map")}</a><a class="btn btn-ghost" href="custom-trip.html">${L("اطلب رحلة مخصصة", "Request a custom trip")}</a></div></div>`;
+}
+function setQ(v) { q = v.trim(); qi.value = q; if (q) { const r = BT.store.get("recentQ", []).filter(x => x !== q); r.unshift(q); BT.store.set("recentQ", r.slice(0, 6)); } BT.store.set("q", { q, type: tab }); run(); }
+document.getElementById("sf").onsubmit = (e) => { e.preventDefault(); setQ(qi.value); };
+let tm; qi.oninput = () => { clearTimeout(tm); tm = setTimeout(() => { q = qi.value.trim(); run(); }, 200); };
+document.addEventListener("click", (e) => { const b = e.target.closest("[data-t]"); if (b && !b.closest(".tabbar")) { tab = b.dataset.t; run(); } const c = e.target.closest("[data-q]"); if (c) setQ(c.dataset.q); });
+run(); qi.focus();
+})();
+</script>
+</body>
+</html>

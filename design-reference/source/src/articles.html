@@ -1,0 +1,42 @@
+<!--title: Bali Trips — المقالات|page: articles|section: articles-->
+<style>
+.feat-art { display: grid; gap: 0; border-radius: var(--r-xl); overflow: hidden; background: var(--forest); color: rgba(255,255,255,.86); }
+.feat-art img { width: 100%; height: 100%; object-fit: cover; min-height: 260px; }
+.feat-art .c { padding: 28px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.feat-art h2 { color: #fff; }
+@media (min-width: 900px) { .feat-art { grid-template-columns: 1.2fr 1fr; } .feat-art .c { padding: 44px; } }
+.alay { display: grid; gap: 32px; align-items: start; }
+@media (min-width: 1024px) { .alay { grid-template-columns: minmax(0,1fr) 320px; } }
+.pop a { display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); }
+.pop .n { font: 800 22px var(--f-en); color: var(--palm-mid); }
+.pop b { color: var(--forest); font-size: 14.5px; line-height: 1.4; }
+</style>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/polaroids.jpg" alt="">
+    <div class="wrap"><div id="crumbs"></div><span class="eyebrow" style="color:var(--palm)" data-en="Travel guide">دليل بالي</span><h1 data-en="Articles & guides">المقالات والأدلة</h1><p data-en="Practical guides from our team: areas, food, culture, and how to plan your days.">أدلة عملية من فريقنا: المناطق، والطعام، والثقافة، وكيف تخطط أيامك.</p></div></section>
+  <section class="sec"><div class="wrap stack" style="gap:28px">
+    <div id="feat"></div>
+    <div class="row between" style="gap:12px"><div class="chips scroll" id="cats" style="flex:1;min-width:0"></div><label class="msearch" style="display:flex;align-items:center;gap:8px;padding:0 14px;border-radius:99px;background:var(--white);border:1.5px solid var(--line);flex:0 1 300px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr-only" data-en="Search articles">ابحث في المقالات</span><input id="q" type="search" style="border:0;outline:0;background:transparent;min-height:44px;flex:1;min-width:0" placeholder="ابحث في المقالات…" data-en-ph="Search articles…"></label></div>
+    <div class="alay"><div class="stack" style="gap:16px"><h2 class="h3" data-en="Latest">الأحدث</h2><div class="grid g2" id="list"></div></div>
+      <aside class="panel stack pop" style="gap:4px"><h2 class="h3" data-en="Most read">الأكثر قراءة</h2><div id="pop"></div></aside></div>
+  </div></section>
+</main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, img, mount, articleCard, numAr } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("المقالات", "Articles"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+const f = D.ARTICLES[0];
+document.getElementById("feat").innerHTML = `<a class="feat-art" href="article.html#${f.id}"><img src="${img(f.img)}" alt=""><div class="c"><span class="tag" style="background:var(--orange);color:var(--forest-ink);align-self:flex-start">${L("مقال مميز", "Featured")}</span><h2 class="h2">${t(f.title)}</h2><p>${t(f.ex)}</p><span style="color:var(--palm);font-weight:700">${L("اقرأ المقال", "Read article")} →</span></div></a>`;
+const cats = ["all", ...new Set(D.ARTICLES.map(a => a.cat.ar))]; let cur = "all", q = "";
+function render() {
+  document.getElementById("cats").innerHTML = cats.map(c => { const a = D.ARTICLES.find(x => x.cat.ar === c); return `<button class="chip" data-c="${c}" aria-pressed="${cur === c}">${c === "all" ? L("كل التصنيفات", "All topics") : t(a.cat)}</button>`; }).join("");
+  const l = D.ARTICLES.filter(a => (cur === "all" || a.cat.ar === cur) && (!q || (a.title.ar + a.title.en + a.ex.ar + a.ex.en).toLowerCase().includes(q))).sort((a, b) => b.date.localeCompare(a.date));
+  mount("#list", l.length ? l.map(articleCard).join("") : `<div class="empty" style="grid-column:1/-1"><span class="ill">${icon("search", 34)}</span><b style="color:var(--forest)">${L("لا توجد مقالات مطابقة", "No matching articles")}</b></div>`);
+}
+document.getElementById("cats").onclick = (e) => { const b = e.target.closest("[data-c]"); if (b) { cur = b.dataset.c; render(); } };
+document.getElementById("q").oninput = (e) => { q = e.target.value.trim().toLowerCase(); render(); };
+document.getElementById("pop").innerHTML = D.ARTICLES.filter(a => a.popular).concat(D.ARTICLES.filter(a => !a.popular)).slice(0, 5).map((a, i) => `<a href="article.html#${a.id}"><span class="n">${i + 1}</span><span><b>${t(a.title)}</b><br><small class="muted">${numAr(a.mins)} ${L("دقائق", "min")}</small></span></a>`).join("");
+render();
+})();
+</script>

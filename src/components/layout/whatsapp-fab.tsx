@@ -14,7 +14,8 @@
  *    place sheet and the pay button.
  *
  * Positioned with `inset-inline-end`, so it sits bottom-right in English and
- * bottom-left in Arabic. It stays below toasts and modals in the z-order.
+ * bottom-left in Arabic. On phones it floats above the bottom tab bar
+ * (`.wa-fab` in bt.css), never over it; below toasts and modals.
  */
 
 import { useTranslations } from 'next-intl'
@@ -37,13 +38,13 @@ export function WhatsAppFab() {
   return (
     <a
       href={href}
-      className="bt-wafab"
+      className="wa-fab"
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t('wa_chat_aria')}
     >
       <Icon name="whatsapp" size={22} />
-      <span className="bt-wafab-label">{t('wa_chat')}</span>
+      <span className="wa-fab-label">{t('wa_chat')}</span>
     </a>
   )
 }

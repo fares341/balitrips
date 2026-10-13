@@ -1,0 +1,120 @@
+<!--title: Bali Trips — الرحلة المخصصة|page: custom|section: services|scripts: booking-->
+<style>
+.ct-grid { display: grid; gap: 28px; align-items: start; padding-block: 32px 72px; }
+@media (min-width: 1024px) { .ct-grid { grid-template-columns: 340px minmax(0,1fr); gap: 48px; } }
+.ct-side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 1023px) { .ct-side { position: static; } }
+.wiz { padding: 0; overflow: hidden; }
+.wiz-head { padding: 18px 22px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 10px; }
+.wiz-bar { height: 6px; border-radius: 6px; background: var(--ivory-3); overflow: hidden; }
+.wiz-bar i { display: block; height: 100%; background: var(--forest); border-radius: 6px; transition: width var(--d-slow) var(--ease); }
+.wiz-body { padding: 22px; min-height: 360px; display: flex; flex-direction: column; gap: 18px; }
+.wiz-step { display: none; flex-direction: column; gap: 16px; animation: fadeUp var(--d-slow) var(--ease); }
+.wiz-step.on { display: flex; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } }
+.wiz-foot { padding: 16px 22px; border-top: 1px solid var(--line-soft); display: flex; justify-content: space-between; gap: 10px; background: var(--ivory); }
+.opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
+.opt { display: flex; gap: 10px; align-items: center; padding: 14px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--white); cursor: pointer; font-weight: 600; color: var(--forest); }
+.opt input { accent-color: var(--forest); width: 18px; height: 18px; }
+.opt:has(input:checked) { border-color: var(--forest); background: #F4FCF5; }
+.kids { display: flex; gap: 8px; flex-wrap: wrap; }
+.kids select { width: 110px; }
+.rv-list { display: grid; gap: 8px; }
+.rv-list div { display: grid; grid-template-columns: 150px minmax(0,1fr) auto; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ivory-2); font-size: 14.5px; align-items: center; }
+.rv-list b { color: var(--forest); }
+.done-box { text-align: center; align-items: center; }
+input[type=range] { width: 100%; accent-color: var(--forest); }
+</style>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/consultant.jpg" alt="" style="object-position:30% 35%">
+    <div class="wrap"><div id="crumbs"></div>
+      <span class="eyebrow" style="color:var(--palm)" data-en="Custom trip">الرحلة المخصصة</span>
+      <h1 data-en="A Bali trip designed around you">رحلة بالي مصممة لك أنت</h1>
+      <p data-en="Different from a ready itinerary: you tell us your dates, group, budget and interests, and our team builds a plan and a quote. You pay only if you approve it.">تختلف عن الجدول الجاهز: تخبرنا بتواريخك ومجموعتك وميزانيتك واهتماماتك، ويصمم فريقنا خطة وعرض سعر. لا تدفع إلا إذا وافقت.</p>
+    </div></section>
+  <div class="wrap ct-grid">
+    <aside class="ct-side">
+      <div class="panel stack" style="gap:12px"><b style="color:var(--forest)" data-en="How it works">كيف تعمل الخدمة؟</b>
+        <ol class="tl-list" style="font-size:14px"><li><b data-en="Fill in the request">املأ الطلب</b><br><small class="muted" data-en="About 3 minutes">حوالي ٣ دقائق</small></li><li><b data-en="We design your plan">نصمم خطتك</b><br><small class="muted" data-en="Within 24–48 hours">خلال ٢٤–٤٨ ساعة</small></li><li><b data-en="You get a quote">يصلك عرض السعر</b><br><small class="muted" data-en="With a day-by-day draft">مع مسودة الأيام</small></li><li class="pending"><b data-en="Approve and pay">توافق وتدفع</b><br><small class="muted" data-en="Or ask for changes">أو تطلب تعديلات</small></li></ol></div>
+      <div class="alert alert-info"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/></svg><span data-en="No final price is shown here: custom trips get a quote from our team.">لا يظهر سعر نهائي هنا: الرحلة المخصصة تحصل على عرض سعر من فريقنا.</span></div>
+    </aside>
+    <form class="panel wiz" id="wiz" novalidate aria-live="polite">
+      <div class="wiz-head"><div class="row between"><b style="color:var(--forest)" id="w-title"></b><small class="muted num" id="w-count"></small></div><div class="wiz-bar"><i id="w-bar"></i></div></div>
+      <div class="wiz-body" id="w-body"></div>
+      <div class="wiz-foot" id="w-foot"><button class="btn btn-ghost" type="button" id="back" data-en="Back">رجوع</button><button class="btn btn-primary" type="submit" id="next" data-en="Next">التالي</button></div>
+    </form>
+  </div>
+</main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, esc, numAr } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("الرحلة المخصصة", "Custom trip"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+const quiz = BT.store.get("quiz", {}) || {};
+const S = Object.assign({ a: null, b: null, flexible: false, days: 7, adults: 2, kids: [], regions: [], type: quiz.type === "family" ? "family" : quiz.type === "couple" ? "honeymoon" : quiz.type === "friends" ? "adventure" : "", interests: [], budget: 3000, services: ["driver"], name: "", email: "", phone: "", notes: "" }, BT.store.get("ctDraft", {}));
+const STEPS = [
+  [L("مدة الرحلة وتاريخها", "Length & dates"), () => `<div class="field"><span class="label">${L("هل تواريخك محددة؟", "Are your dates fixed?")}</span><div class="seg" role="group"><button type="button" data-flex="0" aria-pressed="${!S.flexible}">${L("نعم، محددة", "Yes, fixed")}</button><button type="button" data-flex="1" aria-pressed="${S.flexible}">${L("مرنة / لم أحدد", "Flexible / not yet")}</button></div></div>
+    ${S.flexible ? `<div class="field"><label for="days">${L("كم يومًا تقريبًا؟", "About how many days?")} <b class="num" id="days-out">${S.days}</b></label><input type="range" id="days" min="2" max="21" value="${S.days}"></div>` : `<div id="cal"></div><small class="muted" id="cal-out"></small>`}<span class="err" data-err="dates" style="display:none;color:var(--err);font-weight:600">${L("اختر تاريخ البداية والنهاية.", "Choose a start and end date.")}</span>`],
+  [L("المسافرون", "Travelers"), () => `<div class="row between"><span class="label">${L("البالغون", "Adults")}</span><div id="ad"></div></div><div class="row between"><span class="label">${L("الأطفال", "Children")}</span><div id="kd"></div></div>${S.kids.length ? `<div class="field"><span class="label">${L("أعمار الأطفال", "Children's ages")}</span><div class="kids">${S.kids.map((k, i) => `<select class="select" data-kid="${i}" aria-label="${L("عمر الطفل", "Child age")} ${i + 1}">${Array.from({ length: 18 }, (_, a) => `<option value="${a}" ${+k === a ? "selected" : ""}>${a} ${L("سنة", "yrs")}</option>`).join("")}</select>`).join("")}</div><small class="muted">${L("نحتاج الأعمار لاختيار أنشطة ومقاعد سيارة مناسبة.", "Ages help us pick suitable activities and car seats.")}</small></div>` : ""}`],
+  [L("المناطق المرغوبة", "Areas"), () => `<p class="muted">${L("اختر منطقة أو أكثر، أو اتركها لنا.", "Pick one or more, or leave it to us.")}</p><div class="opts">${D.REGIONS.map(r => `<label class="opt"><input type="checkbox" data-reg="${r.id}" ${S.regions.includes(r.id) ? "checked" : ""}>${t(r.name)}</label>`).join("")}<label class="opt"><input type="checkbox" data-reg="any" ${S.regions.includes("any") ? "checked" : ""}>${L("اقترحوا لي", "Suggest for me")}</label></div>`],
+  [L("نوع الرحلة والاهتمامات", "Trip type & interests"), () => `<div class="field"><span class="label">${L("نوع الرحلة", "Trip type")}</span><div class="opts">${[["family", L("عائلية", "Family")], ["honeymoon", L("شهر عسل", "Honeymoon")], ["adventure", L("مغامرات", "Adventure")], ["relax", L("استرخاء", "Relaxation")], ["economy", L("اقتصادية", "Budget")]].map(([k, n]) => `<label class="opt"><input type="radio" name="type" value="${k}" ${S.type === k ? "checked" : ""}>${n}</label>`).join("")}</div><span class="err" data-err="type" style="display:none;color:var(--err);font-weight:600">${L("اختر نوع الرحلة.", "Choose a trip type.")}</span></div>
+    <div class="field"><span class="label">${L("الاهتمامات", "Interests")}</span><div class="chips">${[["beaches", L("الشواطئ", "Beaches")], ["nature", L("الطبيعة والشلالات", "Nature & waterfalls")], ["culture", L("المعابد والثقافة", "Temples & culture")], ["food", L("المطاعم الحلال", "Halal dining")], ["shopping", L("التسوق", "Shopping")], ["spa", L("السبا", "Spa")], ["photo", L("التصوير", "Photography")], ["adventure", L("مغامرات", "Adventure")]].map(([k, n]) => `<button type="button" class="chip" data-int="${k}" aria-pressed="${S.interests.includes(k)}">${n}</button>`).join("")}</div></div>`],
+  [L("الميزانية التقريبية", "Approximate budget"), () => `<div class="field"><label for="bud">${L("الميزانية للمجموعة كاملة (بدون الطيران)", "Budget for the whole group (excl. flights)")}</label><b style="font:800 34px var(--f-en);color:var(--forest)" id="bud-out">$${S.budget.toLocaleString("en-US")}</b><input type="range" id="bud" min="500" max="15000" step="250" value="${S.budget}"><div class="row between muted num" style="font-size:12.5px"><span>$500</span><span>$15,000+</span></div></div><small class="muted">${L("تساعدنا الميزانية على اقتراح المستوى المناسب، ولا تعني سعرًا نهائيًا.", "Your budget guides the level we suggest; it's not a final price.")}</small>`],
+  [L("الخدمات المطلوبة", "Services you need"), () => `<div class="opts">${[["driver", L("سائق خاص", "Private driver")], ["activities", L("حجز الأنشطة", "Activity bookings")], ["hotels", L("اقتراح الإقامة", "Stay suggestions")], ["airport", L("استقبال المطار", "Airport pickup")], ["honeymoon", L("ترتيبات شهر العسل", "Honeymoon setup")], ["guide", L("دليل يتحدث العربية", "Arabic-speaking guide")]].map(([k, n]) => `<label class="opt"><input type="checkbox" data-svc="${k}" ${S.services.includes(k) ? "checked" : ""}>${n}</label>`).join("")}</div><div class="field"><label for="notes">${L("ملاحظات إضافية", "Additional notes")}</label><textarea class="textarea" id="notes" placeholder="${L("احتياجات خاصة، مناسبة، أماكن تريدها بالذات…", "Special needs, an occasion, places you must see…")}">${esc(S.notes)}</textarea></div>`],
+  [L("بيانات التواصل", "Contact details"), () => `<div class="field"><label for="nm">${L("الاسم", "Name")}</label><input class="input" id="nm" autocomplete="name" value="${esc(S.name)}"><span class="err">${icon("alert", 15)} ${L("اكتب اسمك.", "Enter your name.")}</span></div><div class="field"><label for="em">${L("البريد الإلكتروني", "Email")}</label><input class="input" id="em" type="email" dir="ltr" autocomplete="email" value="${esc(S.email)}"><span class="err">${icon("alert", 15)} ${L("بريد غير صحيح.", "Invalid email.")}</span></div><div class="field"><label for="ph">${L("واتساب", "WhatsApp")}</label><input class="input" id="ph" type="tel" dir="ltr" placeholder="+966 5X XXX XXXX" value="${esc(S.phone)}"><span class="err">${icon("alert", 15)} ${L("أدخل رقمًا صحيحًا مع رمز الدولة.", "Enter a valid number with country code.")}</span></div>`],
+  [L("مراجعة الطلب", "Review"), () => { const reg = S.regions.map(r => r === "any" ? L("اقترحوا لي", "Suggest") : t(BT.region(r).name)).join(L("، ", ", ")) || "—";
+    const rows = [[L("التواريخ", "Dates"), S.flexible ? L(`مرنة — حوالي ${numAr(S.days)} أيام`, `Flexible — about ${S.days} days`) : `${BT.fmtDate(S.a)} – ${BT.fmtDate(S.b)}`, 0], [L("المسافرون", "Travelers"), L(`${numAr(S.adults)} بالغين${S.kids.length ? `، ${numAr(S.kids.length)} أطفال (${S.kids.join("، ")})` : ""}`, `${S.adults} adults${S.kids.length ? `, ${S.kids.length} children (${S.kids.join(", ")})` : ""}`), 1], [L("المناطق", "Areas"), reg, 2], [L("النوع والاهتمامات", "Type & interests"), S.type + (S.interests.length ? " · " + S.interests.join(", ") : ""), 3], [L("الميزانية", "Budget"), "$" + S.budget.toLocaleString("en-US"), 4], [L("الخدمات", "Services"), S.services.join(", ") || "—", 5], [L("التواصل", "Contact"), `${esc(S.name)} · <span dir="ltr">${esc(S.email)}</span>`, 6]];
+    return `<div class="rv-list">${rows.map(([k, v, i]) => `<div><span class="muted">${k}</span><b>${v}</b><button type="button" class="btn btn-ghost btn-sm" data-goto="${i}">${L("تعديل", "Edit")}</button></div>`).join("")}</div><div class="alert alert-info">${icon("info", 18)}<span>${L("بإرسال الطلب لا يُخصم أي مبلغ. سيصلك عرض السعر بالبريد وواتساب، ويظهر في حسابك ضمن «طلبات الجداول المخصصة».", "Submitting charges nothing. Your quote arrives by email and WhatsApp and appears under 'Custom requests' in your account.")}</span></div>`; }],
+];
+let cur = 0;
+const body = document.getElementById("w-body");
+function save() { BT.store.set("ctDraft", S); }
+function render() {
+  document.getElementById("w-title").textContent = STEPS[cur][0];
+  document.getElementById("w-count").textContent = L(`الخطوة ${numAr(cur + 1)} من ${numAr(STEPS.length)}`, `Step ${cur + 1} of ${STEPS.length}`);
+  document.getElementById("w-bar").style.width = ((cur + 1) / STEPS.length * 100) + "%";
+  body.innerHTML = `<div class="wiz-step on">${STEPS[cur][1]()}</div>`;
+  document.getElementById("back").style.visibility = cur ? "visible" : "hidden";
+  document.getElementById("next").textContent = cur === STEPS.length - 1 ? L("أرسل الطلب", "Send request") : L("التالي", "Next");
+  if (cur === 0 && !S.flexible) { BT.Calendar(document.getElementById("cal"), { mode: "range", months: innerWidth > 900 ? 2 : 1, value: [S.a, S.b], onChange: ([a, b]) => { S.a = a; S.b = b; save(); out(); } }); out(); }
+  if (cur === 1) { BT.Stepper(document.getElementById("ad"), { value: S.adults, min: 1, max: 20, label: L("البالغون", "adults"), onChange: (v) => { S.adults = v; save(); } }); BT.Stepper(document.getElementById("kd"), { value: S.kids.length, min: 0, max: 8, label: L("الأطفال", "children"), onChange: (v) => { while (S.kids.length < v) S.kids.push(6); S.kids.length = v; save(); render(); } }); }
+}
+const out = () => { const o = document.getElementById("cal-out"); if (o) o.textContent = S.a && S.b ? L(`${numAr(BT.daysBetween(S.a, S.b))} أيام`, `${BT.daysBetween(S.a, S.b)} days`) : ""; };
+body.addEventListener("click", (e) => {
+  const f = e.target.closest("[data-flex]"); if (f) { S.flexible = f.dataset.flex === "1"; save(); render(); }
+  const i = e.target.closest("[data-int]"); if (i) { const k = i.dataset.int; S.interests = S.interests.includes(k) ? S.interests.filter(x => x !== k) : S.interests.concat(k); i.setAttribute("aria-pressed", S.interests.includes(k)); save(); }
+  const g = e.target.closest("[data-goto]"); if (g) { cur = +g.dataset.goto; render(); }
+});
+body.addEventListener("input", (e) => {
+  if (e.target.id === "days") { S.days = +e.target.value; document.getElementById("days-out").textContent = S.days; }
+  if (e.target.id === "bud") { S.budget = +e.target.value; document.getElementById("bud-out").textContent = "$" + S.budget.toLocaleString("en-US"); }
+  if (e.target.id === "notes") S.notes = e.target.value; if (e.target.id === "nm") S.name = e.target.value; if (e.target.id === "em") S.email = e.target.value; if (e.target.id === "ph") S.phone = e.target.value;
+  const fl = e.target.closest(".field"); if (fl) fl.classList.remove("has-error"); save();
+});
+body.addEventListener("change", (e) => {
+  if (e.target.dataset.reg) { const k = e.target.dataset.reg; S.regions = e.target.checked ? S.regions.concat(k) : S.regions.filter(x => x !== k); }
+  if (e.target.dataset.svc) { const k = e.target.dataset.svc; S.services = e.target.checked ? S.services.concat(k) : S.services.filter(x => x !== k); }
+  if (e.target.name === "type") S.type = e.target.value; if (e.target.dataset.kid != null) S.kids[+e.target.dataset.kid] = +e.target.value; save();
+});
+function valid() {
+  if (cur === 0 && !S.flexible && !(S.a && S.b)) { body.querySelector('[data-err="dates"]').style.display = "block"; return false; }
+  if (cur === 3 && !S.type) { body.querySelector('[data-err="type"]').style.display = "block"; return false; }
+  if (cur === 6) { let ok = true; const chk = (id, bad) => { document.getElementById(id).closest(".field").classList.toggle("has-error", bad); if (bad && ok) { document.getElementById(id).focus(); ok = false; } };
+    chk("nm", S.name.trim().length < 2); chk("em", !/^\S+@\S+\.\S+$/.test(S.email)); chk("ph", S.phone.replace(/\D/g, "").length < 8); return ok; }
+  return true;
+}
+document.getElementById("back").onclick = () => { if (cur) { cur--; render(); } };
+document.getElementById("wiz").onsubmit = (e) => {
+  e.preventDefault(); if (!valid()) return;
+  if (cur < STEPS.length - 1) { cur++; render(); document.getElementById("wiz").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const btn = document.getElementById("next"); btn.classList.add("is-loading");
+  setTimeout(() => {
+    const id = "CT-" + String(Math.floor(1000 + Math.random() * 9000));
+    const reqs = BT.store.get("customReqs", []); reqs.unshift({ id, date: new Date().toISOString(), data: JSON.parse(JSON.stringify(S)), status: "received" }); BT.store.set("customReqs", reqs); BT.store.set("ctDraft", {});
+    document.getElementById("w-foot").hidden = true; document.getElementById("w-bar").style.width = "100%"; document.getElementById("w-title").textContent = L("تم إرسال طلبك", "Request sent"); document.getElementById("w-count").textContent = id;
+    body.innerHTML = `<div class="wiz-step on done-box"><span style="width:76px;height:76px;border-radius:50%;background:var(--palm);color:var(--forest-ink);display:grid;place-items:center">${icon("check", 38, 2.6)}</span><h2 class="h2">${L("وصلنا طلبك", "We've got your request")}</h2><p class="muted" style="max-width:48ch">${L(`رقم الطلب ${id}. سيتواصل معك فريقنا خلال ٢٤–٤٨ ساعة بخطة مقترحة وعرض سعر. لا يوجد أي مبلغ مستحق الآن.`, `Request ${id}. Our team will reach out within 24–48 hours with a proposed plan and quote. Nothing is due now.`)}</p><div class="row" style="justify-content:center"><a class="btn btn-forest" href="account.html#custom">${L("تابع الطلب من حسابي", "Track it in my account")}</a><a class="btn btn-ghost" href="map.html">${L("استكشف الخريطة", "Explore the map")}</a></div></div>`;
+  }, 1200);
+};
+render();
+})();
+</script>

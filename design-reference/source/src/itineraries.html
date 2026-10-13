@@ -1,0 +1,56 @@
+<!--title: Bali Trips — الجداول السياحية|page: itineraries|section: services-->
+<style>
+.filters { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); align-items: end; }
+.what { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+.what div { display: flex; gap: 12px; padding: 16px; border-radius: 18px; background: var(--white); border: 1px solid var(--line-soft); }
+.what .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--palm-soft); color: var(--forest); flex-shrink: 0; }
+.what b { color: var(--forest); display: block; }
+</style>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/flatlay.jpg" alt="">
+    <div class="wrap"><div id="crumbs"></div>
+      <span class="eyebrow" style="color:var(--palm)" data-en="Travel itineraries">الجداول السياحية</span>
+      <h1 data-en="Choose your Bali itinerary">اختر جدولك السياحي في بالي</h1>
+      <p data-en="Day-by-day plans written by people who live in Bali: where to go, when, and how to move between places — as a file on your phone.">جداول يومية كتبها من يعيش في بالي: أين تذهب، ومتى، وكيف تتنقل بين الأماكن — في ملف على جوالك.</p>
+    </div></section>
+  <section class="sec-tight"><div class="wrap stack" style="gap:18px">
+    <div class="what">
+      <div><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/></svg></span><span><b data-en="A PDF you keep">ملف PDF تحتفظ به</b><span class="muted" data-en="Works offline on your phone.">يعمل دون إنترنت على جوالك.</span></span></div>
+      <div><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 4-5.5 2v14L9 18l6 2 5.5-2V4L15 6 9 4Z"/></svg></span><span><b data-en="Map links for every stop">روابط خريطة لكل محطة</b><span class="muted" data-en="Tap to navigate.">اضغط لتبدأ الاتجاهات.</span></span></div>
+      <div><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></span><span><b data-en="Timing that works">توقيت مدروس</b><span class="muted" data-en="Beat crowds and traffic.">تجنب الزحام والطرق المزدحمة.</span></span></div>
+      <div><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M9 8 5 12l4 4M5 12h11"/></svg></span><span><b data-en="Instant access">وصول فوري</b><span class="muted" data-en="On the order page and in your account.">في صفحة الطلب وفي حسابك.</span></span></div>
+    </div>
+  </div></section>
+  <section class="sec-tight" style="padding-top:8px"><div class="wrap stack" style="gap:18px">
+    <div class="panel filters">
+      <div class="field"><span class="label" data-en="Days">عدد الأيام</span><div class="chips" id="f-days"></div></div>
+      <div class="field"><label for="f-region" data-en="Area">المنطقة</label><select class="select" id="f-region"></select></div>
+      <div class="field"><label for="f-type" data-en="Trip type">نوع الرحلة</label><select class="select" id="f-type"></select></div>
+    </div>
+    <p class="muted" id="count" aria-live="polite"></p>
+    <div class="grid g4" id="grid"></div>
+    <div class="panel row between" style="gap:16px;padding:24px"><span class="stack" style="gap:4px"><b class="h3" style="color:var(--forest)" data-en="Didn't find the right length?">لم تجد المدة المناسبة؟</b><span class="muted" data-en="Request a custom itinerary built around your dates and interests.">اطلب جدولًا مخصصًا حسب تواريخك واهتماماتك.</span></span><a class="btn btn-forest" href="custom-trip.html" data-en="Request a custom itinerary">اطلب جدولًا مخصصًا</a></div>
+  </div></section>
+</main>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, mount, itineraryCard, icon, numAr } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("الجداول السياحية", "Itineraries"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+const F = { days: "all", region: "all", type: "all" };
+const types = [["all", L("كل الأنواع", "All types")], ["family", L("عائلية", "Family")], ["honeymoon", L("شهر عسل", "Honeymoon")], ["couples", L("أزواج", "Couples")], ["adventure", L("مغامرات", "Adventure")], ["economy", L("اقتصادية", "Budget")]];
+document.getElementById("f-type").innerHTML = types.map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
+document.getElementById("f-region").innerHTML = `<option value="all">${L("كل المناطق", "All areas")}</option>` + D.REGIONS.map(r => `<option value="${r.id}">${t(r.name)}</option>`).join("");
+function render() {
+  document.getElementById("f-days").innerHTML = [["all", L("الكل", "All")], ...D.ITINERARIES.map(i => [String(i.days), numAr(i.days) + " " + L("أيام", "days")])].map(([k, n]) => `<button class="chip" data-d="${k}" aria-pressed="${F.days === k}">${n}</button>`).join("");
+  const l = D.ITINERARIES.filter(i => (F.days === "all" || String(i.days) === F.days) && (F.region === "all" || i.regions.includes(F.region)) && (F.type === "all" || i.type.includes(F.type)));
+  document.getElementById("count").innerHTML = `<b class="num" style="color:var(--forest)">${l.length}</b> ${L("جداول", "itineraries")}`;
+  mount("#grid", l.length ? l.map(itineraryCard).join("") : `<div class="empty" style="grid-column:1/-1"><span class="ill">${icon("doc", 36)}</span><b style="color:var(--forest)">${L("لا يوجد جدول بهذه المواصفات", "No itinerary matches")}</b><button class="btn btn-ghost btn-sm" id="rs">${L("مسح الفلاتر", "Clear filters")}</button></div>`);
+  const rs = document.getElementById("rs"); if (rs) rs.onclick = () => { Object.assign(F, { days: "all", region: "all", type: "all" }); document.getElementById("f-region").value = "all"; document.getElementById("f-type").value = "all"; render(); };
+}
+document.getElementById("f-days").onclick = (e) => { const b = e.target.closest("[data-d]"); if (b) { F.days = b.dataset.d; render(); } };
+document.getElementById("f-region").onchange = (e) => { F.region = e.target.value; render(); };
+document.getElementById("f-type").onchange = (e) => { F.type = e.target.value; render(); };
+render();
+})();
+</script>

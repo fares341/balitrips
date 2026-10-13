@@ -1,0 +1,351 @@
+<!--title: Bali Trips — تفاصيل الفعالية|page: activity|section: activities|scripts: booking-->
+<style>
+.gal { display: grid; gap: 8px; border-radius: var(--r-xl); overflow: hidden; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 210px 210px; }
+.gal button { padding: 0; border: 0; position: relative; overflow: hidden; background: var(--ivory-3); }
+.gal button:first-child { grid-row: span 2; }
+.gal img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--d-slow) var(--ease); }
+.gal button:hover img { transform: scale(1.04); }
+.gal .all { position: absolute; inset-inline-end: 12px; bottom: 12px; }
+@media (max-width: 820px) { .gal { grid-template-columns: 1fr; grid-template-rows: 260px; } .gal button:not(:first-child) { display: none; } }
+.ttl { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-start; padding-block: 22px 6px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 14.5px; }
+.facts span { display: inline-flex; gap: 6px; align-items: center; }
+.layout { display: grid; gap: 32px; align-items: start; padding-block: 18px 64px; }
+@media (min-width: 1024px) { .layout { grid-template-columns: minmax(0, 1fr) 400px; gap: 48px; } }
+.sec-nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h)); z-index: 20; background: var(--ivory); margin-bottom: 8px; }
+.blk { padding-block: 28px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 14px; scroll-margin-top: calc(var(--hdr-h) + 64px); }
+.blk h2 { font-size: 24px; }
+.pkgs { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.pkg { position: relative; text-align: start; display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 20px; border: 2px solid var(--line); background: var(--white); transition: border-color var(--d-base), box-shadow var(--d-base), transform var(--d-base) var(--ease); }
+.pkg:hover { border-color: var(--forest-soft); }
+.pkg[aria-checked="true"] { border-color: var(--forest); box-shadow: 0 0 0 4px rgba(113,255,133,.35); transform: translateY(-2px); }
+.pkg .radio { position: absolute; top: 16px; inset-inline-end: 16px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; }
+.pkg[aria-checked="true"] .radio { border-color: var(--forest); background: var(--forest); color: #fff; }
+.pkg .pname { font-weight: 700; color: var(--forest); font-size: 17px; padding-inline-end: 30px; }
+.pkg .pprice { font: 800 24px var(--f-en); color: var(--forest); }
+.pkg .pprice small { font: 600 12.5px var(--f); color: var(--muted); }
+.pkg ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.pkg li { display: flex; gap: 8px; align-items: flex-start; }
+.pkg li.no { color: var(--muted); }
+.pkg li svg { flex-shrink: 0; margin-top: 3px; }
+.pkg .badge-top { position: absolute; top: -11px; inset-inline-start: 16px; background: var(--orange); color: var(--forest-ink); font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+.cmp-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; }
+.cmp { width: 100%; border-collapse: collapse; min-width: 520px; font-size: 14px; }
+.cmp th, .cmp td { padding: 12px 14px; text-align: center; border-bottom: 1px solid var(--line-soft); }
+.cmp th:first-child, .cmp td:first-child { text-align: start; }
+.cmp thead th { background: var(--ivory-2); color: var(--forest); }
+.cmp td.y { color: var(--ok); } .cmp td.n { color: #B0B7B1; }
+.cmp tr.diff td { background: #FFFBF2; }
+.ie { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.ie ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ie li { display: flex; gap: 10px; }
+.minimap { position: relative; height: 240px; border-radius: 20px; overflow: hidden; background: #0b2f45; }
+.minimap img { position: absolute; max-width: none; width: 2048px; height: 1399px; }
+.minimap .mk { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px; border-radius: 50%; background: var(--orange); border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(255,144,0,.35); }
+.minimap .btn { position: absolute; bottom: 12px; inset-inline-start: 12px; }
+
+/* booking card */
+.bk { display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden; }
+.bk-head { padding: 18px 20px; background: var(--forest); color: rgba(255,255,255,.85); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.bk-head b { color: #fff; font: 800 26px var(--f-en); }
+.bk-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 18px; }
+@media (max-width: 1023px) { .bk { position: static; } .bk-body { max-height: none; } }
+.bstep { display: flex; flex-direction: column; gap: 10px; }
+.bstep > .lbl { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--forest); font-size: 15px; }
+.bstep > .lbl .n { width: 24px; height: 24px; border-radius: 50%; background: var(--ivory-2); color: var(--forest); font: 700 12px var(--f-en); display: grid; place-items: center; }
+.bstep.ok > .lbl .n { background: var(--ok); color: #fff; }
+.bstep.has-error > .lbl { color: var(--err); }
+.bstep .err { display: none; color: var(--err); font-size: 13px; font-weight: 600; gap: 6px; align-items: center; }
+.bstep.has-error .err { display: flex; }
+.addon { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.addon b { color: var(--forest); font-size: 14.5px; }
+.addon small { color: var(--muted); font-size: 12.5px; }
+.addon .why { color: #8A4B00; font-weight: 600; }
+.ad-price { font: 700 14px var(--f-en); color: var(--forest); white-space: nowrap; }
+.drv-toggle { display: flex; gap: 12px; align-items: center; padding: 14px; border-radius: 16px; background: var(--palm-soft); }
+.switch { position: relative; width: 50px; height: 30px; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; border-radius: 99px; background: #C6CEC7; transition: background var(--d-base); }
+.switch span::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: var(--sh-1); transition: transform var(--d-base) var(--ease); }
+.switch input:checked + span { background: var(--forest); }
+.switch input:checked + span::after { transform: translateX(-20px); }
+[dir="ltr"] .switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 3px solid var(--orange); outline-offset: 2px; }
+.sum { background: var(--ivory-2); border-radius: 16px; padding: 14px 16px; }
+.mbar { position: fixed; z-index: 56; inset-inline: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; background: var(--white); border-top: 1px solid var(--line); box-shadow: 0 -10px 24px -16px rgba(0,0,0,.3); transform: translateY(120%); transition: transform var(--d-slow) var(--ease); }
+.mbar.show { transform: none; }
+@media (min-width: 1024px) { .mbar { display: none; } }
+.lb { position: fixed; inset: 0; z-index: 110; background: rgba(10,25,14,.94); display: grid; place-items: center; padding: 16px; }
+.lb img { max-height: 80vh; max-width: 100%; border-radius: 16px; }
+.lb .x { position: absolute; top: 16px; inset-inline-end: 16px; }
+.lb .pv, .lb .nx { position: absolute; top: 50%; }
+.lb .pv { inset-inline-start: 12px; } .lb .nx { inset-inline-end: 12px; }
+.lb .icon-btn { background: rgba(255,255,255,.12); color: #fff; }
+.notfound { padding-block: 80px; }
+</style>
+<main id="main"><div class="wrap" id="root"></div></main>
+<div class="mbar" id="mbar"><div class="from"><small data-en="Estimated total">الإجمالي التقديري</small><b class="price" id="mbar-total">—</b></div><a class="btn btn-primary" href="#book" data-en="Book now">احجز الآن</a></div>
+<div class="modal-scrim" id="drv-modal" role="dialog" aria-modal="true" aria-labelledby="dm-h"><div class="modal stack" style="gap:14px" id="drv-modal-body"></div></div>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, money, numAr, esc, img, byId, Trip, Fav, toast } = BT;
+const parts = decodeURIComponent(location.hash.slice(1)).split("/");
+const A = byId(D.ACTIVITIES, parts[0]) || null;
+const root = document.getElementById("root");
+if (!A) {
+  root.innerHTML = `<div class="empty notfound"><span class="ill">${icon("compass", 40)}</span><h1 class="h2">${L("لم نجد هذه الفعالية", "We couldn't find this activity")}</h1><p class="muted">${L("ربما تغيّر الرابط أو أُزيلت الفعالية.", "The link may have changed or the activity was removed.")}</p><a class="btn btn-forest" href="activities.html">${L("تصفح كل الأنشطة", "Browse all activities")}</a></div>`;
+  return;
+}
+document.title = "Bali Trips — " + t(A.title);
+const editKey = (parts[1] || "").startsWith("edit-") ? parts[1].slice(5) : null;
+const editing = editKey ? Trip.items().find(i => i.key === editKey) : null;
+const R = BT.region(A.region);
+const place = D.PLACES.find(p => p.activity === A.id) || { x: R.x, y: R.y, lat: R.lat, lon: R.lon };
+const cat = D.ACT_CATS.find(c => c[0] === A.cats[0]);
+const gal = A.gallery.concat(A.gallery.length < 5 ? ["jungle", "rice-walk", "sunset"] : []).slice(0, 5);
+
+/* ---------- state ---------- */
+const st = editing ? JSON.parse(JSON.stringify(editing.state)) : { pkg: A.packages[0].id, date: null, time: A.slots.length === 1 ? A.slots[0] : null, people: 2, addons: {}, driver: false };
+const unavailable = BT.demoUnavailable(A.id.length);
+const slotFull = (date, slot, i) => date && i === 1 && BT.parseDate(date).getDate() % 3 === 0;
+
+root.innerHTML = `
+  ${BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الأنشطة والفعاليات", "Activities"), "activities.html"], [t(A.title), "#"]])}
+  <div class="gal">${gal.map((g, i) => `<button data-lb="${i}" aria-label="${L("عرض الصورة", "View photo")} ${i + 1}"><img src="${img(g)}" alt="" ${i ? 'loading="lazy"' : ""}>${i === 0 ? `<span class="all btn btn-light btn-sm">${icon("grid", 16)} ${L("كل الصور", "All photos")} (${gal.length})</span>` : ""}</button>`).join("")}</div>
+  <div class="ttl">
+    <div class="stack" style="gap:8px;min-width:0;max-width:760px">
+      <div class="row" style="gap:6px"><span class="tag tag-palm">${t(cat[1])}</span>${A.cats.slice(1).map(c => `<span class="tag tag-forest">${t(D.ACT_CATS.find(x => x[0] === c)[1])}</span>`).join("")}</div>
+      <h1 class="h1" style="font-size:clamp(28px,3.6vw,44px)">${t(A.title)}</h1>
+      <div class="facts"><span>${icon("pin", 16)} ${t(R.name)}</span><span>${icon("clock", 16)} ${t(A.duration)}</span>${BT.stars(A.rating, A.reviews)}<span>${icon("shield", 16)} ${L("مزود الخدمة:", "Provider:")} ${A.provider}</span></div>
+    </div>
+    <div class="row"><button class="btn btn-ghost btn-sm" id="share">${icon("share", 16)} ${L("مشاركة", "Share")}</button><button class="btn btn-ghost btn-sm" data-fav="act:${A.id}" aria-pressed="${Fav.has("act:" + A.id)}">${icon("heart", 16)} ${L("حفظ", "Save")}</button></div>
+  </div>
+  <div class="layout">
+    <div class="minw0">
+      <nav class="sec-nav tabs" aria-label="${L("أقسام الصفحة", "Page sections")}">
+        <a href="#overview" aria-current="page">${L("نظرة عامة", "Overview")}</a><a href="#packages">${L("الباقات", "Packages")}</a><a href="#includes">${L("ما يشمله", "Included")}</a><a href="#info">${L("التعليمات", "Instructions")}</a><a href="#cancel">${L("الإلغاء", "Cancellation")}</a><a href="#faq">${L("الأسئلة", "FAQ")}</a><a href="#location">${L("الموقع", "Location")}</a><a href="#reviews">${L("التقييمات", "Reviews")}</a>
+      </nav>
+      <section class="blk" id="overview"><h2>${L("عن الفعالية", "About this activity")}</h2>
+        <p style="font-size:17px;color:var(--text)">${t(A.short)}</p>
+        <p class="muted">${L("وصف تفصيلي يكتبه فريق المحتوى من بيانات مزود الخدمة: مسار النشاط، ما يحدث خطوة بخطوة، ونقطة التجمع. لا تُعرض شروط أو مواعيد غير مؤكدة من المزود.", "A detailed description written by the content team from provider data: the route, what happens step by step, and the meeting point. Unconfirmed terms or times are never shown.")}</p>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          ${[["clock", L("المدة المتوقعة", "Expected duration"), t(A.duration)], ["cal", L("المواعيد المتاحة", "Start times"), A.slots.join(" · ")], ["users", L("التسعير", "Pricing"), L("حسب الباقة: للفرد أو للمجموعة", "Per package: per person or group")], ["pin", L("المنطقة", "Area"), t(R.name)]].map(([i, k, v]) => `<div class="panel panel-ivory" style="padding:14px;display:flex;flex-direction:column;gap:4px"><span class="muted" style="font-size:12.5px;display:flex;gap:6px;align-items:center">${icon(i, 15)} ${k}</span><b style="color:var(--forest)" class="${i === "cal" ? "num" : ""}">${v}</b></div>`).join("")}
+        </div>
+      </section>
+      <section class="blk" id="packages"><div class="row between"><h2>${L("اختر الباقة", "Choose a package")}</h2><button class="btn btn-ghost btn-sm" id="cmp-btn" aria-expanded="false">${icon("list", 16)} ${L("قارن الباقات", "Compare packages")}</button></div>
+        <div class="pkgs" role="radiogroup" aria-label="${L("الباقات", "Packages")}" id="pkgs"></div>
+        <div id="cmp" hidden></div>
+        <p class="demo-note" style="align-self:flex-start">${L("الباقات والأسعار هنا بيانات تجريبية للتصميم", "Packages and prices here are design mockup data")}</p>
+      </section>
+      <section class="blk" id="includes"><h2>${L("ما يشمله السعر وما لا يشمله", "What's included and what's not")}</h2>
+        <div class="ie"><div class="panel" style="padding:18px"><b style="color:var(--ok);display:flex;gap:8px;margin-bottom:10px">${icon("check", 18, 2.4)} ${L("يشمل", "Included")}</b><ul>${t(A.includes).map(x => `<li>${icon("check", 16, 2)} ${x}</li>`).join("")}</ul></div>
+        <div class="panel" style="padding:18px"><b style="color:var(--err);display:flex;gap:8px;margin-bottom:10px">${icon("x", 18, 2.4)} ${L("لا يشمل", "Not included")}</b><ul>${t(A.excludes).map(x => `<li class="muted">${icon("x", 16, 2)} ${x}</li>`).join("")}</ul></div></div>
+      </section>
+      <section class="blk" id="info"><h2>${L("تعليمات المشاركة والمتطلبات", "Instructions & requirements")}</h2>
+        <ul style="margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:6px">
+          ${A.minAge ? `<li><b>${L("العمر:", "Age:")}</b> ${t(A.minAge)}</li>` : ""}
+          <li>${L("احضر قبل الموعد بـ ١٥ دقيقة في نقطة التجمع التي تصلك في رسالة التأكيد.", "Arrive 15 minutes early at the meeting point sent in your confirmation.")}</li>
+          <li>${L("ملابس مريحة، واقٍ من الشمس، ومياه.", "Comfortable clothes, sunscreen and water.")}</li>
+          <li>${L("متطلبات الطول أو الوزن تُعرض هنا فقط إذا حددها مزود الخدمة.", "Height or weight limits appear here only when the provider sets them.")}</li>
+        </ul>
+      </section>
+      <section class="blk" id="cancel"><h2>${L("سياسة الإلغاء والاسترداد", "Cancellation & refunds")}</h2>
+        <div class="alert alert-warn">${icon("info", 18)}<span>${t(A.cancel)}</span></div>
+        <a class="link" href="policy.html#cancellation" style="align-self:flex-start">${L("السياسة العامة للإلغاء", "General cancellation policy")}</a>
+      </section>
+      <section class="blk" id="faq"><h2>${L("الأسئلة الشائعة", "FAQ")}</h2><div class="acc">${A.faq.map(([q, a], i) => `<details ${i ? "" : "open"}><summary>${t(q)}<span class="pm">${icon("plus", 16, 2.2)}</span></summary><div class="acc-body">${t(a)}</div></details>`).join("")}</div></section>
+      <section class="blk" id="location"><h2>${L("الموقع", "Location")}</h2>
+        <div class="minimap"><img src="assets/img/bali-sat.jpg" alt="" id="mm-img"><span class="mk"></span><a class="btn btn-light btn-sm" href="map.html#place-${place.id || ""}">${icon("map", 16)} ${L("اعرضها على الخريطة", "View on the map")}</a></div>
+        <p class="muted">${t(R.name)} — ${L("يُرسل العنوان الدقيق لنقطة التجمع مع تأكيد الحجز.", "The exact meeting point is sent with your confirmation.")}</p>
+      </section>
+      <section class="blk" id="reviews" style="border:0"><div class="row between"><h2>${L("تقييمات هذه الفعالية", "Reviews for this activity")}</h2><span class="demo-note">${L("نموذج — تقييمات موثقة فقط", "Sample — verified reviews only")}</span></div>
+        <div class="row" style="gap:18px;align-items:center"><b style="font:800 44px var(--f-en);color:var(--forest)">${A.rating.toFixed(1)}</b><span class="stack" style="gap:2px"><span class="stars">${BT.starIcon(16).repeat(5)}</span><small class="muted">${A.reviews} ${L("تقييمًا من حجوزات مؤكدة", "reviews from confirmed bookings")}</small></span></div>
+        <div class="grid g2">${D.REVIEWS.slice(0, 2).map(r => `<figure class="panel" style="margin:0;display:flex;flex-direction:column;gap:10px"><span class="stars">${BT.starIcon(14).repeat(r.s)}</span><blockquote style="margin:0">${t(r.t)}</blockquote><figcaption class="muted" style="font-size:13px">${t(r.n)}</figcaption></figure>`).join("")}</div>
+      </section>
+    </div>
+
+    <aside id="book" aria-label="${L("نموذج الحجز", "Booking form")}">
+      <form class="panel bk" id="bk" novalidate>
+        <div class="bk-head"><span>${L("يبدأ من", "From")}<br><small>${L("للشخص", "per person")}</small></span><b class="price">${money(A.priceFrom)}</b></div>
+        <div class="bk-body">
+          ${editing ? `<div class="alert alert-info">${icon("edit", 18)}<span>${L("تعدّل حجزًا موجودًا في رحلتي", "You're editing an item in My Trip")}</span></div>` : ""}
+          <div class="bstep" id="s-pkg"><span class="lbl"><span class="n">1</span>${L("الباقة", "Package")}</span><select class="select" id="pkg-sel" aria-label="${L("الباقة", "Package")}">${A.packages.map(p => `<option value="${p.id}">${t(p.name)} — ${money(p.price)} ${p.per === "group" ? L("للمجموعة", "/ group") : L("للشخص", "/ person")}</option>`).join("")}</select></div>
+          <div class="bstep" id="s-date"><span class="lbl"><span class="n">2</span>${L("التاريخ", "Date")} <span class="muted" style="font-weight:500;font-size:13px" id="date-out"></span></span><div id="cal"></div><span class="err" role="alert">${icon("alert", 16)} ${L("اختر تاريخ الفعالية للمتابعة.", "Choose a date to continue.")}</span></div>
+          <div class="bstep" id="s-time"><span class="lbl"><span class="n">3</span>${L("الوقت", "Time")}</span><div class="slots" id="slots"></div><span class="err" role="alert">${icon("alert", 16)} ${L("اختر وقت البدء.", "Choose a start time.")}</span></div>
+          <div class="bstep" id="s-ppl"><span class="lbl"><span class="n">4</span>${L("عدد الأفراد", "Travelers")}</span><div class="row between"><div id="ppl"></div><small class="muted" id="ppl-note"></small></div><span class="err" role="alert">${icon("alert", 16)} ${L("حدد عدد الأفراد.", "Set the number of travelers.")}</span></div>
+          <div class="bstep" id="s-add"><span class="lbl"><span class="n">5</span>${L("خدمات إضافية (اختيارية)", "Extras (optional)")}</span><div class="stack" style="gap:8px" id="addons"></div></div>
+          <div class="bstep"><span class="lbl"><span class="n">6</span>${L("السائق", "Driver")}</span>
+            <label class="drv-toggle"><span class="switch"><input type="checkbox" id="drv"><span></span></span><span class="addon"><b>${L("أضف سائقًا لهذه الفعالية", "Add a driver for this activity")}</b><small id="drv-info"></small></span><span class="ad-price" id="drv-price"></span></label>
+          </div>
+          <div class="sum" aria-live="polite"><div id="sum-lines"></div><div class="sum-total"><span>${L("الإجمالي التقديري", "Estimated total")}</span><b class="price" id="total">—</b></div><small class="muted">${L("لا رسوم إضافية عند الدفع. الأسعار تجريبية.", "No extra fees at checkout. Demo prices.")}</small></div>
+          <div class="stack" style="gap:8px">
+            <button class="btn btn-primary btn-block btn-lg" type="submit" id="book-now">${editing ? L("حفظ التعديلات", "Save changes") : L("احجز الآن", "Book now")}</button>
+            ${editing ? "" : `<button class="btn btn-ghost btn-block" type="button" id="add-trip">${icon("suitcase", 18)} ${L("أضف إلى رحلتي", "Add to My Trip")}</button>`}
+          </div>
+          <a class="muted center" href="contact.html" style="font-size:13.5px">${icon("chat", 15)} ${L("لديك سؤال قبل الحجز؟ تحدث معنا", "Questions before booking? Talk to us")}</a>
+        </div>
+      </form>
+    </aside>
+  </div>
+  <section class="stack" style="gap:20px;padding-bottom:56px">
+    <h2 class="h2">${L("قد يعجبك أيضًا", "You may also like")}</h2>
+    <div class="grid g3" id="similar"></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;margin-top:20px">
+      <div class="panel stack"><h3 class="h3">${L("باقات تحتوي هذا النشاط", "Packages with this activity")}</h3><div class="stack" style="gap:10px" id="rel-pkg"></div></div>
+      <div class="panel stack"><h3 class="h3">${L("جداول تتضمن هذه المنطقة", "Itineraries covering this area")}</h3><div class="stack" style="gap:10px" id="rel-iti"></div></div>
+    </div>
+  </section>`;
+BT.applyStatic(root);
+
+/* minimap position */
+const mm = document.getElementById("mm-img"); const mmBox = mm.parentElement;
+const posMM = () => { const s = 1.15; mm.style.width = 2048 * s + "px"; mm.style.height = 1399 * s + "px"; mm.style.left = (mmBox.clientWidth / 2 - place.x * s) + "px"; mm.style.top = (mmBox.clientHeight / 2 - place.y * s) + "px"; }; posMM(); addEventListener("resize", posMM);
+
+/* packages */
+const pkgsEl = document.getElementById("pkgs");
+function renderPkgs() {
+  pkgsEl.innerHTML = A.packages.map(p => `<button type="button" class="pkg" role="radio" aria-checked="${st.pkg === p.id}" data-pkg="${p.id}">${p.badge ? `<span class="badge-top">${t(p.badge)}</span>` : ""}<span class="radio">${st.pkg === p.id ? icon("check", 14, 3) : ""}</span>
+    <span class="pname">${t(p.name)}</span><span class="pprice">${money(p.price)} <small>${p.per === "group" ? L(`للمجموعة (حتى ${numAr(p.groupMax)})`, `per group (up to ${p.groupMax})`) : L("للشخص", "per person")}</small></span>
+    <ul>${t(p.inc).map(x => `<li>${icon("check", 15, 2.4)}<span>${x}</span></li>`).join("")}${t(p.exc).map(x => `<li class="no">${icon("x", 15, 2.2)}<span>${x}</span></li>`).join("")}</ul></button>`).join("");
+}
+pkgsEl.onclick = (e) => { const b = e.target.closest("[data-pkg]"); if (!b) return; setPkg(b.dataset.pkg); };
+function setPkg(id) { st.pkg = id; document.getElementById("pkg-sel").value = id; renderPkgs(); renderAddons(); calc(); pkgsEl.querySelector('[aria-checked="true"]').animate([{ transform: "scale(.97)" }, { transform: "translateY(-2px)" }], { duration: 260 }); }
+document.getElementById("pkg-sel").onchange = (e) => setPkg(e.target.value);
+document.getElementById("cmp-btn").onclick = (e) => { const c = document.getElementById("cmp"); c.hidden = !c.hidden; e.currentTarget.setAttribute("aria-expanded", !c.hidden); if (!c.hidden) renderCmp(); };
+function renderCmp() {
+  const feats = [...new Set(A.packages.flatMap(p => t(p.inc).concat(t(p.exc))))];
+  document.getElementById("cmp").innerHTML = `<div class="cmp-wrap"><table class="cmp"><thead><tr><th>${L("الميزة", "Feature")}</th>${A.packages.map(p => `<th>${t(p.name)}<br><span class="num">${money(p.price)}</span></th>`).join("")}</tr></thead><tbody>
+    ${feats.map(f => { const has = A.packages.map(p => t(p.inc).includes(f)); const diff = has.some(x => x) && has.some(x => !x); return `<tr class="${diff ? "diff" : ""}"><td>${f}</td>${has.map(h => `<td class="${h ? "y" : "n"}">${icon(h ? "check" : "minus", 18, 2.4)}<span class="sr-only">${h ? L("مشمول", "Included") : L("غير مشمول", "Not included")}</span></td>`).join("")}</tr>`; }).join("")}
+    <tr><td>${L("نوع التسعير", "Pricing")}</td>${A.packages.map(p => `<td>${p.per === "group" ? L("للمجموعة", "Group") : L("للفرد", "Per person")}</td>`).join("")}</tr>
+    <tr><td></td>${A.packages.map(p => `<td><button class="btn btn-sm ${st.pkg === p.id ? "btn-forest" : "btn-ghost"}" data-pick="${p.id}">${st.pkg === p.id ? L("مختارة", "Selected") : L("اختر", "Choose")}</button></td>`).join("")}</tr></tbody></table></div>
+    <small class="muted">${L("الصفوف المظللة توضح الفروق بين الباقات.", "Highlighted rows show the differences.")}</small>`;
+}
+document.getElementById("cmp").onclick = (e) => { const b = e.target.closest("[data-pick]"); if (b) { setPkg(b.dataset.pick); renderCmp(); } };
+
+/* date + time */
+const cal = BT.Calendar(document.getElementById("cal"), { mode: "single", value: st.date, unavailable, onChange: (d) => { st.date = d; if (st.time && slotFull(d, st.time, A.slots.indexOf(st.time))) st.time = null; renderSlots(); calc(); clearErr("s-date"); } });
+function renderSlots() {
+  document.getElementById("slots").innerHTML = A.slots.map((s, i) => { const full = slotFull(st.date, s, i); return `<button type="button" class="slot" data-slot="${s}" aria-pressed="${st.time === s}" ${full ? "disabled" : ""}>${s}${full ? `<small>${L("ممتلئ", "Full")}</small>` : ""}</button>`; }).join("");
+  document.getElementById("date-out").textContent = st.date ? BT.fmtDate(st.date) : "";
+}
+document.getElementById("slots").onclick = (e) => { const b = e.target.closest("[data-slot]"); if (!b || b.disabled) return; st.time = b.dataset.slot; renderSlots(); calc(); clearErr("s-time"); };
+
+/* people */
+const curPkg = () => byId(A.packages, st.pkg);
+const ppl = BT.Stepper(document.getElementById("ppl"), { value: st.people, min: 1, max: 14, label: L("عدد الأفراد", "travelers"), onChange: (v) => { st.people = v; calc(); clearErr("s-ppl"); } });
+
+/* add-ons with rules */
+function addonState(ad) {
+  const p = curPkg();
+  if ((p.includesAddons || []).includes(ad.id)) return { dis: true, checked: true, why: L("مشمولة في باقتك", "Included in your package") };
+  if (ad.onlyPkgs && !ad.onlyPkgs.includes(p.id)) return { dis: true, checked: false, why: L("غير متاحة مع هذه الباقة", "Not available with this package") };
+  if (ad.requires && !st.addons[ad.requires]) { const r = byId(A.addons, ad.requires); return { dis: true, checked: false, why: L(`تتطلب إضافة «${t(r.name)}» أولًا`, `Requires "${t(r.name)}" first`) }; }
+  return { dis: false, checked: !!st.addons[ad.id] };
+}
+function renderAddons() {
+  // drop add-ons no longer valid
+  A.addons.forEach(ad => { const s = addonState(ad); if (s.dis && !s.checked) delete st.addons[ad.id]; if (s.dis && s.checked) delete st.addons[ad.id]; });
+  A.addons.forEach(ad => { const s = addonState(ad); if (s.dis) delete st.addons[ad.id]; });
+  document.getElementById("addons").innerHTML = A.addons.map(ad => { const s = addonState(ad); const per = ad.per === "person" ? L("للفرد", "/ person") : ad.per === "qty" ? L("لكل وحدة", "/ unit") : L("للحجز", "/ booking");
+    return `<label class="check" ${s.dis ? 'aria-disabled="true"' : ""}><input type="checkbox" data-ad="${ad.id}" ${s.checked ? "checked" : ""} ${s.dis ? "disabled" : ""}><span class="addon"><b>${t(ad.name)}</b>${ad.desc ? `<small>${t(ad.desc)}</small>` : ""}${s.why ? `<small class="why">${s.why}</small>` : ""}${ad.per === "qty" && st.addons[ad.id] ? `<span data-qty="${ad.id}" style="margin-top:6px"></span>` : ""}</span><span class="ad-price">${s.why && s.checked ? "—" : "+" + money(ad.price)}<br><small class="muted" style="font-weight:500">${per}</small></span></label>`; }).join("");
+  A.addons.filter(a => a.per === "qty" && st.addons[a.id]).forEach(ad => { const h = document.querySelector(`[data-qty="${ad.id}"]`); BT.Stepper(h, { value: st.addons[ad.id], min: 1, max: ad.max || 5, label: t(ad.name), onChange: (v) => { st.addons[ad.id] = v; calc(); } }); h.onclick = (e) => e.preventDefault(); });
+}
+document.getElementById("addons").addEventListener("change", (e) => { const c = e.target.closest("[data-ad]"); if (!c) return; if (c.checked) st.addons[c.dataset.ad] = 1; else delete st.addons[c.dataset.ad]; renderAddons(); calc(); });
+
+/* driver */
+document.getElementById("drv").checked = !!st.driver;
+document.getElementById("drv").onchange = (e) => { st.driver = e.target.checked; calc(); };
+
+/* ---------- pricing ---------- */
+function lines() {
+  const p = curPkg(), n = st.people, out = [];
+  if (p.per === "group") { const units = Math.ceil(n / p.groupMax); out.push({ l: { ar: `${p.name.ar} × ${BT.cntAr(units, "g")}`, en: `${t(p.name)} × ${units} group${units > 1 ? "s" : ""}` }, v: p.price * units }); }
+  else out.push({ l: { ar: `${p.name.ar} × ${BT.cntAr(n, "p")}`, en: `${p.name.en} × ${n}` }, v: p.price * n });
+  Object.entries(st.addons).forEach(([id, q]) => { const ad = byId(A.addons, id); if (!ad) return; const mult = ad.per === "person" ? n : ad.per === "qty" ? q : 1; out.push({ l: { ar: `${ad.name.ar}${mult > 1 ? " × " + mult : ""}`, en: `${ad.name.en}${mult > 1 ? " × " + mult : ""}` }, v: ad.price * mult }); });
+  if (st.driver) { const v = BT.vehicleFor(n); out.push({ l: { ar: `سائق — ${v.name.ar} (يوم)`, en: `Driver — ${v.name.en} (1 day)` }, v: v.perDay }); }
+  return out;
+}
+let lastTotal = 0;
+function calc() {
+  const ls = lines(), total = ls.reduce((s, x) => s + x.v, 0);
+  const v = BT.vehicleFor(st.people);
+  document.getElementById("drv-info").textContent = L(`${t(v.name)} لـ ${BT.cnt(st.people, "p")}، بنفس تاريخ الفعالية`, `${t(v.name)} for ${st.people}, same date as the activity`);
+  document.getElementById("drv-price").textContent = "+" + money(v.perDay);
+  const p = curPkg(); document.getElementById("ppl-note").textContent = p.per === "group" ? L(`الباقة تغطي حتى ${numAr(p.groupMax)} أشخاص لكل مجموعة`, `Covers up to ${p.groupMax} per group`) : L(`${money(p.price)} للشخص`, `${money(p.price)} per person`);
+  document.getElementById("sum-lines").innerHTML = `<div class="sum-row"><span>${L("التاريخ والوقت", "Date & time")}</span><span>${st.date ? BT.fmtDate(st.date) : "—"} · <span class="num">${st.time || "—"}</span></span></div>` + ls.map(x => `<div class="sum-row"><span>${t(x.l)}</span><span class="price">${money(x.v)}</span></div>`).join("");
+  const el = document.getElementById("total"); el.textContent = money(total); document.getElementById("mbar-total").textContent = money(total);
+  if (total !== lastTotal) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); lastTotal = total; }
+  ["s-pkg", "s-date", "s-time", "s-ppl"].forEach((id, i) => document.getElementById(id).classList.toggle("ok", [true, !!st.date, !!st.time, st.people > 0][i]));
+  return total;
+}
+
+/* ---------- validation + submit ---------- */
+function clearErr(id) { document.getElementById(id).classList.remove("has-error"); }
+function validate() {
+  const errs = []; if (!st.date) errs.push("s-date"); if (!st.time) errs.push("s-time"); if (!(st.people > 0)) errs.push("s-ppl");
+  errs.forEach(id => document.getElementById(id).classList.add("has-error"));
+  if (errs.length) { document.getElementById(errs[0]).scrollIntoView({ behavior: "smooth", block: "center" }); toast(L("أكمل البيانات المطلوبة: التاريخ والوقت وعدد الأفراد.", "Complete the required details: date, time and travelers."), { err: true }); }
+  return !errs.length;
+}
+function toItem() { return { type: "activity", ref: A.id, title: A.title, img: A.img, date: st.date, time: st.time, people: st.people, state: JSON.parse(JSON.stringify(st)), lines: lines(), total: lines().reduce((s, x) => s + x.v, 0), meta: { region: A.region, durH: A.durH, provider: A.provider, needsProvider: true } }; }
+function save(go) {
+  if (!validate()) return;
+  if (editing) { const items = Trip.items().map(i => i.key === editKey ? Object.assign(toItem(), { key: editKey }) : i); Trip.save(items); toast(L("حُفظت التعديلات", "Changes saved")); setTimeout(() => location.href = "my-trip.html", 500); return; }
+  const it = Trip.add(toItem());
+  if (go) { BT.store.set("checkout", [it.key]); location.href = "checkout.html"; }
+  else toast(L("أُضيفت الفعالية إلى رحلتي", "Activity added to My Trip"), { link: [L("عرض رحلتي", "View My Trip"), "my-trip.html"] });
+}
+const dm = document.getElementById("drv-modal");
+document.getElementById("bk").onsubmit = (e) => {
+  e.preventDefault(); if (!validate()) return;
+  if (!st.driver && !editing) {
+    const v = BT.vehicleFor(st.people);
+    document.getElementById("drv-modal-body").innerHTML = `<span style="width:60px;height:60px;border-radius:18px;background:var(--palm-soft);display:grid;place-items:center;color:var(--forest)">${icon("car", 30)}</span><h2 class="h3" id="dm-h">${L("هل ترغب في إضافة سائق لهذه الرحلة؟", "Would you like to add a driver for this trip?")}</h2><p class="muted">${L(`${t(v.name)} تأخذك من فندقك إلى الفعالية وتعيدك، بنفس التاريخ وعدد الأشخاص.`, `A ${t(v.name).toLowerCase()} takes you from your hotel and back, same date and party size.`)}</p><div class="sum-row" style="background:var(--ivory-2);padding:12px 14px;border-radius:12px"><span>${t(v.name)} · ${L("يوم واحد", "1 day")}</span><b class="price">+${money(v.perDay)}</b></div><div class="row"><button class="btn btn-primary" id="dm-add">${L("أضف السائق وتابع", "Add driver & continue")}</button><button class="btn btn-ghost" id="dm-skip">${L("متابعة بدون سائق", "Continue without")}</button></div>`;
+    dm.classList.add("open"); document.getElementById("dm-add").focus();
+    document.getElementById("dm-add").onclick = () => { st.driver = true; document.getElementById("drv").checked = true; calc(); dm.classList.remove("open"); save(true); };
+    document.getElementById("dm-skip").onclick = () => { dm.classList.remove("open"); save(true); };
+    return;
+  }
+  save(true);
+};
+dm.onclick = (e) => { if (e.target === dm) dm.classList.remove("open"); };
+const at = document.getElementById("add-trip"); if (at) at.onclick = () => save(false);
+
+/* share */
+document.getElementById("share").onclick = async () => { const url = location.href.split("#")[0] + "#" + A.id; try { await navigator.clipboard.writeText(url); toast(L("نُسخ رابط الفعالية", "Link copied")); } catch (e) { toast(L("انسخ الرابط من شريط العنوان", "Copy the link from the address bar")); } };
+
+/* lightbox */
+document.querySelector(".gal").onclick = (e) => { const b = e.target.closest("[data-lb]"); if (!b) return; openLb(+b.dataset.lb); };
+function openLb(i) {
+  const lb = document.createElement("div"); lb.className = "lb"; lb.setAttribute("role", "dialog"); lb.setAttribute("aria-modal", "true");
+  const draw = () => lb.innerHTML = `<img src="${img(gal[i])}" alt=""><button class="icon-btn x" aria-label="${L("إغلاق", "Close")}">${icon("x", 22)}</button><button class="icon-btn pv" aria-label="${L("السابقة", "Previous")}"><span class="${BT.LANG === "ar" ? "" : "flip"}" style="display:grid;${BT.LANG === "en" ? "transform:scaleX(-1)" : ""}">${icon("chev", 22)}</span></button><button class="icon-btn nx" aria-label="${L("التالية", "Next")}"><span style="display:grid;${BT.LANG === "ar" ? "transform:scaleX(-1)" : ""}">${icon("chev", 22)}</span></button><span style="position:absolute;bottom:20px;color:#fff;font:600 14px var(--f-en)">${i + 1} / ${gal.length}</span>`;
+  draw(); document.body.appendChild(lb); lb.querySelector(".x").focus();
+  lb.onclick = (e) => { if (e.target.closest(".x") || e.target === lb) { lb.remove(); return; } if (e.target.closest(".pv")) { i = (i - 1 + gal.length) % gal.length; draw(); } if (e.target.closest(".nx")) { i = (i + 1) % gal.length; draw(); } };
+  lb.onkeydown = (e) => { if (e.key === "Escape") lb.remove(); };
+}
+
+/* section nav highlight */
+const links = [...document.querySelectorAll(".sec-nav a")];
+const io = new IntersectionObserver((es) => es.forEach(en => { if (en.isIntersecting) links.forEach(a => a.toggleAttribute("aria-current", a.getAttribute("href") === "#" + en.target.id)); }), { rootMargin: "-40% 0px -55% 0px" });
+document.querySelectorAll(".blk").forEach(b => io.observe(b));
+links.forEach(a => a.onclick = (e) => { e.preventDefault(); document.querySelector(a.getAttribute("href")).scrollIntoView({ behavior: "smooth" }); });
+
+/* mobile sticky bar */
+const mbar = document.getElementById("mbar"); const bkEl = document.getElementById("bk");
+const io2 = new IntersectionObserver(([en]) => mbar.classList.toggle("show", !en.isIntersecting && scrollY > 300)); io2.observe(bkEl);
+mbar.querySelector("a").onclick = (e) => { e.preventDefault(); bkEl.scrollIntoView({ behavior: "smooth" }); };
+
+/* related */
+const sim = D.ACTIVITIES.filter(x => x.id !== A.id && (x.region === A.region || x.cats.some(c => A.cats.includes(c)))).slice(0, 3);
+BT.mount("#similar", sim.map(BT.activityCard).join(""));
+const rp = D.PACKAGES.filter(p => p.acts.includes(A.id));
+BT.mount("#rel-pkg", (rp.length ? rp : D.PACKAGES.slice(0, 2)).map(p => `<a class="res" href="package.html#${p.id}" style="display:flex;gap:12px;align-items:center;padding:8px;border-radius:14px"><img src="${img(p.img)}" alt="" style="width:64px;height:64px;border-radius:12px;object-fit:cover"><span style="flex:1"><b style="color:var(--forest)">${t(p.name)}</b><br><small class="muted">${BT.cnt(p.days, "d")} · ${L("من", "from")} <span class="num">${money(p.price)}</span></small></span><span class="flip">${icon("chev", 18)}</span></a>`).join(""));
+const ri = D.ITINERARIES.filter(i => i.regions.includes(A.region));
+BT.mount("#rel-iti", (ri.length ? ri : D.ITINERARIES.slice(0, 2)).map(i => `<a class="res" href="itinerary.html#${i.id}" style="display:flex;gap:12px;align-items:center;padding:8px;border-radius:14px"><img src="${img(i.img)}" alt="" style="width:64px;height:64px;border-radius:12px;object-fit:cover"><span style="flex:1"><b style="color:var(--forest)">${t(i.name)}</b><br><small class="muted">PDF · <span class="num">${money(i.price)}</span></small></span><span class="flip">${icon("chev", 18)}</span></a>`).join(""));
+
+renderPkgs(); document.getElementById("pkg-sel").value = st.pkg; renderSlots(); renderAddons(); calc();
+if (parts[1] === "book") setTimeout(() => bkEl.scrollIntoView({ behavior: "smooth" }), 300);
+addEventListener("hashchange", () => { const h = BT.hashId(); if (h !== A.id && D.ACTIVITIES.some(a => a.id === h)) location.reload(); });
+})();
+</script>

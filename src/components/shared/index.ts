@@ -40,4 +40,4 @@ export { Modal } from './modal'
 export type { ModalProps } from './modal'
 
 export { ToastProvider, useToast } from './toast'
-export type { ToastApi, ToastProviderProps } from './toast'
+export type { ToastApi, ToastOptions, ToastProviderProps } from './toast'

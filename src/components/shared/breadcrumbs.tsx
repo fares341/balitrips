@@ -9,16 +9,14 @@
  * anchors here, routed through next-intl's `Link` so they keep the locale
  * prefix.
  *
- * The flat `nav > (link | separator)*` shape is deliberate. `.bt-crumbs` is a
- * flex container that styles its children directly; wrapping the trail in
- * `<ol><li>` — semantically nicer — would collapse the row into a single flex
- * item, and the fix belongs in components.css, which this agent does not own.
- * The last crumb carries `aria-current="page"` either way.
+ * v3: styled by bt.css `.crumbs` — a flat `nav > (link | separator)*` row
+ * with the package's "›" / "‹" separators. The last crumb carries
+ * `aria-current="page"`.
  */
 
 import { Fragment } from 'react'
 
-import { Icon } from '@/components/ui'
+import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/routing'
 
 export type Crumb = {
@@ -32,21 +30,22 @@ export type BreadcrumbsProps = {
   trail: Crumb[]
   /** Light treatment for use inside a photo banner. */
   light?: boolean
-  /**
-   * Accessible name for the landmark. There is no message key for
-   * "Breadcrumb" in messages/*.json; pass a translated string when one exists.
-   */
+  /** Accessible name for the landmark. Defaults to the translated "Breadcrumb". */
   label?: string
   className?: string
 }
 
 export function Breadcrumbs({ trail, light = false, label, className }: BreadcrumbsProps) {
+  const t = useTranslations()
+  const locale = useLocale()
   if (trail.length === 0) return null
+  // The package's separators: "›" reads forward in LTR, "‹" in RTL.
+  const sep = locale === 'ar' ? '‹' : '›'
 
   return (
     <nav
-      aria-label={label ?? 'Breadcrumb'}
-      className={['bt-crumbs', light ? 'light' : null, className].filter(Boolean).join(' ')}
+      aria-label={label ?? t('bt_breadcrumb')}
+      className={['crumbs', light ? 'on-dark' : null, className].filter(Boolean).join(' ')}
     >
       {trail.map((crumb, index) => {
         const isLast = index === trail.length - 1
@@ -57,22 +56,13 @@ export function Breadcrumbs({ trail, light = false, label, className }: Breadcru
         return (
           <Fragment key={key}>
             {isLast || crumb.href === undefined ? (
-              <span
-                className={isLast ? 'bt-crumb-cur' : 'bt-crumb-link'}
-                aria-current={isLast ? 'page' : undefined}
-              >
-                {crumb.label}
-              </span>
+              <span aria-current={isLast ? 'page' : undefined}>{crumb.label}</span>
             ) : (
-              <Link href={crumb.href} className="bt-crumb-link">
-                {crumb.label}
-              </Link>
+              <Link href={crumb.href}>{crumb.label}</Link>
             )}
-
             {!isLast && (
-              <span aria-hidden="true" style={{ display: 'inline-flex' }}>
-                {/* "flip" mirrors the chevron under dir="rtl". */}
-                <Icon name="chevronr" size={13} className="flip" />
+              <span className="sep" aria-hidden="true">
+                {sep}
               </span>
             )}
           </Fragment>

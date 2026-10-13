@@ -167,8 +167,12 @@ export function Photo({
    */
   return (
     <picture style={{ display: 'contents' }}>
-      {srcSetAvif ? <source type="image/avif" srcSet={srcSetAvif} {...(sizes ? { sizes } : {})} /> : null}
-      {srcSetWebp ? <source type="image/webp" srcSet={srcSetWebp} {...(sizes ? { sizes } : {})} /> : null}
+      {srcSetAvif ? (
+        <source type="image/avif" srcSet={srcSetAvif} {...(sizes ? { sizes } : {})} />
+      ) : null}
+      {srcSetWebp ? (
+        <source type="image/webp" srcSet={srcSetWebp} {...(sizes ? { sizes } : {})} />
+      ) : null}
       {img}
     </picture>
   )

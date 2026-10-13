@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — خدماتنا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.svc { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.svc a { display: flex; flex-direction: column; border-radius: var(--r-lg); overflow: hidden; background: var(--white); border: 1px solid var(--line-soft); box-shadow: var(--sh-1); transition: transform var(--d-base) var(--ease), box-shadow var(--d-base); }
+.svc a:hover { transform: translateY(-4px); box-shadow: var(--sh-2); }
+.svc .m { position: relative; aspect-ratio: 16/9; overflow: hidden; }
+.svc .m img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--d-slow) var(--ease); }
+.svc a:hover .m img { transform: scale(1.05); }
+.svc .ic { position: absolute; bottom: -24px; inset-inline-start: 20px; width: 56px; height: 56px; border-radius: 18px; background: var(--forest); color: var(--palm); display: grid; place-items: center; box-shadow: var(--sh-2); border: 3px solid var(--white); }
+.svc .b { padding: 34px 20px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.svc h2 { font-size: 21px; }
+.svc .b .btn { margin-top: auto; align-self: flex-start; }
+.svc .usp { position: absolute; top: 12px; inset-inline-end: 12px; }
+.steps4 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); counter-reset: s; }
+.steps4 div { padding: 20px; border-radius: 20px; background: var(--white); border: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 6px; position: relative; }
+.steps4 div::before { counter-increment: s; content: counter(s); font: 800 36px var(--f-en); color: var(--palm-mid); line-height: 1; }
+.steps4 b { color: var(--forest); }
+.quiz { display: grid; gap: 22px; align-items: start; }
+@media (min-width: 900px) { .quiz { grid-template-columns: 1fr 1fr; } }
+.qopt { display: flex; flex-wrap: wrap; gap: 8px; }
+.sugg { display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 18px; background: var(--white); border: 1.5px solid var(--palm-mid); animation: slideUp var(--d-slow) var(--ease); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } }
+.sugg img { width: 84px; height: 84px; border-radius: 14px; object-fit: cover; }
+</style>
+</head>
+<body data-page="services" data-section="services">
+<div id="hdr"></div>
+<main id="main">
+  <section class="banner"><img class="bg" src="assets/img/flatlay-wide.jpg" alt="">
+    <div class="wrap"><div id="crumbs"></div>
+      <span class="eyebrow" style="color:var(--palm)" data-en="Start planning">ابدأ التخطيط</span>
+      <h1 data-en="Everything for your Bali trip, in one place">كل ما تحتاجه لرحلة بالي، في مكان واحد</h1>
+      <p data-en="Pick where to start. Every service has its own page, its own booking, and adds to My Trip so you can pay once.">اختر من أين تبدأ. لكل خدمة صفحتها وحجزها، وكلها تُضاف إلى «رحلتي» لتدفع مرة واحدة.</p>
+    </div></section>
+  <section class="sec"><div class="wrap"><div class="svc" id="svc"></div></div></section>
+  <section class="sec bg-ivory2"><div class="wrap stack" style="gap:24px">
+    <div class="stack" style="gap:8px"><span class="eyebrow" data-en="How it works">كيف تعمل المنصة</span><h2 class="h2" data-en="From idea to a booked trip in four steps">من الفكرة إلى رحلة محجوزة في أربع خطوات</h2></div>
+    <div class="steps4">
+      <div><b data-en="Choose a service">اختر الخدمة</b><span class="muted" data-en="The map, an itinerary, a package or a fully custom trip.">الخريطة، جدول، باقة، أو رحلة مخصصة بالكامل.</span></div>
+      <div><b data-en="Set dates and travelers">حدد التواريخ والأشخاص</b><span class="muted" data-en="The price updates instantly as you choose.">يتحدث السعر فورًا مع اختياراتك.</span></div>
+      <div><b data-en="Review My Trip and pay">راجع رحلتي وادفع</b><span class="muted" data-en="One checkout for everything, no hidden fees.">دفع واحد لكل شيء، بلا رسوم مخفية.</span></div>
+      <div><b data-en="Get your details">استلم التفاصيل</b><span class="muted" data-en="Files instantly; confirmations by email and WhatsApp.">الملفات فورًا، والتأكيدات بالبريد وواتساب.</span></div>
+    </div>
+  </div></section>
+  <section class="sec"><div class="wrap quiz">
+    <div class="stack" style="gap:12px"><span class="eyebrow" data-en="Not sure where to start?">لا تعرف من أين تبدأ؟</span><h2 class="h2" data-en="Answer two questions, get a suggestion">أجب عن سؤالين، ونقترح عليك البداية</h2><span class="demo-note" style="align-self:flex-start" data-en="Proposed feature: Smart Trip Planner (light version)">ميزة مقترحة: مخطط الرحلات الذكي (نسخة مبسطة)</span>
+      <div class="field"><span class="label" data-en="How many days?">كم يومًا ستقضي في بالي؟</span><div class="qopt" id="q-days"></div></div>
+      <div class="field"><span class="label" data-en="Who's traveling?">من سيسافر؟</span><div class="qopt" id="q-type"></div></div>
+    </div>
+    <div class="stack" style="gap:10px" id="q-out" aria-live="polite"></div>
+  </div></section>
+</main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+const { D, t, L, icon, img, money, numAr, byId } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
+const S = [
+  ["map.html", "map", "bali-sat", L("الخريطة التفاعلية", "Interactive map"), L("استكشف بالي مكانًا بمكان على خريطة بهوية خاصة: مطاعم وكافيهات وشواطئ وأنشطة اختارها فريقنا.", "Explore Bali place by place on a custom map: restaurants, cafés, beaches and activities our team chose."), L("ابدأ الاستكشاف", "Start exploring"), true],
+  ["activities.html", "compass", "jeep", L("الأنشطة والفعاليات", "Activities & events"), L("مغامرات وثقافة وأيام عائلية، بباقات واضحة وإضافات اختيارية وحجز بالتاريخ والوقت.", "Adventures, culture and family days with clear packages, extras and date/time booking."), L("اكتشف المزيد", "Discover more")],
+  ["driver.html", "car", "driver-car", L("السائق", "Driver"), L("سيارة خاصة مكيفة وسائق يعرف بالي، بالأيام. نوع السيارة يتحدد تلقائيًا حسب عددكم.", "A private A/C car and a driver who knows Bali, by the day. The car type adapts to your group."), L("احجز السائق", "Book a driver")],
+  ["itineraries.html", "doc", "flatlay", L("الجداول السياحية", "Travel itineraries"), L("جداول جاهزة لـ ٣ و٥ و٧ و١٠ أيام، ملف تحمّله وتحتفظ به على جوالك طوال الرحلة.", "Ready 3, 5, 7 and 10-day plans you download and keep on your phone."), L("اختر جدولك", "Pick an itinerary")],
+  ["packages.html", "box", "green-dress", L("الباقات السياحية", "Tour packages"), L("برامج متكاملة تجمع الأنشطة والجدول والسائق: شهر عسل، مغامرة، عائلة، استرخاء.", "Complete programs combining activities, a plan and a driver: honeymoon, adventure, family, relaxation."), L("اكتشف الباقات", "See packages")],
+  ["custom-trip.html", "wand", "consultant", L("الرحلة المخصصة", "Custom trip"), L("أخبرنا بتواريخك وميزانيتك واهتماماتك، ويرد فريقنا بخطة وعرض سعر قبل أي دفع.", "Share your dates, budget and interests; our team replies with a plan and a quote before any payment."), L("ابدأ التخطيط", "Start planning")],
+];
+BT.mount("#svc", S.map(([h, ic, im, n, d, b, usp]) => `<a href="${h}" class="rv"><div class="m"><img src="${img(im)}" alt="" loading="lazy">${usp ? `<span class="usp tag" style="background:var(--orange);color:var(--forest-ink)">${L("الأكثر تميزًا", "Signature")}</span>` : ""}<span class="ic">${icon(ic, 26)}</span></div><div class="b"><h2>${n}</h2><p class="muted">${d}</p><span class="btn btn-forest btn-sm">${b} ${icon("arrow", 16)}</span></div></a>`).join(""));
+const Q = { days: null, type: null };
+const days = [["3", L("٣ أيام أو أقل", "3 days or less")], ["5", L("٤–٥ أيام", "4–5 days")], ["7", L("٦–٨ أيام", "6–8 days")], ["10", L("أكثر من ٨", "More than 8")]];
+const types = [["couple", L("زوجان / شهر عسل", "Couple / honeymoon")], ["family", L("عائلة مع أطفال", "Family with kids")], ["friends", L("أصدقاء ومغامرة", "Friends & adventure")], ["relax", L("استرخاء", "Relaxation")]];
+const draw = () => {
+  document.getElementById("q-days").innerHTML = days.map(([k, n]) => `<button class="chip" data-d="${k}" aria-pressed="${Q.days === k}">${n}</button>`).join("");
+  document.getElementById("q-type").innerHTML = types.map(([k, n]) => `<button class="chip" data-t="${k}" aria-pressed="${Q.type === k}">${n}</button>`).join("");
+  const out = document.getElementById("q-out");
+  if (!Q.days || !Q.type) { out.innerHTML = `<div class="panel panel-ivory empty" style="padding:32px"><span class="ill">${icon("sparkle", 34)}</span><b style="color:var(--forest)">${L("اختر إجابتين لتظهر الاقتراحات", "Pick both answers to see suggestions")}</b></div>`; return; }
+  const it = byId(D.ITINERARIES, Q.days + "-days");
+  const pk = byId(D.PACKAGES, { couple: "honeymoon", family: "family", friends: "adventure", relax: "relax" }[Q.type]);
+  out.innerHTML = `<b style="color:var(--forest)">${L("نقترح أن تبدأ بـ:", "We suggest starting with:")}</b>
+    <a class="sugg" href="itinerary.html#${it.id}"><img src="${img(it.img)}" alt=""><span style="flex:1"><span class="tag tag-palm">${L("جدول جاهز", "Itinerary")}</span><br><b style="color:var(--forest)">${t(it.name)}</b><br><small class="muted">${money(it.price)} · PDF</small></span><span class="flip">${icon("chev", 20)}</span></a>
+    <a class="sugg" href="package.html#${pk.id}"><img src="${img(pk.img)}" alt=""><span style="flex:1"><span class="tag tag-orange">${L("باقة", "Package")}</span><br><b style="color:var(--forest)">${t(pk.name)}</b><br><small class="muted">${BT.cnt(pk.days, "d")} · ${L("من", "from")} ${money(pk.price)}</small></span><span class="flip">${icon("chev", 20)}</span></a>
+    <a class="btn btn-ghost" href="custom-trip.html" style="align-self:flex-start">${L("أو اطلب رحلة مخصصة بهذه الإجابات", "Or request a custom trip with these answers")}</a>`;
+};
+document.querySelector(".quiz").onclick = (e) => { const d = e.target.closest("[data-d]"), tt = e.target.closest("[data-t]"); if (d) Q.days = d.dataset.d; if (tt) Q.type = tt.dataset.t; if (d || tt) { draw(); BT.store.set("quiz", Q); } };
+draw();
+})();
+</script>
+</body>
+</html>

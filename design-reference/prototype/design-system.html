@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.ds { display: grid; gap: 32px; align-items: start; padding-block: 8px 80px; }
+@media (min-width: 1100px) { .ds { grid-template-columns: 220px minmax(0,1fr); gap: 48px; } }
+.dsnav { position: sticky; top: calc(var(--hdr-h) + 16px); display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.dsnav a { padding: 7px 12px; border-radius: 10px; color: var(--forest-soft); font-weight: 600; }
+.dsnav a:hover { background: var(--palm-soft); }
+@media (max-width: 1099px) { .dsnav { position: static; flex-direction: row; overflow-x: auto; } .dsnav a { white-space: nowrap; } }
+.dss { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; border-bottom: 1px solid var(--line-soft); scroll-margin-top: calc(var(--hdr-h) + 20px); }
+.dss > h2 { font-size: 26px; }
+.sw { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.sw div { border-radius: 16px; overflow: hidden; border: 1px solid var(--line-soft); background: var(--white); }
+.sw i { display: block; height: 88px; }
+.sw span { display: block; padding: 10px 12px; font-size: 13px; line-height: 1.5; }
+.sw b { color: var(--forest); display: block; font-size: 14px; }
+.sw code { font: 600 12px var(--f-en); color: var(--muted); }
+.ts { display: flex; flex-direction: column; gap: 4px; }
+.ts > div { display: grid; grid-template-columns: 140px minmax(0,1fr); gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px dashed var(--line); }
+.ts small { font: 600 12px var(--f-en); color: var(--muted); }
+.spc { display: flex; flex-direction: column; gap: 8px; }
+.spc div { display: flex; align-items: center; gap: 12px; font: 600 12.5px var(--f-en); color: var(--muted); }
+.spc i { height: 14px; background: var(--palm-mid); border-radius: 3px; }
+.demo { padding: 20px; border-radius: 18px; background: var(--white); border: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 14px; }
+.demo-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.spec { font-size: 13.5px; color: var(--muted); }
+.spec code { font: 600 12px var(--f-en); background: var(--ivory-2); padding: 1px 6px; border-radius: 5px; color: var(--forest); }
+.rad { display: flex; gap: 14px; flex-wrap: wrap; } .rad div { width: 88px; height: 88px; background: var(--palm-soft); border: 2px solid var(--forest-soft); display: grid; place-items: end center; padding-bottom: 6px; font: 600 11px var(--f-en); color: var(--forest); }
+.elev { display: flex; gap: 18px; flex-wrap: wrap; } .elev div { width: 150px; height: 96px; border-radius: 16px; background: var(--white); display: grid; place-items: center; font: 600 12px var(--f-en); color: var(--muted); }
+</style>
+</head>
+<body data-page="ds" data-section="x">
+<div id="hdr"></div>
+<main id="main"><div class="wrap">
+  <div id="crumbs"></div>
+  <div class="stack" style="gap:10px;padding-bottom:20px;max-width:760px"><span class="eyebrow">Design System v2</span><h1 class="h1">نظام التصميم الموحد</h1><p class="lede">مستخرج من دليل الهوية وملف HTML المعتمد. كل مكوّن هنا حي ويعمل، ونفس الكود يُستخدم في صفحات النموذج. التوكنز موجودة في <span class="num">assets/bt.css</span>.</p></div>
+  <div class="ds"><nav class="dsnav" aria-label="أقسام النظام"><a href="#c">الألوان</a><a href="#t">الخطوط</a><a href="#s">المسافات والحواف</a><a href="#b">الأزرار</a><a href="#f">الحقول والتحقق</a><a href="#ch">الوسوم والفلاتر</a><a href="#cd">الكروت</a><a href="#n">التنقل</a><a href="#bk">مكونات الحجز</a><a href="#fb">التغذية الراجعة</a><a href="#rs">التجاوب والاتجاه</a></nav>
+  <div class="stack" style="gap:40px;min-width:0">
+    <section class="dss" id="c"><h2>الألوان</h2><p class="spec">الأخضر الداكن للهوية والعناوين، البرتقالي للفعل الأساسي فقط (زر واحد بارز لكل شاشة)، الأخضر الفاتح <code>#71FF85</code> لا يُستخدم كنص على خلفية فاتحة (تباين ١٫٥:١)، بل كلمسة على الخلفيات الداكنة أو كخلفية ناعمة <code>--palm-soft</code>.</p>
+      <div class="sw" id="sw"></div>
+      <div class="demo"><b style="color:var(--forest)">التباين (WCAG)</b><div class="tbl-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px;min-width:520px"><thead><tr style="text-align:start"><th style="text-align:start;padding:8px">المزيج</th><th style="text-align:start;padding:8px">النسبة</th><th style="text-align:start;padding:8px">الاستخدام</th></tr></thead><tbody id="cr"></tbody></table></div></div></section>
+    <section class="dss" id="t"><h2>الخطوط</h2><p class="spec">العربية: <code>Noor</code> (من ملف الهوية، مضمّن في المشروع) مع بديل <code>Tajawal</code>. اللاتينية والأرقام: <code>Outfit</code>. الأرقام والأسعار دائمًا بـ Outfit و<code>tabular-nums</code> حتى في الواجهة العربية.</p>
+      <div class="ts">
+        <div><small>Display · 38–82px</small><span class="display" style="font-size:clamp(34px,5vw,60px)">بالي كما لم تكتشفها</span></div>
+        <div><small>H1 · 32–56px</small><span class="h1">الخريطة التفاعلية</span></div>
+        <div><small>H2 · 26–42px</small><span class="h2">احجز التجارب التي تشتهر بها بالي</span></div>
+        <div><small>H3 · 19–24px</small><span class="h3" style="color:var(--forest);font-weight:700">ما يشمله السعر</span></div>
+        <div><small>Body · 16px / 1.75</small><span>جداول سياحية جاهزة، وخريطة تفاعلية لأماكن مختارة بعناية، وأنشطة تحجزها بخطوات قليلة.</span></div>
+        <div><small>Small · 14px</small><span class="muted" style="font-size:14px">يتحدث السعر فورًا مع اختياراتك.</span></div>
+        <div><small>Eyebrow · 13px</small><span class="eyebrow">الأنشطة والفعاليات</span></div>
+        <div><small>Price · Outfit 800</small><span style="font:800 32px var(--f-en);color:var(--forest)">$1,290</span></div>
+        <div><small>Latin · Outfit</small><span style="font:800 34px var(--f-en);color:var(--forest);letter-spacing:-.02em">Your Gateway to Bali</span></div>
+      </div></section>
+    <section class="dss" id="s"><h2>المسافات والحواف والظلال</h2><p class="spec">شبكة ٤px. المسافات بين الأقسام <code>56px</code> جوال / <code>88px</code> ديسكتوب. حواف الصفحة <code>16 / 32 / 40px</code>. أقصى عرض للمحتوى <code>1240px</code>.</p>
+      <div class="spc" id="spc"></div>
+      <div class="rad">${"r"}</div>
+      <div class="elev"><div style="box-shadow:var(--sh-1)">sh-1 · كروت</div><div style="box-shadow:var(--sh-2)">sh-2 · Hover</div><div style="box-shadow:var(--sh-3)">sh-3 · Modals</div><div style="box-shadow:var(--sh-orange)">sh-orange · CTA</div></div></section>
+    <section class="dss" id="b"><h2>الأزرار</h2>
+      <div class="demo"><div class="demo-row"><button class="btn btn-primary">احجز الآن</button><button class="btn btn-forest">التفاصيل</button><button class="btn btn-ghost">أضف إلى رحلتي</button><button class="btn btn-light" style="box-shadow:var(--sh-1)">على صورة</button><span style="background:var(--forest);padding:10px;border-radius:14px"><button class="btn btn-glass">زجاجي</button></span></div>
+      <div class="demo-row"><button class="btn btn-primary btn-lg">كبير ٥٦px</button><button class="btn btn-primary">افتراضي ٤٨px</button><button class="btn btn-primary btn-sm">صغير ٤٠px</button><button class="btn btn-primary is-loading">…</button><button class="btn btn-primary" disabled>معطّل</button><button class="icon-btn" aria-label="مثال">${"i"}</button></div>
+      <p class="spec">Primary = إجراء واحد رئيسي (حجز، دفع، ابدأ التخطيط). نص البرتقالي <code>#13301A</code> (تباين ٧٫٦:١). Hover يرفع ٢px خلال ١٤٠ms. Focus حلقة برتقالية ٣px. الحد الأدنى للمس ٤٤px.</p></div></section>
+    <section class="dss" id="f"><h2>الحقول والتحقق</h2><div class="demo"><div class="grid g2" style="gap:14px">
+      <div class="field"><label for="x1">افتراضي</label><input class="input" id="x1" placeholder="اكتب هنا"></div>
+      <div class="field is-valid"><label for="x2">صحيح</label><input class="input" id="x2" value="Sara Ahmed"></div>
+      <div class="field has-error"><label for="x3">خطأ</label><input class="input" id="x3" value="sara@"><span class="err">⚠ أكمل البريد، مثل sara@mail.com</span></div>
+      <div class="field"><label for="x4">قائمة</label><select class="select" id="x4"><option>أوبود</option><option>سيمينياك</option></select></div>
+      <div class="field"><span class="label">عداد</span><div id="stp"></div></div>
+      <div class="field"><span class="label">مفتاح</span><label class="switch"><input type="checkbox" checked aria-label="مثال"><span></span></label></div></div>
+      <label class="check"><input type="checkbox" checked><span><b style="color:var(--forest)">خيار مع وصف</b><br><small class="muted">يستخدم للإضافات والموافقات</small></span></label>
+      <p class="spec">رسائل الخطأ محددة وتشرح الحل، تظهر تحت الحقل عند المحاولة لا أثناء الكتابة، وتختفي عند التعديل. التركيز ينتقل لأول حقل خاطئ. الحالة محفوظة عند الرجوع خطوة.</p></div></section>
+    <section class="dss" id="ch"><h2>الوسوم والفلاتر</h2><div class="demo"><div class="chips"><button class="chip" aria-pressed="true">الكل <span class="ct">14</span></button><button class="chip">المغامرات <span class="ct">6</span></button><button class="chip">الشواطئ</button></div>
+      <div class="demo-row"><span class="tag tag-palm">تصنيف</span><span class="tag tag-orange">سعر/عرض</span><span class="tag tag-forest">معلومة</span><span class="tag tag-ok">مؤكد</span><span class="tag tag-warn">بانتظار</span><span class="tag tag-err">مرفوض</span><span class="tag tag-info">قيد المعالجة</span><span class="demo-note">بيانات تجريبية</span></div>
+      <p class="spec">فلاتر موحدة بين الأنشطة والخريطة (طلب في التعديلات). ألوان الحالة محجوزة للحالة فقط، ومعها نص دائمًا.</p></div></section>
+    <section class="dss" id="cd"><h2>الكروت</h2><div class="grid g3" id="cards"></div><p class="spec">كل كارت رابط كامل لصفحة التفاصيل (طلب في التعديلات). المفضلة وأضف لرحلتي أزرار مستقلة داخل الكارت لا تفتح الصفحة. صورة ٤:٣، حواف ٢٤px، Hover يرفع ٤px ويكبر الصورة ٥٪ خلال ٥٢٠ms.</p></section>
+    <section class="dss" id="n"><h2>التنقل</h2><div class="demo"><p class="spec"><b>الهيدر:</b> صفان على الديسكتوب (الأيقونات والشعار و«ابدأ التخطيط»، ثم ٧ روابط). على الجوال: قائمة جانبية + شريط سفلي بخمسة أقسام. يصبح ثابتًا مع ظل خفيف عند التمرير.</p>${"cr"}<div class="tabs" style="max-width:520px"><button aria-selected="true">نظرة عامة</button><button>الباقات</button><button>الأسئلة</button></div><div class="acc" style="max-width:560px"><details open><summary>سؤال مفتوح<span class="pm">+</span></summary><div class="acc-body">إجابة الأكورديون.</div></details><details><summary>سؤال مغلق<span class="pm">+</span></summary><div class="acc-body">—</div></details></div></div></section>
+    <section class="dss" id="bk"><h2>مكونات الحجز</h2><div class="grid g2" style="align-items:start"><div class="demo"><b style="color:var(--forest)">التقويم (يوم واحد / نطاق)</b><div id="cal"></div><p class="spec">الأيام الماضية رمادية، غير المتاحة مخططة ومشطوبة، النطاق لا يعبر يومًا غير متاح.</p></div>
+      <div class="demo"><b style="color:var(--forest)">الوقت والملخص</b><div class="slots"><button class="slot" aria-pressed="true">09:00</button><button class="slot" disabled>11:00<small>ممتلئ</small></button><button class="slot">14:00</button></div><div class="sum"><div class="sum-row"><span>الباقة الشاملة × 2</span><span class="price">$158</span></div><div class="sum-row"><span>تصوير فوتوغرافي</span><span class="price">$25</span></div><div class="sum-total"><span>الإجمالي التقديري</span><b class="price">$183</b></div></div><ol class="steps"><li class="done"><span>بياناتك</span></li><li class="cur"><span>المراجعة</span></li><li><span>الدفع</span></li></ol></div></div></section>
+    <section class="dss" id="fb"><h2>التغذية الراجعة</h2><div class="demo"><div class="alert alert-info">ℹ معلومة محايدة</div><div class="alert alert-ok">✓ نجاح</div><div class="alert alert-warn">⚠ تنبيه أو سياسة</div><div class="alert alert-err">✕ خطأ مع الحل</div><div class="demo-row"><button class="btn btn-ghost btn-sm" id="tt">عرض Toast</button><a class="btn btn-ghost btn-sm" href="states.html">كل حالات الواجهة</a></div><div class="row" style="gap:12px"><div class="skel" style="width:64px;height:64px;border-radius:12px"></div><div style="flex:1;display:grid;gap:8px"><div class="skel" style="height:14px;width:60%"></div><div class="skel" style="height:12px;width:35%"></div></div></div></div></section>
+    <section class="dss" id="rs" style="border:0"><h2>التجاوب والاتجاه</h2><div class="demo"><p class="spec">مقاسات مرجعية <code>390</code> · <code>768</code> · <code>1440</code>، ونقاط توقف عند <code>640 / 768 / 1024 / 1100 / 1200</code>. كل المسافات بخصائص منطقية (<code>inset-inline</code>, <code>padding-inline</code>, <code>margin-inline</code>) فتنعكس تلقائيًا بين RTL وLTR. الأيقونات الاتجاهية (الأسهم) تُعكس بـ <code>.flip</code>. الأرقام ورقم الجوال والبريد <code>dir="ltr"</code>. يحترم <code>prefers-reduced-motion</code> كل الحركات.</p></div></section>
+  </div></div>
+</div></main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script src="assets/booking.js"></script>
+<script>
+BT.boot();
+(function () {
+const { L, icon, D } = BT;
+document.getElementById("crumbs").outerHTML = BT.crumbs([["صفحة المشروع", "index.html"], ["Design System", "#"]]);
+const C = [["Tropical Forest", "--forest", "#26552E", "الأساسي: عناوين، أزرار ثانوية، فوتر"], ["Forest Deep", "--forest-deep", "#1B3F22", "خلفيات داكنة، الفوتر"], ["Forest Ink", "--forest-ink", "#13301A", "نص على البرتقالي والأخضر الفاتح"], ["Sunset Orange", "--orange", "#FF9000", "الفعل الأساسي فقط"], ["Bali Palm Green", "--palm", "#71FF85", "لمسات على الداكن فقط"], ["Palm Soft", "--palm-soft", "#DDF9E1", "خلفيات ناعمة، Hover"], ["Ivory Sand", "--ivory", "#FFFBF8", "الخلفية الأساسية"], ["Ivory 2", "--ivory-2", "#F6F0E9", "أقسام متبادلة"], ["Text", "--text", "#2F4234", "النص الأساسي"], ["Muted", "--muted", "#5F6E62", "نص ثانوي"]];
+document.getElementById("sw").innerHTML = C.map(([n, v, h, u]) => `<div><i style="background:${h}"></i><span><b>${n}</b><code>${h} · ${v}</code><br>${u}</span></div>`).join("");
+const lum = (h) => { const c = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const cr = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return ((x + .05) / (y + .05)).toFixed(1); };
+document.getElementById("cr").innerHTML = [["#26552E", "#FFFBF8", "عناوين ونص على Ivory"], ["#2F4234", "#FFFBF8", "نص أساسي"], ["#5F6E62", "#FFFBF8", "نص ثانوي"], ["#13301A", "#FF9000", "نص الزر البرتقالي"], ["#FFFFFF", "#FF9000", "أبيض على برتقالي — لا يُستخدم"], ["#71FF85", "#1B3F22", "أخضر فاتح على الداكن"], ["#71FF85", "#FFFBF8", "أخضر فاتح على فاتح — لا يُستخدم"]].map(([f, b, u]) => { const r = cr(f, b); return `<tr><td style="padding:8px"><span style="display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:8px;background:${b};color:${f};font-weight:700;border:1px solid var(--line)">Aa نص</span></td><td style="padding:8px" class="num"><b style="color:${r >= 4.5 ? "var(--ok)" : "var(--err)"}">${r}:1</b> ${r >= 4.5 ? "AA" : "✕"}</td><td style="padding:8px">${u}</td></tr>`; }).join("");
+document.getElementById("spc").innerHTML = [4, 8, 12, 16, 20, 24, 32, 40, 56, 72, 96].map((v, i) => `<div><span style="width:56px">s${i + 1} · ${v}</span><i style="width:${v * 2}px"></i></div>`).join("");
+document.querySelector(".rad").innerHTML = [["xs", 8], ["sm", 12], ["md", 16], ["lg", 24], ["xl", 32], ["pill", 999]].map(([n, v]) => `<div style="border-radius:${Math.min(v, 44)}px">${n} · ${v}</div>`).join("");
+document.querySelector(".icon-btn[aria-label='مثال']").innerHTML = icon("heart", 20);
+document.querySelector("#n .demo").innerHTML = document.querySelector("#n .demo").innerHTML.replace('${"cr"}', BT.crumbs([["الرئيسية", "#"], ["الأنشطة والفعاليات", "#"], ["ATV Adventure", "#"]]));
+BT.mount("#cards", [BT.activityCard(D.ACTIVITIES[1]), BT.itineraryCard(D.ITINERARIES[1]), BT.placeCard(D.PLACES[2])].join(""));
+BT.Stepper(document.getElementById("stp"), { value: 2, min: 1, max: 10, label: "مثال" });
+BT.Calendar(document.getElementById("cal"), { mode: "range", unavailable: BT.demoUnavailable(2) });
+document.getElementById("tt").onclick = () => BT.toast("أُضيف إلى رحلتي", { link: ["عرض", "my-trip.html"] });
+})();
+</script>
+</body>
+</html>
