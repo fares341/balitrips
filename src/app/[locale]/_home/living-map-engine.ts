@@ -307,7 +307,8 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     const hr = root.getBoundingClientRect()
     const sr = stage!.getBoundingClientRect()
     const style = getComputedStyle(root)
-    const mobile = root.clientWidth <= MOBILE_MAX
+    // The same test as the stylesheet's phone layout (a media query).
+    const mobile = window.matchMedia(`(max-width: ${MOBILE_MAX}px)`).matches
     // Layout boxes (offset*), not getBoundingClientRect: the copy may be
     // mid-rise (translated) when this runs, and its resting place is what
     // matters. Text blocks are narrowed to the ink, so a short right-aligned
@@ -368,7 +369,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
         const p = toScreen(pt.x, pt.y)
         if (p.x < m || p.x > L.W - m || p.y < L.navH + m / 2 || p.y > L.H - m) return false
         // Mobile: the stage fades out at its foot.
-        if (L.mobile && p.y > L.sy + L.sh * 0.8) return false
+        if (L.mobile && p.y > L.sy + L.sh * 0.9) return false
         const g = L.mobile ? 12 : 24
         return !L.blocks.some(
           (r) => p.x > r.l - g && p.x < r.r + g && p.y > r.t - g && p.y < r.b + g,
@@ -880,7 +881,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     ctx!.clearRect(0, 0, L.W, L.H)
     if (!drawing()) return
     const t = now / 1000
-    const maxY = L.mobile ? L.sy + L.sh * 0.78 : L.H
+    const maxY = L.mobile ? L.sy + L.sh * 0.88 : L.H
     ctx!.fillStyle = '#fff'
     for (const g of glints) {
       const a = Math.max(0, Math.sin(t * g.sp + g.ph)) ** 8

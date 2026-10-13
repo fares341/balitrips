@@ -229,7 +229,7 @@ section {
 
 /* Services — 5 cards. */
 .bt-grid-5 {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 600px) {
@@ -252,7 +252,7 @@ section {
 
 /* Tour packages. */
 .bt-grid-tp {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 600px) {
@@ -269,7 +269,7 @@ section {
 
 /* Generic auto grids. */
 .bt-grid-3auto {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 640px) {
@@ -287,7 +287,7 @@ section {
 .bt-grid-2 {
   display: grid;
   gap: 20px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 640px) {
@@ -300,7 +300,7 @@ section {
 .bt-fivegrid {
   display: grid;
   gap: 20px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 600px) {
@@ -326,7 +326,7 @@ section {
 /* Start-planning hub. */
 .bt-hub-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -378,7 +378,7 @@ section {
 /* Value props. */
 .bt-vpgrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -397,7 +397,7 @@ section {
 /* How it works. */
 .bt-howgrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -455,7 +455,7 @@ section {
 
 .bt-incexc {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   margin-top: 32px;
 }
@@ -469,7 +469,7 @@ section {
 /* About page. */
 .bt-about2 {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 40px;
 }
 
@@ -496,7 +496,7 @@ section {
 /* Subscription plans. */
 .bt-plangrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -510,7 +510,7 @@ section {
 /* Driver teaser. */
 .bt-driverteaser {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   align-items: center;
 }
@@ -543,7 +543,7 @@ section {
 /* Home driver block. */
 .bt-hdriver {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
   align-items: center;
 }
@@ -558,7 +558,7 @@ section {
 /* Contact. */
 .bt-contact-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   align-items: start;
 }
@@ -631,7 +631,7 @@ section {
 
 .bt-dt-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   padding: 24px 20px;
 }
@@ -652,7 +652,7 @@ section {
 
 .bt-detail-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   margin-top: 8px;
 }
@@ -718,7 +718,7 @@ section {
 /* Blog index. */
 .bt-blog-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 32px;
 }
 
@@ -731,7 +731,7 @@ section {
 /* Cart page. */
 .bt-cart-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   margin-top: 24px;
 }
@@ -749,11 +749,16 @@ section {
   gap: 24px;
 }
 
+/* A group, not a page band: no global section padding. */
+.bt-cart-lines > section {
+  padding-block: 0;
+}
+
 /* Account panel shell. The panel chrome itself lives in components.css. */
 .bt-acct-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   max-width: 1240px;
   width: 100%;
   margin-inline: auto;

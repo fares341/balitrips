@@ -122,14 +122,18 @@ export default async function AccountInvoicesPage({
                 return (
                   <tr key={item.id}>
                     <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>{item.orderNumber}</td>
-                    <td className="muted" style={{ whiteSpace: 'nowrap' }}>
+                    <td
+                      className="muted"
+                      style={{ whiteSpace: 'nowrap' }}
+                      data-label={t('acct_inv_date')}
+                    >
                       {format.dateTime(item.date, { dateStyle: 'medium' })}
                     </td>
-                    <td>
+                    <td data-label={t('acct_inv_item')}>
                       {summary}
                       {extra !== '' && <span className="muted">{extra}</span>}
                     </td>
-                    <td className="num">
+                    <td className="num" data-label={t('acct_inv_amt')}>
                       {formatMoney(item.totalMinor, item.currency, locale)}
                       {item.paymentMethod !== null && PAY_METHODS.has(item.paymentMethod) && (
                         <div className="muted" style={{ fontSize: 12 }}>
@@ -137,12 +141,12 @@ export default async function AccountInvoicesPage({
                         </div>
                       )}
                     </td>
-                    <td>
+                    <td data-label={t('acct_inv_status')}>
                       <Tag variant={STATUS_VARIANT[item.status]} style={{ whiteSpace: 'nowrap' }}>
                         {t(`cf_st_${item.status}`)}
                       </Tag>
                     </td>
-                    <td style={{ textAlign: 'end' }}>
+                    <td className="bt-acct-actions" style={{ textAlign: 'end' }}>
                       {/*
                         A real, linkable receipt. The handoff's "Download"
                         button had no handler and there was no order behind it

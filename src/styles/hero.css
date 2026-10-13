@@ -58,9 +58,22 @@
    Map box
    --------------------------------------------------------------------------- */
 
+/* The map's box. Desktop: the whole hero. Phones: the grid row above the
+   copy. It is a size container, so the stage's cqw/cqh below measure it. */
+.lmh-frame {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  overflow: clip;
+  container-type: size;
+  pointer-events: none;
+}
+
 .lmh-stage {
   position: absolute;
   z-index: 0;
+  pointer-events: auto;
   width: var(--sw);
   height: calc(var(--sw) * 0.55823);
   top: calc((100cqh - var(--sw) * 0.55823) / 2);
@@ -893,75 +906,126 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Mobile: map on top, copy, card and controls stacked below
+   Phones and small tablets: the map on top, the copy below it, then one row
+   with the destination chip and the slider controls.
+
+   The hero becomes a three-row grid. The map frame takes whatever height the
+   copy leaves (1fr), and the stage inside it is sized from that frame, so the
+   map shrinks before any text can slide over it — the map's own labels
+   (Uluwatu, Nusa Dua…) are never under the headline.
    --------------------------------------------------------------------------- */
 
-@container lmh (max-width: 820px) {
-  .lmh-stage {
-    /* 46% of the hero tall (46 × 1.7914 = 82.4), at least full width. */
-    --sw: max(82.4cqh, 100cqw);
-    top: calc(var(--nav-h) * 0.6);
-    /* Centre on the island's middle (58% across), within the box. */
-    left: clamp(calc(100cqw - var(--sw)), calc(50cqw - 0.58 * var(--sw)), 0px);
-    -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
-    mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+@media (max-width: 820px) {
+  .lmh {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'frame frame'
+      'copy copy'
+      'card nav';
+    column-gap: 8px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    min-height: 600px;
+    --side: max(var(--gutter), env(safe-area-inset-left), env(safe-area-inset-right));
   }
 
+  .lmh-frame {
+    position: relative;
+    inset: auto;
+    grid-area: frame;
+    min-height: 0;
+  }
+
+  /* Wisps and the sheen stay on the map. */
+  .lmh-wisps,
+  .lmh-sheen {
+    grid-area: frame;
+  }
+
+  .lmh-stage,
   [dir='rtl'] .lmh-stage {
-    left: clamp(calc(100cqw - var(--sw)), calc(50cqw - 0.58 * var(--sw)), 0px);
-    -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
-    mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+    /* As tall as the frame allows below the header, within a width that
+       keeps every destination (39%–84% across the artwork) on screen. */
+    --sw: min(188cqw, max(100cqw, (100cqh - var(--nav-h) * 0.55) * 1.7914));
+    top: auto;
+    bottom: 0;
+    /* Centre the destinations’ span (≈ 61.5% across). */
+    left: clamp(calc(100cqw - var(--sw)), calc(50cqw - 0.615 * var(--sw)), 0px);
+    /* Fade the foot into the ocean before the copy begins. */
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 9%, #000 84%, transparent 100%);
   }
 
   .lmh-pin-s {
-    transform: scale(1.8);
+    transform: scale(1.7);
   }
 
   .lmh-plane-s {
-    transform: scale(2.3);
+    transform: scale(2.2);
   }
 
   .lmh-route {
-    stroke-width: 7;
+    stroke-width: 6.5;
   }
 
+  /* Only a top tint for the header; the copy has the plain ocean behind it. */
   .lmh-shade,
   [dir='rtl'] .lmh-shade {
-    background:
-      linear-gradient(180deg, rgba(3, 26, 51, 0.3) 0%, rgba(3, 26, 51, 0) 16%),
-      linear-gradient(0deg, var(--ocean) 0%, var(--ocean) 40%, rgba(3, 26, 51, 0) 64%);
+    background: linear-gradient(180deg, rgba(3, 26, 51, 0.35) 0%, rgba(3, 26, 51, 0) 18%);
   }
 
   .lmh-content {
-    top: auto;
-    bottom: 212px;
-    inset-inline: 20px;
+    position: relative;
+    grid-area: copy;
+    inset: auto;
     width: auto;
     display: block;
+    margin-inline: var(--side);
+    padding-top: 6px;
   }
 
-  .lmh-eyebrow {
-    font-size: 11.5px;
+  /* Sentence case on phones: the tracked capitals wrap at 360px. */
+  .lmh-eyebrow,
+  [dir='rtl'] .lmh-eyebrow {
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+
+  .lmh-eyebrow-line {
+    width: 22px;
   }
 
   .lmh-title {
-    margin: 12px 0 10px;
-    font-size: clamp(30px, 8.6cqw, 44px);
+    margin: 10px 0 8px;
+    font-size: clamp(30px, 8.8cqw, 42px);
+    line-height: 1.08;
+  }
+
+  [dir='rtl'] .lmh-title {
+    line-height: 1.32;
   }
 
   .lmh-sub {
-    margin-bottom: 10px;
-    font-size: 14.5px;
-    line-height: 1.6;
+    max-width: 40ch;
+    margin-bottom: 14px;
+    font-size: 15px;
+    line-height: 1.55;
+    /* Two lines at most on a phone. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
   }
 
+  [dir='rtl'] .lmh-sub {
+    line-height: 1.7;
+  }
+
+  /* The price anchor and rating need room phones do not have. */
   .lmh-facts {
-    margin-bottom: 16px;
-    font-size: 13px;
-  }
-
-  /* Prices only: the rating would wrap the line. */
-  .lmh-facts > span:nth-child(n + 3) {
     display: none;
   }
 
@@ -978,6 +1042,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    max-width: 520px;
   }
 
   .lmh .lmh-cta,
@@ -986,59 +1051,173 @@
     min-width: 0;
     min-height: 48px;
     padding: 10px 12px;
-    font-size: 14.5px;
+    font-size: 15px;
     white-space: nowrap;
+  }
+
+  .lmh .lmh-cta {
+    box-shadow: 0 8px 22px -10px rgba(255, 144, 0, 0.75);
   }
 
   .lmh-ctas svg {
     display: none;
   }
 
+  /* --- destination chip: tag + count over the name, an arrow link ------- */
   .lmh-card {
-    left: 20px !important;
-    right: 20px;
-    top: auto !important;
-    bottom: 80px;
+    position: relative;
+    grid-area: card;
+    inset: auto !important;
+    align-self: center;
     width: auto;
-    padding: 12px 18px;
+    min-width: 0;
+    margin-top: 14px;
+    margin-inline-start: var(--side);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'meta link'
+      'name link';
+    align-items: center;
+    column-gap: 8px;
+    min-height: 56px;
+    padding: 7px 10px 9px 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: none;
+    overflow: hidden;
   }
 
-  /* Compact: tag, name and link; the counter lives in the controls below. */
-  .lmh-card-meta > span + span,
+  [dir='rtl'] .lmh-card {
+    padding: 7px 14px 9px 10px;
+  }
+
+  .lmh-card-meta {
+    grid-area: meta;
+    justify-content: flex-start;
+    gap: 8px;
+    min-width: 0;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .lmh-card-meta > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The count is in the progress bar's rhythm; the tag needs the room. */
+  .lmh-card-meta > span + span {
+    display: none;
+  }
+
   .lmh-card-latin,
   .lmh-card-desc {
     display: none;
   }
 
   .lmh-card-name {
-    margin: 6px 0 0;
-    font-size: 20px;
+    grid-area: name;
+    margin: 2px 0 0;
+    min-width: 0;
+    font-size: 17px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
+  /* The link covers the chip; on screen it shows only its arrow. */
   .lmh-card-link {
-    font-size: 13.5px;
+    grid-area: link;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    min-height: 0;
+    border-radius: 50%;
+    background: rgba(255, 144, 0, 0.16);
+    color: var(--orange);
+    font-size: 0;
+  }
+
+  .lmh-card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .lmh-card-link:hover {
+    text-decoration: none;
   }
 
   .lmh-bar {
-    margin-top: 10px;
+    position: absolute;
+    inset-inline: 14px;
+    bottom: 0;
+    margin: 0;
   }
 
   .lmh-leader {
     display: none;
   }
 
+  /* --- slider controls, beside the chip -------------------------------- */
   .lmh-nav {
-    inset-inline: 20px;
-    bottom: 20px;
+    position: relative;
+    grid-area: nav;
+    inset: auto;
+    align-self: center;
+    margin-top: 14px;
+    margin-inline-end: var(--side);
+    gap: 4px;
+  }
+
+  .lmh-count {
+    display: none;
+  }
+
+  .lmh-btn {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: transparent;
+  }
+
+  .lmh-btn svg {
+    width: 17px;
+    height: 17px;
   }
 
   .lmh-toggle {
-    margin-inline-start: auto;
+    margin-inline-start: 0;
   }
 }
 
-@container lmh (max-width: 820px) and (max-height: 740px) {
-  .lmh-sub {
+/* Short phones: the eyebrow goes before anything else. */
+@media (max-width: 820px) and (max-height: 700px) {
+  .lmh-eyebrow {
+    display: none;
+  }
+
+  .lmh-title {
+    margin-top: 0;
+  }
+}
+
+/* Tall phones and small tablets: room for the price line again. */
+@media (max-width: 820px) and (min-height: 880px) {
+  .lmh-facts {
+    display: block;
+    margin-bottom: 14px;
+    font-size: 14px;
+  }
+
+  .lmh-facts > span:nth-child(n + 2) {
     display: none;
   }
 }

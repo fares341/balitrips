@@ -329,7 +329,7 @@ export function DriverBooking({ vehicles }: DriverBookingProps) {
             </div>
           )}
         </div>
-        <span className="tag tag-palm" style={{ fontSize: 10.5 }}>
+        <span className="tag tag-palm" style={{ fontSize: 12 }}>
           {t('dp_auto')}
         </span>
       </div>

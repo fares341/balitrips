@@ -1225,7 +1225,7 @@ select.bt-mchip option {
 
 .bt-tierpanel-body {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   margin-top: 16px;
 }
@@ -1268,7 +1268,7 @@ select.bt-mchip option {
 
 .bt-tiercols {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -1880,7 +1880,7 @@ select.bt-mchip option {
   border-radius: 24px;
   box-shadow: var(--shadow-lg);
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   animation: btPop 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
@@ -2458,6 +2458,24 @@ select.bt-mchip option {
 .bt-stepper-sm button {
   width: 30px;
   height: 30px;
+}
+
+/* Touch screens: the small stepper and the remove link reach finger size. */
+@media (pointer: coarse), (max-width: 640px) {
+  .bt-stepper-sm button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .bt-stepper-sm span {
+    min-width: 36px;
+  }
+
+  .bt-cart-remove {
+    min-height: 40px;
+    padding-inline: 6px;
+    font-size: 13.5px;
+  }
 }
 
 .bt-stepper-sm span {
@@ -3413,7 +3431,7 @@ select.bt-mchip option {
    --------------------------------------------------------------------------- */
 .bt-mapcallout {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   background: var(--white);
   border: 1px solid var(--line-soft);
   border-radius: var(--r-xl);
@@ -3779,13 +3797,26 @@ select.bt-mchip option {
 }
 
 .bt-vehicle {
-  display: flex;
+  /* Icon beside the name; the "auto-matched" tag goes under the name, so a
+     narrow booking box never squeezes the name into a sliver. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 8px 14px;
   padding: 14px;
   background: var(--palm-soft);
   border-radius: 14px;
   margin-bottom: 16px;
+}
+
+.bt-vehicle > .tag {
+  grid-column: 2;
+  justify-self: start;
+  background: var(--white);
+}
+
+.bt-vehicle:has(> .tag) .bt-vehicle-ic {
+  grid-row: span 2;
 }
 
 .bt-vehicle-ic {
@@ -4027,7 +4058,7 @@ select.bt-mchip option {
 
 .bt-foot-cols {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 36px;
 }
 
@@ -4619,5 +4650,123 @@ a.bt-contact-card:hover {
     padding: 24px;
     text-align: center;
     color: #000;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Phones: forms
+   --------------------------------------------------------------------------- */
+
+/* Paired fields (name + email, start + end) stack once two would be cramped. */
+.bt-daterange > .bt-field {
+  min-width: min(100%, 200px);
+}
+
+/* Native checkboxes are 13px; give them a finger-sized box and row. */
+.bt-form input[type='checkbox'] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--forest);
+}
+
+.bt-form label:has(> input[type='checkbox']) {
+  min-height: var(--tap);
+}
+
+/* ---------------------------------------------------------------------------
+   Phones: finger-sized hit areas for small text controls (layout unchanged)
+   --------------------------------------------------------------------------- */
+@media (max-width: 820px) {
+  /* Inline padding grows the hit box without moving the line. */
+  .bt-crumb-link {
+    padding-block: 10px;
+  }
+
+  .bt-slider-dots button {
+    position: relative;
+  }
+
+  .bt-slider-dots button::before {
+    content: '';
+    position: absolute;
+    inset: -16px -4px;
+  }
+
+  .bt-tier-more {
+    min-height: var(--tap);
+    padding-inline: 12px;
+  }
+}
+
+/* Phones: filter chips scroll sideways in one row instead of stacking four
+   rows of chips above the results. The row bleeds to the screen edges. */
+@media (max-width: 640px) {
+  .bt-filterchips,
+  .bt-filtersort {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 2px var(--gutter);
+    scroll-padding-inline: var(--gutter);
+  }
+
+  .bt-filterchips::-webkit-scrollbar,
+  .bt-filtersort::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bt-filterchips > *,
+  .bt-filtersort > * {
+    flex: none;
+  }
+}
+
+/* Phones: a cart line keeps its thumbnail beside one full-width column —
+   title, details, price, then the controls — instead of squeezing the title
+   between the thumbnail and a price column. */
+@media (max-width: 520px) {
+  .bt-cart-line {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: start;
+  }
+
+  .bt-cart-line > :first-child {
+    grid-row: 1 / span 5;
+  }
+
+  .bt-cart-line > :nth-child(2) {
+    display: contents;
+  }
+
+  .bt-cart-line > * > *,
+  .bt-cart-line > :last-child {
+    grid-column: 2;
+  }
+
+  .bt-cart-line > * > :first-child {
+    order: 1;
+  }
+
+  .bt-cart-line > * > .muted {
+    order: 2;
+  }
+
+  .bt-cart-line > :last-child {
+    order: 3;
+    margin-top: 6px;
+  }
+
+  .bt-cart-line > * > .bt-errmsg {
+    order: 4;
+  }
+
+  .bt-cart-line > * > div:last-child:not(.muted):not(:first-child) {
+    order: 5;
   }
 }

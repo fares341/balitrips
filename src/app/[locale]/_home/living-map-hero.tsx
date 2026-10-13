@@ -49,6 +49,8 @@ export interface LivingMapCopy {
   /** Headline in runs; `accent` runs get the gradient. */
   title: readonly { text: string; accent: boolean }[]
   sub: string
+  /** Two-line subtitle for phones; falls back to `sub`. */
+  subShort?: string
   primary: string
   secondary: string
   /** Shorter CTA labels for phones, so both buttons fit on one row. */
@@ -150,103 +152,107 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
 
   return (
     <section ref={rootRef} className="lmh is-pending is-waiting" aria-labelledby="home-hero">
-      <div className="lmh-stage">
-        {/* The colour map paints first and stays put: it is the LCP image.
+      {/* The frame is the map's own box: the whole hero on desktop, the area
+          above the copy on phones (so no text ever sits on the map). */}
+      <div className="lmh-frame">
+        <div className="lmh-stage">
+          {/* The colour map paints first and stays put: it is the LCP image.
             The night map above it is what the reveal wave masks away. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="lmh-map"
-          src={HERO_IMAGE.map}
-          srcSet={HERO_IMAGE.mapSrcSet}
-          sizes={HERO_IMAGE.sizes}
-          alt={copy.mapAlt}
-          width={MAP_W}
-          height={MAP_H}
-          fetchPriority="high"
-          decoding="async"
-          draggable={false}
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="lmh-night"
-          src={HERO_IMAGE.night}
-          srcSet={HERO_IMAGE.nightSrcSet}
-          sizes={HERO_IMAGE.sizes}
-          alt=""
-          aria-hidden="true"
-          width={MAP_W}
-          height={MAP_H}
-          decoding="async"
-          draggable={false}
-        />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="lmh-map"
+            src={HERO_IMAGE.map}
+            srcSet={HERO_IMAGE.mapSrcSet}
+            sizes={HERO_IMAGE.sizes}
+            alt={copy.mapAlt}
+            width={MAP_W}
+            height={MAP_H}
+            fetchPriority="high"
+            decoding="async"
+            draggable={false}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="lmh-night"
+            src={HERO_IMAGE.night}
+            srcSet={HERO_IMAGE.nightSrcSet}
+            sizes={HERO_IMAGE.sizes}
+            alt=""
+            aria-hidden="true"
+            width={MAP_W}
+            height={MAP_H}
+            decoding="async"
+            draggable={false}
+          />
 
-        <svg
-          className="lmh-overlay"
-          viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-        >
-          <defs>
-            <radialGradient id="lmh-spot-g">
-              <stop offset="0" stopColor="#000" />
-              <stop offset=".45" stopColor="#000" />
-              <stop offset="1" stopColor="#fff" />
-            </radialGradient>
-            <mask
-              id="lmh-spot-mask"
-              maskUnits="userSpaceOnUse"
-              x="0"
-              y="0"
-              width={MAP_W}
-              height={MAP_H}
-            >
-              <rect width={MAP_W} height={MAP_H} fill="#fff" />
-              <circle
-                className="lmh-spot-c"
-                cx={destinations[0]?.x ?? 0}
-                cy={destinations[0]?.y ?? 0}
-                r="360"
-                fill="url(#lmh-spot-g)"
-              />
-            </mask>
-          </defs>
-          <rect className="lmh-spot" width={MAP_W} height={MAP_H} mask="url(#lmh-spot-mask)" />
-          <g className="lmh-coast">
-            {COASTLINES.map((d, i) => (
-              <path key={`base-${i}`} className="base" d={d} pathLength={1000} />
-            ))}
-            {COASTLINES.map((d, i) => (
-              <path key={`comet-${i}`} className="comet" d={d} pathLength={1000} />
-            ))}
-          </g>
-          <path className="lmh-route" d={ROUTE_D} />
-          <g className="lmh-bursts" />
-          <g className="lmh-pins">
-            {destinations.map((point, i) => (
-              <g
-                key={point.id}
-                className={i === slide.active ? 'lmh-pin is-active' : 'lmh-pin'}
-                transform={`translate(${point.x} ${point.y})`}
-                onClick={() => engineRef.current?.goToPoint(i)}
+          <svg
+            className="lmh-overlay"
+            viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+          >
+            <defs>
+              <radialGradient id="lmh-spot-g">
+                <stop offset="0" stopColor="#000" />
+                <stop offset=".45" stopColor="#000" />
+                <stop offset="1" stopColor="#fff" />
+              </radialGradient>
+              <mask
+                id="lmh-spot-mask"
+                maskUnits="userSpaceOnUse"
+                x="0"
+                y="0"
+                width={MAP_W}
+                height={MAP_H}
               >
-                <g className="lmh-pin-pop">
-                  <g className="lmh-pin-s">
-                    <circle className="hit" r="48" />
-                    <circle className="halo" r="40" strokeDasharray="14 12" />
-                    <circle className="ring" r="20" />
-                    <circle className="core" r="9" />
+                <rect width={MAP_W} height={MAP_H} fill="#fff" />
+                <circle
+                  className="lmh-spot-c"
+                  cx={destinations[0]?.x ?? 0}
+                  cy={destinations[0]?.y ?? 0}
+                  r="360"
+                  fill="url(#lmh-spot-g)"
+                />
+              </mask>
+            </defs>
+            <rect className="lmh-spot" width={MAP_W} height={MAP_H} mask="url(#lmh-spot-mask)" />
+            <g className="lmh-coast">
+              {COASTLINES.map((d, i) => (
+                <path key={`base-${i}`} className="base" d={d} pathLength={1000} />
+              ))}
+              {COASTLINES.map((d, i) => (
+                <path key={`comet-${i}`} className="comet" d={d} pathLength={1000} />
+              ))}
+            </g>
+            <path className="lmh-route" d={ROUTE_D} />
+            <g className="lmh-bursts" />
+            <g className="lmh-pins">
+              {destinations.map((point, i) => (
+                <g
+                  key={point.id}
+                  className={i === slide.active ? 'lmh-pin is-active' : 'lmh-pin'}
+                  transform={`translate(${point.x} ${point.y})`}
+                  onClick={() => engineRef.current?.goToPoint(i)}
+                >
+                  <g className="lmh-pin-pop">
+                    <g className="lmh-pin-s">
+                      <circle className="hit" r="48" />
+                      <circle className="halo" r="40" strokeDasharray="14 12" />
+                      <circle className="ring" r="20" />
+                      <circle className="core" r="9" />
+                    </g>
                   </g>
                 </g>
-              </g>
-            ))}
-          </g>
-          <g className="lmh-plane">
-            <path
-              className="lmh-plane-s"
-              d="M28 0 L-14 -6 L-24 -26 L-32 -26 L-26 -5 L-40 -4 L-46 -14 L-52 -14 L-48 0 L-52 14 L-46 14 L-40 4 L-26 5 L-32 26 L-24 26 L-14 6 Z"
-            />
-          </g>
-        </svg>
+              ))}
+            </g>
+            <g className="lmh-plane">
+              <path
+                className="lmh-plane-s"
+                d="M28 0 L-14 -6 L-24 -26 L-32 -26 L-26 -5 L-40 -4 L-46 -14 L-52 -14 L-48 0 L-52 14 L-46 14 L-40 4 L-26 5 L-32 26 L-24 26 L-14 6 Z"
+              />
+            </g>
+          </svg>
+        </div>
       </div>
 
       <canvas className="lmh-sparkles" aria-hidden="true" />
@@ -282,7 +288,14 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
             </Fragment>
           ))}
         </h1>
-        <p className="lmh-sub">{copy.sub}</p>
+        {copy.subShort !== undefined && copy.subShort !== '' && copy.subShort !== copy.sub ? (
+          <p className="lmh-sub">
+            <span className="lmh-long">{copy.sub}</span>
+            <span className="lmh-short">{copy.subShort}</span>
+          </p>
+        ) : (
+          <p className="lmh-sub">{copy.sub}</p>
+        )}
         {facts !== undefined && facts !== null && <div className="lmh-facts">{facts}</div>}
         <div className="lmh-ctas">
           <Link href={primaryHref} className="bt-glowcta lmh-cta">

@@ -345,7 +345,7 @@ export default async function ItineraryDetailPage({
                 style={{
                   display: 'grid',
                   gap: 10,
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                 }}
               >
                 {itinerary.gallery.map((image) => (

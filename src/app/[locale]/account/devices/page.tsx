@@ -115,11 +115,13 @@ export default async function AccountDevicesPage({
                       </div>
                     )}
                   </td>
-                  <td>{format.dateTime(item.firstSeenAt, { dateStyle: 'medium' })}</td>
-                  <td>
+                  <td data-label={t('acct_dev_first')}>
+                    {format.dateTime(item.firstSeenAt, { dateStyle: 'medium' })}
+                  </td>
+                  <td data-label={t('acct_dev_last')}>
                     {format.dateTime(item.lastSeenAt, { dateStyle: 'medium', timeStyle: 'short' })}
                   </td>
-                  <td>
+                  <td className="bt-acct-actions">
                     {item.id !== current && (
                       <form action={removeMyDevice}>
                         <input type="hidden" name="deviceId" value={item.id} />
@@ -157,9 +159,13 @@ export default async function AccountDevicesPage({
                 const typeKey = deviceTypeKey(device?.deviceType)
                 return (
                   <tr key={row.id}>
-                    <td>{format.dateTime(row.at, { dateStyle: 'medium', timeStyle: 'short' })}</td>
-                    <td>{t(row.action === 'login' ? 'acct_logins_ok' : 'acct_logins_failed')}</td>
-                    <td>
+                    <td data-label={t('acct_logins_when')}>
+                      {format.dateTime(row.at, { dateStyle: 'medium', timeStyle: 'short' })}
+                    </td>
+                    <td data-label={t('acct_logins_result')}>
+                      {t(row.action === 'login' ? 'acct_logins_ok' : 'acct_logins_failed')}
+                    </td>
+                    <td data-label={t('acct_dev_device')}>
                       <bdi>{device?.label ?? '—'}</bdi>
                       {typeKey && (
                         <div className="muted" style={{ fontSize: 13 }}>
@@ -167,10 +173,10 @@ export default async function AccountDevicesPage({
                         </div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="IP">
                       <bdi>{row.ip ?? '—'}</bdi>
                     </td>
-                    <td>
+                    <td data-label={t('acct_logins_where')}>
                       <bdi>{loginPlace(row.details) ?? '—'}</bdi>
                     </td>
                   </tr>

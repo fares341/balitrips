@@ -215,7 +215,7 @@ function destinationLink(
     : { href: EXPLORE_HREF, label: 'lmap_card_area' }
 }
 
-/** "Discover the magic of the <hl>Island of the Gods</hl>" → plain and accent runs. */
+/** "Plan Bali <hl>like a local</hl>" → plain and accent runs. */
 function titleRuns(raw: unknown): LivingMapCopy['title'] {
   const source = typeof raw === 'string' ? raw : ''
   const runs: { text: string; accent: boolean }[] = []
@@ -341,6 +341,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     eyebrow: t('lmap_eyebrow'),
     title: titleRuns(t.raw('lmap_title')),
     sub: t('lmap_sub'),
+    subShort: t('lmap_sub_short'),
     primary: t('hero_cta_1'),
     secondary: t('lmap_cta_itin'),
     primaryShort: t('navr_map'),

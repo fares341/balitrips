@@ -90,7 +90,11 @@ export default async function BlogPage({
 
   const sidebar = await listArticles({ locale, limit: SIDEBAR_COUNT })
   const sidebarLocks = await articleRequirementsByIds(sidebar.map((article) => article.id))
-  const lockLabels = { map_access: t('art_badge_map'), vip: t('art_badge_vip') }
+  const lockLabels = {
+    map_access: t('art_badge_map'),
+    vip: t('art_badge_vip'),
+    basic: t('acct_subs_basic'),
+  }
 
   return (
     <main>
@@ -223,7 +227,11 @@ async function BlogResults({ locale, searchParams }: { locale: Locale; searchPar
     listArticles({ locale, q, categoryKey }),
   ])
   const locks = await articleRequirementsByIds(articles.map((article) => article.id))
-  const lockLabels = { map_access: t('art_badge_map'), vip: t('art_badge_vip') }
+  const lockLabels = {
+    map_access: t('art_badge_map'),
+    vip: t('art_badge_vip'),
+    basic: t('acct_subs_basic'),
+  }
 
   /**
    * "all" is a sentinel the seed carries as a real row, not a category an
