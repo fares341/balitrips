@@ -1,0 +1,1095 @@
+/* ===========================================================================
+   Bali Trips — home hero, "Living map".
+
+   Markup: src/app/[locale]/_home/living-map-hero.tsx
+   Motion: src/app/[locale]/_home/living-map-engine.ts
+
+   The photo is never scaled, moved or blurred by an animation: everything
+   that moves is a mask or a vector/canvas overlay drawn at screen resolution.
+
+   Layout. The copy sits on the inline-start side (left in English, right in
+   Arabic) over deep ocean; the map box (`.lmh-stage`, exactly the artwork's
+   aspect ratio) is pushed toward the inline end so the destinations stay
+   clear of the copy. Positions are container-relative (cqw/cqh of the hero),
+   so the server HTML is already in its final place — no layout jump when the
+   engine starts.
+
+   States set on the section:
+     is-pending   server HTML, before the engine starts (copy hidden; a CSS
+                  failsafe reveals everything at 3s if JS never arrives)
+     is-waiting   pins/route held hidden until the colour reveal begins
+     is-clear     clouds gone · is-revealed  night map gone, coast "live"
+     is-lit       spotlight on · is-offscreen  CSS loops paused
+   =========================================================================== */
+
+.lmh {
+  --ocean: #031a33;
+  --glow: #ffb347;
+  --glow-soft: #ffd68f;
+  --lmh-muted: rgba(255, 255, 255, 0.8);
+  /* Copy column: aligned with the header's .wrap, never wider than 600px. */
+  --pad: max(var(--gutter), calc((100cqw - var(--maxw)) / 2 + var(--gutter)));
+  --cw: min(600px, 44cqw);
+  /* The map box: cover the hero, keep the artwork's ratio (2576 × 1438). */
+  --sw: max(179.14cqh, 100cqw);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  overflow: clip;
+  container: lmh / size;
+  height: 100vh;
+  height: 100svh;
+  min-height: 560px;
+  /* The global `section { padding-block }` would shrink the container (and
+     every cqh below) — the hero is full-bleed. */
+  padding: 0;
+  background: var(--ocean);
+  color: #fff;
+  font-family: var(--sans);
+}
+
+/* The header floats transparent over this hero (see premium.css). */
+.bt-home > .lmh:first-child {
+  margin-top: calc(-1 * var(--nav-h));
+}
+
+/* ---------------------------------------------------------------------------
+   Map box
+   --------------------------------------------------------------------------- */
+
+.lmh-stage {
+  position: absolute;
+  z-index: 0;
+  width: var(--sw);
+  height: calc(var(--sw) * 0.55823);
+  top: calc((100cqh - var(--sw) * 0.55823) / 2);
+  /* LTR: flush right, so the east coast (and the labels baked into the
+     artwork there) is never cut; the west slides under the copy. */
+  left: calc(100cqw - var(--sw));
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 140px);
+  mask-image: linear-gradient(90deg, transparent 0, #000 140px);
+}
+
+/* RTL: the copy is on the right, so the map moves left until Amed (83.8%
+   across the artwork) sits just before the copy column; the box's right edge
+   fades into the ocean behind the copy. */
+[dir='rtl'] .lmh-stage {
+  left: min(0px, calc(100cqw - var(--pad) - var(--cw) - 24px - 0.8377 * var(--sw)));
+  -webkit-mask-image: linear-gradient(270deg, transparent 0, #000 220px);
+  mask-image: linear-gradient(270deg, transparent 0, #000 220px);
+}
+
+.lmh-map,
+.lmh-night {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The night map hides the colour map; the reveal wave cuts a growing,
+   soft-edged hole in it. --r/--cx/--cy are set from JS via CSSOM. */
+.lmh-night {
+  --r: 0px;
+  --cx: 50%;
+  --cy: 50%;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--cx) var(--cy),
+    transparent calc(var(--r) - 90px),
+    #000 var(--r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--cx) var(--cy),
+    transparent calc(var(--r) - 90px),
+    #000 var(--r)
+  );
+}
+
+.lmh.is-revealed .lmh-night {
+  display: none;
+}
+
+.lmh-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* --- spotlight ----------------------------------------------------------- */
+.lmh-spot {
+  fill: #021022;
+  opacity: 0;
+}
+
+.lmh.is-lit .lmh-spot {
+  opacity: 0.42;
+}
+
+/* --- coastline ------------------------------------------------------------ */
+.lmh-coast path {
+  fill: none;
+  stroke-linejoin: round;
+}
+
+.lmh-coast .base {
+  stroke: #7fe8f2;
+  stroke-width: 2.8;
+  stroke-dasharray: 1000;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(90, 214, 230, 0.9));
+}
+
+.lmh-coast .comet {
+  stroke: #fff6dc;
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 22 978;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px var(--glow-soft)) drop-shadow(0 0 14px rgba(255, 179, 71, 0.8));
+}
+
+.lmh.is-revealed .lmh-coast .base {
+  opacity: 0.35;
+  stroke: #ffe9bf;
+  filter: drop-shadow(0 0 3px rgba(255, 179, 71, 0.7));
+  transition:
+    opacity 1.5s,
+    stroke 1.5s;
+}
+
+.lmh.is-revealed .lmh-coast .comet {
+  opacity: 1;
+  animation: lmh-comet 16s linear infinite;
+}
+
+.lmh.is-revealed .lmh-coast .comet:nth-child(2n) {
+  animation-duration: 11s;
+  animation-delay: -4s;
+}
+
+@keyframes lmh-comet {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+/* --- route + plane ---------------------------------------------------------- */
+.lmh-route {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 7px rgba(255, 144, 0, 0.85));
+}
+
+.lmh.is-waiting .lmh-route {
+  opacity: 0;
+}
+
+.lmh-route.is-marching {
+  stroke-dasharray: 12 20;
+  animation: lmh-march 1.8s linear infinite;
+}
+
+@keyframes lmh-march {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+.lmh-plane {
+  opacity: 0;
+}
+
+.lmh-plane-s {
+  fill: #fff;
+  transform: scale(1.3);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+/* --- pins --------------------------------------------------------------- */
+.lmh-pin {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.lmh-pin-pop,
+.lmh-pin-s {
+  transform-origin: 0 0;
+}
+
+.lmh.is-waiting .lmh-pin-pop {
+  transform: scale(0);
+}
+
+.lmh-pin .hit {
+  fill: transparent;
+}
+
+.lmh-pin .ring {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lmh-pulse 2.8s ease-out infinite;
+}
+
+.lmh-pin .core {
+  fill: #fff;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+  transition: fill 0.5s;
+}
+
+.lmh-pin .halo {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 3;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 0.5s;
+}
+
+.lmh-pin:hover .core {
+  fill: var(--glow);
+}
+
+.lmh-pin.is-active .ring {
+  stroke: var(--orange);
+  stroke-width: 4;
+}
+
+.lmh-pin.is-active .core {
+  fill: var(--orange);
+}
+
+.lmh-pin.is-active .halo {
+  opacity: 1;
+  animation: lmh-spin 10s linear infinite;
+}
+
+@keyframes lmh-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.7);
+    opacity: 0;
+  }
+}
+
+@keyframes lmh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lmh-burst {
+  fill: none;
+  stroke: var(--glow);
+  stroke-width: 3;
+}
+
+.lmh-burst.is-soft {
+  stroke: var(--glow-soft);
+  stroke-width: 2;
+}
+
+/* ---------------------------------------------------------------------------
+   Atmosphere (all above the photo, none of it touches the photo)
+   --------------------------------------------------------------------------- */
+
+.lmh-sparkles,
+.lmh-wisps,
+.lmh-sheen,
+.lmh-fx,
+.lmh-shade,
+.lmh-leader,
+.lmh-clouds,
+.lmh-topfade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.lmh-sparkles {
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+
+.lmh-wisps {
+  z-index: 1;
+  overflow: hidden;
+}
+
+.lmh-wisp {
+  position: absolute;
+  left: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.55), transparent);
+  filter: blur(10px);
+  animation: lmh-drift linear infinite;
+}
+
+@keyframes lmh-drift {
+  from {
+    transform: translateX(-40vw);
+  }
+  to {
+    transform: translateX(140vw);
+  }
+}
+
+.lmh-sheen {
+  z-index: 1;
+  mix-blend-mode: soft-light;
+  opacity: 0.55;
+  background: linear-gradient(
+      115deg,
+      transparent 38%,
+      rgba(255, 226, 170, 0.7) 50%,
+      transparent 62%
+    )
+    no-repeat;
+  background-size: 260% 100%;
+  animation: lmh-sheen 12s ease-in-out infinite;
+}
+
+@keyframes lmh-sheen {
+  0%,
+  100% {
+    background-position: 100% 0;
+  }
+  50% {
+    background-position: 0 0;
+  }
+}
+
+.lmh-fx {
+  z-index: 2;
+  overflow: visible;
+}
+
+.lmh-ring {
+  fill: none;
+  stroke: var(--glow-soft);
+  stroke-width: 2;
+  opacity: 0;
+  filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 30px rgba(255, 179, 71, 0.6));
+}
+
+/* Legibility for the copy: deep ocean on the copy side, a little at the foot. */
+.lmh-shade {
+  z-index: 3;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(3, 26, 51, 0.92) 0%,
+      rgba(3, 26, 51, 0.66) 28%,
+      rgba(3, 26, 51, 0) 50%
+    ),
+    linear-gradient(0deg, rgba(3, 26, 51, 0.55) 0%, rgba(3, 26, 51, 0) 22%);
+}
+
+[dir='rtl'] .lmh-shade {
+  background:
+    linear-gradient(
+      270deg,
+      rgba(3, 26, 51, 0.92) 0%,
+      rgba(3, 26, 51, 0.66) 28%,
+      rgba(3, 26, 51, 0) 50%
+    ),
+    linear-gradient(0deg, rgba(3, 26, 51, 0.55) 0%, rgba(3, 26, 51, 0) 22%);
+}
+
+/* Keeps the transparent header's white ink readable over clouds or map. */
+.lmh-topfade {
+  z-index: 7;
+  height: calc(var(--nav-h) + 72px);
+  background: linear-gradient(180deg, rgba(3, 22, 42, 0.6), rgba(3, 22, 42, 0));
+}
+
+.lmh-clouds {
+  z-index: 6;
+}
+
+.lmh-cloud {
+  position: absolute;
+  top: -10%;
+  height: 120%;
+  width: 75%;
+  filter: blur(20px);
+}
+
+.lmh-cloud--r {
+  right: -10%;
+  animation: lmh-part-r 2.4s 0.15s cubic-bezier(0.76, 0, 0.24, 1) both;
+  background:
+    radial-gradient(circle at 30% 30%, #fff 0 18%, transparent 42%),
+    radial-gradient(circle at 60% 60%, #eef2f8 0 22%, transparent 48%),
+    radial-gradient(circle at 20% 75%, #e2e9f2 0 20%, transparent 46%), #edf2f8;
+}
+
+.lmh-cloud--l {
+  left: -10%;
+  animation: lmh-part-l 2.4s 0.15s cubic-bezier(0.76, 0, 0.24, 1) both;
+  background:
+    radial-gradient(circle at 70% 35%, #fff 0 20%, transparent 44%),
+    radial-gradient(circle at 35% 65%, #e6ecf4 0 22%, transparent 48%),
+    radial-gradient(circle at 80% 80%, #fff 0 18%, transparent 42%), #eaf0f7;
+}
+
+/* power3.inOut, like the prototype; CSS so it runs from the first paint. */
+@keyframes lmh-part-l {
+  to {
+    transform: translateX(-80%);
+    opacity: 0;
+  }
+}
+
+@keyframes lmh-part-r {
+  to {
+    transform: translateX(80%);
+    opacity: 0;
+  }
+}
+
+.lmh.is-clear .lmh-clouds {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Leader line + destination card
+   --------------------------------------------------------------------------- */
+
+.lmh-leader {
+  z-index: 4;
+  overflow: visible;
+}
+
+.lmh-leader-g {
+  opacity: 0;
+}
+
+.lmh-leader-g.is-shown {
+  opacity: 1;
+}
+
+.lmh-leader-path {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 1.5;
+}
+
+.lmh-leader-dot {
+  fill: var(--orange);
+}
+
+.lmh-card {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  width: 300px;
+  padding: 20px 22px 18px;
+  border-radius: 20px;
+  background: rgba(4, 24, 44, 0.58);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.65);
+  opacity: 0;
+}
+
+.lmh-card.is-shown {
+  opacity: 1;
+}
+
+.lmh-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.lmh-card-name {
+  margin: 12px 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.lmh-card-latin {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.22em;
+  color: var(--lmh-muted);
+}
+
+[dir='rtl'] .lmh-card-latin {
+  text-align: right;
+}
+
+.lmh-card-desc {
+  margin: 12px 0 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--lmh-muted);
+}
+
+.lmh-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange);
+  text-decoration: none;
+}
+
+.lmh-card-link svg {
+  transition: transform 0.3s var(--ease-out);
+}
+
+.lmh-card-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lmh-card-link:hover svg {
+  transform: translateX(4px);
+}
+
+[dir='rtl'] .lmh-card-link:hover svg {
+  transform: scaleX(-1) translateX(4px);
+}
+
+.lmh-bar {
+  margin-top: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.lmh-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--palm-light), var(--orange));
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+[dir='rtl'] .lmh-bar-fill {
+  background: linear-gradient(270deg, var(--palm-light), var(--orange));
+  transform-origin: right;
+}
+
+/* ---------------------------------------------------------------------------
+   Copy
+   --------------------------------------------------------------------------- */
+
+.lmh-content {
+  position: absolute;
+  z-index: 5;
+  inset-inline-start: var(--pad);
+  top: calc(var(--nav-h) + 8px);
+  bottom: clamp(96px, 14cqh, 132px);
+  width: var(--cw);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lmh-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.lmh-eyebrow-line {
+  flex: none;
+  display: block;
+  width: 52px;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left;
+}
+
+[dir='rtl'] .lmh-eyebrow {
+  letter-spacing: 0.06em;
+}
+
+[dir='rtl'] .lmh-eyebrow-line {
+  transform-origin: right;
+}
+
+.lmh-title {
+  margin: 20px 0 18px;
+  font-size: clamp(40px, 4.2vw, 68px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+[dir='rtl'] .lmh-title {
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
+/* Each word rises out of its own clipped box. The padding gives Arabic
+   ascenders/descenders room; the negative margin keeps the line height. */
+.lmh-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-block: 0.1em;
+  margin-block: -0.1em;
+}
+
+.lmh-word > span {
+  display: inline-block;
+}
+
+.lmh-accent {
+  background: linear-gradient(
+    100deg,
+    var(--orange) 0%,
+    var(--glow-soft) 55%,
+    var(--palm-light) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Room for the clipped glyph edges (and Latin italics, if ever used). */
+  padding-inline-end: 0.04em;
+}
+
+.lmh-sub {
+  margin: 0 0 16px;
+  max-width: 46ch;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+[dir='rtl'] .lmh-sub {
+  line-height: var(--lh-body-ar);
+}
+
+.lmh-facts {
+  margin: 0 0 26px;
+  font-size: 14.5px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.lmh-facts strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.lmh-facts > span + span::before {
+  content: '·';
+  margin-inline: 10px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lmh-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.lmh .lmh-cta {
+  margin-top: 0;
+  padding: 14px 30px;
+  font-size: 16px;
+}
+
+.lmh-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 14px 26px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-fast),
+    border-color var(--dur-fast);
+}
+
+.lmh-short {
+  display: none;
+}
+
+.lmh-ghost:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.lmh :focus-visible {
+  outline: 2px solid var(--palm-light);
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   Slider controls
+   --------------------------------------------------------------------------- */
+
+.lmh-nav {
+  position: absolute;
+  z-index: 5;
+  inset-inline-start: var(--pad);
+  bottom: clamp(24px, 5.5cqh, 52px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lmh-btn {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  background: rgba(3, 22, 42, 0.3);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    border-color 0.3s,
+    color 0.3s;
+}
+
+.lmh-btn:hover {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--on-orange);
+}
+
+.lmh-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lmh-btn svg .fill {
+  fill: currentColor;
+  stroke: none;
+}
+
+.lmh-toggle {
+  margin-inline-start: 6px;
+}
+
+.lmh-count {
+  min-width: 64px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-align: center;
+  color: var(--lmh-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lmh-count b {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------------
+   Before the engine starts (server HTML), and a failsafe if it never does
+   --------------------------------------------------------------------------- */
+
+.lmh.is-pending .lmh-eyebrow-line {
+  transform: scaleX(0);
+}
+
+.lmh.is-pending :is(.lmh-eyebrow-text, .lmh-sub, .lmh-facts, .lmh-ctas > *, .lmh-nav) {
+  opacity: 0;
+}
+
+.lmh.is-pending .lmh-word > span {
+  transform: translateY(115%);
+}
+
+.lmh.is-pending :is(.lmh-eyebrow-line, .lmh-eyebrow-text, .lmh-sub, .lmh-facts, .lmh-ctas > *),
+.lmh.is-pending .lmh-word > span,
+.lmh.is-pending.is-waiting :is(.lmh-pin-pop, .lmh-route) {
+  animation: lmh-fs-in 0.8s 3s var(--ease-out) forwards;
+}
+
+.lmh.is-pending .lmh-night {
+  animation: lmh-fs-out 1s 3s ease forwards;
+}
+
+@keyframes lmh-fs-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lmh-fs-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Off screen: freeze the CSS loops (the engine pauses its own work). */
+.lmh.is-offscreen *,
+.lmh.is-offscreen *::after {
+  animation-play-state: paused !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Mobile: map on top, copy, card and controls stacked below
+   --------------------------------------------------------------------------- */
+
+@container lmh (max-width: 820px) {
+  .lmh-stage {
+    /* 46% of the hero tall (46 × 1.7914 = 82.4), at least full width. */
+    --sw: max(82.4cqh, 100cqw);
+    top: calc(var(--nav-h) * 0.6);
+    /* Centre on the island's middle (58% across), within the box. */
+    left: clamp(calc(100cqw - var(--sw)), calc(50cqw - 0.58 * var(--sw)), 0px);
+    -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+    mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+  }
+
+  [dir='rtl'] .lmh-stage {
+    left: clamp(calc(100cqw - var(--sw)), calc(50cqw - 0.58 * var(--sw)), 0px);
+    -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+    mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
+  }
+
+  .lmh-pin-s {
+    transform: scale(1.8);
+  }
+
+  .lmh-plane-s {
+    transform: scale(2.3);
+  }
+
+  .lmh-route {
+    stroke-width: 7;
+  }
+
+  .lmh-shade,
+  [dir='rtl'] .lmh-shade {
+    background:
+      linear-gradient(180deg, rgba(3, 26, 51, 0.3) 0%, rgba(3, 26, 51, 0) 16%),
+      linear-gradient(0deg, var(--ocean) 0%, var(--ocean) 40%, rgba(3, 26, 51, 0) 64%);
+  }
+
+  .lmh-content {
+    top: auto;
+    bottom: 212px;
+    inset-inline: 20px;
+    width: auto;
+    display: block;
+  }
+
+  .lmh-eyebrow {
+    font-size: 11.5px;
+  }
+
+  .lmh-title {
+    margin: 12px 0 10px;
+    font-size: clamp(30px, 8.6cqw, 44px);
+  }
+
+  .lmh-sub {
+    margin-bottom: 10px;
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .lmh-facts {
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  /* Prices only: the rating would wrap the line. */
+  .lmh-facts > span:nth-child(n + 3) {
+    display: none;
+  }
+
+  .lmh-long {
+    display: none;
+  }
+
+  .lmh-short {
+    display: inline;
+  }
+
+  /* Two equal buttons on one row (short labels, no icons). */
+  .lmh-ctas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .lmh .lmh-cta,
+  .lmh-ghost {
+    width: auto;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 12px;
+    font-size: 14.5px;
+    white-space: nowrap;
+  }
+
+  .lmh-ctas svg {
+    display: none;
+  }
+
+  .lmh-card {
+    left: 20px !important;
+    right: 20px;
+    top: auto !important;
+    bottom: 80px;
+    width: auto;
+    padding: 12px 18px;
+  }
+
+  /* Compact: tag, name and link; the counter lives in the controls below. */
+  .lmh-card-meta > span + span,
+  .lmh-card-latin,
+  .lmh-card-desc {
+    display: none;
+  }
+
+  .lmh-card-name {
+    margin: 6px 0 0;
+    font-size: 20px;
+  }
+
+  .lmh-card-link {
+    font-size: 13.5px;
+  }
+
+  .lmh-bar {
+    margin-top: 10px;
+  }
+
+  .lmh-leader {
+    display: none;
+  }
+
+  .lmh-nav {
+    inset-inline: 20px;
+    bottom: 20px;
+  }
+
+  .lmh-toggle {
+    margin-inline-start: auto;
+  }
+}
+
+@container lmh (max-width: 820px) and (max-height: 740px) {
+  .lmh-sub {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion: the final frame, a manual slider, nothing that drifts
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .lmh *,
+  .lmh *::before,
+  .lmh *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .lmh
+    :is(
+      .lmh-clouds,
+      .lmh-night,
+      .lmh-wisps,
+      .lmh-sheen,
+      .lmh-sparkles,
+      .lmh-plane,
+      .lmh-fx,
+      .lmh-bar,
+      .lmh-toggle
+    ),
+  .lmh-coast .comet {
+    display: none;
+  }
+
+  .lmh.is-pending :is(.lmh-eyebrow-text, .lmh-sub, .lmh-facts, .lmh-ctas > *, .lmh-nav) {
+    opacity: 1;
+  }
+
+  .lmh.is-pending :is(.lmh-eyebrow-line, .lmh-word > span),
+  .lmh.is-waiting .lmh-pin-pop {
+    transform: none;
+  }
+
+  .lmh.is-waiting .lmh-route {
+    opacity: 1;
+  }
+
+  .lmh-coast .base {
+    opacity: 0.35;
+    stroke: #ffe9bf;
+  }
+
+  .lmh.is-lit .lmh-spot {
+    opacity: 0.45;
+  }
+}

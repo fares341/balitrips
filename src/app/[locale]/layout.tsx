@@ -23,6 +23,8 @@ import '@/styles/components.css'
 // The premium layer (header, home, plans, detail hero, footer). Last, so it
 // refines the base components rather than being overridden by them.
 import '@/styles/premium.css'
+// The home hero's living map (only the home page renders `.lmh`).
+import '@/styles/hero.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))

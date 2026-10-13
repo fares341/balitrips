@@ -1,8 +1,16 @@
 /**
  * Footer.
  *
- * A deep-forest band: the brand and contact block, three link columns, a
- * giant faint "Bali Trips" wordmark set behind them, and one legal line.
+ * A deep-forest band in the four columns the client specified:
+ *
+ *   1. about the platform — logo, one paragraph, a link to /about;
+ *   2. quick links — every public page (`NAV_ROUTES`);
+ *   3. policies — privacy, terms, cancellation & refund, platform use, map
+ *      use, then cookies and image credits (`POLICY_ROUTES`);
+ *   4. general information — FAQ, contact, payment methods (with the card
+ *      marks), and the social and contact channels.
+ *
+ * Below them: the logo, the copyright line and the site version.
  *
  * No 'use client'. Nothing here is interactive, so the whole footer is server
  * markup and costs the client bundle nothing.
@@ -12,10 +20,8 @@
  *  1. **The policy links go somewhere** — they are real routes, because on a
  *     site that takes card payments the refund terms are what wins a
  *     chargeback.
- *  2. **The link columns share the header's route table** rather than a
- *     second hand-maintained list. They are split by href, and any route the
- *     split does not name falls into the second column, so a new entry in
- *     `NAV_ROUTES` can never silently disappear from the footer.
+ *  2. **The quick links are the header's route table**, not a second
+ *     hand-maintained list, so a page added to `NAV_ROUTES` appears here too.
  *  3. **Social links are configuration.** Unset profiles are dropped rather
  *     than rendered as dead links.
  */
@@ -24,16 +30,16 @@ import { getTranslations } from 'next-intl/server'
 
 import { Icon, Logo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
+import { APP_VERSION } from '@/lib/app-version'
 
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from './contact-config'
-import { HOME_HREF, NAV_ROUTES, POLICY_ROUTES } from './routes'
+import { INFO_ROUTES, NAV_ROUTES, POLICY_ROUTES } from './routes'
 
-/** Card schemes shown as plain wordmarks. */
-const PAYMENT_METHODS = ['VISA', 'MC', 'Amex', 'Mada', 'Apple Pay']
-
-/** Where on the island — the first footer column, in this order. The rest go to "Company". */
-const EXPLORE_ORDER = ['/map', '/explore', '/itineraries', '/activities', '/events', '/packages']
-const EXPLORE_HREFS = new Set(EXPLORE_ORDER)
+/**
+ * Card marks shown beside "Payment methods". What Stripe Checkout accepts on
+ * this account — see /payment-methods, which explains each one.
+ */
+const PAYMENT_METHODS = ['VISA', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay']
 
 const SOCIAL_LINKS = [
   { label: 'Instagram', href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM },
@@ -46,16 +52,9 @@ export async function Footer() {
   const year = new Date().getFullYear()
   const wa = whatsappLink()
 
-  const explore = NAV_ROUTES.filter((route) => EXPLORE_HREFS.has(route.href)).sort(
-    (a, b) => EXPLORE_ORDER.indexOf(a.href) - EXPLORE_ORDER.indexOf(b.href),
-  )
-  const company = NAV_ROUTES.filter(
-    (route) => !EXPLORE_HREFS.has(route.href) && route.href !== HOME_HREF,
-  )
-
   return (
     <footer className="bt-footer">
-      {/* Decorative: the brand name as texture. The logo above carries the
+      {/* Decorative: the brand name as texture. The logo carries the
           accessible name. */}
       <div className="bt-foot-wordmark" aria-hidden="true">
         Bali Trips
@@ -63,10 +62,56 @@ export async function Footer() {
 
       <div className="wrap bt-foot-inner">
         <div className="bt-foot-cols">
-          <div className="bt-foot-brand">
-            <Logo height={34} onLight={false} className="bt-foot-logo" />
+          {/* 1 — about the platform */}
+          <div className="bt-foot-col bt-foot-brand">
+            <h2 id="foot-about">{t('foot_about')}</h2>
             <p className="bt-foot-tagline">{t('ft_brand_b')}</p>
+            <Link href="/about" className="bt-foot-more">
+              {t('home_intro_cta')}
+              <Icon name="arrow" size={15} className="flip" />
+            </Link>
+          </div>
 
+          {/* 2 — quick links to every page */}
+          <nav className="bt-foot-col bt-foot-quick" aria-labelledby="foot-quick">
+            <h2 id="foot-quick">{t('ft_nav')}</h2>
+            <div className="bt-foot-quick-list">
+              {NAV_ROUTES.map((route) => (
+                <Link key={route.href} href={route.href} className="bt-foot-link">
+                  {t(route.key)}
+                </Link>
+              ))}
+            </div>
+          </nav>
+
+          {/* 3 — policies */}
+          <nav className="bt-foot-col" aria-labelledby="foot-policies">
+            <h2 id="foot-policies">{t('ft_policies')}</h2>
+            {POLICY_ROUTES.map((route) => (
+              <Link key={route.href} href={route.href} className="bt-foot-link">
+                {t(route.key)}
+              </Link>
+            ))}
+          </nav>
+
+          {/* 4 — general information */}
+          <div className="bt-foot-col">
+            <h2 id="foot-info">{t('foot_info')}</h2>
+            {INFO_ROUTES.map((route) => (
+              <Link key={route.href} href={route.href} className="bt-foot-link">
+                {t(route.key)}
+              </Link>
+            ))}
+
+            <ul className="bt-foot-pay" aria-label={t('ft_pay')}>
+              {PAYMENT_METHODS.map((method) => (
+                <li key={method} className="bt-pay">
+                  {method}
+                </li>
+              ))}
+            </ul>
+
+            <h3 className="bt-foot-sub">{t('foot_social')}</h3>
             <div className="bt-foot-contact">
               {wa !== null && (
                 <a href={wa} className="bt-foot-line" target="_blank" rel="noopener noreferrer">
@@ -81,7 +126,6 @@ export async function Footer() {
                 <span dir="ltr">{CONTACT_EMAIL}</span>
               </a>
             </div>
-
             {SOCIAL_LINKS.length > 0 && (
               <div className="bt-foot-social">
                 {SOCIAL_LINKS.map((social) => (
@@ -97,47 +141,16 @@ export async function Footer() {
               </div>
             )}
           </div>
-
-          <nav className="bt-foot-col" aria-label={t('foot_explore')}>
-            <h2>{t('foot_explore')}</h2>
-            {explore.map((route) => (
-              <Link key={route.href} href={route.href} className="bt-foot-link">
-                {t(route.key)}
-              </Link>
-            ))}
-          </nav>
-
-          <nav className="bt-foot-col" aria-label={t('foot_company')}>
-            <h2>{t('foot_company')}</h2>
-            {company.map((route) => (
-              <Link key={route.href} href={route.href} className="bt-foot-link">
-                {t(route.key)}
-              </Link>
-            ))}
-          </nav>
-
-          <nav className="bt-foot-col" aria-label={t('ft_policies')}>
-            <h2>{t('ft_policies')}</h2>
-            {POLICY_ROUTES.map((route) => (
-              <Link key={route.href} href={route.href} className="bt-foot-link">
-                {t(route.key)}
-              </Link>
-            ))}
-          </nav>
         </div>
 
         <div className="bt-foot-bottom">
+          <Logo height={28} onLight={false} className="bt-foot-logo" />
           <span>
             © {year} {t('foot_rights')}
           </span>
-          <div className="bt-foot-pay">
-            <span className="bt-foot-pay-t">{t('ft_pay')}</span>
-            {PAYMENT_METHODS.map((method) => (
-              <span key={method} className="bt-pay">
-                {method}
-              </span>
-            ))}
-          </div>
+          <span className="bt-foot-ver" dir="ltr">
+            v{APP_VERSION}
+          </span>
         </div>
       </div>
     </footer>

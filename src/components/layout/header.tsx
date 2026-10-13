@@ -3,10 +3,12 @@
 /**
  * Header.
  *
- * One quiet bar: the logo, three or four primary links, the utility icons and
- * a "Menu" button that opens a side drawer holding every other destination,
- * the language switcher and the account link. Modelled on the reference site
- * the owner picked — few choices up front, everything one tap away.
+ * One bar, in the client's order: the logo; seven links (Home, Our services,
+ * Interactive map, Activities & events, Driver, About us, Articles); then the
+ * account icon, the language globe, the orange "Start planning" pill and the
+ * cart. Where the seven links do not fit they collapse into the Menu drawer,
+ * which also holds every other destination, the languages and the account
+ * link; "Start planning", the cart and Menu stay visible at every width.
  *
  * On the home page the bar sits transparent over the full-bleed hero photo
  * and turns solid as soon as the page scrolls; everywhere else it is solid
@@ -47,10 +49,10 @@ import {
   CART_COUNT_COOKIE,
   CART_HREF,
   HOME_HREF,
+  HEADER_ROUTES,
   isActivePath,
-  PRIMARY_ROUTES,
   SEARCH_HREF,
-  SERVICES_HREF,
+  START_PLANNING_HREF,
 } from './routes'
 
 /** Scroll distance after which the bar gains its opaque background. */
@@ -200,7 +202,7 @@ export function Header() {
         </Link>
 
         <nav className="bt-head-primary" aria-label={t('ft_nav')}>
-          {PRIMARY_ROUTES.map((route) => {
+          {HEADER_ROUTES.map((route) => {
             const active = isActivePath(pathname, route.href)
             return (
               <Link
@@ -220,23 +222,39 @@ export function Header() {
           <AdminLink />
           <NotificationBell />
 
-          <LanguageSwitcher variant="menu" className="bt-head-lang" />
-
-          <Link href={SEARCH_HREF} className="bt-iconbtn bt-head-icon" aria-label={t('c_search')}>
+          {/* Only where there is room beside the seven links (or where they
+              have collapsed into the drawer). */}
+          <Link
+            href={SEARCH_HREF}
+            className="bt-iconbtn bt-head-icon bt-head-search"
+            aria-label={t('c_search')}
+          >
             <Icon name="search" size={19} />
-          </Link>
-
-          <Link href={CART_HREF} className="bt-iconbtn bt-head-icon" aria-label={t('ct2_title')}>
-            <Icon name="cart" size={19} />
-            {cartCount > 0 && <span className="bt-iconbtn-badge">{cartCount}</span>}
           </Link>
 
           <Link
             href={ACCOUNT_HREF}
             className="bt-iconbtn bt-head-icon bt-head-account"
             aria-label={t('nav_account')}
+            title={t('nav_account')}
           >
             <Icon name="user" size={19} />
+          </Link>
+
+          <LanguageSwitcher variant="menu" className="bt-head-lang" />
+
+          <Link href={START_PLANNING_HREF} className="bt-head-cta">
+            {t('c_startplan')}
+          </Link>
+
+          <Link
+            href={CART_HREF}
+            className="bt-iconbtn bt-head-icon bt-head-cart"
+            aria-label={t('ct2_title')}
+            title={t('ct2_title')}
+          >
+            <Icon name="cart" size={19} />
+            {cartCount > 0 && <span className="bt-iconbtn-badge">{cartCount}</span>}
           </Link>
 
           <button
@@ -247,9 +265,12 @@ export function Header() {
             aria-expanded={menuOpen}
             aria-controls="bt-drawer"
             aria-haspopup="dialog"
+            aria-label={t('nav_menu')}
           >
             <Icon name="menu" size={20} />
-            <span className="bt-menubtn-label">{t('nav_menu')}</span>
+            <span className="bt-menubtn-label" aria-hidden="true">
+              {t('nav_menu')}
+            </span>
           </button>
         </div>
       </div>
@@ -295,7 +316,7 @@ export function Header() {
                 <Icon name="user" size={18} /> {t('nav_account')}
               </Link>
               <LinkButton
-                href={SERVICES_HREF}
+                href={START_PLANNING_HREF}
                 variant="orange"
                 size="lg"
                 block

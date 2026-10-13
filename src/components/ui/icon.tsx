@@ -233,6 +233,37 @@ const GLYPHS = {
       <path d="M3 9h18M8 3v4M16 3v4M9 15l2 2 4-4" />
     </>
   ),
+  // Home "Find what to do" tiles, landmarks and events.
+  camera: (
+    <>
+      <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="13.5" r="3.5" />
+    </>
+  ),
+  temple: (
+    <>
+      <path d="M12 2v3M8 5h8l-1.5 4h-5L8 5ZM6 9h12l-1.5 4h-9L6 9ZM4 13h16l-1.5 4h-13L4 13Z" />
+      <path d="M3 21h18M7 17v4M17 17v4" />
+    </>
+  ),
+  utensils: (
+    <>
+      <path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10" />
+      <path d="M17 21V3c-2.2 1.4-3.5 4-3.5 7v3H17" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M5 19c0-8 5-14 15-15-1 10-7 15-15 15Z" />
+      <path d="M5 19 13 11" />
+    </>
+  ),
+  ticket: (
+    <>
+      <path d="M3 8a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.5a1.5 1.5 0 0 0 0 3V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2.5a1.5 1.5 0 0 0 0-3V8Z" />
+      <path d="M14 7v10" strokeDasharray="2 2" />
+    </>
+  ),
 } satisfies Record<string, ReactElement>
 
 /** Every glyph the icon set knows how to draw. */

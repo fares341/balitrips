@@ -184,6 +184,8 @@ h2.section-title {
   align-items: center;
   gap: 12px;
   height: var(--nav-h);
+  /* Wider than the content column: seven links plus the utilities need it. */
+  max-width: 1440px;
 }
 
 .bt-head-logo {
@@ -206,8 +208,10 @@ h2.section-title {
   margin-inline-start: auto;
 }
 
+/* Account and language live in the drawer on phones. */
 .bt-head-lang,
-.bt-head-account {
+.bt-head-account,
+.bt-head-search {
   display: none !important;
 }
 
@@ -234,6 +238,56 @@ h2.section-title {
   border-color: rgba(38, 85, 46, 0.3);
 }
 
+/* "Start planning": the bar's one orange control, visible at every width. */
+.bt-head-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: var(--tap);
+  padding-inline: 20px;
+  border-radius: var(--r-pill);
+  background: var(--orange);
+  color: var(--on-orange);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 0 14px 2px rgba(255, 144, 0, 0.32);
+  transition:
+    background-color var(--dur-fast),
+    box-shadow var(--dur-base);
+}
+
+.bt-head-cta:hover {
+  background: #ffa21f;
+  box-shadow: 0 0 18px 4px rgba(255, 144, 0, 0.42);
+}
+
+@media (max-width: 559px) {
+  .bt-head-bar {
+    gap: 8px;
+  }
+
+  .bt-head-end {
+    gap: 6px;
+  }
+
+  .bt-head-cta {
+    padding-inline: 14px;
+    font-size: 14px;
+  }
+
+  .bt-menubtn {
+    width: var(--tap);
+    padding: 0;
+    justify-content: center;
+  }
+
+  .bt-menubtn-label {
+    display: none;
+  }
+}
+
 @media (min-width: 900px) {
   .bt-head-lang,
   .bt-head-account {
@@ -241,16 +295,28 @@ h2.section-title {
   }
 }
 
-@media (min-width: 1080px) {
+/* The search icon only where it does not crowd the seven links. */
+@media (min-width: 900px) and (max-width: 1239px), (min-width: 1400px) {
+  .bt-head-search {
+    display: inline-flex !important;
+  }
+}
+
+/* All seven links fit: show them inline and retire the Menu button. */
+@media (min-width: 1240px) {
   .bt-head-primary {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 0;
     margin-inline: auto;
   }
 
   .bt-head-end {
     margin-inline-start: 0;
+  }
+
+  .bt-menubtn {
+    display: none;
   }
 }
 
@@ -259,15 +325,22 @@ h2.section-title {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap);
-  padding-inline: 14px;
+  padding-inline: 11px;
   border-radius: var(--r-pill);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 500;
   color: var(--forest-deep);
   white-space: nowrap;
   transition:
     background-color var(--dur-fast),
     color var(--dur-fast);
+}
+
+@media (min-width: 1400px) {
+  .bt-head-primary-link {
+    padding-inline: 13px;
+    font-size: 15px;
+  }
 }
 
 .bt-head-primary-link:hover {
@@ -2120,5 +2193,1010 @@ h2.section-title {
 @media (max-width: 959px) {
   .bt-ibook {
     display: none;
+  }
+}
+
+/* ===========================================================================
+   Home — the client's section order (glimpse cards, map teaser, categories,
+   driver, custom trip) and the four-column footer.
+   =========================================================================== */
+
+.bt-phead-s {
+  margin-top: 12px;
+  max-width: 60ch;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.bt-phead.is-dark .bt-phead-s {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+/* The section's own-page button. */
+.bt-hsee {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  min-height: var(--tap);
+  padding-inline: 20px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(38, 85, 46, 0.25);
+  background: var(--white);
+  color: var(--forest-deep);
+  font-size: 15px;
+  font-weight: 700;
+  transition:
+    background-color var(--dur-fast),
+    border-color var(--dur-fast);
+}
+
+.bt-hsee:hover {
+  border-color: var(--forest);
+  background: var(--ivory-2);
+}
+
+/* --- 3 Intro -------------------------------------------------------------- */
+.bt-hintro {
+  display: grid;
+  gap: 8px 64px;
+  align-items: end;
+}
+
+.bt-hintro .bt-phead {
+  margin-bottom: 0;
+}
+
+.bt-hintro-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+@media (min-width: 980px) {
+  .bt-hintro {
+    grid-template-columns: 1.15fr 1fr;
+  }
+}
+
+/* --- 4 Map teaser --------------------------------------------------------- */
+.bt-hmap {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 980px) {
+  .bt-hmap {
+    grid-template-columns: 1fr 1.25fr;
+    gap: 64px;
+  }
+}
+
+.bt-hmap .bt-phead {
+  margin-bottom: 16px;
+}
+
+.bt-hmap-sub {
+  max-width: 48ch;
+  font-size: 17px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.bt-hmap-legend-t {
+  margin-top: 28px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.bt-hmap-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  max-width: 420px;
+}
+
+.bt-hmap-legend li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.bt-hmap-cta {
+  margin-top: 36px;
+}
+
+.bt-hmap-art {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 2048 / 1399;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.7);
+}
+
+.bt-hmap-art .photo,
+.bt-hmap-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.9s var(--ease-out);
+}
+
+.bt-hmap-art:hover img {
+  transform: scale(1.03);
+}
+
+.bt-hmap-pins {
+  position: absolute;
+  inset: 0;
+}
+
+/* Pins are positioned on the photograph, which does not mirror in RTL. */
+[dir='rtl'] .bt-hmap-pins {
+  direction: ltr;
+}
+
+.bt-hmap-pin {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.bt-hmap-pin.free {
+  background: var(--palm);
+}
+
+.bt-hmap-pin.paid {
+  background: var(--orange);
+}
+
+.bt-hmap-pin.gem {
+  background: var(--forest-deep);
+  border-color: var(--palm);
+}
+
+.bt-hmap-pin.vip {
+  background: var(--ivory);
+  border-color: var(--orange);
+}
+
+.bt-hmap-chip {
+  position: absolute;
+  bottom: 18px;
+  inset-inline-start: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--forest-deep);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* --- 5 Find what to do ---------------------------------------------------- */
+.bt-hcats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .bt-hcats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+}
+
+.bt-hcat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 22px 20px 20px;
+  border-radius: var(--p-radius);
+  border: 1px solid var(--line-soft);
+  background: var(--white);
+  box-shadow: var(--p-shadow);
+  transition:
+    box-shadow var(--dur-base),
+    border-color var(--dur-fast);
+}
+
+.bt-hcat:hover {
+  box-shadow: var(--p-shadow-hover);
+  border-color: rgba(255, 144, 0, 0.55);
+}
+
+.bt-hcat-ic {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 16px;
+  background: rgba(38, 85, 46, 0.07);
+  color: var(--forest);
+  transition:
+    background-color var(--dur-fast),
+    color var(--dur-fast);
+}
+
+.bt-hcat:hover .bt-hcat-ic {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+.bt-hcat-t {
+  font-size: 17.5px;
+  font-weight: 700;
+  color: var(--forest-deep);
+}
+
+.bt-hcat-n {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.bt-hcat-go {
+  position: absolute;
+  top: 22px;
+  inset-inline-end: 20px;
+  color: var(--forest-soft);
+}
+
+@media (max-width: 479px) {
+  .bt-hcat {
+    padding: 16px 14px;
+  }
+
+  .bt-hcat-ic {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 10px;
+  }
+
+  .bt-hcat-t {
+    font-size: 16px;
+  }
+
+  .bt-hcat-go {
+    display: none;
+  }
+}
+
+/* --- Glimpse cards (activities, itineraries, packages, articles) ----------- */
+.bt-hgrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .bt-hgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 980px) {
+  .bt-hgrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+
+  .bt-hgrid.n4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+}
+
+.bt-gcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--line-soft);
+  background: var(--white);
+  box-shadow: var(--p-shadow);
+  transition: box-shadow var(--dur-base);
+}
+
+.bt-gcard:hover {
+  box-shadow: var(--p-shadow-hover);
+}
+
+.bt-gcard-media {
+  position: relative;
+  display: block;
+  height: 220px;
+  overflow: hidden;
+  background: var(--forest);
+}
+
+.bt-gcard-media .photo,
+.bt-gcard-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s var(--ease-out);
+}
+
+.bt-gcard:hover .bt-gcard-media img {
+  transform: scale(1.04);
+}
+
+.bt-gcard-tag,
+.bt-gcard-rate {
+  position: absolute;
+  top: 14px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bt-gcard-tag {
+  inset-inline-start: 14px;
+  background: rgba(10, 26, 14, 0.74);
+  color: #fff;
+}
+
+.bt-gcard-rate {
+  inset-inline-end: 14px;
+  background: var(--white);
+  color: var(--forest-deep);
+}
+
+.bt-gcard-rate span {
+  color: var(--orange);
+}
+
+/* The icon chip straddles the photo's bottom edge. */
+.bt-gcard-ic {
+  position: absolute;
+  top: 196px;
+  inset-inline-start: 20px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--orange);
+  color: var(--on-orange);
+  box-shadow: 0 8px 18px -8px rgba(255, 144, 0, 0.7);
+}
+
+.bt-gcard-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+  padding: 38px 22px 20px;
+}
+
+.bt-gcard-t {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--forest-deep);
+}
+
+.bt-gcard-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.bt-gcard-facts span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bt-gcard-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.bt-gcard-price {
+  display: flex;
+  flex-direction: column;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.bt-gcard-price strong {
+  font-size: 21px;
+  line-height: 1.15;
+  color: var(--forest-deep);
+}
+
+.bt-gcard-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--orange-ink);
+}
+
+/* The events tile closes the activities row. */
+.bt-hevents {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 300px;
+  padding: 28px 24px 24px;
+  border-radius: 22px;
+  background:
+    radial-gradient(90% 70% at 100% 0%, rgba(255, 144, 0, 0.28), transparent 65%),
+    var(--forest-deep);
+  color: #fff;
+  box-shadow: var(--p-shadow);
+}
+
+.bt-hevents-ic {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--orange);
+}
+
+.bt-hevents-t {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.bt-hevents-b {
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.bt-hevents-n {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--palm-light);
+}
+
+.bt-hevents-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+/* --- 9 Driver ------------------------------------------------------------- */
+.bt-hdrv {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 980px) {
+  .bt-hdrv {
+    grid-template-columns: 1fr 1fr;
+    gap: 72px;
+  }
+}
+
+.bt-hdrv .bt-phead {
+  margin-bottom: 16px;
+}
+
+.bt-hdrv-checks li {
+  color: #fff;
+}
+
+.bt-hdrv-cta {
+  margin-top: 36px;
+}
+
+.bt-hveh {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bt-hveh-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  transition:
+    background-color var(--dur-fast),
+    border-color var(--dur-fast);
+}
+
+.bt-hveh-card:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 144, 0, 0.6);
+}
+
+.bt-hveh-ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--white);
+  color: var(--forest);
+}
+
+.bt-hveh-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bt-hveh-t {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bt-hveh-d {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.bt-hveh-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.bt-hveh-price strong {
+  font-size: 22px;
+  line-height: 1.15;
+  color: #fff;
+}
+
+@media (max-width: 479px) {
+  .bt-hveh-card {
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .bt-hveh-ic {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* --- 10 Custom trip ------------------------------------------------------- */
+.bt-hcustom {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  min-height: 460px;
+  border-radius: 28px;
+  background: var(--forest);
+  color: #fff;
+  box-shadow: 0 30px 60px -36px rgba(0, 0, 0, 0.55);
+}
+
+.bt-hcustom > .photo,
+.bt-hcustom > img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.9s var(--ease-out);
+}
+
+.bt-hcustom:hover > img {
+  transform: scale(1.03);
+}
+
+.bt-hcustom-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    rgba(10, 26, 14, 0.9) 0%,
+    rgba(10, 26, 14, 0.55) 55%,
+    rgba(10, 26, 14, 0.15) 100%
+  );
+}
+
+[dir='rtl'] .bt-hcustom-veil {
+  background: linear-gradient(
+    270deg,
+    rgba(10, 26, 14, 0.9) 0%,
+    rgba(10, 26, 14, 0.55) 55%,
+    rgba(10, 26, 14, 0.15) 100%
+  );
+}
+
+.bt-hcustom-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 600px;
+  padding: 48px;
+}
+
+.bt-hcustom-ic {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+.bt-hcustom-k {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--orange);
+}
+
+.bt-hcustom-t {
+  font-size: clamp(30px, 3.6vw, 44px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+
+[dir='rtl'] .bt-hcustom-t {
+  letter-spacing: 0;
+  line-height: 1.35;
+}
+
+.bt-hcustom-b {
+  font-size: 17px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.bt-hcustom-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-top: 10px;
+  padding-inline: 28px;
+  border-radius: var(--r-pill);
+  background: var(--orange);
+  color: var(--on-orange);
+  font-weight: 700;
+  box-shadow: 0 0 16px 3px rgba(255, 144, 0, 0.35);
+}
+
+@media (max-width: 639px) {
+  .bt-hcustom {
+    min-height: 520px;
+  }
+
+  .bt-hcustom-veil,
+  [dir='rtl'] .bt-hcustom-veil {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 26, 14, 0.15) 0%,
+      rgba(10, 26, 14, 0.85) 55%,
+      rgba(10, 26, 14, 0.95) 100%
+    );
+  }
+
+  .bt-hcustom-body {
+    padding: 28px 22px;
+  }
+}
+
+/* --- 11 Highlights: an icon chip on each bento tile ----------------------- */
+.bt-bento-ic {
+  position: absolute;
+  top: 14px;
+  inset-inline-start: 14px;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--forest);
+}
+
+/* --- 12 Reviews: each card links to the activity it is about -------------- */
+.bt-hrsummary {
+  justify-content: flex-start;
+  margin: -16px 0 32px;
+}
+
+.bt-hrcard {
+  height: 100%;
+  transition: box-shadow var(--dur-base);
+}
+
+.bt-hrcard:hover {
+  box-shadow: var(--p-shadow-hover);
+}
+
+.bt-hrcard .bt-rcard-head > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.bt-hrcard-q {
+  color: var(--orange);
+  opacity: 0.8;
+}
+
+.bt-hrcard .bt-rcard-meta {
+  display: block;
+}
+
+.bt-hrcard-about {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+/* --- Footer: four columns, then logo, copyright and version --------------- */
+.bt-footer .bt-foot-cols {
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .bt-footer .bt-foot-cols {
+    grid-template-columns: 1.25fr 1.6fr 1fr 1.15fr;
+    gap: 48px;
+  }
+
+  .bt-footer .bt-foot-link,
+  .bt-footer .bt-foot-line {
+    min-height: 36px;
+  }
+}
+
+.bt-footer .bt-foot-brand h2 {
+  margin-bottom: 0;
+}
+
+.bt-footer .bt-foot-tagline {
+  margin-top: 10px;
+}
+
+.bt-foot-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--palm-light);
+}
+
+.bt-foot-quick-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 20px;
+}
+
+.bt-footer .bt-foot-pay {
+  list-style: none;
+  margin: 14px 0 6px;
+  padding: 0;
+}
+
+.bt-foot-sub {
+  margin-top: 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.bt-footer .bt-foot-contact {
+  margin-top: 4px;
+}
+
+.bt-footer .bt-foot-bottom {
+  justify-content: flex-start;
+  gap: 14px 24px;
+}
+
+.bt-foot-ver {
+  margin-inline-start: auto;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639px) {
+  .bt-footer .bt-foot-quick {
+    grid-column: 1 / -1;
+  }
+
+  .bt-footer .bt-foot-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bt-foot-ver {
+    margin-inline-start: 0;
+  }
+}
+
+/* --- Standalone info pages: FAQ, payment methods, reviews ------------------ */
+.bt-faq-h {
+  margin-bottom: 18px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--forest-deep);
+}
+
+.bt-pmlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bt-inc.bt-pm {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  column-gap: 20px;
+}
+
+.bt-pm .bt-inc-ic {
+  margin-bottom: 0;
+}
+
+.bt-pm-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.bt-pm-mark {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--ivory-2);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--forest-deep);
+}
+
+.bt-pm-refund {
+  margin-top: 28px;
+  color: var(--muted);
+}
+
+.bt-pm-refund a {
+  font-weight: 700;
+  color: var(--forest);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.bt-hrcard-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--forest-soft);
+}
+
+/* Phones: glimpse rows become a swipeable strip instead of a long stack.
+   The strip scrolls inside itself; the page never scrolls sideways. */
+@media (max-width: 639px) {
+  .bt-hgrid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    gap: 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 4px var(--gutter) 18px;
+    scrollbar-width: none;
+  }
+
+  .bt-hgrid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bt-hgrid > li {
+    scroll-snap-align: start;
+  }
+
+  .bt-gcard-media {
+    height: 180px;
+  }
+
+  .bt-gcard-ic {
+    top: 156px;
+  }
+
+  .bt-hevents {
+    min-height: 100%;
   }
 }

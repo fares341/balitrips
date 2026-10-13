@@ -20,10 +20,9 @@ import {
 } from '../../_lib/settings'
 import { Field, TextArea, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
-import { loadPickerMedia, MediaPicker } from '../../_ui/media-picker'
 import { PageHead } from '../../_ui/shell'
 import { Pill, When } from '../../_ui/table'
-import { saveContact, saveCurrencies, saveFees, saveHome, savePolicy } from './actions'
+import { saveContact, saveCurrencies, saveFees, savePolicy } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +84,7 @@ export default async function ConfigPage({
       bps / 100,
     )
 
-  const [{ values, invalid, missing }, rows, mediaList] = await Promise.all([
+  const [{ values, invalid, missing }, rows] = await Promise.all([
     readSettings(),
     db
       .select({
@@ -97,7 +96,6 @@ export default async function ConfigPage({
       .leftJoin(users, eq(users.id, siteSettings.updatedByActorId))
       .where(inArray(siteSettings.key, SETTING_KEYS))
       .orderBy(desc(siteSettings.updatedAt)),
-    loadPickerMedia(),
   ])
 
   const meta = new Map(rows.map((row) => [row.key, row]))
@@ -311,27 +309,6 @@ export default async function ConfigPage({
           <div className="a-actions">
             <button className="a-btn" type="submit">
               {t('config.save_contact')}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div className="a-card">
-        <h2>{t('config.home_title')}</h2>
-        <p className="a-hint">{t('config.home_hint')}</p>
-        <SectionMeta t={t} name="home" meta={meta} missing={missing} />
-
-        <form className="a-form" action={saveHome} style={{ marginBlockStart: 12 }}>
-          <MediaPicker
-            name="heroImageId"
-            label={t('config.home_hero_image')}
-            items={mediaList}
-            value={values.home.heroImageId}
-            hint={t('config.home_hero_image_hint')}
-          />
-          <div className="a-actions">
-            <button className="a-btn" type="submit">
-              {t('config.save_home')}
             </button>
           </div>
         </form>

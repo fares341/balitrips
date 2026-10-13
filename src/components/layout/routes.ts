@@ -20,11 +20,15 @@ export interface NavRoute {
   key: string
 }
 
-/** Second-row navigation, in the design's order. */
+/**
+ * Every public destination, in reading order. The Menu drawer renders all of
+ * it and the footer's "Quick links" column lists it, so a page added here is
+ * reachable from both without further wiring.
+ */
 export const NAV_ROUTES: readonly NavRoute[] = [
   { href: '/', key: 'navr_home' },
   { href: '/services', key: 'navr_services' },
-  { href: '/driver', key: 'navr_driver2' },
+  { href: '/map', key: 'navr_map' },
   { href: '/activities', key: 'navr_act' },
   { href: '/events', key: 'navr_events' },
   { href: '/itineraries', key: 'navr_itin' },
@@ -34,24 +38,33 @@ export const NAV_ROUTES: readonly NavRoute[] = [
    * six published products effectively invisible.
    */
   { href: '/packages', key: 'navr_packages' },
-  { href: '/map', key: 'navr_map' },
+  { href: '/driver', key: 'navr_driver' },
+  { href: '/custom', key: 'svc_cust_t' },
   { href: '/explore', key: 'navr_explore' },
   { href: '/plans', key: 'navr_plans' },
+  { href: '/reviews', key: 'rv_title' },
+  { href: '/about', key: 'navr_about' },
   { href: '/blog', key: 'navr_blog' },
   { href: '/contact', key: 'navr_contact' },
 ]
 
 /**
- * The header's always-visible links — the few destinations a first-time
- * visitor is actually looking for. Everything else lives in the Menu drawer,
- * which renders the whole of `NAV_ROUTES`, so nothing here can become
- * unreachable by being left out.
+ * The header's inline links, in the order the client specified. Below the
+ * width where all seven fit they collapse into the Menu drawer, which renders
+ * the whole of `NAV_ROUTES`, so nothing here can become unreachable.
+ *
+ * Events have no slot of their own: "Activities & events" leads to
+ * /activities, which links on to /events, and the drawer and footer list
+ * /events directly.
  */
-export const PRIMARY_ROUTES: readonly NavRoute[] = [
+export const HEADER_ROUTES: readonly NavRoute[] = [
+  { href: '/', key: 'navr_home' },
+  { href: '/services', key: 'navr_services' },
   { href: '/map', key: 'navr_map' },
-  { href: '/itineraries', key: 'navr_itin' },
   { href: '/activities', key: 'navr_act' },
-  { href: '/plans', key: 'navr_plans' },
+  { href: '/driver', key: 'navr_driver' },
+  { href: '/about', key: 'navr_about' },
+  { href: '/blog', key: 'navr_blog' },
 ]
 
 /**
@@ -63,9 +76,11 @@ export const PRIMARY_ROUTES: readonly NavRoute[] = [
  * readable, linkable and archivable.
  */
 export const POLICY_ROUTES: readonly NavRoute[] = [
-  { href: '/terms', key: 'ft_p_terms' },
   { href: '/privacy', key: 'ft_p_privacy' },
+  { href: '/terms', key: 'ft_p_terms' },
   { href: '/refund', key: 'ft_p_refund' },
+  { href: '/platform-use', key: 'ft_p_platform_use' },
+  { href: '/map-use', key: 'ft_p_map_use' },
   { href: '/cookies', key: 'ft_p_cookies' },
   /**
    * Not a policy, but it belongs beside them: CC BY and CC BY-SA both require
@@ -75,8 +90,17 @@ export const POLICY_ROUTES: readonly NavRoute[] = [
   { href: '/credits', key: 'ft_p_credits' },
 ]
 
+/** The footer's "General information" column. Social links are appended from config. */
+export const INFO_ROUTES: readonly NavRoute[] = [
+  { href: '/faq', key: 'faq_title' },
+  { href: '/contact', key: 'navr_contact' },
+  { href: '/payment-methods', key: 'pm_title' },
+]
+
 export const HOME_HREF = '/'
 export const SERVICES_HREF = '/services'
+/** Where the header's "Start planning" button leads: the custom-trip planner. */
+export const START_PLANNING_HREF = '/custom'
 export const SEARCH_HREF = '/search'
 export const CART_HREF = '/cart'
 export const ACCOUNT_HREF = '/account'

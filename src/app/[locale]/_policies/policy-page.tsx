@@ -1,5 +1,5 @@
 /**
- * The prose shell shared by the four policy pages.
+ * The prose shell shared by the policy pages.
  *
  * In the handoff these were `href="#"` in the footer — four dead anchors on a
  * site that takes card payments. That is not only a broken link:
@@ -19,7 +19,7 @@
  * honest; four `#` links are not, and neither is invented legal text, which is
  * worse than none: it would be quoted back at the business in a dispute.
  *
- * Route-private (`_policies` is not a route segment). Each of the four page
+ * Route-private (`_policies` is not a route segment). Each policy page
  * files is a thin wrapper that names its policy.
  */
 
@@ -33,7 +33,7 @@ import type { Locale } from '@/i18n/config'
 
 import { alternatesFor } from '../_seo-hreflang'
 
-export type PolicyId = 'terms' | 'privacy' | 'refund' | 'cookies'
+export type PolicyId = 'terms' | 'privacy' | 'refund' | 'cookies' | 'platform-use' | 'map-use'
 
 type PolicyCopy = {
   /** Message key for the page title. Shared with the footer's link label. */
@@ -50,6 +50,20 @@ type PolicyCopy = {
    * someone has already agreed to. Update it when the wording changes.
    */
   updated: string
+  /**
+   * Headed sections of plain policy text. Pages that have them render them in
+   * place of the "what this page will cover" paragraph; the placeholder note
+   * still stands above them until the wording is signed off.
+   */
+  sections?: readonly { titleKey: string; bodyKey: string }[]
+}
+
+/** `pol_pu1_t`/`pol_pu1_b` … `pol_puN_*` — numbered key pairs, in order. */
+function sectionKeys(prefix: string, count: number): { titleKey: string; bodyKey: string }[] {
+  return Array.from({ length: count }, (_, index) => ({
+    titleKey: `${prefix}${index + 1}_t`,
+    bodyKey: `${prefix}${index + 1}_b`,
+  }))
 }
 
 const POLICIES: Record<PolicyId, PolicyCopy> = {
@@ -77,6 +91,26 @@ const POLICIES: Record<PolicyId, PolicyCopy> = {
     scopeKey: 'pol_cookies_scope',
     updated: '2026-08-07',
   },
+  'platform-use': {
+    titleKey: 'ft_p_platform_use',
+    subKey: 'pol_platform_sub',
+    scopeKey: 'pol_platform_scope',
+    updated: '2026-10-13',
+    sections: sectionKeys('pol_pu', 6),
+  },
+  /**
+   * Matches what the product actually enforces: per-plan device limits
+   * (src/lib/security/devices.ts), the email-and-date watermark and the
+   * copy/print blocking on the map (map/map-protect.tsx), and automatic
+   * suspension on abuse (src/lib/security/bans.ts).
+   */
+  'map-use': {
+    titleKey: 'ft_p_map_use',
+    subKey: 'pol_map_sub',
+    scopeKey: 'pol_map_scope',
+    updated: '2026-10-13',
+    sections: sectionKeys('pol_mu', 6),
+  },
 }
 
 /**
@@ -88,7 +122,8 @@ const POLICIES: Record<PolicyId, PolicyCopy> = {
  * rather than a guess.
  */
 export function policyHref(id: PolicyId): string {
-  return POLICY_ROUTES.find((route) => route.key === `ft_p_${id}`)?.href ?? `/${id}`
+  const key = POLICIES[id].titleKey
+  return POLICY_ROUTES.find((route) => route.key === key)?.href ?? `/${id}`
 }
 
 /**
@@ -181,11 +216,24 @@ export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale 
           </p>
         </div>
 
-        <div className="bt-article-body">
-          <h2 style={{ fontSize: 21, marginBottom: 14 }}>{t('pol_scope')}</h2>
-          <p>{t(copy.scopeKey)}</p>
-          <p>{t('pol_help')}</p>
-        </div>
+        {copy.sections !== undefined ? (
+          <div className="bt-article-body">
+            {copy.sections.map((section, index) => (
+              <div key={section.titleKey}>
+                <h2 id={`policy-s${index + 1}`} style={{ fontSize: 21, marginBottom: 10 }}>
+                  {index + 1}. {t(section.titleKey)}
+                </h2>
+                <p>{t(section.bodyKey)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bt-article-body">
+            <h2 style={{ fontSize: 21, marginBottom: 14 }}>{t('pol_scope')}</h2>
+            <p>{t(copy.scopeKey)}</p>
+            <p>{t('pol_help')}</p>
+          </div>
+        )}
 
         <LinkButton href="/contact" variant="forest">
           {t('navr_contact')} <Icon name="arrow" size={17} color="#fff" className="flip" />

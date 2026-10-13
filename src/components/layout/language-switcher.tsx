@@ -29,10 +29,13 @@
  *    the word "عربي" in the header without opening anything — the globe-and-
  *    code trigger it replaces hid the one control a bilingual site most needs
  *    to make obvious. Indonesian stays a single tap away.
- *  - `menu`: the compact globe trigger with a dropdown, for tight spaces.
+ *  - `menu`: a globe icon button with a dropdown, used in the header bar.
+ *    A proper menu button: ArrowDown/ArrowUp open it on the current/last
+ *    item, the arrow keys, Home and End move between languages, Escape
+ *    closes it and returns focus to the globe, and Tab closes it and moves on.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useLocale } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -57,6 +60,10 @@ const SEGMENT_LABEL: Record<Locale, string> = {
   id: 'ID',
 }
 
+function menuItems(menu: HTMLElement | null): HTMLAnchorElement[] {
+  return menu === null ? [] : [...menu.querySelectorAll<HTMLAnchorElement>('[role^="menuitem"]')]
+}
+
 export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageSwitcherProps) {
   const activeLocale = useLocale() as Locale
   const pathname = usePathname()
@@ -64,6 +71,11 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
 
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
+  const menuId = useId()
+  /** Which item takes focus when the menu opens: the current language, or the last. */
+  const openFocus = useRef<'current' | 'last'>('current')
 
   const close = useCallback(() => setOpen(false), [])
 
@@ -86,8 +98,19 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
       if (node && event.target instanceof Node && !node.contains(event.target)) close()
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close()
+      if (event.key !== 'Escape') return
+      close()
+      // Escape hands focus back to the button that opened the menu.
+      if (menuRef.current?.contains(document.activeElement)) triggerRef.current?.focus()
     }
+
+    // Move focus into the menu so the arrow keys work straight away.
+    const items = menuItems(menuRef.current)
+    const target =
+      openFocus.current === 'last'
+        ? items[items.length - 1]
+        : (items.find((item) => item.dataset.current === 'true') ?? items[0])
+    target?.focus()
 
     document.addEventListener('mousedown', onPointerDown)
     document.addEventListener('touchstart', onPointerDown)
@@ -98,6 +121,40 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open, close])
+
+  /** ArrowDown/Enter/Space open on the current item, ArrowUp on the last. */
+  const onTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      openFocus.current = event.key === 'ArrowUp' ? 'last' : 'current'
+      setOpen(true)
+    }
+  }
+
+  /** Arrow keys, Home and End move between items; Tab closes the menu. */
+  const onMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Tab') {
+      setOpen(false)
+      return
+    }
+    const items = menuItems(menuRef.current)
+    if (items.length === 0) return
+    const index = items.indexOf(document.activeElement as HTMLAnchorElement)
+    let next: number | null = null
+    if (event.key === 'ArrowDown') next = (index + 1) % items.length
+    else if (event.key === 'ArrowUp') next = (index - 1 + items.length) % items.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = items.length - 1
+    else if (event.key === ' ') {
+      // Space activates a menu item, as Enter already does for a link.
+      event.preventDefault()
+      items[index]?.click()
+      return
+    }
+    if (next === null) return
+    event.preventDefault()
+    items[next]?.focus()
+  }
 
   const switchTo = (next: Locale) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     // Let the browser handle modified clicks (new tab, new window, download).
@@ -156,8 +213,9 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
   return (
     <div ref={containerRef} className={className} style={{ position: 'relative' }}>
       <button
+        ref={triggerRef}
         type="button"
-        className="chip"
+        className="bt-iconbtn bt-langbtn"
         /*
          * The accessible name is the current language's *endonym* — "English",
          * "العربية", "Indonesia". Language names are written in their own
@@ -166,17 +224,28 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
          * hard-coded the English string "Language" for all of them.
          */
         aria-label={localeConfig[activeLocale].label}
+        title={localeConfig[activeLocale].label}
         aria-expanded={open}
         aria-haspopup="menu"
-        onClick={() => setOpen((value) => !value)}
-        style={{ gap: 7, padding: '9px 13px', minHeight: 44 }}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => {
+          openFocus.current = 'current'
+          setOpen((value) => !value)
+        }}
+        onKeyDown={onTriggerKeyDown}
       >
-        <Icon name="globe" size={17} />
-        <span style={{ fontWeight: 700 }}>{SEGMENT_LABEL[activeLocale]}</span>
+        <Icon name="globe" size={19} />
       </button>
 
       {open && (
-        <div role="menu" className="bt-langmenu">
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="menu"
+          aria-label={localeConfig[activeLocale].label}
+          className="bt-langmenu"
+          onKeyDown={onMenuKeyDown}
+        >
           {locales.map((candidate) => {
             const current = candidate === activeLocale
             return (
@@ -186,8 +255,11 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
                 locale={candidate}
                 hrefLang={candidate}
                 lang={candidate}
-                role="menuitem"
-                aria-current={current ? 'true' : undefined}
+                role="menuitemradio"
+                aria-checked={current}
+                // Roving focus: arrow keys move between items, Tab leaves.
+                tabIndex={-1}
+                data-current={current ? 'true' : undefined}
                 onClick={switchTo(candidate)}
                 className={current ? 'bt-langmenu-item on' : 'bt-langmenu-item'}
               >

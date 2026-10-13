@@ -20,12 +20,14 @@ export {
   CART_CHANGED_EVENT,
   CART_COUNT_COOKIE,
   CART_HREF,
+  HEADER_ROUTES,
   HOME_HREF,
+  INFO_ROUTES,
   NAV_ROUTES,
   POLICY_ROUTES,
-  PRIMARY_ROUTES,
   SEARCH_HREF,
   SERVICES_HREF,
+  START_PLANNING_HREF,
   isActivePath,
 } from './routes'
 export type { NavRoute } from './routes'
