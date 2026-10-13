@@ -1,0 +1,52 @@
+# Deploy to the server after CI passes on main (optional — the systemd timer
+# from deploy/install-autodeploy.sh does the same without SSH secrets).
+#
+# Needs these repository secrets (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST     server IP or hostname
+#   DEPLOY_USER     the Linux user that owns the checkout (in the docker group)
+#   DEPLOY_SSH_KEY  a private key whose public half is in that user's
+#                   ~/.ssh/authorized_keys
+#   DEPLOY_PATH     (optional) checkout path, default /opt/balitrips
+# Without DEPLOY_HOST the job is skipped, so the workflow is harmless until set up.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Update the server
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Check configuration
+        id: cfg
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "DEPLOY_HOST is not set — skipping deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run deploy/update.sh on the server
+        if: steps.cfg.outputs.skip != 'true'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 45m
+          script: |
+            cd "${{ secrets.DEPLOY_PATH || '/opt/balitrips' }}"
+            ./deploy/update.sh

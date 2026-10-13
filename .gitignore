@@ -103,3 +103,6 @@ test-accounts-*.txt
 /public/itineraries/
 /public/custom-trips/
 /storage/
+
+# Server deploy logs (deploy/update.sh)
+/deploy/logs/

@@ -169,6 +169,74 @@ deploy\start-production.cmd seed test-accounts
 
    قالب `bali_pdf_ready_whatsapp` يُستعمل الآن للجداول الجاهزة والمخصصة معاً. اكتب نصه عاماً، مثل: "جدول رحلتك {{1}} جاهز: {{2}}".
 
+## التحديث التلقائي من GitHub
+
+كل push على `main` يوصل للسيرفر تلقائياً. السكربت `deploy/update.sh` بيعمل الآتي:
+
+1. يسحب آخر commit.
+2. يبني الصور.
+3. يطبّق الـ migrations.
+4. يعيد تشغيل الموقع ويتأكد إنه شغال.
+
+لو أي خطوة فشلت، بيرجع للنسخة اللي قبلها تلقائياً. البيانات والملفات و`.env.production` ما بتتلمسش.
+
+### أول مرة على السيرفر (مرة واحدة)
+
+```bash
+# 1) مفتاح قراءة للريبو (الريبو private)
+ssh-keygen -t ed25519 -f ~/.ssh/balitrips_deploy -N ""
+cat ~/.ssh/balitrips_deploy.pub
+#    انسخه في GitHub: الريبو ← Settings ← Deploy keys ← Add (Read-only)
+cat >> ~/.ssh/config <<'CFG'
+Host github-balitrips
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/balitrips_deploy
+  IdentitiesOnly yes
+CFG
+
+# 2) نسخ المشروع وتشغيله أول مرة
+sudo mkdir -p /opt/balitrips && sudo chown "$USER" /opt/balitrips
+git clone git@github-balitrips:fares341/balitrips.git /opt/balitrips
+cd /opt/balitrips
+./deploy/start-production.sh --seed --test-accounts
+
+# 3) تشغيل التحديث التلقائي (يفحص GitHub كل دقيقتين)
+sudo ./deploy/install-autodeploy.sh
+```
+
+خلاص. بعد كده أي تعديل تعمله push على `main` هيظهر على السيرفر خلال دقيقتين، بالإضافة لوقت البناء (5 إلى 10 دقائق).
+
+### أوامر مفيدة
+
+| الأمر | الوظيفة |
+|---|---|
+| `./deploy/update.sh` | تحديث يدوي فوراً، ولو مفيش جديد مش بيعمل حاجة |
+| `./deploy/update.sh --force` | إعادة بناء وتشغيل حتى من غير تغيير |
+| `journalctl -u balitrips-update -f` | متابعة التحديثات التلقائية |
+| `ls deploy/logs/` | سجل كل تحديث بالتاريخ |
+| `sudo ./deploy/install-autodeploy.sh --remove` | إيقاف التحديث التلقائي |
+
+**HTTPS:** لو شغّال بـ `--https`، اكتب في `.env.production` السطر `DEPLOY_FLAGS=--https`، فيستخدمه التحديث التلقائي كل مرة.
+
+**بديل بـ GitHub Actions (اختياري):** الملف `.github/workflows/deploy.yml` بيحدّث السيرفر بعد ما الـ CI ينجح. محتاج تضيف secrets في GitHub:
+- `DEPLOY_HOST`
+- `DEPLOY_USER`
+- `DEPLOY_SSH_KEY`
+- `DEPLOY_PATH` (اختياري)
+
+من غير الـ secrets دي بيتخطى نفسه. استخدم طريقة واحدة بس، يا التايمر يا Actions.
+
+**ملاحظات:**
+- **الذاكرة:** البناء على السيرفر محتاج 4GB رام أو swap. لو السيرفر 2GB:
+  ```bash
+  sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+  echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+  ```
+- **التوقف أثناء التحديث:** الموقع بيقف ثواني بس، وقت تبديل الحاوية.
+- **الـ migrations ما بتترجعش:** الرجوع لنسخة قديمة بيرجّع الكود بس. اكتب الـ migrations بحيث تضيف من غير ما تحذف، والنسخة القديمة تشتغل عليها.
+- **ما تعدّلش ملفات المشروع على السيرفر نفسه:** التحديث بيمسحها. عدّل في الريبو، و`.env.production` بس هو اللي بيتعدّل على السيرفر.
+
 ## أعطال شائعة
 
 | العَرَض | الحل |
