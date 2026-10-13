@@ -5,6 +5,8 @@
 #   ./deploy/start-production.sh                 build + migrate + start
 #   ./deploy/start-production.sh --seed          …and load the starter content
 #   ./deploy/start-production.sh --test-accounts …and create test accounts per role
+#   ./deploy/start-production.sh --photos        …and (re)import the real photos
+#                                                 (automatic when the site has none)
 #   ./deploy/start-production.sh --https         …and serve HTTPS with Caddy
 #                                                 (needs SITE_DOMAIN + DNS pointing here)
 #   ./deploy/start-production.sh --stop          stop everything (data is kept)
@@ -22,11 +24,12 @@ ROOT="$(pwd)"
 ENV_FILE="$ROOT/.env.production"
 COMPOSE=(docker compose -f "$ROOT/docker-compose.production.yml" --env-file "$ENV_FILE")
 
-SEED=0 TEST_ACCOUNTS=0 HTTPS=0 ACTION=up
+SEED=0 TEST_ACCOUNTS=0 HTTPS=0 PHOTOS=0 ACTION=up
 for arg in "$@"; do
   case "$arg" in
     --seed) SEED=1 ;;
     --test-accounts) TEST_ACCOUNTS=1 ;;
+    --photos) PHOTOS=1 ;;
     --https) HTTPS=1 ;;
     --stop) ACTION=stop ;;
     --logs) ACTION=logs ;;
@@ -130,6 +133,18 @@ REGIONS="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGR
 if [[ "$SEED" == 1 || "${REGIONS:-0}" == 0 ]]; then
   say "Loading starter content (regions, categories, tags, sample places)"
   "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx src/db/seed/index.ts
+fi
+
+# Real photography. The seed only carries drawn SVG placeholders; the photos
+# (openly licensed, with credits) are downloaded from Wikimedia Commons and run
+# through the same pipeline as a Studio upload, into the media volume (or
+# Spaces). Automatic when the library has no photo yet; --photos re-runs it.
+# A failure (e.g. no internet) never stops the deploy — the placeholders stay.
+PHOTO_COUNT="$("${COMPOSE[@]}" exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from media where deleted_at is null and mime_type <> 'image/svg+xml'" 2>/dev/null | tr -d '[:space:]' || echo 0)"
+if [[ "$PHOTOS" == 1 || "${PHOTO_COUNT:-0}" == 0 ]]; then
+  say "Importing the site's photos (Wikimedia Commons, a few minutes)"
+  "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/import-photos.ts ||
+    echo "  ! Photo import failed — placeholders stay. Retry later: ./deploy/start-production.sh --photos"
 fi
 
 # --- App image --------------------------------------------------------------

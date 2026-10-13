@@ -77,7 +77,7 @@ h3 {
   font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0;
-  color: var(--orange-ink);
+  color: var(--forest-soft);
 }
 
 .lede {
@@ -352,7 +352,7 @@ h3 {
 /* Scroll reveal. */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(8px);
   transition:
     opacity 0.7s ease,
     transform 0.7s ease;
@@ -1122,7 +1122,7 @@ select.bt-mchip option {
   margin: 0;
   font-size: 25px;
   font-weight: 800;
-  color: var(--orange-deep, #e4761b);
+  color: var(--forest-deep);
   line-height: 1.15;
 }
 
@@ -1362,7 +1362,6 @@ select.bt-mchip option {
 }
 
 .bt-svc-card:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
 
@@ -1425,8 +1424,10 @@ select.bt-mchip option {
    whole header instead of under its second row.
    =========================================================================== */
 .bt-header {
-  position: sticky;
-  top: 0;
+  /* Not sticky: the client wants the bar to stay at the top of the page and
+     scroll away with it, not follow the reader down. `relative` keeps it
+     above the home hero that slides under it (negative margin). */
+  position: relative;
   z-index: var(--z-header);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -2655,7 +2656,7 @@ select.bt-mchip option {
   border-top: 1px solid var(--line);
   font-weight: 800;
   font-size: 18px;
-  color: var(--orange-ink);
+  color: var(--forest-deep);
 }
 
 /* Custom trip form. */
@@ -3025,7 +3026,6 @@ select.bt-mchip option {
 }
 
 .bt-cardhover:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
 
@@ -3450,7 +3450,6 @@ select.bt-mchip option {
 
 .bt-mapcallout:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
 }
 
 .bt-mapcallout-media {
@@ -3499,8 +3498,7 @@ select.bt-mchip option {
 }
 
 .bt-advchip:hover {
-  border-color: var(--orange);
-  transform: translateY(-3px);
+  border-color: rgba(38, 85, 46, 0.35);
   box-shadow: var(--shadow-md);
 }
 
@@ -3704,7 +3702,7 @@ select.bt-mchip option {
 }
 
 .bt-acc-item.on {
-  border-color: var(--orange);
+  border-color: rgba(38, 85, 46, 0.28);
 }
 
 .bt-acc-q {
@@ -3844,7 +3842,7 @@ select.bt-mchip option {
 .bt-tl-day {
   font-weight: 800;
   font-size: 13px;
-  color: var(--orange-ink);
+  color: var(--forest-soft);
 }
 
 .bt-tl-card {
@@ -3863,7 +3861,7 @@ select.bt-mchip option {
 }
 
 .bt-tl-card:hover {
-  border-color: var(--orange);
+  border-color: rgba(38, 85, 46, 0.35);
   box-shadow: var(--shadow-sm);
 }
 
@@ -3932,7 +3930,6 @@ select.bt-mchip option {
 }
 
 .bt-bridge:hover {
-  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
 
@@ -4287,8 +4284,8 @@ select.bt-mchip option {
   inset: 0;
 }
 
-/* Negative margins centre the pin on its coordinate without touching
-   transform, which btPinBob owns. Handoff wrote `margin: -19px 0 0 -19px`;
+/* Negative margins centre the pin on its coordinate and leave transform
+   free (the pin is still: no bobbing, for visual calm). Handoff wrote `margin: -19px 0 0 -19px`;
    position pins with inset-inline-start so the offset follows direction. */
 .bt-bigmap-pin {
   position: absolute;
@@ -4300,8 +4297,7 @@ select.bt-mchip option {
   background: var(--orange);
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.5);
-  animation: btPinBob 2.6s ease-in-out infinite;
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.35);
 }
 
 .bt-bigmap-cta {
@@ -4329,8 +4325,7 @@ select.bt-mchip option {
 }
 
 .bt-mapcat:hover {
-  border-color: var(--orange);
-  transform: translateY(-3px);
+  border-color: rgba(38, 85, 46, 0.35);
   box-shadow: var(--shadow-sm);
 }
 
@@ -4420,7 +4415,7 @@ select.bt-mchip option {
 }
 
 a.bt-contact-card:hover {
-  border-color: var(--orange);
+  border-color: rgba(38, 85, 46, 0.35);
   box-shadow: var(--shadow-sm);
 }
 
@@ -4535,16 +4530,6 @@ a.bt-contact-card:hover {
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@keyframes btPinBob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
   }
 }
 

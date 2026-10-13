@@ -33,7 +33,7 @@
   --ink: #1c2a1f;
   /* Darkened from #6e7b6f (3.9:1 on --ivory-2) to clear AA on both surfaces. */
   --muted: #5f6b60;
-  --line: rgba(38, 85, 46, 0.14);
+  --line: rgba(38, 85, 46, 0.12);
   --line-soft: rgba(38, 85, 46, 0.08);
   --white: #ffffff;
 
@@ -75,10 +75,11 @@
   --r-pill: 999px;
 
   /* --- Shadows ---------------------------------------------------------- */
-  --shadow-sm: 0 2px 8px rgba(38, 85, 46, 0.08);
-  --shadow-md: 0 12px 32px -12px rgba(38, 85, 46, 0.22);
-  --shadow-lg: 0 28px 60px -24px rgba(27, 63, 34, 0.4);
-  --shadow-orange: 0 12px 28px -10px rgba(255, 144, 0, 0.5);
+  /* Soft and low: depth is a hint, never a drop. */
+  --shadow-sm: 0 1px 3px rgba(38, 85, 46, 0.06);
+  --shadow-md: 0 10px 28px -16px rgba(38, 85, 46, 0.18);
+  --shadow-lg: 0 20px 44px -24px rgba(27, 63, 34, 0.28);
+  --shadow-orange: 0 8px 20px -12px rgba(255, 144, 0, 0.4);
 
   /* --- Layout ----------------------------------------------------------- */
   --maxw: 1240px;
@@ -93,8 +94,10 @@
      sticky offsets previously ignored it, so desktop sidebars slid under it. */
   --nav-row-h: 0px;
   --head-h: calc(var(--nav-h) + var(--nav-row-h));
-  --sticky-top: calc(var(--head-h) + var(--sticky-gap));
-  --scroll-pad: calc(var(--head-h) + 16px);
+  /* The header scrolls away (not sticky), so sticky sidebars and anchor
+     jumps only need a small gap from the top of the viewport. */
+  --sticky-top: calc(var(--sticky-gap) + 4px);
+  --scroll-pad: 16px;
 
   /* --- ADDED: z-index scale --------------------------------------------- */
   /* The handoff scattered 20 raw z-index values from 5 to 300 with no

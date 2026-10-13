@@ -297,7 +297,7 @@ export function BookingEngine({
         <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
           {t('c_from')}
         </span>
-        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--orange-deep)' }}>
+        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--forest-deep)' }}>
           {money(effectivePriceMinor)}
         </span>
         <span className="muted" style={{ fontSize: 13 }}>

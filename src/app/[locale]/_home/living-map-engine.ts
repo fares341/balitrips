@@ -1,23 +1,25 @@
 /**
  * Motion for the home hero's "living map", without an animation library.
  *
- * The client's prototype ran on GSAP. This is the same choreography on the
- * platform: the Web Animations API (`element.animate`) for CSS transforms,
- * opacity and stroke dashes, and a small requestAnimationFrame tween for the
- * values CSS cannot animate (SVG attributes, the reveal mask radius, the
- * plane's position along the route).
+ * The Web Animations API (`element.animate`) for CSS transforms, opacity and
+ * stroke dashes, and a small requestAnimationFrame tween for the values CSS
+ * cannot animate (SVG attributes, the reveal mask radius).
  *
- * Stages, in the prototype's order and timing:
- *   1. clouds part over the night (blueprint) map — pure CSS (hero.css), so
- *      it starts at first paint instead of waiting for hydration
- *   2. the coastline is traced in light
- *   3. a golden wave sweeps out from Ubud and uncovers the colour map
- *   4. pins ripple out; a plane draws the route, which then "marches"
- *   5. the headline rises word by word
- *   6. spotlight + destination slider (glass card, leader line, progress bar)
- * Ambient: sun glints sampled from the map's water pixels (canvas), drifting
- * cloud wisps, a slow sheen. The photo itself is never scaled, moved or
- * blurred — only masks and vector overlays animate over it.
+ * The brief is "beautiful but calm": one short, unhurried opening (about
+ * 3.5s, gentle in-out curves, nothing that overshoots), then a slow,
+ * quiet slider. Stages:
+ *   1. clouds drift apart over the night (blueprint) map — pure CSS
+ *      (hero.css), so it starts at first paint instead of waiting for
+ *      hydration
+ *   2. a thin, faint coastline is traced once
+ *   3. a soft radial fade from Ubud uncovers the colour map
+ *   4. pins fade in; the route is drawn once, then rests at low opacity
+ *   5. the headline and copy fade up
+ *   6. a light vignette around the active pin, then the destination slider
+ *      (card crossfade, leader line fade, one slow breathing ring)
+ * Ambient: a few dim sun glints on the water (canvas) and two or three very
+ * slow cloud wisps. The photo itself is never scaled, moved or blurred —
+ * only masks and vector overlays animate over it.
  *
  * Everything is imperative and owned by this module: React renders the markup
  * once, the engine animates it, and `destroy()` undoes every timer, frame,
@@ -54,40 +56,30 @@ interface Options {
 }
 
 /** Milliseconds each destination stays up. */
-const INTERVAL = 5500
+const INTERVAL = 8000
 /** Mobile layout below this hero width (matches hero.css). */
 const MOBILE_MAX = 820
 /** Phase B (the colour reveal) starts here, or once the map is decoded… */
-const REVEAL_AT = 1900
+const REVEAL_AT = 1000
 /** …but waits no longer than this past REVEAL_AT for a slow image. */
-const DECODE_GRACE = 1500
+const DECODE_GRACE = 1200
 /** The no-JS failsafe in hero.css starts revealing at 3s. Hydrating later
     than this means the visitor has watched the clouds long enough. */
 const LATE_HYDRATION = 2400
 
 // ---------------------------------------------------------------------------
-// Easing: GSAP's curves as functions (for rAF tweens) and as CSS (for WAAPI)
+// Easing: gentle curves only (no back/elastic overshoot), as functions for
+// rAF tweens and as CSS for WAAPI
 // ---------------------------------------------------------------------------
 
 type Ease = (t: number) => number
 
-const backOut =
-  (s: number): Ease =>
-  (t) => {
-    const u = t - 1
-    return 1 + (s + 1) * u * u * u + s * u * u
-  }
-
-/** GSAP names: power1 = quad, power2 = cubic, power3 = quart. */
 const EASE = {
   linear: (t: number) => t,
-  expoOut: (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t)),
-  power1In: (t: number) => t * t,
-  power2In: (t: number) => t * t * t,
-  power2Out: (t: number) => 1 - (1 - t) ** 3,
-  power2InOut: (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
-  power3InOut: (t: number) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2),
-  backOut3: backOut(3),
+  sineOut: (t: number) => Math.sin((t * Math.PI) / 2),
+  sineInOut: (t: number) => -(Math.cos(Math.PI * t) - 1) / 2,
+  quadOut: (t: number) => 1 - (1 - t) * (1 - t),
+  cubicOut: (t: number) => 1 - (1 - t) ** 3,
 } satisfies Record<string, Ease>
 
 type EaseName = keyof typeof EASE
@@ -95,13 +87,10 @@ type EaseName = keyof typeof EASE
 /** Closest cubic-bezier, for engines without CSS `linear()`. */
 const BEZIER: Record<EaseName, string> = {
   linear: 'linear',
-  expoOut: 'cubic-bezier(0.16, 1, 0.3, 1)',
-  power1In: 'cubic-bezier(0.11, 0, 0.5, 0)',
-  power2In: 'cubic-bezier(0.32, 0, 0.67, 0)',
-  power2Out: 'cubic-bezier(0.33, 1, 0.68, 1)',
-  power2InOut: 'cubic-bezier(0.65, 0, 0.35, 1)',
-  power3InOut: 'cubic-bezier(0.76, 0, 0.24, 1)',
-  backOut3: 'cubic-bezier(0.34, 1.9, 0.64, 1)',
+  sineOut: 'cubic-bezier(0.61, 1, 0.88, 1)',
+  sineInOut: 'cubic-bezier(0.37, 0, 0.63, 1)',
+  quadOut: 'cubic-bezier(0.5, 1, 0.89, 1)',
+  cubicOut: 'cubic-bezier(0.33, 1, 0.68, 1)',
 }
 
 function cssEasings(): Record<EaseName, string> {
@@ -165,8 +154,6 @@ const NOOP_ENGINE: LivingMapEngine = {
   goToPoint() {},
 }
 
-const SVG_NS = 'http://www.w3.org/2000/svg'
-
 export function createLivingMap({ root, points, reduce, onSlide }: Options): LivingMapEngine {
   const q = <T extends Element>(selector: string) => root.querySelector<T>(selector)
   const qa = <T extends Element>(selector: string) => [...root.querySelectorAll<T>(selector)]
@@ -178,9 +165,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
   const spot = q<SVGRectElement>('.lmh-spot')
   const spotC = q<SVGCircleElement>('.lmh-spot-c')
   const route = q<SVGPathElement>('.lmh-route')
-  const bursts = q<SVGGElement>('.lmh-bursts')
-  const plane = q<SVGGElement>('.lmh-plane')
-  const ring = q<SVGCircleElement>('.lmh-ring')
   const wisps = q<HTMLElement>('.lmh-wisps')
   const leaderG = q<SVGGElement>('.lmh-leader-g')
   const leaderP = q<SVGPathElement>('.lmh-leader-path')
@@ -200,9 +184,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     !spot ||
     !spotC ||
     !route ||
-    !bursts ||
-    !plane ||
-    !ring ||
     !wisps ||
     !leaderG ||
     !leaderP ||
@@ -399,13 +380,13 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     onSlide({ active, shown, pos: Math.max(0, pos), total: list.length })
   }
 
-  function placeCard(i: number): number {
+  function placeCard(i: number) {
     const pt = points[i]
     if (L.mobile || !pt) {
       card!.style.removeProperty('left')
       card!.style.removeProperty('top')
       leaderP!.setAttribute('d', '')
-      return 0
+      return
     }
     const p = toScreen(pt.x, pt.y)
     const cw = card!.offsetWidth
@@ -436,7 +417,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
         if (best === null || cost < best.cost) best = { left, top, right, above, cost }
       }
     }
-    if (best === null) return 0
+    if (best === null) return
     const left = Math.round(Math.max(edge, Math.min(L.W - cw - edge, best.left)))
     const top = Math.round(best.top)
     card!.style.setProperty('left', `${left}px`)
@@ -447,33 +428,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     leaderP!.setAttribute('d', `M${r1(p.x)} ${r1(p.y)} L${r1(mx)} ${r1(ey)} L${r1(ex)} ${r1(ey)}`)
     leaderDot!.setAttribute('cx', String(r1(ex)))
     leaderDot!.setAttribute('cy', String(r1(ey)))
-    return Math.hypot(mx - p.x, ey - p.y) + Math.abs(ex - mx)
-  }
-
-  function burst(i: number) {
-    const pt = points[i]
-    if (!pt) return
-    for (let k = 0; k < 3; k++) {
-      const c = document.createElementNS(SVG_NS, 'circle')
-      c.setAttribute('cx', String(pt.x))
-      c.setAttribute('cy', String(pt.y))
-      c.setAttribute('r', '20')
-      c.setAttribute('class', k ? 'lmh-burst is-soft' : 'lmh-burst')
-      c.setAttribute('opacity', '0')
-      bursts!.appendChild(c)
-      tween({
-        from: 0,
-        to: 1,
-        duration: 1800,
-        delay: k * 220,
-        ease: 'power2Out',
-        update: (v) => {
-          c.setAttribute('r', String(r1(20 + (240 + k * 60) * v)))
-          c.setAttribute('opacity', String(r1(0.9 * (1 - v), 100)))
-        },
-        done: () => c.remove(),
-      })
-    }
   }
 
   function moveSpot(i: number, instant: boolean) {
@@ -490,8 +444,8 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     cancelSpot = tween({
       from: 0,
       to: 1,
-      duration: 1300,
-      ease: 'power3InOut',
+      duration: 1800,
+      ease: 'sineInOut',
       update: (v) => {
         spotC!.setAttribute('cx', String(r1(fx + (pt.x - fx) * v)))
         spotC!.setAttribute('cy', String(r1(fy + (pt.y - fy) * v)))
@@ -504,25 +458,26 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     items.length = 0
   }
 
-  /** Card out → content swap → leader line drawn → card in. */
+  /** A quiet crossfade: card and leader line fade out, the content swaps,
+      both fade back in. No movement, no blur, no line drawing. */
   function swap(i: number) {
     const token = ++swapToken
-    const cs = getComputedStyle(card!)
-    const from: Keyframe = { opacity: cs.opacity, transform: cs.transform, filter: cs.filter }
+    const cardFrom = getComputedStyle(card!).opacity
     const lineFrom = getComputedStyle(leaderG!).opacity
     cancelAll(cardAnims)
     cancelAll(leaderAnims)
     card!.classList.remove('is-shown')
     leaderG!.classList.remove('is-shown')
-    const out = animate(
-      card!,
-      [from, { opacity: 0, transform: 'translateY(10px)', filter: 'blur(6px)' }],
-      { duration: 350, ease: 'power2In', fill: 'forwards' },
-    )
+    const out = animate(card!, [{ opacity: cardFrom }, { opacity: 0 }], {
+      duration: 450,
+      ease: 'sineInOut',
+      fill: 'forwards',
+    })
     cardAnims.push(out)
     leaderAnims.push(
       animate(leaderG!, [{ opacity: lineFrom }, { opacity: 0 }], {
-        duration: 250,
+        duration: 450,
+        ease: 'sineInOut',
         fill: 'forwards',
       }),
     )
@@ -530,37 +485,25 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       if (token !== swapToken) return
       shown = i
       publish(i)
-      const len = placeCard(i)
+      placeCard(i)
       cancelAll(leaderAnims)
-      leaderG!.classList.add('is-shown')
-      if (len > 0) {
-        leaderP!.style.setProperty('stroke-dasharray', String(len))
-        const draw = animate(leaderP!, [{ strokeDashoffset: len }, { strokeDashoffset: 0 }], {
-          delay: 450,
-          duration: 700,
-          ease: 'power2InOut',
-          fill: 'both',
-        })
-        const dot = animate(leaderDot!, [{ opacity: 0 }, { opacity: 1 }], {
-          delay: 1000,
-          duration: 200,
-          fill: 'both',
-        })
-        leaderAnims.push(draw, dot)
-        onDone(draw, () => {
-          leaderP!.style.removeProperty('stroke-dasharray')
-          draw.cancel()
-        })
-        onDone(dot, () => dot.cancel())
-      }
-      const inn = animate(
-        card!,
-        [
-          { opacity: 0, transform: 'translateY(14px)', filter: 'blur(8px)' },
-          { opacity: 1, transform: 'none', filter: 'blur(0px)' },
-        ],
-        { delay: L.mobile ? 150 : 950, duration: 800, ease: 'expoOut', fill: 'both' },
-      )
+      const line = animate(leaderG!, [{ opacity: 0 }, { opacity: 1 }], {
+        delay: 250,
+        duration: 800,
+        ease: 'sineInOut',
+        fill: 'both',
+      })
+      leaderAnims.push(line)
+      onDone(line, () => {
+        leaderG!.classList.add('is-shown')
+        line.cancel()
+      })
+      const inn = animate(card!, [{ opacity: 0 }, { opacity: 1 }], {
+        delay: 150,
+        duration: 750,
+        ease: 'sineInOut',
+        fill: 'both',
+      })
       cardAnims = [inn]
       out.cancel()
       onDone(inn, () => {
@@ -599,7 +542,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       else barAnim.pause()
     }
     // Announce changes only when they are not happening on their own
-    // (WAI-ARIA carousel pattern): a live region that speaks every 5.5s is
+    // (WAI-ARIA carousel pattern): a live region that speaks every 8s is
     // noise, one that answers the visitor's own click is feedback.
     card!.setAttribute('aria-live', playing ? 'off' : 'polite')
     root.classList.toggle('is-playing', playing)
@@ -625,7 +568,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     }
     publish(i)
     moveSpot(i, false)
-    later(900, () => burst(i))
     swap(i)
     restartBar()
     sync()
@@ -638,6 +580,8 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
 
   // ----- reveal ------------------------------------------------------------
   const revealFrom = points[0] ?? { x: MAP_W / 2, y: MAP_H / 2 }
+  /** Opacity of the dim around the active pin (matches hero.css). */
+  const SPOT = 0.2
 
   function finishReveal() {
     root.classList.add('is-revealed')
@@ -649,62 +593,58 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
   function settle() {
     root.classList.remove('is-pending', 'is-waiting')
     root.classList.add('is-revealed', 'is-clear', 'is-lit')
-    if (!reduce) route!.classList.add('is-marching')
+    route!.classList.add('is-drawn')
     computeList()
     const p = list.indexOf(0)
     if (!reduce) running = true
     go(p > -1 ? p : 0, false)
   }
 
-  function startIntro() {
-    // 1 — the clouds part on their own (hero.css), from the first paint:
-    // they must not wait for this script. Drop them once they are gone.
-    later(2700, () => root.classList.add('is-clear'))
+  /** Fade up from a short distance: no clipping, no rotation, no overshoot. */
+  function rise(els: Element[], at: number, duration: number, gap = 0, lift = '12px') {
+    els.forEach((el, k) =>
+      animate(
+        el,
+        [
+          { opacity: 0, transform: `translateY(${lift})` },
+          { opacity: 1, transform: 'none' },
+        ],
+        { delay: at + k * gap, duration, ease: 'cubicOut', fill: 'backwards' },
+      ),
+    )
+  }
 
-    // 2 — the coastline is traced in light
+  function startIntro() {
+    // 1 — the clouds drift apart on their own (hero.css), from the first
+    // paint: they must not wait for this script. Drop them once they are gone.
+    later(2100, () => root.classList.add('is-clear'))
+
+    // 2 — a thin, faint coastline is traced once
     coastBase.forEach((p, k) => {
       p.style.setProperty('opacity', '1')
       const a = animate(p, [{ strokeDashoffset: 1000 }, { strokeDashoffset: 0 }], {
-        delay: 700 + k * 150,
-        duration: 2400,
-        ease: 'power2InOut',
+        delay: 300 + k * 100,
+        duration: 1600,
+        ease: 'sineInOut',
         fill: 'both',
       })
       onDone(a, () => a.cancel())
     })
 
     // 5 — typography (independent of the image, so never held for it)
-    const rise = (els: Element[], at: number, duration: number, gap = 0) =>
-      els.forEach((el, k) =>
-        animate(
-          el,
-          [
-            { opacity: 0, transform: 'translateY(24px)' },
-            { opacity: 1, transform: 'none' },
-          ],
-          { delay: at + k * gap, duration, ease: 'expoOut', fill: 'backwards' },
-        ),
-      )
     for (const line of qa('.lmh-eyebrow-line'))
       animate(line, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], {
-        delay: 2400,
-        duration: 1200,
-        ease: 'expoOut',
+        delay: 1100,
+        duration: 1000,
+        ease: 'sineInOut',
         fill: 'backwards',
       })
-    rise(qa('.lmh-eyebrow-text'), 2500, 1000)
-    qa('.lmh-word > span').forEach((w, k) =>
-      animate(w, [{ transform: 'translateY(115%) rotate(4deg)' }, { transform: 'none' }], {
-        delay: 2600 + k * 90,
-        duration: 1400,
-        ease: 'expoOut',
-        fill: 'backwards',
-      }),
-    )
-    rise(qa('.lmh-sub'), 3000, 1200)
-    rise(qa('.lmh-facts'), 3100, 1200)
-    rise(qa('.lmh-ctas > *'), 3200, 1100, 100)
-    rise([nav!], 3500, 1000)
+    rise(qa('.lmh-eyebrow-text'), 1100, 900)
+    rise(qa('.lmh-word > span'), 1200, 1000, 45, '0.3em')
+    rise(qa('.lmh-sub'), 1500, 1000)
+    rise(qa('.lmh-facts'), 1600, 1000)
+    rise(qa('.lmh-ctas > *'), 1700, 1000, 80)
+    rise([nav!], 2000, 900, 0, '0px')
 
     root.classList.remove('is-pending')
 
@@ -726,98 +666,70 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
   function phaseB() {
     L = measure()
     computeList()
-    // 3 — a golden wave sweeps out from Ubud, uncovering the colour map
+    // 3 — a soft radial fade from Ubud uncovers the colour map; the night
+    // map's last traces dissolve rather than being swept off
     const c = { x: revealFrom.x * L.k, y: revealFrom.y * L.k }
-    const maxR = Math.hypot(Math.max(c.x, L.sw - c.x), Math.max(c.y, L.sh - c.y)) + 120
+    const maxR = Math.hypot(Math.max(c.x, L.sw - c.x), Math.max(c.y, L.sh - c.y)) + 320
     night!.style.setProperty('--cx', `${r1(c.x)}px`)
     night!.style.setProperty('--cy', `${r1(c.y)}px`)
-    ring!.setAttribute('cx', String(r1(L.sx + c.x)))
-    ring!.setAttribute('cy', String(r1(L.sy + c.y)))
-    const ringFade = animate(ring!, [{ opacity: 1 }, { opacity: 0 }], {
-      delay: 2000,
-      duration: 600,
-      ease: 'power1In',
-      fill: 'both',
-    })
-    onDone(ringFade, () => ringFade.cancel())
     tween({
       from: 0,
       to: maxR,
-      duration: 2600,
-      ease: 'power2InOut',
-      update: (r) => {
-        night!.style.setProperty('--r', `${r1(r)}px`)
-        ring!.setAttribute('r', String(r1(Math.max(0, r - 45))))
-      },
+      duration: 1900,
+      ease: 'sineInOut',
+      update: (r) => night!.style.setProperty('--r', `${r1(r)}px`),
     })
-    later(2700, finishReveal)
+    animate(night!, [{ opacity: 1 }, { opacity: 0 }], {
+      delay: 1000,
+      duration: 900,
+      ease: 'sineInOut',
+      fill: 'forwards',
+    })
+    later(1950, finishReveal)
 
-    // 4 — pins ripple out from the first destination
+    // 4 — pins fade in, nearest to Ubud first
     const o = points[0] ?? revealFrom
     pops.forEach((g, i) => {
       const pt = points[i] ?? o
-      const delay = 500 + (Math.hypot(pt.x - o.x, pt.y - o.y) / 1200) * 1000
-      const a = animate(g, [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], {
-        delay,
-        duration: 1000,
-        ease: 'backOut3',
-        fill: 'both',
-      })
+      const delay = 500 + (Math.hypot(pt.x - o.x, pt.y - o.y) / 1200) * 400
+      const a = animate(
+        g,
+        [
+          { opacity: 0, transform: 'scale(0.8)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { delay, duration: 800, ease: 'cubicOut', fill: 'both' },
+      )
       onDone(a, () => a.cancel())
     })
 
-    // …and the plane draws the route
+    // …and the route is drawn once, then rests (hero.css fades it down)
     const len = route!.getTotalLength()
     route!.style.setProperty('stroke-dasharray', String(len))
     const draw = animate(route!, [{ strokeDashoffset: len }, { strokeDashoffset: 0 }], {
-      delay: 1200,
-      duration: 3000,
-      ease: 'power2InOut',
+      delay: 600,
+      duration: 1700,
+      ease: 'sineInOut',
       fill: 'both',
     })
     onDone(draw, () => {
       route!.style.removeProperty('stroke-dasharray')
       draw.cancel()
-      route!.classList.add('is-marching')
-    })
-    const planeShow = animate(
-      plane!,
-      [
-        { opacity: 0, offset: 0 },
-        { opacity: 1, offset: 0.01 },
-        { opacity: 1, offset: 2800 / 3300 },
-        { opacity: 0, offset: 1 },
-      ],
-      { delay: 1200, duration: 3300, fill: 'both' },
-    )
-    onDone(planeShow, () => planeShow.cancel())
-    tween({
-      from: 0,
-      to: 1,
-      delay: 1200,
-      duration: 3000,
-      ease: 'power2InOut',
-      update: (p) => {
-        const at = p * len
-        const a = route!.getPointAtLength(at)
-        const b = route!.getPointAtLength(Math.min(len, at + 2))
-        const deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
-        plane!.setAttribute('transform', `translate(${r1(a.x)} ${r1(a.y)}) rotate(${r1(deg)})`)
-      },
+      route!.classList.add('is-drawn')
     })
 
-    // 6 — spotlight, then the destination slider
-    const lit = animate(spot!, [{ opacity: 0 }, { opacity: 0.42 }], {
-      delay: 2700,
-      duration: 1600,
-      ease: 'power2Out',
+    // 6 — a light vignette around the pin, then the destination slider
+    const lit = animate(spot!, [{ opacity: 0 }, { opacity: SPOT }], {
+      delay: 1300,
+      duration: 1400,
+      ease: 'sineInOut',
       fill: 'both',
     })
     onDone(lit, () => {
       root.classList.add('is-lit')
       lit.cancel()
     })
-    later(2700, () => {
+    later(1600, () => {
       running = true
       const p = list.indexOf(0)
       go(p > -1 ? p : 0, false)
@@ -826,7 +738,9 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
     root.classList.remove('is-waiting')
   }
 
-  // ----- ambient: sun glints on the water ------------------------------------
+  // ----- ambient: a few dim sun glints on the water -------------------------
+  /** Peak opacity of a glint. */
+  const GLINT_ALPHA = 0.4
   let glints: Glint[] = []
   let glintFrame = 0
 
@@ -849,7 +763,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       x.drawImage(mapImg!, 0, 0, sw, sh)
       const px = x.getImageData(0, 0, sw, sh).data
       const found: Glint[] = []
-      for (let t = 0; t < 30000 && found.length < 160; t++) {
+      for (let t = 0; t < 30000 && found.length < 28; t++) {
         const u = Math.floor(Math.random() * sw)
         const v = Math.floor(Math.random() * sh)
         const o = (v * sw + u) * 4
@@ -861,8 +775,8 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
             x: (u / sw) * MAP_W,
             y: (v / sh) * MAP_H,
             ph: Math.random() * 7,
-            sp: 0.5 + Math.random() * 1.4,
-            s: 1.2 + Math.random() * 2,
+            sp: 0.2 + Math.random() * 0.4,
+            s: 0.8 + Math.random() * 1.2,
           })
       }
       glints = found
@@ -889,7 +803,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       const p = toScreen(g.x, g.y)
       if (p.y > maxY || p.x < 0 || p.x > L.W) continue
       const s = g.s * (0.6 + a * 0.8)
-      ctx!.globalAlpha = a
+      ctx!.globalAlpha = a * GLINT_ALPHA
       ctx!.fillRect(p.x - s * 2.2, p.y - 0.5, s * 4.4, 1)
       ctx!.fillRect(p.x - 0.5, p.y - s * 2.2, 1, s * 4.4)
       ctx!.beginPath()
@@ -906,7 +820,7 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
 
   // ----- ambient: drifting cloud wisps -------------------------------------
   function addWisps() {
-    const count = L.mobile ? 3 : 5
+    const count = L.mobile ? 2 : 3
     for (let i = 0; i < count; i++) {
       const w = document.createElement('div')
       const s = 160 + Math.random() * 220
@@ -914,9 +828,9 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       w.style.setProperty('width', `${Math.round(s * 2)}px`)
       w.style.setProperty('height', `${Math.round(s * 0.6)}px`)
       w.style.setProperty('top', `${Math.round(Math.random() * 75)}%`)
-      w.style.setProperty('opacity', String(r1(0.3 + Math.random() * 0.35, 100)))
-      w.style.setProperty('animation-duration', `${Math.round(60 + Math.random() * 50)}s`)
-      w.style.setProperty('animation-delay', `${-Math.round(Math.random() * 120)}s`)
+      w.style.setProperty('opacity', String(r1(0.12 + Math.random() * 0.1, 100)))
+      w.style.setProperty('animation-duration', `${Math.round(150 + Math.random() * 70)}s`)
+      w.style.setProperty('animation-delay', `${-Math.round(Math.random() * 200)}s`)
       wisps!.appendChild(w)
     }
   }
@@ -987,7 +901,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       if (p > -1) {
         pos = p
         publish(current ?? 0)
-        leaderP.style.removeProperty('stroke-dasharray')
         placeCard(current ?? 0)
       } else {
         pos = -1
@@ -1036,10 +949,9 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       for (const fn of cleanups) fn()
       // Back to the server-rendered state, so a remount starts clean.
       wisps.replaceChildren()
-      bursts.replaceChildren()
       root.classList.remove('is-revealed', 'is-clear', 'is-lit', 'is-offscreen', 'is-playing')
       root.classList.add('is-pending', 'is-waiting')
-      route.classList.remove('is-marching')
+      route.classList.remove('is-drawn')
       route.style.removeProperty('stroke-dasharray')
       for (const p of coastBase) p.style.removeProperty('opacity')
       night.style.removeProperty('--r')
@@ -1047,7 +959,6 @@ export function createLivingMap({ root, points, reduce, onSlide }: Options): Liv
       card.style.removeProperty('left')
       card.style.removeProperty('top')
       leaderG.classList.remove('is-shown')
-      leaderP.style.removeProperty('stroke-dasharray')
       ctx.clearRect(0, 0, canvas.width, canvas.height)
     },
     setUserPaused(paused) {

@@ -6,6 +6,7 @@ REM   deploy\start-production.cmd                  build + migrate + start
 REM   deploy\start-production.cmd seed             ...and load the starter content
 REM   deploy\start-production.cmd test-accounts    ...and create test accounts per role
 REM   deploy\start-production.cmd seed test-accounts
+REM   deploy\start-production.cmd photos           (re)import the real photos (automatic when none)
 REM   deploy\start-production.cmd stop             stop everything (data is kept)
 REM   deploy\start-production.cmd logs             follow app + worker logs
 REM   deploy\start-production.cmd remove-test-accounts
@@ -23,11 +24,13 @@ set "ENV_FILE=%ROOT%\.env.production"
 set "COMPOSE=docker compose -f "%ROOT%\docker-compose.production.yml" --env-file "%ENV_FILE%""
 
 set SEED=0
+set PHOTOS=0
 set TEST_ACCOUNTS=0
 set ACTION=up
 :parse
 if "%~1"=="" goto parsed
 if /I "%~1"=="seed" set SEED=1
+if /I "%~1"=="photos" set PHOTOS=1
 if /I "%~1"=="test-accounts" set TEST_ACCOUNTS=1
 if /I "%~1"=="stop" set ACTION=stop
 if /I "%~1"=="logs" set ACTION=logs
@@ -115,6 +118,20 @@ echo.
 echo ^> Loading starter content (regions, categories, tags, sample places)
 %COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx src/db/seed/index.ts || exit /b 1
 :noseed
+
+REM Real photos (Wikimedia Commons, with credits). Automatic when the library
+REM has none yet; a failure never stops the run - the placeholders stay.
+set PHOTO_COUNT=0
+for /f "usebackq delims=" %%P in (`%COMPOSE% exec -T postgres psql -U !POSTGRES_USER! -d !POSTGRES_DB! -tAc "select count(*) from media where deleted_at is null and mime_type <> 'image/svg+xml'"`) do set "PHOTO_COUNT=%%P"
+set "PHOTO_COUNT=%PHOTO_COUNT: =%"
+if "%PHOTOS%"=="1" goto dophotos
+if "%PHOTO_COUNT%"=="0" goto dophotos
+goto nophotos
+:dophotos
+echo.
+echo ^> Importing the site's photos (a few minutes)
+%COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx scripts/import-photos.ts || echo   ! Photo import failed - placeholders stay. Retry: deploy\start-production.cmd photos
+:nophotos
 
 echo.
 echo ^> Building the app image (this takes a few minutes)

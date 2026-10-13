@@ -113,7 +113,7 @@ export function PackageBookingBox({
   return (
     <aside className="bt-booking" aria-label={t('pd_checkout')}>
       <div className="bt-booking-price">
-        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--orange-deep)' }}>
+        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--forest-deep)' }}>
           {formatMoney(priceMinor, currency, locale)}
         </span>
         {perGuest && (

@@ -18,11 +18,11 @@
   /* Highlight on dark photography. 9.4:1 on --forest-night. */
   --palm-light: #9be8a8;
   --p-radius: 20px;
-  --p-shadow: 0 1px 2px rgba(18, 48, 26, 0.05), 0 12px 32px -16px rgba(18, 48, 26, 0.2);
-  --p-shadow-hover: 0 2px 4px rgba(18, 48, 26, 0.06), 0 22px 44px -18px rgba(18, 48, 26, 0.28);
+  --p-shadow: 0 1px 2px rgba(18, 48, 26, 0.04), 0 8px 24px -16px rgba(18, 48, 26, 0.14);
+  --p-shadow-hover: 0 1px 2px rgba(18, 48, 26, 0.05), 0 12px 30px -18px rgba(18, 48, 26, 0.2);
   /* The one glowing control on the page: the hero CTA. */
-  --p-glow: 0 0 18px 4px rgba(255, 144, 0, 0.45), 0 0 40px 8px rgba(255, 144, 0, 0.2);
-  --p-glow-hover: 0 0 22px 6px rgba(255, 144, 0, 0.55), 0 0 52px 12px rgba(255, 144, 0, 0.26);
+  --p-glow: 0 8px 22px -12px rgba(255, 144, 0, 0.55);
+  --p-glow-hover: 0 10px 26px -12px rgba(255, 144, 0, 0.65);
   /* Above content and sticky sidebars (50), below the header (60) — so the
      open Menu drawer, which lives in the header, covers it. */
   --z-fab: 55;
@@ -55,7 +55,8 @@ h2.section-title {
   box-shadow: var(--p-shadow);
 }
 
-/* Section heading: a short coloured kicker, then a large headline. */
+/* Section heading: a short, quiet kicker, then a large headline. Orange is
+   kept for actions, so the kicker is a muted green. */
 .bt-phead {
   display: flex;
   align-items: flex-end;
@@ -72,13 +73,13 @@ h2.section-title {
 
 .bt-phead-k {
   font-size: 15px;
-  font-weight: 700;
-  color: var(--orange-ink);
+  font-weight: 600;
+  color: var(--forest-soft);
   margin-bottom: 10px;
 }
 
 .bt-phead.is-dark .bt-phead-k {
-  color: var(--orange);
+  color: var(--palm-light);
 }
 
 .bt-phead-t {
@@ -128,7 +129,7 @@ h2.section-title {
 
 .bt-band-night {
   background:
-    radial-gradient(80% 60% at 50% 0%, rgba(60, 110, 69, 0.38), transparent 70%), var(--forest-deep);
+    radial-gradient(80% 60% at 50% 0%, rgba(60, 110, 69, 0.22), transparent 70%), var(--forest-deep);
   color: var(--ivory);
 }
 
@@ -882,10 +883,6 @@ h2.section-title {
   transition: transform 0.7s var(--ease-out);
 }
 
-.bt-way:hover .photo {
-  transform: scale(1.04);
-}
-
 .bt-way-veil {
   position: absolute;
   inset: 0;
@@ -1060,10 +1057,6 @@ h2.section-title {
   transition: transform 0.7s var(--ease-out);
 }
 
-.bt-bento-tile:hover .photo {
-  transform: scale(1.04);
-}
-
 .bt-bento-tile::after {
   content: '';
   position: absolute;
@@ -1140,8 +1133,14 @@ h2.section-title {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--orange);
-  color: var(--on-orange);
+  background: var(--palm-soft);
+  color: var(--forest-deep);
+}
+
+/* On the dark bands: a quiet tint, not an orange dot per line. */
+.bt-band-night .bt-pcheck {
+  background: rgba(155, 232, 168, 0.16);
+  color: var(--palm-light);
 }
 
 .bt-pdriver .bt-hdriver-form {
@@ -2362,7 +2361,7 @@ h2.section-title {
   aspect-ratio: 2048 / 1399;
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 30px 60px -36px rgba(0, 0, 0, 0.5);
 }
 
 .bt-hmap-art .photo,
@@ -2373,10 +2372,6 @@ h2.section-title {
   height: 100%;
   object-fit: cover;
   transition: transform 0.9s var(--ease-out);
-}
-
-.bt-hmap-art:hover img {
-  transform: scale(1.03);
 }
 
 .bt-hmap-pins {
@@ -2396,7 +2391,7 @@ h2.section-title {
   margin: -8px 0 0 -8px;
   border-radius: 50%;
   border: 3px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .bt-hmap-pin.free {
@@ -2467,7 +2462,7 @@ h2.section-title {
 
 .bt-hcat:hover {
   box-shadow: var(--p-shadow-hover);
-  border-color: rgba(255, 144, 0, 0.55);
+  border-color: rgba(38, 85, 46, 0.24);
 }
 
 .bt-hcat-ic {
@@ -2485,8 +2480,7 @@ h2.section-title {
 }
 
 .bt-hcat:hover .bt-hcat-ic {
-  background: var(--orange);
-  color: var(--on-orange);
+  background: rgba(38, 85, 46, 0.12);
 }
 
 .bt-hcat-t {
@@ -2590,10 +2584,6 @@ h2.section-title {
   transition: transform 0.7s var(--ease-out);
 }
 
-.bt-gcard:hover .bt-gcard-media img {
-  transform: scale(1.04);
-}
-
 .bt-gcard-tag,
 .bt-gcard-rate {
   position: absolute;
@@ -2630,9 +2620,10 @@ h2.section-title {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: var(--orange);
-  color: var(--on-orange);
-  box-shadow: 0 8px 18px -8px rgba(255, 144, 0, 0.7);
+  border: 1px solid var(--line-soft);
+  background: var(--white);
+  color: var(--forest);
+  box-shadow: 0 4px 12px -6px rgba(18, 48, 26, 0.18);
 }
 
 .bt-gcard-body {
@@ -2694,7 +2685,7 @@ h2.section-title {
   gap: 6px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--orange-ink);
+  color: var(--forest);
 }
 
 /* The events tile closes the activities row. */
@@ -2710,7 +2701,7 @@ h2.section-title {
   padding: 28px 24px 24px;
   border-radius: 22px;
   background:
-    radial-gradient(90% 70% at 100% 0%, rgba(255, 144, 0, 0.28), transparent 65%),
+    radial-gradient(90% 70% at 100% 0%, rgba(155, 232, 168, 0.12), transparent 65%),
     var(--forest-deep);
   color: #fff;
   box-shadow: var(--p-shadow);
@@ -2724,7 +2715,7 @@ h2.section-title {
   margin-bottom: 10px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.1);
-  color: var(--orange);
+  color: var(--palm-light);
 }
 
 .bt-hevents-t {
@@ -2751,7 +2742,7 @@ h2.section-title {
   gap: 6px;
   margin-top: auto;
   font-weight: 700;
-  color: var(--orange);
+  color: var(--palm-light);
 }
 
 /* --- 9 Driver ------------------------------------------------------------- */
@@ -2878,7 +2869,7 @@ h2.section-title {
   border-radius: 28px;
   background: var(--forest);
   color: #fff;
-  box-shadow: 0 30px 60px -36px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.4);
 }
 
 .bt-hcustom > .photo,
@@ -2932,14 +2923,14 @@ h2.section-title {
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  background: var(--orange);
-  color: var(--on-orange);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .bt-hcustom-k {
   font-size: 15px;
-  font-weight: 700;
-  color: var(--orange);
+  font-weight: 600;
+  color: var(--palm-light);
 }
 
 .bt-hcustom-t {
@@ -2972,7 +2963,7 @@ h2.section-title {
   background: var(--orange);
   color: var(--on-orange);
   font-weight: 700;
-  box-shadow: 0 0 16px 3px rgba(255, 144, 0, 0.35);
+  box-shadow: var(--p-glow);
 }
 
 @media (max-width: 639px) {
@@ -3030,8 +3021,8 @@ h2.section-title {
 }
 
 .bt-hrcard-q {
-  color: var(--orange);
-  opacity: 0.8;
+  color: var(--forest-soft);
+  opacity: 0.45;
 }
 
 .bt-hrcard .bt-rcard-meta {

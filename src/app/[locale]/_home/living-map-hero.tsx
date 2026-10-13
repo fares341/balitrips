@@ -3,11 +3,11 @@
 /**
  * Home hero — "Living map".
  *
- * The client's animated prototype, rebuilt for the site: a night/blueprint map
- * under clouds; the clouds part, the coastline is traced in light, a golden
- * wave uncovers the colour map from Ubud, pins ripple out and a plane draws
- * the route; then the headline rises and a slider walks through the island's
- * destinations with a glass card and a leader line.
+ * The client's animated prototype, rebuilt for the site and kept calm: a
+ * night/blueprint map under clouds; the clouds drift apart, a faint coastline
+ * is traced, a soft radial fade uncovers the colour map from Ubud, pins fade
+ * in and the route is drawn once; then the copy fades up and a slow slider
+ * walks through the island's destinations with a card and a leader line.
  *
  * React renders the markup once (server HTML is the opening frame); all motion
  * lives in ./living-map-engine.ts, started in an effect and fully torn down on
@@ -192,9 +192,10 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
             aria-hidden="true"
           >
             <defs>
+              {/* A wide, soft vignette: the dim starts well away from the pin. */}
               <radialGradient id="lmh-spot-g">
                 <stop offset="0" stopColor="#000" />
-                <stop offset=".45" stopColor="#000" />
+                <stop offset=".35" stopColor="#000" />
                 <stop offset="1" stopColor="#fff" />
               </radialGradient>
               <mask
@@ -210,7 +211,7 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
                   className="lmh-spot-c"
                   cx={destinations[0]?.x ?? 0}
                   cy={destinations[0]?.y ?? 0}
-                  r="360"
+                  r="620"
                   fill="url(#lmh-spot-g)"
                 />
               </mask>
@@ -220,12 +221,8 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
               {COASTLINES.map((d, i) => (
                 <path key={`base-${i}`} className="base" d={d} pathLength={1000} />
               ))}
-              {COASTLINES.map((d, i) => (
-                <path key={`comet-${i}`} className="comet" d={d} pathLength={1000} />
-              ))}
             </g>
             <path className="lmh-route" d={ROUTE_D} />
-            <g className="lmh-bursts" />
             <g className="lmh-pins">
               {destinations.map((point, i) => (
                 <g
@@ -237,7 +234,6 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
                   <g className="lmh-pin-pop">
                     <g className="lmh-pin-s">
                       <circle className="hit" r="48" />
-                      <circle className="halo" r="40" strokeDasharray="14 12" />
                       <circle className="ring" r="20" />
                       <circle className="core" r="9" />
                     </g>
@@ -245,22 +241,12 @@ export function LivingMapHero({ copy, destinations, primaryHref, secondaryHref, 
                 </g>
               ))}
             </g>
-            <g className="lmh-plane">
-              <path
-                className="lmh-plane-s"
-                d="M28 0 L-14 -6 L-24 -26 L-32 -26 L-26 -5 L-40 -4 L-46 -14 L-52 -14 L-48 0 L-52 14 L-46 14 L-40 4 L-26 5 L-32 26 L-24 26 L-14 6 Z"
-              />
-            </g>
           </svg>
         </div>
       </div>
 
       <canvas className="lmh-sparkles" aria-hidden="true" />
       <div className="lmh-wisps" aria-hidden="true" />
-      <div className="lmh-sheen" aria-hidden="true" />
-      <svg className="lmh-fx" aria-hidden="true">
-        <circle className="lmh-ring" r="0" />
-      </svg>
       <div className="lmh-shade" aria-hidden="true" />
 
       <svg className="lmh-leader" aria-hidden="true">
