@@ -202,7 +202,7 @@ function PlanGrid({
             {t(free.bodyKey)}
           </p>
           <p className="bt-plan-price">
-            <span style={{ fontSize: 30, fontWeight: 800 }}>{t('sub_free_price')}</span>
+            <span className="bt-plan-amount">{t('sub_free_price')}</span>
           </p>
           <ul className="bt-checklist" style={{ margin: '18px 0 22px' }}>
             {free.featureKeys.map((key) => (
@@ -234,7 +234,11 @@ function PlanGrid({
             {plan.featured && <span className="bt-plan-badge">{t('sub_best')}</span>}
 
             <span className="bt-plan-ic" aria-hidden="true">
-              <Icon name={icon} size={24} color={plan.featured ? '#fff' : 'var(--forest)'} />
+              <Icon
+                name={icon}
+                size={24}
+                color={plan.featured ? 'var(--on-orange)' : 'var(--forest)'}
+              />
             </span>
 
             <h2 style={{ fontSize: 22, marginTop: 12 }}>{pick(plan.name, locale)}</h2>
@@ -243,11 +247,10 @@ function PlanGrid({
             </p>
 
             <p className="bt-plan-price">
-              <span style={{ fontSize: 34, fontWeight: 800, color: 'var(--orange-deep)' }}>
+              <span className="bt-plan-amount bt-money">
                 {formatMoney(plan.priceMinor, plan.currency, locale)}
               </span>
-              <span className="muted" style={{ fontSize: 13 }}>
-                ·{' '}
+              <span className="bt-plan-term">
                 {plan.durationDays === null
                   ? t('sub_once')
                   : t('sub_for_days', { days: plan.durationDays })}

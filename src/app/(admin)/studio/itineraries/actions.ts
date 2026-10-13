@@ -35,6 +35,8 @@ import {
   fuuidOrNull,
   isUuid,
 } from '../../_lib/form'
+import type { Translate } from '../../_i18n'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -50,22 +52,23 @@ type Outcome = { ok: string } | { err: string }
 
 export async function saveItinerary(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : editor(id)
   let outcome: Outcome
 
   try {
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('itineraries.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      name: flocalizedRequired(form, 'name', t('itineraries.f_name')),
       blurb: flocalizedOrNull(form, 'blurb'),
-      spots: fintOrNull(form, 'spots', 'Spots'),
+      spots: fintOrNull(form, 'spots', t('itineraries.f_spots')),
       tripType: flocalizedOrNull(form, 'tripType'),
       audience: flocalizedList(form, 'audience'),
-      priceMinor: fminor(form, 'priceMinor', 'Price'),
+      priceMinor: fminor(form, 'priceMinor', t('common.price')),
       currency: fcurrency(form, 'currency'),
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
       // الوثيقة 4.2
       detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
       includesMap: fbool(form, 'includesMap'),
@@ -84,7 +87,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
           : ((await tx.select().from(itineraries).where(eq(itineraries.id, id)).limit(1))[0] ??
             null)
 
-      if (id !== 'new' && !before) throw new Error('That itinerary no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('itineraries.err_gone'))
 
       const [row] =
         id === 'new'
@@ -101,7 +104,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
               .returning()
           : await tx.update(itineraries).set(values).where(eq(itineraries.id, id)).returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('itineraries.err_save_failed'))
 
       await tx.delete(itineraryRegions).where(eq(itineraryRegions.itineraryId, row.id))
       if (regionIds.length > 0) {
@@ -126,7 +129,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
     })
 
     target = editor(savedId)
-    outcome = { ok: 'Itinerary saved.' }
+    outcome = { ok: t('itineraries.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -144,12 +147,13 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
  */
 export async function publishItinerary(id: string): Promise<void> {
   const session = await requireCapability('content.publish')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-      if (!before) throw new Error('That itinerary no longer exists')
+      if (!before) throw new Error(t('itineraries.err_gone'))
 
       const days = await tx
         .select({
@@ -162,16 +166,12 @@ export async function publishItinerary(id: string): Promise<void> {
         .orderBy(asc(itineraryDays.dayNumber))
 
       if (days.length === 0) {
-        throw new Error(
-          'Add at least one day before publishing. An itinerary with no plan is not a product.',
-        )
+        throw new Error(t('itineraries.err_publish_no_days'))
       }
 
       const unresolved = days.filter((day) => !day.activityId && !day.isFreeDay)
       if (unresolved.length > 0) {
-        throw new Error(
-          `${unresolved.length} day(s) have neither an activity nor an explicit free-day flag. Resolve them before publishing.`,
-        )
+        throw new Error(t('itineraries.err_publish_unresolved', { count: unresolved.length }))
       }
 
       const [after] = await tx
@@ -198,7 +198,7 @@ export async function publishItinerary(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Published. Version bumped — orders pin the version they bought.' }
+    outcome = { ok: t('itineraries.ok_published') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -209,12 +209,13 @@ export async function publishItinerary(id: string): Promise<void> {
 
 export async function unpublishItinerary(id: string): Promise<void> {
   const session = await requireCapability('content.publish')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-      if (!before) throw new Error('That itinerary no longer exists')
+      if (!before) throw new Error(t('itineraries.err_gone'))
 
       const [after] = await tx
         .update(itineraries)
@@ -235,7 +236,7 @@ export async function unpublishItinerary(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Moved to draft. The version was not changed.' }
+    outcome = { ok: t('itineraries.ok_drafted') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -246,12 +247,13 @@ export async function unpublishItinerary(id: string): Promise<void> {
 
 export async function deleteItinerary(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-      if (!before) throw new Error('That itinerary no longer exists')
+      if (!before) throw new Error(t('itineraries.err_gone'))
 
       await tx
         .update(itineraries)
@@ -271,7 +273,7 @@ export async function deleteItinerary(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Itinerary archived.' }
+    outcome = { ok: t('itineraries.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -294,12 +296,13 @@ export async function deleteItinerary(id: string): Promise<void> {
  */
 export async function addItineraryDay(itineraryId: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const activityId = fuuidOrNull(form, 'activityId', 'Activity')
+    const activityId = fuuidOrNull(form, 'activityId', t('itineraries.day_activity'))
     const isFreeDay = fbool(form, 'isFreeDay')
-    assertDayShape(activityId, isFreeDay)
+    assertDayShape(activityId, isFreeDay, t)
 
     await db.transaction(async (tx) => {
       const [last] = await tx
@@ -336,7 +339,7 @@ export async function addItineraryDay(itineraryId: string, form: FormData): Prom
       )
     })
 
-    outcome = { ok: 'Day added.' }
+    outcome = { ok: t('itineraries.ok_day_added') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -351,13 +354,14 @@ export async function saveItineraryDay(
   form: FormData,
 ): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
-      await persistDay(tx, session, itineraryId, dayId, form)
+      await persistDay(tx, session, t, itineraryId, dayId, form)
     })
-    outcome = { ok: 'Day saved.' }
+    outcome = { ok: t('itineraries.ok_day_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -379,11 +383,12 @@ export async function moveItineraryDay(
   form: FormData,
 ): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
-      await persistDay(tx, session, itineraryId, dayId, form)
+      await persistDay(tx, session, t, itineraryId, dayId, form)
 
       const ordered = await tx
         .select({ id: itineraryDays.id })
@@ -393,18 +398,20 @@ export async function moveItineraryDay(
 
       const ids = ordered.map((row) => row.id)
       const index = ids.indexOf(dayId)
-      if (index === -1) throw new Error('That day no longer exists')
+      if (index === -1) throw new Error(t('itineraries.err_day_gone'))
 
       const swapWith = direction === 'up' ? index - 1 : index + 1
       if (swapWith < 0 || swapWith >= ids.length) {
         throw new Error(
-          `Day ${index + 1} is already at the ${direction === 'up' ? 'start' : 'end'}`,
+          t(direction === 'up' ? 'itineraries.err_day_at_start' : 'itineraries.err_day_at_end', {
+            number: index + 1,
+          }),
         )
       }
 
       const moved = ids[index]
       const other = ids[swapWith]
-      if (!moved || !other) throw new Error('Could not reorder the plan')
+      if (!moved || !other) throw new Error(t('itineraries.err_reorder'))
       ids[index] = other
       ids[swapWith] = moved
 
@@ -423,7 +430,7 @@ export async function moveItineraryDay(
       )
     })
 
-    outcome = { ok: 'Day moved. The plan was renumbered.' }
+    outcome = { ok: t('itineraries.ok_day_moved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -434,6 +441,7 @@ export async function moveItineraryDay(
 
 export async function removeItineraryDay(itineraryId: string, dayId: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -444,7 +452,7 @@ export async function removeItineraryDay(itineraryId: string, dayId: string): Pr
         .where(and(eq(itineraryDays.id, dayId), eq(itineraryDays.itineraryId, itineraryId)))
         .limit(1)
 
-      if (!before) throw new Error('That day no longer exists')
+      if (!before) throw new Error(t('itineraries.err_day_gone'))
 
       await tx.delete(itineraryDays).where(eq(itineraryDays.id, dayId))
 
@@ -474,7 +482,7 @@ export async function removeItineraryDay(itineraryId: string, dayId: string): Pr
       )
     })
 
-    outcome = { ok: 'Day removed. The plan was renumbered.' }
+    outcome = { ok: t('itineraries.ok_day_removed') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -492,6 +500,7 @@ type SessionArg = Awaited<ReturnType<typeof requireCapability>>
 async function persistDay(
   tx: Tx,
   session: SessionArg,
+  t: Translate,
   itineraryId: string,
   dayId: string,
   form: FormData,
@@ -502,11 +511,11 @@ async function persistDay(
     .where(and(eq(itineraryDays.id, dayId), eq(itineraryDays.itineraryId, itineraryId)))
     .limit(1)
 
-  if (!before) throw new Error('That day no longer exists')
+  if (!before) throw new Error(t('itineraries.err_day_gone'))
 
-  const activityId = fuuidOrNull(form, `activityId_${dayId}`, 'Activity')
+  const activityId = fuuidOrNull(form, `activityId_${dayId}`, t('itineraries.day_activity'))
   const isFreeDay = fbool(form, `isFreeDay_${dayId}`)
-  assertDayShape(activityId, isFreeDay)
+  assertDayShape(activityId, isFreeDay, t)
 
   const [after] = await tx
     .update(itineraryDays)
@@ -539,14 +548,12 @@ async function persistDay(
  * neither is the silent gap the renderer used to paper over with untranslated
  * filler copy.
  */
-function assertDayShape(activityId: string | null, isFreeDay: boolean): void {
+function assertDayShape(activityId: string | null, isFreeDay: boolean, t: Translate): void {
   if (isFreeDay && activityId) {
-    throw new Error('A free day cannot also have an activity attached. Choose one.')
+    throw new Error(t('itineraries.err_free_day_with_activity'))
   }
   if (!isFreeDay && !activityId) {
-    throw new Error(
-      'Attach an activity or tick "free day". A day with neither would render as an untranslated placeholder.',
-    )
+    throw new Error(t('itineraries.err_day_empty'))
   }
 }
 
@@ -600,21 +607,23 @@ function looksLikePdf(bytes: Uint8Array): boolean {
  */
 export async function uploadItineraryPdf(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
-    const rawLocale = freq(form, 'locale', 'Language')
-    if (!isLocale(rawLocale)) throw new Error('Pick a language for this PDF.')
+    const rawLocale = freq(form, 'locale', t('itineraries.pdf_language'))
+    if (!isLocale(rawLocale)) throw new Error(t('itineraries.err_pdf_language'))
     const file = form.get('file')
-    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
-    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error('That PDF is larger than 24 MB.')
+    if (!(file instanceof File) || file.size === 0)
+      throw new Error(t('itineraries.err_pdf_missing'))
+    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error(t('itineraries.err_pdf_too_large'))
     if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
-      throw new Error('Object storage is not configured; the file could not be delivered.')
+      throw new Error(t('itineraries.err_pdf_storage'))
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
-    if (!looksLikePdf(bytes)) throw new Error('That file is not a PDF.')
+    if (!looksLikePdf(bytes)) throw new Error(t('itineraries.err_pdf_not_pdf'))
 
     const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-    if (!before) throw new Error('That itinerary no longer exists')
+    if (!before) throw new Error(t('itineraries.err_gone'))
 
     // مفتاح لا يُخمَّن: الملف الأصلي لا يُكشف أبداً (يُسلَّم مختوماً عبر الحساب).
     const objectKey = `itineraries/${id}/uploaded/${rawLocale}-${randomUUID()}.pdf`
@@ -642,8 +651,8 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
     const notified = await notifyItineraryHolders(before, rawLocale, keys)
     outcome = {
       ok:
-        `PDF (${rawLocale.toUpperCase()}) uploaded. Customers now receive this file.` +
-        (notified > 0 ? ` ${notified} customer(s) notified.` : ''),
+        t('itineraries.ok_pdf_uploaded', { locale: rawLocale.toUpperCase() }) +
+        (notified > 0 ? ` ${t('itineraries.ok_pdf_notified', { count: notified })}` : ''),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -707,12 +716,14 @@ async function notifyItineraryHolders(
 /** يزيل الملف المرفوع للغة — يعود التسليم إلى الملف المولّد تلقائياً. */
 export async function removeItineraryPdf(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
-    const rawLocale = freq(form, 'locale', 'Language')
-    if (!(locales as readonly string[]).includes(rawLocale)) throw new Error('Unknown language')
+    const rawLocale = freq(form, 'locale', t('itineraries.pdf_language'))
+    if (!(locales as readonly string[]).includes(rawLocale))
+      throw new Error(t('itineraries.err_pdf_unknown_language'))
     const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-    if (!before) throw new Error('That itinerary no longer exists')
+    if (!before) throw new Error(t('itineraries.err_gone'))
     const keys = { ...(before.uploadedPdfKeys ?? {}) }
     delete keys[rawLocale]
     await db
@@ -727,7 +738,7 @@ export async function removeItineraryPdf(id: string, form: FormData): Promise<vo
       before: { uploadedPdfKeys: before.uploadedPdfKeys },
       after: { uploadedPdfKeys: keys },
     })
-    outcome = { ok: 'Uploaded PDF removed; customers receive the generated PDF again.' }
+    outcome = { ok: t('itineraries.ok_pdf_removed') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

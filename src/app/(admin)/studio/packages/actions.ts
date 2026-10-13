@@ -23,6 +23,7 @@ import {
   fstr,
   fuuidOrNull,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -33,6 +34,7 @@ type Outcome = { ok: string } | { err: string }
 
 export async function savePackage(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : adminHref(`/packages/${id}`)
   let outcome: Outcome
@@ -42,14 +44,14 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
     if (status === 'published') await requireCapability('content.publish')
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('packages.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      name: flocalizedRequired(form, 'name', t('packages.f_name')),
       blurb: flocalizedOrNull(form, 'blurb'),
-      days: fint(form, 'days', 1, 'Days'),
-      maxGuests: fint(form, 'maxGuests', 1, 'Max guests'),
+      days: fint(form, 'days', 1, t('packages.days')),
+      maxGuests: fint(form, 'maxGuests', 1, t('packages.max_guests')),
       driverIncluded: fbool(form, 'driverIncluded'),
-      priceMinor: fminor(form, 'priceMinor', 'Price'),
+      priceMinor: fminor(form, 'priceMinor', t('common.price')),
       currency: fcurrency(form, 'currency'),
       // The prototype advertised "from $X" and then charged a flat X no
       // matter how many guests were entered. This makes the intent explicit
@@ -58,12 +60,12 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
       amenities: flines(form, 'amenities'),
       included: flocalizedList(form, 'included'),
       excluded: flocalizedList(form, 'excluded'),
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('packages.hero_image')),
       status,
     }
 
-    if (values.days < 1) throw new Error('A package must run for at least one day')
-    if (values.maxGuests < 1) throw new Error('Max guests must be at least 1')
+    if (values.days < 1) throw new Error(t('packages.err_days_min'))
+    if (values.maxGuests < 1) throw new Error(t('packages.err_max_guests_min'))
 
     const activityIds = fmulti(form, 'activityIds')
     const regionIds = fmulti(form, 'regionIds')
@@ -74,7 +76,7 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(packages).where(eq(packages.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That package no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('packages.err_gone'))
 
       const [row] =
         id === 'new'
@@ -94,7 +96,7 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
               .where(eq(packages.id, id))
               .returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('packages.err_save_failed'))
 
       await tx.delete(packageActivities).where(eq(packageActivities.packageId, row.id))
       if (activityIds.length > 0) {
@@ -130,7 +132,7 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/packages/${savedId}`)
-    outcome = { ok: 'Package saved.' }
+    outcome = { ok: t('packages.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -141,6 +143,7 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
 
 export async function setPackageStatus(id: string, status: string): Promise<void> {
   const session = await requireCapability('content.publish')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -148,7 +151,7 @@ export async function setPackageStatus(id: string, status: string): Promise<void
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(packages).where(eq(packages.id, id)).limit(1)
-      if (!before) throw new Error('That package no longer exists')
+      if (!before) throw new Error(t('packages.err_gone'))
 
       const [after] = await tx
         .update(packages)
@@ -173,7 +176,9 @@ export async function setPackageStatus(id: string, status: string): Promise<void
       )
     })
 
-    outcome = { ok: next === 'published' ? 'Package published.' : 'Package moved to draft.' }
+    outcome = {
+      ok: next === 'published' ? t('packages.ok_published') : t('packages.ok_drafted'),
+    }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -184,12 +189,13 @@ export async function setPackageStatus(id: string, status: string): Promise<void
 
 export async function deletePackage(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(packages).where(eq(packages.id, id)).limit(1)
-      if (!before) throw new Error('That package no longer exists')
+      if (!before) throw new Error(t('packages.err_gone'))
 
       await tx
         .update(packages)
@@ -209,7 +215,7 @@ export async function deletePackage(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Package archived.' }
+    outcome = { ok: t('packages.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

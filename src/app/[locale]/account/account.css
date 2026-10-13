@@ -168,7 +168,7 @@
   height: 32px;
   border-radius: 10px;
   background: var(--orange);
-  color: #fff;
+  color: var(--on-orange);
   font-weight: 800;
   display: grid;
   place-items: center;
@@ -212,8 +212,6 @@
   font-size: 11.5px;
   font-weight: 700;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }

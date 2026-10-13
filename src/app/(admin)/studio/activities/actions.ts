@@ -26,6 +26,8 @@ import {
   fstr,
   fuuidOrNull,
 } from '../../_lib/form'
+import type { Translate } from '../../_i18n'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { assertSlug } from '../../_lib/slug'
 import { requireCapability } from '../../_lib/session'
@@ -37,6 +39,7 @@ const FAQ_ROWS = 12
 
 export async function saveActivity(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : adminHref(`/activities/${id}`)
   let outcome: { ok: string } | { err: string }
@@ -50,33 +53,36 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
     if (status === 'published') await requireCapability('content.publish')
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('activities.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      name: flocalizedRequired(form, 'name', t('activities.f_name')),
       area: flocalizedOrNull(form, 'area'),
       description: flocalizedOrNull(form, 'description'),
       duration: flocalizedOrNull(form, 'duration'),
-      regionId: fuuidOrNull(form, 'regionId', 'Region'),
-      priceMinor: fminor(form, 'priceMinor', 'Price'),
+      regionId: fuuidOrNull(form, 'regionId', t('activities.region')),
+      priceMinor: fminor(form, 'priceMinor', t('common.price')),
       currency: fcurrency(form, 'currency'),
-      rating: ratingFromTenths(form),
-      reviewCount: fint(form, 'reviewCount', 0, 'Review count'),
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      rating: ratingFromTenths(form, t),
+      reviewCount: fint(form, 'reviewCount', 0, t('activities.f_review_count')),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('activities.hero_image')),
       included: flocalizedList(form, 'included'),
       excluded: flocalizedList(form, 'excluded'),
       faq: ffaq(form, 'faq', FAQ_ROWS),
       cancellationPolicy: flocalizedOrNull(form, 'cancellationPolicy'),
-      timeSlots: normaliseTimeSlots(flines(form, 'timeSlots')),
-      leadTimeHours: fint(form, 'leadTimeHours', 24, 'Lead time'),
-      maxGuests: fint(form, 'maxGuests', 20, 'Max guests'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      timeSlots: normaliseTimeSlots(flines(form, 'timeSlots'), t),
+      leadTimeHours: fint(form, 'leadTimeHours', 24, t('activities.lead_time')),
+      maxGuests: fint(form, 'maxGuests', 20, t('activities.max_guests')),
+      sortOrder: fint(form, 'sortOrder', 0, t('activities.sort_order')),
       // Dated events (category "events") — the Events page orders and expires by these.
-      ...feventRange(form),
+      ...feventRange(form, {
+        start: t('activities.f_event_starts'),
+        end: t('activities.f_event_ends'),
+      }),
       status,
     }
 
-    if (values.leadTimeHours < 0) throw new Error('Lead time cannot be negative')
-    if (values.maxGuests < 1) throw new Error('Max guests must be at least 1')
+    if (values.leadTimeHours < 0) throw new Error(t('activities.err_lead_time_negative'))
+    if (values.maxGuests < 1) throw new Error(t('activities.err_max_guests_min'))
 
     const categoryIds = fmulti(form, 'categoryIds')
 
@@ -86,7 +92,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(activities).where(eq(activities.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That activity no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('activities.err_gone'))
 
       // publishedAt is set the first time it goes live and never reset by a
       // later edit — it is the date the page entered the index.
@@ -105,7 +111,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
               .where(eq(activities.id, id))
               .returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('activities.err_save_failed'))
 
       await tx.delete(activityCategories).where(eq(activityCategories.activityId, row.id))
       if (categoryIds.length > 0) {
@@ -130,7 +136,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/activities/${savedId}`)
-    outcome = { ok: 'Activity saved.' }
+    outcome = { ok: t('activities.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -142,6 +148,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
 /** Quick publish / unpublish from the list, without opening the editor. */
 export async function setActivityStatus(id: string, status: string): Promise<void> {
   const session = await requireCapability('content.publish')
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
@@ -149,7 +156,7 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(activities).where(eq(activities.id, id)).limit(1)
-      if (!before) throw new Error('That activity no longer exists')
+      if (!before) throw new Error(t('activities.err_gone'))
 
       const [after] = await tx
         .update(activities)
@@ -174,7 +181,9 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
       )
     })
 
-    outcome = { ok: status === 'published' ? 'Activity published.' : 'Activity moved to draft.' }
+    outcome = {
+      ok: status === 'published' ? t('activities.ok_published') : t('activities.ok_drafted'),
+    }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -192,12 +201,13 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
  */
 export async function deleteActivity(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(activities).where(eq(activities.id, id)).limit(1)
-      if (!before) throw new Error('That activity no longer exists')
+      if (!before) throw new Error(t('activities.err_gone'))
 
       await tx
         .update(activities)
@@ -217,7 +227,7 @@ export async function deleteActivity(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Activity archived.' }
+    outcome = { ok: t('activities.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -230,10 +240,10 @@ export async function deleteActivity(id: string): Promise<void> {
  * Rating is stored as a `real` but authored as tenths, so an operator types
  * 47 for 4.7 and cannot introduce a float that renders as 4.699999.
  */
-function ratingFromTenths(form: FormData): number | null {
-  const tenths = fintOrNull(form, 'ratingTenths', 'Rating')
+function ratingFromTenths(form: FormData, t: Translate): number | null {
+  const tenths = fintOrNull(form, 'ratingTenths', t('activities.f_rating_short'))
   if (tenths === null) return null
-  if (tenths < 0 || tenths > 50) throw new Error('Rating must be between 0 and 50 tenths (0.0–5.0)')
+  if (tenths < 0 || tenths > 50) throw new Error(t('activities.err_rating_range'))
   return tenths / 10
 }
 
@@ -243,14 +253,15 @@ function ratingFromTenths(form: FormData): number | null {
  * The prototype hard-coded 09:00/11:30/14:00/16:30 for every activity; these
  * are per-activity and are what the booking engine and lead-time rule read.
  */
-function normaliseTimeSlots(lines: readonly string[]): string[] {
+function normaliseTimeSlots(lines: readonly string[], t: Translate): string[] {
   const out: string[] = []
   for (const line of lines) {
     const match = /^(\d{1,2}):(\d{2})$/.exec(line)
-    if (!match) throw new Error(`"${line}" is not a time. Use HH:mm, one per line.`)
+    if (!match) throw new Error(t('activities.err_time_format', { value: line }))
     const hours = Number(match[1])
     const minutes = Number(match[2])
-    if (hours > 23 || minutes > 59) throw new Error(`"${line}" is not a valid time of day.`)
+    if (hours > 23 || minutes > 59)
+      throw new Error(t('activities.err_time_invalid', { value: line }))
     out.push(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`)
   }
   return [...new Set(out)].sort()
@@ -268,15 +279,15 @@ function normaliseTimeSlots(lines: readonly string[]): string[] {
  */
 const tierEditor = (activityId: string) => adminHref(`/activities/${activityId}`)
 
-function tierValuesFrom(form: FormData) {
-  const priceMinor = fminor(form, 'priceMinor', 'Price')
-  if (priceMinor < 0) throw new Error('Price cannot be negative')
+function tierValuesFrom(form: FormData, t: Translate) {
+  const priceMinor = fminor(form, 'priceMinor', t('common.price'))
+  if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
-  const maxGuests = fintOrNull(form, 'maxGuests', 'Max guests')
-  if (maxGuests !== null && maxGuests < 1) throw new Error('Max guests must be at least 1')
+  const maxGuests = fintOrNull(form, 'maxGuests', t('activities.max_guests'))
+  if (maxGuests !== null && maxGuests < 1) throw new Error(t('activities.err_max_guests_min'))
 
   return {
-    name: flocalizedRequired(form, 'name', 'Tier name'),
+    name: flocalizedRequired(form, 'name', t('activities.tier_name')),
     tagline: flocalizedOrNull(form, 'tagline'),
     priceMinor,
     currency: fcurrency(form, 'currency'),
@@ -311,11 +322,12 @@ async function clearOtherPopular(
 
 export async function addActivityTier(activityId: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
-    const values = tierValuesFrom(form)
-    const key = assertSlug(freq(form, 'key', 'Key'))
+    const values = tierValuesFrom(form, t)
+    const key = assertSlug(freq(form, 'key', t('activities.tier_key')))
 
     await db.transaction(async (tx) => {
       const [last] = await tx
@@ -351,7 +363,7 @@ export async function addActivityTier(activityId: string, form: FormData): Promi
       )
     })
 
-    outcome = { ok: 'Tier added.' }
+    outcome = { ok: t('activities.ok_tier_added') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -374,10 +386,11 @@ export async function saveActivityTier(
   form: FormData,
 ): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
-    const values = tierValuesFrom(form)
+    const values = tierValuesFrom(form, t)
 
     await db.transaction(async (tx) => {
       const [before] = await tx
@@ -385,7 +398,7 @@ export async function saveActivityTier(
         .from(activityTiers)
         .where(tierOf(activityId, tierId))
         .limit(1)
-      if (!before) throw new Error('That tier no longer exists.')
+      if (!before) throw new Error(t('activities.err_tier_gone'))
 
       const [row] = await tx
         .update(activityTiers)
@@ -412,7 +425,7 @@ export async function saveActivityTier(
       )
     })
 
-    outcome = { ok: 'Tier saved.' }
+    outcome = { ok: t('activities.ok_tier_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -430,6 +443,7 @@ export async function saveActivityTier(
  */
 export async function removeActivityTier(activityId: string, tierId: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
@@ -439,7 +453,7 @@ export async function removeActivityTier(activityId: string, tierId: string): Pr
         .from(activityTiers)
         .where(tierOf(activityId, tierId))
         .limit(1)
-      if (!before) throw new Error('That tier no longer exists.')
+      if (!before) throw new Error(t('activities.err_tier_gone'))
 
       await tx
         .update(activityTiers)
@@ -459,7 +473,7 @@ export async function removeActivityTier(activityId: string, tierId: string): Pr
       )
     })
 
-    outcome = { ok: 'Tier removed.' }
+    outcome = { ok: t('activities.ok_tier_removed') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

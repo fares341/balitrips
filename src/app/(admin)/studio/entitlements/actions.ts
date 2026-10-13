@@ -11,6 +11,7 @@ import { notifyPlanActivated } from '@/lib/notify/plans'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fenum, freq, fstr, fuuid } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 
@@ -32,10 +33,11 @@ type Outcome = { ok: string } | { err: string }
  */
 export async function grantEntitlement(form: FormData): Promise<void> {
   const session = await requireCapability('entitlements.grant')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const email = freq(form, 'email', 'Customer email').toLowerCase()
+    const email = freq(form, 'email', t('entitlements.customer_email')).toLowerCase()
     const kind = fenum(form, 'kind', KINDS, 'map_access')
     const expiresAtRaw = fstr(form, 'expiresAt')
     const reason = fstr(form, 'reason')
@@ -43,7 +45,7 @@ export async function grantEntitlement(form: FormData): Promise<void> {
     let expiresAt: Date | null = null
     if (expiresAtRaw) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(expiresAtRaw)) {
-        throw new Error('Expiry must be a date (YYYY-MM-DD), or blank for lifetime')
+        throw new Error(t('entitlements.err_expiry_format'))
       }
       expiresAt = new Date(`${expiresAtRaw}T23:59:59Z`)
     }
@@ -55,7 +57,7 @@ export async function grantEntitlement(form: FormData): Promise<void> {
         .where(and(eq(users.email, email), isNull(users.deletedAt)))
         .limit(1)
 
-      if (!user) throw new Error(`No account exists for ${email}`)
+      if (!user) throw new Error(t('entitlements.err_no_account', { email }))
 
       const [existing] = await tx
         .select({ id: entitlements.id })
@@ -71,7 +73,7 @@ export async function grantEntitlement(form: FormData): Promise<void> {
         )
         .limit(1)
 
-      if (existing) throw new Error(`${email} already has an active "${kind}" entitlement`)
+      if (existing) throw new Error(t('entitlements.err_already_active', { email, kind }))
 
       const [row] = await tx
         .insert(entitlements)
@@ -103,7 +105,7 @@ export async function grantEntitlement(form: FormData): Promise<void> {
     if (granted) {
       await notifyPlanActivated(granted.userId, { kind, entitlementId: granted.entitlementId })
     }
-    outcome = { ok: `Granted ${kind} to ${email}.` }
+    outcome = { ok: t('entitlements.ok_granted', { kind, email }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -121,19 +123,20 @@ export async function grantEntitlement(form: FormData): Promise<void> {
  */
 export async function revokeEntitlement(form: FormData): Promise<void> {
   const session = await requireCapability('entitlements.grant')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   // "سحب" من صفحة العميل يعود إليها (حقل `customerId` اختياري).
   const customerId = fstr(form, 'customerId')
   const back = customerId && UUID.test(customerId) ? adminHref(`/customers/${customerId}`) : LIST
 
   try {
-    const id = fuuid(form, 'entitlementId', 'Entitlement')
+    const id = fuuid(form, 'entitlementId', t('entitlements.field_entitlement'))
     const reason = fstr(form, 'reason') ?? `revoked by ${session.email}`
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(entitlements).where(eq(entitlements.id, id)).limit(1)
-      if (!before) throw new Error('That entitlement no longer exists')
-      if (before.revokedAt) throw new Error('That entitlement is already revoked')
+      if (!before) throw new Error(t('entitlements.err_gone'))
+      if (before.revokedAt) throw new Error(t('entitlements.err_already_revoked'))
 
       const [after] = await tx
         .update(entitlements)
@@ -156,7 +159,7 @@ export async function revokeEntitlement(form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Entitlement revoked. Access is gone on the next request.' }
+    outcome = { ok: t('entitlements.ok_revoked') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

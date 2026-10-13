@@ -8,82 +8,90 @@ import type { Capability } from '@/lib/auth/roles'
  * presentation only — the page behind every one of these calls
  * `requireCapability()` itself, because a hidden link is not a permission
  * check.
+ *
+ * Labels are dictionary keys (`_i18n/common.ts`, `nav.*`), resolved in the
+ * Shell with the active Studio language.
  */
 
 export interface NavItem {
   /** Path relative to the configured admin base. */
   path: string
-  label: string
+  labelKey: string
   capability: Capability
   /** Marks the section root so a nested detail page still highlights it. */
   exact?: boolean
 }
 
 export interface NavGroup {
-  title: string
+  titleKey: string
   items: readonly NavItem[]
 }
 
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
-    title: 'Overview',
+    titleKey: 'nav.group_overview',
     items: [
-      { path: '', label: 'Dashboard', capability: 'admin.access', exact: true },
-      { path: '/inbox', label: 'Inbox', capability: 'admin.access' },
-      { path: '/notify', label: 'Send notification', capability: 'roles.write' },
+      { path: '', labelKey: 'nav.dashboard', capability: 'admin.access', exact: true },
+      { path: '/inbox', labelKey: 'nav.inbox', capability: 'admin.access' },
+      { path: '/notify', labelKey: 'nav.notify', capability: 'roles.write' },
     ],
   },
   {
-    title: 'Catalog',
+    titleKey: 'nav.group_people',
     items: [
-      { path: '/media', label: 'Media library', capability: 'media.upload' },
-      { path: '/files', label: 'PDF files', capability: 'content.read' },
-      { path: '/activities', label: 'Activities', capability: 'content.read' },
-      { path: '/itineraries', label: 'Itineraries', capability: 'content.read' },
-      { path: '/packages', label: 'Packages', capability: 'content.read' },
-      { path: '/articles', label: 'Articles', capability: 'content.read' },
-      { path: '/landmarks', label: 'Landmarks', capability: 'content.read' },
-      { path: '/places', label: 'Map places', capability: 'content.read' },
-      { path: '/reviews', label: 'Reviews', capability: 'content.read' },
-      { path: '/taxonomy', label: 'Categories & regions', capability: 'content.read' },
+      { path: '/customers', labelKey: 'nav.customers', capability: 'customers.read' },
+      { path: '/leads', labelKey: 'nav.leads', capability: 'leads.read' },
     ],
   },
   {
-    title: 'Commerce',
+    titleKey: 'nav.group_commerce',
     items: [
-      { path: '/orders', label: 'Orders', capability: 'orders.read' },
-      { path: '/payments', label: 'Payments', capability: 'payments.read' },
-      { path: '/plans', label: 'Plans', capability: 'content.read' },
-      { path: '/entitlements', label: 'Entitlements', capability: 'customers.read' },
-      { path: '/capacity', label: 'Driver capacity', capability: 'capacity.write' },
+      { path: '/orders', labelKey: 'nav.orders', capability: 'orders.read' },
+      { path: '/payments', labelKey: 'nav.payments', capability: 'payments.read' },
+      { path: '/plans', labelKey: 'nav.plans', capability: 'content.read' },
+      { path: '/entitlements', labelKey: 'nav.entitlements', capability: 'customers.read' },
+      { path: '/capacity', labelKey: 'nav.capacity', capability: 'capacity.write' },
     ],
   },
   {
-    title: 'People',
+    titleKey: 'nav.group_catalog',
     items: [
-      { path: '/customers', label: 'Customers', capability: 'customers.read' },
-      { path: '/leads', label: 'Leads', capability: 'leads.read' },
+      { path: '/places', labelKey: 'nav.places', capability: 'content.read' },
+      { path: '/itineraries', labelKey: 'nav.itineraries', capability: 'content.read' },
+      { path: '/activities', labelKey: 'nav.activities', capability: 'content.read' },
+      { path: '/packages', labelKey: 'nav.packages', capability: 'content.read' },
+      { path: '/articles', labelKey: 'nav.articles', capability: 'content.read' },
+      { path: '/landmarks', labelKey: 'nav.landmarks', capability: 'content.read' },
+      { path: '/reviews', labelKey: 'nav.reviews', capability: 'content.read' },
+      { path: '/taxonomy', labelKey: 'nav.taxonomy', capability: 'content.read' },
+      { path: '/media', labelKey: 'nav.media', capability: 'media.upload' },
+      { path: '/files', labelKey: 'nav.files', capability: 'content.read' },
     ],
   },
   {
-    title: 'Protection',
+    titleKey: 'nav.group_protection',
     items: [
-      { path: '/protection', label: 'Bans & signals', capability: 'security.read', exact: true },
-      { path: '/protection/alerts', label: 'Alerts', capability: 'security.read' },
-      { path: '/protection/sessions', label: 'Live sessions', capability: 'security.read' },
-      { path: '/protection/devices', label: 'Devices', capability: 'security.read' },
-      { path: '/protection/activity', label: 'Activity log', capability: 'security.read' },
+      {
+        path: '/protection',
+        labelKey: 'nav.protection',
+        capability: 'security.read',
+        exact: true,
+      },
+      { path: '/protection/alerts', labelKey: 'nav.alerts', capability: 'security.read' },
+      { path: '/protection/sessions', labelKey: 'nav.sessions', capability: 'security.read' },
+      { path: '/protection/devices', labelKey: 'nav.devices', capability: 'security.read' },
+      { path: '/protection/activity', labelKey: 'nav.activity', capability: 'security.read' },
     ],
   },
   {
-    title: 'System',
+    titleKey: 'nav.group_system',
     items: [
-      { path: '/translations', label: 'Translations', capability: 'translations.write' },
-      { path: '/config', label: 'Configuration', capability: 'config.write' },
-      { path: '/audit', label: 'Audit log', capability: 'audit.read' },
+      { path: '/translations', labelKey: 'nav.translations', capability: 'translations.write' },
+      { path: '/config', labelKey: 'nav.config', capability: 'config.write' },
+      { path: '/audit', labelKey: 'nav.audit', capability: 'audit.read' },
       // Always reachable: it is where an operator goes to fix the very thing
       // that is blocking them, so it is gated on entry, not on a capability.
-      { path: '/security', label: 'Two-factor', capability: 'admin.access' },
+      { path: '/security', labelKey: 'nav.security', capability: 'admin.access' },
     ],
   },
 ]

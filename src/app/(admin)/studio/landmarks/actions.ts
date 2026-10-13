@@ -16,6 +16,7 @@ import {
   fstr,
   fuuidOrNull,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -26,6 +27,7 @@ type Outcome = { ok: string } | { err: string }
 
 export async function saveLandmark(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : adminHref(`/landmarks/${id}`)
   let outcome: Outcome
@@ -35,15 +37,15 @@ export async function saveLandmark(id: string, form: FormData): Promise<void> {
     if (status === 'published') await requireCapability('content.publish')
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('common.slug'))),
       legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      name: flocalizedRequired(form, 'name', t('common.name')),
       type: flocalizedOrNull(form, 'type'),
       blurb: flocalizedOrNull(form, 'blurb'),
-      regionId: fuuidOrNull(form, 'regionId', 'Region'),
-      activityId: fuuidOrNull(form, 'activityId', 'Activity'),
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      regionId: fuuidOrNull(form, 'regionId', t('landmarks.region')),
+      activityId: fuuidOrNull(form, 'activityId', t('landmarks.activity')),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('landmarks.hero_image')),
+      sortOrder: fint(form, 'sortOrder', 0, t('landmarks.sort_order')),
       status,
     }
 
@@ -53,7 +55,7 @@ export async function saveLandmark(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(landmarks).where(eq(landmarks.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That landmark no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('landmarks.err_gone'))
 
       const [row] =
         id === 'new'
@@ -73,7 +75,7 @@ export async function saveLandmark(id: string, form: FormData): Promise<void> {
               .where(eq(landmarks.id, id))
               .returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('landmarks.err_save_failed'))
 
       await writeAudit(
         {
@@ -91,7 +93,7 @@ export async function saveLandmark(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/landmarks/${savedId}`)
-    outcome = { ok: 'Landmark saved.' }
+    outcome = { ok: t('landmarks.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -102,12 +104,13 @@ export async function saveLandmark(id: string, form: FormData): Promise<void> {
 
 export async function deleteLandmark(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(landmarks).where(eq(landmarks.id, id)).limit(1)
-      if (!before) throw new Error('That landmark no longer exists')
+      if (!before) throw new Error(t('landmarks.err_gone'))
 
       await tx
         .update(landmarks)
@@ -127,7 +130,7 @@ export async function deleteLandmark(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Landmark archived.' }
+    outcome = { ok: t('landmarks.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

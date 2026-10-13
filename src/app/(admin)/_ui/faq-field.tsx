@@ -2,6 +2,7 @@ import type { Localized } from '@/db/schema'
 import { localeConfig, locales } from '@/i18n/config'
 
 import { TextArea, TextInput } from './field'
+import { uiI18n } from './i18n-server'
 
 export interface FaqEntryValue {
   q: Localized
@@ -19,7 +20,7 @@ export interface FaqEntryValue {
  * The prototype shipped ONE FAQ list shared across all fifteen activities;
  * these are genuinely per-activity.
  */
-export function FaqField({
+export async function FaqField({
   name = 'faq',
   entries,
   maxRows,
@@ -28,27 +29,25 @@ export function FaqField({
   entries: readonly FaqEntryValue[] | null | undefined
   maxRows: number
 }) {
+  const { t } = await uiI18n()
   const existing = entries ?? []
   const rowCount = Math.min(existing.length + 2, maxRows)
 
   return (
     <fieldset className="a-fieldset">
-      <legend>FAQ</legend>
-      <span className="a-hint">
-        Two blank rows are always shown. Clear the English question to delete a row. Up to {maxRows}{' '}
-        entries.
-      </span>
+      <legend>{t('ui.faq_title')}</legend>
+      <span className="a-hint">{t('ui.faq_hint', { max: maxRows })}</span>
 
       {Array.from({ length: rowCount }, (_, index) => {
         const entry = existing[index]
         return (
           <div className="a-day" key={index}>
-            <div className="a-day-no">Question {index + 1}</div>
+            <div className="a-day-no">{t('ui.faq_question_no', { number: index + 1 })}</div>
             <div className="a-l10n">
               {locales.map((locale) => (
                 <div className="a-field" key={`q-${locale}`}>
                   <label htmlFor={`${name}_q_${locale}_${index}`}>
-                    {localeConfig[locale].label} — question
+                    {t('ui.faq_question_in', { language: localeConfig[locale].label })}
                   </label>
                   <TextInput
                     id={`${name}_q_${locale}_${index}`}
@@ -64,7 +63,7 @@ export function FaqField({
               {locales.map((locale) => (
                 <div className="a-field" key={`a-${locale}`}>
                   <label htmlFor={`${name}_a_${locale}_${index}`}>
-                    {localeConfig[locale].label} — answer
+                    {t('ui.faq_answer_in', { language: localeConfig[locale].label })}
                   </label>
                   <TextArea
                     id={`${name}_a_${locale}_${index}`}

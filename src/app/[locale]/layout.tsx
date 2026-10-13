@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages, setRequestLocale } from 'next-intl/server'
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { hasLocale } from 'next-intl'
 
@@ -63,13 +63,31 @@ export default async function LocaleLayout({
             is still visible after the user moves on.
           */}
           <ToastProvider>
+            <SkipLink />
             <Header />
-            {children}
+            {/*
+              Skip-link target. A wrapper rather than an id on each page's
+              <main>: every route renders its own <main>, and the header puts
+              a twelve-link nav in front of all of them.
+            */}
+            <div id="main" tabIndex={-1} style={{ outline: 'none' }}>
+              {children}
+            </div>
             <Footer />
             <PageViewBeacon />
           </ToastProvider>
         </NextIntlClientProvider>
       </body>
     </html>
+  )
+}
+
+/** First focusable element on every page; visible only when focused. */
+async function SkipLink() {
+  const t = await getTranslations()
+  return (
+    <a href="#main" className="bt-skip">
+      {t('c_skip')}
+    </a>
   )
 }

@@ -6,6 +6,7 @@ import { contactMessages, customTripRequests } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { buildQuery, pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -28,6 +29,10 @@ export default async function LeadsPage({
 }) {
   await requireCapability('leads.read')
   const params = await searchParams
+  const { t, intl } = await getAdminI18n()
+  /** Stored status → label; an unknown value shows as stored. */
+  const statusLabel = (value: string) =>
+    t(`leads.status_${value}`) === `leads.status_${value}` ? value : t(`leads.status_${value}`)
 
   const tab = param(params, 'tab') === 'contact' ? 'contact' : 'trip'
   const q = param(params, 'q')
@@ -84,21 +89,21 @@ export default async function LeadsPage({
   return (
     <>
       <PageHead
-        title="Leads"
-        description="Custom trip requests and contact messages. The prototype captured neither — both forms discarded everything the visitor typed."
+        title={t('leads.title')}
+        description={t('leads.description')}
         actions={
           <>
             <Link
               className={`a-btn ${tab === 'trip' ? '' : 'ghost'}`}
               href={`${LIST}${buildQuery(params, { tab: 'trip', page: null })}`}
             >
-              Trip requests ({tripTotal?.value ?? 0})
+              {t('leads.tab_trips', { count: tripTotal?.value ?? 0 })}
             </Link>
             <Link
               className={`a-btn ${tab === 'contact' ? '' : 'ghost'}`}
               href={`${LIST}${buildQuery(params, { tab: 'contact', page: null })}`}
             >
-              Contact ({contactTotal?.value ?? 0})
+              {t('leads.tab_contact', { count: contactTotal?.value ?? 0 })}
             </Link>
           </>
         }
@@ -108,43 +113,43 @@ export default async function LeadsPage({
       <form className="a-row a-card" method="get" action={LIST}>
         <input type="hidden" name="tab" value={tab} />
         <div className="a-field">
-          <label htmlFor="q">Name or email</label>
+          <label htmlFor="q">{t('leads.search')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('leads.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('leads.any')}</option>
             {STATUSES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {statusLabel(value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('leads.filter')}
           </button>
           <Link className="a-btn ghost" href={`${LIST}?tab=${tab}`}>
-            Reset
+            {t('leads.reset')}
           </Link>
         </div>
       </form>
 
       {tab === 'trip' ? (
         trips.length === 0 ? (
-          <Empty>No trip requests match those filters.</Empty>
+          <Empty>{t('leads.empty_trips')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Contact</th>
-                <th>Dates</th>
-                <th className="num">Travellers</th>
-                <th>Theme &amp; budget</th>
-                <th>Notes</th>
-                <th>Status</th>
+                <th>{t('leads.col_contact')}</th>
+                <th>{t('leads.dates')}</th>
+                <th className="num">{t('leads.travellers')}</th>
+                <th>{t('leads.col_theme_budget')}</th>
+                <th>{t('leads.col_notes')}</th>
+                <th>{t('leads.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +157,7 @@ export default async function LeadsPage({
                 <tr key={lead.id}>
                   <td>
                     <Link href={adminHref(`/leads/${lead.id}`)}>
-                      <strong>{lead.name ?? 'Unnamed'}</strong>
+                      <strong>{lead.name ?? t('leads.unnamed')}</strong>
                     </Link>
                     <div className="a-muted">{lead.email ?? '—'}</div>
                     <div className="a-muted">{lead.phone ?? ''}</div>
@@ -162,22 +167,26 @@ export default async function LeadsPage({
                   </td>
                   <td className="a-mono">
                     {lead.startDate ?? '—'}
-                    {lead.endDate ? ` → ${lead.endDate}` : ''}
+                    {lead.endDate ? ` – ${lead.endDate}` : ''}
                   </td>
                   <td className="num">{lead.travellers ?? '—'}</td>
                   <td>
                     {lead.theme ?? <span className="a-muted">—</span>}
                     <div className="a-muted">
                       {lead.budgetPerPersonMinor !== null && lead.currency
-                        ? `${formatMoney(lead.budgetPerPersonMinor, lead.currency, 'en')} pp`
+                        ? t('leads.per_person', {
+                            amount: formatMoney(lead.budgetPerPersonMinor, lead.currency, intl),
+                          })
                         : ''}
                     </div>
                     <div className="a-muted">{(lead.interests ?? []).join(', ')}</div>
-                    {lead.wantsDriver ? <Pill tone="info">wants driver</Pill> : null}
+                    {lead.wantsDriver ? (
+                      <Pill tone="info">{t('leads.wants_driver_tag')}</Pill>
+                    ) : null}
                   </td>
                   <td className="a-json">{lead.notes ?? ''}</td>
                   <td>
-                    <Pill tone={TONES[lead.status] ?? 'neutral'}>{lead.status}</Pill>
+                    <Pill tone={TONES[lead.status] ?? 'neutral'}>{statusLabel(lead.status)}</Pill>
                     <form
                       action={setTripRequestStatus.bind(null, lead.id)}
                       style={{ display: 'flex', gap: 6, marginBlockStart: 6 }}
@@ -185,12 +194,12 @@ export default async function LeadsPage({
                       <select className="a-select" name="status" defaultValue={lead.status}>
                         {TRIP_STATUSES.map((value) => (
                           <option key={value} value={value}>
-                            {value}
+                            {statusLabel(value)}
                           </option>
                         ))}
                       </select>
                       <button className="a-btn ghost small" type="submit">
-                        Set
+                        {t('leads.set')}
                       </button>
                     </form>
                   </td>
@@ -200,15 +209,15 @@ export default async function LeadsPage({
           </Table>
         )
       ) : contacts.length === 0 ? (
-        <Empty>No contact messages match those filters.</Empty>
+        <Empty>{t('leads.empty_contact')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>From</th>
-              <th>Subject</th>
-              <th>Message</th>
-              <th>Status</th>
+              <th>{t('leads.col_from')}</th>
+              <th>{t('leads.col_subject')}</th>
+              <th>{t('leads.col_message')}</th>
+              <th>{t('leads.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -224,7 +233,9 @@ export default async function LeadsPage({
                 <td>{message.subject ?? <span className="a-muted">—</span>}</td>
                 <td className="a-json">{message.message}</td>
                 <td>
-                  <Pill tone={TONES[message.status] ?? 'neutral'}>{message.status}</Pill>
+                  <Pill tone={TONES[message.status] ?? 'neutral'}>
+                    {statusLabel(message.status)}
+                  </Pill>
                   <form
                     action={setContactMessageStatus.bind(null, message.id)}
                     style={{ display: 'flex', gap: 6, marginBlockStart: 6 }}
@@ -232,12 +243,12 @@ export default async function LeadsPage({
                     <select className="a-select" name="status" defaultValue={message.status}>
                       {CONTACT_STATUSES.map((value) => (
                         <option key={value} value={value}>
-                          {value}
+                          {statusLabel(value)}
                         </option>
                       ))}
                     </select>
                     <button className="a-btn ghost small" type="submit">
-                      Set
+                      {t('leads.set')}
                     </button>
                   </form>
                 </td>

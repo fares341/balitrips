@@ -82,7 +82,7 @@ function FieldMessage({
   if (hint === undefined) return null
 
   return (
-    <p id={hintId} className="muted" style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}>
+    <p id={hintId} className="muted" style={{ fontSize: 13, marginTop: 6, marginBottom: 0 }}>
       {hint}
     </p>
   )
@@ -222,17 +222,18 @@ export function FormError({ messageKey }: { messageKey: string | null }) {
       style={{
         display: 'flex',
         gap: 10,
-        alignItems: 'center',
-        background: 'rgba(255,144,0,0.08)',
-        border: '1px solid var(--orange)',
-        color: 'var(--forest)',
+        alignItems: 'flex-start',
+        background: 'var(--danger-soft)',
+        border: '1px solid rgba(179, 38, 30, 0.35)',
+        color: 'var(--danger)',
         borderRadius: 12,
         padding: '12px 14px',
-        fontSize: 14,
+        fontSize: 14.5,
         fontWeight: 600,
+        lineHeight: 1.5,
       }}
     >
-      <Icon name="shield" size={18} />
+      <Icon name="cross" size={18} />
       <span>{t(messageKey)}</span>
     </div>
   )

@@ -12,6 +12,7 @@ import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
+import { getAdminI18n } from '../../_lib/i18n'
 import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
 
 export const dynamic = 'force-dynamic'
@@ -25,6 +26,7 @@ export default async function ItinerariesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -94,12 +96,12 @@ export default async function ItinerariesPage({
   return (
     <>
       <PageHead
-        title="Itineraries"
-        description="Day plans are authored row by row. The length column is the number of days that actually exist — never a number the renderer has to pad with filler."
+        title={t('itineraries.title')}
+        description={t('itineraries.list_description')}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/itineraries/new')}>
-              New itinerary
+              {t('itineraries.new')}
             </Link>
           ) : null
         }
@@ -108,45 +110,45 @@ export default async function ItinerariesPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Name or slug"
+            placeholder={t('itineraries.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="">{t('common.all')}</option>
+            <option value="draft">{t('common.draft')}</option>
+            <option value="published">{t('common.published')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('common.clear')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No itineraries match those filters.</Empty>
+        <Empty>{t('itineraries.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th className="num">Days</th>
-              <th className="num">Version</th>
-              <th className="num">Price</th>
-              <th>Updated</th>
+              <th>{t('common.name')}</th>
+              <th>{t('common.status')}</th>
+              <th className="num">{t('itineraries.days')}</th>
+              <th className="num">{t('itineraries.version')}</th>
+              <th className="num">{t('common.price')}</th>
+              <th>{t('common.updated')}</th>
             </tr>
           </thead>
           <tbody>
@@ -156,7 +158,7 @@ export default async function ItinerariesPage({
                 <tr key={row.id}>
                   <td>
                     <Link href={adminHref(`/itineraries/${row.id}`)}>
-                      {pick(row.name, 'en', row.slug)}
+                      {pick(row.name, locale, row.slug)}
                     </Link>
                     <div className="a-mono a-muted">{row.slug}</div>
                   </td>
@@ -168,12 +170,12 @@ export default async function ItinerariesPage({
                     {authoredDays !== row.days ? (
                       <>
                         {' '}
-                        <Pill tone="warn">stored {row.days}</Pill>
+                        <Pill tone="warn">{t('itineraries.stored_days', { days: row.days })}</Pill>
                       </>
                     ) : null}
                   </td>
                   <td className="num">v{row.version}</td>
-                  <td className="num">{formatMoney(row.priceMinor, row.currency, 'en')}</td>
+                  <td className="num">{formatMoney(row.priceMinor, row.currency, intl)}</td>
                   <td>
                     <When value={row.updatedAt} />
                   </td>

@@ -1,6 +1,16 @@
 import type { Localized } from '@/db/schema'
 
-import { Checkbox, Field, LocalizedField, LocalizedListField, MoneyField, Select, StatusField, TextInput } from '../../../_ui/field'
+import {
+  Checkbox,
+  Field,
+  LocalizedField,
+  LocalizedListField,
+  MoneyField,
+  Select,
+  StatusField,
+  TextInput,
+} from '../../../_ui/field'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { Pill } from '../../../_ui/table'
 import { addActivityTier, removeActivityTier, saveActivityTier } from '../actions'
 
@@ -33,7 +43,7 @@ export interface TierRow {
  * act on exactly the row whose fields they sit beside, and editing one tier
  * can never post another's values.
  */
-export function TierEditor({
+export async function TierEditor({
   activityId,
   tiers,
   currency,
@@ -42,13 +52,14 @@ export function TierEditor({
   tiers: readonly TierRow[]
   currency: string
 }) {
+  const { t } = await getAdminI18n()
   return (
     <div className="a-card">
-      <h2>Service tiers</h2>
+      <h2>{t('activities.tiers_title')}</h2>
       <p className="a-hint">
         {tiers.length === 0
-          ? 'No tiers yet. With none defined the activity sells at its own single price, exactly as before — tiers are optional.'
-          : `${tiers.length} tier${tiers.length === 1 ? '' : 's'}. They appear on the activity page cheapest first, whatever order they are listed here.`}
+          ? t('activities.tiers_empty')
+          : t('activities.tiers_count', { count: tiers.length })}
       </p>
 
       <div
@@ -60,53 +71,68 @@ export function TierEditor({
         }}
       >
         {tiers.map((tier) => (
-          <form key={tier.id} className="a-day" action={saveActivityTier.bind(null, activityId, tier.id)}>
+          <form
+            key={tier.id}
+            className="a-day"
+            action={saveActivityTier.bind(null, activityId, tier.id)}
+          >
             <div className="a-day-head">
               <div className="a-day-no">
                 {tier.key}
-                {tier.isPopular ? <Pill tone="info">most popular</Pill> : null}
-                {tier.status === 'published' ? null : <Pill tone="bad">draft</Pill>}
+                {tier.isPopular ? (
+                  <Pill tone="info">{t('activities.tier_popular_pill')}</Pill>
+                ) : null}
+                {tier.status === 'published' ? null : <Pill tone="bad">{t('common.draft')}</Pill>}
               </div>
               <div className="a-actions">
                 <button className="a-btn ghost small" type="submit">
-                  Save tier
+                  {t('activities.tier_save')}
                 </button>
                 <button
                   className="a-btn danger small"
                   type="submit"
                   formAction={removeActivityTier.bind(null, activityId, tier.id)}
                 >
-                  Remove
+                  {t('common.remove')}
                 </button>
               </div>
             </div>
 
-            <LocalizedField name="name" label="Tier name" value={tier.name} required />
+            <LocalizedField
+              name="name"
+              label={t('activities.tier_name')}
+              value={tier.name}
+              required
+            />
             <LocalizedField
               name="tagline"
-              label="Tagline"
+              label={t('activities.tier_tagline')}
               value={tier.tagline}
-              hint="One line under the title on the card."
+              hint={t('activities.tier_tagline_hint')}
             />
 
             <MoneyField minor={tier.priceMinor} currency={tier.currency} />
 
             <div className="a-row">
               <Field
-                label="Pricing mode"
+                label={t('activities.pricing_mode')}
                 htmlFor={`pricingMode_${tier.id}`}
-                hint="Per guest multiplies by party size. Flat is one price for the whole booking — use it for a couples rate, or a family of six is charged for one."
+                hint={t('activities.pricing_mode_hint')}
               >
-                <Select id={`pricingMode_${tier.id}`} name="pricingMode" defaultValue={tier.pricingMode}>
-                  <option value="per_guest">Per guest</option>
-                  <option value="flat">Flat</option>
+                <Select
+                  id={`pricingMode_${tier.id}`}
+                  name="pricingMode"
+                  defaultValue={tier.pricingMode}
+                >
+                  <option value="per_guest">{t('activities.per_guest')}</option>
+                  <option value="flat">{t('activities.flat')}</option>
                 </Select>
               </Field>
 
               <Field
-                label="Max guests"
+                label={t('activities.max_guests')}
                 htmlFor={`maxGuests_${tier.id}`}
-                hint="Blank uses the activity's own cap. A tier may be tighter than the activity, never looser."
+                hint={t('activities.tier_max_guests_hint')}
               >
                 <TextInput
                   id={`maxGuests_${tier.id}`}
@@ -120,29 +146,33 @@ export function TierEditor({
 
             <Checkbox
               name="isPopular"
-              label="Most popular"
+              label={t('activities.tier_popular')}
               defaultChecked={tier.isPopular}
-              hint="Draws the ribbon. Ticking this clears it from every other tier of this activity — four ribbons is not a stronger recommendation, it is a page that looks broken."
+              hint={t('activities.tier_popular_hint')}
             />
 
             <LocalizedListField
               name="features"
-              label="Feature chips"
+              label={t('activities.tier_features')}
               values={tier.features}
-              hint="The short ticked chips on the card. Three or four reads best."
+              hint={t('activities.tier_features_hint')}
             />
-            <LocalizedListField name="highlights" label="Highlights" values={tier.highlights} />
+            <LocalizedListField
+              name="highlights"
+              label={t('activities.tier_highlights')}
+              values={tier.highlights}
+            />
             <LocalizedListField
               name="details"
-              label="Additional details"
+              label={t('activities.tier_details')}
               values={tier.details}
-              hint="Language, difficulty, who it suits."
+              hint={t('activities.tier_details_hint')}
             />
             <LocalizedListField
               name="notes"
-              label="Important notes"
+              label={t('activities.tier_notes')}
               values={tier.notes}
-              hint="What a traveller must know before booking."
+              hint={t('activities.tier_notes_hint')}
             />
 
             <StatusField value={tier.status} />
@@ -153,45 +183,49 @@ export function TierEditor({
             by pressing Enter inside an existing tier's fields. */}
         <form className="a-day" action={addActivityTier.bind(null, activityId)}>
           <div className="a-day-head">
-            <div className="a-day-no">New tier</div>
+            <div className="a-day-no">{t('activities.tier_new')}</div>
             <div className="a-actions">
               <button className="a-btn small" type="submit">
-                Add tier
+                {t('activities.tier_add')}
               </button>
             </div>
           </div>
 
           <Field
-            label="Key"
+            label={t('activities.tier_key')}
             htmlFor="new_tier_key"
-            hint="Lowercase identifier, unique within this activity — basic, couples, premium. Not shown to visitors."
+            hint={t('activities.tier_key_hint')}
           >
             <TextInput id="new_tier_key" name="key" placeholder="premium" required />
           </Field>
 
-          <LocalizedField name="name" label="Tier name" required />
-          <LocalizedField name="tagline" label="Tagline" />
+          <LocalizedField name="name" label={t('activities.tier_name')} required />
+          <LocalizedField name="tagline" label={t('activities.tier_tagline')} />
 
           <MoneyField currency={currency} />
 
           <div className="a-row">
-            <Field label="Pricing mode" htmlFor="new_tier_mode">
+            <Field label={t('activities.pricing_mode')} htmlFor="new_tier_mode">
               <Select id="new_tier_mode" name="pricingMode" defaultValue="per_guest">
-                <option value="per_guest">Per guest</option>
-                <option value="flat">Flat</option>
+                <option value="per_guest">{t('activities.per_guest')}</option>
+                <option value="flat">{t('activities.flat')}</option>
               </Select>
             </Field>
-            <Field label="Max guests" htmlFor="new_tier_max" hint="Blank uses the activity's cap.">
+            <Field
+              label={t('activities.max_guests')}
+              htmlFor="new_tier_max"
+              hint={t('activities.tier_max_guests_new_hint')}
+            >
               <TextInput id="new_tier_max" name="maxGuests" type="number" min={1} />
             </Field>
           </div>
 
-          <Checkbox name="isPopular" label="Most popular" />
+          <Checkbox name="isPopular" label={t('activities.tier_popular')} />
 
-          <LocalizedListField name="features" label="Feature chips" />
-          <LocalizedListField name="highlights" label="Highlights" />
-          <LocalizedListField name="details" label="Additional details" />
-          <LocalizedListField name="notes" label="Important notes" />
+          <LocalizedListField name="features" label={t('activities.tier_features')} />
+          <LocalizedListField name="highlights" label={t('activities.tier_highlights')} />
+          <LocalizedListField name="details" label={t('activities.tier_details')} />
+          <LocalizedListField name="notes" label={t('activities.tier_notes')} />
 
           <StatusField />
         </form>

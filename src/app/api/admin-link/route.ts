@@ -24,8 +24,10 @@
  * decides whether a shortcut is offered.
  */
 
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+import { ADMIN_LOCALE_COOKIE, INITIAL_ADMIN_LOCALE, isAdminLocale } from '@/app/(admin)/_i18n/types'
 import { adminHref } from '@/app/(admin)/_lib/admin-path'
 import { hasCapability } from '@/lib/auth/session'
 
@@ -36,7 +38,7 @@ export const runtime = 'nodejs'
 export async function GET(): Promise<NextResponse> {
   const allowed = await hasCapability('admin.access')
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     { href: allowed ? adminHref() : null },
     {
       headers: {
@@ -47,4 +49,15 @@ export async function GET(): Promise<NextResponse> {
       },
     },
   )
+  // Staff start the Studio in Arabic; the sidebar toggle changes it after.
+  if (allowed && !isAdminLocale((await cookies()).get(ADMIN_LOCALE_COOKIE)?.value)) {
+    response.cookies.set(ADMIN_LOCALE_COOKIE, INITIAL_ADMIN_LOCALE, {
+      path: '/',
+      sameSite: 'lax',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 365 * 24 * 60 * 60,
+    })
+  }
+  return response
 }

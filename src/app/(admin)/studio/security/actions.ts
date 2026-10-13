@@ -10,7 +10,8 @@ import { generateRecoveryCodes, generateSecret, sealSecret } from '@/lib/auth/to
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { freq } from '../../_lib/form'
-import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
+import { getAdminI18n } from '../../_lib/i18n'
+import { errorMessage, isRedirectError, localizeMessage, withOutcome } from '../../_lib/result'
 import { requireElevated } from '../../_lib/session'
 import {
   CHALLENGE_LOCK_MINUTES,
@@ -63,11 +64,12 @@ export interface EnrolmentResult {
  */
 export async function beginEnrolment(): Promise<void> {
   const session = await requireElevated()
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
     const status = await twoFactorStatus(session.userId)
-    if (status.enabled) throw new Error('Two-factor is already active on this account.')
+    if (status.enabled) throw new Error(t('security.err_already_active_account'))
 
     const secret = generateSecret()
 
@@ -93,7 +95,7 @@ export async function beginEnrolment(): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Scan the code below, then confirm with a six-digit code.' }
+    outcome = { ok: t('security.ok_scan') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -115,18 +117,19 @@ export async function confirmEnrolment(
 ): Promise<EnrolmentResult> {
   try {
     const session = await requireElevated()
+    const { t } = await getAdminI18n()
     const status = await twoFactorStatus(session.userId)
 
-    if (status.enabled) return { ok: false, message: 'Two-factor is already active.' }
+    if (status.enabled) return { ok: false, message: t('security.err_already_active') }
 
     const secret = await readSecret(session.userId)
     if (secret === null) {
-      return { ok: false, message: 'Start the setup again — there is no pending secret.' }
+      return { ok: false, message: t('security.err_no_pending') }
     }
 
-    const code = freq(form, 'code', 'Code')
+    const code = freq(form, 'code', t('security.code'))
     const verified = await verifyCodeOnce(session.userId, secret, code)
-    if (!verified.ok) return { ok: false, message: verified.reason }
+    if (!verified.ok) return { ok: false, message: t(verified.reason) }
 
     const codes = generateRecoveryCodes()
 
@@ -153,12 +156,13 @@ export async function confirmEnrolment(
 
     return {
       ok: true,
-      message: 'Two-factor is on. Store these recovery codes now — they are not shown again.',
+      message: t('security.ok_enabled'),
       codes,
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    return { ok: false, message: errorMessage(error) }
+    // These forms render the message directly, not through <Flash>.
+    return { ok: false, message: localizeMessage(errorMessage(error), (await getAdminI18n()).t) }
   }
 }
 
@@ -171,25 +175,24 @@ export async function confirmEnrolment(
  */
 export async function answerChallenge(form: FormData): Promise<void> {
   const session = await requireElevated()
+  const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }
 
   try {
     const secret = await readSecret(session.userId)
     const status = await twoFactorStatus(session.userId)
     if (secret === null || !status.enabled) {
-      throw new Error('Two-factor is not set up on this account yet.')
+      throw new Error(t('security.err_not_set_up'))
     }
 
-    const submitted = freq(form, 'code', 'Code')
+    const submitted = freq(form, 'code', t('security.code'))
     const looksLikeRecovery = /[A-Za-z]/.test(submitted)
 
     // المحاولة تُحجز (تُعدّ) قبل فحص الرمز، تحت قفل: طلبات متوازية كانت تمر
     // كلها من فحص "مقفل؟" قبل أن يُسجَّل أي خطأ. النجاح يصفّر العدّاد.
     const attempt = await reserveChallengeAttempt(session.userId)
     if (attempt > MAX_CHALLENGE_FAILURES) {
-      throw new Error(
-        `Too many wrong codes. Try again in ${CHALLENGE_LOCK_MINUTES} minutes. Use a recovery code once the lock ends if your phone is unavailable.`,
-      )
+      throw new Error(t('security.err_locked', { minutes: CHALLENGE_LOCK_MINUTES }))
     }
 
     // رمز خاطئ: عند بلوغ الحد تُنهى هذه الجلسة ويُسجَّل القفل.
@@ -211,7 +214,7 @@ export async function answerChallenge(form: FormData): Promise<void> {
     if (looksLikeRecovery) {
       const accepted = await consumeRecoveryCode(session.userId, submitted)
       if (!accepted) {
-        await failed('That recovery code is not valid, or it has already been used.')
+        await failed(t('security.err_bad_recovery'))
       }
 
       await writeAudit({
@@ -224,7 +227,7 @@ export async function answerChallenge(form: FormData): Promise<void> {
       })
     } else {
       const verified = await verifyCodeOnce(session.userId, secret, submitted)
-      if (!verified.ok) await failed(verified.reason)
+      if (!verified.ok) await failed(t(verified.reason))
     }
 
     await clearChallengeFailures(session.userId)
@@ -244,7 +247,7 @@ export async function answerChallenge(form: FormData): Promise<void> {
     redirect(withOutcome(SECURITY, outcome))
   }
 
-  redirect(withOutcome(adminHref(''), { ok: 'Two-factor confirmed for this session.' }))
+  redirect(withOutcome(adminHref(''), { ok: t('security.ok_session_verified') }))
 }
 
 /** Replace the recovery codes. The previous set stops working immediately. */
@@ -254,17 +257,22 @@ export async function regenerateRecoveryCodes(
 ): Promise<EnrolmentResult> {
   try {
     const session = await requireElevated()
+    const { t } = await getAdminI18n()
     const status = await twoFactorStatus(session.userId)
-    if (!status.enabled) return { ok: false, message: 'Finish setting up two-factor first.' }
+    if (!status.enabled) return { ok: false, message: t('security.err_finish_setup') }
 
     const secret = await readSecret(session.userId)
-    if (secret === null) return { ok: false, message: 'This account has no two-factor secret.' }
+    if (secret === null) return { ok: false, message: t('security.err_no_secret') }
 
     // Re-proving possession of the authenticator matters here: an attacker
     // sitting on a hijacked session would otherwise mint themselves a set of
     // permanent bypass codes.
-    const verified = await verifyCodeOnce(session.userId, secret, freq(form, 'code', 'Code'))
-    if (!verified.ok) return { ok: false, message: verified.reason }
+    const verified = await verifyCodeOnce(
+      session.userId,
+      secret,
+      freq(form, 'code', t('security.code')),
+    )
+    if (!verified.ok) return { ok: false, message: t(verified.reason) }
 
     const codes = generateRecoveryCodes()
 
@@ -285,11 +293,12 @@ export async function regenerateRecoveryCodes(
 
     return {
       ok: true,
-      message: 'New recovery codes issued. The previous set no longer works.',
+      message: t('security.ok_regenerated'),
       codes,
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    return { ok: false, message: errorMessage(error) }
+    // These forms render the message directly, not through <Flash>.
+    return { ok: false, message: localizeMessage(errorMessage(error), (await getAdminI18n()).t) }
   }
 }

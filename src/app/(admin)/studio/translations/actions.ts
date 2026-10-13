@@ -14,6 +14,7 @@ import idMessages from '../../../../../messages/id.json'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { flocalized, freq } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 
@@ -30,6 +31,7 @@ const BUNDLED: Record<string, Record<string, string>> = {
 
 export async function saveTranslation(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('translations.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -37,7 +39,7 @@ export async function saveTranslation(id: string, form: FormData): Promise<void>
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(translations).where(eq(translations.id, id)).limit(1)
-      if (!before) throw new Error('That key no longer exists')
+      if (!before) throw new Error(t('translations.err_key_gone'))
 
       const [after] = await tx
         .update(translations)
@@ -58,7 +60,7 @@ export async function saveTranslation(id: string, form: FormData): Promise<void>
       )
     })
 
-    outcome = { ok: 'Key saved.' }
+    outcome = { ok: t('translations.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -69,16 +71,17 @@ export async function saveTranslation(id: string, form: FormData): Promise<void>
 
 export async function createTranslation(form: FormData): Promise<void> {
   const session = await requireCapability('translations.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const key = freq(form, 'key', 'Key').slice(0, 128)
+    const key = freq(form, 'key', t('translations.key')).slice(0, 128)
     if (!/^[a-z0-9_.-]+$/i.test(key)) {
-      throw new Error('A key may contain letters, digits, dots, underscores and hyphens only')
+      throw new Error(t('translations.err_key_format'))
     }
 
     const values = flocalized(form, 'values')
-    if (values.en === '') throw new Error('The English value is required')
+    if (values.en === '') throw new Error(t('translations.err_en_required'))
 
     await db.transaction(async (tx) => {
       const [row] = await tx.insert(translations).values({ key, values }).returning()
@@ -96,7 +99,7 @@ export async function createTranslation(form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: `Added "${key}".` }
+    outcome = { ok: t('translations.ok_added', { key }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -115,6 +118,7 @@ export async function createTranslation(form: FormData): Promise<void> {
  */
 export async function importBundledKeys(): Promise<void> {
   const session = await requireCapability('translations.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -158,8 +162,8 @@ export async function importBundledKeys(): Promise<void> {
     outcome = {
       ok:
         inserted === 0
-          ? 'Nothing to import — every bundled key is already in the database.'
-          : `Imported ${inserted} key(s) from the bundled catalogues.`,
+          ? t('translations.ok_nothing_to_import')
+          : t('translations.ok_imported', { count: inserted }),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error

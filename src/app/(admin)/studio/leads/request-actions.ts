@@ -18,8 +18,10 @@ import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fbool, fcurrency, fintOrNull, fstr, fuuid } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import type { Translate } from '../../_i18n'
 import { logRequestActivity, notifyRequestStatus } from './notify'
 
 /**
@@ -46,6 +48,7 @@ async function run(back: string, body: () => Promise<string>): Promise<never> {
 
 export async function saveRequestNotes(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
     const adminNotes = fstr(form, 'adminNotes')?.slice(0, 5000) ?? null
     const [row] = await db
@@ -53,7 +56,7 @@ export async function saveRequestNotes(id: string, form: FormData): Promise<void
       .set({ adminNotes })
       .where(eq(customTripRequests.id, id))
       .returning({ id: customTripRequests.id })
-    if (!row) throw new Error('That request no longer exists')
+    if (!row) throw new Error(t('leads.err_no_request'))
     await writeAudit({
       actor,
       action: 'custom_trip_request.notes',
@@ -62,7 +65,7 @@ export async function saveRequestNotes(id: string, form: FormData): Promise<void
       before: null,
       after: { length: adminNotes?.length ?? 0 },
     })
-    return 'Notes saved.'
+    return t('leads.ok_notes')
   })
 }
 
@@ -72,9 +75,10 @@ export async function saveRequestNotes(id: string, form: FormData): Promise<void
  */
 export async function linkRequestToUser(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
     const email = (fstr(form, 'email') ?? '').trim().toLowerCase()
-    if (!email.includes('@')) throw new Error('Enter the account e-mail.')
+    if (!email.includes('@')) throw new Error(t('leads.err_enter_email'))
     // الطلب موجود، غير مربوط بعد، وبريده هو البريد المُدخل. غير ذلك كان يربط
     // خطة رحلة شخص (اسمه وتواريخه) بحساب آخر بخطأ كتابة واحد.
     const [request] = await db
@@ -82,11 +86,11 @@ export async function linkRequestToUser(id: string, form: FormData): Promise<voi
       .from(customTripRequests)
       .where(eq(customTripRequests.id, id))
       .limit(1)
-    if (!request) throw new Error('That request no longer exists.')
-    if (request.userId !== null) throw new Error('This request is already linked to an account.')
+    if (!request) throw new Error(t('leads.err_no_request'))
+    if (request.userId !== null) throw new Error(t('leads.err_already_linked'))
     if ((request.email ?? '').trim().toLowerCase() !== email) {
       throw new Error(
-        `The request was sent from ${request.email ?? 'no e-mail'}. Link it only to the account with that same address.`,
+        t('leads.err_email_mismatch', { email: request.email ?? t('leads.no_email') }),
       )
     }
     const [user] = await db
@@ -94,16 +98,13 @@ export async function linkRequestToUser(id: string, form: FormData): Promise<voi
       .from(users)
       .where(and(eq(users.email, email), isNull(users.deletedAt)))
       .limit(1)
-    if (!user)
-      throw new Error(
-        `No account with ${email}. Ask the traveller to sign up with that address first.`,
-      )
+    if (!user) throw new Error(t('leads.err_no_account_for', { email }))
     const linked = await db
       .update(customTripRequests)
       .set({ userId: user.id })
       .where(and(eq(customTripRequests.id, id), isNull(customTripRequests.userId)))
       .returning({ id: customTripRequests.id })
-    if (linked.length === 0) throw new Error('This request was linked meanwhile.')
+    if (linked.length === 0) throw new Error(t('leads.err_linked_meanwhile'))
     await writeAudit({
       actor,
       action: 'custom_trip_request.link',
@@ -112,7 +113,7 @@ export async function linkRequestToUser(id: string, form: FormData): Promise<voi
       before: { userId: null },
       after: { userId: user.id, email },
     })
-    return `Linked to ${email}. Uploaded plans now appear in their account.`
+    return t('leads.ok_linked', { email })
   })
 }
 
@@ -130,13 +131,13 @@ export async function linkRequestToUser(id: string, form: FormData): Promise<voi
  */
 export async function setCustomQuote(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
     if (!can(actor.role, 'config.write') && !can(actor.role, 'orders.refund')) {
-      throw new Error('Only managers (orders or configuration rights) can set a price.')
+      throw new Error(t('leads.err_price_managers_only'))
     }
-    const minor = fintOrNull(form, 'quoteMinor', 'Price')
-    if (minor !== null && minor <= 0)
-      throw new Error('Price must be above zero, or blank to clear.')
+    const minor = fintOrNull(form, 'quoteMinor', t('leads.price'))
+    if (minor !== null && minor <= 0) throw new Error(t('leads.err_price_positive'))
     const currency = minor === null ? null : fcurrency(form, 'quoteCurrency')
 
     const [before] = await db
@@ -153,11 +154,12 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
       .leftJoin(users, eq(users.id, customTripRequests.userId))
       .where(eq(customTripRequests.id, id))
       .limit(1)
-    if (!before) throw new Error('That request no longer exists')
-    if (before.paidOrderId !== null)
-      throw new Error('This request is already paid; the price is final.')
+    if (!before) throw new Error(t('leads.err_no_request'))
+    if (before.paidOrderId !== null) throw new Error(t('leads.err_already_paid'))
     if (minor !== null && (before.status === 'cancelled' || before.status === 'completed')) {
-      throw new Error(`This request is ${before.status}; reopen it before quoting.`)
+      throw new Error(
+        t('leads.err_reopen_before_quote', { status: t(`leads.status_${before.status}`) }),
+      )
     }
 
     const [after] = await db
@@ -169,7 +171,7 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
       })
       .where(and(eq(customTripRequests.id, id), isNull(customTripRequests.paidOrderId)))
       .returning({ id: customTripRequests.id })
-    if (!after) throw new Error('This request was paid meanwhile; the price is final.')
+    if (!after) throw new Error(t('leads.err_paid_meanwhile'))
 
     await writeAudit({
       actor,
@@ -185,11 +187,8 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
       by: actor.userId,
     })
 
-    if (minor === null || currency === null)
-      return 'Price cleared. The traveller can no longer pay.'
-    if (before.userId === null) {
-      return 'Price saved. This request is not linked to an account yet — link it so the traveller can see and pay it.'
-    }
+    if (minor === null || currency === null) return t('leads.ok_price_cleared')
+    if (before.userId === null) return t('leads.ok_price_saved_unlinked')
     const locale = before.locale !== null && isLocale(before.locale) ? before.locale : defaultLocale
     await notifyUser(
       before.userId,
@@ -197,7 +196,7 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
       { name: before.name ?? '', amount: formatMoney(minor, currency, locale) },
       '/account/schedules',
     )
-    return 'Price saved. The traveller has been notified and can pay from their account.'
+    return t('leads.ok_price_saved')
   })
 }
 
@@ -214,7 +213,11 @@ type WhatsappTarget =
  * وافق على واتساب وله رقم دولي صالح، والنسخة غير مسحوبة. الرابط صفحة العرض
  * المحمية في حسابه — لا رابط ملف مباشر أبداً.
  */
-async function whatsappTarget(requestId: string, documentId: string): Promise<WhatsappTarget> {
+async function whatsappTarget(
+  requestId: string,
+  documentId: string,
+  t: Translate,
+): Promise<WhatsappTarget> {
   const [row] = await db
     .select({
       userId: customTripRequests.userId,
@@ -231,19 +234,16 @@ async function whatsappTarget(requestId: string, documentId: string): Promise<Wh
       and(eq(customTripDocuments.id, documentId), eq(customTripDocuments.requestId, requestId)),
     )
     .limit(1)
-  if (!row) return { ok: false, reason: 'That version does not belong to this request.' }
-  if (row.withdrawnAt !== null) return { ok: false, reason: 'That version is withdrawn.' }
+  if (!row) return { ok: false, reason: t('leads.wa_wrong_version') }
+  if (row.withdrawnAt !== null) return { ok: false, reason: t('leads.wa_withdrawn') }
   if (row.userId === null) {
-    return { ok: false, reason: 'This request is not linked to an account — link it first.' }
+    return { ok: false, reason: t('leads.wa_not_linked') }
   }
   if (row.optIn !== true) {
-    return { ok: false, reason: 'The traveller has not opted in to WhatsApp messages.' }
+    return { ok: false, reason: t('leads.wa_not_opted_in') }
   }
   if (toWhatsappNumber(row.phone) === null) {
-    return {
-      ok: false,
-      reason: 'The traveller has no international phone number (+country code) on their account.',
-    }
+    return { ok: false, reason: t('leads.wa_no_phone') }
   }
   const locale = row.locale !== null && isLocale(row.locale) ? row.locale : defaultLocale
   return {
@@ -271,12 +271,13 @@ async function sendPdfWhatsapp(
 
 export async function sendCustomPdfWhatsapp(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
-    const documentId = fuuid(form, 'documentId', 'Document')
-    const target = await whatsappTarget(id, documentId)
+    const documentId = fuuid(form, 'documentId', t('leads.document'))
+    const target = await whatsappTarget(id, documentId, t)
     if (!target.ok) throw new Error(target.reason)
     if (!(await sendPdfWhatsapp(target, documentId))) {
-      throw new Error('The WhatsApp message could not be queued. Try again shortly.')
+      throw new Error(t('leads.err_whatsapp_queue'))
     }
     await writeAudit({
       actor,
@@ -286,7 +287,7 @@ export async function sendCustomPdfWhatsapp(id: string, form: FormData): Promise
       before: null,
       after: { documentId },
     })
-    return 'Queued on WhatsApp with a link to the plan in their account.'
+    return t('leads.ok_whatsapp_queued')
   })
 }
 
@@ -297,23 +298,24 @@ function isPdf(bytes: Uint8Array): boolean {
 
 export async function uploadCustomPdf(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
     const file = form.get('file')
-    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
-    if (file.size > MAX_PDF_BYTES) throw new Error('That PDF is larger than 20 MB.')
+    if (!(file instanceof File) || file.size === 0) throw new Error(t('leads.err_choose_pdf'))
+    if (file.size > MAX_PDF_BYTES) throw new Error(t('leads.err_pdf_too_large'))
     if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
-      throw new Error('Object storage is not configured; nothing can be delivered.')
+      throw new Error(t('leads.err_no_storage'))
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer())
-    if (!isPdf(bytes)) throw new Error('That file is not a PDF.')
+    if (!isPdf(bytes)) throw new Error(t('leads.err_not_pdf'))
 
     const [request] = await db
       .select()
       .from(customTripRequests)
       .where(eq(customTripRequests.id, id))
       .limit(1)
-    if (!request) throw new Error('That request no longer exists')
+    if (!request) throw new Error(t('leads.err_no_request'))
 
     const objectKey = `custom-trips/${id}/${randomUUID()}.pdf`
     if (isPrivateStorageAvailable()) {
@@ -370,9 +372,9 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
       // "أرسل أيضاً على واتساب": رسالة واحدة برابط صفحة العرض المحمية (+ داخل
       // الموقع + البريد). بدونه: الإشعار المعتاد بلا واتساب.
       const alsoWhatsapp = fbool(form, 'alsoWhatsapp')
-      const target = alsoWhatsapp && doc ? await whatsappTarget(id, doc.id) : null
+      const target = alsoWhatsapp && doc ? await whatsappTarget(id, doc.id, t) : null
       if (target?.ok && doc && (await sendPdfWhatsapp(target, doc.id, { email: true }))) {
-        return `Version ${doc.version} uploaded. The traveller has been notified, including on WhatsApp.`
+        return t('leads.ok_uploaded_whatsapp', { version: doc.version })
       }
       await notifyUser(
         request.userId,
@@ -382,22 +384,23 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
         { whatsapp: false },
       )
       if (target && !target.ok) {
-        return `Version ${doc?.version} uploaded and the traveller notified — but not on WhatsApp: ${target.reason}`
+        return t('leads.ok_uploaded_no_whatsapp', { version: doc?.version, reason: target.reason })
       }
-      return `Version ${doc?.version} uploaded. The traveller has been notified.`
+      return t('leads.ok_uploaded', { version: doc?.version })
     }
     // ضيف: بريد بتغيّر الحالة إلى "بانتظار ردك" يدعوه للتسجيل بنفس البريد.
     if (request.status !== 'completed' && request.status !== 'waiting_customer') {
       await notifyRequestStatus(id, 'waiting_customer')
     }
-    return `Version ${doc?.version} uploaded. This request is not linked to an account yet — link it so the traveller can open the plan.`
+    return t('leads.ok_uploaded_unlinked', { version: doc?.version })
   })
 }
 
 export async function withdrawCustomPdf(id: string, form: FormData): Promise<void> {
   const actor = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   await run(detail(id), async () => {
-    const documentId = fuuid(form, 'documentId', 'Document')
+    const documentId = fuuid(form, 'documentId', t('leads.document'))
     const [row] = await db
       .update(customTripDocuments)
       .set({ withdrawnAt: sql`now()` })
@@ -409,7 +412,7 @@ export async function withdrawCustomPdf(id: string, form: FormData): Promise<voi
         ),
       )
       .returning({ version: customTripDocuments.version })
-    if (!row) throw new Error('That version is not active')
+    if (!row) throw new Error(t('leads.err_version_inactive'))
     await writeAudit({
       actor,
       action: 'custom_trip_document.withdraw',
@@ -418,6 +421,6 @@ export async function withdrawCustomPdf(id: string, form: FormData): Promise<voi
       before: { documentId },
       after: { withdrawn: true },
     })
-    return `Version ${row.version} withdrawn. The traveller can no longer open it.`
+    return t('leads.ok_withdrawn', { version: row.version })
   })
 }

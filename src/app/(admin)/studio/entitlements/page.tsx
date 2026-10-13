@@ -6,6 +6,7 @@ import { entitlements, orders, users } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -24,6 +25,7 @@ export default async function EntitlementsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('customers.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -84,42 +86,39 @@ export default async function EntitlementsPage({
 
   return (
     <>
-      <PageHead
-        title="Entitlements"
-        description="What actually unlocks the map. Never cached in a cookie or token — a refund has to remove access immediately."
-      />
+      <PageHead title={t('entitlements.title')} description={t('entitlements.description')} />
       <Flash searchParams={params} />
 
       {mayGrant ? (
         <form className="a-card a-row" action={grantEntitlement}>
           <div className="a-field">
-            <label htmlFor="email">Customer email</label>
+            <label htmlFor="email">{t('entitlements.customer_email')}</label>
             <input className="a-input" id="email" name="email" type="email" required />
           </div>
           <div className="a-field">
-            <label htmlFor="kind">Kind</label>
+            <label htmlFor="kind">{t('entitlements.kind')}</label>
             <select className="a-select" id="kind" name="kind" defaultValue="map_access">
               <option value="map_access">map_access</option>
               <option value="vip">vip</option>
             </select>
           </div>
           <div className="a-field">
-            <label htmlFor="expiresAt">Expires</label>
+            <label htmlFor="expiresAt">{t('entitlements.expires')}</label>
             <input className="a-input" id="expiresAt" name="expiresAt" type="date" />
-            <span className="a-hint">Blank means lifetime.</span>
+            <span className="a-hint">{t('entitlements.expires_hint')}</span>
           </div>
           <div className="a-field">
-            <label htmlFor="reason">Reason</label>
+            <label htmlFor="reason">{t('entitlements.reason')}</label>
             <input
               className="a-input"
               id="reason"
               name="reason"
-              placeholder="Support recovery, comp, …"
+              placeholder={t('entitlements.reason_placeholder')}
             />
           </div>
           <div className="a-actions">
             <button className="a-btn accent" type="submit">
-              Grant
+              {t('entitlements.grant')}
             </button>
           </div>
         </form>
@@ -127,48 +126,48 @@ export default async function EntitlementsPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Email</label>
+          <label htmlFor="q">{t('common.email')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="kind-filter">Kind</label>
+          <label htmlFor="kind-filter">{t('entitlements.kind')}</label>
           <select className="a-select" id="kind-filter" name="kind" defaultValue={kind ?? ''}>
-            <option value="">Any</option>
-            <option value="basic">basic (no map)</option>
+            <option value="">{t('entitlements.any')}</option>
+            <option value="basic">{t('entitlements.kind_basic')}</option>
             <option value="map_access">map_access</option>
             <option value="vip">vip</option>
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="state">State</label>
+          <label htmlFor="state">{t('entitlements.state')}</label>
           <select className="a-select" id="state" name="state" defaultValue={state ?? ''}>
-            <option value="">Any</option>
-            <option value="active">Active</option>
-            <option value="revoked">Revoked</option>
+            <option value="">{t('entitlements.any')}</option>
+            <option value="active">{t('entitlements.state_active')}</option>
+            <option value="revoked">{t('entitlements.state_revoked')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('entitlements.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No entitlements match those filters.</Empty>
+        <Empty>{t('entitlements.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Customer</th>
-              <th>Kind</th>
-              <th>Source</th>
-              <th>Starts</th>
-              <th>Expires</th>
-              <th>State</th>
+              <th>{t('entitlements.col_customer')}</th>
+              <th>{t('entitlements.kind')}</th>
+              <th>{t('entitlements.col_source')}</th>
+              <th>{t('entitlements.col_starts')}</th>
+              <th>{t('entitlements.expires')}</th>
+              <th>{t('entitlements.state')}</th>
               <th />
             </tr>
           </thead>
@@ -182,10 +181,10 @@ export default async function EntitlementsPage({
                   <td>
                     {row.orderId ? (
                       <Link href={adminHref(`/orders/${row.orderId}`)} className="a-mono">
-                        {row.orderNumber ?? 'order'}
+                        {row.orderNumber ?? t('entitlements.order_fallback')}
                       </Link>
                     ) : row.actorId ? (
-                      <Pill tone="info">granted by staff</Pill>
+                      <Pill tone="info">{t('entitlements.by_staff')}</Pill>
                     ) : (
                       <span className="a-muted">—</span>
                     )}
@@ -197,19 +196,19 @@ export default async function EntitlementsPage({
                     {row.expiresAt ? (
                       <When value={row.expiresAt} />
                     ) : (
-                      <Pill tone="good">lifetime</Pill>
+                      <Pill tone="good">{t('entitlements.lifetime')}</Pill>
                     )}
                   </td>
                   <td>
                     {row.revokedAt ? (
                       <>
-                        <Pill tone="bad">revoked</Pill>
+                        <Pill tone="bad">{t('entitlements.state_revoked')}</Pill>
                         <div className="a-muted">{row.revokedReason ?? ''}</div>
                       </>
                     ) : expired ? (
-                      <Pill tone="warn">expired</Pill>
+                      <Pill tone="warn">{t('entitlements.expired')}</Pill>
                     ) : (
-                      <Pill tone="good">active</Pill>
+                      <Pill tone="good">{t('entitlements.state_active')}</Pill>
                     )}
                   </td>
                   <td>
@@ -217,7 +216,7 @@ export default async function EntitlementsPage({
                       <form className="a-inline-form" action={revokeEntitlement}>
                         <input type="hidden" name="entitlementId" value={row.id} />
                         <button className="a-btn danger small" type="submit">
-                          Revoke
+                          {t('entitlements.revoke')}
                         </button>
                       </form>
                     ) : null}

@@ -232,7 +232,7 @@ export function DriverBooking({ vehicles }: DriverBookingProps) {
   const dateSummary = days === null ? EMPTY : `${calendarDate(start)} → ${calendarDate(end)}`
 
   const lengthSummary =
-    days === null ? EMPTY : days === 1 ? t('dp_days_one') : `${format.number(days)} ${t('c_days')}`
+    days === null ? EMPTY : days === 1 ? t('dp_days_one') : t('c_days_n', { n: days })
 
   return (
     <aside className="bt-booking" aria-labelledby={headingId}>
@@ -314,8 +314,6 @@ export function DriverBooking({ vehicles }: DriverBookingProps) {
             style={{
               fontSize: 11.5,
               fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '.06em',
             }}
           >
             {t('dp_vehicle')}

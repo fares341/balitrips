@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test'
+
 import { expect, test } from './support/fixtures'
 
 import { ADMIN_EMAIL, ADMIN_PASSWORD, newCredentials, register, signIn } from './support/auth'
@@ -27,6 +29,18 @@ import { closeDb, resetTwoFactor } from './support/db'
  */
 
 const ADMIN_PATH = '/studio-8f2a'
+
+/**
+ * Admins land on the Studio straight from the sign-in dialog, and the Studio
+ * starts in Arabic. These assertions read English labels, so pin the Studio
+ * language first and wait for the redirect instead of racing it with goto().
+ */
+async function signInAsAdmin(page: Page): Promise<void> {
+  const origin = test.info().project.use.baseURL ?? 'http://localhost:3000'
+  await page.context().addCookies([{ name: 'studio_lang', value: 'en', url: origin }])
+  await signIn(page, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+  await page.waitForURL(new RegExp(ADMIN_PATH), { timeout: 30_000 })
+}
 
 test.describe('admin studio', () => {
   /*
@@ -85,9 +99,7 @@ test.describe('admin studio', () => {
   })
 
   test('the seeded administrator reaches two-factor enrolment', async ({ page }) => {
-    await signIn(page, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
-
-    await page.goto(ADMIN_PATH)
+    await signInAsAdmin(page)
 
     // The dashboard calls `requireCapability()`, which enforces the second
     // factor and redirects an unenrolled admin to the enrolment screen.
@@ -125,7 +137,7 @@ test.describe('admin studio', () => {
    */
 
   test('an unenrolled administrator cannot reach anything but enrolment', async ({ page }) => {
-    await signIn(page, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+    await signInAsAdmin(page)
 
     // TOTP is mandatory and not yet enrolled on the seeded account, so every
     // capability-gated page must bounce back to /security rather than render.

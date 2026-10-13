@@ -8,6 +8,7 @@ import { isStorageConfigured } from '@/lib/storage'
 import { localeConfig, locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { localeFieldName } from '../../_lib/form'
 import {
   derivativesFor,
@@ -67,6 +68,7 @@ export default async function MediaPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -123,24 +125,19 @@ export default async function MediaPage({
   const placeholderCount = placeholderRow?.value ?? 0
   const svgCount = svgRow?.value ?? 0
   const optimising = encoderAvailable()
-  const driver = isStorageConfigured() ? 'Spaces' : 'the local public/ directory'
+  const driver = isStorageConfigured() ? 'Spaces' : t('media.driver_local')
   const returnQuery = buildQuery(params, {}).replace(/^\?/, '')
 
   return (
     <>
-      <PageHead
-        title="Media library"
-        description="Uploads run the ingest pipeline: size cap, magic-byte sniff, metadata strip, then an AVIF and WebP width ladder. Nothing is hot-linked."
-      />
+      <PageHead title={t('media.title')} description={t('media.description')} />
       <Flash searchParams={params} />
 
       {placeholderCount > 0 ? (
         <div className="a-flash warn" role="status">
-          <strong>{placeholderCount}</strong> of the images below are generated placeholders, not
-          licensed photography. They exist so the layout could be judged before real imagery was
-          licensed — replace them here, and clear the credit when you do.{' '}
+          <strong>{placeholderCount}</strong> {t('media.placeholder_warn')}{' '}
           <Link href={`${LIST}${buildQuery(params, { kind: 'placeholder', page: null })}`}>
-            Show only placeholders
+            {t('media.show_placeholders')}
           </Link>
           .
         </div>
@@ -148,22 +145,13 @@ export default async function MediaPage({
 
       {svgCount > 0 ? (
         <div className="a-flash err" role="status">
-          <strong>{svgCount}</strong> live rows are <code>image/svg+xml</code>, written directly by{' '}
-          <code>scripts/seed-media.mjs</code> rather than through this screen. The ingest pipeline
-          <em> refuses</em> SVG on upload, and for a good reason: it is executable XML, and serving
-          one from the site&rsquo;s own origin is stored XSS. These particular files are generated
-          artwork with no scripting in them, so they are not dangerous — but they are outside the
-          policy the rest of the library enforces, and they should be replaced with raster imagery
-          before launch.
+          <strong>{svgCount}</strong> {t('media.svg_warn')}
         </div>
       ) : null}
 
       {!optimising ? (
         <div className="a-flash err" role="status">
-          The <code>sharp</code> encoder is not available in this environment, so uploads are stored
-          WITHOUT their AVIF/WebP ladder, under an <code>unoptimised/</code> prefix. The site will
-          serve the full-size original. Install the platform binary before uploading production
-          imagery.
+          {t('media.no_sharp')}
         </div>
       ) : null}
 
@@ -175,15 +163,13 @@ export default async function MediaPage({
         `FormData` on the server.
       */}
       <form className="a-card a-form" action={uploadMedia}>
-        <h2>Upload</h2>
+        <h2>{t('media.upload_heading')}</h2>
         <p className="a-hint">
-          JPEG, PNG or WebP, identified by their contents rather than their name. Up to{' '}
-          {formatBytes(MAX_UPLOAD_BYTES)} and 80 megapixels. EXIF — including the GPS coordinates
-          most phones embed — is stripped before anything is stored. Objects go to {driver}.
+          {t('media.upload_hint', { max: formatBytes(MAX_UPLOAD_BYTES), driver })}
         </p>
 
         <div className="a-row">
-          <Field label="Image file *" htmlFor="file">
+          <Field label={`${t('media.image_file')} *`} htmlFor="file">
             <input
               className="a-input"
               id="file"
@@ -193,22 +179,14 @@ export default async function MediaPage({
               required
             />
           </Field>
-          <Field
-            label="Credit"
-            htmlFor="credit"
-            hint="Photographer and licence. Leave blank only for artwork you own outright."
-          >
-            <TextInput id="credit" name="credit" placeholder="© Name — licence" />
+          <Field label={t('media.credit')} htmlFor="credit" hint={t('media.credit_hint')}>
+            <TextInput id="credit" name="credit" placeholder={t('media.credit_placeholder')} />
           </Field>
         </div>
 
         <fieldset className="a-fieldset">
-          <legend>Alt text</legend>
-          <span className="a-hint">
-            Describes the image for a screen reader and for a failed load. Per-locale, because it is
-            content: an English alt on an Arabic page is as useless as none. English is enough to
-            start with — the others fall back to it.
-          </span>
+          <legend>{t('media.alt_text')}</legend>
+          <span className="a-hint">{t('media.alt_hint')}</span>
           <div className="a-l10n">
             {locales.map((locale) => {
               const fieldName = localeFieldName('alt', locale)
@@ -229,49 +207,49 @@ export default async function MediaPage({
 
         <div className="a-actions">
           <button className="a-btn accent" type="submit">
-            Upload image
+            {t('media.upload_btn')}
           </button>
         </div>
       </form>
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Object key, alt text or credit"
+            placeholder={t('media.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="kind">Source</label>
+          <label htmlFor="kind">{t('media.source')}</label>
           <select className="a-select" id="kind" name="kind" defaultValue={kind ?? ''}>
-            <option value="">Any</option>
-            <option value="placeholder">Generated placeholders</option>
-            <option value="real">Everything else</option>
+            <option value="">{t('common.all')}</option>
+            <option value="placeholder">{t('media.kind_placeholder')}</option>
+            <option value="real">{t('media.kind_real')}</option>
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="state">State</label>
+          <label htmlFor="state">{t('media.state')}</label>
           <select className="a-select" id="state" name="state" defaultValue={state ?? ''}>
-            <option value="">Live</option>
-            <option value="archived">Archived</option>
+            <option value="">{t('media.state_live')}</option>
+            <option value="archived">{t('media.state_archived')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('media.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No images match those filters.</Empty>
+        <Empty>{t('media.empty')}</Empty>
       ) : (
         <div className="a-cols">
           {rows.map((row) => {
@@ -308,23 +286,27 @@ export default async function MediaPage({
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBlock: 10 }}>
                   {isPlaceholder(row.credit) ? (
-                    <Pill tone="warn">generated placeholder</Pill>
+                    <Pill tone="warn">{t('media.pill_placeholder')}</Pill>
                   ) : (
-                    <Pill tone="good">uploaded</Pill>
+                    <Pill tone="good">{t('media.pill_uploaded')}</Pill>
                   )}
-                  {row.deletedAt ? <Pill tone="bad">archived</Pill> : null}
+                  {row.deletedAt ? <Pill tone="bad">{t('media.pill_archived')}</Pill> : null}
                   {!ingested ? (
-                    <Pill tone="bad">never ingested</Pill>
+                    <Pill tone="bad">{t('media.pill_not_ingested')}</Pill>
                   ) : isUnoptimised(row.objectKey) ? (
-                    <Pill tone="bad">no derivatives</Pill>
+                    <Pill tone="bad">{t('media.pill_no_derivatives')}</Pill>
                   ) : (
-                    <Pill tone="neutral">{derivatives.length} derivatives</Pill>
+                    <Pill tone="neutral">
+                      {t('media.pill_derivatives', { count: derivatives.length })}
+                    </Pill>
                   )}
                   {row.mimeType === 'image/svg+xml' ? <Pill tone="bad">SVG</Pill> : null}
                   {used.length > 0 ? (
-                    <Pill tone={blocking.length > 0 ? 'info' : 'neutral'}>used {used.length}x</Pill>
+                    <Pill tone={blocking.length > 0 ? 'info' : 'neutral'}>
+                      {t('media.pill_used', { count: used.length })}
+                    </Pill>
                   ) : (
-                    <Pill tone="neutral">unused</Pill>
+                    <Pill tone="neutral">{t('media.pill_unused')}</Pill>
                   )}
                 </div>
 
@@ -337,21 +319,21 @@ export default async function MediaPage({
                     fontSize: 12,
                   }}
                 >
-                  <dt className="a-muted">Key</dt>
+                  <dt className="a-muted">{t('media.key')}</dt>
                   <dd className="a-mono" style={{ margin: 0, wordBreak: 'break-all' }}>
                     {row.objectKey}
                   </dd>
-                  <dt className="a-muted">Size</dt>
+                  <dt className="a-muted">{t('media.size')}</dt>
                   <dd style={{ margin: 0 }}>
                     {row.width}×{row.height} · {formatBytes(row.bytes)} · {row.mimeType}
                   </dd>
-                  <dt className="a-muted">Added</dt>
+                  <dt className="a-muted">{t('media.added')}</dt>
                   <dd style={{ margin: 0 }}>
                     <When value={row.createdAt} />
                   </dd>
                   {used.length > 0 ? (
                     <>
-                      <dt className="a-muted">Used by</dt>
+                      <dt className="a-muted">{t('media.used_by')}</dt>
                       <dd style={{ margin: 0 }}>
                         {used.map((reference) => (
                           <div key={`${reference.entity}-${reference.id}`}>
@@ -376,7 +358,7 @@ export default async function MediaPage({
                   >
                     <input type="hidden" name="returnQuery" value={returnQuery} />
                     <button className="a-btn" type="submit">
-                      Restore
+                      {t('media.restore')}
                     </button>
                   </form>
                 ) : (
@@ -388,7 +370,7 @@ export default async function MediaPage({
                     >
                       <input type="hidden" name="returnQuery" value={returnQuery} />
                       <fieldset className="a-fieldset">
-                        <legend>Alt text</legend>
+                        <legend>{t('media.alt_text')}</legend>
                         <div className="a-l10n">
                           {locales.map((locale) => {
                             const fieldName = localeFieldName('alt', locale)
@@ -410,12 +392,10 @@ export default async function MediaPage({
                       </fieldset>
 
                       <Field
-                        label="Credit"
+                        label={t('media.credit')}
                         htmlFor={`${row.id}-credit`}
                         hint={
-                          isPlaceholder(row.credit)
-                            ? 'Replace this once real photography is in place — it is what marks the image as a stand-in.'
-                            : undefined
+                          isPlaceholder(row.credit) ? t('media.credit_replace_hint') : undefined
                         }
                       >
                         <TextInput
@@ -427,7 +407,7 @@ export default async function MediaPage({
 
                       <div className="a-actions">
                         <button className="a-btn" type="submit">
-                          Save details
+                          {t('media.save_details')}
                         </button>
                       </div>
                     </form>
@@ -440,17 +420,17 @@ export default async function MediaPage({
                       >
                         <input type="hidden" name="returnQuery" value={returnQuery} />
                         <div className="a-field">
-                          <label htmlFor={`${row.id}-newcredit`}>Real credit</label>
+                          <label htmlFor={`${row.id}-newcredit`}>{t('media.real_credit')}</label>
                           <TextInput
                             id={`${row.id}-newcredit`}
                             name="credit"
-                            placeholder="© Photographer — licence"
+                            placeholder={t('media.real_credit_placeholder')}
                             required
                           />
                         </div>
                         <div className="a-actions">
                           <button className="a-btn ghost" type="submit">
-                            No longer a placeholder
+                            {t('media.not_placeholder_btn')}
                           </button>
                         </div>
                       </form>
@@ -463,13 +443,11 @@ export default async function MediaPage({
                     >
                       <input type="hidden" name="returnQuery" value={returnQuery} />
                       <button className="a-btn danger small" type="submit">
-                        Archive
+                        {t('media.archive')}
                       </button>
                       {blocking.length > 0 ? (
                         <span className="a-hint">
-                          Will be refused: {blocking.length} published record
-                          {blocking.length === 1 ? '' : 's'} still use
-                          {blocking.length === 1 ? 's' : ''} it.
+                          {t('media.archive_blocked', { count: blocking.length })}
                         </span>
                       ) : null}
                     </form>

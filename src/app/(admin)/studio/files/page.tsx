@@ -16,6 +16,8 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
+import { TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { requireCapability } from '../../_lib/session'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
@@ -38,11 +40,22 @@ export const dynamic = 'force-dynamic'
 
 const PDF_ACTIONS = ['view_pdf', 'download_pdf'] as const
 
-function formatBytes(bytes: number | null): string {
+function formatBytes(bytes: number | null, intl: string): string {
   if (bytes === null) return '—'
   if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  const oneDecimal = new Intl.NumberFormat(intl, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })
+  if (bytes < 1024 * 1024) return `${oneDecimal.format(bytes / 1024)} KB`
+  return `${oneDecimal.format(bytes / (1024 * 1024))} MB`
+}
+
+/** Request statuses are a known set; anything else is shown as stored. */
+function tripStatusKey(status: string): string | null {
+  return (TRIP_STATUSES as readonly string[]).includes(status)
+    ? `files.trip_status_${status}`
+    : null
 }
 
 type Counts = { views: number; downloads: number }
@@ -57,6 +70,7 @@ function addCount(map: Map<string, Counts>, key: string, action: string, value: 
 export default async function FilesPage() {
   const session = await requireCapability('content.read')
   const mayReadLeads = can(session.role, 'leads.read')
+  const { t, intl } = await getAdminI18n()
 
   const [itineraryDocs, itineraryCountRows] = await Promise.all([
     db
@@ -164,26 +178,23 @@ export default async function FilesPage() {
 
   return (
     <>
-      <PageHead
-        title="PDF files"
-        description="Every PDF the site delivers: itinerary schedules (per version and language) and custom-trip plans. Read-only — replace an itinerary PDF on its itinerary page; upload, withdraw or re-send a custom plan on its lead."
-      />
+      <PageHead title={t('files.title')} description={t('files.description')} />
 
       <section className="a-card">
-        <h2>Itinerary PDFs</h2>
+        <h2>{t('files.itinerary_pdfs')}</h2>
         {live.length === 0 ? (
-          <Empty>No itinerary PDFs yet.</Empty>
+          <Empty>{t('files.empty_itinerary')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Itinerary</th>
-                <th>Version</th>
-                <th>Language</th>
-                <th>Size</th>
-                <th>Uploaded</th>
-                <th>Opens</th>
-                <th>Downloads</th>
+                <th>{t('files.col_itinerary')}</th>
+                <th>{t('files.col_version')}</th>
+                <th>{t('files.col_language')}</th>
+                <th>{t('files.col_size')}</th>
+                <th>{t('files.col_uploaded')}</th>
+                <th>{t('files.col_opens')}</th>
+                <th>{t('files.col_downloads')}</th>
                 <th />
               </tr>
             </thead>
@@ -204,13 +215,13 @@ export default async function FilesPage() {
                     <td>
                       v{doc.version}{' '}
                       {doc.version === doc.currentVersion ? (
-                        <Pill tone="good">current</Pill>
+                        <Pill tone="good">{t('files.current')}</Pill>
                       ) : (
-                        <Pill tone="neutral">older</Pill>
+                        <Pill tone="neutral">{t('files.older')}</Pill>
                       )}
                     </td>
                     <td className="a-mono">{doc.locale}</td>
-                    <td>{formatBytes(doc.bytes)}</td>
+                    <td>{formatBytes(doc.bytes, intl)}</td>
                     <td>
                       <When value={doc.updatedAt} />
                     </td>
@@ -218,7 +229,7 @@ export default async function FilesPage() {
                     <td>{counts.downloads}</td>
                     <td>
                       <Link href={adminHref(`/itineraries/${doc.itineraryId}`)}>
-                        Itinerary / replace
+                        {t('files.itinerary_link')}
                       </Link>
                     </td>
                   </tr>
@@ -228,29 +239,27 @@ export default async function FilesPage() {
           </Table>
         )}
         {archived > 0 && (
-          <p className="a-hint">
-            {archived} PDF{archived === 1 ? '' : 's'} of archived itineraries not shown.
-          </p>
+          <p className="a-hint">{t('files.archived_hidden', { count: archived })}</p>
         )}
       </section>
 
       {mayReadLeads && (
         <section className="a-card">
-          <h2>Custom-trip plans</h2>
+          <h2>{t('files.custom_plans')}</h2>
           {customDocs.length === 0 ? (
-            <Empty>No custom plans uploaded yet.</Empty>
+            <Empty>{t('files.empty_custom')}</Empty>
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <th>Request</th>
-                  <th>Customer</th>
-                  <th>File</th>
-                  <th>Size</th>
-                  <th>Uploaded</th>
-                  <th>Status</th>
-                  <th>Opens</th>
-                  <th>Downloads</th>
+                  <th>{t('files.col_request')}</th>
+                  <th>{t('files.col_customer')}</th>
+                  <th>{t('files.col_file')}</th>
+                  <th>{t('files.col_size')}</th>
+                  <th>{t('files.col_uploaded')}</th>
+                  <th>{t('common.status')}</th>
+                  <th>{t('files.col_opens')}</th>
+                  <th>{t('files.col_downloads')}</th>
                   <th />
                 </tr>
               </thead>
@@ -261,13 +270,16 @@ export default async function FilesPage() {
                     row.accountEmail !== null
                       ? contactLabel({ email: row.accountEmail, phone: row.accountPhone })
                       : (row.requestEmail ?? row.requestPhone ?? '—')
+                  const statusKey = tripStatusKey(row.requestStatus)
                   return (
                     <tr key={row.doc.id}>
                       <td>
                         <span className="a-mono">
                           CT-{row.doc.requestId.slice(0, 8).toUpperCase()}
                         </span>
-                        <div className="a-muted">{row.requestStatus}</div>
+                        <div className="a-muted">
+                          {statusKey ? t(statusKey) : row.requestStatus}
+                        </div>
                       </td>
                       <td>
                         {row.requestName ?? '—'}
@@ -277,24 +289,26 @@ export default async function FilesPage() {
                         {row.doc.filename}
                         <div className="a-muted">v{row.doc.version}</div>
                       </td>
-                      <td>{formatBytes(row.doc.bytes)}</td>
+                      <td>{formatBytes(row.doc.bytes, intl)}</td>
                       <td>
                         <When value={row.doc.createdAt} />
                       </td>
                       <td>
                         {row.doc.withdrawnAt !== null ? (
                           <>
-                            <Pill tone="neutral">withdrawn</Pill>{' '}
+                            <Pill tone="neutral">{t('files.withdrawn')}</Pill>{' '}
                             <When value={row.doc.withdrawnAt} />
                           </>
                         ) : (
-                          <Pill tone="good">delivered</Pill>
+                          <Pill tone="good">{t('files.delivered')}</Pill>
                         )}
                       </td>
                       <td>{counts.views}</td>
                       <td>{counts.downloads}</td>
                       <td>
-                        <Link href={adminHref(`/leads/${row.doc.requestId}`)}>Lead / withdraw</Link>
+                        <Link href={adminHref(`/leads/${row.doc.requestId}`)}>
+                          {t('files.lead_link')}
+                        </Link>
                       </td>
                     </tr>
                   )

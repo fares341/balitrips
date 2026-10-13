@@ -23,6 +23,7 @@ import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
 import { Field, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
@@ -66,6 +67,9 @@ export default async function CustomerPage({
   const session = await requireCapability('customers.read')
   const { id } = await params
   const query = await searchParams
+  const { t, intl, locale } = await getAdminI18n()
+  /** Enum value → label; an unknown value shows as stored. */
+  const label = (key: string, raw: string) => (t(key) === key ? raw : t(key))
 
   if (!isUuid(id)) notFound()
 
@@ -155,7 +159,7 @@ export default async function CustomerPage({
   const mayDeactivate = can(session.role, 'security.write')
   const mayGrant = can(session.role, 'entitlements.grant')
   const live = sessionRows.filter((row) => row.expiresAt > now)
-  const summary = (await loadAccountSummaries([account.id])).get(account.id)
+  const summary = (await loadAccountSummaries([account.id], locale)).get(account.id)
   const currentAccess = summary?.access ?? []
   const phoneOnly = isPlaceholderEmail(account.email)
   const livePlanGrants = entitlementRows.filter(
@@ -180,12 +184,18 @@ export default async function CustomerPage({
         title={contactLabel(account)}
         description={
           account.deletedAt
-            ? 'This account has been erased. Its order history is intact — that is a financial record, not consent-based data.'
-            : `${account.name ?? 'No name on file'} · joined ${account.createdAt.toISOString().slice(0, 10)}`
+            ? t('customers.erased_description')
+            : t('customers.joined_line', {
+                name: account.name ?? t('customers.no_name'),
+                date: new Intl.DateTimeFormat(intl, {
+                  dateStyle: 'medium',
+                  timeZone: 'Asia/Makassar',
+                }).format(account.createdAt),
+              })
         }
         actions={
           <Link className="a-btn ghost" href={adminHref('/customers')}>
-            Back to list
+            {t('customers.back_to_list')}
           </Link>
         }
       />
@@ -193,39 +203,39 @@ export default async function CustomerPage({
 
       <div className="a-grid">
         <div className="a-stat">
-          <b>{account.role}</b>
-          <span>Role</span>
+          <b>{label(`customers.role_${account.role}`, account.role)}</b>
+          <span>{t('customers.role')}</span>
         </div>
         <div className="a-stat">
           <b>{live.length}</b>
-          <span>Live sessions</span>
+          <span>{t('customers.live_sessions')}</span>
         </div>
         <div className="a-stat">
           <b>{orderRows.length}</b>
-          <span>Orders</span>
+          <span>{t('customers.orders')}</span>
         </div>
         <div className="a-stat">
           <b>{favoriteRows.length}</b>
-          <span>Saved items</span>
+          <span>{t('customers.saved_items')}</span>
         </div>
         <div className="a-stat">
           <b style={{ fontSize: 15 }}>
             {currentAccess.length === 0
-              ? 'None'
-              : currentAccess.map((access) => accessLine(access)).join(' · ')}
+              ? t('customers.none')
+              : currentAccess.map((access) => accessLine(access, t, intl)).join(' · ')}
           </b>
-          <span>Current plan</span>
+          <span>{t('customers.current_plan')}</span>
         </div>
         <div className="a-stat">
           <b style={{ fontSize: 15 }}>
             <When value={summary?.lastLogin ?? null} />
           </b>
-          <span>Last login</span>
+          <span>{t('customers.last_login')}</span>
         </div>
       </div>
 
       <div className="a-card">
-        <h2>Account</h2>
+        <h2>{t('customers.account')}</h2>
         <dl
           style={{
             display: 'grid',
@@ -235,71 +245,75 @@ export default async function CustomerPage({
             fontSize: 13,
           }}
         >
-          <dt className="a-muted">Id</dt>
+          <dt className="a-muted">{t('customers.id')}</dt>
           <dd className="a-mono" style={{ margin: 0 }}>
             {account.id}
           </dd>
-          <dt className="a-muted">E-mail</dt>
+          <dt className="a-muted">{t('customers.email')}</dt>
           <dd style={{ margin: 0 }}>
             {phoneOnly ? (
               <>
-                <span className="a-muted">none (phone-only account)</span>{' '}
-                <Pill tone="neutral">signs in with {contactLabel(account)}</Pill>
+                <span className="a-muted">{t('customers.no_email_phone_only')}</span>{' '}
+                <Pill tone="neutral">
+                  {t('customers.signs_in_with', { contact: contactLabel(account) })}
+                </Pill>
               </>
             ) : (
               <>
                 {account.email}{' '}
                 {account.emailVerifiedAt ? (
-                  <Pill tone="good">verified</Pill>
+                  <Pill tone="good">{t('customers.verified')}</Pill>
                 ) : (
-                  <Pill tone="warn">unverified</Pill>
+                  <Pill tone="warn">{t('customers.tag_unverified')}</Pill>
                 )}
               </>
             )}
           </dd>
-          <dt className="a-muted">Status</dt>
+          <dt className="a-muted">{t('customers.col_status')}</dt>
           <dd style={{ margin: 0 }}>
-            <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>{account.status}</Pill>
+            <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>
+              {label(`customers.status_${account.status}`, account.status)}
+            </Pill>
           </dd>
-          <dt className="a-muted">Name</dt>
+          <dt className="a-muted">{t('customers.name')}</dt>
           <dd style={{ margin: 0 }}>{account.name ?? '—'}</dd>
-          <dt className="a-muted">Phone</dt>
+          <dt className="a-muted">{t('customers.phone')}</dt>
           <dd style={{ margin: 0 }}>{account.phone ?? '—'}</dd>
-          <dt className="a-muted">Country / locale</dt>
+          <dt className="a-muted">{t('customers.country_locale')}</dt>
           <dd style={{ margin: 0 }}>
             {account.country ?? '—'} · {account.locale}
           </dd>
-          <dt className="a-muted">Two-factor</dt>
+          <dt className="a-muted">{t('customers.two_factor')}</dt>
           <dd style={{ margin: 0 }}>
             {account.twoFactorEnabled ? (
-              <Pill tone="good">enrolled</Pill>
+              <Pill tone="good">{t('customers.tfa_enrolled')}</Pill>
             ) : // `users.role` is a varchar, so an unrecognised value is possible
             // and is treated as `customer` here exactly as `getSession()` does.
             isRole(account.role) && isElevated(account.role) ? (
-              <Pill tone="bad">required and missing</Pill>
+              <Pill tone="bad">{t('customers.tfa_required_missing')}</Pill>
             ) : (
-              <Pill tone="neutral">not required</Pill>
+              <Pill tone="neutral">{t('customers.tfa_not_required')}</Pill>
             )}
           </dd>
-          <dt className="a-muted">Created</dt>
+          <dt className="a-muted">{t('customers.col_created')}</dt>
           <dd style={{ margin: 0 }}>
             <When value={account.createdAt} />
           </dd>
-          <dt className="a-muted">Last login</dt>
+          <dt className="a-muted">{t('customers.last_login')}</dt>
           <dd style={{ margin: 0 }}>
             <When value={summary?.lastLogin ?? null} />
           </dd>
           <dt className="a-muted">WhatsApp</dt>
           <dd style={{ margin: 0 }}>
             {account.whatsappOptIn ? (
-              <Pill tone="good">opted in</Pill>
+              <Pill tone="good">{t('customers.whatsapp_opted_in')}</Pill>
             ) : (
-              <Pill tone="neutral">not opted in</Pill>
+              <Pill tone="neutral">{t('customers.whatsapp_not_opted_in')}</Pill>
             )}
           </dd>
           {account.deletedAt ? (
             <>
-              <dt className="a-muted">Deleted</dt>
+              <dt className="a-muted">{t('customers.state_deleted')}</dt>
               <dd style={{ margin: 0 }}>
                 <When value={account.deletedAt} />
               </dd>
@@ -310,25 +324,26 @@ export default async function CustomerPage({
 
       {mayDeactivate && account.status !== 'banned' && !isSelf ? (
         <form className="a-card a-row" action={setAccountActive.bind(null, account.id)}>
-          <h2 style={{ margin: 0 }}>Account status</h2>
+          <h2 style={{ margin: 0 }}>{t('customers.account_status')}</h2>
           <span>
-            Currently <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>{account.status}</Pill>
-            {account.status === 'suspended'
-              ? ' — suspended automatically by a protection rule.'
-              : '.'}
+            {t('customers.currently')}{' '}
+            <Pill tone={STATUS_TONE[account.status] ?? 'neutral'}>
+              {label(`customers.status_${account.status}`, account.status)}
+            </Pill>
+            {account.status === 'suspended' ? ` ${t('customers.suspended_by_rule')}` : null}
           </span>
           <input type="hidden" name="active" value={dormant ? 'true' : 'false'} />
           <button className={dormant ? 'a-btn accent' : 'a-btn danger'} type="submit">
-            {dormant ? 'Reactivate account' : 'Deactivate account'}
+            {dormant ? t('customers.reactivate') : t('customers.deactivate')}
           </button>
         </form>
       ) : null}
 
       {mayChangeRole ? (
         <form className="a-card a-form" action={updateCustomerProfile.bind(null, account.id)}>
-          <h2>Edit details</h2>
+          <h2>{t('customers.edit_details')}</h2>
           <div className="a-row">
-            <Field label="Name" htmlFor="p-name">
+            <Field label={t('customers.name')} htmlFor="p-name">
               <input
                 className="a-input"
                 id="p-name"
@@ -337,9 +352,9 @@ export default async function CustomerPage({
               />
             </Field>
             <Field
-              label="E-mail"
+              label={t('customers.email')}
               htmlFor="p-email"
-              hint="Changing the e-mail signs the account out everywhere."
+              hint={t('customers.email_change_hint')}
             >
               <input
                 className="a-input"
@@ -350,7 +365,7 @@ export default async function CustomerPage({
                 defaultValue={account.email}
               />
             </Field>
-            <Field label="Phone" htmlFor="p-phone">
+            <Field label={t('customers.phone')} htmlFor="p-phone">
               <input
                 className="a-input"
                 id="p-phone"
@@ -358,7 +373,7 @@ export default async function CustomerPage({
                 defaultValue={account.phone ?? ''}
               />
             </Field>
-            <Field label="Country (2 letters)" htmlFor="p-country">
+            <Field label={t('customers.country_code')} htmlFor="p-country">
               <input
                 className="a-input"
                 id="p-country"
@@ -370,7 +385,7 @@ export default async function CustomerPage({
           </div>
           <div className="a-actions">
             <button className="a-btn accent" type="submit">
-              Save details
+              {t('customers.save_details')}
             </button>
           </div>
         </form>
@@ -378,63 +393,54 @@ export default async function CustomerPage({
 
       <div className="a-cols">
         <div className="a-card">
-          <h2>Role</h2>
+          <h2>{t('customers.role')}</h2>
           {mayChangeRole ? (
             isSelf ? (
-              <p className="a-hint">
-                This is your own account. Changing your own role here could remove the last admin
-                and lock the team out of the screen that would fix it, so it is refused — ask
-                another admin.
-              </p>
+              <p className="a-hint">{t('customers.own_role_hint')}</p>
             ) : (
               <form className="a-row" action={changeRole.bind(null, account.id)}>
                 <Field
-                  label="Role"
+                  label={t('customers.role')}
                   htmlFor="role"
-                  hint="Changing this revokes every session the account has, so the new role is in force immediately rather than whenever a cached session expires."
+                  hint={t('customers.role_change_hint')}
                 >
                   <select className="a-select" id="role" name="role" defaultValue={account.role}>
                     {ROLES.map((value) => (
                       <option key={value} value={value}>
-                        {value}
+                        {label(`customers.role_${value}`, value)}
                       </option>
                     ))}
                   </select>
                 </Field>
                 <div className="a-actions">
                   <button className="a-btn accent" type="submit">
-                    Change role
+                    {t('customers.change_role')}
                   </button>
                 </div>
               </form>
             )
           ) : (
             <p className="a-hint">
-              Currently <strong>{account.role}</strong>. Only an admin can change a role.
+              {t('customers.currently')}{' '}
+              <strong>{label(`customers.role_${account.role}`, account.role)}</strong>.{' '}
+              {t('customers.role_admin_only')}
             </p>
           )}
         </div>
 
         <div className="a-card">
-          <h2>Data subject requests</h2>
+          <h2>{t('customers.dsr_title')}</h2>
           {mayExport ? (
             <>
-              <p className="a-hint">
-                The export is every row this system holds about the account, as JSON. Credentials —
-                the TOTP secret, the password hash and live session tokens — are deliberately left
-                out: they are not personal data, and an export that carries them is an account
-                takeover waiting to be forwarded. Running one writes an audit row.
-              </p>
+              <p className="a-hint">{t('customers.dsr_hint')}</p>
               <div className="a-actions" style={{ marginBlockStart: 12 }}>
                 <a className="a-btn" href={adminHref(`/customers/${account.id}/export`)} download>
-                  Download data export
+                  {t('customers.download_export')}
                 </a>
               </div>
             </>
           ) : (
-            <p className="a-hint">
-              Producing a portable copy of an account is admin-only. Ask an admin to run it.
-            </p>
+            <p className="a-hint">{t('customers.export_admin_only')}</p>
           )}
         </div>
       </div>
@@ -442,21 +448,18 @@ export default async function CustomerPage({
       <ProtectionPanel userId={account.id} viewerRole={session.role} isSelf={isSelf} />
 
       <div className="a-card">
-        <h2>Sessions</h2>
+        <h2>{t('customers.sessions')}</h2>
         {sessionRows.length === 0 ? (
-          <p className="a-hint">
-            No sessions on record — the account has never signed in, or every session has been
-            collected.
-          </p>
+          <p className="a-hint">{t('customers.no_sessions')}</p>
         ) : (
           <>
             <Table>
               <thead>
                 <tr>
-                  <th>Device</th>
+                  <th>{t('customers.device')}</th>
                   <th>IP</th>
-                  <th>Started</th>
-                  <th>Expires</th>
+                  <th>{t('customers.started')}</th>
+                  <th>{t('customers.expires')}</th>
                   <th />
                 </tr>
               </thead>
@@ -466,10 +469,12 @@ export default async function CustomerPage({
                   return (
                     <tr key={row.id}>
                       <td style={{ maxWidth: 420 }}>
-                        <span className="a-mono">{row.userAgent ?? 'unknown client'}</span>
+                        <span className="a-mono">
+                          {row.userAgent ?? t('customers.unknown_client')}
+                        </span>
                         {row.id === session.sessionId ? (
                           <div>
-                            <Pill tone="info">this is your own session</Pill>
+                            <Pill tone="info">{t('customers.own_session')}</Pill>
                           </div>
                         ) : null}
                       </td>
@@ -479,7 +484,7 @@ export default async function CustomerPage({
                       </td>
                       <td>
                         {expired ? (
-                          <Pill tone="neutral">expired</Pill>
+                          <Pill tone="neutral">{t('customers.expired')}</Pill>
                         ) : (
                           <When value={row.expiresAt} />
                         )}
@@ -492,7 +497,7 @@ export default async function CustomerPage({
                           >
                             <input type="hidden" name="sessionId" value={row.id} />
                             <button className="a-btn danger small" type="submit">
-                              Revoke
+                              {t('customers.revoke')}
                             </button>
                           </form>
                         )}
@@ -510,7 +515,7 @@ export default async function CustomerPage({
                 style={{ marginBlockStart: 12 }}
               >
                 <button className="a-btn danger" type="submit">
-                  Revoke all {live.length} live session{live.length === 1 ? '' : 's'}
+                  {t('customers.revoke_all', { count: live.length })}
                 </button>
               </form>
             ) : null}
@@ -519,17 +524,17 @@ export default async function CustomerPage({
       </div>
 
       <div className="a-card">
-        <h2>Orders</h2>
+        <h2>{t('customers.orders')}</h2>
         {orderRows.length === 0 ? (
-          <Empty>No orders.</Empty>
+          <Empty>{t('customers.no_orders')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Status</th>
-                <th className="num">Total</th>
-                <th>Placed</th>
+                <th>{t('customers.reference')}</th>
+                <th>{t('customers.col_status')}</th>
+                <th className="num">{t('customers.total')}</th>
+                <th>{t('customers.placed')}</th>
               </tr>
             </thead>
             <tbody>
@@ -543,7 +548,7 @@ export default async function CustomerPage({
                   <td>
                     <OrderStatusPill status={row.status} />
                   </td>
-                  <td className="num">{formatMoney(row.totalMinor, row.currency, 'en')}</td>
+                  <td className="num">{formatMoney(row.totalMinor, row.currency, intl)}</td>
                   <td>
                     <When value={row.placedAt ?? row.createdAt} />
                   </td>
@@ -555,17 +560,17 @@ export default async function CustomerPage({
       </div>
 
       <div className="a-card">
-        <h2>Files</h2>
+        <h2>{t('customers.files')}</h2>
         {scheduleRows.length === 0 && customDocRows.length === 0 ? (
-          <Empty>No purchased itineraries or custom plans.</Empty>
+          <Empty>{t('customers.no_files')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>File</th>
-                <th>Source</th>
-                <th>Document</th>
-                <th>Date</th>
+                <th>{t('customers.file')}</th>
+                <th>{t('customers.source')}</th>
+                <th>{t('customers.document')}</th>
+                <th>{t('customers.date')}</th>
               </tr>
             </thead>
             <tbody>
@@ -573,7 +578,7 @@ export default async function CustomerPage({
                 <tr key={row.orderItemId}>
                   <td>
                     <Link href={adminHref(`/itineraries/${row.itineraryId}`)}>
-                      {row.name ? pick(row.name, 'en') : 'Itinerary'}
+                      {row.name ? pick(row.name, locale) : t('customers.itinerary')}
                     </Link>
                     <div className="a-muted">v{row.version}</div>
                   </td>
@@ -584,9 +589,9 @@ export default async function CustomerPage({
                   </td>
                   <td>
                     {row.documentReady ? (
-                      <Pill tone="good">PDF available</Pill>
+                      <Pill tone="good">{t('customers.pdf_available')}</Pill>
                     ) : (
-                      <Pill tone="warn">PDF not generated</Pill>
+                      <Pill tone="warn">{t('customers.pdf_not_generated')}</Pill>
                     )}
                   </td>
                   <td>
@@ -599,19 +604,23 @@ export default async function CustomerPage({
                   <td>
                     {doc.filename}
                     <div className="a-muted">
-                      Custom plan v{doc.version} · {Math.round(doc.bytes / 1024)} KB
+                      {t('customers.custom_plan_version', {
+                        version: doc.version,
+                        size: new Intl.NumberFormat(intl).format(Math.round(doc.bytes / 1024)),
+                      })}
                     </div>
                   </td>
                   <td>
                     <Link href={adminHref(`/leads/${requestId}`)}>
-                      Custom request{startDate ? ` · ${startDate}` : ''}
+                      {t('customers.custom_request')}
+                      {startDate ? ` · ${startDate}` : ''}
                     </Link>
                   </td>
                   <td>
                     {doc.withdrawnAt ? (
-                      <Pill tone="neutral">withdrawn</Pill>
+                      <Pill tone="neutral">{t('customers.withdrawn')}</Pill>
                     ) : (
-                      <Pill tone="good">delivered</Pill>
+                      <Pill tone="good">{t('customers.delivered')}</Pill>
                     )}
                   </td>
                   <td>
@@ -626,43 +635,55 @@ export default async function CustomerPage({
 
       {mayGrant && !account.deletedAt ? (
         <form className="a-card a-form" action={grantPlanToCustomer.bind(null, account.id)}>
-          <h2>Change plan</h2>
+          <h2>{t('customers.change_plan')}</h2>
           <p className="a-hint">
-            Grants the plan exactly as a purchase would — its access, device limit and duration
-            (from today) — with no order behind it. Recorded in the audit log under your name.
+            {t('customers.grant_hint')}
             {livePlanGrants.length > 0
-              ? ` The account currently holds ${livePlanGrants.length} live plan grant(s).`
+              ? ` ${t('customers.live_grants', { count: livePlanGrants.length })}`
               : ''}
           </p>
           <div className="a-row">
-            <Field label="Plan" htmlFor="planId">
+            <Field label={t('customers.plan')} htmlFor="planId">
               <select className="a-select" id="planId" name="planId" required defaultValue="">
                 <option value="" disabled>
-                  Choose a plan…
+                  {t('customers.choose_plan')}
                 </option>
                 {planRows.map((plan) => (
                   <option key={plan.id} value={plan.id}>
-                    {pick(plan.name, 'en', plan.slug)} ·{' '}
-                    {plan.entitlementKind === 'basic' ? 'no map' : plan.entitlementKind} ·{' '}
-                    {plan.durationDays === null ? 'lifetime' : `${plan.durationDays} days`} ·{' '}
-                    {plan.deviceLimit} device(s)
-                    {plan.status === 'published' ? '' : ' (draft)'}
+                    {pick(plan.name, locale, plan.slug)} ·{' '}
+                    {plan.entitlementKind === 'basic'
+                      ? t('customers.no_map')
+                      : label(`customers.kind_${plan.entitlementKind}`, plan.entitlementKind)}{' '}
+                    ·{' '}
+                    {plan.durationDays === null
+                      ? t('customers.access_lifetime')
+                      : t('customers.days', { count: plan.durationDays })}{' '}
+                    · {t('customers.devices', { count: plan.deviceLimit })}
+                    {plan.status === 'published' ? '' : ` (${t('customers.draft')})`}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Reason" htmlFor="grant-reason" hint="Recorded on the audit row.">
-              <TextInput id="grant-reason" name="reason" placeholder="Support, comp, upgrade…" />
+            <Field
+              label={t('customers.reason')}
+              htmlFor="grant-reason"
+              hint={t('customers.reason_hint')}
+            >
+              <TextInput
+                id="grant-reason"
+                name="reason"
+                placeholder={t('customers.grant_reason_placeholder')}
+              />
             </Field>
             <div className="a-field">
               <label>
-                <input type="checkbox" name="replace" /> Replace: revoke current live plan grants
+                <input type="checkbox" name="replace" /> {t('customers.replace_grants')}
               </label>
             </div>
           </div>
           <div className="a-actions">
             <button className="a-btn accent" type="submit">
-              Grant
+              {t('customers.grant')}
             </button>
           </div>
         </form>
@@ -670,16 +691,16 @@ export default async function CustomerPage({
 
       {entitlementRows.length > 0 ? (
         <div className="a-card">
-          <h2>Entitlements</h2>
+          <h2>{t('customers.entitlements')}</h2>
           <Table>
             <thead>
               <tr>
-                <th>Kind</th>
-                <th>Plan</th>
-                <th>Source</th>
-                <th>Starts</th>
-                <th>Expires</th>
-                <th>State</th>
+                <th>{t('customers.kind')}</th>
+                <th>{t('customers.plan')}</th>
+                <th>{t('customers.source')}</th>
+                <th>{t('customers.starts')}</th>
+                <th>{t('customers.expires')}</th>
+                <th>{t('customers.state')}</th>
                 {mayGrant ? <th /> : null}
               </tr>
             </thead>
@@ -690,7 +711,9 @@ export default async function CustomerPage({
                   <td>
                     {row.planId ? (
                       <Link href={adminHref(`/plans/${row.planId}`)}>
-                        {planName ? pick(planName, 'en', planSlug ?? 'plan') : 'plan'}
+                        {planName
+                          ? pick(planName, locale, planSlug ?? t('customers.plan_fallback'))
+                          : t('customers.plan_fallback')}
                       </Link>
                     ) : (
                       <span className="a-muted">—</span>
@@ -698,11 +721,13 @@ export default async function CustomerPage({
                   </td>
                   <td>
                     {row.grantedByOrderId ? (
-                      <Link href={adminHref(`/orders/${row.grantedByOrderId}`)}>order</Link>
+                      <Link href={adminHref(`/orders/${row.grantedByOrderId}`)}>
+                        {t('customers.source_order')}
+                      </Link>
                     ) : row.grantedByActorId ? (
-                      <Pill tone="info">staff</Pill>
+                      <Pill tone="info">{t('customers.source_staff')}</Pill>
                     ) : row.sharedByUserId ? (
-                      <Pill tone="info">family</Pill>
+                      <Pill tone="info">{t('customers.source_family')}</Pill>
                     ) : (
                       <span className="a-muted">—</span>
                     )}
@@ -714,18 +739,18 @@ export default async function CustomerPage({
                     {row.expiresAt ? (
                       <When value={row.expiresAt} />
                     ) : (
-                      <Pill tone="good">lifetime</Pill>
+                      <Pill tone="good">{t('customers.access_lifetime')}</Pill>
                     )}
                   </td>
                   <td>
                     {row.revokedAt ? (
-                      <Pill tone="bad">revoked</Pill>
+                      <Pill tone="bad">{t('customers.revoked')}</Pill>
                     ) : row.expiresAt !== null && row.expiresAt <= now ? (
-                      <Pill tone="warn">expired</Pill>
+                      <Pill tone="warn">{t('customers.expired')}</Pill>
                     ) : row.startsAt > now ? (
-                      <Pill tone="info">scheduled</Pill>
+                      <Pill tone="info">{t('customers.scheduled')}</Pill>
                     ) : (
-                      <Pill tone="good">active</Pill>
+                      <Pill tone="good">{t('customers.status_active')}</Pill>
                     )}
                   </td>
                   {mayGrant ? (
@@ -735,7 +760,7 @@ export default async function CustomerPage({
                           <input type="hidden" name="entitlementId" value={row.id} />
                           <input type="hidden" name="customerId" value={account.id} />
                           <button className="a-btn danger small" type="submit">
-                            Revoke
+                            {t('customers.revoke')}
                           </button>
                         </form>
                       ) : null}
@@ -750,21 +775,23 @@ export default async function CustomerPage({
 
       {auditRows.length > 0 ? (
         <div className="a-card">
-          <h2>What staff have done to this account</h2>
+          <h2>{t('customers.audit_title')}</h2>
           <Table>
             <thead>
               <tr>
-                <th>Action</th>
-                <th>By</th>
-                <th>From</th>
-                <th>When</th>
+                <th>{t('customers.action')}</th>
+                <th>{t('customers.by')}</th>
+                <th>{t('customers.from')}</th>
+                <th>{t('customers.when')}</th>
               </tr>
             </thead>
             <tbody>
               {auditRows.map((row) => (
                 <tr key={row.id}>
                   <td className="a-mono">{row.action}</td>
-                  <td>{row.actorEmail ?? <span className="a-muted">system</span>}</td>
+                  <td>
+                    {row.actorEmail ?? <span className="a-muted">{t('customers.system')}</span>}
+                  </td>
                   <td className="a-mono">{row.ipAddress ?? '—'}</td>
                   <td>
                     <When value={row.createdAt} />
@@ -779,42 +806,37 @@ export default async function CustomerPage({
       {mayExport && !isSelf ? (
         account.deletedAt ? (
           <form className="a-card" action={restoreCustomer.bind(null, account.id)}>
-            <h2>Restore</h2>
-            <p className="a-hint">
-              Lifts the deletion flag so the account can sign in again. The name, phone and e-mail
-              were pseudonymised on erasure and are gone for good — the customer sets them again.
-            </p>
+            <h2>{t('customers.restore')}</h2>
+            <p className="a-hint">{t('customers.restore_hint')}</p>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
               <button className="a-btn" type="submit">
-                Restore account
+                {t('customers.restore_account')}
               </button>
             </div>
           </form>
         ) : (
           <form className="a-card a-form" action={deleteCustomer.bind(null, account.id)}>
-            <h2>Erasure request</h2>
-            <p className="a-hint">
-              Soft delete plus pseudonymisation: the account is signed out everywhere, its directly
-              identifying columns are cleared, and it can no longer sign in. Orders, payments and
-              refunds are <strong>kept</strong> — they are retained under a legal obligation rather
-              than consent, and each already carries its own frozen customer snapshot. This cannot
-              be undone from here.
-            </p>
+            <h2>{t('customers.erasure_title')}</h2>
+            <p className="a-hint">{t('customers.erasure_hint')}</p>
             <div className="a-row">
-              <Field
-                label="Type the e-mail address to confirm"
-                htmlFor="confirm"
-                hint={account.email}
-              >
+              <Field label={t('customers.erasure_confirm')} htmlFor="confirm" hint={account.email}>
                 <TextInput id="confirm" name="confirm" autoComplete="off" required />
               </Field>
-              <Field label="Reason" htmlFor="reason" hint="Recorded on the audit row.">
-                <TextInput id="reason" name="reason" placeholder="Subject request, ticket #…" />
+              <Field
+                label={t('customers.reason')}
+                htmlFor="reason"
+                hint={t('customers.reason_hint')}
+              >
+                <TextInput
+                  id="reason"
+                  name="reason"
+                  placeholder={t('customers.erasure_reason_placeholder')}
+                />
               </Field>
             </div>
             <div className="a-actions">
               <button className="a-btn danger" type="submit">
-                Erase account
+                {t('customers.erase_account')}
               </button>
             </div>
           </form>

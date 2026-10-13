@@ -3,6 +3,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/db'
 import { auditLog } from '@/db/schema'
 
+import { getAdminI18n } from '../../_lib/i18n'
 import { requireCapability } from '../../_lib/session'
 import { Field } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
@@ -20,6 +21,7 @@ export default async function NotifyPage({
 }) {
   await requireCapability('roles.write')
   const params = await searchParams
+  const { t, intl } = await getAdminI18n()
 
   const history = await db
     .select({ id: auditLog.id, after: auditLog.after, createdAt: auditLog.createdAt })
@@ -30,66 +32,73 @@ export default async function NotifyPage({
 
   return (
     <>
-      <PageHead
-        title="Send a notification"
-        description="Always delivered in the site (the bell and Account → Notifications). E-mail and WhatsApp are optional; WhatsApp only reaches customers who opted in, through the approved bali_admin_message template ({{1}} = the message)."
-      />
+      <PageHead title={t('notify.title')} description={t('notify.description')} />
       <Flash searchParams={params} />
 
       <form className="a-card a-form" action={sendAdminNotification}>
         <div className="a-row">
-          <Field label="Send to" htmlFor="audience">
+          <Field label={t('notify.send_to')} htmlFor="audience">
             <select className="a-select" id="audience" name="audience" defaultValue="user">
-              <option value="user">One customer (by e-mail)</option>
-              <option value="plan_holders">Everyone with an active plan</option>
-              <option value="customers">All active customers</option>
+              <option value="user">{t('notify.audience_user')}</option>
+              <option value="plan_holders">{t('notify.audience_plan_holders')}</option>
+              <option value="customers">{t('notify.audience_customers')}</option>
             </select>
           </Field>
-          <Field label="Customer e-mail" htmlFor="email_address" hint="Only for “One customer”.">
+          <Field
+            label={t('notify.customer_email')}
+            htmlFor="email_address"
+            hint={t('notify.customer_email_hint')}
+          >
             <input className="a-input" id="email_address" name="email_address" type="email" />
           </Field>
         </div>
-        <Field label="Title" htmlFor="title" hint="Up to 120 characters.">
+        <Field label={t('notify.title_label')} htmlFor="title" hint={t('notify.title_hint')}>
           <input className="a-input" id="title" name="title" maxLength={120} required />
         </Field>
-        <Field label="Message" htmlFor="body" hint="Up to 1000 characters.">
+        <Field label={t('notify.message')} htmlFor="body" hint={t('notify.message_hint')}>
           <textarea className="a-input" id="body" name="body" rows={5} maxLength={1000} required />
         </Field>
-        <Field label="Link inside the site (optional)" htmlFor="href" hint="e.g. /plans or /map">
+        <Field label={t('notify.link')} htmlFor="href" hint={t('notify.link_hint')}>
           <input className="a-input" id="href" name="href" placeholder="/plans" />
         </Field>
         <div className="a-row">
           <label className="a-check">
-            <input type="checkbox" name="email" /> Also send by e-mail
+            <input type="checkbox" name="email" /> {t('notify.also_email')}
           </label>
           <label className="a-check">
-            <input type="checkbox" name="whatsapp" /> Also send on WhatsApp (opted-in only)
+            <input type="checkbox" name="whatsapp" /> {t('notify.also_whatsapp')}
           </label>
         </div>
         <div className="a-actions">
           <button className="a-btn accent" type="submit">
-            Send
+            {t('notify.send')}
           </button>
         </div>
       </form>
 
       <div className="a-card">
-        <h2>Recently sent</h2>
+        <h2>{t('notify.recent')}</h2>
         {history.length === 0 ? (
-          <Empty>Nothing sent yet.</Empty>
+          <Empty>{t('notify.empty')}</Empty>
         ) : (
           <Table>
             <tbody>
               {history.map((row) => {
                 const after = (row.after ?? {}) as Record<string, unknown>
+                const audience = String(after.audience ?? '')
+                const audienceKey = `notify.audience_${audience}`
                 return (
                   <tr key={row.id}>
                     <td>
                       <When value={row.createdAt} />
                     </td>
                     <td>{String(after.title ?? '')}</td>
-                    <td>{String(after.audience ?? '')}</td>
-                    <td className="num">{String(after.sent ?? '')}</td>
+                    <td>{t(audienceKey) === audienceKey ? audience : t(audienceKey)}</td>
+                    <td className="num">
+                      {typeof after.sent === 'number'
+                        ? new Intl.NumberFormat(intl).format(after.sent)
+                        : String(after.sent ?? '')}
+                    </td>
                   </tr>
                 )
               })}

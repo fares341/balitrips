@@ -8,6 +8,7 @@ import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
 import {
   Checkbox,
@@ -33,6 +34,7 @@ export default async function PlanEditPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('config.write')
+  const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
   const isNew = id === 'new'
@@ -46,11 +48,11 @@ export default async function PlanEditPage({
   return (
     <>
       <PageHead
-        title={plan ? pick(plan.name, 'en', plan.slug) : 'New plan'}
-        description="Changes apply to new purchases only. Customers who already bought keep the duration and device limit they paid for."
+        title={plan ? pick(plan.name, locale, plan.slug) : t('plans.new')}
+        description={t('plans.edit_description')}
         actions={
           <Link className="a-btn ghost" href={adminHref('/plans')}>
-            Back to plans
+            {t('plans.back')}
           </Link>
         }
       />
@@ -58,9 +60,9 @@ export default async function PlanEditPage({
 
       <form className="a-form" action={savePlan.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Identity</h2>
+          <h2>{t('plans.identity')}</h2>
           <div className="a-row">
-            <Field label="Slug *" htmlFor="slug">
+            <Field label={t('plans.slug')} htmlFor="slug">
               <TextInput
                 id="slug"
                 name="slug"
@@ -69,10 +71,10 @@ export default async function PlanEditPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label="Icon" htmlFor="icon" hint="pin, gem, star, compass…">
+            <Field label={t('plans.icon')} htmlFor="icon" hint={t('plans.icon_hint')}>
               <TextInput id="icon" name="icon" defaultValue={plan?.icon ?? ''} />
             </Field>
-            <Field label="Sort order" htmlFor="sortOrder">
+            <Field label={t('common.order')} htmlFor="sortOrder">
               <TextInput
                 id="sortOrder"
                 name="sortOrder"
@@ -82,41 +84,45 @@ export default async function PlanEditPage({
             </Field>
             <StatusField value={plan?.status} />
           </div>
-          <LocalizedField name="name" label="Name" value={plan?.name} required />
+          <LocalizedField name="name" label={t('common.name')} value={plan?.name} required />
           <LocalizedField
             name="description"
-            label="Description"
+            label={t('common.description')}
             value={plan?.description}
             rows={3}
           />
           <LocalizedListField
             name="features"
-            label="Features"
+            label={t('plans.features')}
             values={plan?.features}
-            hint="One per line."
+            hint={t('plans.features_hint')}
           />
         </div>
 
         <div className="a-card">
-          <h2>Price and access</h2>
+          <h2>{t('plans.price_access')}</h2>
           <div className="a-row">
             <MoneyField minor={plan?.priceMinor} currency={plan?.currency ?? 'USD'} />
             <Field
-              label="Map access"
+              label={t('plans.map_access')}
               htmlFor="entitlementKind"
-              hint="VIP also unlocks everything Map does. None = a PDF/features-only plan: the permissions below apply, but no map place is unlocked."
+              hint={t('plans.map_access_hint')}
             >
               <Select
                 id="entitlementKind"
                 name="entitlementKind"
                 defaultValue={plan?.entitlementKind ?? 'map_access'}
               >
-                <option value="basic">None (PDF/features only)</option>
-                <option value="map_access">Map — full map</option>
-                <option value="vip">VIP — map + VIP places + Hidden Gems</option>
+                <option value="basic">{t('plans.kind_basic')}</option>
+                <option value="map_access">{t('plans.kind_map')}</option>
+                <option value="vip">{t('plans.kind_vip')}</option>
               </Select>
             </Field>
-            <Field label="Duration (days)" htmlFor="durationDays" hint="Blank = lifetime.">
+            <Field
+              label={t('plans.duration_days')}
+              htmlFor="durationDays"
+              hint={t('plans.duration_hint')}
+            >
               <TextInput
                 id="durationDays"
                 name="durationDays"
@@ -128,7 +134,7 @@ export default async function PlanEditPage({
                 }
               />
             </Field>
-            <Field label="Device limit" htmlFor="deviceLimit">
+            <Field label={t('plans.device_limit')} htmlFor="deviceLimit">
               <TextInput
                 id="deviceLimit"
                 name="deviceLimit"
@@ -136,11 +142,7 @@ export default async function PlanEditPage({
                 defaultValue={String(plan?.deviceLimit ?? 2)}
               />
             </Field>
-            <Field
-              label="People on the plan (family)"
-              htmlFor="maxMembers"
-              hint="1 = one person. More than 1 = a family plan: the buyer adds members by e-mail, each with their own account and devices."
-            >
+            <Field label={t('plans.members')} htmlFor="maxMembers" hint={t('plans.members_hint')}>
               <TextInput
                 id="maxMembers"
                 name="maxMembers"
@@ -154,22 +156,22 @@ export default async function PlanEditPage({
           <div className="a-row">
             <Checkbox
               name="canUseTrip"
-              label="Includes My Trip"
+              label={t('plans.can_trip')}
               defaultChecked={plan?.canUseTrip ?? true}
             />
             <Checkbox
               name="canSaveFavorites"
-              label="Includes favorites"
+              label={t('plans.can_favorites')}
               defaultChecked={plan?.canSaveFavorites ?? true}
             />
             <Checkbox
               name="canDownloadPdf"
-              label="Can download PDFs (off = view in site only)"
+              label={t('plans.can_pdf')}
               defaultChecked={plan?.canDownloadPdf ?? true}
             />
             <Checkbox
               name="featured"
-              label="Featured (“best value” badge)"
+              label={t('plans.featured')}
               defaultChecked={plan?.featured ?? false}
             />
           </div>
@@ -177,18 +179,18 @@ export default async function PlanEditPage({
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save plan
+            {t('plans.save')}
           </button>
         </div>
       </form>
 
       {plan ? (
         <form className="a-card" action={archivePlan.bind(null, plan.id)}>
-          <h2>Archive</h2>
-          <p className="a-hint">Stops selling it. Nobody loses access they already bought.</p>
+          <h2>{t('plans.archive_heading')}</h2>
+          <p className="a-hint">{t('plans.archive_hint')}</p>
           <div className="a-actions">
             <button className="a-btn danger" type="submit">
-              Archive plan
+              {t('plans.archive_btn')}
             </button>
           </div>
         </form>

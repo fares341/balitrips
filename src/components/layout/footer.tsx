@@ -97,7 +97,7 @@ export async function Footer() {
             )}
           </div>
 
-          <nav className="bt-foot-col" aria-label={t('ft_nav')}>
+          <nav className="bt-foot-col bt-foot-nav" aria-label={t('ft_nav')}>
             <h4>{t('ft_nav')}</h4>
             {NAV_ROUTES.map((route) => (
               <Link key={route.href} href={route.href} className="bt-foot-link">
@@ -118,7 +118,10 @@ export async function Footer() {
           <div className="bt-foot-col">
             <h4>{t('ft_contact')}</h4>
             <span className="bt-foot-line">
-              <Icon name="whatsapp" size={16} color="var(--palm)" /> {CONTACT.phone}
+              <Icon name="whatsapp" size={16} color="var(--palm)" />{' '}
+              {/* Isolated LTR run: in Arabic the bidi algorithm otherwise
+                  reverses the digit groups of a phone number. */}
+              <span dir="ltr">{CONTACT.phone}</span>
             </span>
             <a
               href={CONTACT.website}
@@ -126,7 +129,8 @@ export async function Footer() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Icon name="globe" size={16} color="var(--palm)" /> {CONTACT.websiteLabel}
+              <Icon name="globe" size={16} color="var(--palm)" />{' '}
+              <span dir="ltr">{CONTACT.websiteLabel}</span>
             </a>
             <span className="bt-foot-line">
               <Icon name="pin" size={16} color="var(--palm)" /> {CONTACT.offices}
@@ -135,11 +139,9 @@ export async function Footer() {
             <div style={{ marginTop: 14 }}>
               <div
                 style={{
-                  fontSize: 12,
-                  color: 'rgba(255,251,248,0.6)',
+                  fontSize: 13.5,
+                  color: 'rgba(255,251,248,0.78)',
                   marginBottom: 8,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
                   fontWeight: 700,
                 }}
               >

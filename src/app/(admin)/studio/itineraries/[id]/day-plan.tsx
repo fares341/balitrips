@@ -1,6 +1,7 @@
 import type { Localized } from '@/db/schema'
 import { localeConfig, locales } from '@/i18n/config'
 
+import { getAdminI18n } from '../../../_lib/i18n'
 import type { Option } from '../../../_lib/lookups'
 import { TextArea, TextInput } from '../../../_ui/field'
 import { Pill } from '../../../_ui/table'
@@ -28,7 +29,7 @@ export interface DayRow {
  * that form saves the day's fields first, so reordering never discards an
  * edit the operator has already typed.
  */
-export function DayPlan({
+export async function DayPlan({
   itineraryId,
   days,
   activities,
@@ -37,13 +38,14 @@ export function DayPlan({
   days: readonly DayRow[]
   activities: readonly Option[]
 }) {
+  const { t } = await getAdminI18n()
   return (
     <div className="a-card">
-      <h2>Day plan</h2>
+      <h2>{t('itineraries.day_plan')}</h2>
       <p className="a-hint">
         {days.length === 0
-          ? 'No days yet. An itinerary cannot be published until every day is either an activity or an explicit free day.'
-          : `${days.length} day${days.length === 1 ? '' : 's'}. Reordering renumbers the whole plan automatically.`}
+          ? t('itineraries.day_plan_empty')
+          : t('itineraries.day_plan_count', { count: days.length })}
       </p>
 
       <div
@@ -62,12 +64,15 @@ export function DayPlan({
           >
             <div className="a-day-head">
               <div className="a-day-no">
-                Day {day.dayNumber} {day.isFreeDay ? <Pill tone="info">free day</Pill> : null}
-                {!day.isFreeDay && !day.activityId ? <Pill tone="bad">unresolved</Pill> : null}
+                {t('itineraries.day_number', { number: day.dayNumber })}{' '}
+                {day.isFreeDay ? <Pill tone="info">{t('itineraries.free_day_pill')}</Pill> : null}
+                {!day.isFreeDay && !day.activityId ? (
+                  <Pill tone="bad">{t('itineraries.unresolved')}</Pill>
+                ) : null}
               </div>
               <div className="a-actions">
                 <button className="a-btn ghost small" type="submit">
-                  Save day
+                  {t('itineraries.day_save')}
                 </button>
                 <button
                   className="a-btn ghost small"
@@ -75,7 +80,7 @@ export function DayPlan({
                   formAction={moveItineraryDay.bind(null, itineraryId, day.id, 'up')}
                   disabled={index === 0}
                 >
-                  Move up
+                  {t('itineraries.day_move_up')}
                 </button>
                 <button
                   className="a-btn ghost small"
@@ -83,28 +88,28 @@ export function DayPlan({
                   formAction={moveItineraryDay.bind(null, itineraryId, day.id, 'down')}
                   disabled={index === days.length - 1}
                 >
-                  Move down
+                  {t('itineraries.day_move_down')}
                 </button>
                 <button
                   className="a-btn danger small"
                   type="submit"
                   formAction={removeItineraryDay.bind(null, itineraryId, day.id)}
                 >
-                  Remove
+                  {t('common.remove')}
                 </button>
               </div>
             </div>
 
             <div className="a-row">
               <div className="a-field">
-                <label htmlFor={`activityId_${day.id}`}>Activity</label>
+                <label htmlFor={`activityId_${day.id}`}>{t('itineraries.day_activity')}</label>
                 <select
                   className="a-select"
                   id={`activityId_${day.id}`}
                   name={`activityId_${day.id}`}
                   defaultValue={day.activityId ?? ''}
                 >
-                  <option value="">— none —</option>
+                  <option value="">— {t('common.none')} —</option>
                   {activities.map((activity) => (
                     <option key={activity.value} value={activity.value}>
                       {activity.label}
@@ -119,16 +124,14 @@ export function DayPlan({
                     name={`isFreeDay_${day.id}`}
                     defaultChecked={day.isFreeDay}
                   />
-                  Free day
+                  {t('itineraries.free_day')}
                 </label>
-                <span className="a-hint">
-                  An editorial choice, not a gap. Tick this instead of leaving the day empty.
-                </span>
+                <span className="a-hint">{t('itineraries.free_day_hint')}</span>
               </div>
             </div>
 
             <fieldset className="a-fieldset">
-              <legend>Day title</legend>
+              <legend>{t('itineraries.day_title')}</legend>
               <div className="a-l10n">
                 {locales.map((locale) => (
                   <div className="a-field" key={locale}>
@@ -148,7 +151,7 @@ export function DayPlan({
             </fieldset>
 
             <fieldset className="a-fieldset">
-              <legend>Day description</legend>
+              <legend>{t('itineraries.day_description')}</legend>
               <div className="a-l10n">
                 {locales.map((locale) => (
                   <div className="a-field" key={locale}>
@@ -177,9 +180,9 @@ export function DayPlan({
         style={{ marginBlockStart: 'var(--space-5)' }}
       >
         <div className="a-field">
-          <label htmlFor="newDayActivity">Add day — activity</label>
+          <label htmlFor="newDayActivity">{t('itineraries.add_day_activity')}</label>
           <select className="a-select" id="newDayActivity" name="activityId" defaultValue="">
-            <option value="">— none —</option>
+            <option value="">— {t('common.none')} —</option>
             {activities.map((activity) => (
               <option key={activity.value} value={activity.value}>
                 {activity.label}
@@ -190,12 +193,12 @@ export function DayPlan({
         <div className="a-field">
           <label className="a-check">
             <input type="checkbox" name="isFreeDay" />
-            Free day
+            {t('itineraries.free_day')}
           </label>
         </div>
         <div className="a-actions">
           <button className="a-btn accent" type="submit">
-            Add day {days.length + 1}
+            {t('itineraries.add_day', { number: days.length + 1 })}
           </button>
         </div>
       </form>

@@ -32,6 +32,7 @@ import {
   unpublishItinerary,
   uploadItineraryPdf,
 } from '../actions'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { DayPlan } from './day-plan'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +45,7 @@ export default async function ItineraryEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.write')
+  const { t, locale: uiLocale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -88,7 +90,7 @@ export default async function ItineraryEditorPage({
     placeOptions(),
   ])
 
-  const title = itinerary ? pick(itinerary.name, 'en', itinerary.slug) : 'New itinerary'
+  const title = itinerary ? pick(itinerary.name, uiLocale, itinerary.slug) : t('itineraries.new')
   const mayPublish = can(session.role, 'content.publish')
 
   return (
@@ -97,18 +99,22 @@ export default async function ItineraryEditorPage({
         title={title}
         description={
           itinerary
-            ? `Version ${itinerary.version} · ${days.length} authored day${days.length === 1 ? '' : 's'} · /itineraries/${itinerary.slug}`
-            : 'Save the itinerary first, then build its day plan.'
+            ? t('itineraries.edit_description', {
+                version: itinerary.version,
+                count: days.length,
+                path: `/itineraries/${itinerary.slug}`,
+              })
+            : t('itineraries.new_description')
         }
         actions={
           <>
             {itinerary ? (
               <Pill tone={itinerary.status === 'published' ? 'good' : 'neutral'}>
-                {itinerary.status}
+                {itinerary.status === 'published' ? t('common.published') : t('common.draft')}
               </Pill>
             ) : null}
             <Link className="a-btn ghost" href={adminHref('/itineraries')}>
-              Back to list
+              {t('itineraries.back_to_list')}
             </Link>
           </>
         }
@@ -117,9 +123,13 @@ export default async function ItineraryEditorPage({
 
       <form className="a-form" action={saveItinerary.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Identity</h2>
+          <h2>{t('itineraries.section_identity')}</h2>
           <div className="a-row">
-            <Field label="Slug *" htmlFor="slug" hint="Permanent public URL.">
+            <Field
+              label={t('itineraries.slug_required')}
+              htmlFor="slug"
+              hint={t('itineraries.slug_hint')}
+            >
               <TextInput
                 id="slug"
                 name="slug"
@@ -128,13 +138,13 @@ export default async function ItineraryEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label="Legacy id" htmlFor="legacyId">
+            <Field label={t('itineraries.legacy_id')} htmlFor="legacyId">
               <TextInput id="legacyId" name="legacyId" defaultValue={itinerary?.legacyId ?? ''} />
             </Field>
             <Field
-              label="Spots"
+              label={t('itineraries.f_spots')}
               htmlFor="spots"
-              hint="Number of stops shown on the card. Blank hides it."
+              hint={t('itineraries.f_spots_hint')}
             >
               <TextInput
                 id="spots"
@@ -148,48 +158,63 @@ export default async function ItineraryEditorPage({
               />
             </Field>
           </div>
-          <p className="a-hint">
-            Length is derived from the day plan below and is not editable here — a stored length
-            that disagrees with the authored days is what produced the filler cards.
-          </p>
+          <p className="a-hint">{t('itineraries.length_hint')}</p>
         </div>
 
         <div className="a-card">
-          <h2>Copy</h2>
-          <LocalizedField name="name" label="Name" value={itinerary?.name} required />
-          <LocalizedField name="tripType" label="Trip type" value={itinerary?.tripType} />
-          <LocalizedField name="blurb" label="Blurb" value={itinerary?.blurb} rows={4} />
+          <h2>{t('itineraries.section_copy')}</h2>
+          <LocalizedField
+            name="name"
+            label={t('itineraries.f_name')}
+            value={itinerary?.name}
+            required
+          />
+          <LocalizedField
+            name="tripType"
+            label={t('itineraries.f_trip_type')}
+            value={itinerary?.tripType}
+          />
+          <LocalizedField
+            name="blurb"
+            label={t('itineraries.f_blurb')}
+            value={itinerary?.blurb}
+            rows={4}
+          />
           <LocalizedListField
             name="audience"
-            label="Who it suits"
+            label={t('itineraries.f_audience')}
             values={itinerary?.audience}
-            hint="One audience per line."
+            hint={t('itineraries.f_audience_hint')}
           />
           <LocalizedField
             name="detailedDescription"
-            label="Detailed description"
+            label={t('itineraries.f_detailed_description')}
             value={itinerary?.detailedDescription}
             rows={6}
           />
         </div>
 
         <div className="a-card">
-          <h2>Access & internal</h2>
+          <h2>{t('itineraries.section_access')}</h2>
           <div className="a-row">
             <Checkbox
               name="includesMap"
-              label="Includes the map"
+              label={t('itineraries.f_includes_map')}
               defaultChecked={itinerary?.includesMap ?? false}
-              hint="Buying this itinerary unlocks the interactive map (lifetime)."
+              hint={t('itineraries.f_includes_map_hint')}
             />
             <Checkbox
               name="isVip"
-              label="VIP itinerary"
+              label={t('itineraries.f_vip')}
               defaultChecked={itinerary?.isVip ?? false}
-              hint="With “Includes the map”, grants VIP map access (Hidden Gems)."
+              hint={t('itineraries.f_vip_hint')}
             />
           </div>
-          <Field label="Internal notes" htmlFor="internalNotes" hint="Never shown to customers.">
+          <Field
+            label={t('itineraries.f_internal_notes')}
+            htmlFor="internalNotes"
+            hint={t('itineraries.f_internal_notes_hint')}
+          >
             <TextArea
               id="internalNotes"
               name="internalNotes"
@@ -199,32 +224,32 @@ export default async function ItineraryEditorPage({
           </Field>
           <OptionChecklist
             name="galleryImageIds"
-            label="Gallery images"
+            label={t('itineraries.f_gallery')}
             options={mediaList}
             values={itinerary?.galleryImageIds ?? []}
           />
           <OptionChecklist
             name="linkedPlaceIds"
-            label="Linked map places"
+            label={t('itineraries.f_linked_places')}
             options={places}
             values={itinerary?.linkedPlaceIds ?? []}
           />
         </div>
 
         <div className="a-card">
-          <h2>Commercial</h2>
+          <h2>{t('itineraries.section_commercial')}</h2>
           <div className="a-row">
             <MoneyField minor={itinerary?.priceMinor} currency={itinerary?.currency} />
             <OptionField
               name="heroImageId"
-              label="Hero image"
+              label={t('itineraries.hero_image')}
               options={mediaList}
               value={itinerary?.heroImageId}
             />
           </div>
           <OptionChecklist
             name="regionIds"
-            label="Regions covered"
+            label={t('itineraries.f_regions')}
             options={regions}
             values={selectedRegions.map((row) => row.regionId)}
           />
@@ -232,7 +257,7 @@ export default async function ItineraryEditorPage({
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save itinerary
+            {t('itineraries.save')}
           </button>
         </div>
       </form>
@@ -242,11 +267,12 @@ export default async function ItineraryEditorPage({
           <DayPlan itineraryId={itinerary.id} days={days} activities={activities} />
 
           <div className="a-card">
-            <h2>Publishing</h2>
+            <h2>{t('itineraries.section_publishing')}</h2>
             <p className="a-hint">
-              Publishing bumps the version from v{itinerary.version} to v{itinerary.version + 1}.
-              Orders pin the version they bought, so a customer who purchased an earlier plan keeps
-              downloading the plan they paid for. Unpublishing leaves the version alone.
+              {t('itineraries.publishing_hint', {
+                from: itinerary.version,
+                to: itinerary.version + 1,
+              })}
             </p>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
               {mayPublish ? (
@@ -256,7 +282,7 @@ export default async function ItineraryEditorPage({
                     action={publishItinerary.bind(null, itinerary.id)}
                   >
                     <button className="a-btn accent" type="submit">
-                      Publish v{itinerary.version + 1}
+                      {t('itineraries.publish_version', { version: itinerary.version + 1 })}
                     </button>
                   </form>
                   {itinerary.status === 'published' ? (
@@ -265,24 +291,20 @@ export default async function ItineraryEditorPage({
                       action={unpublishItinerary.bind(null, itinerary.id)}
                     >
                       <button className="a-btn ghost" type="submit">
-                        Move to draft
+                        {t('itineraries.move_to_draft')}
                       </button>
                     </form>
                   ) : null}
                 </>
               ) : (
-                <span className="a-hint">Your role cannot publish.</span>
+                <span className="a-hint">{t('itineraries.cannot_publish')}</span>
               )}
             </div>
           </div>
 
           <div className="a-card">
-            <h2>PDF file</h2>
-            <p className="a-hint">
-              Upload a ready-made PDF per language. It replaces the automatically generated PDF for
-              every customer who bought this itinerary, with the same watermark, viewer and download
-              rules. Remove it to go back to the generated file.
-            </p>
+            <h2>{t('itineraries.section_pdf')}</h2>
+            <p className="a-hint">{t('itineraries.pdf_hint')}</p>
             <ul>
               {locales.map((locale) => (
                 <li key={locale}>
@@ -293,13 +315,13 @@ export default async function ItineraryEditorPage({
                       action={removeItineraryPdf.bind(null, itinerary.id)}
                     >
                       <input type="hidden" name="locale" value={locale} />
-                      <strong>uploaded</strong>{' '}
+                      <strong>{t('itineraries.pdf_uploaded')}</strong>{' '}
                       <button className="a-btn ghost small" type="submit">
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </form>
                   ) : (
-                    <span className="a-muted">generated automatically</span>
+                    <span className="a-muted">{t('itineraries.pdf_generated')}</span>
                   )}
                 </li>
               ))}
@@ -309,7 +331,7 @@ export default async function ItineraryEditorPage({
               action={uploadItineraryPdf.bind(null, itinerary.id)}
               style={{ marginBlockStart: 12 }}
             >
-              <Field label="Language" htmlFor="pdf-locale">
+              <Field label={t('itineraries.pdf_language')} htmlFor="pdf-locale">
                 <select className="a-select" id="pdf-locale" name="locale" defaultValue="ar">
                   {locales.map((locale) => (
                     <option key={locale} value={locale}>
@@ -318,7 +340,7 @@ export default async function ItineraryEditorPage({
                   ))}
                 </select>
               </Field>
-              <Field label="PDF (max 24 MB)" htmlFor="pdf-file">
+              <Field label={t('itineraries.pdf_file')} htmlFor="pdf-file">
                 <input
                   className="a-input"
                   id="pdf-file"
@@ -330,20 +352,18 @@ export default async function ItineraryEditorPage({
               </Field>
               <div className="a-actions">
                 <button className="a-btn accent" type="submit">
-                  Upload PDF
+                  {t('itineraries.pdf_upload')}
                 </button>
               </div>
             </form>
           </div>
 
           <form className="a-card" action={deleteItinerary.bind(null, itinerary.id)}>
-            <h2>Archive</h2>
-            <p className="a-hint">
-              Soft delete. Historical orders keep their line snapshots and their pinned version.
-            </p>
+            <h2>{t('itineraries.section_archive')}</h2>
+            <p className="a-hint">{t('itineraries.archive_hint')}</p>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
               <button className="a-btn danger" type="submit">
-                Archive itinerary
+                {t('itineraries.archive')}
               </button>
             </div>
           </form>

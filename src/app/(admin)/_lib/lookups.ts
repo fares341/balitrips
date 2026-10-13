@@ -3,14 +3,16 @@ import { asc, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { activities, articleCategories, categories, mapPlaces, media, regions } from '@/db/schema'
 import type { Localized } from '@/db/schema'
+import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
+
+import { getAdminLocale } from './i18n'
 
 /**
  * Reference data for the editors' select boxes.
  *
- * Everything is labelled in English — the admin is English-only — but the
- * underlying values are the full localized objects, so `pick()` still
- * resolves a sensible label when a row was authored in another locale first.
+ * Labelled in the Studio language (Arabic or English); `pick()` falls back
+ * to English when a row has no translation yet, so a label is never blank.
  */
 
 export interface Option {
@@ -19,24 +21,27 @@ export interface Option {
 }
 
 export async function regionOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({ id: regions.id, key: regions.key, label: regions.label })
     .from(regions)
     .orderBy(asc(regions.sortOrder), asc(regions.key))
 
-  return rows.map((row) => ({ value: row.id, label: pick(row.label, 'en', row.key) }))
+  return rows.map((row) => ({ value: row.id, label: pick(row.label, locale, row.key) }))
 }
 
 export async function categoryOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({ id: categories.id, key: categories.key, label: categories.label })
     .from(categories)
     .orderBy(asc(categories.sortOrder), asc(categories.key))
 
-  return rows.map((row) => ({ value: row.id, label: pick(row.label, 'en', row.key) }))
+  return rows.map((row) => ({ value: row.id, label: pick(row.label, locale, row.key) }))
 }
 
 export async function articleCategoryOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({
       id: articleCategories.id,
@@ -46,10 +51,11 @@ export async function articleCategoryOptions(): Promise<Option[]> {
     .from(articleCategories)
     .orderBy(asc(articleCategories.sortOrder), asc(articleCategories.key))
 
-  return rows.map((row) => ({ value: row.id, label: pick(row.label, 'en', row.key) }))
+  return rows.map((row) => ({ value: row.id, label: pick(row.label, locale, row.key) }))
 }
 
 export async function activityOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({ id: activities.id, slug: activities.slug, name: activities.name })
     .from(activities)
@@ -58,11 +64,12 @@ export async function activityOptions(): Promise<Option[]> {
 
   return rows.map((row) => ({
     value: row.id,
-    label: `${pick(row.name, 'en', row.slug)} (${row.slug})`,
+    label: `${pick(row.name, locale, row.slug)} (${row.slug})`,
   }))
 }
 
 export async function mediaOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({ id: media.id, objectKey: media.objectKey, alt: media.alt })
     .from(media)
@@ -72,21 +79,22 @@ export async function mediaOptions(): Promise<Option[]> {
 
   return rows.map((row) => ({
     value: row.id,
-    label: labelForMedia(row.objectKey, row.alt),
+    label: labelForMedia(row.objectKey, row.alt, locale),
   }))
 }
 
-function labelForMedia(objectKey: string, alt: Localized | null): string {
-  const altText = pick(alt, 'en')
+function labelForMedia(objectKey: string, alt: Localized | null, locale: Locale): string {
+  const altText = pick(alt, locale)
   return altText === '' ? objectKey : `${objectKey} — ${altText}`
 }
 
-/** أماكن الخريطة (غير المحذوفة) — لربطها بجدول. */
+/** Map places (not deleted) — for linking to a plan. */
 export async function placeOptions(): Promise<Option[]> {
+  const locale = await getAdminLocale()
   const rows = await db
     .select({ id: mapPlaces.id, slug: mapPlaces.slug, name: mapPlaces.name })
     .from(mapPlaces)
     .where(isNull(mapPlaces.deletedAt))
     .orderBy(asc(mapPlaces.slug))
-  return rows.map((row) => ({ value: row.id, label: pick(row.name, 'en', row.slug) }))
+  return rows.map((row) => ({ value: row.id, label: pick(row.name, locale, row.slug) }))
 }

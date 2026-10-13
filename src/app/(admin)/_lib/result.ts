@@ -1,3 +1,5 @@
+import { FormError } from './form'
+
 /**
  * Action outcome plumbing.
  *
@@ -23,8 +25,63 @@ export function withOutcome(path: string, outcome: ActionOutcome): string {
  * one — but anything that is not an Error is not echoed back verbatim.
  */
 export function errorMessage(error: unknown): string {
+  if (isKeyedError(error)) return encodeMessage(error.key, error.vars)
   if (error instanceof Error && error.message) return error.message
-  return 'Unexpected error. Nothing was saved.'
+  return encodeMessage('form.unexpected')
+}
+
+// ---------------------------------------------------------------------------
+// Translatable outcomes
+// ---------------------------------------------------------------------------
+
+/**
+ * A banner message that is translated when it is SHOWN, not when it is made.
+ *
+ * The FormData helpers in `form.ts` are synchronous and cannot read the
+ * Studio language (that needs the cookie, which is async). They throw an
+ * error carrying a dictionary key; `errorMessage()` turns it into
+ * `i18n:<key>?<vars>`, which travels through `?err=` like any other message,
+ * and `<Flash>` renders it in the operator's language. Plain strings — the
+ * ones actions already translate with `t()` — pass through untouched.
+ */
+const MESSAGE_PREFIX = 'i18n:'
+
+export type MessageVars = Record<string, string | number>
+
+export function encodeMessage(key: string, vars?: MessageVars): string {
+  const query = new URLSearchParams()
+  for (const [name, value] of Object.entries(vars ?? {})) query.set(name, String(value))
+  const text = query.toString()
+  return `${MESSAGE_PREFIX}${key}${text === '' ? '' : `?${text}`}`
+}
+
+/** The key and placeholders of an encoded message, or null for plain text. */
+export function decodeMessage(message: string): { key: string; vars: MessageVars } | null {
+  if (!message.startsWith(MESSAGE_PREFIX)) return null
+  const body = message.slice(MESSAGE_PREFIX.length)
+  const mark = body.indexOf('?')
+  const key = mark === -1 ? body : body.slice(0, mark)
+  if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(key)) return null
+  const vars: MessageVars = {}
+  if (mark !== -1) {
+    new URLSearchParams(body.slice(mark + 1)).forEach((value, name) => {
+      vars[name] = value
+    })
+  }
+  return { key, vars }
+}
+
+/** Render any outcome message with a translator. */
+export function localizeMessage(
+  message: string,
+  t: (key: string, vars?: MessageVars) => string,
+): string {
+  const decoded = decodeMessage(message)
+  return decoded ? t(decoded.key, decoded.vars) : message
+}
+
+function isKeyedError(error: unknown): error is FormError & { key: string } {
+  return error instanceof FormError && typeof error.key === 'string' && error.key !== ''
 }
 
 /**

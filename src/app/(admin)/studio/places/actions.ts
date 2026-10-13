@@ -27,6 +27,7 @@ import {
   fuuidOrNull,
   isUuid,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -40,6 +41,7 @@ type Outcome = { ok: string } | { err: string }
 
 export async function savePlace(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : adminHref(`/places/${id}`)
   let outcome: Outcome
@@ -48,28 +50,31 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
     const status = form.get('status') === 'published' ? 'published' : 'draft'
     if (status === 'published') await requireCapability('content.publish')
 
-    const lat = ffloat(form, 'lat', 'Latitude')
-    const lon = ffloat(form, 'lon', 'Longitude')
-    if (lat < -90 || lat > 90) throw new Error('Latitude must be between -90 and 90')
-    if (lon < -180 || lon > 180) throw new Error('Longitude must be between -180 and 180')
+    const lat = ffloat(form, 'lat', t('places.latitude'))
+    const lon = ffloat(form, 'lon', t('places.longitude'))
+    if (lat < -90 || lat > 90) throw new Error(t('places.err_lat_range'))
+    if (lon < -180 || lon > 180) throw new Error(t('places.err_lon_range'))
 
-    const ratingTenths = fintOrNull(form, 'ratingTenths', 'Rating')
+    const ratingTenths = fintOrNull(form, 'ratingTenths', t('places.rating'))
     if (ratingTenths !== null && (ratingTenths < 0 || ratingTenths > 50)) {
-      throw new Error('Rating must be between 0 and 50 tenths (0.0–5.0)')
+      throw new Error(t('places.err_rating_range'))
     }
 
-    const { eventStartsAt, eventEndsAt } = feventRange(form)
+    const { eventStartsAt, eventEndsAt } = feventRange(form, {
+      start: t('places.event_starts'),
+      end: t('places.event_ends'),
+    })
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('common.slug'))),
       legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      name: flocalizedRequired(form, 'name', t('common.name')),
       category: flocalizedOrNull(form, 'category'),
       description: flocalizedOrNull(form, 'description'),
       lat,
       lon,
-      regionId: fuuidOrNull(form, 'regionId', 'Region'),
-      activityId: fuuidOrNull(form, 'activityId', 'Activity'),
+      regionId: fuuidOrNull(form, 'regionId', t('places.region')),
+      activityId: fuuidOrNull(form, 'activityId', t('places.activity')),
       /**
        * The freemium gate. A locked place is REDACTED server-side — an
        * unentitled client receives a count and a marker, never the name,
@@ -82,9 +87,9 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       isHidden: fbool(form, 'isHidden'),
       canFavorite: fbool(form, 'canFavorite'),
       canAddToTrip: fbool(form, 'canAddToTrip'),
-      priority: fint(form, 'priority', 0, 'Search priority'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
-      categoryId: fuuidOrNull(form, 'categoryId', 'Category'),
+      priority: fint(form, 'priority', 0, t('places.search_priority')),
+      sortOrder: fint(form, 'sortOrder', 0, t('places.sort_order')),
+      categoryId: fuuidOrNull(form, 'categoryId', t('places.category')),
       detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
       videos: flines(form, 'videos')
         .filter((url) => /^https:\/\//.test(url) || url.startsWith('/media/'))
@@ -94,7 +99,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       internalNotes: fstr(form, 'internalNotes'),
       openingHours: fstr(form, 'openingHours'),
       rating: ratingTenths === null ? null : ratingTenths / 10,
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('places.hero_image')),
       eventStartsAt,
       eventEndsAt,
       status,
@@ -106,7 +111,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(mapPlaces).where(eq(mapPlaces.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That place no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('places.err_gone'))
 
       const [row] =
         id === 'new'
@@ -126,7 +131,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
               .where(eq(mapPlaces.id, id))
               .returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('places.err_save_failed'))
 
       // Tags: the place_tags rows are the source of truth; the legacy jsonb
       // column is rewritten from them (English labels) so pin colours and
@@ -166,7 +171,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/places/${savedId}`)
-    outcome = { ok: 'Place saved.' }
+    outcome = { ok: t('places.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -183,12 +188,13 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
  */
 export async function setPlaceFree(id: string, isFree: boolean): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(mapPlaces).where(eq(mapPlaces.id, id)).limit(1)
-      if (!before) throw new Error('That place no longer exists')
+      if (!before) throw new Error(t('places.err_gone'))
 
       const [after] = await tx
         .update(mapPlaces)
@@ -209,7 +215,7 @@ export async function setPlaceFree(id: string, isFree: boolean): Promise<void> {
       )
     })
 
-    outcome = { ok: isFree ? 'Place is now free to view.' : 'Place now requires an entitlement.' }
+    outcome = { ok: isFree ? t('places.ok_free') : t('places.ok_locked') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -220,12 +226,13 @@ export async function setPlaceFree(id: string, isFree: boolean): Promise<void> {
 
 export async function deletePlace(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(mapPlaces).where(eq(mapPlaces.id, id)).limit(1)
-      if (!before) throw new Error('That place no longer exists')
+      if (!before) throw new Error(t('places.err_gone'))
 
       await tx
         .update(mapPlaces)
@@ -245,7 +252,7 @@ export async function deletePlace(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Place archived.' }
+    outcome = { ok: t('places.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -277,21 +284,22 @@ function videoKind(bytes: Uint8Array): 'mp4' | 'webm' | null {
 
 export async function uploadPlaceVideo(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
     const file = form.get('file')
-    if (!(file instanceof File) || file.size === 0) throw new Error('Choose a video to upload.')
+    if (!(file instanceof File) || file.size === 0) throw new Error(t('places.err_choose_video'))
     if (file.size > MAX_VIDEO_BYTES) {
-      throw new Error('Videos up to 24 MB. For longer clips, upload to YouTube and paste the link.')
+      throw new Error(t('places.err_video_too_large'))
     }
-    if (!(file.type in VIDEO_TYPES)) throw new Error('Upload an MP4 or WebM video.')
+    if (!(file.type in VIDEO_TYPES)) throw new Error(t('places.err_video_type'))
     const bytes = new Uint8Array(await file.arrayBuffer())
     const kind = videoKind(bytes)
-    if (kind === null) throw new Error('That file is not an MP4 or WebM video.')
+    if (kind === null) throw new Error(t('places.err_video_invalid'))
 
     const [before] = await db.select().from(mapPlaces).where(eq(mapPlaces.id, id)).limit(1)
-    if (!before) throw new Error('That place no longer exists')
-    if ((before.videos ?? []).length >= 10) throw new Error('A place can have at most 10 videos.')
+    if (!before) throw new Error(t('places.err_gone'))
+    if ((before.videos ?? []).length >= 10) throw new Error(t('places.err_too_many_videos'))
 
     const key = `media/videos/${id}/${randomUUID()}.${kind}`
     let url: string
@@ -319,7 +327,7 @@ export async function uploadPlaceVideo(id: string, form: FormData): Promise<void
       before: { videos: before.videos },
       after: { videos, bytes: bytes.byteLength },
     })
-    outcome = { ok: 'Video uploaded and added to the place.' }
+    outcome = { ok: t('places.ok_video') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

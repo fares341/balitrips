@@ -27,3 +27,16 @@ export const LEAD_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'i
   replied: 'good',
   closed: 'neutral',
 }
+
+/** Dictionary key (`_i18n/common.ts`) for a trip-request or contact status label. */
+export const LEAD_STATUS_KEYS: Record<string, string> = {
+  new: 'ui.lead_new',
+  under_review: 'ui.lead_under_review',
+  in_progress: 'ui.lead_in_progress',
+  waiting_customer: 'ui.lead_waiting_customer',
+  completed: 'ui.lead_completed',
+  cancelled: 'ui.lead_cancelled',
+  read: 'ui.lead_read',
+  replied: 'ui.lead_replied',
+  closed: 'ui.lead_closed',
+}

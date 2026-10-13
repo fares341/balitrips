@@ -7,6 +7,7 @@ import { mapPlaces, placeTags, tags } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import {
   activityOptions,
   categoryOptions,
@@ -39,6 +40,7 @@ export default async function PlaceEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -71,11 +73,11 @@ export default async function PlaceEditorPage({
   return (
     <>
       <PageHead
-        title={place ? pick(place.name, 'en', place.slug) : 'New map place'}
-        description="Real coordinates are the only coordinate system. Card anchoring is derived from the projection, so a place can be added without hand-authoring pixel offsets."
+        title={place ? pick(place.name, 'en', place.slug) : t('places.new_title')}
+        description={t('places.editor_description')}
         actions={
           <Link className="a-btn ghost" href={adminHref('/places')}>
-            Back to list
+            {t('places.back')}
           </Link>
         }
       />
@@ -83,9 +85,9 @@ export default async function PlaceEditorPage({
 
       <form className="a-form" action={savePlace.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Identity</h2>
+          <h2>{t('places.identity')}</h2>
           <div className="a-row">
-            <Field label="Slug *" htmlFor="slug">
+            <Field label={`${t('common.slug')} *`} htmlFor="slug">
               <TextInput
                 id="slug"
                 name="slug"
@@ -94,7 +96,7 @@ export default async function PlaceEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label="Legacy id" htmlFor="legacyId">
+            <Field label={t('places.legacy_id')} htmlFor="legacyId">
               <TextInput id="legacyId" name="legacyId" defaultValue={place?.legacyId ?? ''} />
             </Field>
             <StatusField value={place?.status} />
@@ -102,36 +104,36 @@ export default async function PlaceEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>Copy</h2>
-          <LocalizedField name="name" label="Name" value={place?.name} required />
-          <LocalizedField name="category" label="Category" value={place?.category} />
+          <h2>{t('places.copy')}</h2>
+          <LocalizedField name="name" label={t('common.name')} value={place?.name} required />
+          <LocalizedField name="category" label={t('places.category')} value={place?.category} />
           <LocalizedField
             name="description"
-            label="Description"
+            label={t('places.description_field')}
             value={place?.description}
             rows={5}
           />
           <LocalizedField
             name="detailedDescription"
-            label="Detailed description"
+            label={t('places.detailed_description')}
             value={place?.detailedDescription}
             rows={8}
           />
         </div>
 
         <div className="a-card">
-          <h2>Access</h2>
+          <h2>{t('places.access')}</h2>
           <div className="a-row">
             <Checkbox
               name="isFree"
-              label="Free to view"
+              label={t('places.free_to_view')}
               defaultChecked={place?.isFree ?? false}
-              hint="Free places are returned in full to everyone. Locked ones are redacted server-side: a marker and a count, never the name or coordinates."
+              hint={t('places.free_to_view_hint')}
             />
             <Field
-              label="Required entitlement"
+              label={t('places.required_entitlement')}
               htmlFor="requiredEntitlement"
-              hint="Which purchase unlocks it. Ignored while the place is free."
+              hint={t('places.required_entitlement_hint')}
             >
               <Select
                 id="requiredEntitlement"
@@ -146,32 +148,32 @@ export default async function PlaceEditorPage({
           <div className="a-row">
             <Checkbox
               name="isHiddenGem"
-              label="Hidden Gem"
+              label={t('places.hidden_gem')}
               defaultChecked={place?.isHiddenGem ?? false}
-              hint="Hidden Gems are VIP-only, whatever the two fields above say."
+              hint={t('places.hidden_gem_hint')}
             />
             <Checkbox
               name="isHidden"
-              label="Hide from map and search"
+              label={t('places.hide')}
               defaultChecked={place?.isHidden ?? false}
-              hint="Stays published, but nobody sees it — e.g. temporarily closed."
+              hint={t('places.hide_hint')}
             />
             <Checkbox
               name="canFavorite"
-              label="Can be saved to favorites"
+              label={t('places.can_favorite')}
               defaultChecked={place?.canFavorite ?? true}
             />
             <Checkbox
               name="canAddToTrip"
-              label="Can be added to My Trip"
+              label={t('places.can_add_to_trip')}
               defaultChecked={place?.canAddToTrip ?? true}
             />
           </div>
           <div className="a-row">
             <Field
-              label="Search priority"
+              label={t('places.search_priority')}
               htmlFor="priority"
-              hint="Higher shows first in search. 0 = normal."
+              hint={t('places.search_priority_hint')}
             >
               <TextInput
                 id="priority"
@@ -180,7 +182,11 @@ export default async function PlaceEditorPage({
                 defaultValue={String(place?.priority ?? 0)}
               />
             </Field>
-            <Field label="Sort order" htmlFor="sortOrder" hint="Lower shows first on the map list.">
+            <Field
+              label={t('places.sort_order')}
+              htmlFor="sortOrder"
+              hint={t('places.sort_order_hint')}
+            >
               <TextInput
                 id="sortOrder"
                 name="sortOrder"
@@ -192,9 +198,13 @@ export default async function PlaceEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>Location and detail</h2>
+          <h2>{t('places.location')}</h2>
           <div className="a-row">
-            <Field label="Latitude *" htmlFor="lat" hint="Decimal degrees, -90 to 90.">
+            <Field
+              label={`${t('places.latitude')} *`}
+              htmlFor="lat"
+              hint={t('places.latitude_hint')}
+            >
               <TextInput
                 id="lat"
                 name="lat"
@@ -203,7 +213,11 @@ export default async function PlaceEditorPage({
                 inputMode="decimal"
               />
             </Field>
-            <Field label="Longitude *" htmlFor="lon" hint="Decimal degrees, -180 to 180.">
+            <Field
+              label={`${t('places.longitude')} *`}
+              htmlFor="lon"
+              hint={t('places.longitude_hint')}
+            >
               <TextInput
                 id="lon"
                 name="lon"
@@ -212,7 +226,7 @@ export default async function PlaceEditorPage({
                 inputMode="decimal"
               />
             </Field>
-            <Field label="Opening hours" htmlFor="openingHours">
+            <Field label={t('places.opening_hours')} htmlFor="openingHours">
               <TextInput
                 id="openingHours"
                 name="openingHours"
@@ -220,7 +234,11 @@ export default async function PlaceEditorPage({
                 maxLength={64}
               />
             </Field>
-            <Field label="Rating (tenths)" htmlFor="ratingTenths" hint="47 means 4.7.">
+            <Field
+              label={t('places.rating_tenths')}
+              htmlFor="ratingTenths"
+              hint={t('places.rating_tenths_hint')}
+            >
               <TextInput
                 id="ratingTenths"
                 name="ratingTenths"
@@ -234,16 +252,21 @@ export default async function PlaceEditorPage({
             </Field>
           </div>
           <div className="a-row">
-            <OptionField name="regionId" label="Region" options={regions} value={place?.regionId} />
+            <OptionField
+              name="regionId"
+              label={t('places.region')}
+              options={regions}
+              value={place?.regionId}
+            />
             <OptionField
               name="activityId"
-              label="Linked activity"
+              label={t('places.linked_activity')}
               options={activities}
               value={place?.activityId}
             />
             <OptionField
               name="heroImageId"
-              label="Hero image"
+              label={t('places.hero_image')}
               options={mediaList}
               value={place?.heroImageId}
             />
@@ -251,16 +274,16 @@ export default async function PlaceEditorPage({
           <div className="a-row">
             <OptionField
               name="categoryId"
-              label="Category (for filters)"
+              label={t('places.category_filters')}
               options={categoryList}
               value={place?.categoryId}
             />
           </div>
           <div className="a-row">
             <Field
-              label="Event starts (Bali time)"
+              label={t('places.event_starts')}
               htmlFor="eventStartsAt"
-              hint="Only for dated events (category “events”). Empty = permanent place."
+              hint={t('places.event_starts_hint')}
             >
               <TextInput
                 id="eventStartsAt"
@@ -270,9 +293,9 @@ export default async function PlaceEditorPage({
               />
             </Field>
             <Field
-              label="Event ends (Bali time)"
+              label={t('places.event_ends')}
               htmlFor="eventEndsAt"
-              hint="Optional. Without it, the event leaves the Events page a day after it starts."
+              hint={t('places.event_ends_hint')}
             >
               <TextInput
                 id="eventEndsAt"
@@ -283,12 +306,12 @@ export default async function PlaceEditorPage({
             </Field>
           </div>
           <div className="a-field">
-            <label>Tags</label>
+            <label>{t('places.tags')}</label>
             <div className="a-row" style={{ gap: 12 }}>
               {tagList.length === 0 ? (
                 <span className="a-hint">
-                  No tags yet — add them in{' '}
-                  <Link href={adminHref('/taxonomy')}>Categories &amp; regions</Link>.
+                  {t('places.no_tags')}{' '}
+                  <Link href={adminHref('/taxonomy')}>{t('places.taxonomy_link')}</Link>.
                 </span>
               ) : (
                 tagList.map((tag) => (
@@ -300,7 +323,7 @@ export default async function PlaceEditorPage({
                       defaultChecked={chosenTags.has(tag.id)}
                     />
                     {pick(tag.label, 'en', tag.key)}
-                    {tag.status !== 'active' ? ' (inactive)' : ''}
+                    {tag.status !== 'active' ? t('places.inactive_suffix') : ''}
                   </label>
                 ))
               )}
@@ -308,19 +331,19 @@ export default async function PlaceEditorPage({
           </div>
           <OptionChecklist
             name="subCategoryIds"
-            label="Sub-categories"
+            label={t('places.sub_categories')}
             options={categoryList}
             values={place?.subCategoryIds ?? []}
-            hint="Extra categories this place also belongs to (filters and search)."
+            hint={t('places.sub_categories_hint')}
           />
           <OptionChecklist
             name="galleryImageIds"
-            label="Gallery images"
+            label={t('places.gallery')}
             options={mediaList}
             values={place?.galleryImageIds ?? []}
-            hint="Shown in the place panel after the hero image. Upload photos in the Media library."
+            hint={t('places.gallery_hint')}
           />
-          <Field label="Videos" htmlFor="videos" hint="One URL per line (YouTube, Vimeo or .mp4).">
+          <Field label={t('places.videos')} htmlFor="videos" hint={t('places.videos_hint')}>
             <TextArea
               id="videos"
               name="videos"
@@ -329,9 +352,9 @@ export default async function PlaceEditorPage({
             />
           </Field>
           <Field
-            label="Internal notes"
+            label={t('places.internal_notes')}
             htmlFor="internalNotes"
-            hint="Staff only. Never sent to the site."
+            hint={t('places.internal_notes_hint')}
           >
             <TextArea
               id="internalNotes"
@@ -344,7 +367,7 @@ export default async function PlaceEditorPage({
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save place
+            {t('places.save')}
           </button>
         </div>
       </form>
@@ -356,8 +379,8 @@ export default async function PlaceEditorPage({
             action={uploadPlaceVideo.bind(null, place.id)}
             style={{ alignItems: 'end' }}
           >
-            <h2 style={{ width: '100%', margin: 0 }}>Upload a video</h2>
-            <Field label="MP4 or WebM, up to 24 MB" htmlFor="video-file">
+            <h2 style={{ width: '100%', margin: 0 }}>{t('places.upload_video_heading')}</h2>
+            <Field label={t('places.video_file')} htmlFor="video-file">
               <input
                 className="a-input"
                 id="video-file"
@@ -369,15 +392,15 @@ export default async function PlaceEditorPage({
             </Field>
             <div className="a-actions">
               <button className="a-btn accent" type="submit">
-                Upload video
+                {t('places.upload_video_btn')}
               </button>
             </div>
           </form>
           <form className="a-card" action={deletePlace.bind(null, place.id)}>
-            <h2>Archive</h2>
+            <h2>{t('places.archive')}</h2>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
               <button className="a-btn danger" type="submit">
-                Archive place
+                {t('places.archive_btn')}
               </button>
             </div>
           </form>

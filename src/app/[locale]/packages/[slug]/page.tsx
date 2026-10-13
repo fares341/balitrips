@@ -133,7 +133,7 @@ export default async function PackageDetailPage({
             <div style={{ position: 'absolute', insetInline: 0, bottom: 0, padding: 28 }}>
               <div className="row" style={{ gap: 8 }}>
                 <span className="tag" style={{ background: 'var(--orange)', color: '#fff' }}>
-                  {format.number(pkg.days)} {t('c_days')}
+                  {t('c_days_n', { n: pkg.days })}
                 </span>
                 {pkg.driverIncluded && (
                   <span className="tag tag-palm">
@@ -165,9 +165,7 @@ export default async function PackageDetailPage({
                 <Icon name="cal" size={18} color="var(--forest)" />
                 <div>
                   <dt>{t('pd_fact_duration')}</dt>
-                  <dd>
-                    {format.number(pkg.days)} {t('c_days')}
-                  </dd>
+                  <dd>{t('c_days_n', { n: pkg.days })}</dd>
                 </div>
               </div>
 

@@ -108,7 +108,7 @@ export function ResetPasswordForm({ socialProviders = [] }: ResetPasswordFormPro
         <Button type="button" variant="orange" onClick={() => setSignInOpen(true)}>
           {t('auth_send_btn')}
         </Button>
-        <Link href={ACCOUNT_HREF} style={{ color: 'var(--orange-deep)', fontWeight: 700 }}>
+        <Link href={ACCOUNT_HREF} style={{ color: 'var(--orange-ink)', fontWeight: 700 }}>
           {t('auth_back')}
         </Link>
         {signInDialog}
@@ -170,7 +170,7 @@ export function ResetPasswordForm({ socialProviders = [] }: ResetPasswordFormPro
 
         <Link
           href={ACCOUNT_HREF}
-          style={{ color: 'var(--orange-deep)', fontWeight: 700, fontSize: 14 }}
+          style={{ color: 'var(--orange-ink)', fontWeight: 700, fontSize: 14 }}
         >
           {t('auth_back')}
         </Link>

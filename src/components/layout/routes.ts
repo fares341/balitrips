@@ -36,7 +36,7 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: '/packages', key: 'navr_packages' },
   { href: '/map', key: 'navr_map' },
   { href: '/explore', key: 'navr_explore' },
-  { href: '/plans', key: 'acct_nav_subs' },
+  { href: '/plans', key: 'navr_plans' },
   { href: '/blog', key: 'navr_blog' },
   { href: '/contact', key: 'navr_contact' },
 ]

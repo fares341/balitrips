@@ -21,16 +21,34 @@ body {
   font-family: var(--sans);
   background: var(--ivory);
   color: var(--forest);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
+/*
+ * Arabic: same family, one step larger and noticeably more leading. Tajawal's
+ * Arabic sits small on the body and its ascenders/descenders (ل، ك، ي) need
+ * the room; at 16/1.6 Arabic paragraphs read cramped next to the English.
+ */
 [dir='rtl'] body,
 [dir='rtl'] {
   font-family: var(--arabic);
+}
+
+[dir='rtl'] body {
+  font-size: 17px;
+  line-height: var(--lh-body-ar);
+}
+
+/*
+ * Numbers: lining, tabular figures so prices and counts line up in cards and
+ * tables, in both Latin and Arabic-Indic digits.
+ */
+body {
+  font-variant-numeric: lining-nums;
 }
 
 /* Directional icons (chevrons, arrows) carry .flip and mirror in RTL. */
@@ -59,8 +77,9 @@ h3,
 h4 {
   margin: 0;
   font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  line-height: var(--lh-head);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
 
 p {
@@ -76,11 +95,71 @@ p {
   padding-inline: var(--gutter);
 }
 
-/* Visible focus for keyboard users — the handoff had none. */
+/*
+ * Visible focus for keyboard users — the handoff had none.
+ *
+ * A two-tone ring: a dark outline that reads on ivory, white and photos, and
+ * an orange halo that reads on the forest bands. A single orange outline
+ * (the previous rule) disappeared against the orange buttons themselves.
+ */
 :focus-visible {
-  outline: 3px solid var(--orange);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  box-shadow: 0 0 0 5px var(--focus-halo);
+  border-radius: 6px;
+}
+
+.bg-forest :focus-visible,
+.bt-hero :focus-visible,
+.bt-footer :focus-visible {
+  outline-color: var(--ivory);
+}
+
+/* Money and other Latin runs inside Arabic copy: keep "59.00 US$" in one
+   left-to-right piece instead of letting the bidi algorithm move the "$". */
+.bt-money,
+bdi {
+  unicode-bidi: isolate;
+}
+
+[dir='rtl'] .bt-money {
+  direction: ltr;
+  display: inline-block;
+}
+
+/* Visually hidden, still announced. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: the header carries a 12-item nav before <main>. */
+.bt-skip {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: -60px;
+  z-index: var(--z-toast);
+  background: var(--forest-deep);
+  color: var(--ivory);
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.bt-skip:focus {
+  top: 12px;
+}
+
+::selection {
+  background: rgba(255, 144, 0, 0.3);
+  color: var(--forest-deep);
 }
 
 /* Respect reduced-motion. The map pin pulse and card hovers are decorative. */

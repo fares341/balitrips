@@ -6,12 +6,14 @@ import { articleCategories, articles } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
+import type { Translate } from '../../_i18n'
 import { adminHref } from '../../_lib/admin-path'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
+import { getAdminI18n } from '../../_lib/i18n'
 import { setArticleStatus } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -25,6 +27,7 @@ export default async function ArticlesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t, locale } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -68,12 +71,12 @@ export default async function ArticlesPage({
   return (
     <>
       <PageHead
-        title="Articles"
-        description="Each article has its own body in all three locales — the prototype reused three lorem paragraphs everywhere."
+        title={t('articles.title')}
+        description={t('articles.list_description')}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/articles/new')}>
-              New article
+              {t('articles.new')}
             </Link>
           ) : null
         }
@@ -82,39 +85,39 @@ export default async function ArticlesPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="">{t('common.all')}</option>
+            <option value="draft">{t('common.draft')}</option>
+            <option value="published">{t('common.published')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('common.clear')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No articles match those filters.</Empty>
+        <Empty>{t('articles.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Body</th>
-              <th>CTA</th>
-              <th>Updated</th>
+              <th>{t('articles.f_title')}</th>
+              <th>{t('articles.category')}</th>
+              <th>{t('common.status')}</th>
+              <th>{t('articles.body_col')}</th>
+              <th>{t('articles.cta_col')}</th>
+              <th>{t('common.updated')}</th>
               <th />
             </tr>
           </thead>
@@ -125,18 +128,21 @@ export default async function ArticlesPage({
                 <tr key={row.id}>
                   <td>
                     <Link href={adminHref(`/articles/${row.id}`)}>
-                      {pick(row.title, 'en', row.slug)}
+                      {pick(row.title, locale, row.slug)}
                     </Link>{' '}
                     {row.requiredEntitlement ? (
                       <Pill tone="warn">
-                        🔒 {row.requiredEntitlement === 'map_access' ? 'Map plan' : 'VIP'}
+                        🔒{' '}
+                        {row.requiredEntitlement === 'map_access'
+                          ? t('articles.gate_map')
+                          : t('articles.gate_vip')}
                       </Pill>
                     ) : null}
                     <div className="a-mono a-muted">{row.slug}</div>
                   </td>
                   <td>
                     {row.categoryKey ? (
-                      pick(row.categoryLabel, 'en', row.categoryKey)
+                      pick(row.categoryLabel, locale, row.categoryKey)
                     ) : (
                       <span className="a-muted">—</span>
                     )}
@@ -145,9 +151,13 @@ export default async function ArticlesPage({
                     <PublishPill status={row.status} />
                   </td>
                   <td>
-                    <Pill tone={hasBody ? 'good' : 'bad'}>{hasBody ? 'written' : 'empty'}</Pill>
+                    <Pill tone={hasBody ? 'good' : 'bad'}>
+                      {hasBody ? t('articles.body_written') : t('articles.body_empty')}
+                    </Pill>
                   </td>
-                  <td>{row.bridge ?? <span className="a-muted">—</span>}</td>
+                  <td>
+                    {row.bridge ? bridgeLabel(row.bridge, t) : <span className="a-muted">—</span>}
+                  </td>
                   <td>
                     <When value={row.updatedAt} />
                   </td>
@@ -162,7 +172,9 @@ export default async function ArticlesPage({
                         )}
                       >
                         <button className="a-btn ghost small" type="submit">
-                          {row.status === 'published' ? 'Unpublish' : 'Publish'}
+                          {row.status === 'published'
+                            ? t('articles.unpublish')
+                            : t('articles.publish')}
                         </button>
                       </form>
                     ) : null}
@@ -183,4 +195,18 @@ export default async function ArticlesPage({
       />
     </>
   )
+}
+
+/** The in-article CTA target, as the editor's select names it. Unknown values show as stored. */
+function bridgeLabel(bridge: string, t: Translate): string {
+  switch (bridge) {
+    case 'map':
+      return t('articles.bridge_map')
+    case 'activities':
+      return t('articles.bridge_activities')
+    case 'driver':
+      return t('articles.bridge_driver')
+    default:
+      return bridge
+  }
 }

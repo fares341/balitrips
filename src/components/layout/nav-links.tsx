@@ -47,9 +47,8 @@ export function NavLinks({ variant = 'desktop', onNavigate }: NavLinksProps) {
             <Link
               key={route.href}
               href={route.href}
-              className="bt-drawer-link"
+              className={active ? 'bt-drawer-link on' : 'bt-drawer-link'}
               aria-current={active ? 'page' : undefined}
-              style={{ color: active ? 'var(--orange-deep)' : 'var(--forest)' }}
               onClick={onNavigate}
             >
               {t(route.key)}

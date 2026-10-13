@@ -115,7 +115,7 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
         <span
           aria-hidden="true"
           style={{
-            color: 'var(--orange-deep)',
+            color: 'var(--orange-ink)',
             fontWeight: 700,
             fontSize: 14,
             display: 'inline-flex',
@@ -123,7 +123,7 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
             gap: 6,
           }}
         >
-          {t('bh_read')} <Icon name="arrow" size={15} color="var(--orange-deep)" className="flip" />
+          {t('bh_read')} <Icon name="arrow" size={15} color="var(--orange-ink)" className="flip" />
         </span>
       </div>
     </article>

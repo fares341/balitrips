@@ -7,6 +7,7 @@ import { landmarks } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import { Field, LocalizedField, StatusField, TextInput } from '../../../_ui/field'
@@ -25,6 +26,7 @@ export default async function LandmarkEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -51,10 +53,10 @@ export default async function LandmarkEditorPage({
   return (
     <>
       <PageHead
-        title={landmark ? pick(landmark.name, 'en', landmark.slug) : 'New landmark'}
+        title={landmark ? pick(landmark.name, 'en', landmark.slug) : t('landmarks.new')}
         actions={
           <Link className="a-btn ghost" href={adminHref('/landmarks')}>
-            Back to list
+            {t('landmarks.back')}
           </Link>
         }
       />
@@ -62,9 +64,9 @@ export default async function LandmarkEditorPage({
 
       <form className="a-form" action={saveLandmark.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Identity</h2>
+          <h2>{t('landmarks.identity')}</h2>
           <div className="a-row">
-            <Field label="Slug *" htmlFor="slug">
+            <Field label={`${t('common.slug')} *`} htmlFor="slug">
               <TextInput
                 id="slug"
                 name="slug"
@@ -73,11 +75,11 @@ export default async function LandmarkEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label="Legacy id" htmlFor="legacyId">
+            <Field label={t('landmarks.legacy_id')} htmlFor="legacyId">
               <TextInput id="legacyId" name="legacyId" defaultValue={landmark?.legacyId ?? ''} />
             </Field>
             <StatusField value={landmark?.status} />
-            <Field label="Sort order" htmlFor="sortOrder">
+            <Field label={t('landmarks.sort_order')} htmlFor="sortOrder">
               <TextInput
                 id="sortOrder"
                 name="sortOrder"
@@ -89,31 +91,36 @@ export default async function LandmarkEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>Copy</h2>
-          <LocalizedField name="name" label="Name" value={landmark?.name} required />
-          <LocalizedField name="type" label="Type" value={landmark?.type} />
-          <LocalizedField name="blurb" label="Blurb" value={landmark?.blurb} rows={4} />
+          <h2>{t('landmarks.copy')}</h2>
+          <LocalizedField name="name" label={t('common.name')} value={landmark?.name} required />
+          <LocalizedField name="type" label={t('common.type')} value={landmark?.type} />
+          <LocalizedField
+            name="blurb"
+            label={t('landmarks.blurb')}
+            value={landmark?.blurb}
+            rows={4}
+          />
         </div>
 
         <div className="a-card">
-          <h2>Links</h2>
+          <h2>{t('landmarks.links')}</h2>
           <div className="a-row">
             <OptionField
               name="regionId"
-              label="Region"
+              label={t('landmarks.region')}
               options={regions}
               value={landmark?.regionId}
             />
             <OptionField
               name="activityId"
-              label="Bookable activity"
+              label={t('landmarks.bookable_activity')}
               options={activities}
               value={landmark?.activityId}
-              hint="Set this and the card links straight to a purchasable tour."
+              hint={t('landmarks.activity_hint')}
             />
             <OptionField
               name="heroImageId"
-              label="Hero image"
+              label={t('landmarks.hero_image')}
               options={mediaList}
               value={landmark?.heroImageId}
             />
@@ -122,17 +129,17 @@ export default async function LandmarkEditorPage({
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save landmark
+            {t('landmarks.save')}
           </button>
         </div>
       </form>
 
       {landmark ? (
         <form className="a-card" action={deleteLandmark.bind(null, landmark.id)}>
-          <h2>Archive</h2>
+          <h2>{t('landmarks.archive')}</h2>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
             <button className="a-btn danger" type="submit">
-              Archive landmark
+              {t('landmarks.archive_btn')}
             </button>
           </div>
         </form>

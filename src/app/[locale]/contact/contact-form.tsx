@@ -354,7 +354,7 @@ function Field({
 
       {error !== null && errorId !== undefined && (
         <span className="bt-errmsg" id={errorId}>
-          <Icon name="cross" size={13} color="var(--orange-deep)" />
+          <Icon name="cross" size={13} />
           {error}
         </span>
       )}

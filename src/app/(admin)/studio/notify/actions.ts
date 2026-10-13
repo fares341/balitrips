@@ -10,6 +10,7 @@ import { notifyUser } from '@/lib/notify'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fbool, fenum, freq, fstr } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 
@@ -25,11 +26,12 @@ const BATCH = 50
  */
 export async function sendAdminNotification(form: FormData): Promise<void> {
   const actor = await requireCapability('roles.write')
+  const { t } = await getAdminI18n()
   let outcome: ActionOutcome
   try {
     const audience = fenum(form, 'audience', AUDIENCES, 'user')
-    const title = freq(form, 'title', 'Title').trim().slice(0, 120)
-    const body = freq(form, 'body', 'Message').trim().slice(0, 1000)
+    const title = freq(form, 'title', t('notify.title_label')).trim().slice(0, 120)
+    const body = freq(form, 'body', t('notify.message')).trim().slice(0, 1000)
     const rawHref = fstr(form, 'href')
     // رابط داخلي فقط — لا روابط خارجية في إشعارات تحمل اسم الموقع.
     // `/\evil.com` يطبّعه المتصفح إلى `//evil.com`، فيُرفض أي `/` يليه `/` أو `\`.
@@ -38,13 +40,13 @@ export async function sendAdminNotification(form: FormData): Promise<void> {
 
     let recipients: string[]
     if (audience === 'user') {
-      const email = freq(form, 'email_address', 'Customer e-mail').trim().toLowerCase()
+      const email = freq(form, 'email_address', t('notify.customer_email')).trim().toLowerCase()
       const [user] = await db
         .select({ id: users.id })
         .from(users)
         .where(and(eq(users.email, email), isNull(users.deletedAt)))
         .limit(1)
-      if (!user) throw new Error(`No account with ${email}.`)
+      if (!user) throw new Error(t('notify.err_no_account', { email }))
       recipients = [user.id]
     } else if (audience === 'customers') {
       const rows = await db
@@ -69,7 +71,7 @@ export async function sendAdminNotification(form: FormData): Promise<void> {
         .limit(MAX_RECIPIENTS)
       recipients = rows.map((row) => row.id)
     }
-    if (recipients.length === 0) throw new Error('Nobody matches that audience.')
+    if (recipients.length === 0) throw new Error(t('notify.err_no_recipients'))
 
     let sent = 0
     for (let index = 0; index < recipients.length; index += BATCH) {
@@ -88,7 +90,7 @@ export async function sendAdminNotification(form: FormData): Promise<void> {
       before: null,
       after: { audience, recipients: recipients.length, sent, channels, title },
     })
-    outcome = { ok: `Sent to ${sent} of ${recipients.length} account(s).` }
+    outcome = { ok: t('notify.ok_sent', { sent, total: recipients.length }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

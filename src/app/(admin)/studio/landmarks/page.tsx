@@ -7,6 +7,7 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -24,6 +25,7 @@ export default async function LandmarksPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -65,12 +67,12 @@ export default async function LandmarksPage({
   return (
     <>
       <PageHead
-        title="Landmarks"
-        description="Cards on the explore index. A landmark with a linked activity becomes a bookable entry point."
+        title={t('landmarks.title')}
+        description={t('landmarks.description')}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/landmarks/new')}>
-              New landmark
+              {t('landmarks.new')}
             </Link>
           ) : null
         }
@@ -79,32 +81,32 @@ export default async function LandmarksPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('landmarks.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No landmarks yet.</Empty>
+        <Empty>{t('landmarks.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Region</th>
-              <th>Linked activity</th>
-              <th>Status</th>
-              <th className="num">Order</th>
-              <th>Updated</th>
+              <th>{t('common.name')}</th>
+              <th>{t('common.type')}</th>
+              <th>{t('landmarks.col_region')}</th>
+              <th>{t('landmarks.col_linked_activity')}</th>
+              <th>{t('common.status')}</th>
+              <th className="num">{t('landmarks.col_order')}</th>
+              <th>{t('common.updated')}</th>
             </tr>
           </thead>
           <tbody>

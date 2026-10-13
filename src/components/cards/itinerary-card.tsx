@@ -49,8 +49,11 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
           priority={priority}
           style={{ height: 180 }}
         />
-        <span className="bt-card-badge" style={{ background: 'var(--orange)', color: '#fff' }}>
-          {itinerary.days} {t('c_days')}
+        <span
+          className="bt-card-badge"
+          style={{ background: 'var(--orange)', color: 'var(--on-orange)' }}
+        >
+          {t('c_days_n', { n: itinerary.days })}
         </span>
       </Link>
 
@@ -81,7 +84,8 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
         <div className="bt-itin-meta">
           {itinerary.spots !== null && (
             <span>
-              <Icon name="pin" size={13} color="var(--muted)" /> {itinerary.spots} {t('hi_spots')}
+              <Icon name="pin" size={13} color="var(--muted)" />{' '}
+              {t('hi_spots_n', { n: itinerary.spots })}
             </span>
           )}
           {tripType !== null && (
@@ -101,18 +105,13 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
             paddingTop: 8,
           }}
         >
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--orange-deep)' }}>
+          <div className="bt-card-price-v bt-money">
             {formatMoney(itinerary.priceMinor, itinerary.currency, locale)}
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <LinkButton
-            href={itinerary.href}
-            variant="ghost"
-            size="sm"
-            style={{ flex: 1, fontSize: 12.5, paddingInline: 10 }}
-          >
+          <LinkButton href={itinerary.href} variant="ghost" size="sm" style={{ flex: 1 }}>
             {t('c_view')}
           </LinkButton>
           {action}

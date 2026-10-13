@@ -2,6 +2,7 @@ import { contentDisposition, isStorageConfigured, localPrivateRoot } from '@/lib
 import { loadOrderVoucher, presignOrderVoucher } from '@/lib/pdf'
 
 import { isUuid } from '../../../../_lib/form'
+import { getAdminI18n } from '../../../../_lib/i18n'
 import { requireCapability } from '../../../../_lib/session'
 
 /** تحميل إيصال الطلب (PDF) من لوحة التحكم — "إصدار إيصال". */
@@ -17,7 +18,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     // Single-host production: the receipt lives on the local private volume.
     const local = localPrivateRoot() === null ? null : await loadOrderVoucher(id, null)
     if (local === null) {
-      return new Response('No receipt for this order (unpaid, not generated yet, or no storage).', {
+      const { t } = await getAdminI18n()
+      return new Response(t('orders.receipt_missing_local'), {
         status: 404,
         headers: NO_STORE,
       })
@@ -32,7 +34,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
   const url = await presignOrderVoucher(id, null, { expiresInSeconds: 60 })
   if (url === null) {
-    return new Response('No receipt for this order (unpaid, or not generated yet).', {
+    const { t } = await getAdminI18n()
+    return new Response(t('orders.receipt_missing'), {
       status: 404,
       headers: NO_STORE,
     })

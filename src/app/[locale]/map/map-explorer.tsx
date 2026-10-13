@@ -816,9 +816,7 @@ export function MapExplorer({
       </div>
 
       <p className="bt-maptip">
-        <span aria-live="polite">
-          {format.number(matched.length)} {t('map_results')}
-        </span>
+        <span aria-live="polite">{t('map_results_n', { n: matched.length })}</span>
         {' · '}
         {t('map_wheel_hint')}
       </p>

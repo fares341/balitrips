@@ -11,10 +11,26 @@ import { locales, type Locale } from '@/i18n/config'
  */
 
 export class FormError extends Error {
-  constructor(message: string) {
+  /**
+   * With a dictionary key the banner is rendered in the operator's Studio
+   * language (see `errorMessage()` in result.ts); `message` stays English for
+   * logs. Without one, `message` is shown as is — pass text already run
+   * through `t()`.
+   */
+  readonly key?: string
+  readonly vars?: Record<string, string | number>
+
+  constructor(message: string, key?: string, vars?: Record<string, string | number>) {
     super(message)
     this.name = 'FormError'
+    this.key = key
+    this.vars = vars
   }
+}
+
+/** A validation failure with an English message and its dictionary key. */
+function invalid(english: string, key: string, vars: Record<string, string | number>): FormError {
+  return new FormError(english, key, vars)
 }
 
 function raw(form: FormData, name: string): string {
@@ -31,7 +47,7 @@ export function fstr(form: FormData, name: string): string | null {
 /** Required text. */
 export function freq(form: FormData, name: string, label = name): string {
   const value = raw(form, name)
-  if (value === '') throw new FormError(`${label} is required`)
+  if (value === '') throw invalid(`${label} is required`, 'form.required', { label })
   return value
 }
 
@@ -45,7 +61,10 @@ export function fint(form: FormData, name: string, fallback: number, label = nam
   const value = raw(form, name)
   if (value === '') return fallback
   if (!/^-?\d+$/.test(value)) {
-    throw new FormError(`${label} must be a whole number, got "${value}"`)
+    throw invalid(`${label} must be a whole number, got "${value}"`, 'form.not_integer', {
+      label,
+      value,
+    })
   }
   return Number.parseInt(value, 10)
 }
@@ -53,7 +72,7 @@ export function fint(form: FormData, name: string, fallback: number, label = nam
 /** Integer minor units. Never a float — there are no fractional cents. */
 export function fminor(form: FormData, name: string, label = name): number {
   const value = fint(form, name, 0, label)
-  if (value < 0) throw new FormError(`${label} cannot be negative`)
+  if (value < 0) throw invalid(`${label} cannot be negative`, 'form.negative', { label })
   return value
 }
 
@@ -61,16 +80,20 @@ export function fintOrNull(form: FormData, name: string, label = name): number |
   const value = raw(form, name)
   if (value === '') return null
   if (!/^-?\d+$/.test(value)) {
-    throw new FormError(`${label} must be a whole number, got "${value}"`)
+    throw invalid(`${label} must be a whole number, got "${value}"`, 'form.not_integer', {
+      label,
+      value,
+    })
   }
   return Number.parseInt(value, 10)
 }
 
 export function ffloat(form: FormData, name: string, label = name): number {
   const value = raw(form, name)
-  if (value === '') throw new FormError(`${label} is required`)
+  if (value === '') throw invalid(`${label} is required`, 'form.required', { label })
   const parsed = Number(value)
-  if (!Number.isFinite(parsed)) throw new FormError(`${label} must be a number, got "${value}"`)
+  if (!Number.isFinite(parsed))
+    throw invalid(`${label} must be a number, got "${value}"`, 'form.not_number', { label, value })
   return parsed
 }
 
@@ -78,7 +101,9 @@ export function ffloat(form: FormData, name: string, label = name): number {
 export function fcurrency(form: FormData, name: string): string {
   const value = raw(form, name).toUpperCase()
   if (!/^[A-Z]{3}$/.test(value)) {
-    throw new FormError(`Currency must be a 3-letter ISO 4217 code, got "${value}"`)
+    throw invalid(`Currency must be a 3-letter ISO 4217 code, got "${value}"`, 'form.currency', {
+      value,
+    })
   }
   return value
 }
@@ -110,13 +135,13 @@ export function fmulti(form: FormData, name: string): string[] {
 export function fuuidOrNull(form: FormData, name: string, label = name): string | null {
   const value = raw(form, name)
   if (value === '') return null
-  if (!isUuid(value)) throw new FormError(`${label} is not a valid id`)
+  if (!isUuid(value)) throw invalid(`${label} is not a valid id`, 'form.invalid_id', { label })
   return value
 }
 
 export function fuuid(form: FormData, name: string, label = name): string {
   const value = fuuidOrNull(form, name, label)
-  if (!value) throw new FormError(`${label} is required`)
+  if (!value) throw invalid(`${label} is required`, 'form.required', { label })
   return value
 }
 
@@ -139,7 +164,10 @@ export function fdate(form: FormData, name: string, label = name): string | null
   const value = raw(form, name)
   if (value === '') return null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new FormError(`${label} must be a date (YYYY-MM-DD), got "${value}"`)
+    throw invalid(`${label} must be a date (YYYY-MM-DD), got "${value}"`, 'form.invalid_date', {
+      label,
+      value,
+    })
   }
   return value
 }
@@ -176,7 +204,8 @@ export function flocalizedOrNull(form: FormData, name: string): Localized | null
 /** Required localized field: English is the authoring locale and must exist. */
 export function flocalizedRequired(form: FormData, name: string, label = name): Localized {
   const value = flocalized(form, name)
-  if (value.en === '') throw new FormError(`${label} (English) is required`)
+  if (value.en === '')
+    throw invalid(`${label} (English) is required`, 'form.required_english', { label })
   return value
 }
 

@@ -6,6 +6,7 @@ import { db } from '@/db'
 import { reviews } from '@/db/schema'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { activityOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import { Checkbox, Field, LocalizedField, TextInput } from '../../../_ui/field'
@@ -24,6 +25,7 @@ export default async function ReviewEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -46,10 +48,10 @@ export default async function ReviewEditorPage({
   return (
     <>
       <PageHead
-        title={review ? review.authorName : 'New review'}
+        title={review ? review.authorName : t('reviews.new_title')}
         actions={
           <Link className="a-btn ghost" href={adminHref('/reviews')}>
-            Back to list
+            {t('reviews.back')}
           </Link>
         }
       />
@@ -57,9 +59,9 @@ export default async function ReviewEditorPage({
 
       <form className="a-form" action={saveReview.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Review</h2>
+          <h2>{t('reviews.review')}</h2>
           <div className="a-row">
-            <Field label="Author name *" htmlFor="authorName">
+            <Field label={`${t('reviews.author_name')} *`} htmlFor="authorName">
               <TextInput
                 id="authorName"
                 name="authorName"
@@ -68,7 +70,7 @@ export default async function ReviewEditorPage({
                 maxLength={128}
               />
             </Field>
-            <Field label="Stars *" htmlFor="stars" hint="1 to 5.">
+            <Field label={`${t('reviews.stars')} *`} htmlFor="stars" hint={t('reviews.stars_hint')}>
               <TextInput
                 id="stars"
                 name="stars"
@@ -79,49 +81,49 @@ export default async function ReviewEditorPage({
             </Field>
             <OptionField
               name="activityId"
-              label="Activity"
+              label={t('reviews.activity')}
               options={activities}
               value={review?.activityId}
-              hint="An unattached review is never shown next to a tour it does not belong to."
+              hint={t('reviews.activity_hint')}
             />
             <Field
-              label="Order id"
+              label={t('reviews.order_id')}
               htmlFor="orderId"
-              hint="Set when the review comes from a real booking. Shows as verified."
+              hint={t('reviews.order_id_hint')}
             >
               <TextInput id="orderId" name="orderId" defaultValue={review?.orderId ?? ''} />
             </Field>
           </div>
           <Checkbox
             name="isPublished"
-            label="Published"
+            label={t('common.published')}
             defaultChecked={review?.isPublished ?? false}
           />
         </div>
 
         <div className="a-card">
-          <h2>Copy</h2>
+          <h2>{t('reviews.copy')}</h2>
           <LocalizedField
             name="authorCountry"
-            label="Author country"
+            label={t('reviews.author_country')}
             value={review?.authorCountry}
           />
-          <LocalizedField name="body" label="Body" value={review?.body} rows={5} />
+          <LocalizedField name="body" label={t('reviews.body')} value={review?.body} rows={5} />
         </div>
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save review
+            {t('reviews.save')}
           </button>
         </div>
       </form>
 
       {review ? (
         <form className="a-card" action={deleteReview.bind(null, review.id)}>
-          <h2>Archive</h2>
+          <h2>{t('reviews.archive')}</h2>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
             <button className="a-btn danger" type="submit">
-              Archive review
+              {t('reviews.archive_btn')}
             </button>
           </div>
         </form>

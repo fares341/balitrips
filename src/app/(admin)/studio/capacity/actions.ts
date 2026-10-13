@@ -16,6 +16,7 @@ import {
   fminor,
   freq,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 
@@ -34,26 +35,29 @@ type Outcome = { ok: string } | { err: string }
  */
 export async function saveVehicle(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('capacity.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const values = {
-      vehicleClass: freq(form, 'vehicleClass', 'Vehicle class').toLowerCase().slice(0, 16),
-      label: flocalizedRequired(form, 'label', 'Label'),
+      vehicleClass: freq(form, 'vehicleClass', t('capacity.vehicle_class'))
+        .toLowerCase()
+        .slice(0, 16),
+      label: flocalizedRequired(form, 'label', t('capacity.label')),
       description: flocalizedOrNull(form, 'description'),
-      minPassengers: fint(form, 'minPassengers', 1, 'Min passengers'),
-      maxPassengers: fint(form, 'maxPassengers', 4, 'Max passengers'),
-      dayRateMinor: fminor(form, 'dayRateMinor', 'Day rate'),
+      minPassengers: fint(form, 'minPassengers', 1, t('capacity.min_passengers')),
+      maxPassengers: fint(form, 'maxPassengers', 4, t('capacity.max_passengers')),
+      dayRateMinor: fminor(form, 'dayRateMinor', t('capacity.day_rate')),
       currency: fcurrency(form, 'currency'),
-      fleetSize: fint(form, 'fleetSize', 0, 'Fleet size'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      fleetSize: fint(form, 'fleetSize', 0, t('capacity.fleet_size')),
+      sortOrder: fint(form, 'sortOrder', 0, t('common.order')),
     }
 
-    if (values.minPassengers < 1) throw new Error('Min passengers must be at least 1')
+    if (values.minPassengers < 1) throw new Error(t('capacity.err_min_passengers'))
     if (values.maxPassengers < values.minPassengers) {
-      throw new Error('Max passengers cannot be below min passengers')
+      throw new Error(t('capacity.err_max_below_min'))
     }
-    if (values.fleetSize < 0) throw new Error('Fleet size cannot be negative')
+    if (values.fleetSize < 0) throw new Error(t('capacity.err_fleet_negative'))
 
     await db.transaction(async (tx) => {
       const before =
@@ -63,7 +67,7 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
               await tx.select().from(driverVehicles).where(eq(driverVehicles.id, id)).limit(1)
             )[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That vehicle no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('capacity.err_gone'))
 
       const [row] =
         id === 'new'
@@ -83,7 +87,7 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Vehicle saved.' }
+    outcome = { ok: t('capacity.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -105,10 +109,11 @@ export async function setDayBlocked(
   returnQuery: string,
 ): Promise<void> {
   const session = await requireCapability('capacity.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(`"${day}" is not a date`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(t('capacity.err_not_date', { day }))
 
     await db.transaction(async (tx) => {
       // Make sure the row exists before updating it — most dates have no
@@ -143,7 +148,9 @@ export async function setDayBlocked(
       )
     })
 
-    outcome = { ok: `${day} ${blocked ? 'blocked' : 'reopened'} for ${vehicleClass}.` }
+    outcome = {
+      ok: t(blocked ? 'capacity.ok_blocked' : 'capacity.ok_reopened', { day, class: vehicleClass }),
+    }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

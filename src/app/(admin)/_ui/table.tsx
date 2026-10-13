@@ -1,8 +1,12 @@
 import Link from 'next/link'
 
 import { buildQuery } from '../_lib/result'
+import { uiI18n } from './i18n-server'
 
-/** Horizontally scrollable table wrapper — the page body never scrolls. */
+/**
+ * Scrollable table wrapper — wide tables scroll sideways inside it, long ones
+ * scroll under a sticky header, and the page body never scrolls sideways.
+ */
 export function Table({ children }: { children: React.ReactNode }) {
   return (
     <div className="a-table-wrap">
@@ -36,12 +40,33 @@ const ORDER_TONES: Record<string, PillTone> = {
   partially_refunded: 'warn',
 }
 
-export function OrderStatusPill({ status }: { status: string }) {
-  return <Pill tone={ORDER_TONES[status] ?? 'neutral'}>{status.replace(/_/g, ' ')}</Pill>
+const ORDER_STATUS_KEYS: Record<string, string> = {
+  pending: 'ui.order_pending',
+  paid: 'ui.order_paid',
+  confirmed: 'ui.order_confirmed',
+  cancelled: 'ui.order_cancelled',
+  refunded: 'ui.order_refunded',
+  partially_refunded: 'ui.order_partially_refunded',
 }
 
-export function PublishPill({ status }: { status: string }) {
-  return <Pill tone={status === 'published' ? 'good' : 'neutral'}>{status}</Pill>
+export async function OrderStatusPill({ status }: { status: string }) {
+  const { t } = await uiI18n()
+  const key = ORDER_STATUS_KEYS[status]
+  return (
+    <Pill tone={ORDER_TONES[status] ?? 'neutral'}>{key ? t(key) : status.replace(/_/g, ' ')}</Pill>
+  )
+}
+
+const PUBLISH_KEYS: Record<string, string> = {
+  draft: 'common.draft',
+  published: 'common.published',
+  archived: 'common.archived',
+}
+
+export async function PublishPill({ status }: { status: string }) {
+  const { t } = await uiI18n()
+  const key = PUBLISH_KEYS[status]
+  return <Pill tone={status === 'published' ? 'good' : 'neutral'}>{key ? t(key) : status}</Pill>
 }
 
 /**
@@ -50,7 +75,7 @@ export function PublishPill({ status }: { status: string }) {
  * Offset rather than keyset deliberately: admin lists are small, always
  * filtered, and an operator expects "page 4" to mean page 4.
  */
-export function Pager({
+export async function Pager({
   basePath,
   searchParams,
   page,
@@ -63,44 +88,46 @@ export function Pager({
   pageSize: number
   total: number
 }) {
+  const { t } = await uiI18n()
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
   return (
-    <div className="a-pager">
-      <span>
-        {from}–{to} of {total}
-      </span>
+    <nav className="a-pager" aria-label={t('ui.pagination')}>
+      <span>{t('ui.pager_range', { from, to, total })}</span>
       {page > 1 ? (
         <Link
           className="a-btn ghost small"
           href={`${basePath}${buildQuery(searchParams, { page: page - 1 })}`}
+          rel="prev"
         >
-          Previous
+          {t('common.previous')}
         </Link>
       ) : null}
       {page < pageCount ? (
         <Link
           className="a-btn ghost small"
           href={`${basePath}${buildQuery(searchParams, { page: page + 1 })}`}
+          rel="next"
         >
-          Next
+          {t('common.next')}
         </Link>
       ) : null}
-    </div>
+    </nav>
   )
 }
 
 /** Timestamps are rendered in Bali time — every date this product shows is one. */
-export function When({ value }: { value: Date | string | null }) {
+export async function When({ value }: { value: Date | string | null }) {
   if (!value) return <span className="a-muted">—</span>
   const date = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(date.getTime())) return <span className="a-muted">—</span>
 
+  const { intl } = await uiI18n()
   return (
-    <time dateTime={date.toISOString()} className="a-mono">
-      {new Intl.DateTimeFormat('en-GB', {
+    <time dateTime={date.toISOString()} className="a-when">
+      {new Intl.DateTimeFormat(intl, {
         dateStyle: 'medium',
         timeStyle: 'short',
         timeZone: 'Asia/Makassar',

@@ -9,6 +9,7 @@ import {
   regenerateRecoveryCodes,
   type EnrolmentResult,
 } from './actions'
+import { useAdminT } from '../../_ui/i18n-provider'
 
 /**
  * The three states this page can be in:
@@ -34,10 +35,11 @@ const panel: React.CSSProperties = {
   border: '1px solid var(--line)',
   borderRadius: 'var(--r-md)',
   padding: 20,
-  marginBottom: 16,
+  marginBlockEnd: 16,
 }
 
 export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secret, qrSvg }: Props) {
+  const { t } = useAdminT()
   const [confirmState, confirmAction, confirming] = useActionState<
     EnrolmentResult | null,
     FormData
@@ -54,12 +56,12 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
     <>
       {codes !== undefined && codes.length > 0 && (
         <div style={{ ...panel, borderColor: 'var(--orange)' }}>
-          <h2 style={{ fontSize: 17, marginBottom: 6 }}>Recovery codes</h2>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 12 }}>
-            Shown once. Store them somewhere you can reach without this account — each works a
-            single time.
+          <h2 style={{ fontSize: 17, marginBlockEnd: 6 }}>{t('security.recovery_title')}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 14, marginBlockEnd: 12 }}>
+            {t('security.recovery_shown_once')}
           </p>
           <ul
+            dir="ltr"
             style={{
               listStyle: 'none',
               padding: 0,
@@ -81,24 +83,23 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
 
       {!enabled && !pending && (
         <form action={beginEnrolment} style={panel}>
-          <h2 style={{ fontSize: 17, marginBottom: 6 }}>Set up</h2>
-          <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 14 }}>
-            Generates a secret for your authenticator app. Nothing changes until you confirm it with
-            a code, so closing this page cannot lock you out.
+          <h2 style={{ fontSize: 17, marginBlockEnd: 6 }}>{t('security.setup_title')}</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 14, marginBlockEnd: 14 }}>
+            {t('security.setup_text')}
           </p>
           <button type="submit" className="btn btn-orange">
-            Start setup
+            {t('security.start_setup')}
           </button>
         </form>
       )}
 
       {!enabled && pending && (
         <form action={confirmAction} style={panel}>
-          <h2 style={{ fontSize: 17, marginBottom: 6 }}>Scan and confirm</h2>
+          <h2 style={{ fontSize: 17, marginBlockEnd: 6 }}>{t('security.scan_title')}</h2>
 
           {qrSvg !== null && (
             <div
-              style={{ margin: '14px 0' }}
+              style={{ marginBlock: 14 }}
               // The SVG is generated server-side from our own secret; there is
               // no user input anywhere in it.
               dangerouslySetInnerHTML={{ __html: qrSvg }}
@@ -106,16 +107,19 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
           )}
 
           {secret !== null && (
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
-              Cannot scan?{' '}
-              <code style={{ fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBlockEnd: 14 }}>
+              {t('security.cannot_scan')}{' '}
+              <code
+                dir="ltr"
+                style={{ fontFamily: 'ui-monospace, monospace', wordBreak: 'break-all' }}
+              >
                 {secret}
               </code>
             </p>
           )}
 
-          <label htmlFor="code" style={{ display: 'block', fontSize: 14, marginBottom: 6 }}>
-            Six-digit code
+          <label htmlFor="code" style={{ display: 'block', fontSize: 14, marginBlockEnd: 6 }}>
+            {t('security.six_digit_code')}
           </label>
           <input
             id="code"
@@ -128,11 +132,14 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
             style={{ width: 140, marginInlineEnd: 10 }}
           />
           <button type="submit" className="btn btn-orange" disabled={confirming}>
-            {confirming ? 'Checking…' : 'Confirm'}
+            {confirming ? t('security.checking') : t('security.confirm')}
           </button>
 
           {confirmState !== null && !confirmState.ok && (
-            <p role="alert" style={{ color: 'var(--orange-deep)', marginTop: 10, fontSize: 14 }}>
+            <p
+              role="alert"
+              style={{ color: 'var(--orange-deep)', marginBlockStart: 10, fontSize: 14 }}
+            >
               {confirmState.message}
             </p>
           )}
@@ -142,13 +149,15 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
       {enabled && (
         <>
           <form action={answerChallenge} style={panel}>
-            <h2 style={{ fontSize: 17, marginBottom: 6 }}>Verify this session</h2>
-            <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 14 }}>
-              Two-factor is active. Enter a current code — or a recovery code — to unlock the admin
-              in this browser.
+            <h2 style={{ fontSize: 17, marginBlockEnd: 6 }}>{t('security.verify_title')}</h2>
+            <p style={{ color: 'var(--muted)', fontSize: 14, marginBlockEnd: 14 }}>
+              {t('security.verify_text')}
             </p>
-            <label htmlFor="challenge" style={{ display: 'block', fontSize: 14, marginBottom: 6 }}>
-              Code
+            <label
+              htmlFor="challenge"
+              style={{ display: 'block', fontSize: 14, marginBlockEnd: 6 }}
+            >
+              {t('security.code')}
             </label>
             <input
               id="challenge"
@@ -159,18 +168,17 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
               style={{ width: 200, marginInlineEnd: 10 }}
             />
             <button type="submit" className="btn btn-orange">
-              Verify
+              {t('security.verify')}
             </button>
           </form>
 
           <form action={regenAction} style={panel}>
-            <h2 style={{ fontSize: 17, marginBottom: 6 }}>Recovery codes</h2>
-            <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 14 }}>
-              {recoveryCodesRemaining} remaining. Replacing them invalidates the previous set
-              immediately.
+            <h2 style={{ fontSize: 17, marginBlockEnd: 6 }}>{t('security.recovery_title')}</h2>
+            <p style={{ color: 'var(--muted)', fontSize: 14, marginBlockEnd: 14 }}>
+              {t('security.recovery_remaining', { count: recoveryCodesRemaining })}
             </p>
-            <label htmlFor="regen" style={{ display: 'block', fontSize: 14, marginBottom: 6 }}>
-              Current code
+            <label htmlFor="regen" style={{ display: 'block', fontSize: 14, marginBlockEnd: 6 }}>
+              {t('security.current_code')}
             </label>
             <input
               id="regen"
@@ -181,11 +189,14 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
               style={{ width: 140, marginInlineEnd: 10 }}
             />
             <button type="submit" className="btn btn-ghost" disabled={regenerating}>
-              {regenerating ? 'Working…' : 'Replace codes'}
+              {regenerating ? t('security.working') : t('security.replace_codes')}
             </button>
 
             {regenState !== null && !regenState.ok && (
-              <p role="alert" style={{ color: 'var(--orange-deep)', marginTop: 10, fontSize: 14 }}>
+              <p
+                role="alert"
+                style={{ color: 'var(--orange-deep)', marginBlockStart: 10, fontSize: 14 }}
+              >
                 {regenState.message}
               </p>
             )}

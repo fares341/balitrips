@@ -1,10 +1,9 @@
 /* ===========================================================================
    Bali Trips — design tokens.
 
-   Ported verbatim from design/handoff/bt-styles.css :root, which is the
-   source of truth. The handoff README's token table is STALE and disagrees
-   with the CSS on fonts (it says Poppins; the CSS uses Outfit), on several
-   hex values, and on the wrap width. Trust this file, not the README.
+   Ported from design/handoff/bt-styles.css :root. The handoff README's
+   token table is STALE (fonts, several hex values, the wrap width). Trust
+   this file, not the README. The only typeface is Tajawal (src/styles/fonts.ts).
 
    Additions beyond the handoff, flagged inline: z-index and spacing scales,
    and sticky offsets derived from --nav-h. The original hard-coded five
@@ -20,21 +19,52 @@
   --palm-soft: #c9f7cf;
   --orange: #ff9000;
   --orange-deep: #e07e00;
+  /* ADDED: orange that can carry TEXT. #ff9000 on ivory is 2.2:1 and
+     --orange-deep 2.9:1 — both fail WCAG AA for copy. This is 4.6:1 on
+     --ivory-2 and 5.2:1 on --ivory. Use --orange for fills, pins and rules;
+     --orange-ink for any orange words. */
+  --orange-ink: #a35a00;
+  /* ADDED: ink that sits on an orange fill (5.2:1). White on #ff9000 is 2.3:1. */
+  --on-orange: #1b3f22;
   --ivory: #fffbf8;
   --ivory-2: #f4efe9;
 
   /* --- Neutrals --------------------------------------------------------- */
   --ink: #1c2a1f;
-  --muted: #6e7b6f;
+  /* Darkened from #6e7b6f (3.9:1 on --ivory-2) to clear AA on both surfaces. */
+  --muted: #5f6b60;
   --line: rgba(38, 85, 46, 0.14);
   --line-soft: rgba(38, 85, 46, 0.08);
   --white: #ffffff;
 
+  /* --- ADDED: feedback ---------------------------------------------------- */
+  /* Errors were drawn in --orange-deep, which is both a brand colour and
+     2.9:1 — an error has to read as an error and be legible. */
+  --danger: #b3261e;
+  --danger-soft: #fdecea;
+  --focus: #1b3f22;
+  --focus-halo: rgba(255, 144, 0, 0.55);
+
   /* --- Type ------------------------------------------------------------- */
-  /* Font families are injected by next/font in the root layout, which
-     supplies the hashed --font-outfit / --font-noor variables. */
-  --sans: var(--font-outfit), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --arabic: var(--font-noor), var(--font-tajawal), var(--font-outfit), sans-serif;
+  /* Tajawal for Arabic AND English (src/styles/fonts.ts injects the hashed
+     --font-tajawal variable in both root layouts). */
+  --sans: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
+  --arabic: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
+
+  /* ADDED: type scale. A 1.25 ratio off a 16px body; Arabic body steps up one
+     notch in base.css because Tajawal's Arabic has a small x-height. */
+  --fs-xs: 12.5px;
+  --fs-sm: 14px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 22px;
+  --fs-xl: clamp(24px, 3.2vw, 30px);
+  --fs-2xl: clamp(28px, 4.2vw, 42px);
+  --fs-display: clamp(44px, 8.4vw, 104px);
+  --lh-body: 1.6;
+  --lh-body-ar: 1.85;
+  --lh-head: 1.12;
+  --lh-head-ar: 1.35;
 
   /* --- Radii ------------------------------------------------------------ */
   --r-sm: 10px;
@@ -53,11 +83,17 @@
   --maxw: 1240px;
   --gutter: 20px;
   --nav-h: 64px;
+  /* ADDED: minimum interactive size (WCAG 2.5.5 / Apple HIG). */
+  --tap: 44px;
 
   /* --- ADDED: sticky offsets, derived rather than hard-coded ------------ */
   --sticky-gap: 12px;
-  --sticky-top: calc(var(--nav-h) + var(--sticky-gap));
-  --scroll-pad: calc(var(--nav-h) + 16px);
+  /* Height of the header's second (nav) row; 0 where the row is hidden. The
+     sticky offsets previously ignored it, so desktop sidebars slid under it. */
+  --nav-row-h: 0px;
+  --head-h: calc(var(--nav-h) + var(--nav-row-h));
+  --sticky-top: calc(var(--head-h) + var(--sticky-gap));
+  --scroll-pad: calc(var(--head-h) + 16px);
 
   /* --- ADDED: z-index scale --------------------------------------------- */
   /* The handoff scattered 20 raw z-index values from 5 to 300 with no
@@ -94,5 +130,12 @@
   :root {
     --gutter: 40px;
     --nav-h: 76px;
+  }
+}
+
+/* Matches the header's 900px breakpoint, where the nav row appears. */
+@media (min-width: 900px) {
+  :root {
+    --nav-row-h: 52px;
   }
 }

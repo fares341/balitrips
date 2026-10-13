@@ -7,6 +7,7 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -25,6 +26,7 @@ export default async function PlacesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -73,12 +75,12 @@ export default async function PlacesPage({
   return (
     <>
       <PageHead
-        title="Map places"
-        description={`${freeRow?.value ?? 0} place(s) are free to view. Everything else is redacted server-side for unentitled visitors — not blurred in CSS.`}
+        title={t('places.title')}
+        description={t('places.description', { count: freeRow?.value ?? 0 })}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/places/new')}>
-              New place
+              {t('places.new')}
             </Link>
           ) : null
         }
@@ -87,39 +89,39 @@ export default async function PlacesPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="access">Access</label>
+          <label htmlFor="access">{t('places.access')}</label>
           <select className="a-select" id="access" name="access" defaultValue={access ?? ''}>
-            <option value="">Any</option>
-            <option value="free">Free</option>
-            <option value="locked">Requires entitlement</option>
+            <option value="">{t('common.all')}</option>
+            <option value="free">{t('places.free')}</option>
+            <option value="locked">{t('places.locked')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('places.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No places match those filters.</Empty>
+        <Empty>{t('places.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Region</th>
-              <th>Coordinates</th>
-              <th>Access</th>
-              <th>Status</th>
+              <th>{t('common.name')}</th>
+              <th>{t('places.col_category')}</th>
+              <th>{t('places.col_region')}</th>
+              <th>{t('places.col_coordinates')}</th>
+              <th>{t('places.col_access')}</th>
+              <th>{t('common.status')}</th>
               <th />
             </tr>
           </thead>
@@ -145,7 +147,7 @@ export default async function PlacesPage({
                 </td>
                 <td>
                   {row.isFree ? (
-                    <Pill tone="good">free</Pill>
+                    <Pill tone="good">{t('places.pill_free')}</Pill>
                   ) : (
                     <Pill tone="warn">{row.requiredEntitlement}</Pill>
                   )}
@@ -160,7 +162,7 @@ export default async function PlacesPage({
                       action={setPlaceFree.bind(null, row.id, !row.isFree)}
                     >
                       <button className="a-btn ghost small" type="submit">
-                        {row.isFree ? 'Lock' : 'Make free'}
+                        {row.isFree ? t('places.lock') : t('places.make_free')}
                       </button>
                     </form>
                   ) : null}

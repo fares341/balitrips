@@ -41,12 +41,21 @@ export function minorUnitExponent(currency: string): number {
 /** Format for display, localized. Never hard-code a symbol. */
 export function formatMoney(minor: number, currency: string, locale: string): string {
   const exponent = minorUnitExponent(currency)
-  return new Intl.NumberFormat(locale, {
+  const text = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency.toUpperCase(),
     minimumFractionDigits: exponent,
     maximumFractionDigits: exponent,
   }).format(minor / 10 ** exponent)
+  // Inside Arabic text the bidi algorithm splits "US$ 59.00" and moves the
+  // symbol ("$US 59.00"). LRI…PDI isolates the amount as one left-to-right
+  // run wherever the string lands — JSX, attributes, emails, PDFs.
+  return isRtlLocale(locale) ? `\u2066${text}\u2069` : text
+}
+
+function isRtlLocale(locale: string): boolean {
+  const language = locale.toLowerCase().split(/[-_]/)[0]
+  return language === 'ar' || language === 'he' || language === 'fa' || language === 'ur'
 }
 
 /**

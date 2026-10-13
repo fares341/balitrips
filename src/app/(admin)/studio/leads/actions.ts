@@ -9,6 +9,7 @@ import { contactMessages, customTripRequests } from '@/db/schema'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fenum } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { CONTACT_STATUSES, TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { requireCapability } from '../../_lib/session'
@@ -27,6 +28,7 @@ type Outcome = { ok: string } | { err: string }
  */
 export async function setTripRequestStatus(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -39,7 +41,7 @@ export async function setTripRequestStatus(id: string, form: FormData): Promise<
         .where(eq(customTripRequests.id, id))
         .limit(1)
 
-      if (!before) throw new Error('That request no longer exists')
+      if (!before) throw new Error(t('leads.err_no_request'))
 
       const [after] = await tx
         .update(customTripRequests)
@@ -66,7 +68,7 @@ export async function setTripRequestStatus(id: string, form: FormData): Promise<
       await logRequestActivity(id, 'status', { from: previous, status, by: session.userId })
       await notifyRequestStatus(id, status)
     }
-    outcome = { ok: `Request marked ${status}.` }
+    outcome = { ok: t('leads.ok_request_marked', { status: t(`leads.status_${status}`) }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -77,6 +79,7 @@ export async function setTripRequestStatus(id: string, form: FormData): Promise<
 
 export async function setContactMessageStatus(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('leads.read')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -89,7 +92,7 @@ export async function setContactMessageStatus(id: string, form: FormData): Promi
         .where(eq(contactMessages.id, id))
         .limit(1)
 
-      if (!before) throw new Error('That message no longer exists')
+      if (!before) throw new Error(t('leads.err_no_message'))
 
       const [after] = await tx
         .update(contactMessages)
@@ -110,7 +113,7 @@ export async function setContactMessageStatus(id: string, form: FormData): Promi
       )
     })
 
-    outcome = { ok: `Message marked ${status}.` }
+    outcome = { ok: t('leads.ok_message_marked', { status: t(`leads.status_${status}`) }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

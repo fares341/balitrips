@@ -9,6 +9,7 @@ import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { LEAD_TONES, TRIP_STATUSES } from '../../../_lib/lead-statuses'
 import { requireCapability } from '../../../_lib/session'
 import { Field, MoneyField, TextArea, TextInput } from '../../../_ui/field'
@@ -38,6 +39,11 @@ export default async function LeadDetailPage({
   const mayQuote = can(session.role, 'config.write') || can(session.role, 'orders.refund')
   const { id } = await params
   const query = await searchParams
+  const { t, intl } = await getAdminI18n()
+  /** Stored status → label; an unknown value shows as stored. */
+  const statusLabel = (value: string) =>
+    t(`leads.status_${value}`) === `leads.status_${value}` ? value : t(`leads.status_${value}`)
+  const yesNo = (value: boolean | null) => (value ? t('leads.yes') : t('leads.no'))
   if (!isUuid(id)) notFound()
 
   const [row] = await db
@@ -63,35 +69,38 @@ export default async function LeadDetailPage({
     .orderBy(desc(customTripDocuments.version))
 
   const facts: [string, string][] = [
-    ['E-mail', request.email ?? '—'],
-    ['Phone', request.phone ?? '—'],
-    ['Dates', `${request.startDate ?? '—'}${request.endDate ? ` → ${request.endDate}` : ''}`],
-    ['Days', request.days === null ? '—' : String(request.days)],
-    ['Travellers', String(request.travellers ?? '—')],
-    ['Trip type', request.theme ?? '—'],
+    [t('leads.email'), request.email ?? '—'],
+    [t('leads.phone'), request.phone ?? '—'],
     [
-      'Budget per person',
+      t('leads.dates'),
+      `${request.startDate ?? '—'}${request.endDate ? ` – ${request.endDate}` : ''}`,
+    ],
+    [t('leads.days'), request.days === null ? '—' : String(request.days)],
+    [t('leads.travellers'), String(request.travellers ?? '—')],
+    [t('leads.trip_type'), request.theme ?? '—'],
+    [
+      t('leads.budget_per_person'),
       request.budgetPerPersonMinor !== null && request.currency
-        ? formatMoney(request.budgetPerPersonMinor, request.currency, 'en')
+        ? formatMoney(request.budgetPerPersonMinor, request.currency, intl)
         : '—',
     ],
-    ['Interests', (request.interests ?? []).join(', ') || '—'],
-    ['Wants driver', request.wantsDriver ? 'yes' : 'no'],
-    ['Children', request.hasChildren ? 'yes' : 'no'],
-    ['Wants VIP map', request.wantsVipMap ? 'yes' : 'no'],
-    ['Luxury restaurants', request.wantsLuxuryDining ? 'yes' : 'no'],
-    ['Adventure', request.wantsAdventure ? 'yes' : 'no'],
-    ['Preferred areas', (request.preferredAreas ?? []).join(', ') || '—'],
+    [t('leads.interests'), (request.interests ?? []).join(', ') || '—'],
+    [t('leads.wants_driver'), yesNo(request.wantsDriver)],
+    [t('leads.children'), yesNo(request.hasChildren)],
+    [t('leads.wants_vip_map'), yesNo(request.wantsVipMap)],
+    [t('leads.luxury_dining'), yesNo(request.wantsLuxuryDining)],
+    [t('leads.adventure'), yesNo(request.wantsAdventure)],
+    [t('leads.preferred_areas'), (request.preferredAreas ?? []).join(', ') || '—'],
   ]
 
   return (
     <>
       <PageHead
-        title={`Custom trip — ${request.name ?? 'Unnamed'}`}
-        description="Upload a personal PDF; it is delivered to the traveller's account watermarked with their details, never as a direct link."
+        title={t('leads.detail_title', { name: request.name ?? t('leads.unnamed') })}
+        description={t('leads.detail_description')}
         actions={
           <Link className="a-btn ghost" href={adminHref('/leads')}>
-            Back to leads
+            {t('leads.back')}
           </Link>
         }
       />
@@ -99,7 +108,8 @@ export default async function LeadDetailPage({
 
       <div className="a-card">
         <h2>
-          Request <Pill tone={LEAD_TONES[request.status] ?? 'neutral'}>{request.status}</Pill>
+          {t('leads.request')}{' '}
+          <Pill tone={LEAD_TONES[request.status] ?? 'neutral'}>{statusLabel(request.status)}</Pill>
         </h2>
         <Table>
           <tbody>
@@ -110,11 +120,11 @@ export default async function LeadDetailPage({
               </tr>
             ))}
             <tr>
-              <th>Traveller notes</th>
+              <th>{t('leads.traveller_notes')}</th>
               <td className="a-json">{request.notes ?? '—'}</td>
             </tr>
             <tr>
-              <th>Received</th>
+              <th>{t('leads.received')}</th>
               <td>
                 <When value={request.createdAt} />
               </td>
@@ -131,42 +141,36 @@ export default async function LeadDetailPage({
             className="a-select"
             name="status"
             defaultValue={request.status}
-            aria-label="Status"
+            aria-label={t('leads.status')}
           >
             {TRIP_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {statusLabel(value)}
               </option>
             ))}
           </select>
           <button className="a-btn" type="submit">
-            Update status
+            {t('leads.update_status')}
           </button>
-          <span className="a-hint">
-            The traveller is notified when the request is linked to an account.
-          </span>
+          <span className="a-hint">{t('leads.status_hint')}</span>
         </form>
       </div>
 
       <div className="a-card">
-        <h2>Account</h2>
+        <h2>{t('leads.account')}</h2>
         {row.account ? (
           <p>
-            Linked to <strong>{row.account}</strong>.{' '}
-            <Link href={adminHref(`/customers/${request.userId}`)}>Customer page →</Link>
+            {t('leads.linked_to')} <strong>{row.account}</strong>.{' '}
+            <Link href={adminHref(`/customers/${request.userId}`)}>{t('leads.customer_page')}</Link>
           </p>
         ) : (
           <form action={linkRequestToUser.bind(null, id)} className="a-row">
-            <Field
-              label="Account e-mail"
-              htmlFor="email"
-              hint="Guest requests must be linked before the traveller can open an uploaded plan."
-            >
+            <Field label={t('leads.account_email')} htmlFor="email" hint={t('leads.link_hint')}>
               <TextInput id="email" name="email" defaultValue={request.email ?? ''} />
             </Field>
             <div className="a-actions">
               <button className="a-btn" type="submit">
-                Link
+                {t('leads.link')}
               </button>
             </div>
           </form>
@@ -175,38 +179,36 @@ export default async function LeadDetailPage({
 
       <div className="a-card">
         <h2>
-          Price{' '}
+          {t('leads.price')}{' '}
           {request.paidOrderId !== null ? (
-            <Pill tone="good">paid</Pill>
+            <Pill tone="good">{t('leads.paid')}</Pill>
           ) : request.quoteMinor !== null ? (
-            <Pill tone="info">quoted</Pill>
+            <Pill tone="info">{t('leads.quoted')}</Pill>
           ) : (
-            <Pill tone="neutral">no quote</Pill>
+            <Pill tone="neutral">{t('leads.no_quote')}</Pill>
           )}
         </h2>
         {request.quoteMinor !== null && request.quoteCurrency !== null ? (
           <p>
-            <strong>{formatMoney(request.quoteMinor, request.quoteCurrency, 'en')}</strong>
+            <strong>{formatMoney(request.quoteMinor, request.quoteCurrency, intl)}</strong>
             {request.quotedAt ? (
               <>
                 {' '}
-                · quoted <When value={request.quotedAt} />
+                · {t('leads.quoted_on')} <When value={request.quotedAt} />
               </>
             ) : null}
             {request.paidOrderId !== null ? (
               <>
                 {' '}
-                · paid with{' '}
+                · {t('leads.paid_with')}{' '}
                 <Link href={adminHref(`/orders/${request.paidOrderId}`)} className="a-mono">
-                  {row.paidOrderNumber ?? 'order'}
+                  {row.paidOrderNumber ?? t('leads.order')}
                 </Link>
               </>
             ) : null}
           </p>
         ) : (
-          <p className="a-muted">
-            No price yet. Once set, the traveller sees it in their account with a Pay button.
-          </p>
+          <p className="a-muted">{t('leads.no_price_hint')}</p>
         )}
         {mayQuote && request.paidOrderId === null ? (
           <form action={setCustomQuote.bind(null, id)} className="a-row">
@@ -218,7 +220,7 @@ export default async function LeadDetailPage({
             />
             <div className="a-actions">
               <button className="a-btn" type="submit">
-                Save price &amp; notify
+                {t('leads.save_price')}
               </button>
             </div>
           </form>
@@ -227,24 +229,22 @@ export default async function LeadDetailPage({
           <form action={setCustomQuote.bind(null, id)} className="a-inline-form">
             <input type="hidden" name="quoteMinor" value="" />
             <button className="a-btn ghost small" type="submit">
-              Withdraw price
+              {t('leads.withdraw_price')}
             </button>
           </form>
         ) : null}
-        {!mayQuote ? (
-          <p className="a-hint">Only managers with orders or configuration rights set prices.</p>
-        ) : null}
+        {!mayQuote ? <p className="a-hint">{t('leads.price_managers_only')}</p> : null}
       </div>
 
       <div className="a-card">
-        <h2>Plan PDF</h2>
+        <h2>{t('leads.plan_pdf')}</h2>
         <form
           action={uploadCustomPdf.bind(null, id)}
           className="a-row"
           encType="multipart/form-data"
         >
           <div className="a-field">
-            <label htmlFor="file">PDF (max 20 MB)</label>
+            <label htmlFor="file">{t('leads.pdf_label')}</label>
             <input
               className="a-input"
               id="file"
@@ -256,30 +256,29 @@ export default async function LeadDetailPage({
           </div>
           <div className="a-field">
             <label>
-              <input type="checkbox" name="alsoWhatsapp" defaultChecked /> Also send on WhatsApp
+              <input type="checkbox" name="alsoWhatsapp" defaultChecked />{' '}
+              {t('leads.also_whatsapp')}
             </label>
             <span className="a-hint">
-              {row.whatsappOptIn
-                ? 'Sends a link to the secure viewer in their account.'
-                : 'The traveller has not opted in to WhatsApp (or the request is not linked); only in-site and e-mail will be sent.'}
+              {row.whatsappOptIn ? t('leads.whatsapp_hint_on') : t('leads.whatsapp_hint_off')}
             </span>
           </div>
           <div className="a-actions">
             <button className="a-btn" type="submit">
-              Upload &amp; notify
+              {t('leads.upload')}
             </button>
           </div>
         </form>
         {docs.length === 0 ? (
-          <Empty>No plan uploaded yet.</Empty>
+          <Empty>{t('leads.no_docs')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Version</th>
-                <th>File</th>
-                <th>Uploaded</th>
-                <th>Status</th>
+                <th>{t('leads.version')}</th>
+                <th>{t('leads.file')}</th>
+                <th>{t('leads.uploaded')}</th>
+                <th>{t('leads.status')}</th>
                 <th />
               </tr>
             </thead>
@@ -289,7 +288,9 @@ export default async function LeadDetailPage({
                   <td>v{doc.version}</td>
                   <td>
                     {doc.filename}
-                    <div className="a-muted">{Math.round(doc.bytes / 1024)} KB</div>
+                    <div className="a-muted">
+                      {new Intl.NumberFormat(intl).format(Math.round(doc.bytes / 1024))} KB
+                    </div>
                   </td>
                   <td>
                     <When value={doc.createdAt} />
@@ -297,9 +298,9 @@ export default async function LeadDetailPage({
                   </td>
                   <td>
                     {doc.withdrawnAt ? (
-                      <Pill tone="neutral">withdrawn</Pill>
+                      <Pill tone="neutral">{t('leads.withdrawn')}</Pill>
                     ) : (
-                      <Pill tone="good">delivered</Pill>
+                      <Pill tone="good">{t('leads.delivered')}</Pill>
                     )}
                   </td>
                   <td>
@@ -311,13 +312,13 @@ export default async function LeadDetailPage({
                         >
                           <input type="hidden" name="documentId" value={doc.id} />
                           <button className="a-btn small" type="submit">
-                            Send via WhatsApp
+                            {t('leads.send_whatsapp')}
                           </button>
                         </form>
                         <form action={withdrawCustomPdf.bind(null, id)} className="a-inline-form">
                           <input type="hidden" name="documentId" value={doc.id} />
                           <button className="a-btn danger small" type="submit">
-                            Withdraw
+                            {t('leads.withdraw')}
                           </button>
                         </form>
                       </div>
@@ -331,8 +332,8 @@ export default async function LeadDetailPage({
       </div>
 
       <form className="a-card" action={saveRequestNotes.bind(null, id)}>
-        <h2>Internal notes</h2>
-        <Field label="Only staff see these" htmlFor="adminNotes">
+        <h2>{t('leads.internal_notes')}</h2>
+        <Field label={t('leads.internal_notes_label')} htmlFor="adminNotes">
           <TextArea
             id="adminNotes"
             name="adminNotes"
@@ -342,7 +343,7 @@ export default async function LeadDetailPage({
         </Field>
         <div className="a-actions">
           <button className="a-btn ghost" type="submit">
-            Save notes
+            {t('leads.save_notes')}
           </button>
         </div>
       </form>

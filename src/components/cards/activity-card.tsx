@@ -115,25 +115,14 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
             paddingTop: 10,
           }}
         >
-          <div>
-            <span
-              className="muted"
-              style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.06em',
-              }}
-            >
-              {t('c_from')}
-            </span>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--orange-deep)' }}>
-              {formatMoney(activity.priceMinor, activity.currency, locale)}
-              <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>
-                {' '}
-                {t('c_pp')}
+          <div className="bt-card-price">
+            <span className="bt-card-price-l">{t('c_from')}</span>
+            <span>
+              <span className="bt-card-price-v bt-money">
+                {formatMoney(activity.priceMinor, activity.currency, locale)}
               </span>
-            </div>
+              <span className="bt-card-price-u">{t('c_pp')}</span>
+            </span>
           </div>
         </div>
 

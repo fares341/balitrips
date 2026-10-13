@@ -16,9 +16,11 @@ import { notifyPlanActivated } from '@/lib/notify/plans'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fbool, freq, fstr, fuuid } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { clearAllVerifications, clearSessionVerification } from '../../_lib/two-factor'
+import type { Translate } from '../../_i18n'
 
 /**
  * Customer and staff account administration.
@@ -62,24 +64,25 @@ const detail = (id: string) => adminHref(`/customers/${id}`)
  */
 export async function changeRole(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('roles.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const nextRole = freq(form, 'role', 'Role')
+    const nextRole = freq(form, 'role', t('customers.role'))
     if (!isRole(nextRole)) {
-      throw new Error(`"${nextRole}" is not a role. Expected one of ${ROLES.join(', ')}.`)
+      throw new Error(t('customers.err_not_a_role', { role: nextRole, roles: ROLES.join(', ') }))
     }
 
     if (userId === session.userId) {
-      throw new Error(
-        'You cannot change your own role. Ask another admin — a self-demotion here can lock everyone out.',
-      )
+      throw new Error(t('customers.err_own_role'))
     }
 
     const revoked = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
-      if (before.role === nextRole) throw new Error(`That account is already ${nextRole}.`)
+      if (!before) throw new Error(t('customers.err_no_account'))
+      if (before.role === nextRole) {
+        throw new Error(t('customers.err_already_role', { role: t(`customers.role_${nextRole}`) }))
+      }
 
       await tx.update(users).set({ role: nextRole }).where(eq(users.id, userId))
 
@@ -108,7 +111,7 @@ export async function changeRole(userId: string, form: FormData): Promise<void> 
     })
 
     outcome = {
-      ok: `Role changed to ${nextRole}. ${revoked} session${revoked === 1 ? '' : 's'} revoked, so the change is in force now rather than whenever a cached session expired.`,
+      ok: t('customers.ok_role_changed', { role: t(`customers.role_${nextRole}`), count: revoked }),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -136,24 +139,24 @@ async function assertMayRevokeFor(
   targetRole: string,
   actorId: string,
   targetId: string,
+  t: Translate,
 ): Promise<void> {
   if (!isRole(targetRole) || !isElevated(targetRole)) return
   // Signing yourself out is always allowed — it is the safe direction.
   if (actorId === targetId) return
   if (can(actorRole, 'roles.write')) return
 
-  throw new Error(
-    'Only an admin can end a staff or admin session. Ask an admin, or have the account sign out itself.',
-  )
+  throw new Error(t('customers.err_revoke_elevated'))
 }
 
 /** Sign one device out. Used when a customer reports a lost phone. */
 export async function revokeSession(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('customers.read')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const sessionId = fuuid(form, 'sessionId', 'Session')
+    const sessionId = fuuid(form, 'sessionId', t('customers.session'))
 
     await db.transaction(async (tx) => {
       const [target] = await tx
@@ -162,8 +165,8 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
         .where(eq(users.id, userId))
         .limit(1)
 
-      if (!target) throw new Error('That account no longer exists')
-      await assertMayRevokeFor(session.role, target.role, session.userId, userId)
+      if (!target) throw new Error(t('customers.err_no_account'))
+      await assertMayRevokeFor(session.role, target.role, session.userId, userId, t)
 
       const [before] = await tx
         .select()
@@ -174,7 +177,7 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
       // Scoped to the user in the WHERE clause rather than checked after the
       // read: without it, a forged `sessionId` would let a staff member end
       // any session in the system from a page they are allowed to open.
-      if (!before) throw new Error('That session does not belong to this account')
+      if (!before) throw new Error(t('customers.err_session_not_owned'))
 
       await tx.delete(sessions).where(eq(sessions.id, sessionId))
       await clearSessionVerification(sessionId, tx)
@@ -197,7 +200,7 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
       )
     })
 
-    outcome = { ok: 'Session revoked.' }
+    outcome = { ok: t('customers.ok_session_revoked') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -209,14 +212,15 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
 /** Sign every device out at once. */
 export async function revokeAllSessions(userId: string): Promise<void> {
   const session = await requireCapability('customers.read')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const revoked = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!user) throw new Error('That account no longer exists')
+      if (!user) throw new Error(t('customers.err_no_account'))
 
-      await assertMayRevokeFor(session.role, user.role, session.userId, userId)
+      await assertMayRevokeFor(session.role, user.role, session.userId, userId, t)
 
       const killed = await tx
         .delete(sessions)
@@ -240,7 +244,7 @@ export async function revokeAllSessions(userId: string): Promise<void> {
       return killed.length
     })
 
-    outcome = { ok: `${revoked} session${revoked === 1 ? '' : 's'} revoked.` }
+    outcome = { ok: t('customers.ok_sessions_revoked', { count: revoked }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -264,14 +268,15 @@ export async function revokeAllSessions(userId: string): Promise<void> {
  */
 export async function deleteCustomer(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('customers.export')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const reason = fstr(form, 'reason')
-    const confirmation = freq(form, 'confirm', 'Confirmation')
+    const confirmation = freq(form, 'confirm', t('customers.confirmation'))
 
     if (userId === session.userId) {
-      throw new Error('You cannot delete your own account from here.')
+      throw new Error(t('customers.err_delete_self'))
     }
 
     await db.transaction(async (tx) => {
@@ -281,13 +286,13 @@ export async function deleteCustomer(userId: string, form: FormData): Promise<vo
         .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1)
 
-      if (!before) throw new Error('That account is already deleted, or no longer exists')
+      if (!before) throw new Error(t('customers.err_already_deleted'))
 
       // Typing the address is the whole confirmation step: a bare "are you
       // sure" is clicked through, and this action cannot be undone from the
       // UI.
       if (confirmation.trim().toLowerCase() !== before.email.toLowerCase()) {
-        throw new Error('Type the account’s e-mail address exactly to confirm the deletion.')
+        throw new Error(t('customers.err_confirm_email'))
       }
 
       const deletedAt = new Date()
@@ -346,7 +351,7 @@ export async function deleteCustomer(userId: string, form: FormData): Promise<vo
     })
 
     outcome = {
-      ok: 'Account erased and signed out everywhere. Order history is preserved — it is a financial record, not consent-based data.',
+      ok: t('customers.ok_erased'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -359,13 +364,14 @@ export async function deleteCustomer(userId: string, form: FormData): Promise<vo
 /** Reverse a soft delete. The personal columns are gone for good. */
 export async function restoreCustomer(userId: string): Promise<void> {
   const session = await requireCapability('customers.export')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
-      if (before.deletedAt === null) throw new Error('That account is not deleted')
+      if (!before) throw new Error(t('customers.err_no_account'))
+      if (before.deletedAt === null) throw new Error(t('customers.err_not_deleted'))
 
       await tx.update(users).set({ deletedAt: null }).where(eq(users.id, userId))
 
@@ -383,7 +389,7 @@ export async function restoreCustomer(userId: string): Promise<void> {
     })
 
     outcome = {
-      ok: 'Account restored. Its name, phone and e-mail were pseudonymised on deletion and cannot be recovered — the customer must set them again.',
+      ok: t('customers.ok_restored'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -400,38 +406,37 @@ export async function restoreCustomer(userId: string): Promise<void> {
  */
 export async function updateCustomerProfile(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('roles.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const name = (fstr(form, 'name') ?? '').trim().slice(0, 128)
-    let email = freq(form, 'email', 'Email').trim().toLowerCase()
+    let email = freq(form, 'email', t('customers.email')).trim().toLowerCase()
     const phoneRaw = (fstr(form, 'phone') ?? '').trim()
     const countryRaw = (fstr(form, 'country') ?? '').trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 256) {
-      throw new Error('Enter a valid e-mail address.')
+      throw new Error(t('customers.err_email_invalid'))
     }
     if (phoneRaw !== '' && !/^[+0-9][0-9 ()./-]{4,31}$/.test(phoneRaw)) {
-      throw new Error('Enter the phone in international format, e.g. +971 50 123 4567.')
+      throw new Error(t('customers.err_phone_format'))
     }
     if (countryRaw !== '' && !/^[A-Za-z]{2}$/.test(countryRaw)) {
-      throw new Error('Country must be a two-letter code, e.g. AE.')
+      throw new Error(t('customers.err_country_code'))
     }
 
     const revoked = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
+      if (!before) throw new Error(t('customers.err_no_account'))
 
       // Phone-only accounts carry a reserved placeholder address that follows
       // the number. Staff may replace it with a real e-mail, never invent one.
       const phoneForPlaceholder = normalizePhone(phoneRaw)
       if (isPlaceholderEmail(email)) {
         if (!isPlaceholderEmail(before.email) || email !== before.email.toLowerCase()) {
-          throw new Error('That e-mail domain is reserved for phone-only accounts.')
+          throw new Error(t('customers.err_reserved_domain'))
         }
         if (phoneForPlaceholder === null) {
-          throw new Error(
-            'This account signs in with its mobile number only — add a real e-mail before removing the number.',
-          )
+          throw new Error(t('customers.err_phone_only_needs_number'))
         }
         email = placeholderEmailFor(phoneForPlaceholder)
       }
@@ -442,7 +447,7 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
           .from(users)
           .where(and(sql`lower(${users.email}) = ${email}`, ne(users.id, userId)))
           .limit(1)
-        if (taken) throw new Error('Another account already uses that e-mail.')
+        if (taken) throw new Error(t('customers.err_email_taken'))
       }
 
       const phoneNormalized = normalizePhone(phoneRaw)
@@ -452,7 +457,7 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
           .from(users)
           .where(and(eq(users.phoneNormalized, phoneNormalized), ne(users.id, userId)))
           .limit(1)
-        if (owner) throw new Error('Another account already uses that mobile number.')
+        if (owner) throw new Error(t('customers.err_phone_taken'))
       }
       const next = {
         name: name === '' ? null : name,
@@ -497,8 +502,8 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
     outcome = {
       ok:
         revoked > 0
-          ? `Profile updated. E-mail changed, so ${revoked} session(s) were signed out.`
-          : 'Profile updated.',
+          ? t('customers.ok_profile_email_changed', { count: revoked })
+          : t('customers.ok_profile_updated'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -515,15 +520,16 @@ export async function updateCustomerProfile(userId: string, form: FormData): Pro
  */
 export async function setAccountActive(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('security.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
     const active = fstr(form, 'active') === 'true'
-    if (!active && userId === session.userId) throw new Error('You cannot deactivate yourself.')
+    if (!active && userId === session.userId) throw new Error(t('customers.err_deactivate_self'))
     const killed = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
+      if (!before) throw new Error(t('customers.err_no_account'))
       if (before.status === 'banned') {
-        throw new Error('This account is banned. Lift the ban from the Protection panel instead.')
+        throw new Error(t('customers.err_banned_use_protection'))
       }
       // إعادة التفعيل ترفع أيضاً "التعليق لحين المراجعة" (suspended) وتمسح سببه.
       await tx
@@ -568,9 +574,7 @@ export async function setAccountActive(userId: string, form: FormData): Promise<
       })
     }
     outcome = {
-      ok: active
-        ? 'Account activated.'
-        : `Account deactivated. ${killed} session(s) ended; it cannot sign in until reactivated.`,
+      ok: active ? t('customers.ok_activated') : t('customers.ok_deactivated', { count: killed }),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -587,9 +591,10 @@ export async function setAccountActive(userId: string, form: FormData): Promise<
  */
 export async function grantPlanToCustomer(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('entitlements.grant')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
-    const planId = fuuid(form, 'planId', 'Plan')
+    const planId = fuuid(form, 'planId', t('customers.plan'))
     const replace = fbool(form, 'replace')
     const reason = fstr(form, 'reason')?.slice(0, 500) ?? null
 
@@ -599,17 +604,17 @@ export async function grantPlanToCustomer(userId: string, form: FormData): Promi
         .from(users)
         .where(eq(users.id, userId))
         .limit(1)
-      if (!account) throw new Error('That account no longer exists')
-      if (account.deletedAt) throw new Error('This account has been erased.')
+      if (!account) throw new Error(t('customers.err_no_account'))
+      if (account.deletedAt) throw new Error(t('customers.err_erased'))
 
       const [plan] = await tx
         .select()
         .from(plans)
         .where(and(eq(plans.id, planId), isNull(plans.deletedAt)))
         .limit(1)
-      if (!plan) throw new Error('That plan no longer exists')
+      if (!plan) throw new Error(t('customers.err_no_plan'))
       if (!isEntitlementKind(plan.entitlementKind)) {
-        throw new Error(`Plan has an unknown access kind "${plan.entitlementKind}".`)
+        throw new Error(t('customers.err_unknown_kind', { kind: plan.entitlementKind }))
       }
 
       const now = new Date()
@@ -682,8 +687,10 @@ export async function grantPlanToCustomer(userId: string, form: FormData): Promi
 
     outcome = {
       ok:
-        `Granted plan ${summary.slug}.` +
-        (summary.revoked > 0 ? ` ${summary.revoked} previous plan grant(s) revoked.` : ''),
+        t('customers.ok_granted', { plan: summary.slug }) +
+        (summary.revoked > 0
+          ? ` ${t('customers.ok_granted_revoked', { count: summary.revoked })}`
+          : ''),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error

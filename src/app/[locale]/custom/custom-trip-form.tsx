@@ -562,9 +562,7 @@ function Proposal({
         )}
         {answers.days !== null && (
           <Tag variant="forest">
-            {answers.days === 1
-              ? t('dp_days_one')
-              : `${format.number(answers.days)} ${t('c_days')}`}
+            {answers.days === 1 ? t('dp_days_one') : t('c_days_n', { n: answers.days })}
           </Tag>
         )}
         <Tag variant="forest">

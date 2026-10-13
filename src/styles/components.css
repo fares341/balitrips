@@ -27,19 +27,27 @@
    Type scale beyond the base reset
    --------------------------------------------------------------------------- */
 .display {
-  font-size: clamp(38px, 11vw, 92px);
-  font-weight: 800;
-  line-height: 0.98;
-  letter-spacing: -0.03em;
+  font-size: var(--fs-display);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
 }
 
+/*
+ * Section titles were clamp(30px, 7vw, 54px): a four-line, 54px headline on
+ * every band left the hero nothing to be louder than. The hero keeps the big
+ * type; bands step down to a size that sets in one or two lines.
+ */
+.section-title,
 h2.section-title {
-  font-size: clamp(30px, 7vw, 54px);
+  font-size: var(--fs-2xl);
   font-weight: 800;
+  line-height: 1.1;
 }
 
 h3 {
-  font-size: clamp(20px, 5vw, 28px);
+  font-size: clamp(19px, 2.4vw, 24px);
+  font-weight: 700;
 }
 
 /* Arabic gets no negative tracking and needs more leading. */
@@ -47,30 +55,45 @@ h3 {
 [dir='rtl'] h2,
 [dir='rtl'] h3,
 [dir='rtl'] h4,
-[dir='rtl'] .display {
+[dir='rtl'] .section-title {
   letter-spacing: 0;
-  line-height: 1.2;
+  line-height: var(--lh-head-ar);
 }
 
+[dir='rtl'] .display {
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+/*
+ * Kicker above a heading. Sentence case, no tracking: tracked capitals were
+ * template chrome, meaningless in Arabic (no case), and the orange failed
+ * contrast. Orange survives as the short rule; the words use --orange-ink.
+ */
 .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: var(--fs-sm);
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--orange);
-}
-
-[dir='rtl'] .eyebrow {
   letter-spacing: 0;
+  color: var(--orange-ink);
 }
 
 .lede {
-  font-size: clamp(16px, 2.4vw, 20px);
-  line-height: 1.7;
+  font-size: clamp(16.5px, 1.6vw, 19px);
+  line-height: 1.65;
   color: var(--forest-soft);
+  max-width: 62ch;
+}
+
+[dir='rtl'] .lede {
+  line-height: 1.85;
+}
+
+.center .lede,
+.lede.center {
+  margin-inline: auto;
 }
 
 .muted {
@@ -82,7 +105,7 @@ h3 {
 }
 
 .stars {
-  color: var(--orange);
+  color: var(--orange-deep);
   letter-spacing: 2px;
 }
 
@@ -96,33 +119,52 @@ h3 {
   gap: 10px;
   font-weight: 700;
   font-size: 15px;
-  line-height: 1;
+  line-height: 1.1;
   padding: 15px 26px;
   border-radius: var(--r-pill);
   border: 2px solid transparent;
   min-height: 48px;
   transition:
-    transform 0.16s ease,
-    background 0.2s,
-    color 0.2s,
-    box-shadow 0.2s,
-    border-color 0.2s;
+    background-color var(--dur-fast),
+    color var(--dur-fast),
+    box-shadow var(--dur-fast),
+    border-color var(--dur-fast);
   white-space: nowrap;
+  text-align: center;
+  max-width: 100%;
 }
 
+/* Pressing answers with a nudge; hovering only changes colour. The handoff
+   lifted every button 2px on hover, which made the page twitch. */
 .btn:active {
-  transform: translateY(1px) scale(0.99);
+  transform: translateY(1px);
 }
 
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+/*
+ * Primary CTA. Ink on orange, not white: white on #ff9000 is 2.3:1, below
+ * AA at any size. Forest-deep on the same orange is 5.2:1 and keeps both
+ * brand colours in the button. Icons inside follow currentColor; a few
+ * call sites still pass color="#fff", so those are re-inked here.
+ */
 .btn-orange {
   background: var(--orange);
-  color: #fff;
-  box-shadow: var(--shadow-orange);
+  color: var(--on-orange);
+  box-shadow: 0 1px 0 rgba(27, 63, 34, 0.25);
+}
+
+.btn-orange svg[stroke='#fff'],
+.btn-orange svg[stroke='#ffffff'] {
+  stroke: currentColor;
 }
 
 .btn-orange:hover {
-  background: var(--orange-deep);
-  transform: translateY(-2px);
+  background: #ffa21f;
+  box-shadow: var(--shadow-orange);
 }
 
 .btn-forest {
@@ -132,17 +174,17 @@ h3 {
 
 .btn-forest:hover {
   background: var(--forest-deep);
-  transform: translateY(-2px);
 }
 
 .btn-ghost {
   background: transparent;
   color: var(--forest);
-  border-color: var(--line);
+  border-color: rgba(38, 85, 46, 0.28);
 }
 
 .btn-ghost:hover {
   border-color: var(--forest);
+  background: rgba(38, 85, 46, 0.04);
 }
 
 .btn-light {
@@ -151,8 +193,7 @@ h3 {
 }
 
 .btn-light:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  background: var(--ivory-2);
 }
 
 .btn-block {
@@ -173,8 +214,11 @@ h3 {
   font-size: 14px;
   font-weight: 600;
   color: var(--forest);
-  transition: all 0.15s;
-  min-height: 40px;
+  transition:
+    background-color var(--dur-fast),
+    border-color var(--dur-fast),
+    color var(--dur-fast);
+  min-height: var(--tap);
 }
 
 .chip:hover {
@@ -190,7 +234,7 @@ h3 {
 .chip.orange.active {
   background: var(--orange);
   border-color: var(--orange);
-  color: #fff;
+  color: var(--on-orange);
 }
 
 .card {
@@ -222,8 +266,8 @@ h3 {
 }
 
 .tag-orange {
-  background: rgba(255, 144, 0, 0.14);
-  color: var(--orange-deep);
+  background: rgba(255, 144, 0, 0.16);
+  color: var(--orange-ink);
 }
 
 .tag-forest {
@@ -289,6 +333,20 @@ h3 {
 .bg-gradient {
   background: linear-gradient(150deg, var(--forest-deep), var(--forest) 55%, var(--forest-soft));
   color: var(--ivory);
+}
+
+/*
+ * Empty state: a quiet framed message where a grid would have been, so an
+ * empty filter reads as a result rather than a rendering failure.
+ */
+.bt-empty {
+  margin: 0;
+  padding: 36px 20px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--r-md);
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 /* Scroll reveal. */
@@ -502,7 +560,7 @@ h3 {
 .bt-mchip.on {
   background: var(--orange);
   border-color: var(--orange);
-  color: #fff;
+  color: var(--on-orange);
   box-shadow: var(--shadow-orange);
 }
 
@@ -1197,7 +1255,6 @@ select.bt-mchip option {
 .bt-tierfacts dt {
   font-size: 11px;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
   color: var(--ink-soft, #6b7a6e);
   margin: 0 0 2px;
 }
@@ -1277,7 +1334,6 @@ select.bt-mchip option {
 .bt-pkgfact dt {
   font-size: 11.5px;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
   color: var(--ink-soft, #6b7a6e);
   margin: 0 0 3px;
 }
@@ -1316,7 +1372,7 @@ select.bt-mchip option {
   gap: 6px;
   font-weight: 700;
   font-size: 13.5px;
-  color: var(--orange-deep);
+  color: var(--orange-ink);
   margin-top: 2px;
 }
 
@@ -1362,20 +1418,56 @@ select.bt-mchip option {
 }
 
 /* ===========================================================================
-   HEADER — centered logo + centered nav (mobile-first)
+   HEADER — centred logo, icon rails, nav row (desktop) / drawer (mobile)
+
+   Mobile-first. Every control in the bar is at least --tap (44px). The nav
+   row has a fixed height (--nav-row-h) so sticky sidebars can sit below the
+   whole header instead of under its second row.
    =========================================================================== */
+.bt-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    background-color var(--dur-base),
+    border-color var(--dur-base);
+}
+
 .bt-head-bar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  /* Phone: burger, logo beside it, icon rail at the end. A centred logo with
+     two 1fr rails squeezed the three 44px icons into ovals at 390px. */
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   height: var(--nav-h);
+}
+
+.bt-head-bar .bt-iconbtn,
+.bt-head-bar .bt-burger {
+  flex-shrink: 0;
+}
+
+@media (min-width: 900px) {
+  .bt-head-bar {
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+  }
 }
 
 .bt-head-side {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .bt-head-side {
+    gap: 8px;
+  }
 }
 
 .bt-head-start {
@@ -1389,7 +1481,9 @@ select.bt-mchip option {
 .bt-head-logo {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: var(--tap);
+  border-radius: 8px;
 }
 
 .bt-head-side-desktop {
@@ -1413,9 +1507,229 @@ select.bt-mchip option {
   cursor: pointer;
 }
 
+.bt-burger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--forest);
+}
+
+/*
+   Missing from the handoff stylesheet: `.bt-cta-desktop` only had the
+   `display: inline-flex !important` rule inside the 900px query, so the
+   "Start Planning" button also crowded the phone bar. The drawer carries its
+   own copy of the CTA.
+*/
+.bt-cta-desktop {
+  display: none;
+}
+
+.bt-iconbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--white);
+  color: var(--forest);
+  transition:
+    background-color var(--dur-fast),
+    border-color var(--dur-fast);
+}
+
+/**
+ * Studio shortcut. MUST stay below .bt-iconbtn (same specificity): written
+ * above it, the white background won and the shield vanished.
+ */
+.bt-adminlink {
+  background: rgba(23, 74, 46, 0.1);
+  border-color: rgba(23, 74, 46, 0.28);
+}
+
+.bt-adminlink:hover {
+  background: rgba(23, 74, 46, 0.16);
+}
+
+.bt-iconbtn:hover {
+  background: var(--ivory-2);
+  border-color: rgba(38, 85, 46, 0.3);
+}
+
+.bt-iconbtn.on {
+  background: var(--forest);
+  color: var(--ivory);
+  border-color: var(--forest);
+}
+
+.bt-iconbtn-badge {
+  position: absolute;
+  top: -3px;
+  inset-inline-end: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--on-orange);
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ivory);
+}
+
+/* --- Language: segmented control ---------------------------------------- */
+.bt-langseg {
+  display: inline-flex;
+  align-items: stretch;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.bt-langseg-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: var(--tap);
+  padding-inline: 12px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--forest);
+  transition:
+    background-color var(--dur-fast),
+    color var(--dur-fast);
+}
+
+/* Arabic-script label needs a hair more size to match the Latin codes. */
+.bt-langseg-opt:lang(ar) {
+  font-size: 15px;
+}
+
+.bt-langseg-opt:hover {
+  background: var(--ivory-2);
+}
+
+.bt-langseg-opt.on {
+  background: var(--forest);
+  color: var(--ivory);
+}
+
+/* Drawer: full width, tall segments. */
+.bt-langseg-block {
+  display: flex;
+  width: 100%;
+}
+
+.bt-langseg-block .bt-langseg-opt {
+  flex: 1;
+  min-height: var(--tap);
+  font-size: 15px;
+}
+
+/* --- Language: dropdown variant ----------------------------------------- */
+.bt-langmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: var(--z-dropdown);
+  min-width: 170px;
+  padding: 6px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+
+.bt-langmenu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--forest);
+  text-align: start;
+}
+
+.bt-langmenu-item:hover,
+.bt-langmenu-item.on {
+  background: var(--ivory-2);
+}
+
+/* --- Drawer (under 900px) ------------------------------------------------ */
+.bt-drawer {
+  border-top: 1px solid var(--line-soft);
+  background: var(--ivory);
+  padding: 14px var(--gutter) 20px;
+  max-height: calc(100dvh - var(--nav-h));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bt-drawer-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.bt-drawer-link {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--forest);
+  padding-block: 10px;
+  padding-inline: 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: none;
+  text-align: start;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.bt-drawer-link.on {
+  color: var(--forest-deep);
+  box-shadow: inset 3px 0 0 var(--orange);
+  padding-inline-start: 14px;
+}
+
+[dir='rtl'] .bt-drawer-link.on {
+  box-shadow: inset -3px 0 0 var(--orange);
+}
+
+.bt-drawer-cta {
+  margin-top: 4px;
+}
+
+/* --- Desktop -------------------------------------------------------------- */
 @media (min-width: 900px) {
   .bt-head-side-desktop {
     display: flex;
+  }
+
+  .bt-head-logo {
+    justify-content: center;
   }
 
   .bt-head-acct-mobile {
@@ -1434,157 +1748,19 @@ select.bt-mchip option {
     display: none !important;
   }
 
+  /*
+   * The nav row. Twelve destinations is a lot; they sit on one quiet,
+   * centred line with a fixed height. Overflow scrolls sideways instead of
+   * wrapping into a second line that would change the header height.
+   */
   .bt-nav-desktop {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    padding: 6px 0 12px;
+    justify-content: safe center;
+    align-items: stretch;
+    gap: 0;
+    height: var(--nav-row-h);
+    padding-inline: var(--gutter);
     border-top: 1px solid var(--line-soft);
-  }
-
-  .bt-nav-desktop a,
-  .bt-nav-desktop .bt-nav-btn {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--forest);
-    position: relative;
-    padding: 4px 0;
-  }
-
-  .bt-nav-desktop a::after,
-  .bt-nav-desktop .bt-nav-btn::after {
-    content: '';
-    position: absolute;
-    inset-inline-start: 0;
-    bottom: -2px;
-    width: 0;
-    height: 2px;
-    background: var(--orange);
-    transition: width 0.2s;
-  }
-
-  .bt-nav-desktop a:hover::after,
-  .bt-nav-desktop .bt-nav-btn:hover::after {
-    width: 100%;
-  }
-}
-
-/* Sticky header shell + icon buttons + drawer. */
-.bt-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-header);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  transition:
-    background 0.25s,
-    border-color 0.25s;
-}
-
-.bt-burger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--white);
-  color: var(--forest);
-}
-
-/*
-   Missing from the handoff stylesheet.
-
-   `.bt-cta-desktop` only ever had the `display: inline-flex !important` rule
-   inside the 900px media query, with no base state to override — so the
-   "Start Planning" button also rendered on mobile, crowding the icon rail
-   next to search, cart and account. The `!important` in the desktop rule is
-   the tell: it exists to beat a base `display: none` that was never written.
-   The mobile drawer carries its own copy of the CTA, so nothing is lost.
-*/
-.bt-cta-desktop {
-  display: none;
-}
-
-.bt-iconbtn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--white);
-  color: var(--forest);
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-/**
- * Studio shortcut.
- *
- * MUST stay below .bt-iconbtn. It was first written above it with the same
- * specificity, so `background: var(--white)` won and the button stayed white
- * — while a more specific `.bt-adminlink svg { stroke: #fff }` did apply,
- * leaving a white icon on a white circle. Invisible, and invisible in a way
- * that looked like a missing icon rather than a CSS ordering mistake.
- *
- * The glyph colour is now simply inherited: .bt-iconbtn already sets
- * `color: var(--forest)` and <Icon> defaults to currentColor, so the shield is
- * green without any rule at all. Only the tint below is ours.
- */
-.bt-adminlink {
-  background: rgba(23, 74, 46, 0.1);
-  border-color: rgba(23, 74, 46, 0.28);
-}
-
-.bt-adminlink:hover {
-  background: rgba(23, 74, 46, 0.16);
-}
-
-.bt-iconbtn:hover {
-  background: var(--ivory-2);
-}
-
-.bt-iconbtn.on {
-  background: var(--forest);
-  color: var(--ivory);
-  border-color: var(--forest);
-}
-
-.bt-iconbtn-badge {
-  position: absolute;
-  top: -3px;
-  inset-inline-end: -3px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: var(--orange);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--ivory);
-}
-
-.bt-nav-btn.on {
-  color: var(--orange-deep) !important;
-}
-
-.bt-nav-btn.on::after {
-  width: 100% !important;
-}
-
-@media (min-width: 900px) {
-  .bt-nav-desktop {
-    gap: 20px !important;
-    padding-inline: var(--gutter) !important;
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
@@ -1594,38 +1770,62 @@ select.bt-mchip option {
     display: none;
   }
 
+  .bt-nav-desktop a,
   .bt-nav-desktop .bt-nav-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+    padding-inline: 9px;
     white-space: nowrap;
-    font-size: 14px !important;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--forest);
+    border-radius: 8px;
+  }
+
+  .bt-nav-desktop a:hover,
+  .bt-nav-desktop .bt-nav-btn:hover {
+    color: var(--forest-deep);
+    background: rgba(38, 85, 46, 0.05);
+  }
+
+  /* Current page: darker ink plus an orange underline — not orange text,
+     which failed contrast and read as a link colour. */
+  .bt-nav-desktop a::after,
+  .bt-nav-desktop .bt-nav-btn::after {
+    content: '';
+    position: absolute;
+    inset-inline: 9px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--orange);
+    transform: scaleX(0);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+
+  .bt-nav-btn.on,
+  .bt-nav-desktop a[aria-current='page'] {
+    color: var(--forest-deep);
+    font-weight: 700;
+  }
+
+  .bt-nav-btn.on::after,
+  .bt-nav-desktop a[aria-current='page']::after {
+    transform: scaleX(1);
   }
 }
 
 @media (min-width: 1180px) {
   .bt-nav-desktop {
-    gap: 26px !important;
+    gap: 2px;
   }
 
+  .bt-nav-desktop a,
   .bt-nav-desktop .bt-nav-btn {
-    font-size: 15px !important;
+    font-size: 15px;
   }
-}
-
-.bt-drawer {
-  border-top: 1px solid var(--line-soft);
-  background: var(--ivory);
-  padding: 14px var(--gutter) 22px;
-}
-
-.bt-drawer-link {
-  font-size: 18px;
-  font-weight: 700;
-  padding: 13px 0;
-  border-bottom: 1px solid var(--line-soft);
-  background: none;
-  border: 0;
-  text-align: start;
-  cursor: pointer;
-  font-family: inherit;
 }
 
 /* ===========================================================================
@@ -1829,7 +2029,7 @@ select.bt-mchip option {
 }
 
 .bt-acctmenu-foot button {
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 .bt-acctmenu-foot button:hover {
@@ -1991,7 +2191,7 @@ select.bt-mchip option {
     border-radius: 12px;
     font-weight: 600;
     font-size: 14px;
-    color: var(--orange-deep);
+    color: var(--orange-ink);
     cursor: pointer;
     font-family: inherit;
   }
@@ -2155,29 +2355,69 @@ select.bt-mchip option {
 /* ---------------------------------------------------------------------------
    Form controls
    --------------------------------------------------------------------------- */
+/* Labels sit above their field, at reading size: 12.5px bold labels were
+   the smallest text in every form. */
 .bt-flabel {
-  font-size: 12.5px;
+  display: block;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--forest);
+  color: var(--forest-deep);
   margin-bottom: 8px;
+  line-height: 1.35;
 }
 
+/*
+ * Inputs: white field on the ivory page with a border that clears 3:1
+ * (WCAG 1.4.11). 16px text stops iOS Safari zooming the page on focus.
+ */
 .bt-input {
   width: 100%;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid rgba(38, 85, 46, 0.32);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
-  color: var(--forest);
-  background: var(--ivory);
-  min-height: 46px;
+  color: var(--ink);
+  background: var(--white);
+  min-height: 48px;
   outline: none;
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
 }
 
-.bt-input:focus {
-  border-color: var(--orange);
-  background: #fff;
+/* Emails, phone numbers and URLs are Latin, left-to-right content even on
+   an Arabic page; typed RTL, "noura@" renders as "@noura". Keep the field
+   aligned with its Arabic label, but lay the text out LTR. */
+[dir='rtl'] .bt-input[type='email'],
+[dir='rtl'] .bt-input[type='tel'],
+[dir='rtl'] .bt-input[type='url'],
+[dir='rtl'] .bt-input[inputmode='email'],
+[dir='rtl'] .bt-input[inputmode='tel'] {
+  direction: ltr;
+  /* `end` of an LTR box is the Arabic start edge, next to the label. */
+  text-align: end;
+}
+
+.bt-input::placeholder {
+  color: #7d887e;
+}
+
+.bt-input:hover {
+  border-color: rgba(38, 85, 46, 0.5);
+}
+
+.bt-input:focus,
+.bt-input:focus-visible {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 4px var(--focus-halo);
+}
+
+.bt-input:disabled,
+.bt-input[readonly] {
+  background: var(--ivory-2);
+  color: var(--muted);
+  cursor: not-allowed;
 }
 
 .bt-stepper {
@@ -2313,17 +2553,23 @@ select.bt-mchip option {
 
 .bt-errmsg {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--orange-deep);
-  font-size: 12px;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--danger);
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1.45;
   margin-top: 6px;
 }
 
-.bt-input-err {
-  border-color: var(--orange-deep) !important;
-  background: rgba(255, 144, 0, 0.05) !important;
+.bt-errmsg svg {
+  margin-top: 1px;
+}
+
+.bt-input-err,
+.bt-input[aria-invalid='true'] {
+  border-color: var(--danger) !important;
+  background: var(--danger-soft) !important;
 }
 
 /* Time slots. */
@@ -2391,7 +2637,7 @@ select.bt-mchip option {
   border-top: 1px solid var(--line);
   font-weight: 800;
   font-size: 18px;
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 /* Custom trip form. */
@@ -2429,7 +2675,7 @@ select.bt-mchip option {
 .bt-range-val {
   font-size: 24px;
   font-weight: 800;
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 /* ---------------------------------------------------------------------------
@@ -2514,7 +2760,7 @@ select.bt-mchip option {
 }
 
 .bt-cart-remove:hover {
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 .bt-cart-foot {
@@ -2706,7 +2952,7 @@ select.bt-mchip option {
 }
 
 .bt-crumb-link:hover {
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 .bt-crumbs.light .bt-crumb-link:hover {
@@ -2801,12 +3047,49 @@ select.bt-mchip option {
   position: absolute;
   top: 12px;
   inset-inline-end: 12px;
-  background: rgba(255, 144, 0, 0.95);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--forest-deep);
   border-radius: 999px;
   padding: 5px 10px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
+  box-shadow: var(--shadow-sm);
+}
+
+/* The star is the only orange in the chip; the number stays legible. */
+.bt-card-rate::first-letter {
+  color: var(--orange-deep);
+}
+
+/*
+ * Price block shared by activity, package and itinerary cards: a small
+ * sentence-case "From" label over a forest figure. Orange text for prices
+ * failed contrast and competed with the orange CTA for attention.
+ */
+.bt-card-price {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bt-card-price-l {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.bt-card-price-v {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--forest-deep);
+}
+
+.bt-card-price-u {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-inline-start: 4px;
 }
 
 .bt-card-veil2 {
@@ -2822,7 +3105,7 @@ select.bt-mchip option {
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: rgba(255, 144, 0, 0.92);
+  background: rgba(27, 63, 34, 0.88);
   display: grid;
   place-items: center;
 }
@@ -2830,30 +3113,276 @@ select.bt-mchip option {
 /* ---------------------------------------------------------------------------
    Hero + stats
    --------------------------------------------------------------------------- */
+/*
+ * The hero is where this site spends its boldness: the largest type on the
+ * page, set tight in Tajawal Black, over the photograph, with the product's
+ * own vocabulary — the four kinds of map pin — as its footing. Everything
+ * after it is quieter on purpose.
+ */
 .bt-hero {
   position: relative;
-  min-height: 88vh;
+  /* It is a <section>, but the band padding from layout.css does not apply:
+     the footing must sit flush on the hero's bottom edge. */
+  padding-block: 0;
+  min-height: min(92vh, 900px);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
+  background: var(--forest-deep);
+  color: #fff;
 }
 
 .bt-hero-veil {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(110deg, rgba(20, 40, 28, 0.78), rgba(20, 40, 28, 0.35) 60%, transparent),
-    linear-gradient(0deg, rgba(20, 40, 28, 0.6), transparent 40%);
-}
-
-.bt-hero-inner {
-  position: relative;
-  padding-block: 80px;
+    linear-gradient(
+      100deg,
+      rgba(20, 44, 26, 0.86) 0%,
+      rgba(20, 44, 26, 0.55) 48%,
+      rgba(20, 44, 26, 0.1) 80%
+    ),
+    linear-gradient(0deg, rgba(20, 44, 26, 0.85) 0%, rgba(20, 44, 26, 0) 45%);
 }
 
 /* The veil gradient is directional; mirror it with the layout. */
 [dir='rtl'] .bt-hero-veil {
   transform: scaleX(-1);
+}
+
+.bt-hero-inner {
+  position: relative;
+  padding-block: 96px 40px;
+}
+
+.bt-hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--palm);
+}
+
+.bt-hero-kicker::before {
+  content: '';
+  width: 28px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--orange);
+}
+
+.bt-hero-title {
+  margin-top: 18px;
+  color: #fff;
+  max-width: 11ch;
+}
+
+/* Each half of the headline on its own line, without a <br> in the copy. */
+.bt-hero-title > span {
+  display: block;
+}
+
+[dir='rtl'] .bt-hero-title {
+  max-width: 9ch;
+}
+
+.bt-hero-sub {
+  margin-top: 22px;
+  max-width: 48ch;
+  font-size: clamp(17px, 1.7vw, 20px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+[dir='rtl'] .bt-hero-sub {
+  line-height: 1.85;
+}
+
+.bt-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+/* --- Footing: map legend + ledger ---------------------------------------- */
+.bt-hero-foot {
+  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(16, 38, 22, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.bt-hero-foot-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 40px;
+  padding-block: 18px;
+}
+
+.bt-hero-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+
+.bt-hero-legend-t {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.bt-hero-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bt-hero-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: var(--tap);
+  padding-block: 6px;
+  padding-inline: 8px 14px;
+  border-radius: var(--r-pill);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  transition: background-color var(--dur-fast);
+}
+
+.bt-hero-legend-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Pin swatches. Shared with any map legend that wants them. */
+.bt-legend-pin {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 4px;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+}
+
+.bt-legend-pin svg {
+  transform: rotate(45deg);
+}
+
+[dir='rtl'] .bt-legend-pin {
+  border-radius: 50% 50% 4px 50%;
+  transform: rotate(45deg);
+}
+
+[dir='rtl'] .bt-legend-pin svg {
+  transform: rotate(-45deg);
+}
+
+.bt-legend-pin.free {
+  background: var(--palm);
+  color: var(--forest-deep);
+}
+
+.bt-legend-pin.paid {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+.bt-legend-pin.vip {
+  background: var(--ivory);
+  color: var(--forest-deep);
+}
+
+.bt-legend-pin.gem {
+  background: var(--forest-deep);
+  color: var(--palm);
+  box-shadow: inset 0 0 0 2px var(--palm);
+}
+
+/* Ledger: value over label, separated by hairlines. */
+.bt-hero-ledger {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.bt-hero-ledger > div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding-inline: 18px;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.bt-hero-ledger > div:first-child {
+  padding-inline-start: 0;
+  border-inline-start: 0;
+}
+
+.bt-hero-ledger dd {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.bt-hero-ledger dt {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+@media (max-width: 899px) {
+  .bt-hero {
+    min-height: auto;
+  }
+
+  .bt-hero-inner {
+    padding-block: 72px 32px;
+  }
+
+  .bt-hero-ctas .btn {
+    flex: 1 1 100%;
+    white-space: normal;
+    padding-inline: 20px !important;
+  }
+
+  .bt-hero-foot-inner {
+    gap: 14px;
+  }
+
+  .bt-hero-legend ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .bt-hero-ledger {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    row-gap: 12px;
+  }
+
+  .bt-hero-ledger > div {
+    padding-inline: 14px;
+  }
+
+  .bt-hero-ledger > div:nth-child(odd) {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
 }
 
 .bt-stat {
@@ -2876,32 +3405,6 @@ select.bt-mchip option {
   font-size: 13px;
   color: var(--muted);
   margin-top: 4px;
-  font-weight: 600;
-}
-
-.bt-hero-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 14px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.bt-hero-stat-v {
-  font-size: clamp(20px, 3vw, 28px);
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.bt-hero-stat-l {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.82);
   font-weight: 600;
 }
 
@@ -3310,9 +3813,7 @@ select.bt-mchip option {
 .bt-tl-day {
   font-weight: 800;
   font-size: 13px;
-  color: var(--orange-deep);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--orange-ink);
 }
 
 .bt-tl-card {
@@ -3367,7 +3868,7 @@ select.bt-mchip option {
 }
 
 .bt-article-mini:hover span {
-  color: var(--orange-deep);
+  color: var(--orange-ink);
 }
 
 .bt-article-body {
@@ -3538,7 +4039,8 @@ select.bt-mchip option {
 
 @media (min-width: 980px) {
   .bt-foot-cols {
-    grid-template-columns: 2fr 1fr 1fr 1.4fr;
+    grid-template-columns: 1.5fr 2fr 1fr 1.4fr;
+    gap: 40px;
   }
 }
 
@@ -3552,18 +4054,35 @@ select.bt-mchip option {
 }
 
 .bt-foot-col h4 {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--palm);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+  grid-column: 1 / -1;
+}
+
+/* Twelve destinations in one column was a long scroll on a phone; two
+   columns there, one column beside the brand on desktop. */
+.bt-foot-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 16px;
+}
+
+@media (min-width: 980px) {
+  .bt-foot-link,
+  .bt-foot-line {
+    min-height: var(--tap);
+  }
 }
 
 .bt-foot-link {
-  display: block;
-  color: rgba(255, 251, 248, 0.82);
-  font-size: 14.5px;
-  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: rgba(255, 251, 248, 0.86);
+  font-size: 15px;
+  padding-block: 4px;
   background: none;
   border: 0;
   text-align: start;
@@ -3573,15 +4092,17 @@ select.bt-mchip option {
 
 .bt-foot-link:hover {
   color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .bt-foot-line {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: rgba(255, 251, 248, 0.82);
-  font-size: 14px;
-  padding: 5px 0;
+  min-height: var(--tap);
+  color: rgba(255, 251, 248, 0.86);
+  font-size: 15px;
 }
 
 .bt-pay {
@@ -3625,22 +4146,20 @@ select.bt-mchip option {
 }
 
 .bt-plan.best {
-  border: 2px solid var(--orange);
+  border: 2px solid var(--forest);
   box-shadow: var(--shadow-md);
 }
 
-@media (min-width: 720px) {
-  .bt-plan.best {
-    transform: scale(1.04);
-  }
-}
+/* The handoff scaled the featured card to 1.04, which blurred its text and
+   broke the row's alignment; a heavier border and a lifted shadow do the
+   same job. */
 
 .bt-plan-badge {
   position: absolute;
   top: -13px;
   inset-inline-start: 24px;
   background: var(--orange);
-  color: #fff;
+  color: var(--on-orange);
   font-size: 11.5px;
   font-weight: 800;
   padding: 5px 12px;
@@ -3663,11 +4182,24 @@ select.bt-mchip option {
 
 .bt-plan-price {
   margin-top: 16px;
-  padding-bottom: 6px;
+  padding-bottom: 14px;
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   border-bottom: 1px solid var(--line-soft);
+}
+
+.bt-plan-amount {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--forest-deep);
+}
+
+.bt-plan-term {
+  font-size: 13.5px;
+  color: var(--muted);
 }
 
 .bt-plan .bt-checklist li {
@@ -3817,7 +4349,7 @@ select.bt-mchip option {
   height: 32px;
   border-radius: 50%;
   background: var(--orange);
-  color: #fff;
+  color: var(--on-orange);
   display: grid;
   place-items: center;
   font-weight: 800;

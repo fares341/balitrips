@@ -51,8 +51,12 @@ section {
 }
 
 .section-head {
-  max-width: 640px;
-  margin-bottom: 36px;
+  max-width: 760px;
+  margin-bottom: 32px;
+}
+
+.section-head .lede {
+  margin-top: 14px;
 }
 
 /* Handoff used margin-left/right: auto. */
@@ -67,7 +71,7 @@ section {
   }
 
   .section-head {
-    margin-bottom: 52px;
+    margin-bottom: 40px;
   }
 }
 
@@ -76,9 +80,40 @@ section {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 16px;
+  gap: 16px 32px;
   flex-wrap: wrap;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 768px) {
+  .bt-sec-head {
+    margin-bottom: 40px;
+  }
+}
+
+/* Home intro: a two-column statement — the claim at the start edge, the
+   explanation beside it — instead of another centred block. */
+.bt-home-intro {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .bt-home-intro {
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+  }
+
+  .bt-home-intro .lede {
+    padding-top: 6px;
+  }
+}
+
+/* Account grid: let the tab rail scroll inside its column instead of
+   widening the whole page on phones. */
+.bt-acct-grid > * {
+  min-width: 0;
 }
 
 .bt-sec-head .section-head {
@@ -317,20 +352,6 @@ section {
 
 @media (min-width: 720px) {
   .bt-statrow {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.bt-hero-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 40px;
-  max-width: 680px;
-}
-
-@media (min-width: 700px) {
-  .bt-hero-stats {
     grid-template-columns: repeat(4, 1fr);
   }
 }

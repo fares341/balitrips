@@ -1,3 +1,5 @@
+import { FormError } from './form'
+
 /**
  * Slugs.
  *
@@ -28,8 +30,10 @@ export function slugify(input: string): string {
 export function assertSlug(value: string): string {
   const slug = value.trim().toLowerCase()
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new Error(
+    throw new FormError(
       `"${value}" is not a valid slug. Use lowercase letters, digits and single hyphens.`,
+      'form.slug_invalid',
+      { value },
     )
   }
   return slug

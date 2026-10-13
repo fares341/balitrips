@@ -38,8 +38,10 @@ import { revokeOrderEntitlements } from '@/lib/orders/webhook'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fminor, fstr, fuuid } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import { fulfilmentLabel, orderStatusLabel } from './labels'
 
 type Outcome = { ok: string } | { err: string }
 
@@ -61,14 +63,15 @@ const detail = (id: string) => adminHref(`/orders/${id}`)
  */
 export async function refundOrderItem(orderId: string, form: FormData): Promise<void> {
   const session = await requireCapability('orders.refund')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const orderItemId = fuuid(form, 'orderItemId', 'Order line')
-    const amountMinor = fminor(form, 'amountMinor', 'Refund amount')
+    const orderItemId = fuuid(form, 'orderItemId', t('orders.field_order_line'))
+    const amountMinor = fminor(form, 'amountMinor', t('orders.field_refund_amount'))
     const reason = fstr(form, 'reason')
 
-    if (amountMinor <= 0) throw new Error('Refund amount must be greater than zero')
+    if (amountMinor <= 0) throw new Error(t('orders.err_amount_positive'))
 
     const summary = await db.transaction(async (tx) => {
       const [order] = await tx
@@ -78,22 +81,22 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         .for('update')
         .limit(1)
 
-      if (!order) throw new Error('That order no longer exists')
+      if (!order) throw new Error(t('orders.err_order_gone'))
 
       const status = order.status as OrderStatus
       if (!isRefundable(status)) {
-        throw new Error(`An order in status "${status}" cannot be refunded.`)
+        throw new Error(t('orders.not_refundable', { status: orderStatusLabel(t, status) }))
       }
 
       const lines = await tx.select().from(orderItems).where(eq(orderItems.orderId, orderId))
 
       const line = lines.find((row) => row.id === orderItemId)
-      if (!line) throw new Error('That line does not belong to this order')
+      if (!line) throw new Error(t('orders.err_line_not_in_order'))
 
       const lineRemaining = line.lineTotalMinor - line.refundedMinor
       if (amountMinor > lineRemaining) {
         throw new Error(
-          `That line has ${lineRemaining} minor units left to refund; ${amountMinor} was requested.`,
+          t('orders.err_line_exceeds', { remaining: lineRemaining, requested: amountMinor }),
         )
       }
 
@@ -114,7 +117,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         .limit(1)
 
       if (!payment?.providerPaymentId) {
-        throw new Error('No settled payment found for this order, so there is nothing to refund.')
+        throw new Error(t('orders.err_no_settled_payment'))
       }
 
       let result: { providerRefundId: string | null; status: string }
@@ -126,7 +129,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         const provider = getPaymentProvider()
         if (provider.name !== payment.provider) {
           throw new Error(
-            `This order was paid through ${payment.provider}, but the active provider is ${provider.name}. Refund it in the ${payment.provider} dashboard.`,
+            t('orders.err_other_provider', { paid: payment.provider, active: provider.name }),
           )
         }
         // Derived from the line and the amount already refunded, so a retried
@@ -296,8 +299,13 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
       }
     }
 
+    const refunded = t('orders.ok_refunded', {
+      amount: amountMinor,
+      currency: summary.currency,
+      status: orderStatusLabel(t, summary.nextStatus),
+    })
     outcome = {
-      ok: `Refunded ${amountMinor} ${summary.currency} minor units. Order is now ${summary.nextStatus.replace(/_/g, ' ')}.${summary.manual ? ' This order was paid by bank transfer: send the money back the same way.' : ''}`,
+      ok: summary.manual ? `${refunded} ${t('orders.ok_refunded_manual')}` : refunded,
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -316,6 +324,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
  */
 export async function confirmOrder(orderId: string): Promise<void> {
   const session = await requireCapability('orders.fulfil')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -327,7 +336,7 @@ export async function confirmOrder(orderId: string): Promise<void> {
         .for('update')
         .limit(1)
 
-      if (!order) throw new Error('That order no longer exists')
+      if (!order) throw new Error(t('orders.err_order_gone'))
 
       const status = order.status as OrderStatus
       assertTransition(status, 'confirmed')
@@ -356,7 +365,7 @@ export async function confirmOrder(orderId: string): Promise<void> {
     if (previous !== 'confirmed') {
       await notifyOrderUpdated(orderId, 'confirmed', { by: session.userId })
     }
-    outcome = { ok: 'Order confirmed.' }
+    outcome = { ok: t('orders.ok_confirmed') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -372,11 +381,12 @@ export async function setLineFulfilment(
   status: string,
 ): Promise<void> {
   const session = await requireCapability('orders.fulfil')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const allowed = ['pending', 'confirmed', 'delivered', 'cancelled']
-    if (!allowed.includes(status)) throw new Error(`Unknown fulfilment status "${status}"`)
+    if (!allowed.includes(status)) throw new Error(t('orders.err_unknown_fulfilment', { status }))
 
     const previous = await db.transaction(async (tx) => {
       const [before] = await tx
@@ -385,9 +395,9 @@ export async function setLineFulfilment(
         .where(and(eq(orderItems.id, orderItemId), eq(orderItems.orderId, orderId)))
         .limit(1)
 
-      if (!before) throw new Error('That line does not belong to this order')
+      if (!before) throw new Error(t('orders.err_line_not_in_order'))
       if (before.fulfilmentStatus === 'refunded') {
-        throw new Error('A refunded line cannot change fulfilment status.')
+        throw new Error(t('orders.err_refunded_line_locked'))
       }
 
       await tx
@@ -413,7 +423,7 @@ export async function setLineFulfilment(
     if (previous !== status && isOrderUpdateStatus(status)) {
       await notifyOrderUpdated(orderId, status, { by: session.userId, item: orderItemId })
     }
-    outcome = { ok: `Line marked ${status}.` }
+    outcome = { ok: t('orders.ok_line_marked', { status: fulfilmentLabel(t, status) }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -431,10 +441,11 @@ export async function setLineFulfilment(
  */
 export async function markOrderPaidOffline(orderId: string, form: FormData): Promise<void> {
   const session = await requireCapability('orders.refund')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
     const reference = (fstr(form, 'reference') ?? '').trim().slice(0, 128)
-    if (reference.length < 3) throw new Error('Enter the transfer or receipt reference.')
+    if (reference.length < 3) throw new Error(t('orders.err_reference_required'))
 
     await db.transaction(async (tx) => {
       const [order] = await tx
@@ -443,10 +454,10 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
         .where(eq(orders.id, orderId))
         .for('update')
         .limit(1)
-      if (!order) throw new Error('That order no longer exists')
+      if (!order) throw new Error(t('orders.err_order_gone'))
       const status = order.status as OrderStatus
       if (status !== 'pending')
-        throw new Error(`Only pending orders can be marked paid (this one is ${status}).`)
+        throw new Error(t('orders.err_only_pending_paid', { status: orderStatusLabel(t, status) }))
       assertTransition(status, 'paid')
 
       await tx.update(orders).set({ status: 'paid' }).where(eq(orders.id, orderId))
@@ -496,7 +507,7 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
     } catch (error) {
       console.error('[orders] follow-ups after offline payment failed', error)
     }
-    outcome = { ok: 'Marked paid. Access granted, customer notified, receipt queued.' }
+    outcome = { ok: t('orders.ok_marked_paid') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -507,6 +518,7 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
 /** إصدار/إعادة توليد إيصال PDF للطلب (الوثيقة: "إصدار إيصال"). */
 export async function issueReceipt(orderId: string): Promise<void> {
   const session = await requireCapability('orders.fulfil')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
     const [order] = await db
@@ -514,9 +526,9 @@ export async function issueReceipt(orderId: string): Promise<void> {
       .from(orders)
       .where(eq(orders.id, orderId))
       .limit(1)
-    if (!order) throw new Error('That order no longer exists')
+    if (!order) throw new Error(t('orders.err_order_gone'))
     if (!['paid', 'confirmed', 'partially_refunded'].includes(order.status)) {
-      throw new Error('Receipts are issued for paid orders only.')
+      throw new Error(t('orders.err_receipt_paid_only'))
     }
     const { enqueueVoucherPdf } = await import('@/worker/queues')
     await enqueueVoucherPdf(orderId)
@@ -528,7 +540,7 @@ export async function issueReceipt(orderId: string): Promise<void> {
       before: null,
       after: { queued: true },
     })
-    outcome = { ok: 'Receipt queued. It is ready to download in a minute.' }
+    outcome = { ok: t('orders.ok_receipt_queued') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -588,6 +600,7 @@ export async function sendItineraryPdfWhatsapp(
   orderItemId: string,
 ): Promise<void> {
   const session = await requireCapability('orders.fulfil')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -609,22 +622,24 @@ export async function sendItineraryPdfWhatsapp(
       .where(and(eq(orderItems.id, orderItemId), eq(orderItems.orderId, orderId)))
       .limit(1)
 
-    if (!line) throw new Error('That line does not belong to this order')
-    if (line.kind !== 'itinerary') throw new Error('Only itinerary lines have a PDF to send.')
+    if (!line) throw new Error(t('orders.err_line_not_in_order'))
+    if (line.kind !== 'itinerary') throw new Error(t('orders.err_itinerary_only'))
     if (!['paid', 'confirmed', 'partially_refunded'].includes(line.orderStatus)) {
-      throw new Error(`The order is ${line.orderStatus}; the customer cannot open the PDF.`)
+      throw new Error(
+        t('orders.err_order_not_open', { status: orderStatusLabel(t, line.orderStatus) }),
+      )
     }
     if (line.fulfilmentStatus === 'refunded' || line.fulfilmentStatus === 'cancelled') {
-      throw new Error(`This line is ${line.fulfilmentStatus}; the customer cannot open the PDF.`)
+      throw new Error(
+        t('orders.err_line_not_open', { status: fulfilmentLabel(t, line.fulfilmentStatus) }),
+      )
     }
-    if (!line.userId || line.deletedAt) throw new Error('This order has no customer account.')
+    if (!line.userId || line.deletedAt) throw new Error(t('orders.err_no_account'))
     if (line.optIn !== true) {
-      throw new Error('The customer has not opted in to WhatsApp messages.')
+      throw new Error(t('orders.err_no_whatsapp_optin'))
     }
     if (toWhatsappNumber(line.phone) === null) {
-      throw new Error(
-        'The customer has no international phone number (+country code) on their account.',
-      )
+      throw new Error(t('orders.err_no_intl_phone'))
     }
 
     const locale = toMailLocale(line.locale)
@@ -637,7 +652,7 @@ export async function sendItineraryPdfWhatsapp(
       { whatsapp: true },
     )
     if (notificationId === null) {
-      throw new Error('The WhatsApp message could not be queued. Try again shortly.')
+      throw new Error(t('orders.err_whatsapp_queue'))
     }
 
     await writeAudit({
@@ -648,7 +663,7 @@ export async function sendItineraryPdfWhatsapp(
       before: null,
       after: { orderId, notificationId },
     })
-    outcome = { ok: 'Queued on WhatsApp with a link to the itinerary in their account.' }
+    outcome = { ok: t('orders.ok_whatsapp_queued') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

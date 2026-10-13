@@ -6,12 +6,14 @@ import { devices, sessions, users } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { pageParam, param } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../../_ui/table'
 import { endSession } from '../actions'
+import { labelOr } from '../labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +27,7 @@ export default async function SessionsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('security.read')
+  const { t } = await getAdminI18n()
   const mayWrite = can(session.role, 'security.write')
   const params = await searchParams
   const page = pageParam(params)
@@ -69,43 +72,43 @@ export default async function SessionsPage({
   return (
     <>
       <PageHead
-        title="Live sessions"
-        description="Every unexpired session on the platform. Sessions created before device tracking show no device."
+        title={t('protection.sessions_title')}
+        description={t('protection.sessions_description')}
       />
       <Flash searchParams={params} />
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('protection.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Email or IP"
+            placeholder={t('protection.search_placeholder')}
           />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('protection.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('protection.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No live sessions.</Empty>
+        <Empty>{t('protection.sessions_empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Account</th>
-              <th>Device</th>
-              <th>IP</th>
-              <th>Started</th>
-              <th>Last refreshed</th>
+              <th>{t('protection.col_account')}</th>
+              <th>{t('protection.col_device')}</th>
+              <th>{t('protection.col_ip')}</th>
+              <th>{t('protection.col_started')}</th>
+              <th>{t('protection.col_last_refreshed')}</th>
               <th />
             </tr>
           </thead>
@@ -116,7 +119,7 @@ export default async function SessionsPage({
                   <Link href={adminHref(`/customers/${row.userId}`)}>{row.email}</Link>
                   {row.role !== 'customer' ? (
                     <div>
-                      <Pill tone="info">{row.role}</Pill>
+                      <Pill tone="info">{labelOr(t, 'protection.role_', row.role)}</Pill>
                     </div>
                   ) : null}
                 </td>
@@ -128,7 +131,11 @@ export default async function SessionsPage({
                   )}
                   {row.deviceStatus && row.deviceStatus !== 'active' ? (
                     <div>
-                      <Pill tone="bad">device {row.deviceStatus}</Pill>
+                      <Pill tone="bad">
+                        {t('protection.device_state', {
+                          status: labelOr(t, 'protection.device_status_', row.deviceStatus),
+                        })}
+                      </Pill>
                     </div>
                   ) : null}
                 </td>
@@ -144,11 +151,11 @@ export default async function SessionsPage({
                     <form className="a-inline-form" action={endSession}>
                       <input type="hidden" name="sessionId" value={row.id} />
                       <button className="a-btn danger small" type="submit">
-                        End
+                        {t('protection.end_session')}
                       </button>
                     </form>
                   ) : row.id === session.sessionId ? (
-                    <Pill tone="info">you</Pill>
+                    <Pill tone="info">{t('protection.you')}</Pill>
                   ) : null}
                 </td>
               </tr>

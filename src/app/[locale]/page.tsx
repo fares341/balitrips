@@ -76,6 +76,14 @@ const PLATFORM_SECTIONS: readonly { icon: IconName; title: string; body: string;
     { icon: 'cal', title: 'svc_itin_t', body: 'svc_itin_b', href: '/itineraries' },
   ]
 
+/** Hero — the four kinds of place on the map, in the order a visitor meets them. */
+const HERO_LEGEND: readonly { key: string; icon: IconName; tone: string }[] = [
+  { key: 'hero_legend_free', icon: 'pin', tone: 'free' },
+  { key: 'hero_legend_paid', icon: 'lock', tone: 'paid' },
+  { key: 'hero_legend_vip', icon: 'star', tone: 'vip' },
+  { key: 'hero_legend_gems', icon: 'gem', tone: 'gem' },
+]
+
 /** Section 4 — the 2x2 checked feature list beside the booking card. */
 const DRIVER_FEATURES = ['dp_vp1', 'dp_vp2', 'dp_vp3', 'dp_vp5'] as const
 
@@ -273,27 +281,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* 2 — platform intro */}
       <section className="bg-ivory" aria-labelledby="home-intro">
-        <div className="wrap center" style={{ maxWidth: 760 }}>
-          <span className="bt-intro-badge" style={{ margin: '0 auto 18px' }}>
-            <Icon name="compass" size={22} color="var(--orange-deep)" />
-          </span>
-          <h2
-            id="home-intro"
-            className="section-title"
-            style={{ fontSize: 'clamp(24px,4vw,38px)' }}
-          >
+        <div className="wrap bt-home-intro">
+          <h2 id="home-intro" className="section-title">
             {t('ab_hero_t')}
           </h2>
-          <p className="lede" style={{ marginTop: 14 }}>
-            {t('about_p1')}
-          </p>
+          <p className="lede">{t('about_p1')}</p>
         </div>
       </section>
 
       {/* 3 — the five platform sections */}
       <section className="bg-ivory-2">
         <div className="wrap">
-          <SectionHead eyebrow={t('hs_eyebrow')} title={t('hs_title')} centered />
+          <SectionHead title={t('hs_title')} />
           <div className="bt-fivegrid">
             {PLATFORM_SECTIONS.map((section, index) => (
               <ServiceCard
@@ -347,11 +346,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 5 — activities & events */}
       <section className="bg-ivory">
         <div className="wrap">
-          <SectionHead eyebrow={t('ev_eyebrow')} title={t('ha_title')} centered />
+          <SectionHead
+            title={t('ha_title')}
+            action={<SeeAll href="/activities" label={t('ha_all')} />}
+          />
 
           <div
             className="bt-filterchips"
-            style={{ justifyContent: 'center', marginBottom: 28 }}
+            style={{ marginBottom: 28 }}
             role="group"
             aria-label={t('ev_eyebrow')}
           >
@@ -371,22 +373,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
 
           <ActivityGrid activities={featured} empty={t('ah_none')} />
-
-          <div className="center" style={{ marginTop: 32 }}>
-            <LinkButton href="/activities" variant="forest">
-              {t('ha_all')} <Icon name="arrow" size={17} color="#fff" className="flip" />
-            </LinkButton>
-          </div>
         </div>
       </section>
 
       {/* 6 — interactive map teaser */}
       <section className="bg-ivory-2">
         <div className="wrap">
-          <SectionHead eyebrow={t('map_eyebrow')} title={t('hm_title')} centered />
-          <p className="lede center" style={{ maxWidth: '70ch', margin: '0 auto 32px' }}>
-            {t('hm_sub')}
-          </p>
+          <SectionHead title={t('hm_title')} subtitle={t('hm_sub')} />
 
           {/*
             A link, not the handoff's <button onClick={navigate}> — the map is
@@ -438,7 +431,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 7 — ready packages */}
       <section className="bg-ivory">
         <div className="wrap">
-          <SectionHead eyebrow={t('tp_eyebrow')} title={t('hp_title')} centered />
+          <SectionHead
+            title={t('hp_title')}
+            action={<SeeAll href="/packages" label={t('c_seeall')} />}
+          />
           {packages.length === 0 ? (
             <EmptyRow>{t('ah_none')}</EmptyRow>
           ) : (
@@ -454,7 +450,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 8 — itineraries */}
       <section className="bg-ivory-2">
         <div className="wrap">
-          <SectionHead eyebrow={t('pkg_eyebrow')} title={t('hi_title')} centered />
+          <SectionHead
+            title={t('hi_title')}
+            action={<SeeAll href="/itineraries" label={t('hi_all')} />}
+          />
           {itineraries.length === 0 ? (
             <EmptyRow>{t('ah_none')}</EmptyRow>
           ) : (
@@ -464,11 +463,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               ))}
             </div>
           )}
-          <div className="center" style={{ marginTop: 32 }}>
-            <LinkButton href="/itineraries" variant="forest">
-              {t('hi_all')} <Icon name="arrow" size={17} color="#fff" className="flip" />
-            </LinkButton>
-          </div>
         </div>
       </section>
 
@@ -499,7 +493,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 10 — landmarks, filtered by region */}
       <section className="bg-ivory">
         <div className="wrap">
-          <SectionHead eyebrow={t('places_eyebrow')} title={t('hl_title')} centered />
+          <SectionHead title={t('hl_title')} />
           <CollectionTabs
             idPrefix="home-landmarks"
             empty={<EmptyRow>{t('ah_none')}</EmptyRow>}
@@ -532,7 +526,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 11 — travelers love */}
       <section className="bg-ivory-2">
         <div className="wrap">
-          <SectionHead eyebrow={t('rev_eyebrow')} title={t('hv_title')} centered />
+          <SectionHead title={t('hv_title')} />
           <CollectionTabs
             idPrefix="home-loved"
             empty={<EmptyRow>{t('ah_none')}</EmptyRow>}
@@ -560,7 +554,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 12 — reviews */}
       <section className="bg-ivory">
         <div className="wrap">
-          <SectionHead eyebrow={t('rev_eyebrow')} title={t('hr_title')} centered />
+          <SectionHead title={t('hr_title')} />
           {reviews.length === 0 ? (
             <EmptyRow>{t('ah_none')}</EmptyRow>
           ) : (
@@ -577,13 +571,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="bg-ivory-2">
         <div className="wrap">
           <SectionHead
-            eyebrow={t('art_eyebrow')}
             title={t('hb_title')}
-            action={
-              <LinkButton href="/blog" variant="ghost" size="sm" className="bt-seeall">
-                {t('c_seeall')} <Icon name="arrow" size={16} className="flip" />
-              </LinkButton>
-            }
+            action={<SeeAll href="/blog" label={t('c_seeall')} />}
           />
           {articles.length === 0 ? (
             <EmptyRow>{t('ah_none')}</EmptyRow>
@@ -653,43 +642,59 @@ function HeroSection({
       <div className="bt-hero-veil" aria-hidden="true" />
 
       <div className="wrap bt-hero-inner">
-        <div className="eyebrow" style={{ color: 'var(--palm)' }}>
-          <span
-            aria-hidden="true"
-            style={{ width: 18, height: 2, background: 'var(--palm)', borderRadius: 2 }}
-          />
-          {t('hero_kicker')}
-        </div>
+        <p className="bt-hero-kicker">{t('hero_kicker')}</p>
 
-        <h1 id="home-hero" className="display" style={{ color: '#fff', marginTop: 16 }}>
-          {t('hero_title_1')}
-          <br />
-          {t('hero_title_2')}
+        <h1 id="home-hero" className="display bt-hero-title">
+          <span>{t('hero_title_1')}</span> <span>{t('hero_title_2')}</span>
         </h1>
 
-        <p
-          className="lede"
-          style={{ color: 'rgba(255,255,255,0.9)', marginTop: 18, maxWidth: '52ch' }}
-        >
-          {t('hero_sub')}
-        </p>
+        <p className="bt-hero-sub">{t('hero_sub')}</p>
 
-        <div className="row" style={{ gap: 12, marginTop: 28 }}>
-          <LinkButton href="/map" variant="orange">
-            <Icon name="pin" size={18} color="#fff" /> {t('hero_cta_1')}
+        <div className="bt-hero-ctas">
+          <LinkButton href="/map" variant="orange" size="lg">
+            <Icon name="pin" size={19} /> {t('hero_cta_1')}
           </LinkButton>
-          <LinkButton href={CUSTOM_HREF} variant="light">
-            <Icon name="sparkle" size={18} color="var(--forest)" /> {t('hero_cta_2')}
+          <LinkButton href={CUSTOM_HREF} variant="light" size="lg">
+            <Icon name="sparkle" size={19} color="var(--forest)" /> {t('hero_cta_2')}
           </LinkButton>
         </div>
+      </div>
 
-        <div className="bt-hero-stats">
-          {stats.map((stat) => (
-            <div key={stat.label} className="bt-hero-stat">
-              <span className="bt-hero-stat-v">{stat.value}</span>
-              <span className="bt-hero-stat-l">{stat.label}</span>
-            </div>
-          ))}
+      {/*
+        The map legend is the hero's signature: the four kinds of pin the
+        product is built on, each a way into the map. The measured stats sit
+        beside it as a quiet ledger instead of four glass tiles.
+      */}
+      <div className="bt-hero-foot">
+        <div className="wrap bt-hero-foot-inner">
+          <nav className="bt-hero-legend" aria-labelledby="home-hero-legend">
+            <span id="home-hero-legend" className="bt-hero-legend-t">
+              {t('hero_legend_t')}
+            </span>
+            <ul>
+              {HERO_LEGEND.map((item) => (
+                <li key={item.key}>
+                  <Link href="/map" className="bt-hero-legend-item">
+                    <span className={`bt-legend-pin ${item.tone}`} aria-hidden="true">
+                      <Icon name={item.icon} size={14} />
+                    </span>
+                    {t(item.key)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {stats.length > 0 && (
+            <dl className="bt-hero-ledger">
+              {stats.map((stat) => (
+                <div key={stat.label}>
+                  <dt>{stat.label}</dt>
+                  <dd>{stat.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
       </div>
     </section>
@@ -727,15 +732,23 @@ function LandmarkGrid({ landmarks, empty }: { landmarks: readonly LandmarkDto[];
 }
 
 /**
+ * "See all" in a section head's trailing slot: one style for every band, so
+ * the way out of a preview always looks the same.
+ */
+function SeeAll({ href, label }: { href: string; label: string }) {
+  return (
+    <LinkButton href={href} variant="ghost" size="sm" className="bt-seeall">
+      {label}
+    </LinkButton>
+  )
+}
+
+/**
  * Empty state.
  *
  * The handoff rendered an empty grid when a filter matched nothing, which on a
  * page of full sections reads as a rendering failure rather than a result.
  */
 function EmptyRow({ children }: { children: ReactNode }) {
-  return (
-    <p className="muted center" style={{ paddingBlock: 32, margin: 0 }}>
-      {children}
-    </p>
-  )
+  return <p className="bt-empty">{children}</p>
 }

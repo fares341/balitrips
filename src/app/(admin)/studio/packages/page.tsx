@@ -13,6 +13,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
+import { getAdminI18n } from '../../_lib/i18n'
 import { setPackageStatus } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,7 @@ export default async function PackagesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -56,12 +58,12 @@ export default async function PackagesPage({
   return (
     <>
       <PageHead
-        title="Packages"
-        description="Pricing mode is explicit: flat charges the price as-is, per guest multiplies it."
+        title={t('packages.title')}
+        description={t('packages.list_description')}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/packages/new')}>
-              New package
+              {t('packages.new')}
             </Link>
           ) : null
         }
@@ -70,40 +72,40 @@ export default async function PackagesPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="">{t('common.all')}</option>
+            <option value="draft">{t('common.draft')}</option>
+            <option value="published">{t('common.published')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('common.clear')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No packages match those filters.</Empty>
+        <Empty>{t('packages.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Pricing</th>
-              <th className="num">Days</th>
-              <th className="num">Max guests</th>
-              <th className="num">Price</th>
-              <th>Updated</th>
+              <th>{t('common.name')}</th>
+              <th>{t('common.status')}</th>
+              <th>{t('packages.pricing')}</th>
+              <th className="num">{t('packages.days')}</th>
+              <th className="num">{t('packages.max_guests')}</th>
+              <th className="num">{t('common.price')}</th>
+              <th>{t('common.updated')}</th>
               <th />
             </tr>
           </thead>
@@ -112,7 +114,7 @@ export default async function PackagesPage({
               <tr key={row.id}>
                 <td>
                   <Link href={adminHref(`/packages/${row.id}`)}>
-                    {pick(row.name, 'en', row.slug)}
+                    {pick(row.name, locale, row.slug)}
                   </Link>
                   <div className="a-mono a-muted">{row.slug}</div>
                 </td>
@@ -121,13 +123,13 @@ export default async function PackagesPage({
                 </td>
                 <td>
                   <Pill tone={row.pricingMode === 'per_guest' ? 'info' : 'neutral'}>
-                    {row.pricingMode === 'per_guest' ? 'per guest' : 'flat'}
+                    {row.pricingMode === 'per_guest' ? t('packages.per_guest') : t('packages.flat')}
                   </Pill>
-                  {row.driverIncluded ? <Pill tone="good">driver</Pill> : null}
+                  {row.driverIncluded ? <Pill tone="good">{t('packages.driver_pill')}</Pill> : null}
                 </td>
                 <td className="num">{row.days}</td>
                 <td className="num">{row.maxGuests}</td>
-                <td className="num">{formatMoney(row.priceMinor, row.currency, 'en')}</td>
+                <td className="num">{formatMoney(row.priceMinor, row.currency, intl)}</td>
                 <td>
                   <When value={row.updatedAt} />
                 </td>
@@ -142,7 +144,9 @@ export default async function PackagesPage({
                       )}
                     >
                       <button className="a-btn ghost small" type="submit">
-                        {row.status === 'published' ? 'Unpublish' : 'Publish'}
+                        {row.status === 'published'
+                          ? t('packages.unpublish')
+                          : t('packages.publish')}
                       </button>
                     </form>
                   ) : null}

@@ -30,21 +30,30 @@ import {
   fstr,
   fuuidOrNull,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
+import type { Translate } from '../../_i18n'
 
 const LIST = adminHref('/taxonomy')
 
 const STATUSES = ['active', 'inactive'] as const
 
 /** رقم عشري اختياري ضمن حدود، وإلا خطأ واضح. */
-function optionalNumber(form: FormData, name: string, label: string, min: number, max: number) {
+function optionalNumber(
+  t: Translate,
+  form: FormData,
+  name: string,
+  label: string,
+  min: number,
+  max: number,
+) {
   const value = fstr(form, name)
   if (value === null) return null
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
-    throw new Error(`${label} must be a number between ${min} and ${max}`)
+    throw new Error(t('taxonomy.err_number_range', { label, min, max }))
   }
   return parsed
 }
@@ -57,6 +66,7 @@ type Outcome = { ok: string } | { err: string }
 
 export async function saveCategory(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -64,16 +74,16 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
     if (icon && !isIconName(icon)) {
       // A category whose icon the set does not have renders as a hole in the
       // filter row, so reject it here rather than at paint time.
-      throw new Error(`"${icon}" is not a name in the icon set.`)
+      throw new Error(t('taxonomy.err_icon', { icon }))
     }
 
     const values = {
-      key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
-      label: flocalizedRequired(form, 'label', 'Label'),
+      key: assertSlug(freq(form, 'key', t('taxonomy.key'))).slice(0, 64),
+      label: flocalizedRequired(form, 'label', t('taxonomy.label')),
       description: flocalizedOrNull(form, 'description'),
       status: fenum(form, 'status', STATUSES, 'active'),
       icon,
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
     }
 
     await db.transaction(async (tx) => {
@@ -82,7 +92,7 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(categories).where(eq(categories.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That category no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('taxonomy.err_category_gone'))
 
       const [row] =
         id === 'new'
@@ -102,7 +112,7 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Category saved.' }
+    outcome = { ok: t('taxonomy.ok_category_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -113,12 +123,13 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
 
 export async function deleteCategory(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(categories).where(eq(categories.id, id)).limit(1)
-      if (!before) throw new Error('That category no longer exists')
+      if (!before) throw new Error(t('taxonomy.err_category_gone'))
 
       const [used] = await tx
         .select({ value: count() })
@@ -128,9 +139,7 @@ export async function deleteCategory(id: string): Promise<void> {
       // Taxonomy has no soft delete, so a delete here would cascade the join
       // rows away and silently un-categorise live activities.
       if ((used?.value ?? 0) > 0) {
-        throw new Error(
-          `${used?.value} activity/activities still use this category. Reassign them first.`,
-        )
+        throw new Error(t('taxonomy.err_category_in_use', { count: used?.value }))
       }
 
       await tx.delete(categories).where(eq(categories.id, id))
@@ -148,7 +157,7 @@ export async function deleteCategory(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Category deleted.' }
+    outcome = { ok: t('taxonomy.ok_category_deleted') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -163,29 +172,30 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function saveRegion(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const parentId = fuuidOrNull(form, 'parentId', 'Parent area')
-    if (parentId !== null && parentId === id) throw new Error('An area cannot be its own parent')
+    const parentId = fuuidOrNull(form, 'parentId', t('taxonomy.parent_area'))
+    if (parentId !== null && parentId === id) throw new Error(t('taxonomy.err_self_parent'))
     const values = {
-      key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
-      label: flocalizedRequired(form, 'label', 'Label'),
+      key: assertSlug(freq(form, 'key', t('taxonomy.key'))).slice(0, 64),
+      label: flocalizedRequired(form, 'label', t('taxonomy.label')),
       description: flocalizedOrNull(form, 'description'),
       status: fenum(form, 'status', STATUSES, 'active'),
       parentId,
-      centerLat: optionalNumber(form, 'centerLat', 'Centre latitude', -9.2, -7.7),
-      centerLon: optionalNumber(form, 'centerLon', 'Centre longitude', 114.4, 115.8),
-      radiusKm: optionalNumber(form, 'radiusKm', 'Radius', 0.2, 80),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      centerLat: optionalNumber(t, form, 'centerLat', t('taxonomy.center_lat'), -9.2, -7.7),
+      centerLon: optionalNumber(t, form, 'centerLon', t('taxonomy.center_lon'), 114.4, 115.8),
+      radiusKm: optionalNumber(t, form, 'radiusKm', t('taxonomy.radius'), 0.2, 80),
+      sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
     }
 
     await db.transaction(async (tx) => {
       if (parentId !== null) {
         // مستويان فقط: الأب يجب أن يكون منطقة عامة بلا أب.
         const [parent] = await tx.select().from(regions).where(eq(regions.id, parentId)).limit(1)
-        if (!parent) throw new Error('The parent area no longer exists')
-        if (parent.parentId !== null) throw new Error('Pick a top-level region as the parent')
+        if (!parent) throw new Error(t('taxonomy.err_parent_gone'))
+        if (parent.parentId !== null) throw new Error(t('taxonomy.err_parent_not_top'))
         if (id !== 'new') {
           const [child] = await tx
             .select({ id: regions.id })
@@ -193,7 +203,7 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
             .where(eq(regions.parentId, id))
             .limit(1)
           if (child) {
-            throw new Error('This region has neighbourhoods inside it, so it cannot be nested.')
+            throw new Error(t('taxonomy.err_region_has_children'))
           }
         }
       }
@@ -202,7 +212,7 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(regions).where(eq(regions.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That region no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('taxonomy.err_region_gone'))
 
       const [row] =
         id === 'new'
@@ -222,7 +232,7 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Region saved.' }
+    outcome = { ok: t('taxonomy.ok_region_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -233,12 +243,13 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
 
 export async function deleteRegion(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(regions).where(eq(regions.id, id)).limit(1)
-      if (!before) throw new Error('That region no longer exists')
+      if (!before) throw new Error(t('taxonomy.err_region_gone'))
 
       const counts = await Promise.all([
         tx.select({ value: count() }).from(activities).where(eq(activities.regionId, id)),
@@ -253,7 +264,7 @@ export async function deleteRegion(id: string): Promise<void> {
 
       const used = counts.reduce((total, rows) => total + (rows[0]?.value ?? 0), 0)
       if (used > 0) {
-        throw new Error(`${used} record(s) still reference this region. Reassign them first.`)
+        throw new Error(t('taxonomy.err_region_in_use', { count: used }))
       }
 
       await tx.delete(regions).where(eq(regions.id, id))
@@ -271,7 +282,7 @@ export async function deleteRegion(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Region deleted.' }
+    outcome = { ok: t('taxonomy.ok_region_deleted') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -286,13 +297,14 @@ export async function deleteRegion(id: string): Promise<void> {
 
 export async function saveArticleCategory(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const values = {
-      key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
-      label: flocalizedRequired(form, 'label', 'Label'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      key: assertSlug(freq(form, 'key', t('taxonomy.key'))).slice(0, 64),
+      label: flocalizedRequired(form, 'label', t('taxonomy.label')),
+      sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
     }
 
     await db.transaction(async (tx) => {
@@ -303,7 +315,7 @@ export async function saveArticleCategory(id: string, form: FormData): Promise<v
               await tx.select().from(articleCategories).where(eq(articleCategories.id, id)).limit(1)
             )[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That article category no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('taxonomy.err_article_category_gone'))
 
       const [row] =
         id === 'new'
@@ -327,7 +339,7 @@ export async function saveArticleCategory(id: string, form: FormData): Promise<v
       )
     })
 
-    outcome = { ok: 'Article category saved.' }
+    outcome = { ok: t('taxonomy.ok_article_category_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -338,6 +350,7 @@ export async function saveArticleCategory(id: string, form: FormData): Promise<v
 
 export async function deleteArticleCategory(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -347,7 +360,7 @@ export async function deleteArticleCategory(id: string): Promise<void> {
         .from(articleCategories)
         .where(eq(articleCategories.id, id))
         .limit(1)
-      if (!before) throw new Error('That article category no longer exists')
+      if (!before) throw new Error(t('taxonomy.err_article_category_gone'))
 
       const [used] = await tx
         .select({ value: count() })
@@ -355,7 +368,7 @@ export async function deleteArticleCategory(id: string): Promise<void> {
         .where(eq(articles.categoryId, id))
 
       if ((used?.value ?? 0) > 0) {
-        throw new Error(`${used?.value} article(s) still use this category. Reassign them first.`)
+        throw new Error(t('taxonomy.err_article_category_in_use', { count: used?.value }))
       }
 
       await tx.delete(articleCategories).where(eq(articleCategories.id, id))
@@ -373,7 +386,7 @@ export async function deleteArticleCategory(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Article category deleted.' }
+    outcome = { ok: t('taxonomy.ok_article_category_deleted') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -389,13 +402,14 @@ export async function deleteArticleCategory(id: string): Promise<void> {
 
 export async function saveTag(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const values = {
-      key: assertSlug(freq(form, 'key', 'Key')).slice(0, 64),
-      label: flocalizedRequired(form, 'label', 'Label'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      key: assertSlug(freq(form, 'key', t('taxonomy.key'))).slice(0, 64),
+      label: flocalizedRequired(form, 'label', t('taxonomy.label')),
+      sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
     }
 
     await db.transaction(async (tx) => {
@@ -403,7 +417,7 @@ export async function saveTag(id: string, form: FormData): Promise<void> {
         id === 'new'
           ? null
           : ((await tx.select().from(tags).where(eq(tags.id, id)).limit(1))[0] ?? null)
-      if (id !== 'new' && !before) throw new Error('That tag no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('taxonomy.err_tag_gone'))
 
       const [row] =
         id === 'new'
@@ -422,7 +436,7 @@ export async function saveTag(id: string, form: FormData): Promise<void> {
         tx,
       )
     })
-    outcome = { ok: 'Tag saved.' }
+    outcome = { ok: t('taxonomy.ok_tag_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -433,12 +447,13 @@ export async function saveTag(id: string, form: FormData): Promise<void> {
 
 export async function deleteTag(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.delete(tags).where(eq(tags.id, id)).returning()
-      if (!before) throw new Error('That tag no longer exists')
+      if (!before) throw new Error(t('taxonomy.err_tag_gone'))
       await writeAudit(
         {
           actor: session,
@@ -451,7 +466,7 @@ export async function deleteTag(id: string): Promise<void> {
         tx,
       )
     })
-    outcome = { ok: 'Tag deleted and removed from every place.' }
+    outcome = { ok: t('taxonomy.ok_tag_deleted') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

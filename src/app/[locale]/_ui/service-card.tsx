@@ -55,7 +55,7 @@ export function ServiceCard({
       <div className="bt-card-media" style={{ width: '100%' }}>
         <Photo src={image?.url} alt="" priority={priority} style={{ height: 150 }} />
         <span className="bt-svc-icon">
-          <Icon name={icon} size={22} color="#fff" />
+          <Icon name={icon} size={22} color="var(--ivory)" />
         </span>
       </div>
 
@@ -73,7 +73,7 @@ export function ServiceCard({
           {body}
         </p>
         <span className="bt-svc-more" aria-hidden="true">
-          {cta} <Icon name="arrow" size={15} color="var(--orange-deep)" className="flip" />
+          {cta} <Icon name="arrow" size={15} color="var(--orange-ink)" className="flip" />
         </span>
       </div>
     </Link>

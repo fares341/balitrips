@@ -1,5 +1,6 @@
 import { readSecret, twoFactorStatus } from '../../_lib/two-factor'
 import { getAdminSession } from '../../_lib/session'
+import { getAdminI18n } from '../../_lib/i18n'
 import { qrToSvg, encodeQr } from '../../_lib/qr'
 import { otpauthUri } from '@/lib/auth/totp'
 import { notFound } from 'next/navigation'
@@ -21,9 +22,12 @@ import { EnrolmentForms } from './forms'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = {
-  title: 'Security',
-  robots: { index: false, follow: false },
+export async function generateMetadata() {
+  const { t } = await getAdminI18n()
+  return {
+    title: t('security.meta_title'),
+    robots: { index: false, follow: false },
+  }
 }
 
 export default async function SecurityPage() {
@@ -32,6 +36,7 @@ export default async function SecurityPage() {
   // Deliberately not `requireCapability()`: that helper enforces the very
   // two-factor check this page exists to satisfy.
   if (!session) notFound()
+  const { t } = await getAdminI18n()
 
   const status = await twoFactorStatus(session.userId)
 
@@ -43,15 +48,13 @@ export default async function SecurityPage() {
   const uri =
     secret === null ? null : otpauthUri({ secret, account: session.email, issuer: 'Bali Trips' })
 
-  const qrSvg = uri === null ? null : qrToSvg(encodeQr(uri), { size: 208, title: 'Scan to enrol' })
+  const qrSvg =
+    uri === null ? null : qrToSvg(encodeQr(uri), { size: 208, title: t('security.qr_title') })
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>Two-factor authentication</h1>
-      <p style={{ color: 'var(--muted)', marginBottom: 24 }}>
-        Required for staff and administrator accounts. Until it is active, this is the only admin
-        page you can reach.
-      </p>
+      <h1 style={{ fontSize: 24, marginBlockEnd: 8 }}>{t('security.page_title')}</h1>
+      <p style={{ color: 'var(--muted)', marginBlockEnd: 24 }}>{t('security.page_intro')}</p>
 
       <EnrolmentForms
         enabled={status.enabled}

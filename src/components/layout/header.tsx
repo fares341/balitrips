@@ -190,13 +190,7 @@ export function Header() {
             {cartCount > 0 && <span className="bt-iconbtn-badge">{cartCount}</span>}
           </Link>
 
-          <LinkButton
-            href={SERVICES_HREF}
-            variant="orange"
-            size="sm"
-            className="bt-cta-desktop"
-            style={{ paddingInline: 20 }}
-          >
+          <LinkButton href={SERVICES_HREF} variant="orange" size="sm" className="bt-cta-desktop">
             {t('c_startplan')}
           </LinkButton>
 
@@ -214,21 +208,24 @@ export function Header() {
 
       {menuOpen && (
         <div className="bt-drawer" id="bt-drawer">
-          <nav aria-label={t('ft_nav')} style={{ display: 'flex', flexDirection: 'column' }}>
+          {/*
+            Language first: on a phone the drawer is the only place the
+            switcher lives, and it should not sit below twelve links.
+          */}
+          <LanguageSwitcher className="bt-langseg-block" />
+          <nav aria-label={t('ft_nav')} className="bt-drawer-nav">
             <NavLinks variant="drawer" onNavigate={() => setMenuOpen(false)} />
           </nav>
-          <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
-            <LanguageSwitcher />
-            <LinkButton
-              href={SERVICES_HREF}
-              variant="orange"
-              size="md"
-              style={{ flex: 1 }}
-              onClick={() => setMenuOpen(false)}
-            >
-              {t('c_startplan')}
-            </LinkButton>
-          </div>
+          <LinkButton
+            href={SERVICES_HREF}
+            variant="orange"
+            size="lg"
+            block
+            className="bt-drawer-cta"
+            onClick={() => setMenuOpen(false)}
+          >
+            {t('c_startplan')}
+          </LinkButton>
         </div>
       )}
     </header>

@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { auditLog, users } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -22,6 +23,7 @@ export default async function AuditPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('audit.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -83,27 +85,24 @@ export default async function AuditPage({
 
   return (
     <>
-      <PageHead
-        title="Audit log"
-        description="Every admin mutation, with the fields that actually changed. Refunds, entitlement grants and role changes are the ones that have to be answerable months later."
-      />
+      <PageHead title={t('audit.title')} description={t('audit.description')} />
       <Flash searchParams={params} />
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('audit.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Action, actor email or IP"
+            placeholder={t('audit.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="entity">Entity type</label>
+          <label htmlFor="entity">{t('audit.entity_type')}</label>
           <select className="a-select" id="entity" name="entity" defaultValue={entityType ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('audit.any')}</option>
             {entityTypes.map((row) => (
               <option key={row.entityType} value={row.entityType}>
                 {row.entityType}
@@ -112,35 +111,35 @@ export default async function AuditPage({
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="from">From</label>
+          <label htmlFor="from">{t('audit.from')}</label>
           <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="to">To</label>
+          <label htmlFor="to">{t('audit.to')}</label>
           <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('audit.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('audit.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>Nothing recorded for those filters.</Empty>
+        <Empty>{t('audit.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>When</th>
-              <th>Actor</th>
-              <th>Action</th>
-              <th>Entity</th>
-              <th>Before</th>
-              <th>After</th>
+              <th>{t('audit.col_when')}</th>
+              <th>{t('audit.col_actor')}</th>
+              <th>{t('audit.col_action')}</th>
+              <th>{t('audit.col_entity')}</th>
+              <th>{t('audit.col_before')}</th>
+              <th>{t('audit.col_after')}</th>
             </tr>
           </thead>
           <tbody>
@@ -150,7 +149,7 @@ export default async function AuditPage({
                   <When value={row.createdAt} />
                   <div className="a-mono a-muted">{row.ipAddress ?? ''}</div>
                 </td>
-                <td>{row.actorEmail ?? <span className="a-muted">system</span>}</td>
+                <td>{row.actorEmail ?? <span className="a-muted">{t('audit.system')}</span>}</td>
                 <td className="a-mono">{row.action}</td>
                 <td>
                   {row.entityType}

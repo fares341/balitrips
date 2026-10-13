@@ -245,7 +245,7 @@ export function SearchOverlay({
   const subtitleOf = (hit: SearchResponseHit): string | null => {
     if (hit.subtitle !== null && hit.subtitle !== '') return hit.subtitle
     if (hit.days === null) return null
-    return `${format.number(hit.days)} ${t('c_days')}`
+    return t('c_days_n', { n: hit.days })
   }
 
   return (

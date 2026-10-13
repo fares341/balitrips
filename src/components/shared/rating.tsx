@@ -63,7 +63,7 @@ export function Rating({
   // One accessible name for the whole control. The visual parts are hidden
   // from assistive tech so the score is not read twice.
   const accessibleName =
-    countText === null ? scoreText : `${scoreText} — ${countText} ${t('c_reviews')}`
+    countText === null ? scoreText : `${scoreText} — ${t('c_reviews_n', { n: count ?? 0 })}`
 
   const glyphs = '★'.repeat(STARS)
 

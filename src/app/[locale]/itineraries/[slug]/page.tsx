@@ -202,7 +202,7 @@ export default async function ItineraryDetailPage({
             <div className="bt-dt-hero-veil" />
             <div style={{ position: 'absolute', insetInline: 0, bottom: 0, padding: 28 }}>
               <span className="tag" style={{ background: 'var(--orange)', color: '#fff' }}>
-                {format.number(itinerary.days)} {t('c_days')}
+                {t('c_days_n', { n: itinerary.days })}
               </span>
               <h1 style={{ fontSize: 'clamp(26px,4.5vw,40px)', color: '#fff', marginTop: 10 }}>
                 {name}

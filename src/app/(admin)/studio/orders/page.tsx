@@ -7,11 +7,13 @@ import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Table, When } from '../../_ui/table'
+import { orderStatusLabel } from './labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +26,7 @@ export default async function OrdersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('orders.read')
+  const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -84,63 +87,60 @@ export default async function OrdersPage({
 
   return (
     <>
-      <PageHead
-        title="Orders"
-        description="Totals are what the buyer was charged, in the currency they were charged in."
-      />
+      <PageHead title={t('orders.title')} description={t('orders.description')} />
       <Flash searchParams={params} />
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Order number, name or email"
+            placeholder={t('orders.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('orders.any')}</option>
             {ORDER_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {value.replace(/_/g, ' ')}
+                {orderStatusLabel(t, value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="from">From</label>
+          <label htmlFor="from">{t('orders.from')}</label>
           <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="to">To</label>
+          <label htmlFor="to">{t('orders.to')}</label>
           <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('orders.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No orders match those filters.</Empty>
+        <Empty>{t('orders.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Status</th>
-              <th className="num">Total</th>
-              <th>Placed</th>
+              <th>{t('orders.col_order')}</th>
+              <th>{t('orders.col_customer')}</th>
+              <th>{t('common.status')}</th>
+              <th className="num">{t('common.total')}</th>
+              <th>{t('orders.col_placed')}</th>
             </tr>
           </thead>
           <tbody>
@@ -153,7 +153,7 @@ export default async function OrdersPage({
                 </td>
                 <td>
                   {row.customerSnapshot?.name ?? row.userEmail ?? (
-                    <span className="a-muted">guest</span>
+                    <span className="a-muted">{t('orders.guest')}</span>
                   )}
                   <div className="a-muted">
                     {row.customerSnapshot?.email ?? row.userEmail ?? ''}
@@ -162,7 +162,7 @@ export default async function OrdersPage({
                 <td>
                   <OrderStatusPill status={row.status} />
                 </td>
-                <td className="num">{formatMoney(row.totalMinor, row.currency, 'en')}</td>
+                <td className="num">{formatMoney(row.totalMinor, row.currency, intl)}</td>
                 <td>
                   <When value={row.placedAt ?? row.createdAt} />
                 </td>

@@ -25,6 +25,7 @@ import { Flash } from '../../../_ui/flash'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { TierEditor } from './tier-editor'
 import { deleteActivity, saveActivity } from '../actions'
 
@@ -41,6 +42,7 @@ export default async function ActivityEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.write')
+  const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -81,7 +83,7 @@ export default async function ActivityEditorPage({
       : Promise.resolve([]),
   ])
 
-  const title = activity ? pick(activity.name, 'en', activity.slug) : 'New activity'
+  const title = activity ? pick(activity.name, locale, activity.slug) : t('activities.new')
 
   return (
     <>
@@ -89,12 +91,12 @@ export default async function ActivityEditorPage({
         title={title}
         description={
           activity
-            ? `Slug /activities/${activity.slug} — every localized field is authored here in all three locales.`
-            : 'Author in English first; Arabic and Indonesian can be filled in later and fall back until they are.'
+            ? t('activities.edit_description', { path: `/activities/${activity.slug}` })
+            : t('activities.new_description')
         }
         actions={
           <Link className="a-btn ghost" href={adminHref('/activities')}>
-            Back to list
+            {t('activities.back_to_list')}
           </Link>
         }
       />
@@ -102,12 +104,12 @@ export default async function ActivityEditorPage({
 
       <form className="a-form" action={saveActivity.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
-          <h2>Identity</h2>
+          <h2>{t('activities.section_identity')}</h2>
           <div className="a-row">
             <Field
-              label="Slug *"
+              label={t('activities.slug_required')}
               htmlFor="slug"
-              hint="Permanent public URL. Changing it breaks links."
+              hint={t('activities.slug_hint')}
             >
               <TextInput
                 id="slug"
@@ -118,14 +120,14 @@ export default async function ActivityEditorPage({
               />
             </Field>
             <Field
-              label="Legacy id"
+              label={t('activities.legacy_id')}
               htmlFor="legacyId"
-              hint="Handoff id, kept for seed cross-references."
+              hint={t('activities.legacy_id_hint')}
             >
               <TextInput id="legacyId" name="legacyId" defaultValue={activity?.legacyId ?? ''} />
             </Field>
             <StatusField value={activity?.status} />
-            <Field label="Sort order" htmlFor="sortOrder">
+            <Field label={t('activities.sort_order')} htmlFor="sortOrder">
               <TextInput
                 id="sortOrder"
                 name="sortOrder"
@@ -137,33 +139,42 @@ export default async function ActivityEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>Copy</h2>
-          <LocalizedField name="name" label="Name" value={activity?.name} required />
-          <LocalizedField name="area" label="Area" value={activity?.area} />
-          <LocalizedField name="duration" label="Duration" value={activity?.duration} />
+          <h2>{t('activities.section_copy')}</h2>
+          <LocalizedField
+            name="name"
+            label={t('activities.f_name')}
+            value={activity?.name}
+            required
+          />
+          <LocalizedField name="area" label={t('activities.f_area')} value={activity?.area} />
+          <LocalizedField
+            name="duration"
+            label={t('activities.f_duration')}
+            value={activity?.duration}
+          />
           <LocalizedField
             name="description"
-            label="Description"
+            label={t('activities.f_description')}
             value={activity?.description}
             rows={6}
           />
           <LocalizedField
             name="cancellationPolicy"
-            label="Cancellation policy"
+            label={t('activities.f_cancellation')}
             value={activity?.cancellationPolicy}
             rows={4}
-            hint="Per-activity. The prototype showed one shared policy on every tour."
+            hint={t('activities.f_cancellation_hint')}
           />
         </div>
 
         <div className="a-card">
-          <h2>Commercial</h2>
+          <h2>{t('activities.section_commercial')}</h2>
           <div className="a-row">
             <MoneyField minor={activity?.priceMinor} currency={activity?.currency} />
             <Field
-              label="Rating (tenths)"
+              label={t('activities.f_rating')}
               htmlFor="ratingTenths"
-              hint="47 means 4.7. Blank means unrated."
+              hint={t('activities.f_rating_hint')}
             >
               <TextInput
                 id="ratingTenths"
@@ -176,7 +187,7 @@ export default async function ActivityEditorPage({
                 }
               />
             </Field>
-            <Field label="Review count" htmlFor="reviewCount">
+            <Field label={t('activities.f_review_count')} htmlFor="reviewCount">
               <TextInput
                 id="reviewCount"
                 name="reviewCount"
@@ -188,33 +199,33 @@ export default async function ActivityEditorPage({
           <div className="a-row">
             <OptionField
               name="regionId"
-              label="Region"
+              label={t('activities.region')}
               options={regions}
               value={activity?.regionId}
             />
           </div>
           <MediaPicker
             name="heroImageId"
-            label="Hero image"
+            label={t('activities.hero_image')}
             items={mediaList}
             value={activity?.heroImageId}
-            hint="Picked visually rather than by object key — a list of filenames is how a temple photograph ends up on a snorkelling tour. Anything badged “placeholder” is generated artwork awaiting real photography."
+            hint={t('activities.hero_image_hint')}
           />
           <OptionChecklist
             name="categoryIds"
-            label="Categories"
+            label={t('activities.categories')}
             options={categories}
             values={selectedCategories.map((row) => row.categoryId)}
           />
         </div>
 
         <div className="a-card">
-          <h2>Booking rules</h2>
+          <h2>{t('activities.section_booking')}</h2>
           <div className="a-row">
             <Field
-              label="Lead time (hours)"
+              label={t('activities.f_lead_time')}
               htmlFor="leadTimeHours"
-              hint="Booking closes this many hours before the slot. Without it a 09:00 tour can be booked at 03:00."
+              hint={t('activities.f_lead_time_hint')}
             >
               <TextInput
                 id="leadTimeHours"
@@ -223,7 +234,7 @@ export default async function ActivityEditorPage({
                 defaultValue={String(activity?.leadTimeHours ?? 24)}
               />
             </Field>
-            <Field label="Max guests" htmlFor="maxGuests">
+            <Field label={t('activities.max_guests')} htmlFor="maxGuests">
               <TextInput
                 id="maxGuests"
                 name="maxGuests"
@@ -234,9 +245,9 @@ export default async function ActivityEditorPage({
           </div>
           <div className="a-row">
             <Field
-              label="Event starts (Bali time)"
+              label={t('activities.f_event_starts')}
               htmlFor="eventStartsAt"
-              hint="Only for dated events (category “events”). Empty = always available."
+              hint={t('activities.f_event_starts_hint')}
             >
               <TextInput
                 id="eventStartsAt"
@@ -246,9 +257,9 @@ export default async function ActivityEditorPage({
               />
             </Field>
             <Field
-              label="Event ends (Bali time)"
+              label={t('activities.f_event_ends')}
               htmlFor="eventEndsAt"
-              hint="Optional. Without it, the event leaves the Events page a day after it starts."
+              hint={t('activities.f_event_ends_hint')}
             >
               <TextInput
                 id="eventEndsAt"
@@ -259,9 +270,9 @@ export default async function ActivityEditorPage({
             </Field>
           </div>
           <Field
-            label="Time slots"
+            label={t('activities.f_time_slots')}
             htmlFor="timeSlots"
-            hint="One HH:mm per line. Leave empty for no fixed slots. Per-activity — the prototype hard-coded 09:00/11:30/14:00/16:30 everywhere."
+            hint={t('activities.f_time_slots_hint')}
           >
             <TextArea
               id="timeSlots"
@@ -273,9 +284,17 @@ export default async function ActivityEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>What is included</h2>
-          <LocalizedListField name="included" label="Included" values={activity?.included} />
-          <LocalizedListField name="excluded" label="Not included" values={activity?.excluded} />
+          <h2>{t('activities.section_included')}</h2>
+          <LocalizedListField
+            name="included"
+            label={t('activities.included')}
+            values={activity?.included}
+          />
+          <LocalizedListField
+            name="excluded"
+            label={t('activities.excluded')}
+            values={activity?.excluded}
+          />
         </div>
 
         <div className="a-card">
@@ -284,12 +303,10 @@ export default async function ActivityEditorPage({
 
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Save activity
+            {t('activities.save')}
           </button>
           {!can(session.role, 'content.publish') ? (
-            <span className="a-hint">
-              Your role cannot publish — saving as Published will be rejected.
-            </span>
+            <span className="a-hint">{t('activities.cannot_publish')}</span>
           ) : null}
         </div>
       </form>
@@ -319,14 +336,11 @@ export default async function ActivityEditorPage({
 
       {activity ? (
         <form className="a-card" action={deleteActivity.bind(null, activity.id)}>
-          <h2>Archive</h2>
-          <p className="a-hint">
-            Soft delete. The row stays so historical orders, reviews and day plans keep their
-            anchor; it disappears from the catalogue and cannot be sold.
-          </p>
+          <h2>{t('activities.section_archive')}</h2>
+          <p className="a-hint">{t('activities.archive_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
             <button className="a-btn danger" type="submit">
-              Archive activity
+              {t('activities.archive')}
             </button>
           </div>
         </form>

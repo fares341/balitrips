@@ -7,10 +7,12 @@ import { activityLog, devices, users } from '@/db/schema'
 import { ACTIVITY_ACTIONS } from '@/lib/security/activity'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { pageParam } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table, When, type PillTone } from '../../../_ui/table'
+import { labelOr } from '../labels'
 import { activityFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
@@ -36,6 +38,7 @@ export default async function ActivityPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('security.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const { q, action, user, from, to, where } = activityFilters(params)
@@ -77,47 +80,47 @@ export default async function ActivityPage({
   return (
     <>
       <PageHead
-        title="Activity log"
-        description="What users did: sign-ins, failures, new devices, PDF downloads and refused access. Admin edits are in the Audit log."
+        title={t('protection.activity_title')}
+        description={t('protection.activity_description')}
       />
 
       <form className="a-row a-card" method="get" action={LIST}>
         {user ? <input type="hidden" name="user" value={user} /> : null}
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('protection.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Email or IP"
+            placeholder={t('protection.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="action">Action</label>
+          <label htmlFor="action">{t('protection.col_action')}</label>
           <select className="a-select" id="action" name="action" defaultValue={action ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('protection.any')}</option>
             {ACTIVITY_ACTIONS.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {labelOr(t, 'protection.action_', value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="from">From</label>
+          <label htmlFor="from">{t('protection.from')}</label>
           <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="to">To</label>
+          <label htmlFor="to">{t('protection.to')}</label>
           <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('protection.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('protection.reset')}
           </Link>
           {mayExport ? (
             // Route handler: a plain <a> so the browser downloads the file.
@@ -125,23 +128,23 @@ export default async function ActivityPage({
               className="a-btn ghost"
               href={`${adminHref('/protection/activity/export')}?${exportQuery}`}
             >
-              Export CSV
+              {t('protection.export_csv')}
             </a>
           ) : null}
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>Nothing recorded for those filters.</Empty>
+        <Empty>{t('protection.activity_empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>When</th>
-              <th>User</th>
-              <th>Action</th>
-              <th>Device</th>
-              <th>Details</th>
+              <th>{t('protection.col_when')}</th>
+              <th>{t('protection.col_user')}</th>
+              <th>{t('protection.col_action')}</th>
+              <th>{t('protection.col_device')}</th>
+              <th>{t('protection.col_details')}</th>
             </tr>
           </thead>
           <tbody>
@@ -157,11 +160,13 @@ export default async function ActivityPage({
                       {row.email ?? row.userId}
                     </Link>
                   ) : (
-                    <span className="a-muted">anonymous</span>
+                    <span className="a-muted">{t('protection.anonymous')}</span>
                   )}
                 </td>
                 <td>
-                  <Pill tone={TONE[row.action] ?? 'neutral'}>{row.action}</Pill>
+                  <Pill tone={TONE[row.action] ?? 'neutral'}>
+                    {labelOr(t, 'protection.action_', row.action)}
+                  </Pill>
                 </td>
                 <td>{row.browser ? `${row.browser} · ${row.os ?? ''}` : '—'}</td>
                 <td>

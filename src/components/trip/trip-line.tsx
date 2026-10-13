@@ -80,7 +80,7 @@ export async function tripLineMeta(line: CartLineView, locale: Locale): Promise<
     // Days come from the quote, which derives them from the range. The
     // handoff hardcoded one day whatever the dates said.
     if (line.pricedQuantity !== null) {
-      parts.push(`${format.number(line.pricedQuantity)} ${t('c_days')}`)
+      parts.push(t('c_days_n', { n: line.pricedQuantity }))
     }
     if (line.guests !== null) parts.push(`${t('c_guests')}: ${format.number(line.guests)}`)
   } else if (line.kind === 'activity') {
@@ -173,7 +173,7 @@ export async function TripLine({ line, locale, controls, size = 72 }: TripLinePr
 
         {!priced && (
           <p className="bt-errmsg" style={{ marginTop: 6 }}>
-            <Icon name="cross" size={12} color="var(--orange-deep)" />
+            <Icon name="cross" size={12} color="var(--orange-ink)" />
             {t('ct2_line_off')}
           </p>
         )}
@@ -197,7 +197,7 @@ export async function TripLine({ line, locale, controls, size = 72 }: TripLinePr
         style={{
           fontWeight: 800,
           fontSize: 16,
-          color: 'var(--orange-deep)',
+          color: 'var(--orange-ink)',
           whiteSpace: 'nowrap',
         }}
       >

@@ -259,6 +259,20 @@ export function AuthModal({
       return
     }
 
+    // الإدارة والموظفون يدخلون مباشرة على لوحة التحكم. المسار السري لا يصل
+    // للمتصفح إلا لجلسة تملك صلاحية الدخول (`/api/admin-link`).
+    const adminHref = await fetch('/api/admin-link', {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then((response) => (response.ok ? response.json() : { href: null }))
+      .then((data: { href: string | null }) => data.href)
+      .catch(() => null)
+    if (adminHref !== null) {
+      window.location.assign(adminHref)
+      return
+    }
+
     // The session cookie is set; every Server Component that reads it is now
     // stale. Refresh before handing control back, so the page the visitor
     // returns to is already signed in.
@@ -496,7 +510,7 @@ export function AuthModal({
           style={{
             background: 'none',
             border: 0,
-            color: 'var(--orange-deep)',
+            color: 'var(--orange-ink)',
             fontWeight: 600,
             cursor: 'pointer',
             fontSize: 13.5,
@@ -522,7 +536,7 @@ export function AuthModal({
           style={{
             background: 'none',
             border: 0,
-            color: 'var(--orange-deep)',
+            color: 'var(--orange-ink)',
             fontWeight: 700,
             cursor: 'pointer',
             padding: 0,
@@ -676,7 +690,7 @@ export function AuthModal({
           style={{
             background: 'none',
             border: 0,
-            color: 'var(--orange-deep)',
+            color: 'var(--orange-ink)',
             fontWeight: 700,
             cursor: 'pointer',
             padding: 0,
@@ -732,7 +746,7 @@ export function AuthModal({
         style={{
           background: 'none',
           border: 0,
-          color: 'var(--orange-deep)',
+          color: 'var(--orange-ink)',
           fontWeight: 700,
           cursor: 'pointer',
           fontSize: 14,

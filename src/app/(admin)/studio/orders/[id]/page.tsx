@@ -8,9 +8,9 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import { isRefundable, type OrderStatus } from '@/lib/orders/state'
-import { paymentMethodLabel } from '@/lib/payments'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
@@ -23,6 +23,7 @@ import {
   sendItineraryPdfWhatsapp,
   setLineFulfilment,
 } from '../actions'
+import { fulfilmentLabel, orderStatusLabel, paymentMethodName, paymentStatusLabel } from '../labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,6 +43,7 @@ export default async function OrderDetailPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('orders.read')
+  const { t, intl, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -93,12 +95,12 @@ export default async function OrderDetailPage({
     <>
       <PageHead
         title={row.orderNumber}
-        description={`${row.customerSnapshot?.name ?? order.userEmail ?? 'Guest'} · ${row.customerSnapshot?.email ?? order.userEmail ?? '—'}`}
+        description={`${row.customerSnapshot?.name ?? order.userEmail ?? t('orders.guest')} · ${row.customerSnapshot?.email ?? order.userEmail ?? '—'}`}
         actions={
           <>
             <OrderStatusPill status={row.status} />
             <Link className="a-btn ghost" href={adminHref('/orders')}>
-              Back to list
+              {t('orders.back_to_list')}
             </Link>
           </>
         }
@@ -107,22 +109,22 @@ export default async function OrderDetailPage({
 
       <div className="a-grid">
         <div className="a-stat">
-          <span>Total charged</span>
-          <b>{formatMoney(row.totalMinor, row.presentmentCurrency, 'en')}</b>
+          <span>{t('orders.stat_total_charged')}</span>
+          <b>{formatMoney(row.totalMinor, row.presentmentCurrency, intl)}</b>
         </div>
         <div className="a-stat">
-          <span>Refunded</span>
-          <b>{formatMoney(refundedTotal, row.presentmentCurrency, 'en')}</b>
+          <span>{t('orders.stat_refunded')}</span>
+          <b>{formatMoney(refundedTotal, row.presentmentCurrency, intl)}</b>
         </div>
         <div className="a-stat">
-          <span>Net</span>
-          <b>{formatMoney(row.totalMinor - refundedTotal, row.presentmentCurrency, 'en')}</b>
+          <span>{t('orders.stat_net')}</span>
+          <b>{formatMoney(row.totalMinor - refundedTotal, row.presentmentCurrency, intl)}</b>
         </div>
         <div className="a-stat">
-          <span>Settlement</span>
+          <span>{t('orders.stat_settlement')}</span>
           <b>
             {row.settlementTotalMinor !== null && row.settlementCurrency
-              ? formatMoney(row.settlementTotalMinor, row.settlementCurrency, 'en')
+              ? formatMoney(row.settlementTotalMinor, row.settlementCurrency, intl)
               : '—'}
           </b>
         </div>
@@ -130,27 +132,27 @@ export default async function OrderDetailPage({
 
       <div className="a-cols">
         <div className="a-card">
-          <h2>Customer</h2>
+          <h2>{t('orders.col_customer')}</h2>
           <Table>
             <tbody>
               <tr>
-                <th>Name</th>
+                <th>{t('common.name')}</th>
                 <td>{row.customerSnapshot?.name ?? '—'}</td>
               </tr>
               <tr>
-                <th>Email</th>
+                <th>{t('common.email')}</th>
                 <td>{row.customerSnapshot?.email ?? order.userEmail ?? '—'}</td>
               </tr>
               <tr>
-                <th>Phone</th>
+                <th>{t('common.phone')}</th>
                 <td>{row.customerSnapshot?.phone ?? '—'}</td>
               </tr>
               <tr>
-                <th>Country</th>
+                <th>{t('common.country')}</th>
                 <td>{row.customerSnapshot?.country ?? '—'}</td>
               </tr>
               <tr>
-                <th>Locale</th>
+                <th>{t('common.language')}</th>
                 <td>{row.customerSnapshot?.locale ?? '—'}</td>
               </tr>
             </tbody>
@@ -158,52 +160,50 @@ export default async function OrderDetailPage({
         </div>
 
         <div className="a-card">
-          <h2>Terms and timing</h2>
+          <h2>{t('orders.terms_heading')}</h2>
           <Table>
             <tbody>
               <tr>
-                <th>Placed</th>
+                <th>{t('orders.col_placed')}</th>
                 <td>
                   <When value={row.placedAt ?? row.createdAt} />
                 </td>
               </tr>
               <tr>
-                <th>Terms accepted</th>
+                <th>{t('orders.field_terms_accepted')}</th>
                 <td>
                   <When value={row.termsAcceptedAt} />
                 </td>
               </tr>
               <tr>
-                <th>Terms version</th>
+                <th>{t('orders.field_terms_version')}</th>
                 <td className="a-mono">{row.termsVersion ?? '—'}</td>
               </tr>
               <tr>
-                <th>Exchange rate</th>
+                <th>{t('orders.field_exchange_rate')}</th>
                 <td className="a-mono">{row.exchangeRate ?? '—'}</td>
               </tr>
             </tbody>
           </Table>
           <p className="a-hint" style={{ marginBlockStart: 8 }}>
-            The timestamped acceptance is the compelling evidence that wins a &ldquo;services not
-            rendered&rdquo; dispute, and the window on future-dated travel runs up to ~540 days.
+            {t('orders.terms_hint')}
           </p>
         </div>
       </div>
 
       {mayRefund && status === 'pending' ? (
         <form className="a-card a-row" action={markOrderPaidOffline.bind(null, row.id)}>
-          <h2 style={{ width: '100%', margin: 0 }}>Record an offline payment</h2>
+          <h2 style={{ width: '100%', margin: 0 }}>{t('orders.offline_heading')}</h2>
           <p className="a-hint" style={{ width: '100%' }}>
-            For a bank transfer or cash received outside the payment page. Marks the order paid,
-            grants the plans in it, notifies the customer and issues the receipt.
+            {t('orders.offline_hint')}
           </p>
           <div className="a-field">
-            <label htmlFor="reference">Transfer / receipt reference</label>
+            <label htmlFor="reference">{t('orders.offline_reference')}</label>
             <input className="a-input" id="reference" name="reference" required minLength={3} />
           </div>
           <div className="a-actions">
             <button className="a-btn accent" type="submit">
-              Mark as paid
+              {t('orders.offline_submit')}
             </button>
           </div>
         </form>
@@ -212,55 +212,52 @@ export default async function OrderDetailPage({
       {mayFulfil &&
       (status === 'paid' || status === 'confirmed' || status === 'partially_refunded') ? (
         <div className="a-card a-row">
-          <h2 style={{ width: '100%', margin: 0 }}>Receipt</h2>
+          <h2 style={{ width: '100%', margin: 0 }}>{t('orders.receipt_heading')}</h2>
           <form action={issueReceipt.bind(null, row.id)}>
             <button className="a-btn ghost" type="submit">
-              Issue / regenerate receipt
+              {t('orders.receipt_issue')}
             </button>
           </form>
           <a className="a-btn ghost" href={adminHref(`/orders/${row.id}/receipt`)}>
-            Download receipt (PDF)
+            {t('orders.receipt_download')}
           </a>
         </div>
       ) : null}
 
       {mayFulfil && (status === 'paid' || status === 'pending') ? (
         <form className="a-card" action={confirmOrder.bind(null, row.id)}>
-          <h2>Fulfilment</h2>
-          <p className="a-hint">
-            Confirms the booking with the operator. Card payments reach <code>paid</code> only
-            through the verified webhook; bank transfers are recorded below.
-          </p>
+          <h2>{t('orders.fulfilment_heading')}</h2>
+          <p className="a-hint">{t('orders.fulfilment_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
             <button className="a-btn accent" type="submit" disabled={status !== 'paid'}>
-              Confirm order
+              {t('orders.confirm_btn')}
             </button>
             {status !== 'paid' ? (
-              <span className="a-hint">Only a paid order can be confirmed.</span>
+              <span className="a-hint">{t('orders.confirm_only_paid')}</span>
             ) : null}
           </div>
         </form>
       ) : null}
 
       <div className="a-card">
-        <h2>Line items</h2>
+        <h2>{t('orders.lines_heading')}</h2>
         <Table>
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Travel</th>
-              <th className="num">Unit</th>
-              <th className="num">Qty</th>
-              <th className="num">Line total</th>
-              <th className="num">Refunded</th>
-              <th>Fulfilment</th>
+              <th>{t('orders.col_item')}</th>
+              <th>{t('orders.col_travel')}</th>
+              <th className="num">{t('orders.col_unit')}</th>
+              <th className="num">{t('orders.col_qty')}</th>
+              <th className="num">{t('orders.col_line_total')}</th>
+              <th className="num">{t('orders.col_refunded')}</th>
+              <th>{t('orders.col_fulfilment')}</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((line) => (
               <tr key={line.id}>
                 <td>
-                  <strong>{pick(line.nameSnapshot, 'en', line.kind)}</strong>
+                  <strong>{pick(line.nameSnapshot, locale, line.kind)}</strong>
                   <div className="a-muted">
                     {line.kind}
                     {line.refVersion !== null ? ` · v${line.refVersion}` : ''}
@@ -270,22 +267,24 @@ export default async function OrderDetailPage({
                 <td className="a-mono">
                   {line.travelDate ?? '—'}
                   {line.travelTime ? ` ${line.travelTime.slice(0, 5)}` : ''}
-                  {line.endDate ? ` → ${line.endDate}` : ''}
-                  {line.guests !== null ? ` · ${line.guests} guest(s)` : ''}
+                  {line.endDate ? ` – ${line.endDate}` : ''}
+                  {line.guests !== null
+                    ? ` · ${t('orders.guests_count', { count: line.guests })}`
+                    : ''}
                 </td>
                 <td className="num">
-                  {formatMoney(line.unitPriceMinor, row.presentmentCurrency, 'en')}
+                  {formatMoney(line.unitPriceMinor, row.presentmentCurrency, intl)}
                 </td>
                 <td className="num">{line.quantity}</td>
                 <td className="num">
-                  {formatMoney(line.lineTotalMinor, row.presentmentCurrency, 'en')}
+                  {formatMoney(line.lineTotalMinor, row.presentmentCurrency, intl)}
                 </td>
                 <td className="num">
-                  {formatMoney(line.refundedMinor, row.presentmentCurrency, 'en')}
+                  {formatMoney(line.refundedMinor, row.presentmentCurrency, intl)}
                 </td>
                 <td>
                   <Pill tone={FULFILMENT_TONES[line.fulfilmentStatus] ?? 'neutral'}>
-                    {line.fulfilmentStatus}
+                    {fulfilmentLabel(t, line.fulfilmentStatus)}
                   </Pill>
                   {mayFulfil && line.fulfilmentStatus !== 'refunded' ? (
                     <form
@@ -297,7 +296,7 @@ export default async function OrderDetailPage({
                         type="submit"
                         style={{ marginBlockStart: 6 }}
                       >
-                        Mark delivered
+                        {t('orders.mark_delivered')}
                       </button>
                     </form>
                   ) : null}
@@ -314,9 +313,9 @@ export default async function OrderDetailPage({
                         className="a-btn ghost small"
                         type="submit"
                         style={{ marginBlockStart: 6 }}
-                        title="Sends a WhatsApp message with a link to the secure viewer in the customer's account (opted-in customers only)."
+                        title={t('orders.whatsapp_title')}
                       >
-                        Send PDF via WhatsApp
+                        {t('orders.whatsapp_btn')}
                       </button>
                     </form>
                   ) : null}
@@ -329,18 +328,15 @@ export default async function OrderDetailPage({
 
       {mayRefund ? (
         <div className="a-card">
-          <h2>Partial refund</h2>
+          <h2>{t('orders.refund_heading')}</h2>
           {!isRefundable(status) ? (
             <p className="a-hint">
-              An order in status <strong>{status.replace(/_/g, ' ')}</strong> cannot be refunded.
+              {t('orders.not_refundable', { status: orderStatusLabel(t, status) })}
             </p>
           ) : (
             <>
               <p className="a-hint">
-                Refund one line at a time. Amounts are integer minor units in{' '}
-                {row.presentmentCurrency}. The order status is recomputed from the running total, so
-                partials that add up to the full charge land on <code>refunded</code> — and a refund
-                that clears map access revokes the entitlement it granted.
+                {t('orders.refund_hint', { currency: row.presentmentCurrency })}
               </p>
               <div
                 style={{
@@ -362,15 +358,19 @@ export default async function OrderDetailPage({
                       >
                         <input type="hidden" name="orderItemId" value={line.id} />
                         <div className="a-day-head">
-                          <div className="a-day-no">{pick(line.nameSnapshot, 'en', line.kind)}</div>
+                          <div className="a-day-no">
+                            {pick(line.nameSnapshot, locale, line.kind)}
+                          </div>
                           <span className="a-hint">
-                            {formatMoney(remaining, row.presentmentCurrency, 'en')} refundable (
-                            {remaining} minor units)
+                            {t('orders.refundable', {
+                              amount: formatMoney(remaining, row.presentmentCurrency, intl),
+                              minor: remaining,
+                            })}
                           </span>
                         </div>
                         <div className="a-row">
                           <div className="a-field">
-                            <label htmlFor={`amount-${line.id}`}>Amount (minor units)</label>
+                            <label htmlFor={`amount-${line.id}`}>{t('orders.refund_amount')}</label>
                             <input
                               className="a-input"
                               id={`amount-${line.id}`}
@@ -381,17 +381,17 @@ export default async function OrderDetailPage({
                             />
                           </div>
                           <div className="a-field">
-                            <label htmlFor={`reason-${line.id}`}>Reason</label>
+                            <label htmlFor={`reason-${line.id}`}>{t('orders.refund_reason')}</label>
                             <input
                               className="a-input"
                               id={`reason-${line.id}`}
                               name="reason"
-                              placeholder="Recorded on the refund and in the audit log"
+                              placeholder={t('orders.refund_reason_placeholder')}
                             />
                           </div>
                           <div className="a-actions">
                             <button className="a-btn danger" type="submit">
-                              Refund line
+                              {t('orders.refund_line_btn')}
                             </button>
                           </div>
                         </div>
@@ -399,7 +399,7 @@ export default async function OrderDetailPage({
                     )
                   })}
                 {lines.every((line) => line.refundedMinor >= line.lineTotalMinor) ? (
-                  <Empty>Every line has been fully refunded.</Empty>
+                  <Empty>{t('orders.all_refunded')}</Empty>
                 ) : null}
               </div>
             </>
@@ -409,17 +409,17 @@ export default async function OrderDetailPage({
 
       <div className="a-cols">
         <div className="a-card">
-          <h2>Payments</h2>
+          <h2>{t('orders.payments_heading')}</h2>
           {paymentRows.length === 0 ? (
-            <Empty>No payment attempts recorded.</Empty>
+            <Empty>{t('orders.payments_empty')}</Empty>
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <th>Provider</th>
-                  <th>Status</th>
-                  <th className="num">Amount</th>
-                  <th>Created</th>
+                  <th>{t('orders.col_provider')}</th>
+                  <th>{t('common.status')}</th>
+                  <th className="num">{t('common.amount')}</th>
+                  <th>{t('common.created')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -427,16 +427,16 @@ export default async function OrderDetailPage({
                   <tr key={payment.id}>
                     <td>
                       {payment.provider}
-                      {payment.method ? <div>{paymentMethodLabel(payment.method)}</div> : null}
+                      {payment.method ? <div>{paymentMethodName(t, payment.method)}</div> : null}
                       <div className="a-mono a-muted">{payment.providerPaymentId ?? '—'}</div>
                     </td>
                     <td>
                       <Pill tone={payment.status === 'succeeded' ? 'good' : 'neutral'}>
-                        {payment.status}
+                        {paymentStatusLabel(t, payment.status)}
                       </Pill>
                     </td>
                     <td className="num">
-                      {formatMoney(payment.amountMinor, payment.currency, 'en')}
+                      {formatMoney(payment.amountMinor, payment.currency, intl)}
                     </td>
                     <td>
                       <When value={payment.createdAt} />
@@ -449,27 +449,29 @@ export default async function OrderDetailPage({
         </div>
 
         <div className="a-card">
-          <h2>Refunds</h2>
+          <h2>{t('orders.refunds_heading')}</h2>
           {refundRows.length === 0 ? (
-            <Empty>No refunds issued.</Empty>
+            <Empty>{t('orders.refunds_empty')}</Empty>
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <th className="num">Amount</th>
-                  <th>Reason</th>
-                  <th>By</th>
-                  <th>When</th>
+                  <th className="num">{t('common.amount')}</th>
+                  <th>{t('orders.col_reason')}</th>
+                  <th>{t('orders.col_by')}</th>
+                  <th>{t('orders.col_when')}</th>
                 </tr>
               </thead>
               <tbody>
                 {refundRows.map((refund) => (
                   <tr key={refund.id}>
                     <td className="num">
-                      {formatMoney(refund.amountMinor, refund.currency, 'en')}
+                      {formatMoney(refund.amountMinor, refund.currency, intl)}
                     </td>
                     <td>{refund.reason ?? <span className="a-muted">—</span>}</td>
-                    <td>{refund.actorEmail ?? <span className="a-muted">system</span>}</td>
+                    <td>
+                      {refund.actorEmail ?? <span className="a-muted">{t('orders.system')}</span>}
+                    </td>
                     <td>
                       <When value={refund.createdAt} />
                     </td>
@@ -482,17 +484,17 @@ export default async function OrderDetailPage({
       </div>
 
       <div className="a-card">
-        <h2>Entitlements granted by this order</h2>
+        <h2>{t('orders.grants_heading')}</h2>
         {grants.length === 0 ? (
-          <Empty>This order granted no entitlements.</Empty>
+          <Empty>{t('orders.grants_empty')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Kind</th>
-                <th>Starts</th>
-                <th>Expires</th>
-                <th>Revoked</th>
+                <th>{t('orders.col_kind')}</th>
+                <th>{t('orders.col_starts')}</th>
+                <th>{t('orders.col_expires')}</th>
+                <th>{t('orders.col_revoked')}</th>
               </tr>
             </thead>
             <tbody>
@@ -506,7 +508,7 @@ export default async function OrderDetailPage({
                     {grant.expiresAt ? (
                       <When value={grant.expiresAt} />
                     ) : (
-                      <Pill tone="good">lifetime</Pill>
+                      <Pill tone="good">{t('orders.lifetime')}</Pill>
                     )}
                   </td>
                   <td>
@@ -516,7 +518,7 @@ export default async function OrderDetailPage({
                         <div className="a-muted">{grant.revokedReason ?? ''}</div>
                       </>
                     ) : (
-                      <Pill tone="good">active</Pill>
+                      <Pill tone="good">{t('orders.active')}</Pill>
                     )}
                   </td>
                 </tr>

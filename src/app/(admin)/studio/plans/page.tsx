@@ -7,6 +7,7 @@ import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
@@ -20,6 +21,7 @@ export default async function PlansPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('content.read')
+  const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
   const rows = await db
@@ -43,29 +45,29 @@ export default async function PlansPage({
   return (
     <>
       <PageHead
-        title="Plans"
-        description="What /plans sells. Buying a plan grants an entitlement with this plan's access, duration and device limit, copied at purchase time."
+        title={t('plans.title')}
+        description={t('plans.description')}
         actions={
           <Link className="a-btn" href={adminHref('/plans/new')}>
-            New plan
+            {t('plans.new')}
           </Link>
         }
       />
       <Flash searchParams={params} />
 
       {rows.length === 0 ? (
-        <Empty>No plans yet.</Empty>
+        <Empty>{t('plans.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Plan</th>
-              <th>Price</th>
-              <th>Map access</th>
-              <th>Duration</th>
-              <th>Devices</th>
-              <th>Active customers</th>
-              <th>Status</th>
+              <th>{t('plans.col_plan')}</th>
+              <th>{t('common.price')}</th>
+              <th>{t('plans.map_access')}</th>
+              <th>{t('plans.col_duration')}</th>
+              <th>{t('plans.col_devices')}</th>
+              <th>{t('plans.col_active')}</th>
+              <th>{t('common.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,15 +75,21 @@ export default async function PlansPage({
               <tr key={plan.id}>
                 <td>
                   <Link href={adminHref(`/plans/${plan.id}`)}>
-                    {pick(plan.name, 'en', plan.slug)}
+                    {pick(plan.name, locale, plan.slug)}
                   </Link>
                   <div className="a-mono a-muted">{plan.slug}</div>
                 </td>
-                <td>{formatMoney(plan.priceMinor, plan.currency, 'en')}</td>
+                <td>{formatMoney(plan.priceMinor, plan.currency, intl)}</td>
                 <td className="a-mono">
-                  {plan.entitlementKind === 'basic' ? 'none (PDF only)' : plan.entitlementKind}
+                  {plan.entitlementKind === 'basic'
+                    ? t('plans.kind_none_short')
+                    : plan.entitlementKind}
                 </td>
-                <td>{plan.durationDays === null ? 'Lifetime' : `${plan.durationDays} days`}</td>
+                <td>
+                  {plan.durationDays === null
+                    ? t('plans.lifetime')
+                    : t('plans.days', { count: plan.durationDays })}
+                </td>
                 <td>{plan.deviceLimit}</td>
                 <td>{active}</td>
                 <td>
@@ -92,10 +100,7 @@ export default async function PlansPage({
           </tbody>
         </Table>
       )}
-      <p className="a-hint">
-        {legacy?.value ?? 0} live entitlement(s) were granted without a plan (manual grants or
-        before plans existed). They use the default device limit and allow My Trip.
-      </p>
+      <p className="a-hint">{t('plans.legacy_hint', { count: legacy?.value ?? 0 })}</p>
     </>
   )
 }

@@ -12,6 +12,7 @@ import { Field, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
+import { getAdminI18n } from '../../_lib/i18n'
 import { banIp, liftDeviceBan, liftIpBan, liftSuspension, saveSecuritySettings } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,7 @@ export default async function ProtectionPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('security.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
   const mayWrite = can(session.role, 'security.write')
   const now = new Date()
@@ -97,32 +99,29 @@ export default async function ProtectionPage({
 
   return (
     <>
-      <PageHead
-        title="Protection"
-        description="Bans and anti-sharing signals. Banning a specific account or device is done from the customer's page."
-      />
+      <PageHead title={t('protection.title')} description={t('protection.description')} />
       <Flash searchParams={params} />
 
       <div className="a-card">
         <h2>
-          Alerts awaiting review:{' '}
+          {t('protection.alerts_awaiting')}{' '}
           <Link href={adminHref('/protection/alerts')}>{openAlerts?.value ?? 0}</Link>
         </h2>
         <p className="a-hint">
-          Raised automatically by the detection rules.{' '}
-          <Link href={adminHref('/protection/sessions')}>Live sessions →</Link>
+          {t('protection.alerts_hint')}{' '}
+          <Link href={adminHref('/protection/sessions')}>{t('protection.live_sessions_link')}</Link>
         </p>
       </div>
 
       <div className="a-card">
-        <h2>Settings</h2>
+        <h2>{t('protection.settings')}</h2>
         <form className="a-form" action={saveSecuritySettings}>
           <fieldset disabled={!mayWrite} style={{ border: 0, padding: 0, margin: 0 }}>
             <div className="a-row">
               <Field
-                label="Default device limit"
+                label={t('protection.default_device_limit')}
                 htmlFor="defaultDeviceLimit"
-                hint="Used when an account's entitlements do not set their own device_limit."
+                hint={t('protection.default_device_limit_hint')}
               >
                 <TextInput
                   id="defaultDeviceLimit"
@@ -133,34 +132,36 @@ export default async function ProtectionPage({
                   defaultValue={settings.defaultDeviceLimit}
                 />
               </Field>
-              <Field label="When a new device exceeds the limit" htmlFor="newDevicePolicy">
+              <Field label={t('protection.new_device_policy')} htmlFor="newDevicePolicy">
                 <select
                   className="a-select"
                   id="newDevicePolicy"
                   name="newDevicePolicy"
                   defaultValue={settings.newDevicePolicy}
                 >
-                  <option value="block">Refuse sign-in (user removes a device)</option>
-                  <option value="evict_oldest">Sign out the oldest device</option>
-                  <option value="require_approval">Needs admin approval</option>
-                  <option value="warn">Allow, and show an upgrade message</option>
+                  <option value="block">{t('protection.policy_block')}</option>
+                  <option value="evict_oldest">{t('protection.policy_evict_oldest')}</option>
+                  <option value="require_approval">
+                    {t('protection.policy_require_approval')}
+                  </option>
+                  <option value="warn">{t('protection.policy_warn')}</option>
                 </select>
               </Field>
-              <Field label="PDF downloads" htmlFor="pdfDownloads">
+              <Field label={t('protection.pdf_downloads')} htmlFor="pdfDownloads">
                 <select
                   className="a-select"
                   id="pdfDownloads"
                   name="pdfDownloads"
                   defaultValue={settings.pdfDownloads}
                 >
-                  <option value="allow">Allow (watermarked)</option>
-                  <option value="view_only">View in browser only</option>
+                  <option value="allow">{t('protection.pdf_allow')}</option>
+                  <option value="view_only">{t('protection.pdf_view_only')}</option>
                 </select>
               </Field>
               <Field
-                label="Downloads per schedule"
+                label={t('protection.downloads_per_schedule')}
                 htmlFor="maxDownloadsPerItem"
-                hint="0 = unlimited. Viewing in the browser never counts."
+                hint={t('protection.downloads_per_schedule_hint')}
               >
                 <TextInput
                   id="maxDownloadsPerItem"
@@ -177,15 +178,12 @@ export default async function ProtectionPage({
               style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 8 }}
             >
               <input type="checkbox" name="autoBan" defaultChecked={settings.autoBan} />
-              Automatic actions: 1h IP ban for credential stuffing, 24h account ban for heavy device
-              switching, and suspension pending review for repeated over-the-limit sign-ins or
-              repeated attempts on content the account does not own. Staff and admin accounts are
-              never acted on automatically. Alerts are raised either way.
+              {t('protection.auto_ban')}
             </label>
             {mayWrite ? (
               <div className="a-actions">
                 <button className="a-btn" type="submit">
-                  Save settings
+                  {t('protection.save_settings')}
                 </button>
               </div>
             ) : null}
@@ -196,11 +194,11 @@ export default async function ProtectionPage({
       <div className="a-row">
         {(
           [
-            ['login_failed', 'Failed sign-ins'],
-            ['device_limit_blocked', 'Device-limit refusals'],
-            ['login_blocked', 'Blocked sign-ins'],
-            ['unauthorized_access', 'Unauthorized access'],
-            ['new_device', 'New devices'],
+            ['login_failed', t('protection.stat_login_failed')],
+            ['device_limit_blocked', t('protection.stat_device_limit_blocked')],
+            ['login_blocked', t('protection.stat_login_blocked')],
+            ['unauthorized_access', t('protection.stat_unauthorized_access')],
+            ['new_device', t('protection.stat_new_device')],
           ] as const
         ).map(([action, label]) => (
           <Link
@@ -209,27 +207,24 @@ export default async function ProtectionPage({
             href={activityHref(action)}
             style={{ minWidth: 160 }}
           >
-            <div className="a-muted">{label} · 24h</div>
+            <div className="a-muted">{t('protection.stat_24h', { label })}</div>
             <div style={{ fontSize: 28, fontWeight: 700 }}>{count(action)}</div>
           </Link>
         ))}
       </div>
 
       <div className="a-card">
-        <h2>Suspended accounts (pending review)</h2>
-        <p className="a-hint">
-          Suspended automatically by the protection rules. They cannot sign in or open paid content
-          until reactivated. Review the account&apos;s activity first.
-        </p>
+        <h2>{t('protection.suspended_title')}</h2>
+        <p className="a-hint">{t('protection.suspended_hint')}</p>
         {suspendedUsers.length === 0 ? (
-          <Empty>No account is waiting for review.</Empty>
+          <Empty>{t('protection.suspended_empty')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Account</th>
-                <th>Reason</th>
-                <th>Since</th>
+                <th>{t('protection.col_account')}</th>
+                <th>{t('protection.col_reason')}</th>
+                <th>{t('protection.col_since')}</th>
                 <th />
               </tr>
             </thead>
@@ -242,7 +237,7 @@ export default async function ProtectionPage({
                       className="a-muted"
                       href={adminHref(`/protection/activity?user=${row.id}`)}
                     >
-                      activity
+                      {t('protection.activity_link')}
                     </Link>
                   </td>
                   <td>{row.reason ?? '—'}</td>
@@ -254,7 +249,7 @@ export default async function ProtectionPage({
                       <form className="a-inline-form" action={liftSuspension}>
                         <input type="hidden" name="userId" value={row.id} />
                         <button className="a-btn accent small" type="submit">
-                          Reactivate
+                          {t('protection.reactivate')}
                         </button>
                       </form>
                     ) : null}
@@ -267,16 +262,16 @@ export default async function ProtectionPage({
       </div>
 
       <div className="a-card">
-        <h2>Banned accounts</h2>
+        <h2>{t('protection.banned_title')}</h2>
         {bannedUsers.length === 0 ? (
-          <Empty>No account is banned.</Empty>
+          <Empty>{t('protection.banned_empty')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Account</th>
-                <th>Reason</th>
-                <th>Until</th>
+                <th>{t('protection.col_account')}</th>
+                <th>{t('protection.col_reason')}</th>
+                <th>{t('protection.col_until')}</th>
               </tr>
             </thead>
             <tbody>
@@ -290,7 +285,7 @@ export default async function ProtectionPage({
                     {row.bannedUntil ? (
                       <When value={row.bannedUntil} />
                     ) : (
-                      <Pill tone="bad">permanent</Pill>
+                      <Pill tone="bad">{t('protection.permanent')}</Pill>
                     )}
                   </td>
                 </tr>
@@ -301,45 +296,42 @@ export default async function ProtectionPage({
       </div>
 
       <div className="a-card">
-        <h2>IP bans</h2>
+        <h2>{t('protection.ip_bans_title')}</h2>
         {mayWrite ? (
           <form className="a-row" action={banIp} style={{ marginBlockEnd: 12 }}>
-            <Field label="IP address" htmlFor="ip">
+            <Field label={t('protection.ip_address')} htmlFor="ip">
               <TextInput id="ip" name="ip" required placeholder="203.0.113.7" />
             </Field>
-            <Field label="Reason" htmlFor="ip-reason">
+            <Field label={t('protection.reason')} htmlFor="ip-reason">
               <TextInput id="ip-reason" name="reason" required />
             </Field>
-            <Field label="Duration" htmlFor="ip-duration">
+            <Field label={t('protection.duration')} htmlFor="ip-duration">
               <select className="a-select" id="ip-duration" name="duration" defaultValue="24h">
-                <option value="1h">1 hour</option>
-                <option value="24h">24 hours</option>
-                <option value="7d">7 days</option>
-                <option value="30d">30 days</option>
-                <option value="permanent">Permanent</option>
+                <option value="1h">{t('protection.duration_1h')}</option>
+                <option value="24h">{t('protection.duration_24h')}</option>
+                <option value="7d">{t('protection.duration_7d')}</option>
+                <option value="30d">{t('protection.duration_30d')}</option>
+                <option value="permanent">{t('protection.duration_permanent')}</option>
               </select>
             </Field>
             <div className="a-actions">
               <button className="a-btn danger" type="submit">
-                Ban IP
+                {t('protection.ban_ip')}
               </button>
             </div>
           </form>
         ) : null}
-        <p className="a-hint">
-          Shared networks (hotels, airports, mobile carriers) put many travellers behind one
-          address. Prefer short bans, and prefer banning the account or device.
-        </p>
+        <p className="a-hint">{t('protection.ip_hint')}</p>
         {ipBans.length === 0 ? (
-          <Empty>No active IP bans.</Empty>
+          <Empty>{t('protection.ip_bans_empty')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>IP</th>
-                <th>Reason</th>
-                <th>Until</th>
-                <th>By</th>
+                <th>{t('protection.col_ip')}</th>
+                <th>{t('protection.col_reason')}</th>
+                <th>{t('protection.col_until')}</th>
+                <th>{t('protection.col_by')}</th>
                 <th />
               </tr>
             </thead>
@@ -349,7 +341,11 @@ export default async function ProtectionPage({
                   <td className="a-mono">{ban.ip}</td>
                   <td>{ban.reason}</td>
                   <td>
-                    {ban.until ? <When value={ban.until} /> : <Pill tone="bad">permanent</Pill>}
+                    {ban.until ? (
+                      <When value={ban.until} />
+                    ) : (
+                      <Pill tone="bad">{t('protection.permanent')}</Pill>
+                    )}
                   </td>
                   <td>{by ?? '—'}</td>
                   <td>
@@ -357,7 +353,7 @@ export default async function ProtectionPage({
                       <form className="a-inline-form" action={liftIpBan}>
                         <input type="hidden" name="banId" value={ban.id} />
                         <button className="a-btn small" type="submit">
-                          Lift
+                          {t('protection.lift')}
                         </button>
                       </form>
                     ) : null}
@@ -370,17 +366,17 @@ export default async function ProtectionPage({
       </div>
 
       <div className="a-card">
-        <h2>Platform-wide device bans</h2>
+        <h2>{t('protection.device_bans_title')}</h2>
         {deviceBans.length === 0 ? (
-          <Empty>No device fingerprint is banned platform-wide.</Empty>
+          <Empty>{t('protection.device_bans_empty')}</Empty>
         ) : (
           <Table>
             <thead>
               <tr>
-                <th>Fingerprint</th>
-                <th>Reason</th>
-                <th>By</th>
-                <th>Since</th>
+                <th>{t('protection.col_fingerprint')}</th>
+                <th>{t('protection.col_reason')}</th>
+                <th>{t('protection.col_by')}</th>
+                <th>{t('protection.col_since')}</th>
                 <th />
               </tr>
             </thead>
@@ -398,7 +394,7 @@ export default async function ProtectionPage({
                       <form className="a-inline-form" action={liftDeviceBan}>
                         <input type="hidden" name="banId" value={ban.id} />
                         <button className="a-btn small" type="submit">
-                          Lift
+                          {t('protection.lift')}
                         </button>
                       </form>
                     ) : null}

@@ -13,6 +13,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, PublishPill, Table, When } from '../../_ui/table'
+import { getAdminI18n } from '../../_lib/i18n'
 import { setActivityStatus } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,7 @@ export default async function ActivitiesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -88,12 +90,12 @@ export default async function ActivitiesPage({
   return (
     <>
       <PageHead
-        title="Activities"
-        description="Per-activity inclusions, FAQ, time slots and lead time — not one shared list across every tour."
+        title={t('activities.title')}
+        description={t('activities.list_description')}
         actions={
           mayWrite ? (
             <Link className="a-btn" href={adminHref('/activities/new')}>
-              New activity
+              {t('activities.new')}
             </Link>
           ) : null
         }
@@ -102,57 +104,57 @@ export default async function ActivitiesPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Name, area or slug"
+            placeholder={t('activities.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">Any</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
+            <option value="">{t('common.all')}</option>
+            <option value="draft">{t('common.draft')}</option>
+            <option value="published">{t('common.published')}</option>
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="region">Region</label>
+          <label htmlFor="region">{t('activities.region')}</label>
           <select className="a-select" id="region" name="region" defaultValue={regionId ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('common.all')}</option>
             {regionRows.map((region) => (
               <option key={region.id} value={region.id}>
-                {pick(region.label, 'en', region.key)}
+                {pick(region.label, locale, region.key)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('common.clear')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No activities match those filters.</Empty>
+        <Empty>{t('activities.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Region</th>
-              <th>Status</th>
-              <th className="num">Price</th>
-              <th className="num">Max guests</th>
-              <th className="num">Lead time</th>
-              <th>Updated</th>
+              <th>{t('common.name')}</th>
+              <th>{t('activities.region')}</th>
+              <th>{t('common.status')}</th>
+              <th className="num">{t('common.price')}</th>
+              <th className="num">{t('activities.max_guests')}</th>
+              <th className="num">{t('activities.lead_time')}</th>
+              <th>{t('common.updated')}</th>
               <th />
             </tr>
           </thead>
@@ -161,13 +163,13 @@ export default async function ActivitiesPage({
               <tr key={row.id}>
                 <td>
                   <Link href={adminHref(`/activities/${row.id}`)}>
-                    {pick(row.name, 'en', row.slug)}
+                    {pick(row.name, locale, row.slug)}
                   </Link>
                   <div className="a-mono a-muted">{row.slug}</div>
                 </td>
                 <td>
                   {row.regionKey ? (
-                    pick(row.regionLabel, 'en', row.regionKey)
+                    pick(row.regionLabel, locale, row.regionKey)
                   ) : (
                     <span className="a-muted">—</span>
                   )}
@@ -175,9 +177,9 @@ export default async function ActivitiesPage({
                 <td>
                   <PublishPill status={row.status} />
                 </td>
-                <td className="num">{formatMoney(row.priceMinor, row.currency, 'en')}</td>
+                <td className="num">{formatMoney(row.priceMinor, row.currency, intl)}</td>
                 <td className="num">{row.maxGuests}</td>
-                <td className="num">{row.leadTimeHours}h</td>
+                <td className="num">{t('activities.hours_short', { hours: row.leadTimeHours })}</td>
                 <td>
                   <When value={row.updatedAt} />
                 </td>
@@ -192,7 +194,9 @@ export default async function ActivitiesPage({
                       )}
                     >
                       <button className="a-btn ghost small" type="submit">
-                        {row.status === 'published' ? 'Unpublish' : 'Publish'}
+                        {row.status === 'published'
+                          ? t('activities.unpublish')
+                          : t('activities.publish')}
                       </button>
                     </form>
                   ) : null}

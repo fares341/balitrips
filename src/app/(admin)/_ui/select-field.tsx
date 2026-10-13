@@ -1,14 +1,15 @@
 import type { Option } from '../_lib/lookups'
 import { Field, Select } from './field'
+import { uiI18n } from './i18n-server'
 
 /** Single-choice reference field, with an explicit "none" when optional. */
-export function OptionField({
+export async function OptionField({
   name,
   label,
   options,
   value,
   hint,
-  emptyLabel = '— none —',
+  emptyLabel,
   required,
 }: {
   name: string
@@ -19,10 +20,11 @@ export function OptionField({
   emptyLabel?: string
   required?: boolean
 }) {
+  const { t } = await uiI18n()
   return (
-    <Field label={label} htmlFor={name} hint={hint}>
+    <Field label={label} htmlFor={name} hint={hint} required={required}>
       <Select id={name} name={name} defaultValue={value ?? ''} required={required}>
-        {required ? null : <option value="">{emptyLabel}</option>}
+        {required ? null : <option value="">{emptyLabel ?? t('ui.select_none')}</option>}
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
@@ -38,7 +40,7 @@ export function OptionField({
  * multi-select: a native multi-select needs ctrl-click to add a second
  * value, which operators lose items to constantly.
  */
-export function OptionChecklist({
+export async function OptionChecklist({
   name,
   label,
   options,
@@ -51,6 +53,7 @@ export function OptionChecklist({
   values: readonly string[]
   hint?: string
 }) {
+  const { t } = await uiI18n()
   const selected = new Set(values)
 
   return (
@@ -58,9 +61,9 @@ export function OptionChecklist({
       <legend>{label}</legend>
       {hint ? <span className="a-hint">{hint}</span> : null}
       {options.length === 0 ? (
-        <span className="a-hint">Nothing to choose from yet.</span>
+        <span className="a-hint">{t('ui.checklist_empty')}</span>
       ) : (
-        <div className="a-l10n">
+        <div className="a-checklist">
           {options.map((option) => (
             <label className="a-check" key={option.value}>
               <input

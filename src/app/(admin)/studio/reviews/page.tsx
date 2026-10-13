@@ -7,6 +7,7 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -25,6 +26,7 @@ export default async function ReviewsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
+  const { t } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -63,12 +65,12 @@ export default async function ReviewsPage({
   return (
     <>
       <PageHead
-        title="Reviews"
-        description="Every review belongs to an activity. One tied to a real order shows as verified."
+        title={t('reviews.title')}
+        description={t('reviews.description')}
         actions={
           can(session.role, 'content.write') ? (
             <Link className="a-btn" href={adminHref('/reviews/new')}>
-              New review
+              {t('reviews.new')}
             </Link>
           ) : null
         }
@@ -77,39 +79,39 @@ export default async function ReviewsPage({
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Author</label>
+          <label htmlFor="q">{t('reviews.author')}</label>
           <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="state">State</label>
+          <label htmlFor="state">{t('reviews.state')}</label>
           <select className="a-select" id="state" name="state" defaultValue={state ?? ''}>
-            <option value="">Any</option>
-            <option value="published">Published</option>
-            <option value="hidden">Hidden</option>
+            <option value="">{t('common.all')}</option>
+            <option value="published">{t('common.published')}</option>
+            <option value="hidden">{t('common.hidden')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('reviews.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No reviews match those filters.</Empty>
+        <Empty>{t('reviews.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Author</th>
-              <th className="num">Stars</th>
-              <th>Activity</th>
-              <th>Body</th>
-              <th>State</th>
-              <th>Received</th>
+              <th>{t('reviews.author')}</th>
+              <th className="num">{t('reviews.col_stars')}</th>
+              <th>{t('reviews.col_activity')}</th>
+              <th>{t('reviews.col_body')}</th>
+              <th>{t('reviews.state')}</th>
+              <th>{t('reviews.col_received')}</th>
               <th />
             </tr>
           </thead>
@@ -121,7 +123,7 @@ export default async function ReviewsPage({
                   {row.orderId ? (
                     <>
                       {' '}
-                      <Pill tone="good">verified</Pill>
+                      <Pill tone="good">{t('reviews.pill_verified')}</Pill>
                     </>
                   ) : null}
                 </td>
@@ -130,13 +132,13 @@ export default async function ReviewsPage({
                   {row.activitySlug ? (
                     pick(row.activityName, 'en', row.activitySlug)
                   ) : (
-                    <Pill tone="bad">unattached</Pill>
+                    <Pill tone="bad">{t('reviews.pill_unattached')}</Pill>
                   )}
                 </td>
                 <td className="a-json">{pick(row.body, 'en').slice(0, 140)}</td>
                 <td>
                   <Pill tone={row.isPublished ? 'good' : 'neutral'}>
-                    {row.isPublished ? 'published' : 'hidden'}
+                    {row.isPublished ? t('reviews.pill_published') : t('reviews.pill_hidden')}
                   </Pill>
                 </td>
                 <td>
@@ -149,7 +151,7 @@ export default async function ReviewsPage({
                       action={setReviewPublished.bind(null, row.id, !row.isPublished)}
                     >
                       <button className="a-btn ghost small" type="submit">
-                        {row.isPublished ? 'Hide' : 'Publish'}
+                        {row.isPublished ? t('reviews.hide') : t('reviews.publish')}
                       </button>
                     </form>
                   ) : null}

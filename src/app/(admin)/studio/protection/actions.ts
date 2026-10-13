@@ -20,12 +20,14 @@ import { normalizeIp } from '@/lib/security/ip'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import { getAdminI18n } from '../../_lib/i18n'
 import { fbool, fenum, fint, freq, fstr, fuuid } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability, type AdminSession } from '../../_lib/session'
 import { parseSetting, SETTING_DEFAULTS } from '../../_lib/settings'
 import { clearSessionVerification } from '../../_lib/two-factor'
 import { clearAllVerifications } from '../../_lib/two-factor'
+import type { Translate } from '../../_i18n'
 
 /**
  * إجراءات الحظر وإدارة الأجهزة.
@@ -56,10 +58,11 @@ function untilFor(duration: BanDuration, now = new Date()): Date | null {
 const customerHref = (id: string) => adminHref(`/customers/${id}`)
 const PROTECTION = adminHref('/protection')
 
-async function run(back: string, body: () => Promise<string>): Promise<never> {
+async function run(back: string, body: (t: Translate) => Promise<string>): Promise<never> {
+  const { t } = await getAdminI18n()
   let outcome: ActionOutcome
   try {
-    outcome = { ok: await body() }
+    outcome = { ok: await body(t) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -74,15 +77,15 @@ async function run(back: string, body: () => Promise<string>): Promise<never> {
 export async function banUser(userId: string, form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
 
-  await run(customerHref(userId), async () => {
-    if (userId === actor.userId) throw new Error('You cannot ban your own account.')
-    const reason = freq(form, 'reason', 'Reason').slice(0, 500)
+  await run(customerHref(userId), async (t) => {
+    if (userId === actor.userId) throw new Error(t('protection.err_ban_self'))
+    const reason = freq(form, 'reason', t('protection.reason')).slice(0, 500)
     const duration = fenum(form, 'duration', BAN_DURATIONS, 'permanent')
     const until = untilFor(duration)
 
     const ended = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-      if (!before) throw new Error('That account no longer exists')
+      if (!before) throw new Error(t('protection.err_account_gone'))
 
       await tx
         .update(users)
@@ -114,7 +117,10 @@ export async function banUser(userId: string, form: FormData): Promise<void> {
       ip: actor.ipAddress,
       details: { by: actor.userId, duration, reason },
     })
-    return `Account banned (${duration}). ${ended} session${ended === 1 ? '' : 's'} ended.`
+    return t('protection.ok_account_banned', {
+      duration: t(`protection.duration_${duration}`),
+      count: ended,
+    })
   })
 }
 
@@ -124,21 +130,23 @@ export async function banUser(userId: string, form: FormData): Promise<void> {
  */
 export async function unbanUser(userId: string): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(customerHref(userId), () => reactivate(actor, userId))
+  await run(customerHref(userId), (t) => reactivate(t, actor, userId))
 }
 
 /** نفس `unbanUser` من قائمة "الحسابات المعلّقة" في صفحة الحماية. */
 export async function liftSuspension(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(PROTECTION, () => reactivate(actor, fuuid(form, 'userId', 'Account')))
+  await run(PROTECTION, (t) =>
+    reactivate(t, actor, fuuid(form, 'userId', t('protection.label_account'))),
+  )
 }
 
-async function reactivate(actor: AdminSession, userId: string): Promise<string> {
+async function reactivate(t: Translate, actor: AdminSession, userId: string): Promise<string> {
   const previous = await db.transaction(async (tx) => {
     const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
-    if (!before) throw new Error('That account no longer exists')
+    if (!before) throw new Error(t('protection.err_account_gone'))
     if (before.status !== 'banned' && before.status !== 'suspended') {
-      throw new Error('That account is neither banned nor suspended.')
+      throw new Error(t('protection.err_not_banned'))
     }
 
     await tx
@@ -165,8 +173,8 @@ async function reactivate(actor: AdminSession, userId: string): Promise<string> 
     details: { by: actor.userId },
   })
   return previous === 'suspended'
-    ? 'Suspension lifted. The account can sign in again.'
-    : 'Ban lifted.'
+    ? t('protection.ok_suspension_lifted')
+    : t('protection.ok_ban_lifted')
 }
 
 /* --------------------------------------------------------------------------
@@ -182,8 +190,8 @@ async function reactivate(actor: AdminSession, userId: string): Promise<string> 
 export async function actOnDevice(userId: string, form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
 
-  await run(customerHref(userId), async () => {
-    const deviceId = fuuid(form, 'deviceId', 'Device')
+  await run(customerHref(userId), async (t) => {
+    const deviceId = fuuid(form, 'deviceId', t('protection.label_device'))
     const mode = fenum(form, 'mode', ['revoke', 'ban', 'ban_all'] as const, 'revoke')
 
     const [device] = await db
@@ -191,7 +199,7 @@ export async function actOnDevice(userId: string, form: FormData): Promise<void>
       .from(devices)
       .where(and(eq(devices.id, deviceId), eq(devices.userId, userId)))
       .limit(1)
-    if (!device) throw new Error('That device does not belong to this account')
+    if (!device) throw new Error(t('protection.err_device_not_owned'))
 
     const result = await revokeDevice(deviceId, {
       userId,
@@ -200,7 +208,7 @@ export async function actOnDevice(userId: string, form: FormData): Promise<void>
     })
 
     if (mode === 'ban_all') {
-      const reason = fstr(form, 'reason') ?? 'Banned from customer page'
+      const reason = fstr(form, 'reason') ?? t('protection.default_device_ban_reason')
       await db.insert(bannedDevices).values({
         fingerprintHash: device.fingerprintHash,
         reason: reason.slice(0, 500),
@@ -226,23 +234,23 @@ export async function actOnDevice(userId: string, form: FormData): Promise<void>
     })
 
     return mode === 'revoke'
-      ? 'Device signed out. Its slot is free.'
+      ? t('protection.ok_device_revoked')
       : mode === 'ban'
-        ? 'Device banned for this account.'
-        : 'Device fingerprint banned platform-wide.'
+        ? t('protection.ok_device_banned')
+        : t('protection.ok_device_banned_all')
   })
 }
 
 export async function liftDeviceBan(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(PROTECTION, async () => {
-    const id = fuuid(form, 'banId', 'Ban')
+  await run(PROTECTION, async (t) => {
+    const id = fuuid(form, 'banId', t('protection.label_ban'))
     const [row] = await db
       .update(bannedDevices)
       .set({ liftedAt: new Date(), liftedBy: actor.userId })
       .where(and(eq(bannedDevices.id, id), isNull(bannedDevices.liftedAt)))
       .returning()
-    if (!row) throw new Error('That ban is not active')
+    if (!row) throw new Error(t('protection.err_ban_inactive'))
     await writeAudit({
       actor,
       action: 'device_ban.lift',
@@ -251,7 +259,7 @@ export async function liftDeviceBan(form: FormData): Promise<void> {
       before: { reason: row.reason },
       after: { lifted: true },
     })
-    return 'Device ban lifted. Accounts that banned this device individually stay blocked until the device is removed from each.'
+    return t('protection.ok_device_ban_lifted')
   })
 }
 
@@ -261,11 +269,11 @@ export async function liftDeviceBan(form: FormData): Promise<void> {
 
 export async function banIp(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(PROTECTION, async () => {
-    const ip = normalizeIp(freq(form, 'ip', 'IP address'))
-    if (ip === null) throw new Error('That is not a valid IPv4 or IPv6 address.')
-    if (ip === actor.ipAddress) throw new Error('That is your own IP address.')
-    const reason = freq(form, 'reason', 'Reason').slice(0, 500)
+  await run(PROTECTION, async (t) => {
+    const ip = normalizeIp(freq(form, 'ip', t('protection.ip_address')))
+    if (ip === null) throw new Error(t('protection.err_invalid_ip'))
+    if (ip === actor.ipAddress) throw new Error(t('protection.err_own_ip'))
+    const reason = freq(form, 'reason', t('protection.reason')).slice(0, 500)
     const duration = fenum(form, 'duration', BAN_DURATIONS, '24h')
     const until = untilFor(duration)
 
@@ -281,20 +289,20 @@ export async function banIp(form: FormData): Promise<void> {
       before: null,
       after: { ip, reason, until: until?.toISOString() ?? null },
     })
-    return `${ip} banned (${duration}). New sign-ins and paid content are refused from it; existing sessions from it are refused on their next protected request.`
+    return t('protection.ok_ip_banned', { ip, duration: t(`protection.duration_${duration}`) })
   })
 }
 
 export async function liftIpBan(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(PROTECTION, async () => {
-    const id = fuuid(form, 'banId', 'Ban')
+  await run(PROTECTION, async (t) => {
+    const id = fuuid(form, 'banId', t('protection.label_ban'))
     const [row] = await db
       .update(bannedIps)
       .set({ liftedAt: new Date(), liftedBy: actor.userId })
       .where(and(eq(bannedIps.id, id), isNull(bannedIps.liftedAt)))
       .returning()
-    if (!row) throw new Error('That ban is not active')
+    if (!row) throw new Error(t('protection.err_ban_inactive'))
     await writeAudit({
       actor,
       action: 'ip_ban.lift',
@@ -303,7 +311,7 @@ export async function liftIpBan(form: FormData): Promise<void> {
       before: { ip: row.ip, reason: row.reason },
       after: { lifted: true },
     })
-    return `Ban on ${row.ip} lifted.`
+    return t('protection.ok_ip_ban_lifted', { ip: row.ip })
   })
 }
 
@@ -313,12 +321,17 @@ export async function liftIpBan(form: FormData): Promise<void> {
 
 export async function saveSecuritySettings(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(PROTECTION, async () => {
+  await run(PROTECTION, async (t) => {
     const value = parseSetting('security', {
       newDevicePolicy: fenum(form, 'newDevicePolicy', NEW_DEVICE_POLICIES, 'block'),
-      defaultDeviceLimit: fint(form, 'defaultDeviceLimit', 2, 'Default device limit'),
+      defaultDeviceLimit: fint(form, 'defaultDeviceLimit', 2, t('protection.default_device_limit')),
       pdfDownloads: fenum(form, 'pdfDownloads', PDF_DOWNLOAD_MODES, 'allow'),
-      maxDownloadsPerItem: fint(form, 'maxDownloadsPerItem', 0, 'Download limit'),
+      maxDownloadsPerItem: fint(
+        form,
+        'maxDownloadsPerItem',
+        0,
+        t('protection.label_download_limit'),
+      ),
       autoBan: fbool(form, 'autoBan'),
     })
 
@@ -347,7 +360,7 @@ export async function saveSecuritySettings(form: FormData): Promise<void> {
         tx,
       )
     })
-    return 'Security settings saved. They apply to the next sign-in and the next PDF request.'
+    return t('protection.ok_settings_saved')
   })
 }
 
@@ -357,15 +370,15 @@ export async function saveSecuritySettings(form: FormData): Promise<void> {
 
 export async function reviewAlert(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(adminHref('/protection/alerts'), async () => {
-    const id = fuuid(form, 'alertId', 'Alert')
+  await run(adminHref('/protection/alerts'), async (t) => {
+    const id = fuuid(form, 'alertId', t('protection.label_alert'))
     const status = fenum(form, 'status', ['dismissed', 'actioned'] as const, 'dismissed')
     const [row] = await db
       .update(securityAlerts)
       .set({ status, reviewedBy: actor.userId, reviewedAt: new Date() })
       .where(and(eq(securityAlerts.id, id), eq(securityAlerts.status, 'open')))
       .returning({ rule: securityAlerts.rule, subject: securityAlerts.subject })
-    if (!row) throw new Error('That alert is no longer open')
+    if (!row) throw new Error(t('protection.err_alert_closed'))
     await writeAudit({
       actor,
       action: `alert.${status}`,
@@ -374,7 +387,9 @@ export async function reviewAlert(form: FormData): Promise<void> {
       before: { status: 'open' },
       after: { status, rule: row.rule, subject: row.subject },
     })
-    return status === 'dismissed' ? 'Alert dismissed.' : 'Alert marked as handled.'
+    return status === 'dismissed'
+      ? t('protection.ok_alert_dismissed')
+      : t('protection.ok_alert_actioned')
   })
 }
 
@@ -384,13 +399,13 @@ export async function reviewAlert(form: FormData): Promise<void> {
 
 export async function endSession(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(adminHref('/protection/sessions'), async () => {
-    const sessionId = fuuid(form, 'sessionId', 'Session')
+  await run(adminHref('/protection/sessions'), async (t) => {
+    const sessionId = fuuid(form, 'sessionId', t('protection.label_session'))
     if (sessionId === actor.sessionId) {
-      throw new Error('That is your own session. Use sign out instead.')
+      throw new Error(t('protection.err_own_session'))
     }
     const [before] = await db.delete(sessions).where(eq(sessions.id, sessionId)).returning()
-    if (!before) throw new Error('That session has already ended')
+    if (!before) throw new Error(t('protection.err_session_gone'))
     await clearSessionVerification(sessionId)
     await writeAudit({
       actor,
@@ -400,7 +415,7 @@ export async function endSession(form: FormData): Promise<void> {
       before: { sessionId, ipAddress: before.ipAddress, deviceId: before.deviceId },
       after: null,
     })
-    return 'Session ended. Paid content is refused from its next request; pages may show it signed in for up to five minutes.'
+    return t('protection.ok_session_ended')
   })
 }
 
@@ -410,18 +425,20 @@ export async function endSession(form: FormData): Promise<void> {
 
 export async function decideDevice(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
-  await run(adminHref('/protection/devices?status=pending'), async () => {
-    const deviceId = fuuid(form, 'deviceId', 'Device')
+  await run(adminHref('/protection/devices?status=pending'), async (t) => {
+    const deviceId = fuuid(form, 'deviceId', t('protection.label_device'))
     const decision = fenum(form, 'decision', ['approve', 'reject'] as const, 'reject')
     const [device] = await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1)
-    if (!device) throw new Error('That device no longer exists')
+    if (!device) throw new Error(t('protection.err_device_gone'))
     const rejected = device.status === 'revoked' && device.revokedReason === REJECTED_REASON
     if (device.status !== 'pending' && !(rejected && decision === 'approve')) {
-      throw new Error('That device is not waiting for approval')
+      throw new Error(t('protection.err_device_not_pending'))
     }
 
     if (decision === 'approve') {
-      if ((await approveDevice(deviceId)) === null) throw new Error('That device changed meanwhile')
+      if ((await approveDevice(deviceId)) === null) {
+        throw new Error(t('protection.err_device_changed'))
+      }
     } else {
       await revokeDevice(deviceId, {
         userId: device.userId,
@@ -447,7 +464,7 @@ export async function decideDevice(form: FormData): Promise<void> {
       details: { by: actor.userId, decision, adminApproval: true },
     })
     return decision === 'approve'
-      ? 'Device approved. The customer can sign in from it now.'
-      : 'Device rejected.'
+      ? t('protection.ok_device_approved')
+      : t('protection.ok_device_rejected')
   })
 }

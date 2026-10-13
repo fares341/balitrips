@@ -21,6 +21,15 @@
  *    RTL, so a cross-fade would animate the whole page mirroring.
  *  - Escape closes, an outside click closes, and focus is not trapped — this
  *    is a menu, not a dialog.
+ *
+ * Two presentations:
+ *
+ *  - `segmented` (default): every language visible at once as a pill of
+ *    links, the current one filled. A Gulf visitor who lands on English sees
+ *    the word "عربي" in the header without opening anything — the globe-and-
+ *    code trigger it replaces hid the one control a bilingual site most needs
+ *    to make obvious. Indonesian stays a single tap away.
+ *  - `menu`: the compact globe trigger with a dropdown, for tight spaces.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -31,11 +40,24 @@ import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { Link, usePathname, useRouter } from '@/i18n/routing'
 
 export type LanguageSwitcherProps = {
-  /** Extra classes on the trigger, e.g. to stretch it inside the drawer. */
+  /** Extra classes on the root, e.g. to stretch it inside the drawer. */
   className?: string
+  /** `segmented` shows every language inline; `menu` is a globe dropdown. */
+  variant?: 'segmented' | 'menu'
 }
 
-export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
+/**
+ * What each option says in the segmented control. Written in the language it
+ * names (an endonym), so it needs no translation key. `localeConfig.short`
+ * carries "ع" for Arabic, which is too cryptic to be the only signpost.
+ */
+const SEGMENT_LABEL: Record<Locale, string> = {
+  en: 'EN',
+  ar: 'عربي',
+  id: 'ID',
+}
+
+export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageSwitcherProps) {
   const activeLocale = useLocale() as Locale
   const pathname = usePathname()
   const router = useRouter()
@@ -90,16 +112,52 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
     }
     event.preventDefault()
     setOpen(false)
+    if (next === activeLocale) return
     // `usePathname` has the locale prefix stripped; the search string is not
     // part of it, so it has to be re-attached explicitly.
     router.replace(`${pathname}${window.location.search}`, { locale: next })
   }
 
+  if (variant === 'segmented') {
+    return (
+      <nav
+        className={['bt-langseg', className].filter(Boolean).join(' ')}
+        /*
+         * Named by the current language's endonym, as the menu trigger is:
+         * it reads correctly to a screen reader in all three locales without
+         * a translation key.
+         */
+        aria-label={localeConfig[activeLocale].label}
+      >
+        {locales.map((candidate) => {
+          const current = candidate === activeLocale
+          return (
+            <Link
+              key={candidate}
+              href={pathname}
+              locale={candidate}
+              hrefLang={candidate}
+              lang={candidate}
+              className={current ? 'bt-langseg-opt on' : 'bt-langseg-opt'}
+              aria-current={current ? 'true' : undefined}
+              // The visible text is a code ("EN"); the accessible name is the
+              // full endonym ("English", "العربية", "Indonesia").
+              aria-label={localeConfig[candidate].label}
+              onClick={switchTo(candidate)}
+            >
+              {SEGMENT_LABEL[candidate]}
+            </Link>
+          )
+        })}
+      </nav>
+    )
+  }
+
   return (
-    <div ref={containerRef} style={{ position: 'relative' }}>
+    <div ref={containerRef} className={className} style={{ position: 'relative' }}>
       <button
         type="button"
-        className={['chip', className].filter(Boolean).join(' ')}
+        className="chip"
         /*
          * The accessible name is the current language's *endonym* — "English",
          * "العربية", "Indonesia". Language names are written in their own
@@ -114,25 +172,11 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
         style={{ gap: 7, padding: '9px 13px', minHeight: 44 }}
       >
         <Icon name="globe" size={17} />
-        <span style={{ fontWeight: 700 }}>{localeConfig[activeLocale].short}</span>
+        <span style={{ fontWeight: 700 }}>{SEGMENT_LABEL[activeLocale]}</span>
       </button>
 
       {open && (
-        <div
-          role="menu"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 8px)',
-            insetInlineEnd: 0,
-            zIndex: 'var(--z-dropdown)',
-            background: 'var(--white)',
-            borderRadius: 14,
-            boxShadow: 'var(--shadow-md)',
-            border: '1px solid var(--line)',
-            overflow: 'hidden',
-            minWidth: 150,
-          }}
-        >
+        <div role="menu" className="bt-langmenu">
           {locales.map((candidate) => {
             const current = candidate === activeLocale
             return (
@@ -145,29 +189,10 @@ export function LanguageSwitcher({ className }: LanguageSwitcherProps) {
                 role="menuitem"
                 aria-current={current ? 'true' : undefined}
                 onClick={switchTo(candidate)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: current ? 'var(--ivory-2)' : 'transparent',
-                  color: 'var(--forest)',
-                  fontWeight: 600,
-                  fontSize: 14,
-                  textAlign: 'start',
-                  minHeight: 44,
-                }}
+                className={current ? 'bt-langmenu-item on' : 'bt-langmenu-item'}
               >
-                <span
-                  style={{
-                    fontFamily: candidate === 'ar' ? 'var(--arabic)' : 'var(--sans)',
-                  }}
-                >
-                  {localeConfig[candidate].label}
-                </span>
-                {current && <Icon name="check" size={16} color="var(--orange)" />}
+                <span>{localeConfig[candidate].label}</span>
+                {current && <Icon name="check" size={16} color="var(--orange-ink)" />}
               </Link>
             )
           })}

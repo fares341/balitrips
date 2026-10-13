@@ -165,8 +165,6 @@ export function DriverBookingCard({ areas, href }: DriverBookingCardProps) {
             style={{
               fontSize: 11.5,
               fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '.06em',
             }}
           >
             {t('hd_vehtype')}

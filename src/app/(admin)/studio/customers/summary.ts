@@ -2,7 +2,10 @@ import { and, desc, eq, gt, inArray, isNull, lte, max, or } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { activityLog, entitlements, plans, sessions } from '@/db/schema'
+import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
+
+import type { Translate } from '../../_i18n'
 
 /**
  * "الباقة الحالية" و"آخر دخول" لقائمة العملاء وصفحة العميل (الوثيقة 21.2).
@@ -14,7 +17,7 @@ import { pick } from '@/lib/content/localize'
 export interface LiveAccess {
   id: string
   kind: string
-  /** اسم الباقة بالإنجليزية (Studio)، أو null لمنح بلا باقة. */
+  /** اسم الباقة بلغة الاستوديو، أو null لمنح بلا باقة. */
   plan: string | null
   expiresAt: Date | null
   /** نسخة من باقة عائلية يملكها شخص آخر. */
@@ -28,6 +31,7 @@ export interface AccountSummary {
 
 export async function loadAccountSummaries(
   userIds: readonly string[],
+  locale: Locale = 'en',
 ): Promise<Map<string, AccountSummary>> {
   const out = new Map<string, AccountSummary>()
   if (userIds.length === 0) return out
@@ -93,7 +97,7 @@ export async function loadAccountSummaries(
     entry(row.userId).access.push({
       id: row.id,
       kind: row.kind,
-      plan: row.planName ? pick(row.planName, 'en') || null : null,
+      plan: row.planName ? pick(row.planName, locale) || null : null,
       expiresAt: row.expiresAt,
       shared: row.sharedByUserId !== null,
     })
@@ -101,10 +105,20 @@ export async function loadAccountSummaries(
   return out
 }
 
-/** سطر قصير: "VIP plan (until 2026-11-01)" أو "map_access (lifetime)". */
-export function accessLine(access: LiveAccess): string {
+/** سطر قصير: "VIP plan (until 1 Nov 2026)" أو "Map access (lifetime)" — بلغة الاستوديو. */
+export function accessLine(access: LiveAccess, t: Translate, intl: string): string {
   const until = access.expiresAt
-    ? `until ${access.expiresAt.toISOString().slice(0, 10)}`
-    : 'lifetime'
-  return `${access.plan ?? access.kind} (${until}${access.shared ? ', family seat' : ''})`
+    ? t('customers.access_until', {
+        date: new Intl.DateTimeFormat(intl, {
+          dateStyle: 'medium',
+          timeZone: 'Asia/Makassar',
+        }).format(access.expiresAt),
+      })
+    : t('customers.access_lifetime')
+  const kindKey = `customers.kind_${access.kind}`
+  const kind = t(kindKey) === kindKey ? access.kind : t(kindKey)
+  return t(access.shared ? 'customers.access_line_family' : 'customers.access_line', {
+    plan: access.plan ?? kind,
+    until,
+  })
 }

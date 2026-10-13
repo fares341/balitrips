@@ -5,14 +5,15 @@ import { db } from '@/db'
 import { can } from '@/lib/auth/roles'
 import { orders, payments, users } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
-import { paymentMethodLabel } from '@/lib/payments'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
+import { paymentMethodName, paymentStatusLabel } from '../orders/labels'
 import { refundDuplicatePayment } from './actions'
 import { PAYMENT_METHOD_FILTERS, PAYMENT_STATUSES, paymentFilters } from './filters'
 
@@ -31,6 +32,7 @@ export default async function PaymentsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('payments.read')
+  const { t, intl } = await getAdminI18n()
   const mayRefund = can(session.role, 'orders.refund')
   const mayExport = can(session.role, 'customers.export')
   const params = await searchParams
@@ -83,92 +85,89 @@ export default async function PaymentsPage({
 
   return (
     <>
-      <PageHead
-        title="Payments"
-        description="Every payment attempt. Open the order to refund, record a bank transfer, or issue the receipt."
-      />
+      <PageHead title={t('payments.title')} description={t('payments.description')} />
       <Flash searchParams={params} />
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('common.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Order number, e-mail or provider id"
+            placeholder={t('payments.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="status">Status</label>
+          <label htmlFor="status">{t('common.status')}</label>
           <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">All</option>
+            <option value="">{t('common.all')}</option>
             {PAYMENT_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {paymentStatusLabel(t, value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="provider">Provider</label>
+          <label htmlFor="provider">{t('payments.provider')}</label>
           <select className="a-select" id="provider" name="provider" defaultValue={provider ?? ''}>
-            <option value="">All</option>
+            <option value="">{t('common.all')}</option>
             <option value="stripe">stripe</option>
-            <option value="manual">manual (bank transfer)</option>
+            <option value="manual">{t('payments.provider_manual')}</option>
             <option value="sandbox">sandbox</option>
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="method">Method</label>
+          <label htmlFor="method">{t('payments.method')}</label>
           <select className="a-select" id="method" name="method" defaultValue={method ?? ''}>
-            <option value="">All</option>
+            <option value="">{t('common.all')}</option>
             {PAYMENT_METHOD_FILTERS.map((value) => (
               <option key={value} value={value}>
-                {paymentMethodLabel(value)}
+                {paymentMethodName(t, value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="from">From</label>
+          <label htmlFor="from">{t('payments.from')}</label>
           <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
         </div>
         <div className="a-field">
-          <label htmlFor="to">To</label>
+          <label htmlFor="to">{t('payments.to')}</label>
           <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('common.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('payments.reset')}
           </Link>
           {mayExport ? (
             // Route handler, not a page: a plain <a> so the browser downloads it.
             <a className="a-btn ghost" href={`${adminHref('/payments/export')}?${exportQuery}`}>
-              Export CSV
+              {t('payments.export_csv')}
             </a>
           ) : null}
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No payments match.</Empty>
+        <Empty>{t('payments.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>When</th>
-              <th>Order</th>
-              <th>Customer</th>
-              <th>Provider</th>
-              <th>Method</th>
-              <th>Payment</th>
-              <th>Order status</th>
-              <th className="num">Amount</th>
+              <th>{t('payments.col_when')}</th>
+              <th>{t('payments.col_order')}</th>
+              <th>{t('payments.col_customer')}</th>
+              <th>{t('payments.provider')}</th>
+              <th>{t('payments.method')}</th>
+              <th>{t('payments.col_payment')}</th>
+              <th>{t('payments.col_order_status')}</th>
+              <th className="num">{t('common.amount')}</th>
               <th />
             </tr>
           </thead>
@@ -183,14 +182,14 @@ export default async function PaymentsPage({
                     {row.orderNumber}
                   </Link>
                 </td>
-                <td>{row.email ?? <span className="a-muted">guest</span>}</td>
+                <td>{row.email ?? <span className="a-muted">{t('payments.guest')}</span>}</td>
                 <td>
                   {row.provider}
                   {row.providerPaymentId ? (
                     <div className="a-muted a-mono">{row.providerPaymentId}</div>
                   ) : null}
                 </td>
-                <td>{paymentMethodLabel(row.method) ?? <span className="a-muted">—</span>}</td>
+                <td>{paymentMethodName(t, row.method) ?? <span className="a-muted">—</span>}</td>
                 <td>
                   <Pill
                     tone={
@@ -203,22 +202,22 @@ export default async function PaymentsPage({
                           : 'warn'
                     }
                   >
-                    {row.status}
+                    {paymentStatusLabel(t, row.status)}
                   </Pill>
                 </td>
                 <td>
                   <OrderStatusPill status={row.orderStatus} />
                 </td>
-                <td className="num">{formatMoney(row.amountMinor, row.currency, 'en')}</td>
+                <td className="num">{formatMoney(row.amountMinor, row.currency, intl)}</td>
                 <td>
                   {row.duplicate ? (
                     <>
-                      <Pill tone="warn">duplicate</Pill>
+                      <Pill tone="warn">{t('payments.duplicate')}</Pill>
                       {mayRefund ? (
                         <form className="a-inline-form" action={refundDuplicatePayment}>
                           <input type="hidden" name="paymentId" value={row.id} />
                           <button className="a-btn danger small" type="submit">
-                            Refund duplicate
+                            {t('payments.refund_duplicate')}
                           </button>
                         </form>
                       ) : null}

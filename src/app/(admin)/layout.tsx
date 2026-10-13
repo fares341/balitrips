@@ -2,6 +2,10 @@ import type { Metadata } from 'next'
 
 import { fontVariables } from '@/styles/fonts'
 
+import { messagesFor } from './_i18n'
+import { getAdminI18n } from './_lib/i18n'
+import { AdminI18nProvider } from './_ui/i18n-provider'
+
 import './admin.css'
 import '@/styles/tokens.css'
 
@@ -13,10 +17,11 @@ import '@/styles/tokens.css'
  * is never statically rendered — every page below reads the session cookie
  * and must therefore be dynamic.
  *
- * The UI is English-only by design. It is an internal tool for a small
- * operations team, not customer-facing copy, so it does not consume
- * next-intl and does not add keys to messages/{en,ar,id}.json. The CONTENT
- * it edits is fully trilingual; the chrome around it is not.
+ * The Studio UI is Arabic (default, RTL) or English, switched from the
+ * sidebar and kept in the `studio_lang` cookie. It has its own small
+ * dictionaries in `_i18n/` rather than next-intl: it lives outside
+ * `[locale]` and must not add keys to the public messages/*.json. The
+ * CONTENT it edits stays fully trilingual (en/ar/id).
  */
 
 /**
@@ -37,10 +42,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 }
 
-export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminRootLayout({ children }: { children: React.ReactNode }) {
+  const { locale, dir } = await getAdminI18n()
+  // English underneath: a key missing from one language still shows words.
+  const messages = { ...messagesFor('en'), ...messagesFor(locale) }
   return (
-    <html lang="en" dir="ltr" className={fontVariables}>
-      <body className="a-body">{children}</body>
+    <html lang={locale} dir={dir} className={fontVariables}>
+      <body className="a-body">
+        <AdminI18nProvider locale={locale} messages={messages}>
+          {children}
+        </AdminI18nProvider>
+      </body>
     </html>
   )
 }

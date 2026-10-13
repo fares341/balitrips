@@ -17,6 +17,7 @@ import {
   fstr,
   fuuidOrNull,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -36,6 +37,7 @@ const READERS = ['', 'map_access', 'vip'] as const
 
 export async function saveArticle(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
 
   let target = id === 'new' ? LIST : adminHref(`/articles/${id}`)
   let outcome: Outcome
@@ -49,17 +51,17 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
       // The prototype's blog was a shell: `bodyParas()` returned the same
       // three lorem paragraphs for every article and the data carried no
       // body at all. Publishing an empty one would recreate that.
-      throw new Error('An article needs an English body before it can be published.')
+      throw new Error(t('articles.err_body_required'))
     }
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')),
+      slug: assertSlug(freq(form, 'slug', t('articles.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
-      title: flocalizedRequired(form, 'title', 'Title'),
+      title: flocalizedRequired(form, 'title', t('articles.f_title')),
       excerpt: flocalizedOrNull(form, 'excerpt'),
       body,
-      categoryId: fuuidOrNull(form, 'categoryId', 'Category'),
-      heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      categoryId: fuuidOrNull(form, 'categoryId', t('articles.category')),
+      heroImageId: fuuidOrNull(form, 'heroImageId', t('articles.hero_image')),
       bridge: fenum(form, 'bridge', BRIDGES, '') || null,
       requiredEntitlement: fenum(form, 'requiredEntitlement', READERS, '') || null,
       status,
@@ -71,7 +73,7 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(articles).where(eq(articles.id, id)).limit(1))[0] ?? null)
 
-      if (id !== 'new' && !before) throw new Error('That article no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('articles.err_gone'))
 
       const [row] =
         id === 'new'
@@ -91,7 +93,7 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
               .where(eq(articles.id, id))
               .returning()
 
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('articles.err_save_failed'))
 
       await writeAudit(
         {
@@ -109,7 +111,7 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/articles/${savedId}`)
-    outcome = { ok: 'Article saved.' }
+    outcome = { ok: t('articles.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -120,6 +122,7 @@ export async function saveArticle(id: string, form: FormData): Promise<void> {
 
 export async function setArticleStatus(id: string, status: string): Promise<void> {
   const session = await requireCapability('content.publish')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -127,10 +130,10 @@ export async function setArticleStatus(id: string, status: string): Promise<void
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(articles).where(eq(articles.id, id)).limit(1)
-      if (!before) throw new Error('That article no longer exists')
+      if (!before) throw new Error(t('articles.err_gone'))
 
       if (next === 'published' && (before.body?.en ?? '').trim() === '') {
-        throw new Error('An article needs an English body before it can be published.')
+        throw new Error(t('articles.err_body_required'))
       }
 
       const [after] = await tx
@@ -156,7 +159,9 @@ export async function setArticleStatus(id: string, status: string): Promise<void
       )
     })
 
-    outcome = { ok: next === 'published' ? 'Article published.' : 'Article moved to draft.' }
+    outcome = {
+      ok: next === 'published' ? t('articles.ok_published') : t('articles.ok_drafted'),
+    }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -167,12 +172,13 @@ export async function setArticleStatus(id: string, status: string): Promise<void
 
 export async function deleteArticle(id: string): Promise<void> {
   const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(articles).where(eq(articles.id, id)).limit(1)
-      if (!before) throw new Error('That article no longer exists')
+      if (!before) throw new Error(t('articles.err_gone'))
 
       await tx
         .update(articles)
@@ -192,7 +198,7 @@ export async function deleteArticle(id: string): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Article archived.' }
+    outcome = { ok: t('articles.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

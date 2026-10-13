@@ -6,12 +6,14 @@ import { ALERT_STATUSES, securityAlerts, users, type AlertStatus } from '@/db/sc
 import { can } from '@/lib/auth/roles'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { pageParam, param } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table, When, type PillTone } from '../../../_ui/table'
 import { reviewAlert } from '../actions'
+import { labelOr } from '../labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +28,7 @@ export default async function AlertsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('security.read')
+  const { t } = await getAdminI18n()
   const mayWrite = can(session.role, 'security.write')
   const params = await searchParams
   const page = pageParam(params)
@@ -51,8 +54,8 @@ export default async function AlertsPage({
   return (
     <>
       <PageHead
-        title="Security alerts"
-        description="Raised by the automatic detection rules. Automatic actions are always temporary; anything permanent is your call."
+        title={t('protection.alerts_title')}
+        description={t('protection.alerts_description')}
       />
       <Flash searchParams={params} />
 
@@ -63,22 +66,24 @@ export default async function AlertsPage({
             className={`a-btn ${value === status ? '' : 'ghost'}`}
             href={`${LIST}?status=${value}`}
           >
-            {value}
+            {t(`protection.alert_status_${value}`)}
           </Link>
         ))}
       </div>
 
       {rows.length === 0 ? (
-        <Empty>No {status} alerts.</Empty>
+        <Empty>
+          {t('protection.alerts_empty', { status: t(`protection.alert_status_${status}`) })}
+        </Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Last seen</th>
-              <th>Rule</th>
-              <th>Subject</th>
-              <th>Observed</th>
-              <th>Automatic action</th>
+              <th>{t('protection.col_last_seen')}</th>
+              <th>{t('protection.col_rule')}</th>
+              <th>{t('protection.col_subject')}</th>
+              <th>{t('protection.col_observed')}</th>
+              <th>{t('protection.col_auto_action')}</th>
               <th />
             </tr>
           </thead>
@@ -92,9 +97,13 @@ export default async function AlertsPage({
                     <div className="a-muted">×{alert.hits}</div>
                   </td>
                   <td>
-                    <Pill tone={TONE[alert.severity] ?? 'neutral'}>{alert.severity}</Pill>{' '}
+                    <Pill tone={TONE[alert.severity] ?? 'neutral'}>
+                      {labelOr(t, 'protection.severity_', alert.severity)}
+                    </Pill>{' '}
                     <span className="a-mono">{alert.rule}</span>
-                    <div className="a-hint">{String(details.label ?? '')}</div>
+                    <div className="a-hint">
+                      {labelOr(t, 'protection.rule_', alert.rule, String(details.label ?? ''))}
+                    </div>
                   </td>
                   <td>
                     {alert.userId ? (
@@ -114,15 +123,24 @@ export default async function AlertsPage({
                               )
                         }
                       >
-                        activity →
+                        {t('protection.activity_link')}
                       </Link>
                     </div>
                   </td>
                   <td>
-                    {String(details.observed ?? '?')} / {String(details.threshold ?? '?')} in{' '}
-                    {String(details.windowMinutes ?? '?')} min
+                    {t('protection.observed', {
+                      observed: String(details.observed ?? '?'),
+                      threshold: String(details.threshold ?? '?'),
+                      minutes: String(details.windowMinutes ?? '?'),
+                    })}
                   </td>
-                  <td>{alert.autoAction ? <Pill tone="warn">{alert.autoAction}</Pill> : '—'}</td>
+                  <td>
+                    {alert.autoAction ? (
+                      <Pill tone="warn">{labelOr(t, 'protection.auto_', alert.autoAction)}</Pill>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td>
                     {mayWrite && alert.status === 'open' ? (
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -130,14 +148,14 @@ export default async function AlertsPage({
                           <input type="hidden" name="alertId" value={alert.id} />
                           <input type="hidden" name="status" value="actioned" />
                           <button className="a-btn small" type="submit">
-                            Handled
+                            {t('protection.handled')}
                           </button>
                         </form>
                         <form className="a-inline-form" action={reviewAlert}>
                           <input type="hidden" name="alertId" value={alert.id} />
                           <input type="hidden" name="status" value="dismissed" />
                           <button className="a-btn ghost small" type="submit">
-                            Dismiss
+                            {t('protection.dismiss')}
                           </button>
                         </form>
                       </div>

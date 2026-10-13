@@ -8,6 +8,7 @@ import { isUserBanned } from '@/lib/security/bans'
 import { deviceLimitFor } from '@/lib/security/devices'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { getAdminI18n } from '../../../_lib/i18n'
 import { Field, TextInput } from '../../../_ui/field'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { actOnDevice, banUser, decideDevice, unbanUser } from '../../protection/actions'
@@ -27,6 +28,9 @@ export async function ProtectionPanel({
 }) {
   if (!can(viewerRole, 'security.read')) return null
   const mayWrite = can(viewerRole, 'security.write')
+  const { t } = await getAdminI18n()
+  /** Enum value → label; an unknown value shows as stored. */
+  const label = (key: string, raw: string) => (t(key) === key ? raw : t(key))
 
   const [[account], deviceRows, limit] = await Promise.all([
     db
@@ -44,23 +48,29 @@ export async function ProtectionPanel({
 
   return (
     <div className="a-card">
-      <h2>Protection</h2>
+      <h2>{t('customers.protection')}</h2>
       <p className="a-hint">
-        {active} of {limit} device slots in use ·{' '}
+        {t('customers.device_slots', { active, limit })} ·{' '}
         <Link href={adminHref(`/protection/activity?user=${userId}`)}>
-          activity log for this account
+          {t('customers.activity_log_link')}
         </Link>
       </p>
 
       {banned ? (
         <div style={{ marginBlock: 12 }}>
           {account.status === 'suspended' ? (
-            <Pill tone="warn">suspended — pending review</Pill>
+            <Pill tone="warn">{t('customers.suspended_pending')}</Pill>
           ) : (
-            <Pill tone="bad">banned {account.bannedUntil ? 'until' : 'permanently'}</Pill>
+            <Pill tone="bad">
+              {account.bannedUntil
+                ? t('customers.banned_until')
+                : t('customers.banned_permanently')}
+            </Pill>
           )}{' '}
           {account.bannedUntil ? <When value={account.bannedUntil} /> : null}
-          <div className="a-hint">Reason: {account.banReason ?? '—'}</div>
+          <div className="a-hint">
+            {t('customers.ban_reason_line', { reason: account.banReason ?? '—' })}
+          </div>
           {mayWrite ? (
             <form
               className="a-inline-form"
@@ -68,44 +78,44 @@ export async function ProtectionPanel({
               style={{ marginBlockStart: 8 }}
             >
               <button className="a-btn" type="submit">
-                Lift ban
+                {t('customers.lift_ban')}
               </button>
             </form>
           ) : null}
         </div>
       ) : mayWrite && !isSelf ? (
         <form className="a-row" action={banUser.bind(null, userId)} style={{ marginBlock: 12 }}>
-          <Field label="Ban reason" htmlFor="ban-reason">
+          <Field label={t('customers.ban_reason')} htmlFor="ban-reason">
             <TextInput id="ban-reason" name="reason" required />
           </Field>
-          <Field label="Duration" htmlFor="ban-duration">
+          <Field label={t('customers.ban_duration')} htmlFor="ban-duration">
             <select className="a-select" id="ban-duration" name="duration" defaultValue="7d">
-              <option value="1h">1 hour</option>
-              <option value="24h">24 hours</option>
-              <option value="7d">7 days</option>
-              <option value="30d">30 days</option>
-              <option value="permanent">Permanent</option>
+              <option value="1h">{t('customers.ban_1h')}</option>
+              <option value="24h">{t('customers.ban_24h')}</option>
+              <option value="7d">{t('customers.ban_7d')}</option>
+              <option value="30d">{t('customers.ban_30d')}</option>
+              <option value="permanent">{t('customers.ban_permanent')}</option>
             </select>
           </Field>
           <div className="a-actions">
             <button className="a-btn danger" type="submit">
-              Ban account
+              {t('customers.ban_account')}
             </button>
           </div>
         </form>
       ) : null}
 
       {deviceRows.length === 0 ? (
-        <Empty>No devices recorded yet. Devices are recorded from the next sign-in onwards.</Empty>
+        <Empty>{t('customers.no_devices')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Device</th>
-              <th>Last IP</th>
-              <th>First seen</th>
-              <th>Last seen</th>
-              <th>Status</th>
+              <th>{t('customers.device')}</th>
+              <th>{t('customers.last_ip')}</th>
+              <th>{t('customers.first_seen')}</th>
+              <th>{t('customers.last_seen')}</th>
+              <th>{t('customers.col_status')}</th>
               <th />
             </tr>
           </thead>
@@ -117,7 +127,7 @@ export async function ProtectionPanel({
                   {row.deviceType ? <span className="a-muted"> · {row.deviceType}</span> : null}
                   {row.weak ? (
                     <div>
-                      <Pill tone="warn">no browser fingerprint</Pill>
+                      <Pill tone="warn">{t('customers.no_fingerprint')}</Pill>
                     </div>
                   ) : null}
                   <div className="a-mono a-muted">{row.fingerprintHash.slice(0, 12)}…</div>
@@ -141,7 +151,7 @@ export async function ProtectionPanel({
                             : 'neutral'
                     }
                   >
-                    {row.status}
+                    {label(`customers.device_status_${row.status}`, row.status)}
                   </Pill>
                   {row.revokedReason ? <div className="a-hint">{row.revokedReason}</div> : null}
                 </td>
@@ -151,7 +161,7 @@ export async function ProtectionPanel({
                       <input type="hidden" name="deviceId" value={row.id} />
                       <input type="hidden" name="decision" value="approve" />
                       <button className="a-btn accent small" type="submit">
-                        Approve device
+                        {t('customers.approve_device')}
                       </button>
                     </form>
                   ) : null}
@@ -162,16 +172,16 @@ export async function ProtectionPanel({
                         className="a-select"
                         name="mode"
                         defaultValue="revoke"
-                        aria-label="Device action"
+                        aria-label={t('customers.device_action')}
                       >
                         {row.status === 'active' ? (
-                          <option value="revoke">Sign out &amp; free slot</option>
+                          <option value="revoke">{t('customers.device_revoke')}</option>
                         ) : null}
-                        <option value="ban">Ban for this account</option>
-                        <option value="ban_all">Ban fingerprint everywhere</option>
+                        <option value="ban">{t('customers.device_ban')}</option>
+                        <option value="ban_all">{t('customers.device_ban_all')}</option>
                       </select>
                       <button className="a-btn danger small" type="submit">
-                        Apply
+                        {t('customers.apply')}
                       </button>
                     </form>
                   ) : null}

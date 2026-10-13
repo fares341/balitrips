@@ -52,7 +52,6 @@ export function PageBanner({
   tall = false,
   children,
 }: PageBannerProps) {
-
   return (
     <div className={tall ? 'bt-banner tall' : 'bt-banner'}>
       <Photo
@@ -71,7 +70,7 @@ export function PageBanner({
         {tag !== undefined && (
           <span
             className="tag"
-            style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
+            style={{ background: 'var(--orange)', color: 'var(--on-orange)', width: 'fit-content' }}
           >
             {tag}
           </span>

@@ -8,6 +8,7 @@ import { mediaUrl } from '@/lib/content/queries'
 
 import { adminHref } from '../_lib/admin-path'
 import { isPlaceholder } from '../_lib/media-refs'
+import { uiI18n } from './i18n-server'
 
 /**
  * Hero image picker.
@@ -64,7 +65,7 @@ export async function loadPickerMedia(limit = PICKER_LIMIT): Promise<PickerItem[
     .limit(limit)
 }
 
-export function MediaPicker({
+export async function MediaPicker({
   name,
   label,
   items,
@@ -77,6 +78,7 @@ export function MediaPicker({
   value?: string | null
   hint?: string
 }) {
+  const { t, locale } = await uiI18n()
   const selected = items.find((item) => item.id === value) ?? null
 
   /**
@@ -108,30 +110,28 @@ export function MediaPicker({
           <>
             <MediaThumb item={selected} size={64} />
             <div style={{ minWidth: 0 }}>
-              <div className="a-mono" style={{ wordBreak: 'break-all' }}>
+              <div className="a-mono" dir="ltr" style={{ wordBreak: 'break-all' }}>
                 {selected.objectKey}
               </div>
               <PlaceholderNote credit={selected.credit} />
             </div>
           </>
         ) : orphanedValue ? (
-          <span className="a-hint">
-            Currently set to an image that is archived or older than the newest {PICKER_LIMIT}. It
-            is kept unless you choose another below.
-          </span>
+          <span className="a-hint">{t('ui.media_orphan', { limit: PICKER_LIMIT })}</span>
         ) : (
-          <span className="a-hint">No image selected.</span>
+          <span className="a-hint">{t('ui.media_none')}</span>
         )}
       </div>
 
       <details>
-        <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
-          {selected || orphanedValue ? 'Change image' : 'Choose an image'}
+        <summary className="a-btn ghost small">
+          {selected || orphanedValue ? t('ui.media_change') : t('ui.media_choose')}
         </summary>
 
         {items.length === 0 && !orphanedValue ? (
           <p className="a-hint" style={{ marginBlockStart: 10 }}>
-            The media library is empty. <a href={adminHref('/media')}>Upload something first.</a>
+            {t('ui.media_library_empty')}{' '}
+            <a href={adminHref('/media')}>{t('ui.media_upload_first')}</a>
           </p>
         ) : (
           <>
@@ -158,7 +158,7 @@ export function MediaPicker({
                 }}
               >
                 <input type="radio" name={name} value="" defaultChecked={!value} />
-                No image
+                {t('ui.media_no_image')}
               </label>
 
               {orphanedValue ? (
@@ -174,7 +174,7 @@ export function MediaPicker({
                   }}
                 >
                   <input type="radio" name={name} value={orphanedValue} defaultChecked />
-                  Keep the current image
+                  {t('ui.media_keep_current')}
                 </label>
               ) : null}
 
@@ -215,7 +215,7 @@ export function MediaPicker({
                         }}
                         title={item.objectKey}
                       >
-                        {pick(item.alt, 'en', item.objectKey)}
+                        {pick(item.alt, locale, item.objectKey)}
                       </span>
                       <PlaceholderNote credit={item.credit} />
                     </span>
@@ -226,8 +226,8 @@ export function MediaPicker({
 
             {items.length >= PICKER_LIMIT ? (
               <p className="a-hint" style={{ marginBlockStart: 8 }}>
-                Showing the newest {PICKER_LIMIT}. Older images are still selectable from the{' '}
-                <a href={adminHref('/media')}>media library</a>.
+                {t('ui.media_capped', { limit: PICKER_LIMIT })}{' '}
+                <a href={adminHref('/media')}>{t('nav.media')}</a>
               </p>
             ) : null}
           </>
@@ -267,7 +267,7 @@ export function MediaThumb({ item, size }: { item: PickerItem; size: number }) {
 }
 
 /** Says "generated placeholder" where that is true, and nothing where it is not. */
-export function PlaceholderNote({ credit }: { credit: string | null }) {
+export async function PlaceholderNote({ credit }: { credit: string | null }) {
   if (!isPlaceholder(credit)) {
     return credit ? (
       <span className="a-hint" style={{ display: 'block' }}>
@@ -276,9 +276,10 @@ export function PlaceholderNote({ credit }: { credit: string | null }) {
     ) : null
   }
 
+  const { t } = await uiI18n()
   return (
     <span className="a-pill warn" style={{ marginBlockStart: 4 }}>
-      placeholder
+      {t('ui.media_placeholder')}
     </span>
   )
 }

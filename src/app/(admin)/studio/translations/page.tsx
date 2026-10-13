@@ -6,6 +6,7 @@ import { translations } from '@/db/schema'
 import { localeConfig, locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -25,6 +26,13 @@ export default async function TranslationsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('translations.write')
+  const { t, intl } = await getAdminI18n()
+  const num = new Intl.NumberFormat(intl)
+  const label = (prefix: string, value: string) => {
+    const key = `${prefix}${value.toLowerCase().replace(/\s+/g, '_')}`
+    const text = t(key)
+    return text === key ? value : text
+  }
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -77,12 +85,12 @@ export default async function TranslationsPage({
   return (
     <>
       <PageHead
-        title="Translations"
-        description="UI strings, editable without a deploy. Content copy is translated in each entity's own editor; the report below shows how far behind it is."
+        title={t('translations.title')}
+        description={t('translations.description')}
         actions={
           <form className="a-inline-form" action={importBundledKeys}>
             <button className="a-btn ghost" type="submit">
-              Import bundled keys
+              {t('translations.import_btn')}
             </button>
           </form>
         }
@@ -91,59 +99,53 @@ export default async function TranslationsPage({
 
       <div className="a-grid">
         <div className="a-stat">
-          <span>Keys in database</span>
-          <b>{allKeys}</b>
+          <span>{t('translations.stat_keys')}</span>
+          <b>{num.format(allKeys)}</b>
         </div>
         <div className="a-stat">
-          <span>Incomplete keys</span>
-          <b>{incompleteKeys}</b>
+          <span>{t('translations.stat_incomplete')}</span>
+          <b>{num.format(incompleteKeys)}</b>
         </div>
         <div className="a-stat">
-          <span>Matching filter</span>
-          <b>{total}</b>
+          <span>{t('translations.stat_matching')}</span>
+          <b>{num.format(total)}</b>
         </div>
       </div>
 
-      {allKeys === 0 ? (
-        <div className="a-flash warn">
-          No keys in the database yet. &ldquo;Import bundled keys&rdquo; copies every string from
-          messages/en.json, messages/ar.json and messages/id.json. It never overwrites a row that
-          already exists.
-        </div>
-      ) : null}
+      {allKeys === 0 ? <div className="a-flash warn">{t('translations.empty_db')}</div> : null}
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('translations.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="Key or English text"
+            placeholder={t('translations.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="only">Show</label>
+          <label htmlFor="only">{t('translations.show')}</label>
           <select className="a-select" id="only" name="only" defaultValue={only ?? ''}>
-            <option value="">Everything</option>
-            <option value="any">Missing any locale</option>
-            <option value="ar">Missing Arabic</option>
-            <option value="id">Missing Indonesian</option>
+            <option value="">{t('translations.show_all')}</option>
+            <option value="any">{t('translations.show_any')}</option>
+            <option value="ar">{t('translations.show_ar')}</option>
+            <option value="id">{t('translations.show_id')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('translations.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('translations.reset')}
           </Link>
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No keys match those filters.</Empty>
+        <Empty>{t('translations.empty')}</Empty>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {rows.map((row) => (
@@ -155,18 +157,22 @@ export default async function TranslationsPage({
                     .filter((locale) => (row.values?.[locale] ?? '') === '')
                     .map((locale) => (
                       <Pill tone="warn" key={locale}>
-                        missing {locale}
+                        {t('translations.missing_locale', {
+                          locale: t(`translations.lang_${locale}`),
+                        })}
                       </Pill>
                     ))}
                   <button className="a-btn ghost small" type="submit">
-                    Save
+                    {t('translations.save')}
                   </button>
                 </div>
               </div>
               <div className="a-l10n">
                 {locales.map((locale) => (
                   <div className="a-field" key={locale}>
-                    <label htmlFor={`t-${row.id}-${locale}`}>{localeConfig[locale].label}</label>
+                    <label htmlFor={`t-${row.id}-${locale}`}>
+                      {t(`translations.lang_${locale}`)}
+                    </label>
                     <textarea
                       className="a-textarea"
                       id={`t-${row.id}-${locale}`}
@@ -187,10 +193,10 @@ export default async function TranslationsPage({
       <Pager basePath={LIST} searchParams={params} page={page} pageSize={PAGE_SIZE} total={total} />
 
       <form className="a-card" action={createTranslation}>
-        <h2>Add a key</h2>
+        <h2>{t('translations.add_title')}</h2>
         <div className="a-row">
           <div className="a-field">
-            <label htmlFor="new-key">Key</label>
+            <label htmlFor="new-key">{t('translations.key')}</label>
             <input
               className="a-input"
               id="new-key"
@@ -203,7 +209,7 @@ export default async function TranslationsPage({
         <div className="a-l10n">
           {locales.map((locale) => (
             <div className="a-field" key={locale}>
-              <label htmlFor={`new-t-${locale}`}>{localeConfig[locale].label}</label>
+              <label htmlFor={`new-t-${locale}`}>{t(`translations.lang_${locale}`)}</label>
               <textarea
                 className="a-textarea"
                 id={`new-t-${locale}`}
@@ -218,39 +224,43 @@ export default async function TranslationsPage({
         </div>
         <div className="a-actions" style={{ marginBlockStart: 12 }}>
           <button className="a-btn accent" type="submit">
-            Add key
+            {t('translations.add_btn')}
           </button>
         </div>
       </form>
 
       <div className="a-card">
-        <h2>Missing translations across content</h2>
-        <p className="a-hint">
-          English is the authoring locale, so a fresh record is legitimately English-only. A blank
-          locale falls back to English at render time rather than showing an empty field, so this is
-          a completeness queue, not a list of bugs.
-        </p>
+        <h2>{t('translations.gaps_title')}</h2>
+        <p className="a-hint">{t('translations.gaps_hint')}</p>
         <Table>
           <thead>
             <tr>
-              <th>Entity</th>
-              <th>Field</th>
-              <th className="num">Rows</th>
-              <th className="num">Missing Arabic</th>
-              <th className="num">Missing Indonesian</th>
+              <th>{t('translations.col_entity')}</th>
+              <th>{t('translations.col_field')}</th>
+              <th className="num">{t('translations.col_rows')}</th>
+              <th className="num">{t('translations.col_missing_ar')}</th>
+              <th className="num">{t('translations.col_missing_id')}</th>
             </tr>
           </thead>
           <tbody>
             {gaps.map((gap) => (
               <tr key={`${gap.entity}-${gap.field}`}>
-                <td>{gap.entity}</td>
-                <td>{gap.field}</td>
-                <td className="num">{gap.total}</td>
+                <td>{label('translations.entity_', gap.entity)}</td>
+                <td>{label('translations.field_', gap.field)}</td>
+                <td className="num">{num.format(gap.total)}</td>
                 <td className="num">
-                  {gap.missingAr > 0 ? <Pill tone="warn">{gap.missingAr}</Pill> : gap.missingAr}
+                  {gap.missingAr > 0 ? (
+                    <Pill tone="warn">{num.format(gap.missingAr)}</Pill>
+                  ) : (
+                    num.format(gap.missingAr)
+                  )}
                 </td>
                 <td className="num">
-                  {gap.missingId > 0 ? <Pill tone="warn">{gap.missingId}</Pill> : gap.missingId}
+                  {gap.missingId > 0 ? (
+                    <Pill tone="warn">{num.format(gap.missingId)}</Pill>
+                  ) : (
+                    num.format(gap.missingId)
+                  )}
                 </td>
               </tr>
             ))}

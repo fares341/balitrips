@@ -74,7 +74,7 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
 
         <div className="row" style={{ gap: 8 }}>
           <Tag variant="forest">
-            <Icon name="cal" size={13} /> {pkg.days} {t('c_days')}
+            <Icon name="cal" size={13} /> {t('c_days_n', { n: pkg.days })}
           </Tag>
           <Tag variant="palm">
             <Icon name="users" size={13} /> {t('ph_maxg')} {pkg.maxGuests}
@@ -88,15 +88,7 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
 
         {pkg.regions.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span
-              className="muted"
-              style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.05em',
-              }}
-            >
+            <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>
               {t('hp_regions')}:
             </span>
             <span className="muted" style={{ fontSize: 12.5 }}>
@@ -107,15 +99,7 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
 
         {pkg.amenities.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span
-              className="muted"
-              style={{
-                fontSize: 11.5,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '.05em',
-              }}
-            >
+            <span className="muted" style={{ fontSize: 12.5, fontWeight: 700 }}>
               {t('hp_services')}:
             </span>
             <span style={{ display: 'flex', gap: 6 }}>
@@ -138,11 +122,9 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
             paddingTop: 8,
           }}
         >
-          <div>
-            <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>
-              {t('c_from')}{' '}
-            </span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--orange-deep)' }}>
+          <div className="bt-card-price">
+            <span className="bt-card-price-l">{t('c_from')}</span>
+            <span className="bt-card-price-v bt-money">
               {formatMoney(pkg.priceMinor, pkg.currency, locale)}
             </span>
           </div>

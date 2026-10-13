@@ -24,6 +24,7 @@ import {
   freq,
   fstr,
 } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
@@ -42,29 +43,30 @@ const refreshPublic = () => revalidatePath('/[locale]/plans', 'page')
 
 export async function savePlan(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('config.write')
+  const { t } = await getAdminI18n()
   let target = id === 'new' ? LIST : adminHref(`/plans/${id}`)
   let outcome: ActionOutcome
 
   try {
-    const durationDays = fintOrNull(form, 'durationDays', 'Duration')
+    const durationDays = fintOrNull(form, 'durationDays', t('plans.field_duration'))
     if (durationDays !== null && (durationDays < 1 || durationDays > 3650)) {
-      throw new Error('Duration must be 1–3650 days, or blank for lifetime')
+      throw new Error(t('plans.err_duration'))
     }
-    const maxMembers = fint(form, 'maxMembers', 1, 'People on the plan')
-    if (maxMembers < 1 || maxMembers > 10) throw new Error('People on the plan must be 1–10.')
-    const deviceLimit = fint(form, 'deviceLimit', 2, 'Device limit')
+    const maxMembers = fint(form, 'maxMembers', 1, t('plans.field_members'))
+    if (maxMembers < 1 || maxMembers > 10) throw new Error(t('plans.err_members'))
+    const deviceLimit = fint(form, 'deviceLimit', 2, t('plans.device_limit'))
     if (deviceLimit < 1 || deviceLimit > MAX_DEVICE_LIMIT) {
-      throw new Error(`Device limit must be 1–${MAX_DEVICE_LIMIT}`)
+      throw new Error(t('plans.err_device_limit', { max: MAX_DEVICE_LIMIT }))
     }
     const status = form.get('status') === 'published' ? 'published' : 'draft'
 
     const values = {
-      slug: assertSlug(freq(form, 'slug', 'Slug')).slice(0, 64),
-      name: flocalizedRequired(form, 'name', 'Name'),
+      slug: assertSlug(freq(form, 'slug', t('common.slug'))).slice(0, 64),
+      name: flocalizedRequired(form, 'name', t('common.name')),
       description: flocalizedOrNull(form, 'description'),
       features: flocalizedList(form, 'features'),
       icon: fstr(form, 'icon')?.slice(0, 32) ?? null,
-      priceMinor: fminor(form, 'priceMinor', 'Price'),
+      priceMinor: fminor(form, 'priceMinor', t('common.price')),
       currency: fcurrency(form, 'currency'),
       entitlementKind: fenum(form, 'entitlementKind', ENTITLEMENT_KINDS, 'map_access'),
       durationDays,
@@ -74,7 +76,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       canSaveFavorites: fbool(form, 'canSaveFavorites'),
       canDownloadPdf: fbool(form, 'canDownloadPdf'),
       featured: fbool(form, 'featured'),
-      sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      sortOrder: fint(form, 'sortOrder', 0, t('common.order')),
       status,
     }
 
@@ -83,7 +85,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
         id === 'new'
           ? null
           : ((await tx.select().from(plans).where(eq(plans.id, id)).limit(1))[0] ?? null)
-      if (id !== 'new' && !before) throw new Error('That plan no longer exists')
+      if (id !== 'new' && !before) throw new Error(t('plans.err_gone'))
 
       const publishedAt =
         status === 'published' ? (before?.publishedAt ?? new Date()) : (before?.publishedAt ?? null)
@@ -98,7 +100,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
               .set({ ...values, publishedAt })
               .where(eq(plans.id, id))
               .returning()
-      if (!row) throw new Error('Save failed')
+      if (!row) throw new Error(t('plans.err_save_failed'))
 
       await writeAudit(
         {
@@ -117,7 +119,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
     refreshPublic()
     target = adminHref(`/plans/${savedId}`)
     outcome = {
-      ok: 'Plan saved. Existing customers keep the duration and device limit they bought.',
+      ok: t('plans.ok_saved'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -130,6 +132,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
 /** Archive (soft delete). Entitlements already granted from it are untouched. */
 export async function archivePlan(id: string): Promise<void> {
   const session = await requireCapability('config.write')
+  const { t } = await getAdminI18n()
   let outcome: ActionOutcome
   try {
     const [row] = await db
@@ -137,7 +140,7 @@ export async function archivePlan(id: string): Promise<void> {
       .set({ deletedAt: new Date(), status: 'draft' })
       .where(eq(plans.id, id))
       .returning()
-    if (!row) throw new Error('That plan no longer exists')
+    if (!row) throw new Error(t('plans.err_gone'))
     await writeAudit({
       actor: session,
       action: 'plan.archive',
@@ -148,7 +151,7 @@ export async function archivePlan(id: string): Promise<void> {
     })
     refreshPublic()
     outcome = {
-      ok: 'Plan archived. It is no longer for sale; existing customers keep their access.',
+      ok: t('plans.ok_archived'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error

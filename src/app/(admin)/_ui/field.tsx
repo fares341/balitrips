@@ -2,6 +2,7 @@ import type { Localized } from '@/db/schema'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 
 import { localeFieldName } from '../_lib/form'
+import { uiI18n } from './i18n-server'
 
 /**
  * Form primitives.
@@ -16,16 +17,26 @@ export function Field({
   label,
   hint,
   htmlFor,
+  required,
   children,
 }: {
   label: string
   hint?: string
   htmlFor?: string
+  /** Shows a required marker after the label. Optional; validation stays on the input. */
+  required?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="a-field">
-      <label htmlFor={htmlFor}>{label}</label>
+      <label htmlFor={htmlFor}>
+        {label}
+        {required ? (
+          <span className="a-req" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </label>
       {children}
       {hint ? <span className="a-hint">{hint}</span> : null}
     </div>
@@ -95,7 +106,11 @@ export function LocalizedField({
     <fieldset className="a-fieldset">
       <legend>
         {label}
-        {required ? ' *' : ''}
+        {required ? (
+          <span className="a-req" aria-hidden="true">
+            *
+          </span>
+        ) : null}
       </legend>
       {hint ? <span className="a-hint">{hint}</span> : null}
       <div className="a-l10n">
@@ -139,7 +154,7 @@ export function LocalizedField({
  * English drives the length, so a half-finished translation cannot truncate
  * or pad the published list.
  */
-export function LocalizedListField({
+export async function LocalizedListField({
   name,
   label,
   values,
@@ -152,14 +167,15 @@ export function LocalizedListField({
   hint?: string
   rows?: number
 }) {
+  const { t } = await uiI18n()
   const text = (locale: Locale) => (values ?? []).map((value) => value[locale] ?? '').join('\n')
 
   return (
     <fieldset className="a-fieldset">
       <legend>{label}</legend>
       <span className="a-hint">
-        {hint ? `${hint} ` : ''}One item per line. Lines are matched across locales by position, and
-        a line whose English is blank is dropped.
+        {hint ? `${hint} ` : ''}
+        {t('ui.list_hint')}
       </span>
       <div className="a-l10n">
         {locales.map((locale) => {
@@ -184,12 +200,13 @@ export function LocalizedListField({
 }
 
 /** Draft / published selector, used by every publishable entity. */
-export function StatusField({ value }: { value?: string | null }) {
+export async function StatusField({ value }: { value?: string | null }) {
+  const { t } = await uiI18n()
   return (
-    <Field label="Status" htmlFor="status" hint="Only published rows are sellable and crawlable.">
+    <Field label={t('common.status')} htmlFor="status" hint={t('ui.status_hint')}>
       <Select id="status" name="status" defaultValue={value ?? 'draft'}>
-        <option value="draft">Draft</option>
-        <option value="published">Published</option>
+        <option value="draft">{t('common.draft')}</option>
+        <option value="published">{t('common.published')}</option>
       </Select>
     </Field>
   )
@@ -203,10 +220,10 @@ export function StatusField({ value }: { value?: string | null }) {
  * currency (JPY 0, USD 2, KWD 3), so "12.50" has no single meaning and a
  * float round-trip is exactly how a price drifts by a cent.
  */
-export function MoneyField({
+export async function MoneyField({
   minorName = 'priceMinor',
   currencyName = 'currency',
-  label = 'Price',
+  label,
   minor,
   currency,
 }: {
@@ -216,27 +233,30 @@ export function MoneyField({
   minor?: number | null
   currency?: string | null
 }) {
+  const { t } = await uiI18n()
   return (
     <>
       <Field
-        label={`${label} (minor units)`}
+        label={t('ui.money_minor', { label: label ?? t('common.price') })}
         htmlFor={minorName}
-        hint="Integer count of minor units — 12500 is 125.00 in a 2-decimal currency."
+        hint={t('ui.money_hint')}
       >
         <TextInput
           id={minorName}
           name={minorName}
           inputMode="numeric"
           pattern="[0-9]*"
+          dir="ltr"
           defaultValue={String(minor ?? 0)}
           required
         />
       </Field>
-      <Field label="Currency" htmlFor={currencyName} hint="ISO 4217, e.g. USD, IDR, SAR.">
+      <Field label={t('common.currency')} htmlFor={currencyName} hint={t('ui.currency_hint')}>
         <TextInput
           id={currencyName}
           name={currencyName}
           maxLength={3}
+          dir="ltr"
           defaultValue={currency ?? 'USD'}
           style={{ textTransform: 'uppercase' }}
           required

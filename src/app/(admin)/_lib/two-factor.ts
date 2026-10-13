@@ -141,7 +141,8 @@ export async function verifyCodeOnce(
   if (!result.valid)
     return {
       ok: false,
-      reason: 'That code is not valid. Check your phone’s clock and try the next one.',
+      // Studio dictionary key (`_i18n/system.ts`); callers translate it.
+      reason: 'security.err_code_invalid',
     }
 
   const identifier = `${TWO_FACTOR_PREFIXES.replay}${userId}`
@@ -149,7 +150,7 @@ export async function verifyCodeOnce(
   if (previous !== null && Number.parseInt(previous, 10) >= result.step) {
     return {
       ok: false,
-      reason: 'That code has already been used. Wait for your authenticator to show the next one.',
+      reason: 'security.err_code_reused',
     }
   }
 

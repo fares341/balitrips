@@ -8,6 +8,7 @@ import { orders, sessions, users } from '@/db/schema'
 import { ROLES } from '@/lib/auth/roles'
 
 import { adminHref } from '../../_lib/admin-path'
+import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -48,6 +49,9 @@ export default async function CustomersPage({
 }) {
   const session = await requireCapability('customers.read')
   const params = await searchParams
+  const { t, intl, locale } = await getAdminI18n()
+  /** Enum value → label; an unknown value shows as stored. */
+  const label = (key: string, raw: string) => (t(key) === key ? raw : t(key))
 
   const { q, role, state, where } = customerFilters(params)
   const page = pageParam(params)
@@ -85,77 +89,77 @@ export default async function CustomersPage({
       .offset((page - 1) * PAGE_SIZE),
     db.select({ value: count() }).from(users).where(where),
   ])
-  const summaries = await loadAccountSummaries(rows.map((row) => row.id))
+  const summaries = await loadAccountSummaries(
+    rows.map((row) => row.id),
+    locale,
+  )
 
   return (
     <>
-      <PageHead
-        title="Customers"
-        description="Accounts, their live sessions and their role. Role changes and erasure requests are handled on the account page and every one of them is audited."
-      />
+      <PageHead title={t('customers.title')} description={t('customers.description')} />
       <Flash searchParams={params} />
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
-          <label htmlFor="q">Search</label>
+          <label htmlFor="q">{t('customers.search')}</label>
           <input
             className="a-input"
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder="E-mail, name or phone"
+            placeholder={t('customers.search_placeholder')}
           />
         </div>
         <div className="a-field">
-          <label htmlFor="role">Role</label>
+          <label htmlFor="role">{t('customers.role')}</label>
           <select className="a-select" id="role" name="role" defaultValue={role ?? ''}>
-            <option value="">Any</option>
+            <option value="">{t('customers.any')}</option>
             {ROLES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {label(`customers.role_${value}`, value)}
               </option>
             ))}
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor="state">State</label>
+          <label htmlFor="state">{t('customers.state')}</label>
           <select className="a-select" id="state" name="state" defaultValue={state ?? ''}>
-            <option value="">Active</option>
-            <option value="deleted">Deleted</option>
+            <option value="">{t('customers.state_active')}</option>
+            <option value="deleted">{t('customers.state_deleted')}</option>
           </select>
         </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
-            Filter
+            {t('customers.filter')}
           </button>
           <Link className="a-btn ghost" href={LIST}>
-            Reset
+            {t('customers.reset')}
           </Link>
           {mayExport ? (
             // Route handler: a plain <a> so the browser downloads the file.
             <a className="a-btn ghost" href={`${adminHref('/customers/export')}?${exportQuery}`}>
-              Export CSV
+              {t('customers.export_csv')}
             </a>
           ) : null}
         </div>
       </form>
 
       {rows.length === 0 ? (
-        <Empty>No accounts match those filters.</Empty>
+        <Empty>{t('customers.empty')}</Empty>
       ) : (
         <Table>
           <thead>
             <tr>
-              <th>Account</th>
-              <th>Status</th>
-              <th>Current plan</th>
-              <th>Last login</th>
-              <th>Role</th>
-              <th>Two-factor</th>
-              <th className="num">Sessions</th>
-              <th className="num">Orders</th>
-              <th>Locale</th>
-              <th>Created</th>
+              <th>{t('customers.col_account')}</th>
+              <th>{t('customers.col_status')}</th>
+              <th>{t('customers.current_plan')}</th>
+              <th>{t('customers.last_login')}</th>
+              <th>{t('customers.role')}</th>
+              <th>{t('customers.two_factor')}</th>
+              <th className="num">{t('customers.col_sessions')}</th>
+              <th className="num">{t('customers.orders')}</th>
+              <th>{t('customers.col_locale')}</th>
+              <th>{t('customers.col_created')}</th>
             </tr>
           </thead>
           <tbody>
@@ -169,44 +173,48 @@ export default async function CustomersPage({
                     <Link href={adminHref(`/customers/${row.id}`)}>{contactLabel(row)}</Link>
                     <div className="a-muted">
                       {row.name ?? '—'}
-                      {phoneOnly ? ' · phone only' : ''}
-                      {row.deletedAt ? ' · deleted' : ''}
+                      {phoneOnly ? ` · ${t('customers.tag_phone_only')}` : ''}
+                      {row.deletedAt ? ` · ${t('customers.tag_deleted')}` : ''}
                       {row.emailVerifiedAt === null && row.deletedAt === null && !phoneOnly
-                        ? ' · unverified'
+                        ? ` · ${t('customers.tag_unverified')}`
                         : ''}
                     </div>
                   </td>
                   <td>
                     {row.deletedAt ? (
-                      <Pill tone="bad">deleted</Pill>
+                      <Pill tone="bad">{t('customers.status_deleted')}</Pill>
                     ) : (
-                      <Pill tone={STATUS_TONES[row.status] ?? 'neutral'}>{row.status}</Pill>
+                      <Pill tone={STATUS_TONES[row.status] ?? 'neutral'}>
+                        {label(`customers.status_${row.status}`, row.status)}
+                      </Pill>
                     )}
                   </td>
                   <td>
                     {summary && summary.access.length > 0 ? (
                       summary.access.map((access) => (
                         <div key={access.id} className="a-mono" style={{ fontSize: 12 }}>
-                          {accessLine(access)}
+                          {accessLine(access, t, intl)}
                         </div>
                       ))
                     ) : (
-                      <span className="a-muted">none</span>
+                      <span className="a-muted">{t('customers.none')}</span>
                     )}
                   </td>
                   <td>
                     <When value={summary?.lastLogin ?? null} />
                   </td>
                   <td>
-                    <Pill tone={row.role === 'customer' ? 'neutral' : 'info'}>{row.role}</Pill>
+                    <Pill tone={row.role === 'customer' ? 'neutral' : 'info'}>
+                      {label(`customers.role_${row.role}`, row.role)}
+                    </Pill>
                   </td>
                   <td>
                     {row.role === 'customer' ? (
-                      <span className="a-muted">n/a</span>
+                      <span className="a-muted">{t('customers.not_applicable')}</span>
                     ) : row.twoFactorEnabled ? (
-                      <Pill tone="good">enrolled</Pill>
+                      <Pill tone="good">{t('customers.tfa_enrolled')}</Pill>
                     ) : (
-                      <Pill tone="bad">missing</Pill>
+                      <Pill tone="bad">{t('customers.tfa_missing')}</Pill>
                     )}
                   </td>
                   <td className="num">{row.liveSessions}</td>

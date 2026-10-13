@@ -11,6 +11,7 @@ import { media } from '@/db/schema'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { flocalized, freq, fstr } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { ImageRejected } from '../../_lib/image/inspect'
 import { formatBytes, ingestImage, MAX_UPLOAD_BYTES } from '../../_lib/image/pipeline'
 import { isPlaceholder, publishedReferences, referencesTo } from '../../_lib/media-refs'
@@ -48,12 +49,13 @@ type Outcome = { ok: string } | { err: string }
  */
 export async function uploadMedia(form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     const file = form.get('file')
     if (!(file instanceof File) || file.size === 0) {
-      throw new Error('Choose an image to upload.')
+      throw new Error(t('media.err_choose_image'))
     }
 
     // Checked before the body is read into memory. `file.size` is the
@@ -61,7 +63,10 @@ export async function uploadMedia(form: FormData): Promise<void> {
     // pipeline checks the actual byte length again after buffering.
     if (file.size > MAX_UPLOAD_BYTES) {
       throw new Error(
-        `That file is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_UPLOAD_BYTES)} — resize or re-export it first.`,
+        t('media.err_too_large', {
+          size: formatBytes(file.size),
+          max: formatBytes(MAX_UPLOAD_BYTES),
+        }),
       )
     }
 
@@ -94,7 +99,7 @@ export async function uploadMedia(form: FormData): Promise<void> {
         })
         .returning()
 
-      if (!row) throw new Error('Upload succeeded but the media row could not be written.')
+      if (!row) throw new Error(t('media.err_row_write'))
 
       await writeAudit(
         {
@@ -124,14 +129,28 @@ export async function uploadMedia(form: FormData): Promise<void> {
 
     outcome = {
       ok: result.optimised
-        ? `Uploaded ${inserted.width}x${inserted.height}, ${formatBytes(inserted.bytes)}, plus ${result.derivatives.length} derivatives.`
-        : `Uploaded ${inserted.width}x${inserted.height}, ${formatBytes(inserted.bytes)}. NO derivatives were generated — the sharp encoder is not installed, so this image is served at full size.`,
+        ? t('media.ok_uploaded', {
+            width: inserted.width,
+            height: inserted.height,
+            size: formatBytes(inserted.bytes),
+            count: result.derivatives.length,
+          })
+        : t('media.ok_uploaded_unoptimised', {
+            width: inserted.width,
+            height: inserted.height,
+            size: formatBytes(inserted.bytes),
+          }),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    // ImageRejected messages are written for operators and say exactly what
-    // was wrong with the file, so they pass through unchanged.
-    outcome = { err: error instanceof ImageRejected ? error.message : errorMessage(error) }
+    // ImageRejected messages say exactly what was wrong with the file; they
+    // are technical English, so the sentence around them is translated.
+    outcome = {
+      err:
+        error instanceof ImageRejected
+          ? t('media.err_rejected', { detail: error.message })
+          : errorMessage(error),
+    }
   }
 
   redirect(withOutcome(LIST, outcome))
@@ -146,6 +165,7 @@ export async function uploadMedia(form: FormData): Promise<void> {
  */
 export async function updateMedia(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -156,7 +176,7 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(media).where(eq(media.id, id)).limit(1)
-      if (!before) throw new Error('That image no longer exists')
+      if (!before) throw new Error(t('media.err_gone'))
 
       const [after] = await tx.update(media).set(values).where(eq(media.id, id)).returning()
 
@@ -173,7 +193,7 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Image details saved.' }
+    outcome = { ok: t('media.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -204,6 +224,7 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
  */
 export async function deleteMedia(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -215,7 +236,7 @@ export async function deleteMedia(id: string, form: FormData): Promise<void> {
         .for('update')
         .limit(1)
 
-      if (!before) throw new Error('That image is already archived, or no longer exists')
+      if (!before) throw new Error(t('media.err_already_archived'))
 
       const blocking = publishedReferences(await referencesTo(id, tx))
       if (blocking.length > 0) {
@@ -223,10 +244,8 @@ export async function deleteMedia(id: string, form: FormData): Promise<void> {
           .slice(0, 4)
           .map((reference) => `${reference.entity} “${reference.label}”`)
           .join(', ')
-        const more = blocking.length > 4 ? ` and ${blocking.length - 4} more` : ''
-        throw new Error(
-          `Still used by ${blocking.length} published record${blocking.length === 1 ? '' : 's'}: ${named}${more}. Unpublish them or pick a different image first.`,
-        )
+        const more = blocking.length > 4 ? t('media.and_more', { count: blocking.length - 4 }) : ''
+        throw new Error(t('media.err_still_used', { count: blocking.length, named, more }))
       }
 
       await tx.update(media).set({ deletedAt: new Date() }).where(eq(media.id, id))
@@ -245,7 +264,7 @@ export async function deleteMedia(id: string, form: FormData): Promise<void> {
     })
 
     outcome = {
-      ok: 'Image archived. The stored objects are kept, so it can be restored.',
+      ok: t('media.ok_archived'),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -258,6 +277,7 @@ export async function deleteMedia(id: string, form: FormData): Promise<void> {
 /** Undo an archive. The objects were never removed, so this is a flag flip. */
 export async function restoreMedia(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -268,7 +288,7 @@ export async function restoreMedia(id: string, form: FormData): Promise<void> {
         .where(and(eq(media.id, id), isNotNull(media.deletedAt)))
         .limit(1)
 
-      if (!before) throw new Error('That image is not archived')
+      if (!before) throw new Error(t('media.err_not_archived'))
 
       await tx.update(media).set({ deletedAt: null }).where(eq(media.id, id))
 
@@ -285,7 +305,7 @@ export async function restoreMedia(id: string, form: FormData): Promise<void> {
       )
     })
 
-    outcome = { ok: 'Image restored.' }
+    outcome = { ok: t('media.ok_restored') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
@@ -303,16 +323,17 @@ export async function restoreMedia(id: string, form: FormData): Promise<void> {
  */
 export async function clearPlaceholderCredit(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
-    const credit = freq(form, 'credit', 'Credit')
+    const credit = freq(form, 'credit', t('media.credit'))
 
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(media).where(eq(media.id, id)).limit(1)
-      if (!before) throw new Error('That image no longer exists')
+      if (!before) throw new Error(t('media.err_gone'))
       if (!isPlaceholder(before.credit)) {
-        throw new Error('That image is not marked as a generated placeholder.')
+        throw new Error(t('media.err_not_placeholder'))
       }
 
       await tx.update(media).set({ credit }).where(eq(media.id, id))
@@ -330,7 +351,7 @@ export async function clearPlaceholderCredit(id: string, form: FormData): Promis
       )
     })
 
-    outcome = { ok: 'Credit updated — this image no longer reads as a placeholder.' }
+    outcome = { ok: t('media.ok_credit') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

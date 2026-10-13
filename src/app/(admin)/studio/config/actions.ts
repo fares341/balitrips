@@ -10,7 +10,9 @@ import { locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import type { Translate } from '../../_i18n'
 import { fcurrency, fdate, fint, flines, freq, localeFieldName } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import {
@@ -49,16 +51,17 @@ type Outcome = { ok: string } | { err: string }
  */
 async function save<K extends SettingKey>(
   key: K,
-  build: () => SettingsShape[K],
-  successMessage: string,
+  build: (t: Translate) => SettingsShape[K],
+  successKey: string,
 ): Promise<void> {
   const session = await requireCapability('config.write')
+  const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
     // Parsed here so a validation failure is reported before anything is
     // written, and reported with the field name the operator typed into.
-    const value = parseSetting(key, build())
+    const value = parseSetting(key, build(t))
 
     await db.transaction(async (tx) => {
       const [existing] = await tx
@@ -98,10 +101,10 @@ async function save<K extends SettingKey>(
       )
     })
 
-    outcome = { ok: successMessage }
+    outcome = { ok: t(successKey) }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    outcome = { err: readableError(error) }
+    outcome = { err: readableError(t, error) }
   }
 
   redirect(withOutcome(LIST, outcome))
@@ -114,9 +117,11 @@ async function save<K extends SettingKey>(
  * useless in a one-line banner. `prettifyError` gives the field path and the
  * reason, which is what an operator needs to find the input they got wrong.
  */
-function readableError(error: unknown): string {
+function readableError(t: Translate, error: unknown): string {
   if (error instanceof z.ZodError) {
-    return `That value was rejected. ${z.prettifyError(error).replace(/\s+/g, ' ').trim()}`
+    return t('config.err_rejected', {
+      detail: z.prettifyError(error).replace(/\s+/g, ' ').trim(),
+    })
   }
   return errorMessage(error)
 }
@@ -131,19 +136,17 @@ function readableError(error: unknown): string {
 export async function saveCurrencies(form: FormData): Promise<void> {
   await save(
     'currencies',
-    () => {
+    (t) => {
       const presentmentCurrencies = flines(form, 'presentmentCurrencies').map((line) =>
         line.toUpperCase(),
       )
       const defaultPresentment = fcurrency(form, 'defaultPresentment')
 
       if (presentmentCurrencies.length === 0) {
-        throw new Error('List at least one presentment currency, one per line.')
+        throw new Error(t('config.err_no_presentment'))
       }
       if (!presentmentCurrencies.includes(defaultPresentment)) {
-        throw new Error(
-          `The default presentment currency (${defaultPresentment}) must also appear in the list of presentment currencies.`,
-        )
+        throw new Error(t('config.err_default_not_listed', { currency: defaultPresentment }))
       }
 
       return {
@@ -152,7 +155,7 @@ export async function saveCurrencies(form: FormData): Promise<void> {
         defaultPresentment,
       }
     },
-    'Currency settings saved.',
+    'config.ok_currencies',
   )
 }
 
@@ -160,13 +163,13 @@ export async function saveCurrencies(form: FormData): Promise<void> {
 export async function saveFees(form: FormData): Promise<void> {
   await save(
     'fees',
-    () => ({
-      serviceFeeBps: fint(form, 'serviceFeeBps', 0, 'Service fee'),
-      bookingFeeMinor: fint(form, 'bookingFeeMinor', 0, 'Booking fee'),
-      paymentSurchargeBps: fint(form, 'paymentSurchargeBps', 0, 'Payment surcharge'),
+    (t) => ({
+      serviceFeeBps: fint(form, 'serviceFeeBps', 0, t('config.label_service_fee')),
+      bookingFeeMinor: fint(form, 'bookingFeeMinor', 0, t('config.label_booking_fee')),
+      paymentSurchargeBps: fint(form, 'paymentSurchargeBps', 0, t('config.label_surcharge')),
       feeCurrency: fcurrency(form, 'feeCurrency'),
     }),
-    'Fee schedule saved.',
+    'config.ok_fees',
   )
 }
 
@@ -174,15 +177,18 @@ export async function saveFees(form: FormData): Promise<void> {
 export async function saveContact(form: FormData): Promise<void> {
   await save(
     'contact',
-    () => ({
+    (t) => ({
       // Punctuation is stripped rather than rejected: an operator pasting
       // "+62 812 3456 7890" out of a phone is the normal case, and refusing it
       // teaches them to distrust the field.
-      whatsappNumber: freq(form, 'whatsappNumber', 'WhatsApp number').replace(/[^0-9]/g, ''),
-      whatsappDisplay: freq(form, 'whatsappDisplay', 'Displayed number'),
-      supportEmail: freq(form, 'supportEmail', 'Support e-mail'),
+      whatsappNumber: freq(form, 'whatsappNumber', t('config.whatsapp_number')).replace(
+        /[^0-9]/g,
+        '',
+      ),
+      whatsappDisplay: freq(form, 'whatsappDisplay', t('config.displayed_number')),
+      supportEmail: freq(form, 'supportEmail', t('config.support_email')),
     }),
-    'Contact details saved.',
+    'config.ok_contact',
   )
 }
 
@@ -199,14 +205,15 @@ export async function savePolicy(id: string, form: FormData): Promise<void> {
   if (!policyId) {
     // Never reachable from the rendered form; a hand-built POST lands here.
     await requireCapability('config.write')
-    redirect(withOutcome(LIST, { err: `"${id}" is not a policy page.` }))
+    const { t } = await getAdminI18n()
+    redirect(withOutcome(LIST, { err: t('config.err_not_policy', { id }) }))
   }
 
   await save(
     `policy.${policyId satisfies PolicyId}`,
-    () => {
-      const updated = fdate(form, 'updated', 'Effective date')
-      if (!updated) throw new Error('Effective date is required (YYYY-MM-DD).')
+    (t) => {
+      const updated = fdate(form, 'updated', t('config.effective_date'))
+      if (!updated) throw new Error(t('config.err_effective_required'))
 
       const body = {} as Record<(typeof locales)[number], string>
       for (const locale of locales) {
@@ -215,13 +222,11 @@ export async function savePolicy(id: string, form: FormData): Promise<void> {
       }
 
       if (body.en === '') {
-        throw new Error(
-          'The English body is required — it is the authoring locale, and the other two fall back to it.',
-        )
+        throw new Error(t('config.err_en_body_required'))
       }
 
       return { updated, body }
     },
-    'Policy saved.',
+    'config.ok_policy',
   )
 }
