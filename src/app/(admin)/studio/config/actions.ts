@@ -1,6 +1,7 @@
 'use server'
 
 import { eq, sql } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
@@ -53,6 +54,8 @@ async function save<K extends SettingKey>(
   key: K,
   build: (t: Translate) => SettingsShape[K],
   successKey: string,
+  /** Runs after the write commits — e.g. to refresh a prerendered page. */
+  onSaved?: () => void,
 ): Promise<void> {
   const session = await requireCapability('config.write')
   const { t } = await getAdminI18n()
@@ -101,6 +104,7 @@ async function save<K extends SettingKey>(
       )
     })
 
+    onSaved?.()
     outcome = { ok: t(successKey) }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -228,5 +232,27 @@ export async function savePolicy(id: string, form: FormData): Promise<void> {
       return { updated, body }
     },
     'config.ok_policy',
+  )
+}
+
+/**
+ * Home page presentation: the hero background image.
+ *
+ * The value is a media-library id or nothing. The picker posts an empty
+ * string for "no image", which is stored as `null` so the page falls back to
+ * its shipped artwork. The home page is prerendered, so it is revalidated
+ * after the write — otherwise the new photo would only appear on the next
+ * deploy.
+ */
+export async function saveHome(form: FormData): Promise<void> {
+  await save(
+    'home',
+    () => {
+      const raw = form.get('heroImageId')
+      const value = typeof raw === 'string' ? raw.trim() : ''
+      return { heroImageId: value === '' ? null : value }
+    },
+    'config.ok_home',
+    () => revalidatePath('/[locale]', 'page'),
   )
 }

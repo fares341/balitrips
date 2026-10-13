@@ -3,35 +3,34 @@
 /**
  * Header.
  *
- * Ported from design/handoff/sections-bt/header.jsx: sticky, blurred, centered
- * logo, icon rail on both sides, a second row of navigation that scrolls
- * horizontally on desktop, and a drawer under 900px.
+ * One quiet bar: the logo, three or four primary links, the utility icons and
+ * a "Menu" button that opens a side drawer holding every other destination,
+ * the language switcher and the account link. Modelled on the reference site
+ * the owner picked — few choices up front, everything one tap away.
+ *
+ * On the home page the bar sits transparent over the full-bleed hero photo
+ * and turns solid as soon as the page scrolls; everywhere else it is solid
+ * from the start.
  *
  * 'use client' is unavoidable — the scroll state, the drawer and the language
  * menu are all interactive. It is deliberately the *only* client boundary in
  * the layout shell: the footer and every card stay on the server.
  *
- * Four fixes over the handoff:
+ * Carried over from the previous header:
  *
- *  1. **The drawer state is reset at the breakpoint.** The handoff only hid
- *     `.bt-drawer` with `display: none !important` above 900px, so a visitor
- *     who opened the menu on a phone, rotated to landscape and rotated back
- *     found it still open — and, worse, the burger icon showed a close cross
- *     for a drawer nobody could see. A `matchMedia` listener clears the state
- *     rather than the stylesheet hiding it.
- *  2. **Everything is a link.** `navigate()` pushed `"#" + name`, so the logo,
- *     the cart and the CTA had no href.
- *  3. **The drawer closes on navigation.** With real client-side routing the
- *     drawer would otherwise stay open over the page it just opened.
- *  4. **The cart badge does not make the site dynamic.** Reading the cart
- *     server-side means `cookies()`, which opts every route out of static
- *     rendering and sends every visitor to origin. The count is read on the
- *     client from a non-httpOnly `bt_cart_count` cookie that cart mutations
- *     maintain, and refreshed on the `bt:cart-changed` event, so the shell
- *     stays cacheable at the edge.
+ *  1. **Everything is a link** — logo, cart, account and every nav entry have
+ *     a real href.
+ *  2. **The drawer closes on navigation**, adjusted during render so the new
+ *     page never paints with the drawer still open.
+ *  3. **The cart badge does not make the site dynamic.** The count is read
+ *     on the client from the non-httpOnly `bt_cart_count` cookie and
+ *     refreshed on `bt:cart-changed`, so the shell stays cacheable.
+ *
+ * The drawer is a modal dialog: Escape closes it, Tab is kept inside it, the
+ * page behind does not scroll, and focus returns to the Menu button.
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { LinkButton } from '@/components/shared'
@@ -48,15 +47,20 @@ import {
   CART_COUNT_COOKIE,
   CART_HREF,
   HOME_HREF,
+  isActivePath,
+  PRIMARY_ROUTES,
   SEARCH_HREF,
   SERVICES_HREF,
 } from './routes'
 
-/** Matches the `@media (min-width: 900px)` block in components.css. */
-const DESKTOP_QUERY = '(min-width: 900px)'
-
 /** Scroll distance after which the bar gains its opaque background. */
-const SCROLL_THRESHOLD = 20
+const SCROLL_THRESHOLD = 24
+
+/** Pages whose first section is a full-bleed photo the bar may float over. */
+const OVERLAY_PATHS: ReadonlySet<string> = new Set([HOME_HREF])
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
 
 function readCartCount(): number {
   if (typeof document === 'undefined') return 0
@@ -95,22 +99,41 @@ function useCartCount(): number {
   return count
 }
 
+function subscribeScroll(onChange: () => void): () => void {
+  window.addEventListener('scroll', onChange, { passive: true })
+  return () => window.removeEventListener('scroll', onChange)
+}
+
+/**
+ * Whether the page has scrolled past the threshold.
+ *
+ * `useSyncExternalStore` rather than a scroll listener that sets state: the
+ * window's scroll position is an external store, the snapshot is a boolean so
+ * React only re-renders when it flips, and the server snapshot (`false`)
+ * matches the first client render, so there is no hydration mismatch.
+ */
+function useScrolled(): boolean {
+  return useSyncExternalStore(
+    subscribeScroll,
+    () => window.scrollY > SCROLL_THRESHOLD,
+    () => false,
+  )
+}
+
 export function Header() {
   const t = useTranslations()
   const pathname = usePathname()
 
-  const [scrolled, setScrolled] = useState(false)
+  const scrolled = useScrolled()
   const [menuOpen, setMenuOpen] = useState(false)
   const cartCount = useCartCount()
 
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
+  const drawerRef = useRef<HTMLDivElement | null>(null)
+
   /*
-   * Close the drawer when the route changes.
-   *
-   * Adjusted during render rather than in an effect: an effect would commit
-   * the new page with the drawer still open and only then close it, which is
-   * a visible flash on a slow device. This is React's documented
-   * "adjusting state when a prop changes" pattern — the extra render happens
-   * before anything is painted.
+   * Close the drawer when the route changes — adjusted during render rather
+   * than in an effect, so the new page never commits with the drawer open.
    */
   const [lastPathname, setLastPathname] = useState(pathname)
   if (lastPathname !== pathname) {
@@ -118,114 +141,171 @@ export function Header() {
     setMenuOpen(false)
   }
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > SCROLL_THRESHOLD)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+  const closeMenu = useCallback(() => {
+    setMenuOpen(false)
+    menuButtonRef.current?.focus()
   }, [])
 
-  // Reset, do not merely hide. See note 1 at the top of the file. Subscribing
-  // to an external system (the media query) is exactly what effects are for.
+  // Modal behaviour while the drawer is open. Pure DOM work — focus, a key
+  // listener and the body's overflow — so no state is set from the effect.
   useEffect(() => {
-    const query = window.matchMedia(DESKTOP_QUERY)
-    const onChange = (event: MediaQueryListEvent) => {
-      if (event.matches) setMenuOpen(false)
+    if (!menuOpen) return
+    const drawer = drawerRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    drawer?.querySelector<HTMLElement>('[data-autofocus]')?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeMenu()
+        return
+      }
+      if (event.key !== 'Tab' || drawer === null) return
+      const items = [...drawer.querySelectorAll<HTMLElement>(FOCUSABLE)]
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (first === undefined || last === undefined) return
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
-  }, [])
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [menuOpen, closeMenu])
+
+  const overHero = OVERLAY_PATHS.has(pathname) && !scrolled && !menuOpen
+  const className = [
+    'bt-header',
+    overHero ? 'is-over' : null,
+    scrolled ? 'is-scrolled' : null,
+    OVERLAY_PATHS.has(pathname) ? 'is-overlay-page' : null,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <header
-      className="bt-header"
-      style={{
-        background: scrolled ? 'rgba(255,251,248,0.94)' : 'rgba(255,251,248,0.8)',
-        borderBottom: scrolled ? '1px solid var(--line-soft)' : '1px solid transparent',
-      }}
-    >
+    <header className={className}>
       <div className="wrap bt-head-bar">
-        <div className="bt-head-side bt-head-start">
-          <button
-            type="button"
-            className="bt-burger"
-            onClick={() => setMenuOpen((value) => !value)}
-            /*
-             * There is no dedicated "Menu" key in the 609-key catalogue, and
-             * inventing an English literal here would ship untranslated copy to
-             * Arabic and Indonesian readers. `ft_nav` — "Quick links" /
-             * "روابط سريعة" / "Tautan cepat" — is the existing, translated name
-             * for exactly this set of links, and it labels the drawer's own
-             * landmark below, so the two agree.
-             */
-            aria-label={t('ft_nav')}
-            aria-expanded={menuOpen}
-            aria-controls="bt-drawer"
-          >
-            <Icon name={menuOpen ? 'cross' : 'menu'} size={22} />
-          </button>
-          <div className="bt-head-side-desktop">
-            <Link href={ACCOUNT_HREF} className="bt-iconbtn" aria-label={t('nav_account')}>
-              <Icon name="user" size={20} />
-            </Link>
-            <LanguageSwitcher />
-          </div>
-        </div>
-
         <Link href={HOME_HREF} className="bt-head-logo" aria-label={t('c_home')}>
-          <Logo height={32} priority />
+          <Logo height={34} priority />
         </Link>
 
-        <div className="bt-head-side bt-head-end">
+        <nav className="bt-head-primary" aria-label={t('ft_nav')}>
+          {PRIMARY_ROUTES.map((route) => {
+            const active = isActivePath(pathname, route.href)
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                className="bt-head-primary-link"
+                aria-current={active ? 'page' : undefined}
+              >
+                {t(route.key)}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="bt-head-end">
           {/* Renders nothing unless the viewer can actually open Studio. */}
           <AdminLink />
           <NotificationBell />
 
-          <Link href={SEARCH_HREF} className="bt-iconbtn" aria-label={t('c_search')}>
+          <LanguageSwitcher variant="menu" className="bt-head-lang" />
+
+          <Link href={SEARCH_HREF} className="bt-iconbtn bt-head-icon" aria-label={t('c_search')}>
             <Icon name="search" size={19} />
           </Link>
 
-          <Link href={CART_HREF} className="bt-iconbtn" aria-label={t('ct2_title')}>
+          <Link href={CART_HREF} className="bt-iconbtn bt-head-icon" aria-label={t('ct2_title')}>
             <Icon name="cart" size={19} />
             {cartCount > 0 && <span className="bt-iconbtn-badge">{cartCount}</span>}
           </Link>
 
-          <LinkButton href={SERVICES_HREF} variant="orange" size="sm" className="bt-cta-desktop">
-            {t('c_startplan')}
-          </LinkButton>
+          <Link
+            href={ACCOUNT_HREF}
+            className="bt-iconbtn bt-head-icon bt-head-account"
+            aria-label={t('nav_account')}
+          >
+            <Icon name="user" size={19} />
+          </Link>
 
-          <div className="bt-head-acct-mobile">
-            <Link href={ACCOUNT_HREF} className="bt-iconbtn" aria-label={t('nav_account')}>
-              <Icon name="user" size={20} />
-            </Link>
-          </div>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="bt-menubtn"
+            onClick={() => setMenuOpen(true)}
+            aria-expanded={menuOpen}
+            aria-controls="bt-drawer"
+            aria-haspopup="dialog"
+          >
+            <Icon name="menu" size={20} />
+            <span className="bt-menubtn-label">{t('nav_menu')}</span>
+          </button>
         </div>
       </div>
 
-      <nav className="bt-nav-desktop" aria-label={t('ft_nav')}>
-        <NavLinks variant="desktop" />
-      </nav>
-
       {menuOpen && (
-        <div className="bt-drawer" id="bt-drawer">
-          {/*
-            Language first: on a phone the drawer is the only place the
-            switcher lives, and it should not sit below twelve links.
-          */}
-          <LanguageSwitcher className="bt-langseg-block" />
-          <nav aria-label={t('ft_nav')} className="bt-drawer-nav">
-            <NavLinks variant="drawer" onNavigate={() => setMenuOpen(false)} />
-          </nav>
-          <LinkButton
-            href={SERVICES_HREF}
-            variant="orange"
-            size="lg"
-            block
-            className="bt-drawer-cta"
-            onClick={() => setMenuOpen(false)}
+        <div className="bt-drawer-layer">
+          {/* The scrim is a mouse convenience; keyboard users have Escape and
+              the close button, so it is not focusable. */}
+          <div className="bt-drawer-scrim" aria-hidden="true" onClick={closeMenu} />
+          <div
+            ref={drawerRef}
+            className="bt-drawer"
+            id="bt-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('nav_menu')}
           >
-            {t('c_startplan')}
-          </LinkButton>
+            <div className="bt-drawer-top">
+              <Logo height={30} />
+              <button
+                type="button"
+                className="bt-iconbtn"
+                onClick={closeMenu}
+                aria-label={t('c_close')}
+                data-autofocus
+              >
+                <Icon name="cross" size={20} />
+              </button>
+            </div>
+
+            <LanguageSwitcher className="bt-langseg-block" />
+
+            <nav aria-label={t('ft_nav')} className="bt-drawer-nav">
+              <NavLinks variant="drawer" onNavigate={() => setMenuOpen(false)} />
+            </nav>
+
+            <div className="bt-drawer-foot">
+              <Link
+                href={ACCOUNT_HREF}
+                className="bt-drawer-account"
+                onClick={() => setMenuOpen(false)}
+              >
+                <Icon name="user" size={18} /> {t('nav_account')}
+              </Link>
+              <LinkButton
+                href={SERVICES_HREF}
+                variant="orange"
+                size="lg"
+                block
+                className="bt-drawer-cta"
+                onClick={() => setMenuOpen(false)}
+              >
+                {t('c_startplan')}
+              </LinkButton>
+            </div>
+          </div>
         </div>
       )}
     </header>

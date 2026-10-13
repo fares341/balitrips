@@ -6,6 +6,7 @@ import { hasLocale } from 'next-intl'
 
 import { Footer, Header } from '@/components/layout'
 import { PageViewBeacon } from '@/components/layout/page-view-beacon'
+import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { ToastProvider } from '@/components/shared'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
@@ -19,6 +20,9 @@ import '@/styles/tokens.css'
 import '@/styles/base.css'
 import '@/styles/layout.css'
 import '@/styles/components.css'
+// The premium layer (header, home, plans, detail hero, footer). Last, so it
+// refines the base components rather than being overridden by them.
+import '@/styles/premium.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -74,6 +78,7 @@ export default async function LocaleLayout({
               {children}
             </div>
             <Footer />
+            <WhatsAppFab />
             <PageViewBeacon />
           </ToastProvider>
         </NextIntlClientProvider>

@@ -42,6 +42,19 @@ export const NAV_ROUTES: readonly NavRoute[] = [
 ]
 
 /**
+ * The header's always-visible links — the few destinations a first-time
+ * visitor is actually looking for. Everything else lives in the Menu drawer,
+ * which renders the whole of `NAV_ROUTES`, so nothing here can become
+ * unreachable by being left out.
+ */
+export const PRIMARY_ROUTES: readonly NavRoute[] = [
+  { href: '/map', key: 'navr_map' },
+  { href: '/itineraries', key: 'navr_itin' },
+  { href: '/activities', key: 'navr_act' },
+  { href: '/plans', key: 'navr_plans' },
+]
+
+/**
  * Policy pages.
  *
  * The handoff rendered these as `href="#"`, which is a dead link on a page

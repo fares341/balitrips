@@ -3,7 +3,7 @@
 
    Ported from design/handoff/bt-styles.css :root. The handoff README's
    token table is STALE (fonts, several hex values, the wrap width). Trust
-   this file, not the README. The only typeface is Tajawal (src/styles/fonts.ts).
+   this file, not the README. Typefaces: Plus Jakarta Sans + IBM Plex Sans Arabic (src/styles/fonts.ts).
 
    Additions beyond the handoff, flagged inline: z-index and spacing scales,
    and sticky offsets derived from --nav-h. The original hard-coded five
@@ -46,13 +46,14 @@
   --focus-halo: rgba(255, 144, 0, 0.55);
 
   /* --- Type ------------------------------------------------------------- */
-  /* Tajawal for Arabic AND English (src/styles/fonts.ts injects the hashed
-     --font-tajawal variable in both root layouts). */
-  --sans: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
-  --arabic: var(--font-tajawal), 'Segoe UI', Tahoma, system-ui, sans-serif;
+  /* Plus Jakarta Sans (Latin) + IBM Plex Sans Arabic (Arabic), injected by
+     src/styles/fonts.ts in both root layouts. Same stack for both
+     directions: Latin glyphs from Jakarta, Arabic from Plex. */
+  --sans: var(--font-latin), var(--font-arabic), 'Segoe UI', Tahoma, system-ui, sans-serif;
+  --arabic: var(--font-latin), var(--font-arabic), 'Segoe UI', Tahoma, system-ui, sans-serif;
 
-  /* ADDED: type scale. A 1.25 ratio off a 16px body; Arabic body steps up one
-     notch in base.css because Tajawal's Arabic has a small x-height. */
+  /* ADDED: type scale. A 1.25 ratio off a 16px body; Arabic body gets more
+     leading in base.css. */
   --fs-xs: 12.5px;
   --fs-sm: 14px;
   --fs-base: 16px;
@@ -133,9 +134,8 @@
   }
 }
 
-/* Matches the header's 900px breakpoint, where the nav row appears. */
-@media (min-width: 900px) {
-  :root {
-    --nav-row-h: 52px;
-  }
-}
+/*
+ * --nav-row-h stays 0 at every width: the header is a single bar now (three
+ * or four primary links inline, everything else in the Menu drawer), so the
+ * second row that used to add 52px at 900px+ no longer exists.
+ */

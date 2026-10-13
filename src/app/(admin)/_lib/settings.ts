@@ -131,11 +131,21 @@ export const securitySchema = z.object({
   autoBan: z.boolean(),
 })
 
+/**
+ * The public home page. Only presentation: which media-library image sits
+ * behind the hero. `null` keeps the shipped artwork and gradient, so an empty
+ * table still renders a finished page.
+ */
+export const homeSchema = z.object({
+  heroImageId: z.guid().nullable(),
+})
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
 export type FeesSetting = z.infer<typeof feesSchema>
 export type ContactSetting = z.infer<typeof contactSchema>
 export type PolicySetting = z.infer<typeof policySchema>
+export type HomeSetting = z.infer<typeof homeSchema>
 
 /* --------------------------------------------------------------------------
    Registry
@@ -144,13 +154,20 @@ export type PolicySetting = z.infer<typeof policySchema>
 export const POLICY_IDS = ['terms', 'privacy', 'refund', 'cookies'] as const
 export type PolicyId = (typeof POLICY_IDS)[number]
 
-export type SettingKey = 'currencies' | 'fees' | 'contact' | 'security' | `policy.${PolicyId}`
+export type SettingKey =
+  | 'currencies'
+  | 'fees'
+  | 'contact'
+  | 'security'
+  | 'home'
+  | `policy.${PolicyId}`
 
 export interface SettingsShape {
   currencies: CurrenciesSetting
   fees: FeesSetting
   contact: ContactSetting
   security: SecuritySetting
+  home: HomeSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -210,6 +227,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     maxDownloadsPerItem: 0,
     autoBan: true,
   },
+  home: { heroImageId: null },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -221,6 +239,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   fees: feesSchema,
   contact: contactSchema,
   security: securitySchema,
+  home: homeSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

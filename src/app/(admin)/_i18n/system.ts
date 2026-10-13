@@ -197,6 +197,14 @@ const section: Section = {
     'config.label_surcharge': 'Payment surcharge',
     'config.ok_fees': 'Fee schedule saved.',
     'config.ok_contact': 'Contact details saved.',
+    'config.home_title': 'Home page',
+    'config.home_hint':
+      'The photo behind the home page headline. This one is live: saving updates the public home page in every language.',
+    'config.home_hero_image': 'Hero image',
+    'config.home_hero_image_hint':
+      'A wide landscape photo works best (at least 2000px wide). With no image, the page shows its built-in artwork on a green gradient.',
+    'config.save_home': 'Save home page',
+    'config.ok_home': 'Home page saved.',
     'config.err_not_policy': '"{id}" is not a policy page.',
     'config.err_effective_required': 'Effective date is required (YYYY-MM-DD).',
     'config.err_en_body_required':
@@ -416,6 +424,14 @@ const section: Section = {
     'config.label_surcharge': 'رسوم الدفع الإضافية',
     'config.ok_fees': 'تم حفظ جدول الرسوم.',
     'config.ok_contact': 'تم حفظ بيانات التواصل.',
+    'config.home_title': 'الصفحة الرئيسية',
+    'config.home_hint':
+      'الصورة التي تظهر خلف عنوان الصفحة الرئيسية. هذا الإعداد مفعّل: الحفظ يحدّث الصفحة الرئيسية للزوار بكل اللغات.',
+    'config.home_hero_image': 'صورة الواجهة',
+    'config.home_hero_image_hint':
+      'الأفضل صورة أفقية عريضة (2000 بكسل عرضاً على الأقل). بدون صورة تعرض الصفحة رسمتها الافتراضية على خلفية خضراء متدرجة.',
+    'config.save_home': 'حفظ الصفحة الرئيسية',
+    'config.ok_home': 'تم حفظ الصفحة الرئيسية.',
     'config.err_not_policy': '"{id}" ليست صفحة سياسة.',
     'config.err_effective_required': 'تاريخ السريان مطلوب (YYYY-MM-DD).',
     'config.err_en_body_required':

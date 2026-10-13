@@ -1,26 +1,23 @@
 /**
  * Footer.
  *
- * Ported from `Footer` in design/handoff/bt-ui.jsx (lines 411-451): four
- * columns — brand, quick links, policies, contact and payment — on the forest
- * surface.
+ * A deep-forest band: the brand and contact block, three link columns, a
+ * giant faint "Bali Trips" wordmark set behind them, and one legal line.
  *
  * No 'use client'. Nothing here is interactive, so the whole footer is server
  * markup and costs the client bundle nothing.
  *
- * Three fixes over the handoff:
+ * Kept from the previous footer:
  *
- *  1. **The policy links go somewhere.** They were `href="#"`. On a site that
- *     takes card payments the cancellation ladder and refund terms are the
- *     evidence that wins a chargeback — they have to be reachable, linkable
- *     and archivable, so they are real routes.
- *  2. **The nav column shares the header's route table** instead of repeating
- *     a second hand-maintained copy of the same ten entries.
- *  3. **Social links are configuration, not markup.** The handoff shipped
- *     three `href="#"` anchors. Real profile URLs are business data, so they
- *     come from the environment and the row renders only once they are set —
- *     better an absent row than three links that go nowhere or, worse, to an
- *     account the brand does not own.
+ *  1. **The policy links go somewhere** — they are real routes, because on a
+ *     site that takes card payments the refund terms are what wins a
+ *     chargeback.
+ *  2. **The link columns share the header's route table** rather than a
+ *     second hand-maintained list. They are split by href, and any route the
+ *     split does not name falls into the second column, so a new entry in
+ *     `NAV_ROUTES` can never silently disappear from the footer.
+ *  3. **Social links are configuration.** Unset profiles are dropped rather
+ *     than rendered as dead links.
  */
 
 import { getTranslations } from 'next-intl/server'
@@ -28,23 +25,16 @@ import { getTranslations } from 'next-intl/server'
 import { Icon, Logo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 
-import { NAV_ROUTES, POLICY_ROUTES } from './routes'
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from './contact-config'
+import { HOME_HREF, NAV_ROUTES, POLICY_ROUTES } from './routes'
 
-/** Contact details carried over from the design's footer. */
-const CONTACT = {
-  phone: '+966 4815 654 4666',
-  website: 'https://www.balitrips.com',
-  websiteLabel: 'www.balitrips.com',
-  offices: 'Bali · Jeddah, KSA',
-}
-
-/** Card schemes shown as plain wordmarks, exactly as in the design. */
+/** Card schemes shown as plain wordmarks. */
 const PAYMENT_METHODS = ['VISA', 'MC', 'Amex', 'Mada', 'Apple Pay']
 
-/**
- * Set `NEXT_PUBLIC_SOCIAL_INSTAGRAM`, `…_TIKTOK` and `…_YOUTUBE` to the real
- * profile URLs. Unset entries are dropped rather than rendered dead.
- */
+/** Where on the island — the first footer column, in this order. The rest go to "Company". */
+const EXPLORE_ORDER = ['/map', '/explore', '/itineraries', '/activities', '/events', '/packages']
+const EXPLORE_HREFS = new Set(EXPLORE_ORDER)
+
 const SOCIAL_LINKS = [
   { label: 'Instagram', href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM },
   { label: 'TikTok', href: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK },
@@ -54,41 +44,52 @@ const SOCIAL_LINKS = [
 export async function Footer() {
   const t = await getTranslations()
   const year = new Date().getFullYear()
+  const wa = whatsappLink()
+
+  const explore = NAV_ROUTES.filter((route) => EXPLORE_HREFS.has(route.href)).sort(
+    (a, b) => EXPLORE_ORDER.indexOf(a.href) - EXPLORE_ORDER.indexOf(b.href),
+  )
+  const company = NAV_ROUTES.filter(
+    (route) => !EXPLORE_HREFS.has(route.href) && route.href !== HOME_HREF,
+  )
 
   return (
-    <footer className="bg-forest bt-footer">
-      <div className="wrap">
+    <footer className="bt-footer">
+      {/* Decorative: the brand name as texture. The logo above carries the
+          accessible name. */}
+      <div className="bt-foot-wordmark" aria-hidden="true">
+        Bali Trips
+      </div>
+
+      <div className="wrap bt-foot-inner">
         <div className="bt-foot-cols">
           <div className="bt-foot-brand">
-            <div
-              style={{
-                background: 'var(--ivory)',
-                display: 'inline-block',
-                padding: '10px 14px',
-                borderRadius: 14,
-              }}
-            >
-              <Logo height={30} />
+            <Logo height={34} onLight={false} className="bt-foot-logo" />
+            <p className="bt-foot-tagline">{t('ft_brand_b')}</p>
+
+            <div className="bt-foot-contact">
+              {wa !== null && (
+                <a href={wa} className="bt-foot-line" target="_blank" rel="noopener noreferrer">
+                  <Icon name="whatsapp" size={17} />
+                  {/* Isolated LTR run: in Arabic the bidi algorithm otherwise
+                      reverses the digit groups of a phone number. */}
+                  <span dir="ltr">{WHATSAPP_DISPLAY}</span>
+                </a>
+              )}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="bt-foot-line">
+                <Icon name="mail" size={17} />
+                <span dir="ltr">{CONTACT_EMAIL}</span>
+              </a>
             </div>
-            <p
-              style={{
-                color: 'rgba(255,251,248,0.8)',
-                marginTop: 16,
-                maxWidth: '38ch',
-                lineHeight: 1.6,
-              }}
-            >
-              {t('ft_brand_b')}
-            </p>
+
             {SOCIAL_LINKS.length > 0 && (
-              <div style={{ display: 'flex', gap: 12, marginTop: 18 }}>
+              <div className="bt-foot-social">
                 {SOCIAL_LINKS.map((social) => (
                   <a
                     key={social.label}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: 'var(--palm)', fontSize: 13.5, fontWeight: 600 }}
                   >
                     {social.label}
                   </a>
@@ -97,9 +98,18 @@ export async function Footer() {
             )}
           </div>
 
-          <nav className="bt-foot-col bt-foot-nav" aria-label={t('ft_nav')}>
-            <h4>{t('ft_nav')}</h4>
-            {NAV_ROUTES.map((route) => (
+          <nav className="bt-foot-col" aria-label={t('foot_explore')}>
+            <h2>{t('foot_explore')}</h2>
+            {explore.map((route) => (
+              <Link key={route.href} href={route.href} className="bt-foot-link">
+                {t(route.key)}
+              </Link>
+            ))}
+          </nav>
+
+          <nav className="bt-foot-col" aria-label={t('foot_company')}>
+            <h2>{t('foot_company')}</h2>
+            {company.map((route) => (
               <Link key={route.href} href={route.href} className="bt-foot-link">
                 {t(route.key)}
               </Link>
@@ -107,61 +117,27 @@ export async function Footer() {
           </nav>
 
           <nav className="bt-foot-col" aria-label={t('ft_policies')}>
-            <h4>{t('ft_policies')}</h4>
+            <h2>{t('ft_policies')}</h2>
             {POLICY_ROUTES.map((route) => (
               <Link key={route.href} href={route.href} className="bt-foot-link">
                 {t(route.key)}
               </Link>
             ))}
           </nav>
-
-          <div className="bt-foot-col">
-            <h4>{t('ft_contact')}</h4>
-            <span className="bt-foot-line">
-              <Icon name="whatsapp" size={16} color="var(--palm)" />{' '}
-              {/* Isolated LTR run: in Arabic the bidi algorithm otherwise
-                  reverses the digit groups of a phone number. */}
-              <span dir="ltr">{CONTACT.phone}</span>
-            </span>
-            <a
-              href={CONTACT.website}
-              className="bt-foot-line"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icon name="globe" size={16} color="var(--palm)" />{' '}
-              <span dir="ltr">{CONTACT.websiteLabel}</span>
-            </a>
-            <span className="bt-foot-line">
-              <Icon name="pin" size={16} color="var(--palm)" /> {CONTACT.offices}
-            </span>
-
-            <div style={{ marginTop: 14 }}>
-              <div
-                style={{
-                  fontSize: 13.5,
-                  color: 'rgba(255,251,248,0.78)',
-                  marginBottom: 8,
-                  fontWeight: 700,
-                }}
-              >
-                {t('ft_pay')}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {PAYMENT_METHODS.map((method) => (
-                  <span key={method} className="bt-pay">
-                    {method}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="bt-foot-bottom">
           <span>
             © {year} {t('foot_rights')}
           </span>
+          <div className="bt-foot-pay">
+            <span className="bt-foot-pay-t">{t('ft_pay')}</span>
+            {PAYMENT_METHODS.map((method) => (
+              <span key={method} className="bt-pay">
+                {method}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

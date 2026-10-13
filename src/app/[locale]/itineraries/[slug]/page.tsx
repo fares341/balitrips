@@ -4,7 +4,14 @@
  * Ported from `ItineraryDetailPage` in
  * design/handoff/sections-bt/page-plans.jsx: hero with the day badge, overview,
  * "who it's for", the day-by-day timeline, recommended stops, and the sticky
- * price + delivery sidebar.
+ * price sidebar.
+ *
+ * Presented in the reference site's detail layout: a full-bleed photo hero
+ * with the title and price line, a white bar straddling its edge (the two
+ * delivery promises, price and buy button), a strip of key facts read from
+ * the row, then — after the plan — what's included, a short FAQ and an
+ * "ask an expert" contact block. No date/guest search: an itinerary is a
+ * download, not a dated booking.
  *
  * Three things the handoff did that are not carried over.
  *
@@ -24,7 +31,7 @@
  *    slugs are `notFound()`.
  *
  * 3. **`${it.price}` behind a literal `$`.** Money is minor units plus an ISO
- *    code, rendered by `formatMoney`.
+ *    code, rendered by `formatPrice` (`formatMoney` minus zero cents).
  */
 
 import { cache } from 'react'
@@ -33,8 +40,9 @@ import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HOME_HREF } from '@/components/layout'
-import { Breadcrumbs, LinkButton } from '@/components/shared'
-import { Icon, Photo } from '@/components/ui'
+import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '@/components/layout/contact-config'
+import { Accordion, Breadcrumbs, LinkButton } from '@/components/shared'
+import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { can } from '@/lib/auth/roles'
@@ -43,14 +51,27 @@ import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
-import { formatMoney } from '@/lib/money'
 import { alternates } from '../_meta'
+import { formatPrice } from '../../_ui/price'
 import { LinkedPlaces } from './linked-places'
 
 const INDEX_HREF = ENTITY_PATHS.itinerary
 
-/** The four delivery promises in the sidebar, in the design's order. */
+/** The four delivery promises, in the design's order — the inclusions list. */
 const DELIVERY_KEYS = ['id_del1', 'id_del2', 'id_del3', 'id_del4'] as const
+
+/** The two promises in the hero's trust bar, beside the price. */
+const TRUST_KEYS: readonly { icon: IconName; key: string }[] = [
+  { icon: 'check', key: 'id_del1' },
+  { icon: 'whatsapp', key: 'id_del4' },
+]
+
+/** Question/answer key pairs for the FAQ block; the map answer depends on the row. */
+const FAQ_KEYS = [
+  { q: 'home_faq2_q', a: 'home_faq2_a' },
+  { q: 'it_faq_change_q', a: 'it_faq_change_a' },
+  { q: 'it_faq_driver_q', a: 'it_faq_driver_a' },
+] as const
 
 /**
  * Where the buy CTA sends the visitor.
@@ -178,55 +199,135 @@ export default async function ItineraryDetailPage({
     }
   }
 
+  const regionNames = itinerary.regions.map((region) => pick(region.label, locale, region.key))
+  const tripType = pickOptional(itinerary.tripType, locale)
+  const price = formatPrice(itinerary.priceMinor, itinerary.currency, locale)
+  const wa = whatsappLink(`${t('it_wa_prefix')} ${name}`)
+
+  /**
+   * Key facts, all read from the row. A fact the record does not carry is
+   * left out rather than shown as a placeholder.
+   */
+  const facts: { icon: IconName; text: string }[] = [
+    { icon: 'cal', text: t('c_days_n', { n: itinerary.days }) },
+    ...(itinerary.spots !== null
+      ? [{ icon: 'pin' as const, text: t('hi_spots_n', { n: itinerary.spots }) }]
+      : []),
+    { icon: 'pdf', text: t('it_fact_pdf') },
+    ...(itinerary.includesMap ? [{ icon: 'route' as const, text: t('id_includes_map') }] : []),
+    ...(itinerary.isVip ? [{ icon: 'star' as const, text: t('it_fact_vip') }] : []),
+    ...(regionNames.length > 0
+      ? [{ icon: 'globe' as const, text: new Intl.ListFormat(locale).format(regionNames) }]
+      : []),
+    ...(tripType !== null ? [{ icon: 'users' as const, text: tripType }] : []),
+  ]
+
+  const faq = [
+    ...FAQ_KEYS.map((entry) => ({ id: entry.q, question: t(entry.q), answer: t(entry.a) })),
+    {
+      id: 'it_faq_map',
+      question: t('it_faq_map_q'),
+      answer: t(itinerary.includesMap ? 'it_faq_map_yes' : 'it_faq_map_no'),
+    },
+  ]
+
   return (
-    <main className="bt-detailwrap">
+    <main className="bt-detailwrap bt-itin">
+      <section className="bt-ihero" aria-labelledby="itin-title">
+        <div className="bt-ihero-media" aria-hidden="true">
+          <Photo
+            src={itinerary.hero?.url}
+            srcSetAvif={itinerary.hero?.srcSetAvif}
+            srcSetWebp={itinerary.hero?.srcSetWebp}
+            sizes="100vw"
+            alt=""
+            priority
+          />
+        </div>
+        <div className="bt-ihero-veil" aria-hidden="true" />
+
+        <div className="wrap bt-ihero-inner">
+          <Breadcrumbs
+            light
+            label={t('c_breadcrumb')}
+            trail={[
+              { label: t('c_home'), href: HOME_HREF },
+              { label: t('svc_itin_t'), href: INDEX_HREF },
+              { label: name },
+            ]}
+          />
+
+          <div className="bt-ihero-chips">
+            <span className="bt-ihero-chip is-brand">{t('c_days_n', { n: itinerary.days })}</span>
+            {itinerary.isVip && <span className="bt-ihero-chip">VIP</span>}
+            {itinerary.includesMap && (
+              <span className="bt-ihero-chip">
+                <Icon name="pin" size={13} /> {t('id_includes_map')}
+              </span>
+            )}
+          </div>
+
+          <h1 id="itin-title" className="bt-ihero-title">
+            {name}
+          </h1>
+
+          <p className="bt-ihero-line">
+            <span>
+              <strong className="bt-money">{price}</strong> / {t('sub_once')}
+            </span>
+            {itinerary.spots !== null && <span>{t('hi_spots_n', { n: itinerary.spots })}</span>}
+          </p>
+        </div>
+
+        {/* The bar the reference site uses for its date search, carrying
+            what this product actually has: the promises, the price and the
+            one action. */}
+        <div className="wrap">
+          <div className="bt-ibar">
+            <ul className="bt-ibar-trust">
+              {TRUST_KEYS.map((item) => (
+                <li key={item.key}>
+                  <span className="bt-ibar-ic" aria-hidden="true">
+                    <Icon name={item.icon} size={17} />
+                  </span>
+                  {t(item.key)}
+                </li>
+              ))}
+            </ul>
+            <div className="bt-ibar-buy">
+              <span className="bt-ibar-price">
+                <strong className="bt-money">{price}</strong>
+                <span>{t('sub_once')}</span>
+              </span>
+              <LinkButton href={addToTripHref(itinerary.slug)} variant="orange">
+                {t('ih_buy')}
+              </LinkButton>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div className="wrap">
-        <Breadcrumbs
-          trail={[
-            { label: t('c_home'), href: HOME_HREF },
-            { label: t('svc_itin_t'), href: INDEX_HREF },
-            { label: name },
-          ]}
-        />
+        <ul className="bt-ifacts">
+          {facts.map((fact) => (
+            <li key={fact.text}>
+              <span className="bt-ifacts-ic" aria-hidden="true">
+                <Icon name={fact.icon} size={20} stroke={1.6} />
+              </span>
+              {fact.text}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="wrap bt-detail-grid">
         <div className="bt-detail-main">
-          <div className="bt-slider" style={{ borderRadius: 'var(--r-lg)' }}>
-            <Photo
-              src={itinerary.hero?.url}
-              alt={pick(itinerary.hero?.alt, locale)}
-              priority
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-            />
-            <div className="bt-dt-hero-veil" />
-            <div style={{ position: 'absolute', insetInline: 0, bottom: 0, padding: 28 }}>
-              <span className="tag" style={{ background: 'var(--orange)', color: '#fff' }}>
-                {t('c_days_n', { n: itinerary.days })}
-              </span>
-              <h1 style={{ fontSize: 'clamp(26px,4.5vw,40px)', color: '#fff', marginTop: 10 }}>
-                {name}
-              </h1>
-            </div>
-          </div>
-
           {blurb !== null && (
             <div className="bt-detail-block">
               <h2 className="bt-detail-h">{t('id_overview')}</h2>
               <p className="lede" style={{ fontSize: 16 }}>
                 {blurb}
               </p>
-            </div>
-          )}
-
-          {(itinerary.includesMap || itinerary.isVip) && (
-            <div className="row" style={{ gap: 8, marginBlockStart: 12 }}>
-              {itinerary.isVip && <span className="tag tag-orange">VIP</span>}
-              {itinerary.includesMap && (
-                <span className="tag tag-forest">
-                  <Icon name="pin" size={13} /> {t('id_includes_map')}
-                </span>
-              )}
             </div>
           )}
 
@@ -399,6 +500,34 @@ export default async function ItineraryDetailPage({
 
           <LinkedPlaces itineraryId={itinerary.id} locale={locale} />
 
+          <div className="bt-detail-block">
+            <h2 className="bt-detail-h">{t('it_inc_title')}</h2>
+            <ul className="bt-iinc">
+              <li>
+                <span className="bt-pcheck" aria-hidden="true">
+                  <Icon name="check" size={14} stroke={2.2} />
+                </span>
+                {t('it_inc_days', { n: itinerary.days })}
+              </li>
+              {DELIVERY_KEYS.map((key) => (
+                <li key={key}>
+                  <span className="bt-pcheck" aria-hidden="true">
+                    <Icon name="check" size={14} stroke={2.2} />
+                  </span>
+                  {t(key)}
+                </li>
+              ))}
+              {itinerary.includesMap && (
+                <li>
+                  <span className="bt-pcheck" aria-hidden="true">
+                    <Icon name="check" size={14} stroke={2.2} />
+                  </span>
+                  {t('id_includes_map')}
+                </li>
+              )}
+            </ul>
+          </div>
+
           {stops.length > 0 && (
             <div className="bt-detail-block">
               <h2 className="bt-detail-h">{t('id_pins')}</h2>
@@ -412,26 +541,57 @@ export default async function ItineraryDetailPage({
               </div>
             </div>
           )}
+          <div className="bt-detail-block">
+            <h2 className="bt-detail-h">{t('ad_faq')}</h2>
+            <Accordion className="bt-pacc" defaultOpen={-1} items={faq} />
+          </div>
+
+          <div className="bt-expert">
+            <div>
+              <h2 className="bt-expert-t">{t('it_expert_t')}</h2>
+              <p className="bt-expert-b">{t('it_expert_b')}</p>
+            </div>
+            <div className="bt-expert-links">
+              {wa !== null && (
+                <a href={wa} className="bt-expert-link" target="_blank" rel="noopener noreferrer">
+                  <Icon name="whatsapp" size={18} />
+                  <span>
+                    <strong>WhatsApp</strong>
+                    <span dir="ltr">{WHATSAPP_DISPLAY}</span>
+                  </span>
+                </a>
+              )}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="bt-expert-link">
+                <Icon name="mail" size={18} />
+                <span>
+                  <strong>{t('co_mail')}</strong>
+                  <span dir="ltr">{CONTACT_EMAIL}</span>
+                </span>
+              </a>
+              <Link href="/contact" className="bt-expert-link">
+                <Icon name="phone" size={18} />
+                <span>
+                  <strong>{t('navr_contact')}</strong>
+                  <span>{t('co_hours_b')}</span>
+                </span>
+              </Link>
+            </div>
+          </div>
         </div>
 
-        <aside className="bt-booking" aria-label={t('ih_buy')}>
-          <div className="bt-booking-price">
-            <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--orange-deep)' }}>
-              {formatMoney(itinerary.priceMinor, itinerary.currency, locale)}
-            </span>
+        <aside className="bt-booking bt-ibook" aria-label={t('ih_buy')}>
+          <div className="bt-ibook-price">
+            <strong className="bt-money">{price}</strong>
+            <span>{t('sub_once')}</span>
           </div>
-
-          <div className="bt-summary" style={{ marginTop: 4 }}>
-            <div className="bt-summary-t">{t('id_delivery')}</div>
-            {DELIVERY_KEYS.map((key) => (
-              <div key={key} className="bt-summary-row" style={{ alignItems: 'flex-start' }}>
-                <span className="bt-check yes" style={{ marginTop: 2 }}>
-                  <Icon name="check" size={13} color="var(--forest)" />
-                </span>
-                <span style={{ flex: 1, fontSize: 13.5 }}>{t(key)}</span>
-              </div>
+          <ul className="bt-ibook-facts">
+            {DELIVERY_KEYS.slice(0, 2).map((key) => (
+              <li key={key}>
+                <Icon name="check" size={16} />
+                {t(key)}
+              </li>
             ))}
-          </div>
+          </ul>
 
           {/*
             One CTA, not the handoff's two. Both of its buttons ran the same
@@ -443,7 +603,7 @@ export default async function ItineraryDetailPage({
             href={addToTripHref(itinerary.slug)}
             variant="orange"
             block
-            style={{ marginTop: 14 }}
+            style={{ marginTop: 16 }}
           >
             {t('ih_buy')}
           </LinkButton>
