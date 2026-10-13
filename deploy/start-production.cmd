@@ -13,7 +13,9 @@ REM
 REM Needs: Docker Desktop (WSL2 backend) running. PowerShell is used only to
 REM generate secrets and edit .env.production.
 REM ===========================================================================
-setlocal EnableExtensions EnableDelayedExpansion
+REM Delayed expansion stays OFF until .env.production has been read: with it on,
+REM every "!" in a value (a password, say) is silently eaten.
+setlocal EnableExtensions DisableDelayedExpansion
 
 cd /d "%~dp0.."
 set "ROOT=%CD%"
@@ -56,18 +58,25 @@ if not exist "%ENV_FILE%" (
   echo   -^> .env.production created. Review it ^(domain, Stripe, Resend, Spaces, WhatsApp^) before going live.
 )
 
-REM Read the values this script needs (literal read, never "sourced").
-for %%K in (POSTGRES_USER POSTGRES_DB POSTGRES_PASSWORD DB_HOST_PORT APP_PORT ADMIN_BASE_PATH NEXT_PUBLIC_SITE_URL) do set "%%K="
-for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
-  set "LINE=%%A"
-  if not "!LINE:~0,1!"=="#" set "%%A=%%B"
+REM Read ONLY the values this script needs (literal read, never "sourced"), with
+REM delayed expansion off so "!" survives. One pair of surrounding quotes is
+REM stripped, as docker compose does: "x" via %%~B, 'x' in :unquote.
+set "NEEDED=POSTGRES_USER POSTGRES_DB POSTGRES_PASSWORD DB_HOST_PORT APP_PORT ADMIN_BASE_PATH NEXT_PUBLIC_SITE_URL"
+for %%K in (%NEEDED%) do set "%%K="
+for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
+  for %%K in (%NEEDED%) do if "%%A"=="%%K" set "%%K=%%~B"
 )
-if "%POSTGRES_USER%"=="" set POSTGRES_USER=bali
-if "%POSTGRES_DB%"=="" set POSTGRES_DB=bali
-if "%DB_HOST_PORT%"=="" set DB_HOST_PORT=55432
-if "%APP_PORT%"=="" set APP_PORT=3000
-if "%POSTGRES_PASSWORD%"=="" (echo [X] POSTGRES_PASSWORD is empty in .env.production & exit /b 1)
-if "%ADMIN_BASE_PATH%"=="" (echo [X] ADMIN_BASE_PATH is empty in .env.production & exit /b 1)
+for %%K in (%NEEDED%) do call :unquote %%K
+if not defined POSTGRES_USER set POSTGRES_USER=bali
+if not defined POSTGRES_DB set POSTGRES_DB=bali
+if not defined DB_HOST_PORT set DB_HOST_PORT=55432
+if not defined APP_PORT set APP_PORT=3000
+if not defined POSTGRES_PASSWORD (echo [X] POSTGRES_PASSWORD is empty in .env.production & exit /b 1)
+if not defined ADMIN_BASE_PATH (echo [X] ADMIN_BASE_PATH is empty in .env.production & exit /b 1)
+
+REM From here on delayed expansion is ON. The values read above are used as
+REM !NAME! (inserted verbatim), never %NAME% (whose "!" would be eaten).
+setlocal EnableDelayedExpansion
 
 if /I "%ACTION%"=="stop" (
   %COMPOSE% --profile https down
@@ -96,7 +105,7 @@ echo ^> Applying database migrations
 %COMPOSE% run --rm --no-deps worker node_modules/.bin/tsx src/db/migrate.ts || exit /b 1
 
 set REGIONS=0
-for /f "usebackq delims=" %%R in (`%COMPOSE% exec -T postgres psql -U %POSTGRES_USER% -d %POSTGRES_DB% -tAc "select count(*) from regions"`) do set "REGIONS=%%R"
+for /f "usebackq delims=" %%R in (`%COMPOSE% exec -T postgres psql -U !POSTGRES_USER! -d !POSTGRES_DB! -tAc "select count(*) from regions"`) do set "REGIONS=%%R"
 set "REGIONS=%REGIONS: =%"
 if "%SEED%"=="1" goto doseed
 if "%REGIONS%"=="0" goto doseed
@@ -111,12 +120,18 @@ echo.
 echo ^> Building the app image (this takes a few minutes)
 REM next build reads the database. Docker Desktop lets the build container reach
 REM the Postgres port published on this PC through host.docker.internal.
-set "BUILD_DATABASE_URL=postgresql://%POSTGRES_USER%:%POSTGRES_PASSWORD%@host.docker.internal:%DB_HOST_PORT%/%POSTGRES_DB%"
+set "BUILD_DATABASE_URL=postgresql://!POSTGRES_USER!:!POSTGRES_PASSWORD!@host.docker.internal:!DB_HOST_PORT!/!POSTGRES_DB!"
+REM Build args: read and run with delayed expansion OFF ("!" in values survives),
+REM one pair of surrounding quotes stripped like the values above.
+setlocal DisableDelayedExpansion
 set "BUILD_ARGS="
 for /f "usebackq tokens=1,* delims==" %%A in (`findstr /R "^NEXT_PUBLIC_ ^ADMIN_BASE_PATH= ^PAYMENT_PROVIDER= ^ALLOW_SANDBOX_PAYMENTS=" "%ENV_FILE%"`) do (
-  set "BUILD_ARGS=!BUILD_ARGS! --build-arg "%%A=%%B""
+  set "V=%%~B"
+  call :unquote V
+  call :append %%A
 )
 docker build --add-host=host.docker.internal:host-gateway --target runner -t bali-app:production --build-arg "DATABASE_URL=%BUILD_DATABASE_URL%" %BUILD_ARGS% "%ROOT%" || exit /b 1
+endlocal
 
 echo.
 echo ^> Starting app and worker
@@ -153,11 +168,42 @@ if "%TEST_ACCOUNTS%"=="1" (
   echo   -^> saved to !OUT! ^(contains passwords and 2FA secrets - keep it private^)
 )
 
-if "%NEXT_PUBLIC_SITE_URL%"=="" set "NEXT_PUBLIC_SITE_URL=http://localhost:%APP_PORT%"
+if not defined NEXT_PUBLIC_SITE_URL set "NEXT_PUBLIC_SITE_URL=http://localhost:%APP_PORT%"
 echo.
 echo ^> Running
-echo   Site:   %NEXT_PUBLIC_SITE_URL%
-echo   Admin:  %NEXT_PUBLIC_SITE_URL%%ADMIN_BASE_PATH%
+echo   Site:   !NEXT_PUBLIC_SITE_URL!
+echo   Admin:  !NEXT_PUBLIC_SITE_URL!!ADMIN_BASE_PATH!
 echo   Logs:   deploy\start-production.cmd logs
 echo   Stop:   deploy\start-production.cmd stop
 endlocal
+endlocal
+exit /b 0
+
+REM ---------------------------------------------------------------------------
+REM :unquote NAME - strip one pair of surrounding single quotes from %NAME%,
+REM keeping "!" and "%%" in the value intact (the "endlocal tunnel": the value
+REM leaves the delayed-expansion scope through a FOR variable).
+:unquote
+setlocal EnableDelayedExpansion
+set "U=!%~1!"
+if defined U if "!U:~0,1!!U:~-1!"=="''" set "U=!U:~1,-1!"
+if not defined U (
+  endlocal
+  set "%~1="
+  goto :eof
+)
+for /f "delims=" %%L in (""!U!"") do (
+  endlocal
+  set "%~1=%%~L"
+)
+goto :eof
+
+REM :append KEY - add  --build-arg "KEY=<V>"  to BUILD_ARGS, "!" intact.
+:append
+setlocal EnableDelayedExpansion
+set "NEXT=!BUILD_ARGS! --build-arg "%~1=!V!""
+for /f "delims=" %%L in ("!NEXT!") do (
+  endlocal
+  set "BUILD_ARGS=%%L"
+)
+goto :eof

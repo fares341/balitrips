@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { entitlements, users } from '@/db/schema'
 import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
+import { notifyPlanActivated } from '@/lib/notify/plans'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -16,6 +17,8 @@ import { requireCapability } from '../../_lib/session'
 const LIST = adminHref('/entitlements')
 
 const KINDS = ['map_access', 'vip'] as const
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 type Outcome = { ok: string } | { err: string }
 
@@ -45,7 +48,7 @@ export async function grantEntitlement(form: FormData): Promise<void> {
       expiresAt = new Date(`${expiresAtRaw}T23:59:59Z`)
     }
 
-    await db.transaction(async (tx) => {
+    const granted = await db.transaction(async (tx) => {
       const [user] = await tx
         .select({ id: users.id })
         .from(users)
@@ -93,8 +96,13 @@ export async function grantEntitlement(form: FormData): Promise<void> {
         },
         tx,
       )
+      return row ? { userId: user.id, entitlementId: row.id } : null
     })
 
+    // بعد الالتزام: داخل الموقع + بريد + واتساب (لمن وافق).
+    if (granted) {
+      await notifyPlanActivated(granted.userId, { kind, entitlementId: granted.entitlementId })
+    }
     outcome = { ok: `Granted ${kind} to ${email}.` }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -114,6 +122,9 @@ export async function grantEntitlement(form: FormData): Promise<void> {
 export async function revokeEntitlement(form: FormData): Promise<void> {
   const session = await requireCapability('entitlements.grant')
   let outcome: Outcome
+  // "سحب" من صفحة العميل يعود إليها (حقل `customerId` اختياري).
+  const customerId = fstr(form, 'customerId')
+  const back = customerId && UUID.test(customerId) ? adminHref(`/customers/${customerId}`) : LIST
 
   try {
     const id = fuuid(form, 'entitlementId', 'Entitlement')
@@ -151,5 +162,5 @@ export async function revokeEntitlement(form: FormData): Promise<void> {
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(LIST, outcome))
+  redirect(withOutcome(back, outcome))
 }

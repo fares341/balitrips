@@ -67,8 +67,20 @@ deploy\start-production.cmd seed test-accounts
 | `… --test-accounts` | `… test-accounts` | + حسابات الاختبار. يمكن إعادته، فيعيد ضبطها بكلمة مرور جديدة |
 | `… --https` | — | + Caddy على 80/443 بشهادة Let's Encrypt. يحتاج `SITE_DOMAIN` و`ACME_EMAIL` ودومين يشير للسيرفر |
 | `… --logs` | `… logs` | متابعة سجلات التطبيق والـ worker |
-| `… --stop` | `… stop` | إيقاف كل شيء. البيانات محفوظة في volume `pgdata` |
+| `… --stop` | `… stop` | إيقاف كل شيء. البيانات محفوظة في volume `pgdata` (والوسائط في `media_data`، والـ PDF في `private_data`) |
 | `… --remove-test-accounts` | `… remove-test-accounts` | حذف حسابات الاختبار وباقات TEST |
+
+## الوسائط المرفوعة بدون Spaces
+
+- إن لم تُضبط مفاتيح DO Spaces، تُحفظ الصور التي تُرفع من مكتبة الوسائط (ودرجاتها AVIF/WebP) وفيديوهات الأماكن في `public/media` داخل الحاوية، وهو الـ volume **`media_data`** المشترك بين `app` و`worker`. تبقى بعد إعادة البناء والتشغيل.
+- **التطبيق نفسه يخدمها** على `/media/…` (`src/app/media/[...path]/route.ts`): خادم Next المستقل لا يخدم من `public/` إلا ما كان موجوداً وقت البناء. فقط أنواع الصور والفيديو التي يكتبها الرفع (avif, webp, jpg, png, mp4, webm)، مع تخزين مؤقت طويل.
+- عند ضبط Spaces لا يُستخدم هذا المسار: الروابط تشير إلى الـ CDN (`NEXT_PUBLIC_CDN_URL`).
+- **ملفات PDF خاصة:**
+  - تشمل الجداول المرفوعة والمولّدة، والخطط المخصصة، والإيصالات.
+  - تُحفظ في volume منفصل اسمه **`private_data`** (`/app/storage/private`، متغير `PRIVATE_STORAGE_DIR`).
+  - ليس لها أي رابط عام: الخادم وحده يقرؤها، ويسلّمها مختومة بالعلامة المائية بعد فحص الصلاحية، تماماً كمسار Spaces.
+  - بهذا تعمل كل ميزات الـ PDF في الاختبار المحلي بلا Spaces. عند ضبط Spaces يُتجاهل هذا المجلد.
+- **النسخ الاحتياطي:** انسخ الـ volumes `bali-prod_media_data` و`bali-prod_private_data` مع قاعدة البيانات، وإلا ضاعت الصور والـ PDFs.
 
 ## حسابات الاختبار
 
@@ -142,6 +154,11 @@ deploy\start-production.cmd seed test-accounts
    | `bali_pdf_ready_whatsapp` | Utility | اسم الجدول، الرابط |
    | `bali_password_reset_whatsapp` | Utility | الرابط |
    | `bali_phone_otp` | **Authentication** | الرمز (6 أرقام) |
+   | `bali_plan_expired` | Utility | اسم الباقة |
+
+   قالب `bali_phone_otp` من فئة Authentication يحتاج **زر "نسخ الرمز"**؛ الكود يرسل الرمز للنص وللزر معاً.
+
+   قالب `bali_pdf_ready_whatsapp` يُستعمل الآن للجداول الجاهزة والمخصصة معاً. اكتب نصه عاماً، مثل: "جدول رحلتك {{1}} جاهز: {{2}}".
 
 ## أعطال شائعة
 
@@ -151,4 +168,6 @@ deploy\start-production.cmd seed test-accounts
 | البناء يفشل في الاتصال بالقاعدة | **Linux:** البناء يستخدم `--network host`. **Windows:** يستخدم `host.docker.internal`، فتأكد أن Docker Desktop محدَّث وأن المنفذ `55432` غير مستخدم، أو غيّر `DB_HOST_PORT` |
 | المنفذ 3000 مستخدم | `APP_PORT=3100` في `.env.production` |
 | `The app did not become healthy` | `--logs`، وغالباً متغير ناقص في `.env.production`. الرسالة توضّح أيّها |
-| أريد البدء من الصفر | `--stop` ثم `docker volume rm bali-prod_pgdata` (**يحذف كل البيانات**) |
+| أريد البدء من الصفر | `--stop` ثم `docker volume rm bali-prod_pgdata bali-prod_media_data` (**يحذف كل البيانات والصور المرفوعة**) |
+| صورة مرفوعة تظهر 404 | بلا Spaces: تأكد أن الملف موجود في volume `media_data` (`docker compose … exec app ls public/media`) وأن صورة Docker للتطبيق أُعيد بناؤها بعد هذا التحديث |
+| قيمة في `.env.production` بين علامتي تنصيص | تُزال علامتا التنصيص المحيطتان (`"…"` أو `'…'`) مرة واحدة، كما يفعل docker compose. علامة `!` في القيم تبقى كما هي في سكربت Windows |

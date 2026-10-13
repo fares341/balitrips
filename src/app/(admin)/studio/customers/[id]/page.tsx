@@ -16,6 +16,7 @@ import {
   users,
 } from '@/db/schema'
 import { defaultLocale, isLocale } from '@/i18n/config'
+import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
@@ -37,6 +38,8 @@ import {
   revokeAllSessions,
   revokeSession,
 } from '../actions'
+import { revokeEntitlement } from '../../entitlements/actions'
+import { accessLine, loadAccountSummaries } from '../summary'
 import { ProtectionPanel } from './protection-panel'
 
 export const dynamic = 'force-dynamic'
@@ -152,6 +155,9 @@ export default async function CustomerPage({
   const mayDeactivate = can(session.role, 'security.write')
   const mayGrant = can(session.role, 'entitlements.grant')
   const live = sessionRows.filter((row) => row.expiresAt > now)
+  const summary = (await loadAccountSummaries([account.id])).get(account.id)
+  const currentAccess = summary?.access ?? []
+  const phoneOnly = isPlaceholderEmail(account.email)
   const livePlanGrants = entitlementRows.filter(
     ({ entitlement }) =>
       entitlement.planId !== null &&
@@ -171,7 +177,7 @@ export default async function CustomerPage({
   return (
     <>
       <PageHead
-        title={account.email}
+        title={contactLabel(account)}
         description={
           account.deletedAt
             ? 'This account has been erased. Its order history is intact — that is a financial record, not consent-based data.'
@@ -202,6 +208,20 @@ export default async function CustomerPage({
           <b>{favoriteRows.length}</b>
           <span>Saved items</span>
         </div>
+        <div className="a-stat">
+          <b style={{ fontSize: 15 }}>
+            {currentAccess.length === 0
+              ? 'None'
+              : currentAccess.map((access) => accessLine(access)).join(' · ')}
+          </b>
+          <span>Current plan</span>
+        </div>
+        <div className="a-stat">
+          <b style={{ fontSize: 15 }}>
+            <When value={summary?.lastLogin ?? null} />
+          </b>
+          <span>Last login</span>
+        </div>
       </div>
 
       <div className="a-card">
@@ -221,11 +241,20 @@ export default async function CustomerPage({
           </dd>
           <dt className="a-muted">E-mail</dt>
           <dd style={{ margin: 0 }}>
-            {account.email}{' '}
-            {account.emailVerifiedAt ? (
-              <Pill tone="good">verified</Pill>
+            {phoneOnly ? (
+              <>
+                <span className="a-muted">none (phone-only account)</span>{' '}
+                <Pill tone="neutral">signs in with {contactLabel(account)}</Pill>
+              </>
             ) : (
-              <Pill tone="warn">unverified</Pill>
+              <>
+                {account.email}{' '}
+                {account.emailVerifiedAt ? (
+                  <Pill tone="good">verified</Pill>
+                ) : (
+                  <Pill tone="warn">unverified</Pill>
+                )}
+              </>
             )}
           </dd>
           <dt className="a-muted">Status</dt>
@@ -255,6 +284,18 @@ export default async function CustomerPage({
           <dt className="a-muted">Created</dt>
           <dd style={{ margin: 0 }}>
             <When value={account.createdAt} />
+          </dd>
+          <dt className="a-muted">Last login</dt>
+          <dd style={{ margin: 0 }}>
+            <When value={summary?.lastLogin ?? null} />
+          </dd>
+          <dt className="a-muted">WhatsApp</dt>
+          <dd style={{ margin: 0 }}>
+            {account.whatsappOptIn ? (
+              <Pill tone="good">opted in</Pill>
+            ) : (
+              <Pill tone="neutral">not opted in</Pill>
+            )}
           </dd>
           {account.deletedAt ? (
             <>
@@ -639,6 +680,7 @@ export default async function CustomerPage({
                 <th>Starts</th>
                 <th>Expires</th>
                 <th>State</th>
+                {mayGrant ? <th /> : null}
               </tr>
             </thead>
             <tbody>
@@ -686,6 +728,19 @@ export default async function CustomerPage({
                       <Pill tone="good">active</Pill>
                     )}
                   </td>
+                  {mayGrant ? (
+                    <td>
+                      {row.revokedAt === null && (row.expiresAt === null || row.expiresAt > now) ? (
+                        <form className="a-inline-form" action={revokeEntitlement}>
+                          <input type="hidden" name="entitlementId" value={row.id} />
+                          <input type="hidden" name="customerId" value={account.id} />
+                          <button className="a-btn danger small" type="submit">
+                            Revoke
+                          </button>
+                        </form>
+                      ) : null}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

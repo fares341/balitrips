@@ -24,4 +24,11 @@ export {
   type UploadResult,
 } from './spaces'
 
+export {
+  isPrivateStorageAvailable,
+  localPrivateRoot,
+  readPrivateObject,
+  writeLocalPrivate,
+} from './local-private'
+
 export { presignObjectUrl, signRequest, type SigningCredentials } from './sigv4'

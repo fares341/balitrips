@@ -10,6 +10,7 @@ import { mapPlaces, placeTags, tags } from '@/db/schema'
 import { isStorageConfigured, publicUrl, uploadPublic } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
+import { feventRange } from '../../_lib/bali-time'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
@@ -57,6 +58,8 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       throw new Error('Rating must be between 0 and 50 tenths (0.0–5.0)')
     }
 
+    const { eventStartsAt, eventEndsAt } = feventRange(form)
+
     const values = {
       slug: assertSlug(freq(form, 'slug', 'Slug')),
       legacyId: fstr(form, 'legacyId'),
@@ -92,6 +95,8 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       openingHours: fstr(form, 'openingHours'),
       rating: ratingTenths === null ? null : ratingTenths / 10,
       heroImageId: fuuidOrNull(form, 'heroImageId', 'Hero image'),
+      eventStartsAt,
+      eventEndsAt,
       status,
     }
 
@@ -294,9 +299,8 @@ export async function uploadPlaceVideo(id: string, form: FormData): Promise<void
       await uploadPublic({ key, body: bytes, contentType: `video/${kind}` })
       url = publicUrl(key)
     } else {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('Object storage is not configured; the video could not be stored.')
-      }
+      // بلا Spaces: public/media (المجلد media_data في الإنتاج)، يخدمه
+      // src/app/media/[...path]/route.ts — كما تفعل صور مكتبة الوسائط.
       const { mkdir, writeFile } = await import('node:fs/promises')
       const path = await import('node:path')
       const target = path.join(process.cwd(), 'public', key)

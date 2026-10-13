@@ -59,8 +59,20 @@ async function prepare(placeId: string, resource: string): Promise<Prepared> {
       .limit(1),
     loadPermissions(access.user.id),
   ])
-  if (!place || !canSeePlace(place, permissions.entitlements))
+  if (!place) return { error: 'not_found' as const }
+  if (!canSeePlace(place, permissions.entitlements)) {
+    // يُسجَّل كمحاولة وصول لمكان مقفل، لكن بسبب لا تعدّه قاعدة التعليق: خريطة
+    // مفتوحة لحظة انتهاء الباقة تبقى دبابيسها قابلة للنقر، وتعليق عميل لأن
+    // اشتراكه انتهى أثناء التصفح عقاب خاطئ. الرد يبقى not_found.
+    await logActivity({
+      action: 'unauthorized_access',
+      userId: access.user.id,
+      ip: access.ip,
+      deviceId: access.deviceId,
+      details: { resource, why: 'place_locked' },
+    })
     return { error: 'not_found' as const }
+  }
   return { error: null, access, place, permissions }
 }
 

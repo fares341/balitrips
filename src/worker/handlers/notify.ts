@@ -15,11 +15,11 @@ import { db } from '@/db'
 import { auditLog, entitlements, notifications, plans, users } from '@/db/schema'
 import type { Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
-import { pick } from '@/lib/content/localize'
 import { renderNotificationEmail, sendEmail, toMailLocale } from '@/lib/email'
 import { isElevated, isRole } from '@/lib/auth/roles'
 import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { notifyUser } from '@/lib/notify'
+import { accessLabel } from '@/lib/notify/plans'
 import { isNotificationType } from '@/lib/notify/types'
 import { sendWhatsappTemplate, toWhatsappNumber } from '@/lib/notify/whatsapp'
 
@@ -170,7 +170,9 @@ export async function handleWhatsappJob(job: WhatsappJob): Promise<void> {
  * تذكير قبل انتهاء الباقة بـ 3 أيام (افتراضياً). مرة واحدة لكل صلاحية:
  * `params.entitlementId` يمنع التكرار بين تشغيلين.
  */
-export async function handleNotifySweep(job: NotifySweepJob): Promise<{ reminded: number }> {
+export async function handleNotifySweep(
+  job: NotifySweepJob,
+): Promise<{ reminded: number; expired: number }> {
   const withinDays = job.withinDays ?? 3
   const now = new Date()
   const horizon = new Date(now.getTime() + withinDays * 24 * 60 * 60 * 1000)
@@ -180,6 +182,7 @@ export async function handleNotifySweep(job: NotifySweepJob): Promise<{ reminded
       id: entitlements.id,
       userId: entitlements.userId,
       expiresAt: entitlements.expiresAt,
+      kind: entitlements.kind,
       planName: plans.name,
       locale: users.locale,
     })
@@ -207,12 +210,71 @@ export async function handleNotifySweep(job: NotifySweepJob): Promise<{ reminded
       'plan_expiring',
       {
         entitlementId: row.id,
-        plan: row.planName ? pick(row.planName, locale) : 'Map access',
+        plan: accessLabel(row.planName, row.kind, locale),
         date: (row.expiresAt ?? now).toISOString().slice(0, 10),
       },
       '/plans',
     )
   }
-  console.info('[notify] expiry sweep', { reminded: expiring.length })
-  return { reminded: expiring.length }
+
+  const expired = await notifyExpired(now)
+  console.info('[notify] expiry sweep', { reminded: expiring.length, expired })
+  return { reminded: expiring.length, expired }
+}
+
+/** لا نبلّغ عن صلاحية انتهت قبل أكثر من هذا (أول تشغيل بعد النشر لا يغرق أحداً). */
+const EXPIRED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * "انتهت باقتك" (`plan_expired`): صلاحيات انتهت منذ آخر مسح (نافذة 7 أيام)،
+ * مرة واحدة لكل صلاحية — `params.entitlementId` يمنع التكرار كما في التذكير.
+ * لا إشعار إن بقي للمستخدم وصول حيّ من النوع نفسه (تجديد بدأ عند نهاية القديمة).
+ */
+async function notifyExpired(now: Date): Promise<number> {
+  const since = new Date(now.getTime() - EXPIRED_LOOKBACK_MS)
+  const rows = await db
+    .select({
+      id: entitlements.id,
+      userId: entitlements.userId,
+      kind: entitlements.kind,
+      planName: plans.name,
+      locale: users.locale,
+    })
+    .from(entitlements)
+    .innerJoin(users, eq(users.id, entitlements.userId))
+    .leftJoin(plans, eq(plans.id, entitlements.planId))
+    .where(
+      and(
+        isNull(entitlements.revokedAt),
+        isNotNull(entitlements.expiresAt),
+        lte(entitlements.expiresAt, now),
+        gt(entitlements.expiresAt, since),
+        isNull(users.deletedAt),
+        // مكتوب صراحةً: الجدول نفسه بالاسم المستعار `live` داخل الاستعلام الفرعي.
+        sql`not exists (
+          select 1 from entitlements live
+          where live.user_id = "entitlements"."user_id"
+            and live.kind = "entitlements"."kind"
+            and live.id <> "entitlements"."id"
+            and live.revoked_at is null
+            and live.starts_at <= now()
+            and (live.expires_at is null or live.expires_at > now())
+        )`,
+        sql`not exists (
+          select 1 from ${notifications} n
+          where n.type = 'plan_expired' and n.params->>'entitlementId' = ${entitlements.id}::text
+        )`,
+      ),
+    )
+
+  for (const row of rows) {
+    const locale = toMailLocale(row.locale)
+    await notifyUser(
+      row.userId,
+      'plan_expired',
+      { entitlementId: row.id, plan: accessLabel(row.planName, row.kind, locale) },
+      '/plans',
+    )
+  }
+  return rows.length
 }

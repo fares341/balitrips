@@ -44,6 +44,15 @@ export function toWhatsappNumber(raw: string | null | undefined): string | null 
   return normalized.length >= 8 && normalized.length <= 15 ? normalized : null
 }
 
+interface TemplateTextParam {
+  type: 'text'
+  text: string
+}
+
+type TemplateComponent =
+  | { type: 'body'; parameters: TemplateTextParam[] }
+  | { type: 'button'; sub_type: 'url'; index: string; parameters: TemplateTextParam[] }
+
 export function buildTemplatePayload(
   to: string,
   type: NotificationType,
@@ -52,6 +61,28 @@ export function buildTemplatePayload(
   prefix: string,
 ) {
   const order = WHATSAPP_PARAM_ORDER[type] ?? []
+  const components: TemplateComponent[] =
+    order.length === 0
+      ? []
+      : [
+          {
+            type: 'body',
+            parameters: order.map((key) => ({
+              type: 'text',
+              // حد Meta لكل معامل ~1024؛ نقصّر بأمان.
+              text: String(params[key] ?? '-').slice(0, 200),
+            })),
+          },
+        ]
+  // قوالب Authentication (OTP) في Meta تتطلب الرمز أيضاً كمعامل لزر النسخ/URL.
+  if (type === 'phone_otp') {
+    components.push({
+      type: 'button',
+      sub_type: 'url',
+      index: '0',
+      parameters: [{ type: 'text', text: String(params.code ?? '') }],
+    })
+  }
   return {
     messaging_product: 'whatsapp',
     to,
@@ -59,19 +90,7 @@ export function buildTemplatePayload(
     template: {
       name: `${prefix}${type}`,
       language: { code: locale === 'ar' ? 'ar' : locale === 'id' ? 'id' : 'en' },
-      components:
-        order.length === 0
-          ? []
-          : [
-              {
-                type: 'body',
-                parameters: order.map((key) => ({
-                  type: 'text',
-                  // حد Meta لكل معامل ~1024؛ نقصّر بأمان.
-                  text: String(params[key] ?? '-').slice(0, 200),
-                })),
-              },
-            ],
+      components,
     },
   }
 }

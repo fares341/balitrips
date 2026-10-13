@@ -50,7 +50,7 @@ import { DEGRADED_QUEUES, EMAIL_CONCURRENCY, RUN_SCHEDULES, SHUTDOWN_TIMEOUT_MS 
 import type { Job, JobResult, JobWithMetadata, PgBoss, WorkOptions } from 'pg-boss'
 
 import { gotenbergHealthy, gotenbergUrl } from '@/lib/pdf'
-import { isStorageConfigured } from '@/lib/storage'
+import { isPrivateStorageAvailable } from '@/lib/storage'
 
 import { handleCapacityJob } from './handlers/capacity'
 import { handleNotifySweep, handleWhatsappJob } from './handlers/notify'
@@ -586,8 +586,10 @@ async function main(): Promise<void> {
     if (!healthy) {
       console.warn(`[worker] Gotenberg is not answering at ${gotenbergUrl()}; PDF jobs will retry`)
     }
-    if (!isStorageConfigured()) {
-      console.warn('[worker] object storage is not configured; rendered PDFs have nowhere to go')
+    if (!isPrivateStorageAvailable()) {
+      console.warn(
+        '[worker] neither object storage nor PRIVATE_STORAGE_DIR is configured; rendered PDFs have nowhere to go',
+      )
     }
   }
 

@@ -26,7 +26,12 @@ import type { Locale } from '@/i18n/config'
 import { formatInstant, formatPlainDate, toMailLocale, translator } from '@/lib/email/catalogue'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
-import { presignedGet, uploadPrivate, type PresignedGetOptions } from '@/lib/storage'
+import {
+  presignedGet,
+  readPrivateObject,
+  uploadPrivate,
+  type PresignedGetOptions,
+} from '@/lib/storage'
 
 import { renderPdf } from './gotenberg'
 import { voucherPdfHtml, type VoucherPdfLine } from './templates'
@@ -187,11 +192,10 @@ export async function generateOrderVoucher(orderId: string): Promise<GeneratedVo
  * user's id and this refuses to sign anything for an order that is not theirs.
  * `null` is reserved for the admin receipt route, which checks `orders.read`.
  */
-export async function presignOrderVoucher(
+async function voucherTarget(
   orderId: string,
   userId: string | null,
-  options: PresignedGetOptions = {},
-): Promise<string | null> {
+): Promise<{ key: string; filename: string } | null> {
   const [order] = await db
     .select({
       orderNumber: orders.orderNumber,
@@ -209,10 +213,33 @@ export async function presignOrderVoucher(
   }
 
   const locale = toMailLocale(order.customer?.locale)
+  return { key: voucherObjectKey(orderId, locale), filename: `${order.orderNumber}.pdf` }
+}
 
-  return presignedGet(voucherObjectKey(orderId, locale), {
-    downloadFilename: `${order.orderNumber}.pdf`,
+export async function presignOrderVoucher(
+  orderId: string,
+  userId: string | null,
+  options: PresignedGetOptions = {},
+): Promise<string | null> {
+  const target = await voucherTarget(orderId, userId)
+  if (target === null) return null
+  return presignedGet(target.key, {
+    downloadFilename: target.filename,
     contentType: 'application/pdf',
     ...options,
   })
+}
+
+/**
+ * The voucher bytes from the local private volume (single-host production
+ * without Spaces) — same ownership rule as `presignOrderVoucher`.
+ */
+export async function loadOrderVoucher(
+  orderId: string,
+  userId: string | null,
+): Promise<{ bytes: Uint8Array; filename: string } | null> {
+  const target = await voucherTarget(orderId, userId)
+  if (target === null) return null
+  const bytes = await readPrivateObject(target.key)
+  return bytes === null ? null : { bytes, filename: target.filename }
 }

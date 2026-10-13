@@ -15,12 +15,15 @@ import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
+  activities,
   articleCategories,
   articles,
   categories,
   itineraries,
   mapPlaces,
   media,
+  orderItems,
+  orders,
   regions,
   tripItems,
   tripShares,
@@ -189,15 +192,51 @@ export async function linkedPlacesForItinerary(
   return placeTeasersByIds(ids, held)
 }
 
+/** A visible event place plus its optional dates (`event_starts_at` / `event_ends_at`). */
+export type VisibleEventPlace = VisiblePlaceTeaser & {
+  startsAt: Date | null
+  endsAt: Date | null
+}
+
+/**
+ * An event is over when its end has passed, or — with no end set — when it
+ * started more than a day ago. Undated rows are permanent and never "over".
+ * Shared by the places query (SQL) and the events page (activities, in JS).
+ */
+export const EVENT_GRACE_MS = 24 * 60 * 60 * 1000
+
+export function isEventOver(
+  startsAt: Date | null,
+  endsAt: Date | null,
+  now: Date = new Date(),
+): boolean {
+  if (endsAt !== null) return endsAt.getTime() < now.getTime()
+  if (startsAt !== null) return startsAt.getTime() < now.getTime() - EVENT_GRACE_MS
+  return false
+}
+
+/** Dated first, soonest start first; undated after, in their existing order. */
+export function compareEventDates(
+  a: { startsAt: Date | null },
+  b: { startsAt: Date | null },
+): number {
+  if (a.startsAt === null || b.startsAt === null) {
+    return a.startsAt === b.startsAt ? 0 : a.startsAt === null ? 1 : -1
+  }
+  return a.startsAt.getTime() - b.startsAt.getTime()
+}
+
 /**
  * Map places in the `events` category (main category or a sub-category).
  *
  * Returns the visible ones in full and only a COUNT of the locked ones — the
  * events page shows "N more events with a plan", never a list of locked rows.
+ * Ended events are dropped (see `isEventOver`); dated ones come first, by
+ * start date, then the undated ones by admin priority.
  */
 export async function eventPlacesForViewer(
   held: EntitlementSet,
-): Promise<{ visible: VisiblePlaceTeaser[]; lockedCount: number }> {
+): Promise<{ visible: VisibleEventPlace[]; lockedCount: number }> {
   const [events] = await db
     .select({ id: categories.id })
     .from(categories)
@@ -205,23 +244,58 @@ export async function eventPlacesForViewer(
     .limit(1)
   if (events === undefined) return { visible: [], lockedCount: 0 }
 
-  const rows = await teaserQuery()
+  const rows = await db
+    .select({
+      ...teaserColumns,
+      event: { startsAt: mapPlaces.eventStartsAt, endsAt: mapPlaces.eventEndsAt },
+    })
+    .from(mapPlaces)
+    .leftJoin(media, eq(media.id, mapPlaces.heroImageId))
+    .leftJoin(regions, eq(regions.id, mapPlaces.regionId))
+    .leftJoin(categories, eq(categories.id, mapPlaces.categoryId))
     .where(
       and(
         LIVE_PLACE,
         sql`(${mapPlaces.categoryId} = ${events.id} or ${mapPlaces.subCategoryIds} @> ${JSON.stringify([events.id])}::jsonb)`,
+        sql`not coalesce(${mapPlaces.eventEndsAt} < now(), ${mapPlaces.eventStartsAt} < now() - interval '1 day', false)`,
       ),
     )
-    .orderBy(desc(mapPlaces.priority), asc(mapPlaces.sortOrder), asc(mapPlaces.slug))
+    .orderBy(
+      sql`${mapPlaces.eventStartsAt} asc nulls last`,
+      desc(mapPlaces.priority),
+      asc(mapPlaces.sortOrder),
+      asc(mapPlaces.slug),
+    )
 
-  const visible: VisiblePlaceTeaser[] = []
+  const visible: VisibleEventPlace[] = []
   let lockedCount = 0
   for (const row of rows) {
     const teaser = toTeaser(row, held)
     if (teaser.locked) lockedCount += 1
-    else visible.push(teaser)
+    else visible.push({ ...teaser, startsAt: row.event.startsAt, endsAt: row.event.endsAt })
   }
   return { visible, lockedCount }
+}
+
+/**
+ * Event dates of the given activities (`activities.event_starts_at/ends_at`).
+ * The activity list DTO is shared and does not carry them; the events page
+ * joins them in here to sort, hide ended events and print the date.
+ */
+export async function activityEventDates(
+  ids: readonly string[],
+): Promise<Map<string, { startsAt: Date | null; endsAt: Date | null }>> {
+  const wanted = [...new Set(ids.filter((id) => UUID.test(id)))]
+  if (wanted.length === 0) return new Map()
+  const rows = await db
+    .select({
+      id: activities.id,
+      startsAt: activities.eventStartsAt,
+      endsAt: activities.eventEndsAt,
+    })
+    .from(activities)
+    .where(inArray(activities.id, wanted))
+  return new Map(rows.map((row) => [row.id, { startsAt: row.startsAt, endsAt: row.endsAt }]))
 }
 
 // ---------------------------------------------------------------------------
@@ -446,4 +520,38 @@ export async function getArticleBodyForViewer(
     .where(and(LIVE_ARTICLE, eq(articles.id, articleId)))
     .limit(1)
   return { locked: false, body: row?.body ?? null }
+}
+
+// ---------------------------------------------------------------------------
+// Itinerary ownership — who may see the full day-by-day plan
+// ---------------------------------------------------------------------------
+
+/**
+ * Order states in which a bought itinerary is the customer's. Same set as the
+ * account's "My schedules" (`SETTLED` in account/_lib/queries.ts).
+ */
+const SETTLED_ORDER = ['paid', 'confirmed', 'partially_refunded'] as const
+
+/**
+ * Has this user paid for this itinerary (a settled order, line not refunded or
+ * cancelled)? The detail page shows the full day plan only when this is true
+ * (or to staff) — everyone else gets day 1 and the remaining days' titles.
+ */
+export async function ownsItinerary(userId: string, itineraryId: string): Promise<boolean> {
+  if (!UUID.test(userId) || !UUID.test(itineraryId)) return false
+  const [row] = await db
+    .select({ id: orderItems.id })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(
+      and(
+        eq(orders.userId, userId),
+        eq(orderItems.kind, 'itinerary'),
+        eq(orderItems.refId, itineraryId),
+        inArray(orders.status, [...SETTLED_ORDER]),
+        sql`${orderItems.fulfilmentStatus} not in ('refunded', 'cancelled')`,
+      ),
+    )
+    .limit(1)
+  return row !== undefined
 }

@@ -92,10 +92,14 @@ services:
       HOSTNAME: '0.0.0.0'
       DATABASE_URL: postgresql://${POSTGRES_USER:-bali}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bali}
       NODE_OPTIONS: '--max-old-space-size=512'
+      # Paid PDFs (itineraries, custom plans, receipts) when Spaces is not
+      # configured. Ignored as soon as SPACES_* are set.
+      PRIVATE_STORAGE_DIR: /app/storage/private
     ports:
       - '${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000'
     volumes:
       - media_data:/app/public/media
+      - private_data:/app/storage/private
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,8 +126,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-bali}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bali}
       GOTENBERG_URL: http://gotenberg:3000
       NODE_OPTIONS: '--max-old-space-size=384'
+      PRIVATE_STORAGE_DIR: /app/storage/private
     volumes:
       - media_data:/app/public/media
+      - private_data:/app/storage/private
     depends_on:
       postgres:
         condition: service_healthy
@@ -154,5 +160,6 @@ services:
 volumes:
   pgdata:
   media_data:
+  private_data:
   caddy_data:
   caddy_config:

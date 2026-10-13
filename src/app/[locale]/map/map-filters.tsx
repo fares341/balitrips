@@ -20,7 +20,7 @@
  *  - الترتيب (8.6): الأقرب، داخل المنطقة، أولوية الإدارة، VIP لمشترك VIP، الأشهر
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -40,6 +40,8 @@ import {
 import type { MapPin } from './projection'
 
 const DEFAULT_RADIUS_KM = 5
+/** توقف الكتابة قبل تسجيل البحث (`search_map`) — لا نسجّل كل حرف. */
+const SEARCH_LOG_IDLE_MS = 1500
 const RADIUS_CHOICES = [2, 5, 10, 25] as const
 
 export type GeoStatus = 'idle' | 'locating' | 'denied' | 'outside'
@@ -158,6 +160,35 @@ export function useMapFilters(
       window.clearTimeout(timer)
     }
   }, [trimmed, locale])
+
+  // تسجيل البحث (`search_map`): الخريطة تفلتر هنا ولا تمرّ بـ /api/places/search،
+  // فنرسل الجملة بعد توقف الكتابة، غير فارغة ومختلفة عن آخر ما أُرسل. بلا
+  // setState — مؤقت ومرجع فقط. الخادم يتجاهل الزائر ويكرر نفس الجملة خلال دقيقة.
+  const lastLogged = useRef('')
+  const resultCount = matched.length
+  const nearMe = understood.nearMe || near !== null
+  useEffect(() => {
+    const q = trimmed
+    if (q.length === 0 || q === lastLogged.current) return
+    const timer = window.setTimeout(() => {
+      lastLogged.current = q
+      void fetch('/api/places/search-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          q,
+          areaKey: region,
+          categories: category === null ? [] : [category],
+          tag: filterTag,
+          gems: gemsOnly,
+          nearMe,
+          results: resultCount,
+        }),
+        keepalive: true,
+      }).catch(() => undefined)
+    }, SEARCH_LOG_IDLE_MS)
+    return () => window.clearTimeout(timer)
+  }, [trimmed, region, category, filterTag, gemsOnly, nearMe, resultCount])
 
   /**
    * `fromQuery`: "Cafes near me" — ترتيب بالأقرب بلا حد مسافة. الزر: نصف قطر.

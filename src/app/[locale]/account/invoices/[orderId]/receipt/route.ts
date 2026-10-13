@@ -7,9 +7,9 @@ import { NextResponse } from 'next/server'
 
 import { defaultLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
-import { presignOrderVoucher } from '@/lib/pdf'
+import { loadOrderVoucher, presignOrderVoucher } from '@/lib/pdf'
 import { checkSecureAccess } from '@/lib/security/guard'
-import { isStorageConfigured } from '@/lib/storage'
+import { contentDisposition, isStorageConfigured, localPrivateRoot } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +34,19 @@ export async function GET(
     })
   }
   if (!UUID.test(orderId)) return new NextResponse(null, { status: 404, headers: NO_STORE })
-  if (!isStorageConfigured()) return back({ receipt: 'pending' })
+  if (!isStorageConfigured()) {
+    // تشغيل خادم واحد بلا Spaces: الإيصال من المجلد الخاص المحلي.
+    const local =
+      localPrivateRoot() === null ? null : await loadOrderVoucher(orderId, access.user.id)
+    if (local === null) return back({ receipt: 'pending' })
+    return new NextResponse(Buffer.from(local.bytes), {
+      headers: {
+        ...NO_STORE,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': contentDisposition(local.filename),
+      },
+    })
+  }
 
   const url = await presignOrderVoucher(orderId, access.user.id, { expiresInSeconds: 60 })
   if (url === null) return back({ receipt: 'pending' })

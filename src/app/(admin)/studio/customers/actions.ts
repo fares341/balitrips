@@ -11,6 +11,7 @@ import { can, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
 import { isEntitlementKind } from '@/lib/entitlements'
 import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
 import { planExpiry } from '@/lib/entitlements/plans'
+import { notifyPlanActivated } from '@/lib/notify/plans'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -301,7 +302,10 @@ export async function deleteCustomer(userId: string, form: FormData): Promise<vo
           email: `deleted+${userId}@invalid.local`,
           name: null,
           phone: null,
+          // Frees the number for its real owner (`users_phone_normalized_unique`)
+          // and drops the ownership proof that went with it.
           phoneNormalized: null,
+          phoneVerifiedAt: null,
           country: null,
           image: null,
           twoFactorEnabled: false,
@@ -660,7 +664,20 @@ export async function grantPlanToCustomer(userId: string, form: FormData): Promi
         },
         tx,
       )
-      return { slug: plan.slug, revoked: revoked.length }
+      return {
+        slug: plan.slug,
+        revoked: revoked.length,
+        planId: plan.id,
+        kind: plan.entitlementKind,
+        entitlementId: row?.id ?? null,
+      }
+    })
+
+    // بعد الالتزام: "تم تفعيل الباقة" داخل الموقع + بريد + واتساب (لمن وافق).
+    await notifyPlanActivated(userId, {
+      kind: summary.kind,
+      planId: summary.planId,
+      entitlementId: summary.entitlementId,
     })
 
     outcome = {

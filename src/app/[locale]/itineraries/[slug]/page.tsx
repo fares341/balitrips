@@ -37,6 +37,9 @@ import { Breadcrumbs, LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
+import { can } from '@/lib/auth/roles'
+import { getUser } from '@/lib/auth/session'
+import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
@@ -139,6 +142,27 @@ export default async function ItineraryDetailPage({
   const audience = pickList(itinerary.audience, locale)
 
   /**
+   * The day-by-day plan IS the product. Buyers (a settled, unrefunded order
+   * line) and staff see all of it; everyone else sees day 1 in full and only
+   * the remaining days' numbers and authored titles. The split happens here on
+   * the server — the hidden days' activities and notes are never rendered, so
+   * they never reach the RSC payload.
+   */
+  const viewer = await getUser()
+  const fullPlan =
+    viewer !== null &&
+    (can(viewer.role, 'content.read') || (await ownsItinerary(viewer.id, itinerary.id)))
+  const orderedDays = [...itinerary.dayPlans].sort((a, b) => a.dayNumber - b.dayNumber)
+  const openDays = fullPlan ? orderedDays : orderedDays.slice(0, 1)
+  const lockedDays = fullPlan
+    ? []
+    : orderedDays.slice(1).map((day) => ({
+        id: day.id,
+        dayNumber: day.dayNumber,
+        title: pickOptional(day.title, locale),
+      }))
+
+  /**
    * Recommended stops.
    *
    * Derived from the day plan rather than from a second list, so the chips can
@@ -147,7 +171,7 @@ export default async function ItineraryDetailPage({
    */
   const stops: ActivitySummary[] = []
   const seen = new Set<string>()
-  for (const day of itinerary.dayPlans) {
+  for (const day of openDays) {
     if (day.activity !== null && !seen.has(day.activity.id)) {
       seen.add(day.activity.id)
       stops.push(day.activity)
@@ -257,11 +281,11 @@ export default async function ItineraryDetailPage({
             </div>
           )}
 
-          {itinerary.dayPlans.length > 0 && (
+          {orderedDays.length > 0 && (
             <div className="bt-detail-block">
               <h2 className="bt-detail-h">{t('id_daybyday')}</h2>
               <ol className="bt-timeline" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {itinerary.dayPlans.map((day) => {
+                {openDays.map((day) => {
                   const dayTitle = pickOptional(day.title, locale)
                   const dayNote = pickOptional(day.description, locale)
                   const activity = day.activity
@@ -335,7 +359,41 @@ export default async function ItineraryDetailPage({
                     </li>
                   )
                 })}
+                {lockedDays.map((day) => (
+                  <li key={day.id} className="bt-tl-item" aria-disabled="true">
+                    <span className="bt-tl-day">
+                      {t('dt_day_n')} {format.number(day.dayNumber)}
+                    </span>
+                    <div
+                      className="bt-tl-rest"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.75 }}
+                    >
+                      <Icon name="lock" size={14} color="var(--muted)" />
+                      <strong style={{ fontStyle: 'normal', color: 'var(--forest)' }}>
+                        {day.title ?? t('id_locked_day')}
+                      </strong>
+                    </div>
+                  </li>
+                ))}
               </ol>
+              {lockedDays.length > 0 && (
+                <div
+                  role="note"
+                  className="bt-summary"
+                  style={{ marginTop: 14, display: 'grid', gap: 10, justifyItems: 'start' }}
+                >
+                  <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Icon name="lock" size={16} color="var(--orange-deep)" />
+                    {t('id_locked_t')}
+                  </strong>
+                  <span className="muted" style={{ fontSize: 13.5 }}>
+                    {t('id_locked_b', { count: lockedDays.length })}
+                  </span>
+                  <LinkButton href={addToTripHref(itinerary.slug)} variant="orange">
+                    {t('ih_buy')}
+                  </LinkButton>
+                </div>
+              )}
             </div>
           )}
 

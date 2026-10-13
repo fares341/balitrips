@@ -229,6 +229,14 @@ export async function uploadPublic(input: UploadInput): Promise<UploadResult> {
  * store it somewhere.
  */
 export async function uploadPrivate(input: UploadInput): Promise<UploadResult> {
+  // Single-host production without Spaces: the local private volume
+  // (PRIVATE_STORAGE_DIR, see local-private.ts). Spaces wins when configured.
+  if (!isStorageConfigured() && process.env.PRIVATE_STORAGE_DIR?.trim()) {
+    const { writeLocalPrivate } = await import('./local-private')
+    const key = normalizeKey(input.key)
+    const bytes = await writeLocalPrivate(key, input.body)
+    return { bucket: 'private', key, bytes, url: null }
+  }
   return putObject('private', input)
 }
 

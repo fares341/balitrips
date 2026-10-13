@@ -85,6 +85,13 @@
       "when": 1792170000000,
       "tag": "0011_spec_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792260000000,
+      "tag": "0012_event_dates",
+      "breakpoints": true
     }
   ]
 }

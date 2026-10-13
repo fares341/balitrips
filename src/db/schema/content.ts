@@ -10,6 +10,7 @@ import {
   primaryKey,
   real,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
   varchar,
@@ -132,6 +133,13 @@ export const activities = pgTable(
      */
     leadTimeHours: integer('lead_time_hours').notNull().default(24),
     maxGuests: integer('max_guests').notNull().default(20),
+
+    /**
+     * فعالية بتاريخ (تصنيف `events`): البداية والنهاية. NULL = نشاط دائم بلا
+     * تاريخ. صفحة الفعاليات تعرض القادمة أولاً وتخفي المنتهية.
+     */
+    eventStartsAt: timestamp('event_starts_at', { withTimezone: true }),
+    eventEndsAt: timestamp('event_ends_at', { withTimezone: true }),
 
     sortOrder: integer('sort_order').notNull().default(0),
     ...publishing,
@@ -501,6 +509,13 @@ export const mapPlaces = pgTable(
 
     openingHours: varchar('opening_hours', { length: 64 }),
     rating: real('rating'),
+
+    /**
+     * فعالية بتاريخ (تصنيف `events`): البداية والنهاية. NULL = مكان دائم.
+     * صفحة الفعاليات تعرض القادمة أولاً وتخفي المنتهية.
+     */
+    eventStartsAt: timestamp('event_starts_at', { withTimezone: true }),
+    eventEndsAt: timestamp('event_ends_at', { withTimezone: true }),
 
     heroImageId: uuid('hero_image_id').references(() => media.id),
 

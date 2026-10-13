@@ -11,6 +11,11 @@
  *    like every map place. The viewer sees the ones their plan unlocks (free
  *    ones for guests); locked ones are only COUNTED, never listed.
  *
+ * Dated events (`event_starts_at` / `event_ends_at` on either table) come
+ * first, soonest first, with the date on the card; ended ones are hidden (end
+ * passed, or — without an end — started over a day ago). Undated rows are
+ * permanent and follow in their usual order.
+ *
  * Request-rendered for the second half: the visible set depends on the
  * viewer's entitlements, and a cached page cannot be both.
  */
@@ -23,9 +28,16 @@ import { LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
-import { EVENTS_CATEGORY_KEY, eventPlacesForViewer } from '@/lib/content/extra-queries'
+import {
+  activityEventDates,
+  compareEventDates,
+  EVENTS_CATEGORY_KEY,
+  eventPlacesForViewer,
+  isEventOver,
+} from '@/lib/content/extra-queries'
 import { pick } from '@/lib/content/localize'
 import { listActivities } from '@/lib/content/queries'
+import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
 import { checkSecureAccess } from '@/lib/security/guard'
 
@@ -64,12 +76,41 @@ export default async function EventsPage({ params }: PageProps) {
   const access = await checkSecureAccess('events')
   const held = access.ok ? await loadEntitlements(access.user.id) : emptyEntitlements()
 
-  const [t, format, activities, places] = await Promise.all([
+  const [t, format, allActivities, places] = await Promise.all([
     getTranslations({ locale }),
     getFormatter({ locale }),
     listActivities({ categoryKey: EVENTS_CATEGORY_KEY, locale }),
     eventPlacesForViewer(held),
   ])
+
+  const now = new Date()
+  const dates = await activityEventDates(allActivities.map((activity) => activity.id))
+  const activities = allActivities
+    .map((activity) => ({
+      activity,
+      startsAt: dates.get(activity.id)?.startsAt ?? null,
+      endsAt: dates.get(activity.id)?.endsAt ?? null,
+    }))
+    .filter((entry) => !isEventOver(entry.startsAt, entry.endsAt, now))
+    // Array.sort is stable: undated activities keep the list's order.
+    .sort(compareEventDates)
+
+  /** "Sat, 14 Jun 2026, 19:00" — or a range when the end is set. Bali time. */
+  const eventWhen = (startsAt: Date | null, endsAt: Date | null): string | null => {
+    if (startsAt === null) return null
+    const options = {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: BALI_TIME_ZONE,
+    } as const
+    return endsAt === null
+      ? format.dateTime(startsAt, options)
+      : format.dateTimeRange(startsAt, endsAt, options)
+  }
 
   const nothing = activities.length === 0 && places.visible.length === 0
 
@@ -92,9 +133,17 @@ export default async function EventsPage({ params }: PageProps) {
                 {format.number(activities.length)} {t('ah_count')}
               </p>
               <div className="grid bt-grid-3auto">
-                {activities.map((activity, index) => (
-                  <ActivityCard key={activity.id} activity={activity} priority={index < 3} />
-                ))}
+                {activities.map(({ activity, startsAt, endsAt }, index) => {
+                  const when = eventWhen(startsAt, endsAt)
+                  return when === null ? (
+                    <ActivityCard key={activity.id} activity={activity} priority={index < 3} />
+                  ) : (
+                    <div key={activity.id} style={{ display: 'grid', gap: 6 }}>
+                      <EventDate when={when} at={startsAt} />
+                      <ActivityCard activity={activity} priority={index < 3} />
+                    </div>
+                  )
+                })}
               </div>
             </>
           )}
@@ -103,37 +152,41 @@ export default async function EventsPage({ params }: PageProps) {
             <>
               <h2 style={{ fontSize: 24, margin: '40px 0 18px' }}>{t('evp_on_map')}</h2>
               <div className="grid bt-grid-4">
-                {places.visible.map((place) => (
-                  <article
-                    key={place.id}
-                    className="card bt-cardhover"
-                    style={{ display: 'flex', flexDirection: 'column' }}
-                  >
-                    <Link
-                      href={place.href}
-                      className="bt-card-media"
-                      tabIndex={-1}
-                      aria-hidden="true"
+                {places.visible.map((place) => {
+                  const when = eventWhen(place.startsAt, place.endsAt)
+                  return (
+                    <article
+                      key={place.id}
+                      className="card bt-cardhover"
+                      style={{ display: 'flex', flexDirection: 'column' }}
                     >
-                      <Photo src={place.heroImageUrl} alt="" style={{ height: 160 }} />
-                      {place.isFree && <span className="bt-card-badge">{t('mp_free')}</span>}
-                    </Link>
-                    <div className="card-pad" style={{ display: 'grid', gap: 6 }}>
-                      <h3 style={{ fontSize: 17, margin: 0, color: 'var(--forest)' }}>
-                        <Link href={place.href}>{pick(place.name, locale, place.slug)}</Link>
-                      </h3>
-                      {place.regionLabel !== null && (
-                        <span className="muted" style={{ fontSize: 12.5 }}>
-                          <Icon name="pin" size={12} color="var(--muted)" />{' '}
-                          {pick(place.regionLabel, locale)}
-                        </span>
-                      )}
-                      <LinkButton href={place.href} variant="forest" size="sm">
-                        {t('map_view')}
-                      </LinkButton>
-                    </div>
-                  </article>
-                ))}
+                      <Link
+                        href={place.href}
+                        className="bt-card-media"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                      >
+                        <Photo src={place.heroImageUrl} alt="" style={{ height: 160 }} />
+                        {place.isFree && <span className="bt-card-badge">{t('mp_free')}</span>}
+                      </Link>
+                      <div className="card-pad" style={{ display: 'grid', gap: 6 }}>
+                        {when !== null && <EventDate when={when} at={place.startsAt} />}
+                        <h3 style={{ fontSize: 17, margin: 0, color: 'var(--forest)' }}>
+                          <Link href={place.href}>{pick(place.name, locale, place.slug)}</Link>
+                        </h3>
+                        {place.regionLabel !== null && (
+                          <span className="muted" style={{ fontSize: 12.5 }}>
+                            <Icon name="pin" size={12} color="var(--muted)" />{' '}
+                            {pick(place.regionLabel, locale)}
+                          </span>
+                        )}
+                        <LinkButton href={place.href} variant="forest" size="sm">
+                          {t('map_view')}
+                        </LinkButton>
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
             </>
           )}
@@ -166,5 +219,18 @@ export default async function EventsPage({ params }: PageProps) {
         </div>
       </section>
     </main>
+  )
+}
+
+/** The event's date line on a card. `<time>` carries the machine-readable start. */
+function EventDate({ when, at }: { when: string; at: Date | null }) {
+  return (
+    <time
+      dateTime={at?.toISOString()}
+      className="tag tag-orange"
+      style={{ justifySelf: 'start', fontSize: 12.5 }}
+    >
+      <Icon name="cal" size={12} /> {when}
+    </time>
   )
 }

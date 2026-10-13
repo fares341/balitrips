@@ -73,3 +73,44 @@ export async function notifyStaff(
     return null
   }
 }
+
+/** حجم الدفعة لإدراج الإشعارات الجماعية وإرسال مهامها إلى الطابور. */
+const BULK_CHUNK = 500
+const ENQUEUE_PARALLEL = 25
+
+/**
+ * نفس الإشعار لعدد كبير من المستخدمين (مثلاً كل من اشترى جدولاً): إدراج على
+ * دفعات بدل صف لكل `await`، ثم مهام البريد/واتساب بالتوازي في مجموعات صغيرة.
+ * يعيد عدد الصفوف المُدرجة. لا يرمي.
+ */
+export async function notifyUsers(
+  userIds: readonly string[],
+  type: UserNotificationType,
+  params: NotificationParams = {},
+  href: string | null = null,
+  override: Channels = {},
+): Promise<number> {
+  const unique = [...new Set(userIds)]
+  if (unique.length === 0) return 0
+  const channels = { ...USER_NOTIFICATION_TYPES[type], ...override }
+  let inserted = 0
+  try {
+    for (let start = 0; start < unique.length; start += BULK_CHUNK) {
+      const chunk = unique.slice(start, start + BULK_CHUNK)
+      const rows = await db
+        .insert(notifications)
+        .values(chunk.map((userId) => ({ audience: 'user', userId, type, params, href })))
+        .returning({ id: notifications.id })
+      inserted += rows.length
+      if (!channels.email && !channels.whatsapp) continue
+      for (let at = 0; at < rows.length; at += ENQUEUE_PARALLEL) {
+        await Promise.all(
+          rows.slice(at, at + ENQUEUE_PARALLEL).map((row) => enqueueChannels(row.id, channels)),
+        )
+      }
+    }
+  } catch (error) {
+    console.error('[notify] bulk user notification failed', { type, inserted, error })
+  }
+  return inserted
+}

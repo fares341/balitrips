@@ -54,7 +54,24 @@ setvar() { # setvar KEY VALUE — replace or append, literally (no sourcing).
   fi
   mv "$tmp" "$ENV_FILE"
 }
-getvar() { grep -E "^$1=" "$ENV_FILE" | tail -n1 | cut -d= -f2- || true; }
+# The file is read literally (never sourced), like docker compose reads it:
+# a value written as KEY="x" or KEY='x' means x, and a file saved on Windows
+# carries a trailing \r on every line. Strip both, once.
+unquote() {
+  local v="${1%$'\r'}"
+  if [[ ${#v} -ge 2 ]]; then
+    local first="${v:0:1}" last="${v: -1}"
+    if [[ ( "$first" == '"' && "$last" == '"' ) || ( "$first" == "'" && "$last" == "'" ) ]]; then
+      v="${v:1:${#v}-2}"
+    fi
+  fi
+  printf '%s' "$v"
+}
+getvar() {
+  local raw
+  raw="$(grep -E "^$1=" "$ENV_FILE" | tail -n1 | cut -d= -f2- || true)"
+  unquote "$raw"
+}
 
 if [[ ! -f "$ENV_FILE" ]]; then
   say "First run: creating .env.production with new secrets"
@@ -122,7 +139,9 @@ say "Building the app image (this takes a few minutes)"
 PASS="$(getvar POSTGRES_PASSWORD)"
 export BUILD_DATABASE_URL="postgresql://${POSTGRES_USER}:${PASS}@127.0.0.1:${DB_HOST_PORT}/${POSTGRES_DB}"
 build_args=()
-while IFS= read -r line; do build_args+=(--build-arg "$line"); done < <(
+while IFS= read -r line; do
+  build_args+=(--build-arg "${line%%=*}=$(unquote "${line#*=}")")
+done < <(
   grep -E '^(NEXT_PUBLIC_[A-Z_]+|ADMIN_BASE_PATH|PAYMENT_PROVIDER|ALLOW_SANDBOX_PAYMENTS)=' "$ENV_FILE"
 )
 DOCKER_BUILDKIT=1 docker build --network host --target runner -t bali-app:production \

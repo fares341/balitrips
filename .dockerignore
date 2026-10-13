@@ -36,3 +36,11 @@ docker-compose*.yml
 
 # Test account credentials written by deploy/start-production.* — never ship them.
 test-accounts-*.txt
+
+# Local uploads written when Spaces is not configured (dev, or a
+# start-production run on the same machine): paid PDFs and media must never
+# be baked into an image or committed.
+/public/media/
+/public/itineraries/
+/public/custom-trips/
+/storage/

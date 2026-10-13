@@ -1,5 +1,5 @@
-import { isStorageConfigured } from '@/lib/storage'
-import { presignOrderVoucher } from '@/lib/pdf'
+import { contentDisposition, isStorageConfigured, localPrivateRoot } from '@/lib/storage'
+import { loadOrderVoucher, presignOrderVoucher } from '@/lib/pdf'
 
 import { isUuid } from '../../../../_lib/form'
 import { requireCapability } from '../../../../_lib/session'
@@ -14,9 +14,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params
   if (!isUuid(id)) return new Response(null, { status: 404, headers: NO_STORE })
   if (!isStorageConfigured()) {
-    return new Response('Object storage is not configured; receipts cannot be served.', {
-      status: 503,
-      headers: NO_STORE,
+    // Single-host production: the receipt lives on the local private volume.
+    const local = localPrivateRoot() === null ? null : await loadOrderVoucher(id, null)
+    if (local === null) {
+      return new Response('No receipt for this order (unpaid, not generated yet, or no storage).', {
+        status: 404,
+        headers: NO_STORE,
+      })
+    }
+    return new Response(Buffer.from(local.bytes), {
+      headers: {
+        ...NO_STORE,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': contentDisposition(local.filename),
+      },
     })
   }
   const url = await presignOrderVoucher(id, null, { expiresInSeconds: 60 })

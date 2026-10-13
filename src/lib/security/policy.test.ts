@@ -125,6 +125,15 @@ describe('rules', async () => {
     // Over-the-limit attempts suspend for review instead of a timed ban.
     expect(RULES.find((r) => r.id === 'device_limit_hits')?.autoAction).not.toBe('ban_user_24h')
   })
+  it('alerts staff on scraping volume without suspending, and skips page_view', () => {
+    const rule = RULES.find((r) => r.id === 'content_scrape')
+    expect(rule?.counts).toEqual(['view_place', 'search_map'])
+    expect(rule?.by).toBe('user')
+    expect(rule?.autoAction).toBeNull()
+    expect(rule?.notifyStaff).toBe(true)
+    expect(TRIGGER_ACTIONS.has('view_place')).toBe(true)
+    expect(TRIGGER_ACTIONS.has('page_view')).toBe(false)
+  })
   it('keeps the trigger list in activity.ts in sync with the rules', async () => {
     const { RULE_TRIGGERS } = await import('./activity')
     expect([...RULE_TRIGGERS].sort()).toEqual([...TRIGGER_ACTIONS].sort())

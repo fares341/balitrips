@@ -34,6 +34,7 @@ import { locales, localeConfig, type Locale } from '@/i18n/config'
 
 import { IDLE_PROFILE_STATE } from './_lib/contract'
 import { updateProfileAction } from './actions'
+import { ClaimPhoneForm } from './verify-phone-notice'
 
 export type ProfileFormProps = {
   /** Current values, straight from the session. */
@@ -78,123 +79,130 @@ export function ProfileForm({ initial, displayLocale }: ProfileFormProps) {
   const countries = countryOptions(displayLocale)
 
   return (
-    <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* The controlled values, as the form fields the action actually reads. */}
-      <input type="hidden" name="name" value={name} />
-      <input type="hidden" name="phone" value={phone} />
-      <input type="hidden" name="country" value={country} />
-      <input type="hidden" name="locale" value={locale} />
+    <>
+      {/*
+        الرقم مسجّل لحساب آخر: إن كان ذلك الحساب لم يثبت ملكيته، يستطيع صاحب
+        الرقم الحقيقي استرداده برمز واتساب. خارج النموذج لأن له نماذجه الخاصة.
+      */}
+      {state.errors.phone === 'auth_err_phone_taken' && <ClaimPhoneForm initialPhone={phone} />}
+      <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* The controlled values, as the form fields the action actually reads. */}
+        <input type="hidden" name="name" value={name} />
+        <input type="hidden" name="phone" value={phone} />
+        <input type="hidden" name="country" value={country} />
+        <input type="hidden" name="locale" value={locale} />
 
-      <FormError messageKey={state.formError} />
-      {state.status === 'saved' && <FormNotice>{t('acct_saved')}</FormNotice>}
+        <FormError messageKey={state.formError} />
+        {state.status === 'saved' && <FormNotice>{t('acct_saved')}</FormNotice>}
 
-      <div className="bt-acct-fields">
-        <TextField
-          label={t('auth_name')}
-          value={name}
-          onChange={edit(setName, 'name')}
-          autoComplete="name"
-          maxLength={MAX_NAME_LENGTH}
-          error={errorFor('name')}
-          disabled={pending}
-        />
+        <div className="bt-acct-fields">
+          <TextField
+            label={t('auth_name')}
+            value={name}
+            onChange={edit(setName, 'name')}
+            autoComplete="name"
+            maxLength={MAX_NAME_LENGTH}
+            error={errorFor('name')}
+            disabled={pending}
+          />
 
-        {/*
+          {/*
           Read-only rather than absent: the traveller needs to know which
           address the receipts are going to.
         */}
-        <div className="bt-field" style={{ marginBottom: 0 }}>
-          <label className="bt-flabel" htmlFor="bt-acct-email" style={{ display: 'block' }}>
-            {t('auth_email')}
-          </label>
-          <input
-            id="bt-acct-email"
-            className="bt-input"
-            type="email"
-            value={initial.email}
-            readOnly
-            aria-describedby="bt-acct-email-note"
-            style={{ background: 'var(--ivory-2)', color: 'var(--muted)' }}
+          <div className="bt-field" style={{ marginBottom: 0 }}>
+            <label className="bt-flabel" htmlFor="bt-acct-email" style={{ display: 'block' }}>
+              {t('auth_email')}
+            </label>
+            <input
+              id="bt-acct-email"
+              className="bt-input"
+              type="email"
+              value={initial.email}
+              readOnly
+              aria-describedby="bt-acct-email-note"
+              style={{ background: 'var(--ivory-2)', color: 'var(--muted)' }}
+            />
+            <p
+              id="bt-acct-email-note"
+              className="muted"
+              style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
+            >
+              {t('acct_email_note')}
+            </p>
+          </div>
+
+          <TextField
+            label={t('auth_phone')}
+            optionalLabel={t('co_optional')}
+            type="tel"
+            inputMode="tel"
+            value={phone}
+            onChange={edit(setPhone, 'phone')}
+            placeholder="+62 ···"
+            autoComplete="tel"
+            maxLength={MAX_PHONE_LENGTH}
+            error={errorFor('phone')}
+            disabled={pending}
           />
-          <p
-            id="bt-acct-email-note"
-            className="muted"
-            style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
-          >
-            {t('acct_email_note')}
-          </p>
-        </div>
 
-        <TextField
-          label={t('auth_phone')}
-          optionalLabel={t('co_optional')}
-          type="tel"
-          inputMode="tel"
-          value={phone}
-          onChange={edit(setPhone, 'phone')}
-          placeholder="+62 ···"
-          autoComplete="tel"
-          maxLength={MAX_PHONE_LENGTH}
-          error={errorFor('phone')}
-          disabled={pending}
-        />
-
-        {/*
+          {/*
           A select, not the handoff's free-text box: `users.country` is
           varchar(2), so anything longer is a 500 rather than a validation
           message.
         */}
-        <SelectField
-          label={t('auth_country')}
-          optionalLabel={t('co_optional')}
-          value={country}
-          onChange={edit(setCountry, 'country')}
-          placeholder={t('auth_country_ph')}
-          options={countries.map((option) => ({ value: option.code, label: option.label }))}
-          autoComplete="country"
-          error={errorFor('country')}
-          disabled={pending}
-        />
+          <SelectField
+            label={t('auth_country')}
+            optionalLabel={t('co_optional')}
+            value={country}
+            onChange={edit(setCountry, 'country')}
+            placeholder={t('auth_country_ph')}
+            options={countries.map((option) => ({ value: option.code, label: option.label }))}
+            autoComplete="country"
+            error={errorFor('country')}
+            disabled={pending}
+          />
 
-        {/*
+          {/*
           Written by hand rather than through `SelectField`, which always
           renders an empty placeholder option. A language is never "unset" —
           offering a blank choice here would let someone save nothing and
           silently fall back to English.
         */}
-        <div className="bt-field" style={{ marginBottom: 0 }}>
-          <label className="bt-flabel" htmlFor="bt-acct-locale" style={{ display: 'block' }}>
-            {t('acct_lang')}
-          </label>
-          <select
-            id="bt-acct-locale"
-            className="bt-input"
-            value={locale}
-            onChange={(event) => setLocale(event.target.value)}
-            disabled={pending}
-            aria-describedby="bt-acct-locale-hint"
-          >
-            {locales.map((code) => (
-              <option key={code} value={code}>
-                {localeConfig[code].label}
-              </option>
-            ))}
-          </select>
-          <p
-            id="bt-acct-locale-hint"
-            className="muted"
-            style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
-          >
-            {t('acct_lang_hint')}
-          </p>
+          <div className="bt-field" style={{ marginBottom: 0 }}>
+            <label className="bt-flabel" htmlFor="bt-acct-locale" style={{ display: 'block' }}>
+              {t('acct_lang')}
+            </label>
+            <select
+              id="bt-acct-locale"
+              className="bt-input"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value)}
+              disabled={pending}
+              aria-describedby="bt-acct-locale-hint"
+            >
+              {locales.map((code) => (
+                <option key={code} value={code}>
+                  {localeConfig[code].label}
+                </option>
+              ))}
+            </select>
+            <p
+              id="bt-acct-locale-hint"
+              className="muted"
+              style={{ fontSize: 12, marginTop: 6, marginBottom: 0 }}
+            >
+              {t('acct_lang_hint')}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div>
-        <Button type="submit" variant="orange" disabled={pending}>
-          {pending ? t('auth_working') : t('acct_save')}
-        </Button>
-      </div>
-    </form>
+        <div>
+          <Button type="submit" variant="orange" disabled={pending}>
+            {pending ? t('auth_working') : t('acct_save')}
+          </Button>
+        </div>
+      </form>
+    </>
   )
 }

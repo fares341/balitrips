@@ -169,6 +169,8 @@ export function AuthModal({
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [rememberMe, setRememberMe] = useState(true)
+  /** موافقة واتساب (الوثيقة 19.3/20.1) — اختيارية وغير محددة افتراضياً. */
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [pending, setPending] = useState<Pending>(null)
@@ -189,6 +191,7 @@ export function AuthModal({
     if (open) {
       setMode(initialMode)
       setForm(EMPTY_FORM)
+      setWhatsappOptIn(false)
       setErrors({})
       setFormError(null)
       setPending(null)
@@ -303,6 +306,7 @@ export function AuthModal({
       phone,
       country: country === '' ? undefined : country,
       locale: preferredLocale,
+      whatsappOptIn,
     })
 
     if (error) {
@@ -311,10 +315,14 @@ export function AuthModal({
       return
     }
 
-    router.refresh()
     setPending(null)
     onAuthenticated?.()
     onClose()
+    // حساب بالجوال وحده: الرقم لم يُثبت بعد. نأخذه مباشرة لصفحة الحساب حيث
+    // إشعار التحقق برمز واتساب — رقم غير مؤكَّد لا يستعيد كلمة المرور، وقد
+    // يُسحب منه إن أثبت صاحبه الحقيقي ملكيته (انظر verifyPhoneCodeAction).
+    if (email.trim() === '') router.push('/account')
+    else router.refresh()
   }
 
   /**
@@ -629,6 +637,25 @@ export function AuthModal({
         error={errors.password2}
         disabled={busy}
       />
+
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          fontSize: 13.5,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={whatsappOptIn}
+          onChange={(event) => setWhatsappOptIn(event.target.checked)}
+          disabled={busy}
+          style={{ width: 16, height: 16, marginTop: 2, accentColor: 'var(--orange)' }}
+        />
+        {t('auth_whatsapp_optin')}
+      </label>
 
       <Button type="submit" variant="orange" block disabled={busy}>
         {pending === 'email' ? t('auth_working') : t('auth_up_btn')}

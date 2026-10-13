@@ -20,6 +20,7 @@ import {
   issueReceipt,
   markOrderPaidOffline,
   refundOrderItem,
+  sendItineraryPdfWhatsapp,
   setLineFulfilment,
 } from '../actions'
 
@@ -297,6 +298,25 @@ export default async function OrderDetailPage({
                         style={{ marginBlockStart: 6 }}
                       >
                         Mark delivered
+                      </button>
+                    </form>
+                  ) : null}
+                  {mayFulfil &&
+                  line.kind === 'itinerary' &&
+                  row.userId !== null &&
+                  line.fulfilmentStatus !== 'refunded' &&
+                  line.fulfilmentStatus !== 'cancelled' ? (
+                    <form
+                      className="a-inline-form"
+                      action={sendItineraryPdfWhatsapp.bind(null, row.id, line.id)}
+                    >
+                      <button
+                        className="a-btn ghost small"
+                        type="submit"
+                        style={{ marginBlockStart: 6 }}
+                        title="Sends a WhatsApp message with a link to the secure viewer in the customer's account (opted-in customers only)."
+                      >
+                        Send PDF via WhatsApp
                       </button>
                     </form>
                   ) : null}

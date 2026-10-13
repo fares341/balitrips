@@ -34,10 +34,12 @@ import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ArticleCard } from '@/components/cards'
+import { ProtectedContent } from '@/components/protect'
 import { Breadcrumbs, LinkButton, Tag } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import type { IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
+import { contactLabel } from '@/lib/auth/phone'
 import { pick, pickOptional } from '@/lib/content/localize'
 import {
   getArticleBodyForViewer,
@@ -48,6 +50,7 @@ import { listArticles } from '@/lib/content/queries'
 import type { ArticleSummary, LocalizedText } from '@/lib/content/types'
 import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
 import type { Locale } from '@/i18n/config'
+import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
 
 import { alternatesFor, toLocale } from '../../_seo-hreflang'
@@ -144,12 +147,34 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
   // viewer's live entitlements through the same guard as the map.
   let held = emptyEntitlements()
   let signedIn = false
+  let access: Awaited<ReturnType<typeof checkSecureAccess>> | null = null
   if (article.requiredEntitlement !== null) {
-    const access = await checkSecureAccess('article')
+    access = await checkSecureAccess('article')
     signedIn = access.ok
     if (access.ok) held = await loadEntitlements(access.user.id)
   }
   const gate = await getArticleBodyForViewer(article.id, held)
+
+  // Exclusive body shown to its subscriber: copy protection + a watermark
+  // carrying who they are and today's date (Bali time), as on the map.
+  let watermark: string | null = null
+  if (access?.ok === true && article.requiredEntitlement !== null) {
+    if (gate.locked) {
+      // Recorded for review, but NOT as `why: 'not_entitled'`: exclusive
+      // articles are listed publicly with a lock badge, so a curious member
+      // opening a handful of teasers would trip `unauthorized_probe` and be
+      // suspended. A distinct reason keeps the trail without that rule.
+      await logActivity({
+        action: 'unauthorized_access',
+        userId: access.user.id,
+        ip: access.ip,
+        deviceId: access.deviceId,
+        details: { resource: `article:${article.slug}`, why: 'paywall_preview' },
+      })
+    } else {
+      watermark = `${contactLabel(access.user)} · ${new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date())}`
+    }
+  }
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
@@ -222,11 +247,15 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
           paragraphs of filler copied from every other post.
         */}
         {paragraphs.length > 0 && (
-          <div className="bt-article-body">
+          <ProtectedContent
+            className="bt-article-body"
+            label={watermark}
+            printNote={t('art_print_blocked')}
+          >
             {paragraphs.map((paragraph, index) => (
               <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
             ))}
-          </div>
+          </ProtectedContent>
         )}
 
         {gate.locked && (

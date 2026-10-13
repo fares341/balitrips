@@ -100,7 +100,7 @@
 - ✅ Stripe Checkout (Apple/Google Pay، 3DS) مع webhook موقّع.
 - ✅ مبالغ `bigint`: لا انهيار فوق 21 مليون روبية.
 - ✅ Docker + Caddy blue/green، CSP، worker بطوابير، نسخ تخزين DO Spaces.
-- ✅ هجرات 0000→0011 مختبرة على قاعدة جديدة.
+- ✅ هجرات 0000→0012 مختبرة على قاعدة جديدة.
 - ✅ **ملفا تشغيل الإنتاج** (`.sh` و`.cmd`) + **حسابات اختبار لكل دور** — `docs/production-run.md`.
 - ✅ تأكيد البريد برابط (لا يمنع الدخول)، وأرقام الثقة في الرئيسية و"من نحن" حقيقية من قاعدة البيانات.
 - ✅ **مراجعة الكود الكاملة قبل الإطلاق** (6 مراجعات مستقلة، أكثر من 40 مشكلة أُصلحت) — التفاصيل في `docs/prelaunch-review.md`.
@@ -123,10 +123,11 @@
 | | البند |
 |---|---|
 | 🔑 | مفاتيح الإنتاج: Stripe live + webhook، Resend (ونطاق البريد SPF/DKIM)، DO Spaces، WhatsApp Cloud API. |
-| 🔑 | اعتماد قوالب واتساب في Meta: القديمة + `bali_custom_completed` + الجديدة (`bali_order_updated`، `bali_custom_status`، `bali_custom_quote`، `bali_pdf_ready_whatsapp`، `bali_password_reset_whatsapp`، و`bali_phone_otp` بفئة Authentication) — الجدول في `docs/production-run.md`. وإن أردت إرسال إشعار الإدارة عبر واتساب، قالب لرسالة الإدارة. |
+| 🔑 | اعتماد قوالب واتساب في Meta: القديمة + `bali_custom_completed` + الجديدة (`bali_order_updated`، `bali_custom_status`، `bali_custom_quote`، `bali_pdf_ready_whatsapp`، `bali_password_reset_whatsapp`، `bali_plan_expired`، و`bali_phone_otp` بفئة Authentication مع زر نسخ الرمز) — الجدول في `docs/production-run.md`. وإن أردت إرسال إشعار الإدارة عبر واتساب، قالب لرسالة الإدارة. |
 | 🔑 | صفحات قانونية حقيقية: الشروط، الخصوصية، **الاسترداد** (شرط لحساب تاجر)، الكوكيز. |
 | 🔑 | المحتوى الحقيقي: الأماكن (9 فقط حالياً)، الصور المرخصة (الحالية placeholders)، الجداول وPDFs. |
-| 🔑 | مراجعة العربية والإندونيسية من متحدث أصلي (~1120 مفتاح). |
+| 🔑 | مراجعة العربية والإندونيسية من متحدث أصلي (~1140 مفتاح). |
+| ❓ | لوحة الإدارة بالإنجليزية فقط (الموقع بثلاث لغات). هل تريدها بالعربية؟ |
 | 🔑 | ضبط `GEO_COUNTRY_HEADER` و`GEO_CITY_HEADER` و`TRUSTED_IP_HEADER` حسب وجود Cloudflare (والمدينة تحتاج "Add visitor location headers" في Cloudflare). |
 | 🔑 | `ALLOW_BOOKINGS=true` عند الإطلاق فقط — بدونه الحجز مقفول (مقصود). |
 | 🔑 | `ADMIN_BASE_PATH` في `.env.production` و`caddy.env` بنفس القيمة. |
@@ -155,3 +156,4 @@
 | **2 (مرحلة)** | الميزات الجديدة كلياً من الوثيقة | `docs/phase2-new-features.md` |
 | **ما قبل الإطلاق** | النواقص + المراجعة الكاملة + سيناريوهات الاختبار | `docs/prelaunch-review.md`، `docs/test-scenarios.md` |
 | **استكمال الوثيقة** | كل الناقص والجزئي + تشغيل الإنتاج + حسابات الاختبار | `docs/spec-completion.md`، `docs/production-run.md` |
+| **استكمال الوثيقة 2** | مراجعة مستقلة ثانية: سجل البحث، إشعارات التفعيل والانتهاء، طلبات الزوار، حماية الجدول والمقالات، الفعاليات بتواريخ، شاشة ملفات PDF، PDF بلا Spaces | `docs/spec-completion.md` |

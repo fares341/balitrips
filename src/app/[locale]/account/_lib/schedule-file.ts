@@ -28,7 +28,7 @@ import { customDocumentUnlocked } from '@/lib/orders/custom-request'
 import { stampPdf } from '@/lib/pdf/watermark'
 import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
-import { contentDisposition, isStorageConfigured, presignedGet } from '@/lib/storage'
+import { contentDisposition, isPrivateStorageAvailable, readPrivateObject } from '@/lib/storage'
 
 import { resolveScheduleDocument } from './queries'
 
@@ -56,14 +56,10 @@ const MAX_SOURCE_BYTES = 30 * 1024 * 1024
 async function loadSource(objectKey: string): Promise<Uint8Array | null> {
   const key = objectKey.replace(/^\/+/, '')
 
-  if (isStorageConfigured()) {
-    const response = await fetch(presignedGet(key, { expiresInSeconds: 60 }), { cache: 'no-store' })
-    if (!response.ok) {
-      console.error('[schedules] storage fetch failed', response.status, key)
-      return null
-    }
-    const buffer = new Uint8Array(await response.arrayBuffer())
-    return buffer.byteLength > MAX_SOURCE_BYTES ? null : buffer
+  // Spaces، أو مجلد خاص محلي (PRIVATE_STORAGE_DIR) في تشغيل خادم واحد.
+  if (isPrivateStorageAvailable()) {
+    const buffer = await readPrivateObject(key)
+    return buffer === null || buffer.byteLength > MAX_SOURCE_BYTES ? null : buffer
   }
 
   // تطوير محلي فقط: الملفات من public/. في الإنتاج بلا تخزين لا نسلّم شيئاً.

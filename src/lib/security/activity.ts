@@ -42,6 +42,8 @@ export const ACTIVITY_ACTIONS = [
   'update_order',
   /** الوثيقة 15.2: "الصفحات التي زارها". */
   'page_view',
+  /** رقم جوال غير مُتحقق منه سُحب من الحساب لأن صاحبه أثبت ملكيته (phone-actions.ts). */
+  'phone_released',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]
@@ -99,4 +101,6 @@ export const RULE_TRIGGERS: ReadonlySet<ActivityAction> = new Set<ActivityAction
   'device_pending',
   'login',
   'unauthorized_access',
+  'view_place',
+  'search_map',
 ])

@@ -2,13 +2,22 @@
 
 import { randomUUID } from 'node:crypto'
 
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { itineraries, itineraryDays, itineraryRegions } from '@/db/schema'
-import { locales, isLocale } from '@/i18n/config'
-import { isStorageConfigured, uploadPrivate } from '@/lib/storage'
+import {
+  itineraries,
+  itineraryDays,
+  itineraryRegions,
+  orderItems,
+  orders,
+  users,
+} from '@/db/schema'
+import { defaultLocale, locales, isLocale, type Locale } from '@/i18n/config'
+import { pick } from '@/lib/content/localize'
+import { notifyUsers } from '@/lib/notify'
+import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit, type Tx } from '../../_lib/audit'
@@ -598,7 +607,7 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
     const file = form.get('file')
     if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
     if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error('That PDF is larger than 24 MB.')
-    if (!isStorageConfigured() && process.env.NODE_ENV === 'production') {
+    if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
       throw new Error('Object storage is not configured; the file could not be delivered.')
     }
     const bytes = new Uint8Array(await file.arrayBuffer())
@@ -609,7 +618,7 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
 
     // مفتاح لا يُخمَّن: الملف الأصلي لا يُكشف أبداً (يُسلَّم مختوماً عبر الحساب).
     const objectKey = `itineraries/${id}/uploaded/${rawLocale}-${randomUUID()}.pdf`
-    if (isStorageConfigured()) {
+    if (isPrivateStorageAvailable()) {
       await uploadPrivate({ key: objectKey, body: bytes, contentType: 'application/pdf' })
     } else {
       // تطوير محلي فقط (الإنتاج بلا تخزين مرفوض أعلاه)، كما في الجداول المخصصة.
@@ -630,12 +639,69 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
       before: { uploadedPdfKeys: before.uploadedPdfKeys },
       after: { uploadedPdfKeys: keys, bytes: bytes.byteLength },
     })
-    outcome = { ok: `PDF (${rawLocale.toUpperCase()}) uploaded. Customers now receive this file.` }
+    const notified = await notifyItineraryHolders(before, rawLocale, keys)
+    outcome = {
+      ok:
+        `PDF (${rawLocale.toUpperCase()}) uploaded. Customers now receive this file.` +
+        (notified > 0 ? ` ${notified} customer(s) notified.` : ''),
+    }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
   redirect(withOutcome(editor(id), outcome))
+}
+
+/**
+ * بعد رفع ملف جديد: إشعار `itinerary_pdf_updated` (داخل الموقع + بريد) لكل من
+ * يملك هذا الجدول (بند مسدَّد غير مسترد/ملغى) ويستلم ملف هذه اللغة — لغته هي
+ * لغة الملف، أو ملف اللغة الافتراضية ولا ملف مرفوع للغته. إدراج جماعي بلغة كل
+ * مجموعة. لا يرمي: فشل الإشعار لا يُفشل الرفع.
+ */
+async function notifyItineraryHolders(
+  itinerary: typeof itineraries.$inferSelect,
+  uploadedLocale: Locale,
+  keys: Partial<Record<string, string>>,
+): Promise<number> {
+  try {
+    const receives = locales.filter(
+      (locale) => locale === uploadedLocale || (uploadedLocale === defaultLocale && !keys[locale]),
+    )
+    const holders = await db
+      .selectDistinct({ userId: orders.userId, locale: users.locale })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .innerJoin(users, eq(users.id, orders.userId))
+      .where(
+        and(
+          eq(orderItems.refId, itinerary.id),
+          eq(orderItems.kind, 'itinerary'),
+          inArray(orders.status, ['paid', 'confirmed', 'partially_refunded']),
+          notInArray(orderItems.fulfilmentStatus, ['refunded', 'cancelled']),
+          isNull(users.deletedAt),
+        ),
+      )
+    const byLocale = new Map<Locale, string[]>()
+    for (const holder of holders) {
+      if (!holder.userId) continue
+      const locale = isLocale(holder.locale) ? holder.locale : defaultLocale
+      if (!receives.includes(locale)) continue
+      byLocale.set(locale, [...(byLocale.get(locale) ?? []), holder.userId])
+    }
+    let total = 0
+    for (const [locale, userIds] of byLocale) {
+      total += await notifyUsers(
+        userIds,
+        'itinerary_pdf_updated',
+        { name: pick(itinerary.name, locale, itinerary.slug) },
+        '/account/schedules',
+      )
+    }
+    return total
+  } catch (error) {
+    console.error('[itineraries] holder notification failed', { id: itinerary.id, error })
+    return 0
+  }
 }
 
 /** يزيل الملف المرفوع للغة — يعود التسليم إلى الملف المولّد تلقائياً. */

@@ -33,8 +33,10 @@ import { revalidatePath } from 'next/cache'
 import { getLocale } from 'next-intl/server'
 import { z } from 'zod'
 
+import { and, eq, gt, sql } from 'drizzle-orm'
+
 import { db } from '@/db'
-import { customTripRequests } from '@/db/schema'
+import { customTripRequests, users } from '@/db/schema'
 import { defaultLocale, isLocale } from '@/i18n/config'
 import { redirect } from '@/i18n/routing'
 import { addItem, CartRejectedError } from '@/lib/cart'
@@ -51,7 +53,8 @@ import {
   listRegions,
 } from '@/lib/content/queries'
 
-import { notifyStaff } from '@/lib/notify'
+import { notifyStaff, notifyUser } from '@/lib/notify'
+import { emailGuest } from '@/lib/notify/guest'
 import { logActivity } from '@/lib/security/activity'
 
 import { currentUserId } from '../_viewer/session'
@@ -103,6 +106,7 @@ const schema = z.object({
   wantsAdventure: z.boolean(),
   preferredAreas: z.array(z.string().trim().max(64)).max(AREAS_MAX),
   notes: z.string().trim().max(NOTES_MAX),
+  whatsappOptIn: z.boolean(),
 })
 
 export async function submitCustomTrip(
@@ -127,6 +131,7 @@ export async function submitCustomTrip(
     wantsAdventure: formData.get('wantsAdventure') !== null,
     preferredAreas: formData.getAll('areas').map(String).slice(0, AREAS_MAX),
     notes: formData.get('notes') ?? '',
+    whatsappOptIn: formData.get('whatsappOptIn') !== null,
   })
 
   if (!parsed.success) {
@@ -287,6 +292,35 @@ export async function submitCustomTrip(
         userId,
         details: { requestId, kind: 'custom_trip', event: 'created' },
       })
+      // موافقة واتساب صريحة من النموذج (غير محددة افتراضياً). تُضاف فقط — عدم
+      // التحديد لا يسحب موافقة سابقة؛ السحب من صفحة الإشعارات في الحساب.
+      if (input.whatsappOptIn) {
+        await db.update(users).set({ whatsappOptIn: true }).where(eq(users.id, userId))
+      }
+      await notifyUser(userId, 'custom_received', { name: input.name }, '/account/schedules')
+    } else {
+      // ضيف: تأكيد بالبريد مباشرة (لا حساب يحمل إشعاراً). عند التسجيل بنفس البريد
+      // يُربط الطلب بالحساب تلقائياً (src/lib/auth/server.ts). بلا اسم المرسل في
+      // النص: العنوان غير متحقق منه، فلا نجعل النموذج قناة لنص يكتبه غريب.
+      // وحدّ للعنوان الواحد: 3 تأكيدات في الساعة — النموذج عام، فبدونه يصير أداة
+      // لإغراق صندوق بريد أي شخص.
+      const [recent] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(customTripRequests)
+        .where(
+          and(
+            sql`lower(${customTripRequests.email}) = ${input.email.trim().toLowerCase()}`,
+            gt(customTripRequests.createdAt, new Date(Date.now() - 60 * 60_000)),
+          ),
+        )
+      if ((recent?.n ?? 0) <= 3)
+        await emailGuest({
+          to: input.email,
+          locale,
+          type: 'custom_received_guest',
+          params: {},
+          href: '/account/schedules',
+        })
     }
 
     await notifyStaff(

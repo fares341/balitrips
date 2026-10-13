@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
@@ -80,7 +80,10 @@ export default async function DashboardPage({
           .from(entitlements)
           .where(
             and(
+              // "مستخدمو الخريطة": الأنواع التي تفتح الخريطة فقط (باقة `basic` لا).
+              inArray(entitlements.kind, ['map_access', 'vip']),
               isNull(entitlements.revokedAt),
+              lte(entitlements.startsAt, now),
               or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
             ),
           )

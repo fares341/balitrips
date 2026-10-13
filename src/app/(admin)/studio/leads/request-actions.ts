@@ -13,13 +13,14 @@ import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { notifyUser } from '@/lib/notify'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
-import { isStorageConfigured, uploadPrivate } from '@/lib/storage'
+import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { fbool, fcurrency, fintOrNull, fstr, fuuid } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import { logRequestActivity, notifyRequestStatus } from './notify'
 
 /**
  * إدارة طلب الجدول المخصص: ملاحظات داخلية، ربط بحساب، رفع PDF، سحب نسخة.
@@ -178,6 +179,11 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
       before: { quoteMinor: before.quoteMinor, quoteCurrency: before.quoteCurrency },
       after: { quoteMinor: minor, quoteCurrency: currency },
     })
+    await logRequestActivity(id, minor === null ? 'quote_cleared' : 'quote', {
+      quoteMinor: minor,
+      currency,
+      by: actor.userId,
+    })
 
     if (minor === null || currency === null)
       return 'Price cleared. The traveller can no longer pay.'
@@ -295,7 +301,7 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
     const file = form.get('file')
     if (!(file instanceof File) || file.size === 0) throw new Error('Choose a PDF to upload.')
     if (file.size > MAX_PDF_BYTES) throw new Error('That PDF is larger than 20 MB.')
-    if (!isStorageConfigured() && process.env.NODE_ENV === 'production') {
+    if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
       throw new Error('Object storage is not configured; nothing can be delivered.')
     }
 
@@ -310,7 +316,7 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
     if (!request) throw new Error('That request no longer exists')
 
     const objectKey = `custom-trips/${id}/${randomUUID()}.pdf`
-    if (isStorageConfigured()) {
+    if (isPrivateStorageAvailable()) {
       await uploadPrivate({ key: objectKey, body: bytes, contentType: 'application/pdf' })
     } else {
       // تطوير محلي: public/ كما يفعل مسار الجداول. لا يحدث في الإنتاج (أعلاه).
@@ -354,6 +360,11 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
       before: null,
       after: { documentId: doc?.id, version: doc?.version, bytes: bytes.byteLength },
     })
+    await logRequestActivity(id, 'pdf_uploaded', {
+      documentId: doc?.id ?? null,
+      version: doc?.version ?? null,
+      by: actor.userId,
+    })
 
     if (request.userId) {
       // "أرسل أيضاً على واتساب": رسالة واحدة برابط صفحة العرض المحمية (+ داخل
@@ -374,6 +385,10 @@ export async function uploadCustomPdf(id: string, form: FormData): Promise<void>
         return `Version ${doc?.version} uploaded and the traveller notified — but not on WhatsApp: ${target.reason}`
       }
       return `Version ${doc?.version} uploaded. The traveller has been notified.`
+    }
+    // ضيف: بريد بتغيّر الحالة إلى "بانتظار ردك" يدعوه للتسجيل بنفس البريد.
+    if (request.status !== 'completed' && request.status !== 'waiting_customer') {
+      await notifyRequestStatus(id, 'waiting_customer')
     }
     return `Version ${doc?.version} uploaded. This request is not linked to an account yet — link it so the traveller can open the plan.`
   })

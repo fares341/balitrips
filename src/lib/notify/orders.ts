@@ -3,16 +3,17 @@
  * (webhook أو reconcile) — إشعار عن دفع تراجعت معاملته أسوأ من عدم الإشعار.
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { orderItems, orders, plans, users } from '@/db/schema'
+import { entitlements, orderItems, orders, plans, users } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale, translator } from '@/lib/email'
 import { formatMoney } from '@/lib/money'
 import { logActivity } from '@/lib/security/activity'
 
 import { notifyStaff, notifyUser } from './index'
+import { accessLabel } from './plans'
 
 export async function notifyOrderPaid(orderId: string): Promise<void> {
   try {
@@ -67,6 +68,28 @@ export async function notifyOrderPaid(orderId: string): Promise<void> {
       .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'plan')))
     for (const line of planLines) {
       await notifyUser(order.userId, 'plan_activated', { plan: pick(line.name, locale) }, '/map')
+    }
+
+    // الوثيقة 4.2: جدول "يشمل الخريطة" يمنح وصولاً بلا باقة (`grantOrderPlans`)
+    // — صفوف صلاحية هذا الطلب التي لا باقة لها. كان المشتري لا يُبلَّغ بها.
+    const mapGrants = await db
+      .select({ id: entitlements.id, kind: entitlements.kind })
+      .from(entitlements)
+      .where(
+        and(
+          eq(entitlements.grantedByOrderId, orderId),
+          eq(entitlements.userId, order.userId),
+          isNull(entitlements.planId),
+          isNull(entitlements.revokedAt),
+        ),
+      )
+    for (const grant of mapGrants) {
+      await notifyUser(
+        order.userId,
+        'plan_activated',
+        { plan: accessLabel(null, grant.kind, locale), entitlementId: grant.id },
+        '/map',
+      )
     }
   } catch (error) {
     console.error('[notify] order paid notifications failed', { orderId, error })

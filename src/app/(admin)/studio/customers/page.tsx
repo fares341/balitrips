@@ -2,6 +2,7 @@ import { and, count, desc, eq, gt } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
+import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can } from '@/lib/auth/roles'
 import { orders, sessions, users } from '@/db/schema'
 import { ROLES } from '@/lib/auth/roles'
@@ -13,6 +14,7 @@ import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { customerFilters } from './filters'
+import { accessLine, loadAccountSummaries } from './summary'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +32,13 @@ export const dynamic = 'force-dynamic'
  */
 
 const PAGE_SIZE = 30
+
+const STATUS_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'info'> = {
+  active: 'good',
+  inactive: 'warn',
+  suspended: 'warn',
+  banned: 'bad',
+}
 const LIST = adminHref('/customers')
 
 export default async function CustomersPage({
@@ -53,8 +62,10 @@ export default async function CustomersPage({
       .select({
         id: users.id,
         email: users.email,
+        phone: users.phone,
         name: users.name,
         role: users.role,
+        status: users.status,
         locale: users.locale,
         country: users.country,
         twoFactorEnabled: users.twoFactorEnabled,
@@ -74,6 +85,7 @@ export default async function CustomersPage({
       .offset((page - 1) * PAGE_SIZE),
     db.select({ value: count() }).from(users).where(where),
   ])
+  const summaries = await loadAccountSummaries(rows.map((row) => row.id))
 
   return (
     <>
@@ -135,6 +147,9 @@ export default async function CustomersPage({
           <thead>
             <tr>
               <th>Account</th>
+              <th>Status</th>
+              <th>Current plan</th>
+              <th>Last login</th>
               <th>Role</th>
               <th>Two-factor</th>
               <th className="num">Sessions</th>
@@ -144,39 +159,68 @@ export default async function CustomersPage({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <Link href={adminHref(`/customers/${row.id}`)}>{row.email}</Link>
-                  <div className="a-muted">
-                    {row.name ?? '—'}
-                    {row.deletedAt ? ' · deleted' : ''}
-                    {row.emailVerifiedAt === null && row.deletedAt === null ? ' · unverified' : ''}
-                  </div>
-                </td>
-                <td>
-                  <Pill tone={row.role === 'customer' ? 'neutral' : 'info'}>{row.role}</Pill>
-                </td>
-                <td>
-                  {row.role === 'customer' ? (
-                    <span className="a-muted">n/a</span>
-                  ) : row.twoFactorEnabled ? (
-                    <Pill tone="good">enrolled</Pill>
-                  ) : (
-                    <Pill tone="bad">missing</Pill>
-                  )}
-                </td>
-                <td className="num">{row.liveSessions}</td>
-                <td className="num">{row.orderCount}</td>
-                <td className="a-mono">
-                  {row.locale}
-                  {row.country ? ` · ${row.country}` : ''}
-                </td>
-                <td>
-                  <When value={row.createdAt} />
-                </td>
-              </tr>
-            ))}
+            {rows.map((row) => {
+              const summary = summaries.get(row.id)
+              const phoneOnly = isPlaceholderEmail(row.email)
+              return (
+                <tr key={row.id}>
+                  <td>
+                    {/* حساب الجوال وحده: الرقم بدل البريد البديل `@phone.balitrips.invalid`. */}
+                    <Link href={adminHref(`/customers/${row.id}`)}>{contactLabel(row)}</Link>
+                    <div className="a-muted">
+                      {row.name ?? '—'}
+                      {phoneOnly ? ' · phone only' : ''}
+                      {row.deletedAt ? ' · deleted' : ''}
+                      {row.emailVerifiedAt === null && row.deletedAt === null && !phoneOnly
+                        ? ' · unverified'
+                        : ''}
+                    </div>
+                  </td>
+                  <td>
+                    {row.deletedAt ? (
+                      <Pill tone="bad">deleted</Pill>
+                    ) : (
+                      <Pill tone={STATUS_TONES[row.status] ?? 'neutral'}>{row.status}</Pill>
+                    )}
+                  </td>
+                  <td>
+                    {summary && summary.access.length > 0 ? (
+                      summary.access.map((access) => (
+                        <div key={access.id} className="a-mono" style={{ fontSize: 12 }}>
+                          {accessLine(access)}
+                        </div>
+                      ))
+                    ) : (
+                      <span className="a-muted">none</span>
+                    )}
+                  </td>
+                  <td>
+                    <When value={summary?.lastLogin ?? null} />
+                  </td>
+                  <td>
+                    <Pill tone={row.role === 'customer' ? 'neutral' : 'info'}>{row.role}</Pill>
+                  </td>
+                  <td>
+                    {row.role === 'customer' ? (
+                      <span className="a-muted">n/a</span>
+                    ) : row.twoFactorEnabled ? (
+                      <Pill tone="good">enrolled</Pill>
+                    ) : (
+                      <Pill tone="bad">missing</Pill>
+                    )}
+                  </td>
+                  <td className="num">{row.liveSessions}</td>
+                  <td className="num">{row.orderCount}</td>
+                  <td className="a-mono">
+                    {row.locale}
+                    {row.country ? ` · ${row.country}` : ''}
+                  </td>
+                  <td>
+                    <When value={row.createdAt} />
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </Table>
       )}

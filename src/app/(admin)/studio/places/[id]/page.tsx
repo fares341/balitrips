@@ -25,6 +25,7 @@ import {
 } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
+import { baliInputValue } from '../../../_lib/bali-time'
 import { PageHead } from '../../../_ui/shell'
 import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
 
@@ -254,6 +255,32 @@ export default async function PlaceEditorPage({
               options={categoryList}
               value={place?.categoryId}
             />
+          </div>
+          <div className="a-row">
+            <Field
+              label="Event starts (Bali time)"
+              htmlFor="eventStartsAt"
+              hint="Only for dated events (category “events”). Empty = permanent place."
+            >
+              <TextInput
+                id="eventStartsAt"
+                name="eventStartsAt"
+                type="datetime-local"
+                defaultValue={baliInputValue(place?.eventStartsAt)}
+              />
+            </Field>
+            <Field
+              label="Event ends (Bali time)"
+              htmlFor="eventEndsAt"
+              hint="Optional. Without it, the event leaves the Events page a day after it starts."
+            >
+              <TextInput
+                id="eventEndsAt"
+                name="eventEndsAt"
+                type="datetime-local"
+                defaultValue={baliInputValue(place?.eventEndsAt)}
+              />
+            </Field>
           </div>
           <div className="a-field">
             <label>Tags</label>

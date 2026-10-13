@@ -97,7 +97,12 @@ ENV HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# Owned by the runtime user: without Spaces, uploads are written to
+# public/media (the `media_data` volume) and served by src/app/media/[...path]
+# — the standalone server only serves public/ files that existed at build time.
+# A fresh named volume copies this directory's ownership on first mount.
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+RUN mkdir -p public/media storage/private && chown -R nextjs:nodejs public/media storage
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -120,5 +125,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
+# Shares the `media_data` volume with the app; writable by the runtime user.
+RUN mkdir -p public/media storage/private && chown -R nextjs:nodejs public/media storage
 USER nextjs
 CMD ["node_modules/.bin/tsx", "src/worker/index.ts"]

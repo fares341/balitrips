@@ -214,18 +214,30 @@ export const auth = betterAuth({
       // لا عبر الطابور ولا جدول الإشعارات — الرابط يحمل رمزاً صالحاً.
       if (isPlaceholderEmail(user.email)) {
         const [row] = await db
-          .select({ phone: users.phoneNormalized })
+          .select({ phone: users.phoneNormalized, verifiedAt: users.phoneVerifiedAt })
           .from(users)
           .where(eq(users.id, String(user.id)))
           .limit(1)
-        const { sendWhatsappTemplate, toWhatsappNumber } = await import('@/lib/notify/whatsapp')
-        const result = await sendWhatsappTemplate(
-          toWhatsappNumber(row?.phone ?? null),
-          'password_reset_whatsapp',
-          { link: url },
-          locale,
-        )
-        if (!result.sent) console.error('[auth] reset link not sent on WhatsApp', result.reason)
+        // رقم لم يُثبت صاحبه ملكيته (رمز واتساب) لا يستقبل رابط إعادة التعيين:
+        // من سجّل برقم غيره لا يجب أن يصل رابط حسابه لصاحب الرقم الحقيقي ولا العكس.
+        // نرجع بصمت — الرد الموحّد لا يكشف شيئاً.
+        if (!row?.phone || row.verifiedAt === null) {
+          console.info('[auth] WhatsApp reset skipped: phone not verified', { userId: user.id })
+          return
+        }
+        try {
+          const { sendWhatsappTemplate, toWhatsappNumber } = await import('@/lib/notify/whatsapp')
+          const result = await sendWhatsappTemplate(
+            toWhatsappNumber(row.phone),
+            'password_reset_whatsapp',
+            { link: url },
+            locale,
+          )
+          if (!result.sent) console.error('[auth] reset link not sent on WhatsApp', result.reason)
+        } catch (error) {
+          // لا نرمي أبداً: الخطأ هنا يكشف وجود الحساب (رد مختلف عن رقم غير مسجّل).
+          console.error('[auth] reset link WhatsApp send failed', error)
+        }
         return
       }
       await sendPasswordResetEmail({
@@ -261,6 +273,16 @@ export const auth = betterAuth({
         siteUrl: `${BASE_URL}/${locale}`,
         locale,
       })
+    },
+    // طلبات جدول مخصص أُرسلت كزائر بهذا البريد تُربط بالحساب الآن فقط — بعد إثبات
+    // ملكية البريد، كي لا يرى من سجّل ببريد غيره تفاصيل رحلة شخص آخر.
+    afterEmailVerification: async (user) => {
+      try {
+        const { linkGuestCustomRequests } = await import('@/lib/notify/guest')
+        await linkGuestCustomRequests(user.id, user.email)
+      } catch (error) {
+        console.error('[auth] could not link guest custom requests', error)
+      }
     },
   },
 
@@ -394,6 +416,17 @@ export const auth = betterAuth({
         defaultValue: 'active',
       },
       bannedUntil: { type: 'date', required: false, input: false, returned: true },
+      /**
+       * موافقة واتساب الصريحة من خانة التسجيل (غير محددة افتراضياً — سياسة Meta).
+       * قيمة منطقية فقط؛ يمكن سحبها من صفحة الإشعارات في الحساب.
+       */
+      whatsappOptIn: {
+        type: 'boolean',
+        required: false,
+        input: true,
+        returned: false,
+        defaultValue: false,
+      },
     },
   },
 
@@ -605,11 +638,30 @@ export const auth = betterAuth({
               code: 'PHONE_REQUIRED',
             })
           }
-          if (phoneNormalized !== null && (await phoneTaken(phoneNormalized))) {
-            throw APIError.from('BAD_REQUEST', {
-              message: 'This mobile number is already registered.',
-              code: 'PHONE_TAKEN',
-            })
+          // الرقم يبقى فريداً عند التسجيل حتى لو لم يُتحقق منه بعد. ملكيته تُثبت
+          // لاحقاً برمز واتساب: غير المُتحقق منه لا يستقبل رابط إعادة التعيين
+          // (`sendResetPassword`)، ويستعيده صاحبه الحقيقي برمز من حسابه
+          // (`claimPhoneCodeAction`) — فيُسحب ممن حجزه ويُغلق حساب الجوال وحده.
+          // صاحب الرقم الحقيقي لا يُحبس خارج الموقع: إن كان الرقم محجوزاً لحساب لم
+          // يثبت ملكيته، والتسجيل ببريد حقيقي، يُنشأ الحساب بلا رقم ثم يستعيده
+          // صاحبه من صفحة الحساب برمز واتساب (نموذج الاسترداد يظهر عند الحفظ).
+          let keepPhone = true
+          if (phoneNormalized !== null) {
+            const [holder] = await db
+              .select({ verifiedAt: users.phoneVerifiedAt })
+              .from(users)
+              .where(eq(users.phoneNormalized, phoneNormalized))
+              .limit(1)
+            if (holder) {
+              const email = typeof user.email === 'string' ? user.email : ''
+              if (holder.verifiedAt !== null || isPlaceholderEmail(email)) {
+                throw APIError.from('BAD_REQUEST', {
+                  message: 'This mobile number is already registered.',
+                  code: 'PHONE_TAKEN',
+                })
+              }
+              keepPhone = false
+            }
           }
 
           return {
@@ -617,11 +669,11 @@ export const auth = betterAuth({
               ...user,
               // `users.name` هو varchar(128) و Better Auth لا يحدّه: اسم أطول كان خطأ 500.
               name: typeof user.name === 'string' ? user.name.trim().slice(0, 128) : user.name,
-              phoneNormalized,
+              phoneNormalized: keepPhone ? phoneNormalized : null,
               locale:
                 typeof rawLocale === 'string' && isLocale(rawLocale) ? rawLocale : defaultLocale,
               phone:
-                typeof rawPhone === 'string' && rawPhone.trim() !== ''
+                keepPhone && typeof rawPhone === 'string' && rawPhone.trim() !== ''
                   ? rawPhone.trim().slice(0, 32)
                   : null,
               country:
@@ -641,6 +693,31 @@ export const auth = betterAuth({
           // فلا نرسل رسالتين. حساب Google/Apple مؤكَّد أصلاً: ترحيب عادي.
           const record = user as { emailVerified?: unknown; emailVerifiedAt?: unknown }
           const verified = record.emailVerified === true || record.emailVerifiedAt instanceof Date
+          const userId = String(user.id)
+          const phoneOnly = isPlaceholderEmail(user.email)
+
+          // ترحيب داخل الموقع لكل حساب جديد. نسخة واتساب لحساب الجوال وحده تُرسل
+          // بعد إثبات الرقم فقط (verifyPhoneCodeAction): الرقم هنا لم يُثبت بعد،
+          // والاسم نص يكتبه المسجِّل — لا نجعل رقمنا قناة لنص غريب إلى رقم غيره.
+          await notifyUser(
+            userId,
+            'welcome',
+            { name: typeof user.name === 'string' ? user.name : '' },
+            '/account',
+          )
+
+          // طلبات الجدول المخصص التي أرسلها ضيفاً بنفس البريد تُربط بالحساب. فقط
+          // لبريد مؤكَّد (Google/Apple): بريد غير مؤكَّد قد يكون لشخص آخر، وربطه كان
+          // سيكشف خطة رحلة صاحبه (الاسم، التواريخ، الجوال) لمن سجّل به.
+          if (verified && !phoneOnly) {
+            try {
+              const { linkGuestCustomRequests } = await import('@/lib/notify/guest')
+              await linkGuestCustomRequests(userId, user.email)
+            } catch (error) {
+              console.error('[auth] could not link guest custom requests', error)
+            }
+          }
+
           if (!verified) return
           try {
             const { enqueueEmail } = await import('@/worker/queues')
@@ -1018,12 +1095,20 @@ function reservedEmailError() {
   })
 }
 
-/** هل الرقم الموحّد مستخدم لحساب آخر (غير محذوف)؟ */
+/**
+ * هل الرقم الموحّد مستخدم لحساب آخر؟
+ *
+ * يطابق `users_phone_normalized_unique` (على كل الصفوف): الحذف الناعم يمسح
+ * `phone_normalized` (studio/customers `deleteCustomer`)، فصف محذوف ما زال يحمل
+ * الرقم (بيانات قديمة) يحجزه فعلاً — تجاهله هنا كان ينتهي بخطأ 500 من القيد بدل
+ * PHONE_TAKEN. رقم يحجزه حساب غير مُتحقق منه يستعيده صاحبه بإثبات الملكية
+ * (`claimPhoneCodeAction` في account/phone-actions.ts)، لا بالتسجيل.
+ */
 async function phoneTaken(normalized: string, exceptUserId?: string): Promise<boolean> {
   const rows = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.phoneNormalized, normalized), isNull(users.deletedAt)))
+    .where(eq(users.phoneNormalized, normalized))
     .limit(2)
   return rows.some((row) => row.id !== exceptUserId)
 }

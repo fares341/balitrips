@@ -180,6 +180,25 @@ export const RULES: readonly RuleSpec[] = [
     why: ['device_revoked'],
     label: 'A removed device keeps requesting paid content',
   },
+  {
+    /**
+     * نسخ المحتوى آلياً (الوثيقة 18.2: نشاط غير طبيعي). يعدّ فتح الأماكن والبحث
+     * في الخريطة فقط — `page_view` يُسجَّل لكل صفحة، وتقييم القواعد عليه يضيف
+     * استعلاماً لكل زيارة بلا فائدة: الكاشط يحتاج بيانات الأماكن، وهي تمر من هنا.
+     * 300 حدث في 10 دقائق = حدث كل ثانيتين بلا توقف؛ لا يبلغه متصفح بشري.
+     * تنبيه للفريق فقط: لا تعليق تلقائي لعميل دفع بسبب حجم استخدام.
+     */
+    id: 'content_scrape',
+    counts: ['view_place', 'search_map'],
+    by: 'user',
+    measure: 'events',
+    windowMs: 10 * MINUTE,
+    threshold: 300,
+    severity: 'medium',
+    autoAction: null,
+    notifyStaff: true,
+    label: 'Unusually high volume of place views and map searches (possible scraping)',
+  },
 ]
 
 export const TRIGGER_ACTIONS: ReadonlySet<ActivityAction> = new Set(

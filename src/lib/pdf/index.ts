@@ -32,6 +32,7 @@ export {
 export {
   generateOrderVoucher,
   presignOrderVoucher,
+  loadOrderVoucher,
   voucherObjectKey,
   VoucherError,
   type GeneratedVoucher,

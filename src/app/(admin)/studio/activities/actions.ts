@@ -7,6 +7,7 @@ import { db } from '@/db'
 import { activities, activityCategories, activityTiers } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
+import { feventRange } from '../../_lib/bali-time'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
@@ -69,6 +70,8 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
       leadTimeHours: fint(form, 'leadTimeHours', 24, 'Lead time'),
       maxGuests: fint(form, 'maxGuests', 20, 'Max guests'),
       sortOrder: fint(form, 'sortOrder', 0, 'Sort order'),
+      // Dated events (category "events") — the Events page orders and expires by these.
+      ...feventRange(form),
       status,
     }
 

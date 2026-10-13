@@ -215,6 +215,18 @@ export function CustomTripForm({
             <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
           )}
         </label>
+
+        {/* موافقة واتساب صريحة (سياسة Meta): غير محددة افتراضياً، وتُحفظ في الحساب
+            إن كان المرسل مسجّلاً. */}
+        <label
+          className="row"
+          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, marginTop: 10 }}
+        >
+          <input type="checkbox" name="whatsappOptIn" /> {t('cp_wa_optin')}
+        </label>
+        <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 0' }}>
+          {t('cp_wa_optin_hint')}
+        </p>
       </div>
 
       {/* ---------------- dates ---------------- */}

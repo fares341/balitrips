@@ -3,15 +3,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
-import {
-  activities,
-  activityCategories,
-  activityTiers,
-} from '@/db/schema'
+import { activities, activityCategories, activityTiers } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { baliInputValue } from '../../../_lib/bali-time'
 import { categoryOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import {
@@ -232,6 +229,32 @@ export default async function ActivityEditorPage({
                 name="maxGuests"
                 inputMode="numeric"
                 defaultValue={String(activity?.maxGuests ?? 20)}
+              />
+            </Field>
+          </div>
+          <div className="a-row">
+            <Field
+              label="Event starts (Bali time)"
+              htmlFor="eventStartsAt"
+              hint="Only for dated events (category “events”). Empty = always available."
+            >
+              <TextInput
+                id="eventStartsAt"
+                name="eventStartsAt"
+                type="datetime-local"
+                defaultValue={baliInputValue(activity?.eventStartsAt)}
+              />
+            </Field>
+            <Field
+              label="Event ends (Bali time)"
+              htmlFor="eventEndsAt"
+              hint="Optional. Without it, the event leaves the Events page a day after it starts."
+            >
+              <TextInput
+                id="eventEndsAt"
+                name="eventEndsAt"
+                type="datetime-local"
+                defaultValue={baliInputValue(activity?.eventEndsAt)}
               />
             </Field>
           </div>

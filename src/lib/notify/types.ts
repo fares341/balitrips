@@ -11,6 +11,17 @@ export const USER_NOTIFICATION_TYPES = {
   order_paid: { email: false /* order_confirmation يُرسل أصلاً */, whatsapp: true },
   plan_activated: { email: true, whatsapp: true },
   plan_expiring: { email: true, whatsapp: true },
+  /** انتهت الصلاحية فعلاً (مسح `notify.sweep`، مرة لكل صلاحية). */
+  plan_expired: { email: true, whatsapp: true },
+  /**
+   * إنشاء حساب: داخل الموقع. البريد له رسالته الخاصة (`welcome` في طابور البريد)،
+   * وواتساب يُفعَّل بالتجاوز لحساب الجوال وحده (لا بريد يصله) — لمن وافق فقط.
+   */
+  welcome: { email: false, whatsapp: false },
+  /** استلام طلب الجدول المخصص (لصاحب الحساب؛ الضيف يصله بريد مباشر). */
+  custom_received: { email: true, whatsapp: false },
+  /** نسخة PDF جديدة لجدول جاهز اشتراه العميل (رفع يدوي من Studio). */
+  itinerary_pdf_updated: { email: true, whatsapp: false },
   /** الوثيقة 19.1: تحديث حالة الطلب المخصص — داخل الموقع + بريد + واتساب. */
   custom_status: { email: true, whatsapp: true },
   custom_pdf_ready: { email: true, whatsapp: true },
@@ -83,6 +94,8 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   order_paid: ['orderNumber'],
   plan_activated: ['plan'],
   plan_expiring: ['plan', 'date'],
+  plan_expired: ['plan'],
+  welcome: ['name'],
   custom_pdf_ready: ['name'],
   custom_completed: ['name'],
   custom_status: ['status'],

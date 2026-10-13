@@ -14,7 +14,13 @@ import {
   payments,
   planMembers,
   refunds,
+  users,
 } from '@/db/schema'
+import { absoluteUrl } from '@/app/[locale]/_meta'
+import { pick } from '@/lib/content/localize'
+import { toMailLocale } from '@/lib/email'
+import { notifyUser } from '@/lib/notify'
+import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
@@ -570,4 +576,83 @@ async function mapKindsLostWith(
     (row) => row.id !== lineId && row.refundedMinor < row.lineTotalMinor && kindOf(row) === lost,
   )
   return stillCovered ? [] : [lost]
+}
+
+/**
+ * الوثيقة 4.4: إرسال جدول جاهز اشتراه العميل عبر واتساب — رسالة `pdf_ready_whatsapp`
+ * برابط صفحة العرض المحمية في حسابه (`/account/schedules/<بند>/view`)، لا رابط ملف
+ * أبداً. يشترط: بند جدول في طلب مسدَّد غير مسترد، وحساب وافق على واتساب وله رقم دولي.
+ */
+export async function sendItineraryPdfWhatsapp(
+  orderId: string,
+  orderItemId: string,
+): Promise<void> {
+  const session = await requireCapability('orders.fulfil')
+  let outcome: Outcome
+
+  try {
+    const [line] = await db
+      .select({
+        kind: orderItems.kind,
+        nameSnapshot: orderItems.nameSnapshot,
+        fulfilmentStatus: orderItems.fulfilmentStatus,
+        orderStatus: orders.status,
+        userId: orders.userId,
+        optIn: users.whatsappOptIn,
+        phone: users.phone,
+        locale: users.locale,
+        deletedAt: users.deletedAt,
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .leftJoin(users, eq(users.id, orders.userId))
+      .where(and(eq(orderItems.id, orderItemId), eq(orderItems.orderId, orderId)))
+      .limit(1)
+
+    if (!line) throw new Error('That line does not belong to this order')
+    if (line.kind !== 'itinerary') throw new Error('Only itinerary lines have a PDF to send.')
+    if (!['paid', 'confirmed', 'partially_refunded'].includes(line.orderStatus)) {
+      throw new Error(`The order is ${line.orderStatus}; the customer cannot open the PDF.`)
+    }
+    if (line.fulfilmentStatus === 'refunded' || line.fulfilmentStatus === 'cancelled') {
+      throw new Error(`This line is ${line.fulfilmentStatus}; the customer cannot open the PDF.`)
+    }
+    if (!line.userId || line.deletedAt) throw new Error('This order has no customer account.')
+    if (line.optIn !== true) {
+      throw new Error('The customer has not opted in to WhatsApp messages.')
+    }
+    if (toWhatsappNumber(line.phone) === null) {
+      throw new Error(
+        'The customer has no international phone number (+country code) on their account.',
+      )
+    }
+
+    const locale = toMailLocale(line.locale)
+    const path = `/account/schedules/${orderItemId}/view`
+    const notificationId = await notifyUser(
+      line.userId,
+      'pdf_ready_whatsapp',
+      { name: pick(line.nameSnapshot, locale, 'Itinerary'), link: absoluteUrl(path, locale) },
+      path,
+      { whatsapp: true },
+    )
+    if (notificationId === null) {
+      throw new Error('The WhatsApp message could not be queued. Try again shortly.')
+    }
+
+    await writeAudit({
+      actor: session,
+      action: 'order_item.pdf_whatsapp',
+      entityType: 'order_item',
+      entityId: orderItemId,
+      before: null,
+      after: { orderId, notificationId },
+    })
+    outcome = { ok: 'Queued on WhatsApp with a link to the itinerary in their account.' }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(detail(orderId), outcome))
 }

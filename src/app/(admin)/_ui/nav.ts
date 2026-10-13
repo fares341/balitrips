@@ -37,6 +37,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Catalog',
     items: [
       { path: '/media', label: 'Media library', capability: 'media.upload' },
+      { path: '/files', label: 'PDF files', capability: 'content.read' },
       { path: '/activities', label: 'Activities', capability: 'content.read' },
       { path: '/itineraries', label: 'Itineraries', capability: 'content.read' },
       { path: '/packages', label: 'Packages', capability: 'content.read' },

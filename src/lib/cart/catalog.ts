@@ -19,7 +19,7 @@
  * rather than quietly selling something withdrawn from sale.
  */
 
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
@@ -151,7 +151,15 @@ export async function loadCartCatalog(
             heroImageId: activities.heroImageId,
           })
           .from(activities)
-          .where(and(inArray(activities.id, activityIds), isNull(activities.deletedAt)))
+          .where(
+            and(
+              inArray(activities.id, activityIds),
+              isNull(activities.deletedAt),
+              // فعالية مؤرَّخة انتهت لا تُباع (نفس قاعدة صفحة الفعاليات: النهاية، أو يوم
+              // بعد البداية بلا نهاية). غير المؤرَّخة دائماً متاحة.
+              sql`coalesce(${activities.eventEndsAt}, ${activities.eventStartsAt} + interval '1 day', 'infinity'::timestamptz) >= now()`,
+            ),
+          )
       : Promise.resolve([]),
     itineraryIds.length
       ? db

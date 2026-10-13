@@ -12,7 +12,7 @@ import { fenum } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { CONTACT_STATUSES, TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { requireCapability } from '../../_lib/session'
-import { notifyRequestStatus } from './notify'
+import { logRequestActivity, notifyRequestStatus } from './notify'
 
 const LIST = adminHref('/leads')
 
@@ -32,7 +32,7 @@ export async function setTripRequestStatus(id: string, form: FormData): Promise<
   try {
     const status = fenum(form, 'status', TRIP_STATUSES, 'new')
 
-    await db.transaction(async (tx) => {
+    const previous = await db.transaction(async (tx) => {
       const [before] = await tx
         .select()
         .from(customTripRequests)
@@ -58,9 +58,14 @@ export async function setTripRequestStatus(id: string, form: FormData): Promise<
         },
         tx,
       )
+      return before.status
     })
 
-    await notifyRequestStatus(id, status)
+    // حفظ بلا تغيير في الحالة لا يُشعر أحداً (ولا يرسل بريداً لعنوان ضيف).
+    if (previous !== status) {
+      await logRequestActivity(id, 'status', { from: previous, status, by: session.userId })
+      await notifyRequestStatus(id, status)
+    }
     outcome = { ok: `Request marked ${status}.` }
   } catch (error) {
     if (isRedirectError(error)) throw error
