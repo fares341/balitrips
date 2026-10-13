@@ -3284,49 +3284,6 @@ select.bt-mchip option {
 }
 
 /* Pin swatches. Shared with any map legend that wants them. */
-.bt-legend-pin {
-  display: inline-grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50% 50% 50% 4px;
-  transform: rotate(-45deg);
-  flex-shrink: 0;
-}
-
-.bt-legend-pin svg {
-  transform: rotate(45deg);
-}
-
-[dir='rtl'] .bt-legend-pin {
-  border-radius: 50% 50% 4px 50%;
-  transform: rotate(45deg);
-}
-
-[dir='rtl'] .bt-legend-pin svg {
-  transform: rotate(-45deg);
-}
-
-.bt-legend-pin.free {
-  background: var(--palm);
-  color: var(--forest-deep);
-}
-
-.bt-legend-pin.paid {
-  background: var(--orange);
-  color: var(--on-orange);
-}
-
-.bt-legend-pin.vip {
-  background: var(--ivory);
-  color: var(--forest-deep);
-}
-
-.bt-legend-pin.gem {
-  background: var(--forest-deep);
-  color: var(--palm);
-  box-shadow: inset 0 0 0 2px var(--palm);
-}
 
 /* Ledger: value over label, separated by hairlines. */
 .bt-hero-ledger {
@@ -4236,23 +4193,6 @@ select.bt-mchip option {
 
 .bt-plan .btn {
   margin-top: auto;
-}
-
-.bt-hdriver-form {
-  background: var(--white);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: var(--shadow-lg);
-  color: var(--forest);
-}
-
-.bt-hdriver-form .muted {
-  color: var(--muted);
-}
-
-.bt-hdriver-form select.bt-input {
-  appearance: none;
-  -webkit-appearance: none;
 }
 
 .bt-bigmap {

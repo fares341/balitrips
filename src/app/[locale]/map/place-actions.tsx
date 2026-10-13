@@ -1,17 +1,16 @@
 'use client'
 
 /**
- * "احفظ" و"أضف إلى رحلتي" داخل لوحة المكان.
+ * "احفظ" و"أضف إلى رحلتي" — في بطاقة المكان على الخريطة وفي صفحة المكان.
  *
  * الخادم هو من يقرر (`../_actions/places.ts`): الزر لا يعرف إن كانت الباقة
  * تسمح، ويعرض ما يعيده الخادم — بما في ذلك "سجّل الدخول" أو "رقِّ باقتك".
  */
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { Button, LinkButton } from '@/components/shared'
-import { Icon } from '@/components/ui'
+import { Button, LinkButton } from '@/components/bt'
 
 import {
   addPlaceToTrip,
@@ -35,10 +34,16 @@ export function PlaceActions({
   placeId,
   canFavorite,
   canAddToTrip,
+  layout = 'grid',
+  children,
 }: {
   placeId: string
   canFavorite: boolean
   canAddToTrip: boolean
+  /** `grid`: two columns (map card). `stack`: full-width column (place page). */
+  layout?: 'grid' | 'stack'
+  /** Extra buttons placed in the same group (Details, Directions…). */
+  children?: ReactNode
 }) {
   const t = useTranslations()
   const [pending, startTransition] = useTransition()
@@ -47,7 +52,7 @@ export function PlaceActions({
   const [inTrip, setInTrip] = useState(false)
 
   // الحالة الحقيقية من الخادم: الزر يعرض "محفوظ" لمكان محفوظ، فلا يحذفه أحد بالخطأ.
-  // المكوّن يُعاد تركيبه لكل مكان (`key={place.id}` في اللوحة)، فلا حالة قديمة تُصفَّر هنا.
+  // المكوّن يُعاد تركيبه لكل مكان (`key={place.id}`)، فلا حالة قديمة تُصفَّر هنا.
   useEffect(() => {
     let live = true
     void placeUserState(placeId).then((state) => {
@@ -59,8 +64,6 @@ export function PlaceActions({
       live = false
     }
   }, [placeId])
-
-  if (!canFavorite && !canAddToTrip) return null
 
   const run = (action: (id: string) => Promise<PlaceActionResult>) =>
     startTransition(async () => {
@@ -74,33 +77,35 @@ export function PlaceActions({
   const key = result === null ? null : MESSAGE[result.ok ? result.state : result.reason]
 
   return (
-    <div style={{ marginTop: 14 }}>
-      <div className="row" style={{ gap: 8 }}>
+    <div className="mp-actions-wrap">
+      <div className={layout === 'grid' ? 'mp-actions' : 'mp-actions is-stack'}>
+        {children}
+        {canAddToTrip && (
+          <Button
+            variant="primary"
+            size="sm"
+            icon={inTrip ? 'check' : 'plus'}
+            disabled={pending || inTrip}
+            onClick={() => run(addPlaceToTrip)}
+          >
+            {inTrip ? t('map_trip_already') : t('bt_add_trip')}
+          </Button>
+        )}
         {canFavorite && (
           <Button
             variant="ghost"
             size="sm"
+            icon="heart"
             disabled={pending}
             aria-pressed={saved}
             onClick={() => run(toggleFavoritePlace)}
           >
-            <Icon name="heart" size={15} /> {saved ? t('mp_faved') : t('map_save')}
-          </Button>
-        )}
-        {canAddToTrip && (
-          <Button
-            variant="forest"
-            size="sm"
-            disabled={pending || inTrip}
-            onClick={() => run(addPlaceToTrip)}
-          >
-            <Icon name="route" size={15} color="#fff" />{' '}
-            {inTrip ? t('map_trip_already') : t('map_add_trip')}
+            {saved ? t('mp_faved') : t('map_save')}
           </Button>
         )}
       </div>
       {key !== null && key !== undefined && (
-        <p role="status" className="muted" style={{ fontSize: 12.5, marginTop: 8 }}>
+        <p role="status" className="muted mp-action-note">
           {t(key)}{' '}
           {result?.ok === false && result.reason === 'signed_out' && (
             <LinkButton href="/account" variant="ghost" size="sm">

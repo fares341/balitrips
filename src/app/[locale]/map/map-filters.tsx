@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * فلاتر الخريطة — مشتركة بين الخريطة المسطحة (map-explorer) والثلاثية (map-surface).
+ * فلاتر الخريطة (map-app): البحث والتصنيف والمنطقة والوسوم و"قريب مني".
  *
  * كانت كل واجهة تحمل نسختها من البحث والفلترة، فانحرفتا: الثلاثية بقيت تقارن
  * بالنصوص الإنجليزية القديمة للوسوم بعد انتقالها لمفاتيح `tags.key`. مصدر
@@ -20,10 +20,9 @@
  *  - الترتيب (8.6): الأقرب، داخل المنطقة، أولوية الإدارة، VIP لمشترك VIP، الأشهر
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useLocale, useTranslations } from 'next-intl'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale } from 'next-intl'
 
-import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
@@ -42,7 +41,6 @@ import type { MapPin } from './projection'
 const DEFAULT_RADIUS_KM = 5
 /** توقف الكتابة قبل تسجيل البحث (`search_map`) — لا نسجّل كل حرف. */
 const SEARCH_LOG_IDLE_MS = 1500
-const RADIUS_CHOICES = [2, 5, 10, 25] as const
 
 export type GeoStatus = 'idle' | 'locating' | 'denied' | 'outside'
 
@@ -51,19 +49,31 @@ export interface MapFilterOptions {
   taxonomy: MapTaxonomy
   /** المستخدم يملك VIP: أماكن VIP قبل غيرها (الوثيقة 8.6، البند 4). */
   vipFirst: boolean
+  /** From the URL (`/map?q=…&cat=…&region=…`): links from the home page and search. */
+  initialQuery?: string
+  initialCategory?: string | null
+  initialRegion?: string | null
 }
 
 export function useMapFilters(
   pins: readonly MapPin[],
   onPickPlace: (pin: MapPin) => void,
-  { taxonomy, vipFirst }: MapFilterOptions,
+  { taxonomy, vipFirst, initialQuery, initialCategory, initialRegion }: MapFilterOptions,
 ) {
   const locale = useLocale() as Locale
-  const [query, setQueryText] = useState('')
+  const [query, setQueryText] = useState(initialQuery ?? '')
   const [filterTag, setFilterTag] = useState<string | null>(null)
   /** المنطقة المختارة من القائمة أو الخريطة. الجملة قد تسمّي غيرها (انظر `region`). */
-  const [regionChoice, setRegionChoice] = useState<string | null>(null)
-  const [category, setCategory] = useState<string | null>(null)
+  const [regionChoice, setRegionChoice] = useState<string | null>(() =>
+    initialRegion && taxonomy.regions.some((entry) => entry.key === initialRegion)
+      ? initialRegion
+      : null,
+  )
+  const [category, setCategory] = useState<string | null>(() =>
+    initialCategory && taxonomy.categories.some((entry) => entry.key === initialCategory)
+      ? initialCategory
+      : null,
+  )
   const [gemsOnly, setGemsOnly] = useState(false)
   const [near, setNear] = useState<LatLon | null>(null)
   /** null = أي مسافة: "قريب مني" في الجملة يرتّب بالأقرب ولا يقطع عند 5 كم. */
@@ -257,7 +267,8 @@ export function useMapFilters(
       setGeoStatus('idle')
       return
     }
-    requestLocation(false)
+    // "قريب مني" في الخريطة يرتّب بالأقرب أولاً ولا يقطع بمسافة (التصميم v3).
+    requestLocation(true)
   }
 
   return {
@@ -285,164 +296,3 @@ export function useMapFilters(
 }
 
 export type MapFilters = ReturnType<typeof useMapFilters>
-
-/**
- * الشريط العلوي فوق الخريطة. نفس الأصناف CSS في الواجهتين.
- * `children`: أزرار خاصة بواجهة (مثل "اعرض المناطق" في المسطحة).
- */
-export function MapFilterBar({ f, children }: { f: MapFilters; children?: ReactNode }) {
-  const t = useTranslations()
-  const geoFailed = f.geoStatus === 'denied' || f.geoStatus === 'outside'
-  return (
-    <div className="bt-mapui">
-      <div className="bt-mapsearch">
-        <Icon name="search" size={19} color="#5b6b5c" />
-        <input
-          type="search"
-          value={f.query}
-          onChange={(event) => f.setQuery(event.target.value)}
-          placeholder={t('map_search')}
-          aria-label={t('map_search')}
-          autoComplete="off"
-        />
-      </div>
-      {f.suggestions.length > 0 && (
-        <ul className="bt-mapsuggest" aria-label={t('map_suggestions')}>
-          {f.suggestions.map((item, index) => (
-            <li key={`${item.type}-${index}`}>
-              <button type="button" onClick={() => f.applySuggestion(item)}>
-                <Icon
-                  name={item.type === 'place' ? 'pin' : item.type === 'tag' ? 'tag' : 'search'}
-                  size={14}
-                />{' '}
-                <bdi>{item.label}</bdi>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="bt-mapchips">
-        <button
-          type="button"
-          className={f.filterTag === null ? 'bt-mchip on' : 'bt-mchip'}
-          aria-pressed={f.filterTag === null}
-          onClick={() => f.setFilterTag(null)}
-        >
-          {t('map_f_all')}
-        </button>
-        {f.facets.tags.map(([key, label]) => {
-          const on = key === f.filterTag
-          return (
-            <button
-              key={key}
-              type="button"
-              className={on ? 'bt-mchip on' : 'bt-mchip'}
-              aria-pressed={on}
-              onClick={() => f.setFilterTag(on ? null : key)}
-            >
-              <bdi>{label}</bdi>
-            </button>
-          )
-        })}
-        <button
-          type="button"
-          className={f.gemsOnly ? 'bt-mchip on' : 'bt-mchip'}
-          aria-pressed={f.gemsOnly}
-          onClick={() => f.setGemsOnly(!f.gemsOnly)}
-        >
-          <Icon name="gem" size={13} /> {t('map_f_gems')}
-        </button>
-      </div>
-
-      <div className="bt-mapchips" style={{ marginTop: 8 }}>
-        <select
-          className={f.region !== null ? 'bt-mchip on' : 'bt-mchip'}
-          aria-label={t('map_region')}
-          value={f.region ?? ''}
-          onChange={(event) =>
-            f.chooseRegion(event.target.value === '' ? null : event.target.value)
-          }
-        >
-          <option value="">{t('map_region_all')}</option>
-          {f.facets.regions.map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          className={f.category !== null ? 'bt-mchip on' : 'bt-mchip'}
-          aria-label={t('map_category')}
-          value={f.category ?? ''}
-          onChange={(event) => f.setCategory(event.target.value === '' ? null : event.target.value)}
-        >
-          <option value="">{t('map_category_all')}</option>
-          {f.facets.categories.map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          className={f.near !== null ? 'bt-mchip on' : 'bt-mchip'}
-          aria-pressed={f.near !== null}
-          onClick={f.locate}
-        >
-          <Icon name="pin" size={13} />{' '}
-          {f.geoStatus === 'locating' ? t('map_locating') : t('map_near_me')}
-        </button>
-        {f.near !== null && (
-          <select
-            className="bt-mchip"
-            aria-label={t('map_radius')}
-            value={f.radiusKm ?? ''}
-            onChange={(event) =>
-              f.setRadiusKm(event.target.value === '' ? null : Number(event.target.value))
-            }
-          >
-            {RADIUS_CHOICES.map((km) => (
-              <option key={km} value={km}>
-                {t('map_within_km', { km })}
-              </option>
-            ))}
-            <option value="">{t('map_any_distance')}</option>
-          </select>
-        )}
-        {children}
-      </div>
-
-      {f.near !== null && f.understood.nearMe && (
-        <p role="status" className="bt-mapnote">
-          {t('map_sorted_near')}
-        </p>
-      )}
-      {geoFailed && (
-        // الموقع مرفوض أو خارج بالي: الشرح، ثم المناطق نفسها كاختيار بارز (الوثيقة 9.3).
-        <div role="status" className="bt-mapnote bt-geo-areas">
-          <p>
-            {t(f.geoStatus === 'denied' ? 'map_geo_denied' : 'map_geo_outside')}
-            {f.understood.nearMe && <> {t('map_geo_fallback')}</>}
-          </p>
-          <div className="bt-geo-area-list" aria-label={t('map_pick_area')}>
-            {f.facets.regions.map(([key, label]) => {
-              const on = key === f.region
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className={on ? 'bt-mchip on' : 'bt-mchip'}
-                  aria-pressed={on}
-                  onClick={() => f.chooseRegion(on ? null : key)}
-                >
-                  <bdi>{label.replace(/^— /, '')}</bdi>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}

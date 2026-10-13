@@ -23,11 +23,11 @@ import '@/styles/components.css'
 // The premium layer (header, home, plans, detail hero, footer). Last, so it
 // refines the base components rather than being overridden by them.
 import '@/styles/premium.css'
-// The home hero's living map (only the home page renders `.lmh`).
-import '@/styles/hero.css'
 // v3 design system (design-reference/prototype/assets/bt.css). Last: it is
 // the authority wherever it shares a class name with the sheets above.
 import '@/styles/bt.css'
+// v3 home page sections (scoped to `.home-v3`), after bt.css.
+import '@/styles/bt-home.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))

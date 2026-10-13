@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest'
+
+import { emptyEntitlements, makeEntitlementSet, type FullMapPlace } from '@/lib/entitlements'
+import type { MapRegion } from '@/lib/search/query'
+
+import { buildFreeZone, buildRegionBubbles } from './regions'
+
+const region = (key: string, extra: Partial<MapRegion> = {}): MapRegion => ({
+  key,
+  label: { en: key },
+  parentKey: null,
+  centerLat: null,
+  centerLon: null,
+  radiusKm: null,
+  ...extra,
+})
+
+const REGIONS: MapRegion[] = [
+  region('central'),
+  region('ubud', { parentKey: 'central', centerLat: -8.5069, centerLon: 115.2625, radiusKm: 6 }),
+  region('islands'),
+]
+
+const place = (id: string, regionKey: string, parent: string | null, isFree: boolean) =>
+  ({
+    id,
+    slug: id,
+    name: { en: `Secret ${id}` },
+    lat: -8.777777,
+    lon: 115.555555,
+    isFree,
+    requiredEntitlement: 'map_access',
+    regionKey,
+    parentRegionKey: parent,
+  }) as unknown as FullMapPlace
+
+const PLACES = [
+  place('a', 'ubud', 'central', true),
+  place('b', 'islands', null, false),
+  place('c', 'islands', null, false),
+]
+
+describe('buildRegionBubbles', () => {
+  it('reports locked counts per region without any place data', () => {
+    const bubbles = buildRegionBubbles(PLACES, REGIONS, emptyEntitlements(), 'ubud')
+    const json = JSON.stringify(bubbles)
+    expect(json).not.toContain('Secret')
+    expect(json).not.toContain('777777')
+    expect(json).not.toContain('555555')
+    const islands = bubbles.find((b) => b.key === 'islands')
+    expect(islands?.lockedCount).toBe(2)
+    expect(islands?.locked).toBe(true)
+    const ubud = bubbles.find((b) => b.key === 'ubud')
+    expect(ubud?.locked).toBe(false)
+    // `central` is represented by its area (ubud), not double-counted.
+    expect(bubbles.some((b) => b.key === 'central')).toBe(false)
+  })
+
+  it('unlocks everything for map_access', () => {
+    const bubbles = buildRegionBubbles(PLACES, REGIONS, makeEntitlementSet(['map_access']), 'ubud')
+    expect(bubbles.every((b) => !b.locked && b.lockedCount === 0)).toBe(true)
+  })
+})
+
+describe('buildFreeZone', () => {
+  it('uses the region centre and radius', () => {
+    expect(buildFreeZone(REGIONS, 'ubud')).toMatchObject({
+      lat: -8.5069,
+      lon: 115.2625,
+      radiusKm: 6,
+    })
+    expect(buildFreeZone(REGIONS, 'nowhere')).toBeNull()
+  })
+})

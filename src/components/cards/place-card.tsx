@@ -32,9 +32,14 @@ const PLANS_HREF = '/plans'
 export type PlaceCardProps = {
   place: MapPlaceForClient
   priority?: boolean
+  /**
+   * Show the "Free preview" chip on free places (default). Off where every
+   * card is free anyway (the home page's free-place sections).
+   */
+  showFree?: boolean
 }
 
-export function PlaceCard({ place, priority = false }: PlaceCardProps) {
+export function PlaceCard({ place, priority = false, showFree = true }: PlaceCardProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
 
@@ -67,10 +72,10 @@ export function PlaceCard({ place, priority = false }: PlaceCardProps) {
         src={place.heroImageUrl}
         priority={priority}
         badges={
-          category !== null || place.isFree ? (
+          category !== null || (showFree && place.isFree) ? (
             <>
               {category !== null && <Tag variant="glass">{category}</Tag>}
-              {place.isFree && <Tag variant="sun">{t('mp_free')}</Tag>}
+              {showFree && place.isFree && <Tag variant="sun">{t('mp_free')}</Tag>}
             </>
           ) : null
         }
