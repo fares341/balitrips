@@ -146,6 +146,8 @@ if [[ "$PHOTOS" == 1 || "${PHOTO_COUNT:-0}" == 0 ]]; then
   "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/import-photos.ts ||
     echo "  ! Photo import failed — placeholders stay. Retry later: ./deploy/start-production.sh --photos"
 fi
+# Report where every one of the 52 photos stands (read-only, never fails the run).
+"${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/verify-media.ts 2>/dev/null | tail -n 3 || true
 
 # --- App image --------------------------------------------------------------
 # `next build` reads the database (prerendered pages). The build container
