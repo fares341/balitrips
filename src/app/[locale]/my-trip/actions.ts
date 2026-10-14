@@ -17,7 +17,14 @@
 import { revalidatePath } from 'next/cache'
 
 import { bookingsOpen } from '@/lib/bookings-open'
-import { addItem, clearCart, removeItem, updateQuantity, type AddItemInput } from '@/lib/cart'
+import {
+  addDriverToBooking,
+  addItem,
+  clearCart,
+  removeItem,
+  updateQuantity,
+  type AddItemInput,
+} from '@/lib/cart'
 
 export interface CartActionResult {
   ok: boolean
@@ -32,7 +39,7 @@ export interface CartActionResult {
  * is what would otherwise show a stale trip after a back navigation.
  */
 function revalidateCartRoutes(): void {
-  revalidatePath('/[locale]/cart', 'page')
+  revalidatePath('/[locale]/my-trip', 'page')
   revalidatePath('/[locale]/checkout', 'page')
 }
 
@@ -80,4 +87,36 @@ export async function addToCartAction(input: AddItemInput): Promise<CartActionRe
   const result = await addItem(input)
   revalidateCartRoutes()
   return { ok: true, itemCount: result.itemCount }
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export interface DriversActionResult {
+  ok: boolean
+  itemCount: number
+  /** Set when a car could not be added for at least one activity. */
+  reason?: 'bookings_closed' | 'driver_full' | 'invalid'
+}
+
+/**
+ * "Yes, add a driver" in the confirmation shown before payment: one linked
+ * driver line per activity named, over that activity's own dates. The ids
+ * are only a selection — `addDriverToBooking` re-reads each line from the
+ * caller's own cart and prices nothing from the browser.
+ */
+export async function addDriversAction(itemIds: unknown): Promise<DriversActionResult> {
+  if (!bookingsOpen()) return { ok: false, itemCount: 0, reason: 'bookings_closed' }
+  if (!Array.isArray(itemIds) || itemIds.length === 0 || itemIds.length > 20) {
+    return { ok: false, itemCount: 0, reason: 'invalid' }
+  }
+  let itemCount = 0
+  let full = false
+  for (const id of itemIds) {
+    if (typeof id !== 'string' || !UUID.test(id)) return { ok: false, itemCount, reason: 'invalid' }
+    const result = await addDriverToBooking(id)
+    if (result.ok) itemCount = result.itemCount
+    else if (result.code === 'driver_full') full = true
+  }
+  revalidateCartRoutes()
+  return full ? { ok: false, itemCount, reason: 'driver_full' } : { ok: true, itemCount }
 }

@@ -29,6 +29,6 @@ export async function buyPlan(form: FormData): Promise<void> {
   }
 
   await addItem({ kind: 'plan', refId: plan.id })
-  revalidatePath('/[locale]/cart', 'page')
-  redirect({ href: '/cart', locale })
+  revalidatePath('/[locale]/my-trip', 'page')
+  redirect({ href: '/my-trip', locale })
 }

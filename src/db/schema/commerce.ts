@@ -146,6 +146,8 @@ export const orders = pgTable(
       phone?: string
       country?: string
       locale: string
+      /** Lead traveller's note for the provider (checkout step 1). */
+      notes?: string
     }>(),
 
     /**
@@ -157,9 +159,22 @@ export const orders = pgTable(
     termsVersion: varchar('terms_version', { length: 32 }),
 
     placedAt: timestamp('placed_at', { withTimezone: true }),
+
+    /**
+     * Guest checkout: sha256 of the placing browser's `bt_guest` cookie, so
+     * that browser — and nobody else — can open the order page. Null for an
+     * order placed while signed in.
+     */
+    guestTokenHash: varchar('guest_token_hash', { length: 64 }),
+    /** The cart the order was placed from; the webhook empties a guest's cart by it. */
+    sourceCartId: uuid('source_cart_id'),
     ...timestamps,
   },
-  (t) => [index('orders_user_idx').on(t.userId), index('orders_status_idx').on(t.status)],
+  (t) => [
+    index('orders_user_idx').on(t.userId),
+    index('orders_status_idx').on(t.status),
+    index('orders_guest_token_idx').on(t.guestTokenHash),
+  ],
 )
 
 export const orderItems = pgTable(
@@ -193,6 +208,15 @@ export const orderItems = pgTable(
 
     /** pending | confirmed | delivered | cancelled | refunded */
     fulfilmentStatus: varchar('fulfilment_status', { length: 24 }).notNull().default('pending'),
+    /**
+     * Provider-facing life of the booked item (v3 handoff, migration 0014):
+     * created → sent_to_provider → confirmed → completed, and
+     * cancel_requested → cancelled → refunded. "confirmed" is set only when
+     * the provider confirms — never by payment; digital products complete on
+     * payment. Rules in `@/lib/orders/booking-status`.
+     */
+    bookingStatus: varchar('booking_status', { length: 24 }).notNull().default('created'),
+    bookingStatusAt: timestamp('booking_status_at', { withTimezone: true }),
     refundedMinor: moneyMinor('refunded_minor').notNull().default(0),
 
     parentItemId: uuid('parent_item_id'),

@@ -80,14 +80,14 @@ function escapeHtml(value: string): string {
  * arrives from a genuine bank page.
  */
 function safeReturnUrl(raw: string | null): string {
-  if (raw === null || raw === '') return `${SITE_URL}/cart`
+  if (raw === null || raw === '') return `${SITE_URL}/my-trip`
   try {
     const candidate = new URL(raw, SITE_URL)
     const site = new URL(SITE_URL)
-    if (candidate.origin !== site.origin) return `${SITE_URL}/cart`
+    if (candidate.origin !== site.origin) return `${SITE_URL}/my-trip`
     return candidate.toString()
   } catch {
-    return `${SITE_URL}/cart`
+    return `${SITE_URL}/my-trip`
   }
 }
 

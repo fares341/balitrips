@@ -372,7 +372,7 @@ export async function payCustomQuote(form: FormData): Promise<void> {
   } else {
     try {
       await addItem({ kind: 'custom', refId: requestId, quantity: 1 })
-      revalidatePath('/[locale]/cart', 'page')
+      revalidatePath('/[locale]/my-trip', 'page')
       revalidatePath('/[locale]/checkout', 'page')
     } catch (error) {
       if (!(error instanceof CartRejectedError)) {

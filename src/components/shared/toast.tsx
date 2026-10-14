@@ -39,7 +39,7 @@ import { Link } from '@/i18n/routing'
 export type ToastOptions = {
   /** Error styling (dark red) and an alert icon. */
   error?: boolean
-  /** Trailing link, e.g. { href: '/cart', label: t('bt_my_trip') }. */
+  /** Trailing link, e.g. { href: '/my-trip', label: t('bt_my_trip') }. */
   link?: { href: string; label: string }
 }
 

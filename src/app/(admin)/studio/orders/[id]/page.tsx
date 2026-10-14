@@ -7,6 +7,7 @@ import { entitlements, orderItems, orders, payments, refunds, users } from '@/db
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { isBookingStatus, nextBookingStatuses } from '@/lib/orders/booking-status'
 import { isRefundable, type OrderStatus } from '@/lib/orders/state'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -21,9 +22,16 @@ import {
   markOrderPaidOffline,
   refundOrderItem,
   sendItineraryPdfWhatsapp,
+  setBookingStatus,
   setLineFulfilment,
 } from '../actions'
-import { fulfilmentLabel, orderStatusLabel, paymentMethodName, paymentStatusLabel } from '../labels'
+import {
+  bookingStatusLabel,
+  fulfilmentLabel,
+  orderStatusLabel,
+  paymentMethodName,
+  paymentStatusLabel,
+} from '../labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,6 +39,17 @@ const FULFILMENT_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'in
   pending: 'warn',
   confirmed: 'info',
   delivered: 'good',
+  cancelled: 'bad',
+  refunded: 'bad',
+}
+
+/** Booking ladder (provider status) tones. "Confirmed" is the provider's word only. */
+const BOOKING_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'info'> = {
+  created: 'neutral',
+  sent_to_provider: 'warn',
+  confirmed: 'good',
+  completed: 'good',
+  cancel_requested: 'warn',
   cancelled: 'bad',
   refunded: 'bad',
 }
@@ -251,6 +270,7 @@ export default async function OrderDetailPage({
               <th className="num">{t('orders.col_line_total')}</th>
               <th className="num">{t('orders.col_refunded')}</th>
               <th>{t('orders.col_fulfilment')}</th>
+              <th>{t('orders.col_booking')}</th>
             </tr>
           </thead>
           <tbody>
@@ -316,6 +336,44 @@ export default async function OrderDetailPage({
                         title={t('orders.whatsapp_title')}
                       >
                         {t('orders.whatsapp_btn')}
+                      </button>
+                    </form>
+                  ) : null}
+                </td>
+                <td>
+                  <Pill tone={BOOKING_TONES[line.bookingStatus] ?? 'neutral'}>
+                    {bookingStatusLabel(t, line.bookingStatus)}
+                  </Pill>
+                  {line.bookingStatusAt !== null ? (
+                    <div className="a-muted">
+                      <When value={line.bookingStatusAt} />
+                    </div>
+                  ) : null}
+                  {mayFulfil &&
+                  isBookingStatus(line.bookingStatus) &&
+                  nextBookingStatuses(line.bookingStatus).length > 0 ? (
+                    <form
+                      className="a-inline-form"
+                      action={setBookingStatus.bind(null, row.id)}
+                      style={{ display: 'grid', gap: 6, marginBlockStart: 6 }}
+                    >
+                      <input type="hidden" name="orderItemId" value={line.id} />
+                      <label className="a-muted" htmlFor={`bs-${line.id}`}>
+                        {t('orders.booking_move_to')}
+                      </label>
+                      <select className="a-input" id={`bs-${line.id}`} name="bookingStatus">
+                        {nextBookingStatuses(line.bookingStatus).map((next) => (
+                          <option key={next} value={next}>
+                            {bookingStatusLabel(t, next)}
+                          </option>
+                        ))}
+                      </select>
+                      <label className="a-muted" style={{ display: 'flex', gap: 6 }}>
+                        <input type="checkbox" name="notify" defaultChecked />
+                        {t('orders.booking_notify')}
+                      </label>
+                      <button className="a-btn ghost small" type="submit">
+                        {t('orders.booking_save')}
                       </button>
                     </form>
                   ) : null}

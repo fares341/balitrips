@@ -1,19 +1,21 @@
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, payments, planMembers, webhookEvents } from '@/db/schema'
+import {
+  auditLog,
+  entitlements,
+  orderItems,
+  orders,
+  payments,
+  planMembers,
+  webhookEvents,
+} from '@/db/schema'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { releaseCustomRequestsPayment } from '@/lib/orders/custom-request'
-import { releaseDriverCapacity } from '@/lib/availability/capacity'
-import type { VehicleClass } from '@/lib/booking-rules'
 import type { WebhookEvent } from '@/lib/payments'
 
-import {
-  canTransition,
-  shouldRevokeEntitlements,
-  statusForWebhook,
-  type OrderStatus,
-} from './state'
+import { bookingStatusAfterPaid, isBookingStatus } from './booking-status'
+import { canTransition, statusForWebhook, type OrderStatus } from './state'
 
 /**
  * Webhook processing.
@@ -27,12 +29,26 @@ import {
  *   1. Replay is a no-op, enforced by a unique index on (provider, eventId).
  *   2. State never regresses; a late event for an already-terminal order is
  *      recorded and ignored rather than applied.
- *   3. Cancelling releases the capacity the order was holding, so an
- *      abandoned checkout does not keep a van off the market forever.
+ *   3. A failed attempt leaves the order open (and its capacity held) so
+ *      the SAME order can be paid again; the expiry sweep cancels it and
+ *      returns the capacity if nobody does, so an abandoned checkout does
+ *      not keep a van off the market forever.
  */
 
 export type WebhookOutcome =
-  | { handled: true; orderId: string; from: OrderStatus; to: OrderStatus }
+  | {
+      handled: true
+      orderId: string
+      from: OrderStatus
+      to: OrderStatus
+      /**
+       * Set when a payment attempt failed or expired on an unpaid order. The
+       * order stays `pending` so the customer can pay the SAME order again
+       * (v3 handoff: a retry never duplicates the order); the expiry sweep
+       * cancels it and returns its capacity if nobody does.
+       */
+      paymentFailed?: true
+    }
   | { handled: false; reason: 'duplicate' | 'no_order' | 'no_transition' | 'ignored' }
 
 export async function processWebhookEvent(
@@ -119,6 +135,28 @@ export async function processWebhookEvent(
       return { handled: false, reason: 'no_transition' } as const
     }
 
+    if (isFailureEvent) {
+      /**
+       * A declined or abandoned attempt closes that attempt, not the order.
+       * Cancelling here (as this did before v3) threw the order away and made
+       * "Try again" create a second one; keeping it `pending` with its
+       * capacity held lets the retry pay the same order number. Abandoned
+       * orders are still cancelled — by `capacity.release-expired`, which
+       * only acts once no attempt is live.
+       */
+      await tx
+        .update(payments)
+        .set({ status: event.type === 'payment.cancelled' ? 'cancelled' : 'failed' })
+        .where(
+          and(
+            eq(payments.providerPaymentId, event.providerPaymentId),
+            ne(payments.status, 'succeeded'),
+          ),
+        )
+      await markProcessed(tx, provider, event.providerEventId)
+      return { handled: true, orderId: order.id, from, to: from, paymentFailed: true } as const
+    }
+
     if (target === 'paid' && from === 'paid') {
       // A second, real charge for an order already paid — typically one an
       // admin marked paid offline while the customer's card checkout was still
@@ -161,14 +199,12 @@ export async function processWebhookEvent(
       // يكون فيها الطلب مدفوعاً والخريطة مقفلة.
       if (target === 'paid') {
         await grantOrderPlans(tx, order.id)
+        await completeDigitalItems(tx, order.id)
       }
 
-      if (target === 'cancelled') {
-        await releaseHeldCapacity(tx, order.id)
-        if (shouldRevokeEntitlements(target)) {
-          await revokeOrderEntitlements(tx, order.id, 'order cancelled')
-        }
-      }
+      // No `cancelled` branch any more: a failure event never cancels (see
+      // above). Unpaid orders are cancelled — capacity returned, access
+      // revoked — by `cancelUnpaidOrder` in the expiry sweep.
     }
 
     await markProcessed(tx, provider, event.providerEventId)
@@ -188,29 +224,34 @@ async function markProcessed(tx: Tx, provider: string, providerEventId: string):
 }
 
 /**
- * Return the fleet days an order was holding.
- *
- * Without this, an abandoned or failed checkout keeps a vehicle off the
- * market until someone notices by hand.
+ * Digital products — the itinerary file, map access, a paid custom itinerary
+ * — are delivered by the payment itself, so their booking status becomes
+ * `completed` in the transaction that records the money. Provider bookings
+ * are untouched: "confirmed" waits for the provider (handoff rule).
+ * Each change is written to the audit log, the order's timeline.
  */
-async function releaseHeldCapacity(tx: Tx, orderId: string): Promise<void> {
-  const lines = await tx
-    .select({
-      vehicleClass: orderItems.vehicleClass,
-      travelDate: orderItems.travelDate,
-      endDate: orderItems.endDate,
-    })
+async function completeDigitalItems(tx: Tx, orderId: string): Promise<void> {
+  const items = await tx
+    .select({ id: orderItems.id, kind: orderItems.kind, status: orderItems.bookingStatus })
     .from(orderItems)
-    .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'driver')))
-
-  for (const line of lines) {
-    if (!line.vehicleClass || !line.travelDate) continue
-    await releaseDriverCapacity(
-      tx,
-      line.vehicleClass as VehicleClass,
-      line.travelDate,
-      line.endDate ?? line.travelDate,
-    )
+    .where(eq(orderItems.orderId, orderId))
+  const now = new Date()
+  for (const item of items) {
+    if (!isBookingStatus(item.status)) continue
+    const next = bookingStatusAfterPaid(item.kind, item.status)
+    if (next === null) continue
+    await tx
+      .update(orderItems)
+      .set({ bookingStatus: next, bookingStatusAt: now })
+      .where(eq(orderItems.id, item.id))
+    await tx.insert(auditLog).values({
+      actorId: null,
+      action: 'order_item.booking_status',
+      entityType: 'order_item',
+      entityId: item.id,
+      before: { bookingStatus: item.status, orderId },
+      after: { bookingStatus: next, orderId, reason: 'paid' },
+    })
   }
 }
 

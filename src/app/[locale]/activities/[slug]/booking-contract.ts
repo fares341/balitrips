@@ -13,6 +13,25 @@ export interface BookActivityRequest {
   people: number
   addons: { id: string; qty: number }[]
   driver: boolean
+  /**
+   * "Edit" from My Trip: the trip line this booking replaces. Removed (with
+   * its linked driver) once the edited booking is saved, unless the saved
+   * booking IS that line.
+   */
+  replaceItemId?: string | null
+}
+
+/** A trip line loaded back into the booking box for editing. */
+export interface EditableBooking {
+  itemId: string
+  activityId: string
+  packageId: string | null
+  date: string
+  endDate: string | null
+  time: string | null
+  people: number
+  addons: { id: string; qty: number }[]
+  driver: boolean
 }
 
 /** Which booking-box step an issue belongs to, so the page can mark it. */

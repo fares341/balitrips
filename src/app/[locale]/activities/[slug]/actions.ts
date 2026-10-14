@@ -13,9 +13,19 @@
 import { revalidatePath } from 'next/cache'
 
 import { bookingsOpen } from '@/lib/bookings-open'
-import { addActivityBooking, type ActivityBookingIssue } from '@/lib/cart'
+import {
+  addActivityBooking,
+  getBookingForEdit,
+  removeItem,
+  type ActivityBookingIssue,
+} from '@/lib/cart'
 
-import type { BookActivityRequest, BookActivityResponse, BookingField } from './booking-contract'
+import type {
+  BookActivityRequest,
+  BookActivityResponse,
+  BookingField,
+  EditableBooking,
+} from './booking-contract'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/
@@ -70,6 +80,8 @@ function parse(input: unknown): BookActivityRequest | null {
     people,
     addons,
     driver: v.driver === true,
+    replaceItemId:
+      typeof v.replaceItemId === 'string' && UUID.test(v.replaceItemId) ? v.replaceItemId : null,
   }
 }
 
@@ -84,7 +96,8 @@ export async function bookActivityAction(input: unknown): Promise<BookActivityRe
   if (request.people < 1) return { ok: false, field: 'people', code: 'invalid_quantity' }
 
   try {
-    const result = await addActivityBooking(request)
+    const { replaceItemId, ...booking } = request
+    const result = await addActivityBooking(booking)
     if (!result.ok) {
       const first = result.issues[0]
       const code = first?.code ?? 'invalid'
@@ -93,16 +106,32 @@ export async function bookActivityAction(input: unknown): Promise<BookActivityRe
         : (FIELD_OF[code as ActivityBookingIssue] ?? 'form')
       return { ok: false, field, code }
     }
-    revalidatePath('/[locale]/cart', 'page')
+    // Edited from My Trip: the old line goes once the new one is stored.
+    let itemCount = result.itemCount
+    if (replaceItemId && replaceItemId !== result.itemId) {
+      itemCount = (await removeItem(replaceItemId)).itemCount
+    }
+    revalidatePath('/[locale]/my-trip', 'page')
     revalidatePath('/[locale]/checkout', 'page')
     return {
       ok: true,
-      itemCount: result.itemCount,
+      itemCount,
       totalMinor: result.totalMinor,
       currency: result.currency,
     }
   } catch (error) {
     console.error('[bookActivityAction]', error)
     return { ok: false, field: 'form', code: 'error' }
+  }
+}
+
+/** "Edit" on My Trip: the caller's own trip line, for the booking box to load. */
+export async function loadTripBookingAction(itemId: unknown): Promise<EditableBooking | null> {
+  if (typeof itemId !== 'string' || !UUID.test(itemId)) return null
+  try {
+    return await getBookingForEdit(itemId)
+  } catch (error) {
+    console.error('[loadTripBookingAction]', error)
+    return null
   }
 }

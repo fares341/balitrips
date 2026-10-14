@@ -33,6 +33,7 @@ import {
 } from '@/lib/orders/state'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { isOrderUpdateStatus, notifyOrderPaid, notifyOrderUpdated } from '@/lib/notify/orders'
+import { canMoveBooking, isBookingStatus, type BookingStatus } from '@/lib/orders/booking-status'
 import { revokeOrderEntitlements } from '@/lib/orders/webhook'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -41,7 +42,7 @@ import { fminor, fstr, fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
-import { fulfilmentLabel, orderStatusLabel } from './labels'
+import { bookingStatusLabel, fulfilmentLabel, orderStatusLabel } from './labels'
 
 type Outcome = { ok: string } | { err: string }
 
@@ -166,6 +167,10 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
           refundedMinor: lineRefunded,
           fulfilmentStatus:
             lineRefunded >= line.lineTotalMinor ? 'refunded' : line.fulfilmentStatus,
+          // A fully refunded line is refunded on the booking ladder too.
+          ...(lineRefunded >= line.lineTotalMinor
+            ? { bookingStatus: 'refunded', bookingStatusAt: new Date() }
+            : {}),
         })
         .where(eq(orderItems.id, orderItemId))
 
@@ -664,6 +669,105 @@ export async function sendItineraryPdfWhatsapp(
       after: { orderId, notificationId },
     })
     outcome = { ok: t('orders.ok_whatsapp_queued') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(detail(orderId), outcome))
+}
+
+/**
+ * The provider's answer for one booked item (v3 booking ladder):
+ * created → sent_to_provider → confirmed → completed, and
+ * cancel_requested → cancelled → refunded.
+ *
+ * This is the ONLY way an item becomes "confirmed" — payment never does it.
+ * Each change is written to the audit log, which the customer's order page
+ * shows as the item's timeline; the customer is notified when staff tick the
+ * box (handoff: "a notification … if the admin chooses").
+ *
+ * Minimal by design: the full bookings board is the Studio redesign (phase 7).
+ */
+export async function setBookingStatus(orderId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('orders.fulfil')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+
+  try {
+    const orderItemId = fuuid(form, 'orderItemId', t('orders.field_order_line'))
+    const raw = fstr(form, 'bookingStatus') ?? ''
+    if (!isBookingStatus(raw)) throw new Error(t('orders.err_unknown_booking', { status: raw }))
+    const next: BookingStatus = raw
+    const notify = form.get('notify') === 'on'
+
+    const previous = await db.transaction(async (tx) => {
+      const [line] = await tx
+        .select({
+          bookingStatus: orderItems.bookingStatus,
+          fulfilmentStatus: orderItems.fulfilmentStatus,
+          orderStatus: orders.status,
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orders.id, orderItems.orderId))
+        .where(and(eq(orderItems.id, orderItemId), eq(orderItems.orderId, orderId)))
+        .for('update')
+        .limit(1)
+      if (!line) throw new Error(t('orders.err_line_not_in_order'))
+      const from = isBookingStatus(line.bookingStatus) ? line.bookingStatus : 'created'
+      if (!canMoveBooking(from, next)) {
+        throw new Error(
+          t('orders.err_booking_move', {
+            from: bookingStatusLabel(t, from),
+            to: bookingStatusLabel(t, next),
+          }),
+        )
+      }
+      // An unpaid order has nothing to confirm with a provider yet.
+      const paid = ['paid', 'confirmed', 'partially_refunded', 'refunded'].includes(
+        line.orderStatus,
+      )
+      if (!paid && next !== 'cancelled') throw new Error(t('orders.err_booking_unpaid'))
+      if (from === next) return from
+
+      // Keep the older fulfilment column in step where they overlap, so
+      // vouchers and the account pages agree with the booking status.
+      const fulfilment =
+        line.fulfilmentStatus === 'refunded'
+          ? 'refunded'
+          : next === 'cancelled'
+            ? 'cancelled'
+            : next === 'completed'
+              ? 'delivered'
+              : next === 'confirmed' && line.fulfilmentStatus === 'pending'
+                ? 'confirmed'
+                : line.fulfilmentStatus
+
+      await tx
+        .update(orderItems)
+        .set({ bookingStatus: next, bookingStatusAt: new Date(), fulfilmentStatus: fulfilment })
+        .where(eq(orderItems.id, orderItemId))
+
+      await writeAudit(
+        {
+          actor: session,
+          action: 'order_item.booking_status',
+          entityType: 'order_item',
+          entityId: orderItemId,
+          before: { bookingStatus: from },
+          after: { bookingStatus: next },
+        },
+        tx,
+      )
+      return from
+    })
+
+    // After commit. The customer hears about the moves that matter to them.
+    const update = next === 'completed' ? 'delivered' : next
+    if (notify && previous !== next && isOrderUpdateStatus(update)) {
+      await notifyOrderUpdated(orderId, update, { by: session.userId, item: orderItemId })
+    }
+    outcome = { ok: t('orders.ok_booking_marked', { status: bookingStatusLabel(t, next) }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

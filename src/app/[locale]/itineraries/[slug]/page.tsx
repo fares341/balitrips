@@ -82,7 +82,7 @@ const FAQ_KEYS = [
  */
 function addToTripHref(slug: string): string {
   const query = new URLSearchParams({ add: 'itinerary', slug })
-  return `/cart?${query.toString()}`
+  return `/my-trip?${query.toString()}`
 }
 
 /**

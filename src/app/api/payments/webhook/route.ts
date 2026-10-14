@@ -37,7 +37,7 @@ import { eq } from 'drizzle-orm'
 import { after, NextResponse } from 'next/server'
 
 import { db } from '@/db'
-import { orders } from '@/db/schema'
+import { cartItems, orders } from '@/db/schema'
 import { clearCartForUser } from '@/lib/cart'
 import { recordPaymentMethod } from '@/lib/orders/payment-method'
 import { processWebhookEvent } from '@/lib/orders/webhook'
@@ -80,7 +80,12 @@ export async function POST(request: Request): Promise<Response> {
       await releaseCartFor(outcome.orderId)
       await notifyOrderPaid(outcome.orderId)
     }
-    if (outcome.handled && outcome.to === 'cancelled' && outcome.from === 'pending') {
+    // A failed attempt leaves the order open for a retry on the same order
+    // number (see processWebhookEvent); staff still hear about it.
+    if (
+      outcome.handled &&
+      (outcome.paymentFailed === true || (outcome.to === 'cancelled' && outcome.from === 'pending'))
+    ) {
       await notifyPaymentFailed(outcome.orderId)
     }
 
@@ -114,13 +119,18 @@ export async function POST(request: Request): Promise<Response> {
 async function releaseCartFor(orderId: string): Promise<void> {
   try {
     const rows = await db
-      .select({ userId: orders.userId })
+      .select({ userId: orders.userId, sourceCartId: orders.sourceCartId })
       .from(orders)
       .where(eq(orders.id, orderId))
       .limit(1)
 
     const userId = rows[0]?.userId
+    const sourceCartId = rows[0]?.sourceCartId ?? null
     if (userId) await clearCartForUser(userId)
+    // Guest checkout: no account to find the cart by, so the order carries it.
+    else if (sourceCartId !== null) {
+      await db.delete(cartItems).where(eq(cartItems.cartId, sourceCartId))
+    }
   } catch (error) {
     console.error('[payments/webhook] could not empty the cart', { orderId, error })
   }

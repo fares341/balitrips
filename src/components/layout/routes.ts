@@ -118,8 +118,8 @@ export const SERVICES_HREF = '/services'
 /** Where "Start Planning" leads (v3 package: the services hub). */
 export const START_PLANNING_HREF = '/services'
 export const SEARCH_HREF = '/search'
-/** "My Trip" — the cart page until the /my-trip route exists. */
-export const CART_HREF = '/cart'
+/** "My Trip" — the server-owned cart. `/cart` survives as a redirect here. */
+export const CART_HREF = '/my-trip'
 export const FAVORITES_HREF = '/account/favorites'
 export const ACCOUNT_HREF = '/account'
 

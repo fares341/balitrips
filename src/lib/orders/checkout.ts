@@ -64,10 +64,20 @@ export class CheckoutError extends Error {
 
 export interface CheckoutInput {
   cartId: string
-  userId: string
+  /** Null for a guest checkout; `guestTokenHash` then identifies the buyer. */
+  userId: string | null
+  /** sha256 of the guest browser's `bt_guest` cookie. Required when `userId` is null. */
+  guestTokenHash?: string | null
   /** What the browser displayed. A mismatch aborts rather than charges. */
   expectedTotalMinor: number
-  customer: { email: string; name: string; phone?: string; country?: string; locale: string }
+  customer: {
+    email: string
+    name: string
+    phone?: string
+    country?: string
+    locale: string
+    notes?: string
+  }
   /** Timestamped proof the cancellation ladder was accepted. */
   termsVersion: string
   returnUrl: string
@@ -85,7 +95,7 @@ export interface CheckoutResult {
 /** Load exactly the catalog facts pricing needs for the items in a cart. */
 async function loadCatalog(
   items: readonly QuoteRequestItem[],
-  userId: string,
+  userId: string | null,
 ): Promise<CatalogSnapshot> {
   const idsOf = (kind: string) =>
     items.filter((i) => i.kind === kind && i.refId).map((i) => i.refId as string)
@@ -252,6 +262,11 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   // Placed here so a refusal cannot advance order_number_seq or hold a seat.
   assertBookingsOpen('checkout')
 
+  const guestTokenHash = input.userId === null ? (input.guestTokenHash ?? null) : null
+  if (input.userId === null && guestTokenHash === null) {
+    throw new CheckoutError('A guest checkout needs a guest token', 'no_owner')
+  }
+
   const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, input.cartId))
 
   if (rows.length === 0) {
@@ -295,7 +310,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   // جلسة دفع واحدة مفتوحة لكل عميل: الرجوع للدفع (زر "رجوع" أو تبويب ثانٍ) كان
   // يُنشئ جلسة Stripe جديدة بينما القديمة ما زالت قابلة للدفع 35 دقيقة — فيُدفع
   // الطلب مرتين. نغلق جلسات طلباته المعلّقة السابقة أولاً.
-  await closeOpenCheckouts(input.userId, input.idempotencyKey)
+  await closeOpenCheckouts({ userId: input.userId, guestTokenHash }, input.idempotencyKey)
 
   const orderNumber = await nextOrderNumber()
   const provider = getPaymentProvider()
@@ -322,6 +337,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       .values({
         orderNumber,
         userId: input.userId,
+        guestTokenHash,
+        sourceCartId: input.cartId,
         status: 'pending',
         presentmentCurrency: quote.currency,
         subtotalMinor: quote.subtotalMinor,
@@ -581,11 +598,30 @@ function isUniqueViolation(error: unknown): boolean {
   return code === '23505' || causeCode === '23505'
 }
 
+/** Whose earlier checkouts to close: an account, or a guest browser. */
+interface CheckoutOwner {
+  userId: string | null
+  guestTokenHash: string | null
+}
+
 /**
  * يغلق جلسات الدفع غير المدفوعة لطلبات العميل المعلّقة. أفضل جهد: فشل الإغلاق
  * لا يمنع الدفع الجديد (الطلب القديم ينتهي وحده بمهمة capacity.release-expired).
+ *
+ * v3: a failed attempt no longer cancels its order (the customer may retry the
+ * same order), so a traveller who instead starts a fresh checkout would leave
+ * the failed order holding capacity until the sweep. Those are superseded
+ * here too — `cancelUnpaidOrder` refuses any order with money still in play.
  */
-async function closeOpenCheckouts(userId: string, currentKey: string): Promise<void> {
+async function closeOpenCheckouts(owner: CheckoutOwner, currentKey: string): Promise<void> {
+  const ownedBy =
+    owner.userId !== null
+      ? eq(orders.userId, owner.userId)
+      : owner.guestTokenHash !== null
+        ? and(isNull(orders.userId), eq(orders.guestTokenHash, owner.guestTokenHash))
+        : null
+  if (ownedBy === null || ownedBy === undefined) return
+
   const open = await db
     .select({
       id: payments.id,
@@ -598,7 +634,7 @@ async function closeOpenCheckouts(userId: string, currentKey: string): Promise<v
     .innerJoin(orders, eq(orders.id, payments.orderId))
     .where(
       and(
-        eq(orders.userId, userId),
+        ownedBy,
         eq(orders.status, 'pending'),
         // `processing` = دفع قيد التسوية (تحويل مؤجل): المال في الطريق، لا يُغلق.
         eq(payments.status, 'requires_action'),
@@ -606,27 +642,51 @@ async function closeOpenCheckouts(userId: string, currentKey: string): Promise<v
         ne(payments.idempotencyKey, currentKey),
       ),
     )
-  if (open.length === 0) return
-  const provider = getPaymentProvider()
-  for (const row of open) {
-    if (row.providerPaymentId === null || row.provider !== provider.name) continue
-    try {
-      const closed = (await provider.cancelIntent?.(row.providerPaymentId)) ?? false
-      if (!closed) continue
-      await db.update(payments).set({ status: 'cancelled' }).where(eq(payments.id, row.id))
-      // الطلب القديم يُلغى فوراً وتعود سعته — فيصل إشعار انتهاء الجلسة من
-      // المزوّد على طلب ملغى أصلاً، فلا "فشل الدفع" مضلّل للعميل.
-      await cancelUnpaidOrder(
-        row.orderId,
-        row.orderNumber,
-        'superseded by a newer checkout',
-        'order.superseded',
-      )
-    } catch (error) {
-      console.error('[checkout] could not close an earlier payment session', {
-        paymentId: row.id,
-        error,
-      })
+  if (open.length > 0) {
+    const provider = getPaymentProvider()
+    for (const row of open) {
+      if (row.providerPaymentId === null || row.provider !== provider.name) continue
+      try {
+        const closed = (await provider.cancelIntent?.(row.providerPaymentId)) ?? false
+        if (!closed) continue
+        await db.update(payments).set({ status: 'cancelled' }).where(eq(payments.id, row.id))
+        // الطلب القديم يُلغى فوراً وتعود سعته — فيصل إشعار انتهاء الجلسة من
+        // المزوّد على طلب ملغى أصلاً، فلا "فشل الدفع" مضلّل للعميل.
+        await cancelUnpaidOrder(
+          row.orderId,
+          row.orderNumber,
+          'superseded by a newer checkout',
+          'order.superseded',
+        )
+      } catch (error) {
+        console.error('[checkout] could not close an earlier payment session', {
+          paymentId: row.id,
+          error,
+        })
+      }
     }
+  }
+
+  // Earlier orders whose every attempt failed: still pending, still holding
+  // capacity. The order of a concurrent press with the same key is excluded.
+  const stale = await db
+    .select({ id: orders.id, orderNumber: orders.orderNumber })
+    .from(orders)
+    .where(
+      and(
+        ownedBy,
+        eq(orders.status, 'pending'),
+        sql`not exists (select 1 from ${payments} p where p.order_id = ${orders.id} and p.idempotency_key = ${currentKey})`,
+      ),
+    )
+  for (const row of stale) {
+    await cancelUnpaidOrder(
+      row.id,
+      row.orderNumber,
+      'superseded by a newer checkout',
+      'order.superseded',
+    ).catch((error: unknown) =>
+      console.error('[checkout] could not supersede an earlier order', { orderId: row.id, error }),
+    )
   }
 }

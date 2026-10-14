@@ -209,7 +209,7 @@ export async function addFavoriteToTripAction(
     return { status: 'error', refId: ref.refId, messageKey: 'c_error' }
   }
 
-  revalidatePath('/[locale]/cart', 'page')
+  revalidatePath('/[locale]/my-trip', 'page')
   revalidateAccount()
   return { status: 'added', refId: ref.refId, messageKey: null }
 }
@@ -252,7 +252,7 @@ export async function createTripFromFavoritesAction(formData: FormData): Promise
     }
   }
 
-  revalidatePath('/[locale]/cart', 'page')
+  revalidatePath('/[locale]/my-trip', 'page')
   revalidateAccount()
   // `getPathname` is the only thing that knows how `localePrefix: 'as-needed'`
   // maps a route to a path; it is typed `never`, which ends the action for the

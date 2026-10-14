@@ -826,6 +826,117 @@ export async function addActivityBooking(
   return { ok: true, itemId, itemCount, totalMinor: quote.totalMinor, currency: quote.currency }
 }
 
+/** An activity booking in the caller's trip, as the booking box needs it to edit it. */
+export interface BookingForEdit {
+  itemId: string
+  activityId: string
+  packageId: string | null
+  date: string
+  endDate: string | null
+  time: string | null
+  people: number
+  addons: { id: string; qty: number }[]
+  driver: boolean
+}
+
+/**
+ * Read one activity line of the caller's own trip for "Edit" on My Trip.
+ * Null when the line is not theirs, not an activity, or its package is gone.
+ */
+export async function getBookingForEdit(itemId: string): Promise<BookingForEdit | null> {
+  const cart = await findCart()
+  if (!cart) return null
+  const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
+  const row = rows.find(
+    (r) =>
+      r.id === itemId &&
+      (r.kind === 'activity' || r.kind === 'activity_tier') &&
+      r.parentItemId === null &&
+      r.travelDate !== null &&
+      r.refId !== null,
+  )
+  if (!row || row.refId === null || row.travelDate === null) return null
+
+  let activityId = row.refId
+  if (row.kind === 'activity_tier') {
+    const probe = await loadCartCatalog(
+      [
+        {
+          id: row.id,
+          kind: 'activity_tier',
+          refId: row.refId,
+          quantity: row.quantity,
+          travelDate: row.travelDate,
+          travelTime: row.travelTime,
+          guests: row.guests,
+          endDate: row.endDate,
+          parentItemId: null,
+        },
+      ],
+      await loadEntitlements(null),
+    )
+    const parent = probe.snapshot.activityTiers.get(row.refId)?.activityId
+    if (parent === undefined) return null
+    activityId = parent
+  }
+
+  return {
+    itemId: row.id,
+    activityId,
+    packageId: row.kind === 'activity_tier' ? row.refId : null,
+    date: row.travelDate,
+    endDate: row.endDate,
+    time: row.travelTime === null ? null : row.travelTime.slice(0, 5),
+    people: row.guests ?? row.quantity,
+    addons: row.options?.addons ?? [],
+    driver: rows.some((r) => r.kind === 'driver' && r.parentItemId === row.id),
+  }
+}
+
+export type DriverForBookingResult =
+  | { ok: true; driverItemId: string | null; itemCount: number }
+  | { ok: false; code: 'not_found' | 'driver_full' }
+
+/**
+ * Add a driver to an activity already in the trip — the "add a driver?"
+ * confirmation shown before payment (v3 handoff, `driver_suggest_response`).
+ *
+ * Same shape as a driver chosen in the booking box: a `driver` line linked to
+ * the activity (`parentItemId`), over the same dates, vehicle from the party
+ * size. Asking twice never sells two cars, and a sold-out day is refused
+ * now rather than at payment (checkout's conditional UPDATE still reserves).
+ */
+export async function addDriverToBooking(itemId: string): Promise<DriverForBookingResult> {
+  assertBookingsOpen('addItem')
+
+  const cart = await findCart()
+  if (!cart) return { ok: false, code: 'not_found' }
+  const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
+  const parent = rows.find(
+    (row) =>
+      row.id === itemId &&
+      (row.kind === 'activity' || row.kind === 'activity_tier') &&
+      row.parentItemId === null &&
+      row.travelDate !== null,
+  )
+  if (!parent || parent.travelDate === null) return { ok: false, code: 'not_found' }
+
+  const guests = clampQuantity(parent.guests ?? parent.quantity, CART_MAX_QUANTITY)
+  const endDate = parent.endDate ?? parent.travelDate
+  const days = await getDriverAvailability(vehicleForPassengers(guests), parent.travelDate, endDate)
+  if (days.some((day) => day.available < 1)) return { ok: false, code: 'driver_full' }
+
+  const driverItemId = await attachDriver(
+    cart.id,
+    parent.id,
+    { kind: parent.kind as CartItemKind, travelDate: parent.travelDate, guests },
+    { guests, endDate },
+    rows,
+  )
+  const itemCount = await writeCartCount(cart.id)
+  return { ok: true, driverItemId, itemCount }
+}
+
 /**
  * Change a line's quantity.
  *

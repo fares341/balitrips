@@ -40,7 +40,7 @@ import {
   type PackageRule,
 } from '@/lib/booking/price'
 
-import { bookActivityAction } from './actions'
+import { bookActivityAction, loadTripBookingAction } from './actions'
 import type { BookingField } from './booking-contract'
 
 // ---------------------------------------------------------------------------
@@ -137,6 +137,8 @@ type Ctx = {
   confirmDriver: (withDriver: boolean) => void
   modalOpen: boolean
   closeModal: () => void
+  /** Editing a My Trip line (`?edit=<itemId>`): saving replaces it. */
+  editing: boolean
   money: (minor: number) => string
 }
 
@@ -240,7 +242,35 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const [busy, setBusy] = useState(false)
   const [bump, setBump] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
   const [today] = useState(() => todayInBali())
+
+  // "Edit" on My Trip opens this page with `?edit=<itemId>`: load that line
+  // (the server checks it is the caller's own) back into the box.
+  useEffect(() => {
+    const itemId = new URLSearchParams(window.location.search).get('edit')
+    if (!itemId) return
+    let alive = true
+    loadTripBookingAction(itemId)
+      .then((booking) => {
+        if (!alive || booking === null || booking.activityId !== data.activityId) return
+        const loaded: State = {
+          pkg: booking.packageId,
+          date: booking.date,
+          endDate: data.multiDay ? booking.endDate : null,
+          time: booking.time,
+          people: booking.people,
+          addons: Object.fromEntries(booking.addons.map((a) => [a.id, a.qty])),
+          driver: booking.driver,
+        }
+        setState(prune(loaded, data))
+        setEditing(booking.itemId)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [data])
 
   const pkgInfo = data.packages.find((p) => p.id === state.pkg) ?? null
   const pkg = toRule(pkgInfo, data)
@@ -312,6 +342,7 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
         people: state.people,
         addons: Object.entries(state.addons).map(([id, qty]) => ({ id, qty })),
         driver: withDriver,
+        replaceItemId: editing,
       })
       if (!result.ok) {
         const message = t(SERVER_MESSAGE[result.code] ?? 'c_error')
@@ -322,6 +353,12 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
       window.dispatchEvent(new Event(CART_CHANGED_EVENT))
       if (mode === 'book') {
         router.push('/checkout')
+        return
+      }
+      if (editing !== null) {
+        setEditing(null)
+        toast(t('trip_updated'))
+        router.push(CART_HREF)
         return
       }
       toast(t('act_added'), { link: { href: CART_HREF, label: t('bt_my_trip') } })
@@ -363,6 +400,7 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     money,
     modalOpen,
     closeModal: () => setModalOpen(false),
+    editing: editing !== null,
     setPackage: (id, el) => {
       const target = data.packages.find((p) => p.id === id)
       if (!target || !target.available) return
@@ -933,8 +971,10 @@ export function BookingBox() {
             disabled={b.busy}
             onClick={() => b.submit('trip')}
           >
-            <Icon name="suitcase" size={18} /> {t('act_add_trip')}
+            <Icon name={b.editing ? 'check' : 'suitcase'} size={18} />{' '}
+            {b.editing ? t('trip_save_changes') : t('act_add_trip')}
           </button>
+          {b.editing && <small className="muted center">{t('trip_editing_note')}</small>}
         </div>
         <Link className="muted center bk-help" href="/contact">
           <Icon name="chat" size={15} /> {t('act_questions')}

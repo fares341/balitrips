@@ -1,311 +1,496 @@
 /**
- * Order confirmation.
+ * Order page — v3 screens 17, 17b, 17c, 17d (prototype confirmation.html).
  *
- * The handoff's version of this screen was `const [done, setDone] =
- * React.useState(false)` — a boolean in component state. It had no order
- * number, no line items, no amount and no status; it vanished on any
- * navigation and could never be reopened, bookmarked, forwarded to support or
- * shown to a bank. This is a real page at a real URL, keyed by the order
- * number.
+ * One URL per order, four payment states:
+ *  - success    ✓ drawn + confetti in the brand colours (reduced motion: the
+ *               mark only), items with their booking status, "What's next";
+ *  - failed     nothing charged; "Try again" pays the SAME order again
+ *               (`retryPaymentAction`) — no second order is ever created;
+ *  - processing waiting for the provider's verdict; the page polls;
+ *  - transfer   a bank transfer chosen at the provider is on its way.
+ * plus cancelled/expired and refunded.
  *
- * It polls while the order is still `pending`. That is not a workaround: only
- * a verified webhook moves an order to `paid`, and providers routinely deliver
- * that event before the customer's browser returns. A confirmation page that
- * assumed the redirect meant success would confidently tell people their
- * booking was confirmed before any money existed.
+ * Every item shows its own booking status. "Confirmed" appears only when the
+ * provider confirmed (never because the payment succeeded); digital products
+ * read "Ready to download" / "Unlocked" once paid. Status changes recorded by
+ * staff are listed as the order's timeline (from `audit_log`).
  *
- * Every amount is read from the immutable order snapshot rather than
- * recomputed, so editing or unpublishing a product later cannot rewrite what
- * the customer bought.
+ * Visible to the account that placed the order, or — for a guest checkout —
+ * to the browser that placed it (`bt_guest` cookie). Everyone else gets 404.
+ * Amounts are the immutable order snapshot, never a live recomputation.
  */
 
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { formatPrice, LinkButton } from '@/components/bt'
 import { HOME_HREF } from '@/components/layout/routes'
-import { Breadcrumbs, Button, LinkButton } from '@/components/shared'
 import { TRIP_KIND_ICON } from '@/components/trip'
-import { Icon } from '@/components/ui'
-import { db } from '@/db'
-import { orderItems, orders } from '@/db/schema'
 import { PriceBreakdown } from '@/components/trip/price-breakdown'
+import { Icon, Photo } from '@/components/ui'
+import { db } from '@/db'
+import { auditLog, orderItems, orders, payments } from '@/db/schema'
+import { Link } from '@/i18n/routing'
 import { getSessionUser } from '@/lib/cart'
+import { displayKey, loadCartCatalog } from '@/lib/cart/catalog'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
-import { ORDER_STATUSES, type OrderStatus } from '@/lib/orders/state'
-import type { CartItemKind } from '@/lib/pricing/quote'
+import { loadEntitlements } from '@/lib/entitlements'
+import {
+  isBookingStatus,
+  itemTag,
+  isDigitalKind,
+  paymentState,
+  type PaymentState,
+} from '@/lib/orders/booking-status'
+import { canViewOrder, readGuestTokenHash } from '@/lib/orders/guest'
+import type { CartItemKind, QuoteRequestItem } from '@/lib/pricing/quote'
 
 import { toLocale } from '../../../_seo-hreflang'
-import { beginSignInAction } from '../../actions'
+import { retryPaymentAction } from '../../actions'
 import { OrderStatusWatcher } from './order-status-watcher'
+
+import '@/styles/bt-trip.css'
 
 /** Status changes underneath this page; there is nothing to cache. */
 export const dynamic = 'force-dynamic'
 
-const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/
-
 type PageParams = Promise<{ locale: string; orderNumber: string }>
+type PageSearch = Promise<Record<string, string | string[] | undefined>>
 
-function isOrderStatus(value: string): value is OrderStatus {
-  return (ORDER_STATUSES as readonly string[]).includes(value)
-}
+const RETRY_REASONS = new Set([
+  'expired',
+  'in_progress',
+  'not_retryable',
+  'payment',
+  'closed',
+  'error',
+  'not_found',
+])
 
-/** Headline, body and colour per status. */
-function presentation(status: OrderStatus): {
-  titleKey: string
-  bodyKey: string | null
-  icon: 'check' | 'clock' | 'cross'
-  colour: string
-} {
-  switch (status) {
-    case 'paid':
-    case 'confirmed':
-      return { titleKey: 'cf_t_paid', bodyKey: 'cf_b_paid', icon: 'check', colour: 'var(--forest)' }
-    case 'cancelled':
-      return {
-        titleKey: 'cf_t_failed',
-        bodyKey: 'cf_b_failed',
-        icon: 'cross',
-        colour: 'var(--orange-deep)',
-      }
-    case 'refunded':
-    case 'partially_refunded':
-      return {
-        titleKey: 'cf_t_refunded',
-        bodyKey: 'cf_b_refunded',
-        icon: 'check',
-        colour: 'var(--muted)',
-      }
-    case 'pending':
-      // The body is the watcher's, because it changes as time passes.
-      return { titleKey: 'cf_t_pending', bodyKey: null, icon: 'clock', colour: 'var(--muted)' }
-  }
-}
+/** Twelve brand-coloured pieces per row, positions fixed so SSR and the browser agree. */
+const CONFETTI = Array.from({ length: 36 }, (_, i) => ({
+  start: (i * 37 + 11) % 100,
+  delay: ((i * 7) % 12) / 20,
+  colour: ['#71FF85', '#FF9000', '#FFFBF8'][i % 3] as string,
+}))
 
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw, orderNumber } = await params
-  const locale = toLocale(raw)
-  const t = await getTranslations({ locale })
-
+  const t = await getTranslations({ locale: toLocale(raw) })
   return {
     title: `${t('cf_order')} ${orderNumber}`,
-    description: t('cf_b_paid'),
-    // Someone else's order confirmation is the last thing that should be in
-    // a search index.
+    // Someone's order is the last thing that belongs in a search index.
     robots: { index: false, follow: false },
   }
 }
 
-export default async function ConfirmationPage({ params }: { params: PageParams }) {
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: PageParams
+  searchParams: PageSearch
+}) {
   const { locale: raw, orderNumber } = await params
   const locale = toLocale(raw)
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
+  const retryRaw = (await searchParams).retry
+  const retryReason = typeof retryRaw === 'string' && RETRY_REASONS.has(retryRaw) ? retryRaw : null
 
+  const [order] = await db.select().from(orders).where(eq(orders.orderNumber, orderNumber)).limit(1)
   const user = await getSessionUser()
+  const viewer = { userId: user?.id ?? null, guestTokenHash: await readGuestTokenHash() }
+  // Unknown, or someone else's: both are a 404, never a hint that it exists.
+  if (!order || !canViewOrder(order, viewer)) notFound()
 
-  if (!user) {
-    return (
-      <div className="bt-detailwrap">
-        <div className="wrap">
-          <div className="bt-cart-done">
-            <span className="bt-cart-done-ic" style={{ background: 'var(--forest)' }}>
-              <Icon name="lock" size={34} color="#fff" />
-            </span>
-            <h1 style={{ fontSize: 'clamp(26px,4.5vw,40px)', marginTop: 18 }}>
-              {t('cf_signin_t')}
-            </h1>
-            <p className="lede" style={{ marginTop: 12, maxWidth: '48ch', marginInline: 'auto' }}>
-              {t('cf_signin_b')}
-            </p>
-            <form action={beginSignInAction} style={{ marginTop: 20 }}>
-              <input type="hidden" name="locale" value={locale} />
-              <Button type="submit" variant="orange">
-                {t('auth_in_btn')}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const [lines, attempts] = await Promise.all([
+    db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order.id))
+      .orderBy(asc(orderItems.createdAt), asc(orderItems.id)),
+    db
+      .select({ status: payments.status, method: payments.method, createdAt: payments.createdAt })
+      .from(payments)
+      .where(eq(payments.orderId, order.id)),
+  ])
 
-  const orderRows = await db
-    .select()
-    .from(orders)
-    .where(and(eq(orders.orderNumber, orderNumber), eq(orders.userId, user.id)))
-    .limit(1)
+  const state: PaymentState = paymentState(order.status, attempts)
+  const currency = order.presentmentCurrency
+  const money = (minor: number) => formatPrice(minor, currency, locale)
+  const email = order.customerSnapshot?.email ?? ''
 
-  const order = orderRows[0]
-  // Unknown order number, or someone else's. Both are a 404 — never the
-  // handoff's "|| ARRAY[0]" style fallback onto whatever happened to be first.
-  if (!order) notFound()
+  // Photos for the lines, from the live catalogue (names stay the snapshot).
+  const catalog = await loadCartCatalog(
+    lines.map(
+      (line): QuoteRequestItem => ({
+        id: line.id,
+        kind: line.kind as CartItemKind,
+        refId: line.refId,
+        quantity: line.quantity,
+        travelDate: line.travelDate,
+        travelTime: line.travelTime,
+        guests: line.guests,
+        endDate: line.endDate,
+        parentItemId: line.parentItemId,
+      }),
+    ),
+    await loadEntitlements(order.userId),
+    order.userId,
+  ).catch(() => null)
 
-  const lines = await db
-    .select()
-    .from(orderItems)
-    .where(eq(orderItems.orderId, order.id))
-    .orderBy(asc(orderItems.createdAt), asc(orderItems.id))
+  // Booking-status history (staff changes and payment-time completions).
+  const history =
+    lines.length === 0
+      ? []
+      : await db
+          .select({
+            entityId: auditLog.entityId,
+            after: auditLog.after,
+            createdAt: auditLog.createdAt,
+          })
+          .from(auditLog)
+          .where(
+            and(
+              eq(auditLog.entityType, 'order_item'),
+              eq(auditLog.action, 'order_item.booking_status'),
+              inArray(
+                auditLog.entityId,
+                lines.map((line) => line.id),
+              ),
+            ),
+          )
+          .orderBy(asc(auditLog.createdAt))
 
-  const status: OrderStatus = isOrderStatus(order.status) ? order.status : 'pending'
-  const view = presentation(status)
-  const settled = status === 'paid' || status === 'confirmed'
+  const day = (value: string) =>
+    format.dateTime(new Date(`${value}T00:00:00Z`), {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    })
+  const nameOf = (line: (typeof lines)[number]) =>
+    pick(line.nameSnapshot, locale, t(`ct2_grp_${line.kind}`))
+  const providerItems = lines.filter((line) => !isDigitalKind(line.kind))
 
-  const calendarDate = (value: string): string => {
-    if (!PLAIN_DATE.test(value)) return value
-    return format.dateTime(new Date(`${value}T00:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' })
-  }
+  const hero = {
+    success: {
+      icon: (
+        <svg
+          className="draw"
+          width="44"
+          height="44"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m5 12.5 4.5 4.5L19 7.5" />
+        </svg>
+      ),
+      title: t('trip_ok_t'),
+      body:
+        email === ''
+          ? t('trip_ok_b_noemail', { order: order.orderNumber })
+          : t('trip_ok_b', { order: order.orderNumber, email }),
+    },
+    failed: {
+      icon: <Icon name="cross" size={40} stroke={2.6} />,
+      title: t('trip_fail_t'),
+      body: t('trip_fail_b'),
+    },
+    processing: {
+      icon: (
+        <span className="spin" style={{ display: 'grid' }}>
+          <Icon name="refresh" size={38} stroke={2.2} />
+        </span>
+      ),
+      title: t('trip_proc_t'),
+      body: t('trip_proc_b'),
+    },
+    transfer: {
+      icon: <Icon name="doc" size={38} />,
+      title: t('trip_tr_t'),
+      body: t('trip_tr_b'),
+    },
+    cancelled: {
+      icon: <Icon name="cal" size={38} />,
+      title: t('trip_cx_t'),
+      body: t('trip_cx_b'),
+    },
+    refunded: {
+      icon: <Icon name="check" size={38} />,
+      title: t('trip_rf_t'),
+      body: t('trip_rf_b'),
+    },
+  }[state]
 
-  const crumbs = [{ label: t('c_home'), href: HOME_HREF }, { label: t('cf_order') }]
+  const amountLabel =
+    state === 'success' || state === 'refunded' ? t('trip_amount_paid') : t('trip_amount_due')
 
   return (
-    <div className="bt-detailwrap">
+    <main className="trip-page">
       <div className="wrap">
-        <Breadcrumbs trail={crumbs} label={t('c_breadcrumb')} />
-      </div>
-
-      <div className="wrap">
-        <div className="bt-cart-done">
-          <span className="bt-cart-done-ic" style={{ background: view.colour }}>
-            <Icon name={view.icon} size={38} color="#fff" />
-          </span>
-          <h1 style={{ fontSize: 'clamp(26px,4.5vw,40px)', marginTop: 18 }}>{t(view.titleKey)}</h1>
-          {view.bodyKey !== null && (
-            <p className="lede" style={{ marginTop: 12, maxWidth: '48ch', marginInline: 'auto' }}>
-              {t(view.bodyKey)}
-            </p>
-          )}
-          <OrderStatusWatcher status={status} />
-        </div>
-
-        <div className="bt-cart-grid">
-          <div className="bt-cart-lines">
-            <section aria-labelledby="bt-cf-items">
-              <h2 className="bt-cart-grouphead" id="bt-cf-items">
-                <Icon name="grid" size={17} color="var(--forest)" />
-                {t('cf_items')} <span className="muted">· {format.number(lines.length)}</span>
-              </h2>
-
-              {lines.map((line) => {
-                const kind = line.kind as CartItemKind
-                const icon = TRIP_KIND_ICON[kind] ?? 'grid'
-                const meta: string[] = []
-                if (line.travelDate !== null) {
-                  meta.push(
-                    line.endDate !== null && line.endDate !== line.travelDate
-                      ? `${calendarDate(line.travelDate)} – ${calendarDate(line.endDate)}`
-                      : calendarDate(line.travelDate),
-                  )
-                }
-                if (line.travelTime !== null) meta.push(line.travelTime.slice(0, 5))
-                if (line.guests !== null) {
-                  meta.push(`${t('c_guests')}: ${format.number(line.guests)}`)
-                }
-
-                return (
-                  <article key={line.id} className="bt-cart-line">
-                    <span
-                      style={{
-                        width: 48,
-                        height: 48,
-                        flexShrink: 0,
-                        borderRadius: 12,
-                        background: 'var(--ivory-2)',
-                        display: 'grid',
-                        placeItems: 'center',
-                      }}
-                      aria-hidden="true"
-                    >
-                      <Icon name={icon} size={20} color="var(--muted)" />
-                    </span>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>
-                        {/* The name the customer actually bought, frozen at
-                            purchase — not a live read of the catalogue. */}
-                        {pick(line.nameSnapshot, locale, t(`ct2_grp_${kind}`))}
-                      </div>
-                      {meta.length > 0 && (
-                        <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                          {meta.join(' · ')}
-                        </div>
-                      )}
-                      {line.options?.lines && line.options.lines.length > 0 ? (
-                        // An activity booking: package and add-ons as charged.
-                        <PriceBreakdown
-                          parts={line.options.lines}
-                          currency={order.presentmentCurrency}
-                          locale={locale}
-                        />
-                      ) : (
-                        <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                          {formatMoney(line.unitPriceMinor, order.presentmentCurrency, locale)} ×{' '}
-                          {format.number(line.quantity)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div
-                      style={{
-                        fontWeight: 800,
-                        fontSize: 16,
-                        color: 'var(--orange-deep)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {formatMoney(line.lineTotalMinor, order.presentmentCurrency, locale)}
-                    </div>
-                  </article>
-                )
-              })}
-            </section>
-          </div>
-
-          <aside className="bt-booking" aria-labelledby="bt-cf-summary">
-            <h2 id="bt-cf-summary" style={{ fontSize: 18, marginBottom: 14 }}>
-              {t('ad_summary')}
-            </h2>
-
-            <div className="bt-summary" style={{ marginTop: 0 }}>
-              <SummaryRow label={t('cf_order')} value={order.orderNumber} />
-              {order.placedAt !== null && (
-                <SummaryRow
-                  label={t('c_date')}
-                  value={format.dateTime(order.placedAt, { dateStyle: 'medium' })}
-                />
-              )}
-              <SummaryRow label={t('cf_status')} value={t(`cf_st_${status}`)} />
-              <div className="bt-summary-total">
-                {/* "Amount paid" only once it has been. Until the webhook
-                    lands it is an amount due, and saying otherwise would be
-                    the same lie the handoff's instant success screen told. */}
-                <span>{settled ? t('cf_paid') : t('c_total')}</span>
-                <span>{formatMoney(order.totalMinor, order.presentmentCurrency, locale)}</span>
+        <div className="cf">
+          <section className={`hero-st ${state}`} aria-live="polite">
+            {state === 'success' && (
+              <div className="confetti" aria-hidden="true">
+                {CONFETTI.map((piece, index) => (
+                  <i
+                    key={index}
+                    style={{
+                      insetInlineStart: `${piece.start}%`,
+                      background: piece.colour,
+                      animationDelay: `${piece.delay}s`,
+                    }}
+                  />
+                ))}
               </div>
+            )}
+            <span className="st-ic pop">{hero.icon}</span>
+            <h1 className="h2">{hero.title}</h1>
+            <p style={{ maxWidth: '52ch' }}>{hero.body}</p>
+            {state === 'processing' && <OrderStatusWatcher state={state} />}
+            {state === 'success' && <OrderStatusWatcher state={state} />}
+
+            {state === 'failed' && retryReason !== null && (
+              <p className="alert alert-err" role="alert">
+                <Icon name="alert" size={18} />
+                <span>{t(`trip_retry_${retryReason}`)}</span>
+              </p>
+            )}
+
+            <div className="row" style={{ justifyContent: 'center' }}>
+              {state === 'failed' && (
+                <form action={retryPaymentAction}>
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="orderNumber" value={order.orderNumber} />
+                  <button type="submit" className="btn btn-primary btn-lg">
+                    {t('trip_retry')}
+                  </button>
+                </form>
+              )}
+              {state === 'failed' && (
+                <LinkButton href="/contact" variant="ghost">
+                  {t('trip_support')}
+                </LinkButton>
+              )}
+              {state === 'success' && order.userId !== null && (
+                <LinkButton href="/account/invoices" variant="primary">
+                  {t('trip_view_bookings')}
+                </LinkButton>
+              )}
+              {state === 'success' && (
+                <LinkButton href={HOME_HREF} variant="glass">
+                  {t('trip_back_home')}
+                </LinkButton>
+              )}
+              {(state === 'processing' || state === 'transfer') && order.userId !== null && (
+                <LinkButton href="/account/invoices" variant="forest">
+                  {t('trip_track')}
+                </LinkButton>
+              )}
+              {state === 'cancelled' && (
+                <LinkButton href="/my-trip" variant="forest">
+                  {t('co_back_trip')}
+                </LinkButton>
+              )}
+            </div>
+          </section>
+
+          {state === 'transfer' && (
+            <section className="panel stack" aria-labelledby="cf-bank-t">
+              <h2 className="h3" id="cf-bank-t">
+                {t('trip_tr_details')}
+              </h2>
+              <div className="bank">
+                <div>
+                  <span>{t('trip_tr_amount')}</span>
+                  <b dir="ltr">{money(order.totalMinor)}</b>
+                </div>
+                <div>
+                  <span>{t('trip_tr_ref')}</span>
+                  <b dir="ltr">{order.orderNumber}</b>
+                </div>
+              </div>
+              <p className="muted" style={{ fontSize: 14 }}>
+                {t('trip_tr_where')}
+              </p>
+            </section>
+          )}
+
+          <section className="stack" style={{ gap: 12 }} aria-labelledby="cf-items-t">
+            <div className="row between">
+              <h2 className="h3" id="cf-items-t">
+                {t('trip_items_t')}
+              </h2>
+              <span className="tag tag-forest num" dir="ltr">
+                {order.orderNumber}
+              </span>
             </div>
 
-            <LinkButton href="/account" variant="orange" block style={{ marginTop: 14 }}>
-              {t('nav_account')}
-            </LinkButton>
-            <LinkButton href={HOME_HREF} variant="ghost" block style={{ marginTop: 10 }}>
-              {t('c_home')}
-            </LinkButton>
-          </aside>
+            {lines.map((line) => {
+              const status = isBookingStatus(line.bookingStatus) ? line.bookingStatus : 'created'
+              const tag = itemTag(state, line.kind, status)
+              const display = catalog?.display.get(
+                displayKey(line.kind, line.kind === 'driver' ? line.vehicleClass : line.refId),
+              )
+              const meta: string[] = []
+              if (line.travelDate !== null) {
+                meta.push(
+                  line.endDate !== null && line.endDate !== line.travelDate
+                    ? `${day(line.travelDate)} – ${day(line.endDate)}`
+                    : day(line.travelDate),
+                )
+              } else if (isDigitalKind(line.kind)) {
+                meta.push(t('co_digital'))
+              }
+              return (
+                <article key={line.id} className="oi">
+                  {display?.imageUrl ? (
+                    <Photo src={display.imageUrl} alt="" width={64} height={64} radius={12} />
+                  ) : (
+                    <span className="ck-thumb" style={{ width: 64, height: 64 }} aria-hidden="true">
+                      <Icon name={TRIP_KIND_ICON[line.kind as CartItemKind] ?? 'grid'} size={24} />
+                    </span>
+                  )}
+                  <span className="minw0 stack" style={{ gap: 4 }}>
+                    <b className="oi-name">{nameOf(line)}</b>
+                    <small className="muted">
+                      {meta.join(' · ')}
+                      {line.travelTime !== null && (
+                        <>
+                          {meta.length > 0 ? ' · ' : ''}
+                          <span dir="ltr">{line.travelTime.slice(0, 5)}</span>
+                        </>
+                      )}
+                    </small>
+                    {line.options?.lines && line.options.lines.length > 0 && (
+                      <PriceBreakdown
+                        parts={line.options.lines}
+                        currency={currency}
+                        locale={locale}
+                      />
+                    )}
+                    <span className={`tag tag-${tag.tone}`} style={{ alignSelf: 'flex-start' }}>
+                      {t(tag.key)}
+                    </span>
+                  </span>
+                  <span className="stack oi-end">
+                    <b className="price" dir="ltr">
+                      {money(line.lineTotalMinor)}
+                    </b>
+                    {state === 'success' && status === 'completed' && line.kind === 'itinerary' && (
+                      <Link
+                        className="btn btn-forest btn-sm"
+                        href={`/account/schedules/${line.id}/download`}
+                      >
+                        <Icon name="download" size={15} /> PDF
+                      </Link>
+                    )}
+                    {state === 'success' && status === 'completed' && line.kind === 'plan' && (
+                      <Link className="btn btn-forest btn-sm" href="/map">
+                        {t('trip_open')}
+                      </Link>
+                    )}
+                  </span>
+                </article>
+              )
+            })}
+
+            <div className="sum-total">
+              <span>{amountLabel}</span>
+              <b className="price" dir="ltr">
+                {money(order.totalMinor)}
+              </b>
+            </div>
+          </section>
+
+          {state === 'success' && (
+            <section className="panel stack" aria-labelledby="cf-next-t">
+              <h2 className="h3" id="cf-next-t">
+                {t('trip_next_t')}
+              </h2>
+              <ol className="tl-list">
+                <li>
+                  <b>{t('trip_next_paid')}</b>
+                  <br />
+                  <small className="muted">
+                    {order.placedAt === null
+                      ? ''
+                      : format.dateTime(order.placedAt, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                  </small>
+                </li>
+                {providerItems.length > 0 && (
+                  <li
+                    className={
+                      providerItems.every(
+                        (l) => l.bookingStatus === 'confirmed' || l.bookingStatus === 'completed',
+                      )
+                        ? undefined
+                        : 'now'
+                    }
+                  >
+                    <b>{t('trip_next_provider')}</b>
+                    <br />
+                    <small className="muted">{t('trip_next_provider_b')}</small>
+                  </li>
+                )}
+                {providerItems.length > 0 && (
+                  <li className="pending">
+                    <b>{t('trip_next_voucher')}</b>
+                    <br />
+                    <small className="muted">{t('trip_next_voucher_b')}</small>
+                  </li>
+                )}
+                {providerItems.length === 0 && (
+                  <li>
+                    <b>{t('trip_next_ready')}</b>
+                    <br />
+                    <small className="muted">{t('trip_next_ready_b')}</small>
+                  </li>
+                )}
+              </ol>
+              {history.length > 0 && (
+                <>
+                  <h3 className="cf-hist-t">{t('trip_history_t')}</h3>
+                  <ul className="cf-hist">
+                    {history.map((event, index) => {
+                      const line = lines.find((l) => l.id === event.entityId)
+                      const next = (event.after as { bookingStatus?: string } | null)?.bookingStatus
+                      if (!line || next === undefined || !isBookingStatus(next)) return null
+                      return (
+                        <li key={index}>
+                          <time dateTime={event.createdAt.toISOString()}>
+                            {format.dateTime(event.createdAt, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </time>
+                          <span>
+                            {nameOf(line)} — {t(`trip_bs_${next}`)}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
         </div>
       </div>
-    </div>
-  )
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bt-summary-row">
-      <span className="muted">{label}</span>
-      <span style={{ fontWeight: 700 }}>{value}</span>
-    </div>
+    </main>
   )
 }

@@ -12,7 +12,7 @@ import { getTranslations } from 'next-intl/server'
 import type { Localized } from '@/db/schema/_shared'
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { formatPrice } from '@/components/bt/card'
 
 export type BreakdownPart = {
   kind: 'package' | 'addon' | 'driver'
@@ -53,11 +53,14 @@ export async function PriceBreakdown({
             <span>
               {name}
               {part.quantity > 1 && !part.included ? (
-                <span dir="ltr"> × {part.quantity}</span>
+                <>
+                  {' '}
+                  <span dir="ltr">× {part.quantity}</span>
+                </>
               ) : null}
             </span>
             <span dir="ltr" style={{ whiteSpace: 'nowrap' }}>
-              {part.included ? t('act_included') : formatMoney(part.totalMinor, currency, locale)}
+              {part.included ? t('act_included') : formatPrice(part.totalMinor, currency, locale)}
             </span>
           </li>
         )

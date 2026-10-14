@@ -1,56 +1,66 @@
 /**
- * Checkout.
+ * Checkout — v3 screens 16 / 16b.
  *
- * The handoff had no checkout. `CartPage.complete()` was three lines: if there
- * is no user, open the signup modal and return; otherwise flip a boolean, empty
- * the cart and scroll to the top. No order, no payment, no terms, and — the
- * part that made it unusable — no memory of what you had been doing, so after
- * creating an account you landed back on the cart and had to press the button
- * a second time.
+ * The page has a URL, so signing in mid-flow is a round trip that ends here:
+ * the sign-in detour records where it came from (`?next=` and an httpOnly
+ * cookie) and `mergeAnonymousCartOnSignIn` folds the trip built while signed
+ * out into the account. A traveller may also continue as a guest when the
+ * trip holds nothing that must live in an account.
  *
- * This page fixes that at the root. It has a URL, so signing in mid-flow is a
- * round trip that ends *here*: the sign-in detour records where it came from,
- * in a `?next=` parameter and an httpOnly cookie, and `mergeAnonymousCart`
- * folds the trip built while signed out into the new account. The cart is
- * never destroyed at the moment it is most valuable.
+ * Server-rendered parts — the review of the lines and the order summary — are
+ * handed to the client flow as ready-made nodes; the flow only steps between
+ * them and posts the form. The total shown is the server's, recomputed from
+ * the catalogue by `buildQuote`.
  *
- * The total shown is the server's, recomputed from the catalogue by
- * `buildQuote`. Nothing on this page is trusted to price anything: the hidden
- * `expectedTotalMinor` exists only so the action can refuse to charge a number
- * the customer never saw.
+ * Deliberate differences from the prototype: no card fields (payment happens
+ * on the provider's secure page — card data never touches this site), no
+ * order number before payment (one is allocated when the order is created, so
+ * a retry can reuse it), and no bank-transfer radio (see the payment step).
  */
 
 import { randomUUID } from 'node:crypto'
 
 import type { Metadata } from 'next'
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { Breadcrumbs, formatPrice, LinkButton } from '@/components/bt'
 import { CART_HREF, HOME_HREF } from '@/components/layout/routes'
-import { Breadcrumbs, Button, LinkButton } from '@/components/shared'
-import { NO_PRICE, TRIP_KIND_ICON, TripLine } from '@/components/trip'
-import { Icon } from '@/components/ui'
+import { TRIP_KIND_ICON } from '@/components/trip'
+import { PriceBreakdown } from '@/components/trip/price-breakdown'
+import { Icon, Photo } from '@/components/ui'
+import { db } from '@/db'
+import { driverVehicles } from '@/db/schema'
+import type { Locale } from '@/i18n/config'
+import { isPlaceholderEmail } from '@/lib/auth/phone'
+import type { VehicleClass } from '@/lib/booking-rules'
+import { driverSuggestions } from '@/lib/booking/trip'
 import { bookingsOpen } from '@/lib/bookings-open'
-import { getCartWithTotals, getSessionUser, mergeAnonymousCartOnSignIn } from '@/lib/cart'
-import { formatMoney } from '@/lib/money'
+import {
+  getCartWithTotals,
+  getSessionUser,
+  mergeAnonymousCartOnSignIn,
+  type CartLineView,
+} from '@/lib/cart'
+import { pick } from '@/lib/content/localize'
+import { splitPhone } from '@/lib/orders/contact'
 
 import { toLocale } from '../_seo-hreflang'
 import { beginSignInAction } from './actions'
-import { CheckoutForm } from './checkout-form'
+import { CheckoutFlow, type DriverOffer } from './checkout-flow'
+import { ACCOUNT_ONLY_KINDS } from './constants'
+
+import '@/styles/bt-trip.css'
 
 /** Per-visitor and money-bearing: never cached, never prerendered. */
 export const dynamic = 'force-dynamic'
-
-const ACTIVITIES_HREF = '/activities'
 
 type PageParams = Promise<{ locale: string }>
 
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw } = await params
-  const locale = toLocale(raw)
-  const t = await getTranslations({ locale })
-
+  const t = await getTranslations({ locale: toLocale(raw) })
   return {
-    title: t('chk_title'),
+    title: t('co_page_t'),
     description: t('chk_sub'),
     robots: { index: false, follow: false },
   }
@@ -62,235 +72,280 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
-  const format = await getFormatter({ locale })
-
   const user = await getSessionUser()
-
-  /*
-   * Arriving here straight after signing up is the normal path, so the merge
-   * runs on render as well as in the action. It is idempotent and a no-op when
-   * there is no anonymous token, which is why it is safe to call twice.
-   */
+  // Arriving straight after signing in is the normal path. Idempotent.
   if (user) await mergeAnonymousCartOnSignIn(user.id)
-
   const cart = await getCartWithTotals()
 
-  const crumbs = [
-    { label: t('c_home'), href: HOME_HREF },
-    { label: t('ct2_title'), href: CART_HREF },
-    { label: t('chk_title') },
-  ]
-
   const shell = (children: React.ReactNode) => (
-    <div className="bt-detailwrap">
+    <main className="trip-page ck-page">
       <div className="wrap">
-        <Breadcrumbs trail={crumbs} label={t('c_breadcrumb')} />
-      </div>
-      <div className="wrap">
-        <div className="bt-sec-head" style={{ marginBottom: 8 }}>
-          <div>
-            <h1 style={{ fontSize: 'clamp(28px,5vw,42px)' }}>{t('chk_title')}</h1>
-            <p className="lede" style={{ marginTop: 10 }}>
-              {t('chk_sub')}
-            </p>
-          </div>
-        </div>
+        <Breadcrumbs
+          label={t('c_breadcrumb')}
+          trail={[
+            { label: t('c_home'), href: HOME_HREF },
+            { label: t('ct2_title'), href: CART_HREF },
+            { label: t('co_page_t') },
+          ]}
+        />
+        <h1 className="h1 trip-h1 ck-h1">{t('co_page_t')}</h1>
         {children}
       </div>
+    </main>
+  )
+
+  const notice = (
+    icon: 'cal' | 'suitcase' | 'alert',
+    title: string,
+    text: string,
+    action: React.ReactNode,
+  ) =>
+    shell(
+      <section className="panel empty trip-empty">
+        <span className="ill" aria-hidden="true">
+          <Icon name={icon} size={36} />
+        </span>
+        <h2 className="h3">{title}</h2>
+        <p className="muted" style={{ maxWidth: '46ch' }}>
+          {text}
+        </p>
+        {action}
+      </section>,
+    )
+
+  // Bookings closed: no flow, no idempotency key minted. Safe to read the
+  // flag here — the route is force-dynamic.
+  if (!bookingsOpen()) {
+    return notice(
+      'cal',
+      t('bk_closed_t'),
+      t('bk_closed_b'),
+      <LinkButton href="/custom" variant="primary">
+        {t('bk_closed_cta')}
+      </LinkButton>,
+    )
+  }
+
+  const lines = cart?.groups.flatMap((group) => group.lines) ?? []
+  const payable = lines.filter((line) => line.lineTotalMinor !== null && line.lineTotalMinor > 0)
+  if (cart === null || payable.length === 0) {
+    return notice(
+      'suitcase',
+      t('co_nothing_t'),
+      t('co_nothing_b'),
+      <LinkButton href={CART_HREF} variant="forest">
+        {t('co_back_trip')}
+      </LinkButton>,
+    )
+  }
+  if (!cart.ok) {
+    return notice(
+      'alert',
+      t('co_blocked_t'),
+      t('ct2_blocked'),
+      <LinkButton href={CART_HREF} variant="forest">
+        {t('co_back_trip')}
+      </LinkButton>,
+    )
+  }
+
+  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
+  const titleOf = (line: CartLineView) => {
+    const name = pick(line.name, locale, '')
+    return name === '' ? t(`ct2_grp_${line.kind}`) : name
+  }
+  const day = (value: string) =>
+    new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'UTC',
+    }).format(new Date(`${value}T00:00:00Z`))
+  const when = (line: CartLineView): string => {
+    if (line.travelDate === null) return t('co_digital')
+    const end =
+      line.endDate !== null && line.endDate !== line.travelDate ? ` – ${day(line.endDate)}` : ''
+    return `${day(line.travelDate)}${end}`
+  }
+
+  // ---- Driver suggestion (activities but no driver) ----
+  const rates = await db
+    .select({
+      vehicleClass: driverVehicles.vehicleClass,
+      dayRateMinor: driverVehicles.dayRateMinor,
+      currency: driverVehicles.currency,
+      label: driverVehicles.label,
+    })
+    .from(driverVehicles)
+  const sameCurrency = rates.filter((rate) => rate.currency === cart.currency)
+  const driverOffers: DriverOffer[] = driverSuggestions(
+    lines,
+    sameCurrency.map((rate) => ({ ...rate, vehicleClass: rate.vehicleClass as VehicleClass })),
+  ).map((offer) => {
+    const line = lines.find((l) => l.id === offer.itemId)
+    const rate = sameCurrency.find((r) => r.vehicleClass === offer.vehicleClass)
+    return {
+      itemId: offer.itemId,
+      activity: line ? titleOf(line) : '',
+      vehicle: pick(rate?.label ?? null, locale, offer.vehicleClass),
+      days: offer.days,
+      price: money(offer.totalMinor, offer.currency),
+    }
+  })
+
+  // ---- Contact defaults ----
+  const phone = splitPhone(user?.phone ?? null)
+  const defaults = {
+    name: user?.name ?? '',
+    email: user === null || isPlaceholderEmail(user.email) ? '' : user.email,
+    dialCode: phone.dialCode,
+    phone: phone.phone,
+  }
+  const guestAllowed = !lines.some((line) => ACCOUNT_ONLY_KINDS.includes(line.kind))
+  const discountMinor = Math.max(0, cart.subtotalMinor - cart.totalMinor)
+
+  const signIn = (
+    <form action={beginSignInAction} className="ck-signin">
+      <input type="hidden" name="locale" value={locale} />
+      <button type="submit" className="link">
+        {t('co_log_in')}
+      </button>
+    </form>
+  )
+
+  const review = (
+    <div className="stack ck-review">
+      {lines.map((line) => (
+        <div key={line.id} className="ck-line">
+          <LineThumb line={line} locale={locale} />
+          <div className="minw0" style={{ flex: 1 }}>
+            <div className="ck-line-top">
+              <b className="ck-line-name">{titleOf(line)}</b>
+              <b className="price" dir="ltr">
+                {line.lineTotalMinor === 0
+                  ? t('trip_no_cost')
+                  : money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+              </b>
+            </div>
+            <div className="card-meta">
+              <span>{when(line)}</span>
+              {line.travelTime !== null && (
+                <span className="num" dir="ltr">
+                  {line.travelTime.slice(0, 5)}
+                </span>
+              )}
+              {(line.kind === 'activity' ? line.quantity : line.guests) !== null && (
+                <span>
+                  {t('trip_people_n', {
+                    n: line.kind === 'activity' ? line.quantity : (line.guests ?? 1),
+                  })}
+                </span>
+              )}
+            </div>
+            {line.breakdown !== null && line.breakdown.length > 0 && (
+              <PriceBreakdown
+                parts={line.breakdown}
+                currency={line.currency ?? cart.currency}
+                locale={locale}
+              />
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   )
 
-  // ---------------------------------------------------------------------
-  // Bookings closed: no pay box, no sign-in prompt, no idempotency key minted.
-  // Above the signed-out branch so a visitor is never asked to sign in for
-  // something that cannot complete. Safe to read the flag here -- this route
-  // is force-dynamic, so the value is not baked at build time.
-  // ---------------------------------------------------------------------
-  if (!bookingsOpen()) {
-    return shell(
-      <div className="bt-cart-empty2">
-        <span
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: '50%',
-            background: 'var(--ivory-2)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <Icon name="cal" size={30} color="var(--forest)" />
+  const summary = (
+    <aside className="panel stack ck-sum" aria-labelledby="ck-sum-t">
+      <h2 className="h3" id="ck-sum-t">
+        {t('co_sum_t')}
+      </h2>
+      <div className="mini-items">
+        {payable.map((line) => (
+          <div key={line.id}>
+            <LineThumb line={line} locale={locale} size={52} />
+            <span className="minw0" style={{ flex: 1 }}>
+              <b>{titleOf(line)}</b>
+              <small className="muted">{when(line)}</small>
+            </span>
+            <b className="price" dir="ltr">
+              {money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+            </b>
+          </div>
+        ))}
+      </div>
+      <div className="sum-row">
+        <span>{t('co_subtotal')}</span>
+        <span className="price" dir="ltr">
+          {money(cart.subtotalMinor, cart.currency)}
         </span>
-        <h2 style={{ fontSize: 20 }}>{t('bk_closed_t')}</h2>
-        <p className="muted" style={{ fontSize: 14.5, maxWidth: '46ch' }}>
-          {t('bk_closed_b')}
-        </p>
-        <LinkButton href="/custom" variant="orange">
-          {t('bk_closed_cta')}
-        </LinkButton>
-      </div>,
-    )
-  }
-
-  // ---------------------------------------------------------------------
-  // Signed out: prompt, remember, come back here.
-  // ---------------------------------------------------------------------
-  if (!user) {
-    return shell(
-      <div className="bt-cart-empty2">
-        <span
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: '50%',
-            background: 'var(--ivory-2)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <Icon name="lock" size={30} color="var(--forest)" />
+      </div>
+      {discountMinor > 0 && (
+        <div className="sum-row trip-discount">
+          <span>{t('trip_discount')}</span>
+          <span className="price" dir="ltr">
+            −{money(discountMinor, cart.currency)}
+          </span>
+        </div>
+      )}
+      <div className="sum-row">
+        <span>{t('co_fees')}</span>
+        <span className="price" dir="ltr">
+          {money(0, cart.currency)}
         </span>
-        <h2 style={{ fontSize: 20 }}>{t('chk_signin_t')}</h2>
-        <p className="muted" style={{ fontSize: 14.5, maxWidth: '46ch' }}>
-          {t('chk_signin_b')}
-        </p>
-
-        {/*
-          A form, not a link: a Server Component render cannot write cookies,
-          and the pending-checkout cookie is precisely what stops the visitor
-          from having to press "complete booking" twice.
-        */}
-        <form action={beginSignInAction}>
-          <input type="hidden" name="locale" value={locale} />
-          <Button type="submit" variant="orange">
-            {t('auth_in_btn')} <Icon name="arrow" size={17} color="#fff" className="flip" />
-          </Button>
-        </form>
-
-        <LinkButton href={CART_HREF} variant="ghost" size="sm">
-          {t('c_backto')} {t('ct2_title')}
-        </LinkButton>
-      </div>,
-    )
-  }
-
-  // ---------------------------------------------------------------------
-  // Nothing to buy.
-  // ---------------------------------------------------------------------
-  if (cart === null || cart.itemCount === 0) {
-    return shell(
-      <div className="bt-cart-empty2">
-        <span
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: '50%',
-            background: 'var(--ivory-2)',
-            display: 'grid',
-            placeItems: 'center',
-          }}
-        >
-          <Icon name="cart" size={32} color="var(--muted)" />
-        </span>
-        <h2 style={{ fontSize: 20 }}>{t('ct2_empty')}</h2>
-        <p className="muted" style={{ fontSize: 14.5, maxWidth: '42ch' }}>
-          {t('ct2_empty_b')}
-        </p>
-        <LinkButton href={ACTIVITIES_HREF} variant="orange">
-          {t('ct2_browse')}
-        </LinkButton>
-      </div>,
-    )
-  }
-
-  /**
-   * New per render, so a double-click submits the *same* key and cannot buy
-   * the trip twice, while a genuine retry after a decline gets a fresh one.
-   */
-  const idempotencyKey = randomUUID()
+      </div>
+      <div className="sum-total">
+        <span>{t('co_final_total')}</span>
+        <b className="price" dir="ltr">
+          {money(cart.totalMinor, cart.currency)}
+        </b>
+      </div>
+      <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
+    </aside>
+  )
 
   return shell(
-    <div className="bt-cart-grid">
-      <div className="bt-cart-lines">
-        <section aria-labelledby="bt-chk-review">
-          <h2 className="bt-cart-grouphead" id="bt-chk-review">
-            <Icon name="calcheck" size={17} color="var(--forest)" />
-            {t('chk_review')} <span className="muted">· {format.number(cart.itemCount)}</span>
-          </h2>
+    <CheckoutFlow
+      signedInAs={user === null ? null : (user.name ?? defaults.email ?? '')}
+      guestAllowed={guestAllowed}
+      defaults={defaults}
+      expectedTotalMinor={cart.totalMinor}
+      totalLabel={money(cart.totalMinor, cart.currency)}
+      // New per render, so a double-click submits the same key and cannot
+      // buy the trip twice, while a fresh visit gets a fresh one.
+      idempotencyKey={randomUUID()}
+      review={review}
+      summary={summary}
+      driverOffers={driverOffers}
+      signIn={signIn}
+    />,
+  )
+}
 
-          {cart.groups.flatMap((group) =>
-            group.lines.map((line) => (
-              <TripLine key={line.id} line={line} locale={locale} size={64} />
-            )),
-          )}
-        </section>
-
-        {!cart.ok && (
-          <p className="bt-errmsg">
-            <Icon name="cross" size={12} color="var(--orange-deep)" />
-            {t('ct2_blocked')}
-          </p>
-        )}
-
-        <div>
-          <LinkButton href={CART_HREF} variant="ghost" size="sm">
-            {t('c_backto')} {t('ct2_title')}
-          </LinkButton>
-        </div>
-      </div>
-
-      <aside className="bt-booking" aria-labelledby="bt-chk-summary">
-        <h2 id="bt-chk-summary" style={{ fontSize: 18, marginBottom: 14 }}>
-          {t('ad_summary')}
-        </h2>
-
-        {cart.ok ? (
-          <CheckoutForm
-            expectedTotalMinor={cart.totalMinor}
-            currency={cart.currency}
-            idempotencyKey={idempotencyKey}
-          >
-            <div className="bt-summary" style={{ marginTop: 0 }}>
-              {cart.groups.map((group) => {
-                const priced = group.lines.length - group.unpricedCount
-                return (
-                  <div key={group.kind} className="bt-summary-row">
-                    <span className="muted">
-                      <Icon name={TRIP_KIND_ICON[group.kind] ?? 'pdf'} size={13} />{' '}
-                      {`${t(`ct2_grp_${group.kind}`)} (${format.number(group.lines.length)})`}
-                    </span>
-                    <span style={{ fontWeight: 700 }}>
-                      {priced === 0
-                        ? NO_PRICE
-                        : formatMoney(group.subtotalMinor, group.currency, locale)}
-                    </span>
-                  </div>
-                )
-              })}
-              <div className="bt-summary-total">
-                <span>{t('c_total')}</span>
-                <span>{formatMoney(cart.totalMinor, cart.currency, locale)}</span>
-              </div>
-            </div>
-          </CheckoutForm>
-        ) : (
-          <>
-            <div className="bt-summary" style={{ marginTop: 0 }}>
-              <div className="bt-summary-total">
-                <span>{t('c_total')}</span>
-                <span>{formatMoney(cart.totalMinor, cart.currency, locale)}</span>
-              </div>
-            </div>
-            <p className="bt-errmsg" style={{ marginTop: 12 }}>
-              <Icon name="cross" size={12} color="var(--orange-deep)" />
-              {t('ct2_blocked')}
-            </p>
-            <LinkButton href={CART_HREF} variant="orange" block style={{ marginTop: 8 }}>
-              {t('ct2_title')}
-            </LinkButton>
-          </>
-        )}
-      </aside>
-    </div>,
+function LineThumb({
+  line,
+  locale,
+  size = 72,
+}: {
+  line: CartLineView
+  locale: Locale
+  size?: number
+}) {
+  if (line.imageUrl === null) {
+    return (
+      <span className="ck-thumb" style={{ width: size, height: size }} aria-hidden="true">
+        <Icon name={TRIP_KIND_ICON[line.kind]} size={Math.round(size / 2.6)} />
+      </span>
+    )
+  }
+  return (
+    <Photo
+      src={line.imageUrl}
+      alt={pick(line.imageAlt, locale, '')}
+      width={size}
+      height={size}
+      radius={12}
+      style={{ width: size, height: size, flexShrink: 0 }}
+    />
   )
 }

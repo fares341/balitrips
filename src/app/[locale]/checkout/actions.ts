@@ -3,19 +3,21 @@
 /**
  * Checkout server actions.
  *
- * Two of them:
- *
  *  - `beginSignInAction` records where to come back to and sends the visitor
- *    to sign in. The handoff dropped you back on the cart page with no
- *    pending-intent state, so after creating an account you had to find and
- *    press "complete booking" a second time. The intent is carried twice, in
- *    the `?next=` parameter and in an httpOnly cookie, so it survives whatever
- *    the auth screen does with the query string.
+ *    to sign in. The intent is carried twice, in the `?next=` parameter and in
+ *    an httpOnly cookie, so it survives whatever the auth screen does with the
+ *    query string.
  *
- *  - `startCheckoutAction` is the real one. It re-reads the cart, compares the
- *    freshly computed total against the total the browser actually displayed,
- *    requires an explicit acceptance of the cancellation policy, and only then
- *    calls `checkout()`. Nothing about the amount comes from the form.
+ *  - `startCheckoutAction` is the real one (v3 checkout, steps 1–3). It
+ *    validates the lead traveller's contact details, re-reads the cart,
+ *    compares the freshly computed total against the total the browser
+ *    actually displayed, requires an explicit acceptance of the terms, and
+ *    only then calls `checkout()`. Nothing about the amount comes from the
+ *    form. A signed-out traveller may check out as a guest when the trip holds
+ *    nothing that must live in an account (itinerary files, map access).
+ *
+ *  - `retryPaymentAction` pays an open order again after a failed attempt —
+ *    the SAME order number, never a second order (v3 handoff).
  *
  * `checkout()` deliberately leaves the order in `pending`; only a verified
  * webhook moves it to `paid`. So the last thing these actions do is follow the
@@ -26,8 +28,10 @@
 import { randomUUID } from 'node:crypto'
 
 import { eq } from 'drizzle-orm'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import { formatPrice } from '@/components/bt/card'
 import { db } from '@/db'
 import { orders, payments } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
@@ -38,11 +42,17 @@ import {
   mergeAnonymousCartOnSignIn,
   setPendingCheckout,
 } from '@/lib/cart'
-import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { CheckoutError, checkout } from '@/lib/orders/checkout'
+import { validateContact } from '@/lib/orders/contact'
+import { canViewOrder, ensureGuestTokenHash, readGuestTokenHash } from '@/lib/orders/guest'
+import { RetryError, retryOrderPayment } from '@/lib/orders/retry'
+import { findActiveBan } from '@/lib/security/bans'
+import { clientIp } from '@/lib/security/ip'
+import { activeUserOrNull } from '@/lib/security/require'
 
 import {
+  ACCOUNT_ONLY_KINDS,
   CHECKOUT_HREF,
   CONFIRMATION_HREF,
   SIGN_IN_HREF,
@@ -50,10 +60,37 @@ import {
   TERMS_VERSION,
   type CheckoutState,
 } from './constants'
-import { activeUserOrNull } from '@/lib/security/require'
 
 function localeOf(value: FormDataEntryValue | null): Locale {
   return typeof value === 'string' && isLocale(value) ? value : defaultLocale
+}
+
+function text(formData: FormData, name: string): string {
+  const value = formData.get(name)
+  return typeof value === 'string' ? value : ''
+}
+
+/** Absolute return URL for a payment attempt, keyed by its idempotency key. */
+function returnUrlFor(locale: Locale, key: string): string {
+  return `${SITE_URL}${getPathname({ href: '/checkout/return', locale })}?k=${encodeURIComponent(key)}`
+}
+
+/**
+ * Follow the provider. Every intent requires 3-D Secure by contract, so the
+ * redirect branch is the normal one — the others exist so a provider that
+ * settles in-page, or one that needs no step-up, does not fall through to a
+ * blank screen.
+ */
+function followProvider(nextAction: unknown, locale: Locale, orderNumber: string): never {
+  if (nextAction !== null && typeof nextAction === 'object' && 'type' in nextAction) {
+    const action = nextAction as { type: string; url?: string }
+    if (action.type === 'redirect' && typeof action.url === 'string') {
+      // Absolute, provider-owned URL: the plain Next redirect, not the
+      // locale-aware one, which would try to prefix it.
+      redirect(action.url)
+    }
+  }
+  redirect(getPathname({ href: `${CONFIRMATION_HREF}/${orderNumber}`, locale }))
 }
 
 /**
@@ -66,10 +103,6 @@ function localeOf(value: FormDataEntryValue | null): Locale {
 export async function beginSignInAction(formData: FormData): Promise<never> {
   const locale = localeOf(formData.get('locale'))
   await setPendingCheckout(CHECKOUT_HREF)
-  // `getPathname` is the only thing that knows how `localePrefix: 'as-needed'`
-  // maps a route to a path, so the destination is built with it and handed to
-  // the plain redirect — which is typed `never` and therefore terminates the
-  // action for the compiler as well as at runtime.
   redirect(
     getPathname({ href: { pathname: SIGN_IN_HREF, query: { next: CHECKOUT_HREF } }, locale }),
   )
@@ -87,46 +120,66 @@ export async function startCheckoutAction(
 
   const locale = localeOf(formData.get('locale'))
 
-  // The cancellation ladder must be accepted explicitly, every time. An
-  // unchecked box is not consent, and a pre-checked one is not evidence.
+  // Step 1, checked again here: the browser's checks are a courtesy.
+  const contact = validateContact({
+    name: text(formData, 'name'),
+    email: text(formData, 'email'),
+    dialCode: text(formData, 'dialCode'),
+    phone: text(formData, 'phone'),
+    notes: text(formData, 'notes'),
+  })
+  if (!contact.ok) return { error: 'contact', fields: contact.errors }
+
+  // The terms must be accepted explicitly, every time. An unchecked box is
+  // not consent, and a pre-checked one is not evidence.
   if (formData.get('terms') !== 'on') return { error: 'terms' }
 
   const user = await getSessionUser()
-  if (!user) return { error: 'sign_in' }
-  // جهاز مُزال أو IP/جهاز محظور لا يشتري — نفس فحص المحتوى المدفوع.
-  if ((await activeUserOrNull('checkout')) === null) return { error: 'sign_in' }
-
-  // Signing up mid-flow is the normal path; fold the anonymous trip in before
-  // pricing it, or the account checks out with an empty cart.
-  await mergeAnonymousCartOnSignIn(user.id)
+  if (user) {
+    // جهاز مُزال أو IP/جهاز محظور لا يشتري — نفس فحص المحتوى المدفوع.
+    if ((await activeUserOrNull('checkout')) === null) return { error: 'sign_in' }
+    // Signing up mid-flow is the normal path; fold the anonymous trip in
+    // before pricing it, or the account checks out with an empty cart.
+    await mergeAnonymousCartOnSignIn(user.id)
+  } else {
+    // A guest is still subject to an IP ban.
+    const ip = clientIp(await headers())
+    if ((await findActiveBan({ userId: null, fingerprintHash: null, ip })) !== null) {
+      return { error: 'sign_in' }
+    }
+  }
 
   const cart = await getCartWithTotals()
   if (cart === null || cart.itemCount === 0) return { error: 'empty' }
   if (!cart.ok) return { error: 'invalid_cart' }
 
+  if (!user) {
+    const needsAccount = cart.groups.some((group) => ACCOUNT_ONLY_KINDS.includes(group.kind))
+    if (needsAccount) return { error: 'sign_in' }
+  }
+
   /**
    * What the browser displayed must equal what the server just computed.
-   *
    * `checkout()` performs the same comparison against the catalogue, but this
    * one catches the case that matters to the customer: an admin changed a
-   * price between the page rendering and the button being pressed. Charging a
-   * total the customer never saw is the one outcome worth aborting for.
+   * price between the page rendering and the button being pressed.
    */
   const displayed = Number(formData.get('expectedTotalMinor'))
   if (!Number.isInteger(displayed) || displayed !== cart.totalMinor) {
-    return { error: 'price_changed', newTotalMinor: cart.totalMinor, currency: cart.currency }
+    return {
+      error: 'price_changed',
+      newTotalMinor: cart.totalMinor,
+      currency: cart.currency,
+      newTotalLabel: formatPrice(cart.totalMinor, cart.currency, locale),
+    }
   }
 
   const rawKey = formData.get('idempotencyKey')
   const idempotencyKey = typeof rawKey === 'string' && rawKey !== '' ? rawKey : randomUUID()
 
   /**
-   * A repeat submission of the same form must not buy the trip twice.
-   *
-   * The unique index on `payments.idempotency_key` would reject the second
-   * insert, but only after `checkout()` had already written a second order and
-   * held capacity for it. Catching it here means the duplicate press simply
-   * lands on the order it already created.
+   * A repeat submission of the same form must not buy the trip twice: the
+   * duplicate press lands on the order the first one created.
    */
   const existing = await db
     .select({ orderNumber: orders.orderNumber })
@@ -140,31 +193,31 @@ export async function startCheckoutAction(
     redirect(getPathname({ href: `${CONFIRMATION_HREF}/${alreadyPlaced.orderNumber}`, locale }))
   }
 
-  const returnUrl = `${SITE_URL}${getPathname({ href: '/checkout/return', locale })}?k=${encodeURIComponent(idempotencyKey)}`
+  const guestTokenHash = user ? null : await ensureGuestTokenHash()
+  const { name, email, phone, notes } = contact.value
 
   let result
   try {
     result = await checkout({
       cartId: cart.cartId,
-      userId: user.id,
+      userId: user?.id ?? null,
+      guestTokenHash,
       expectedTotalMinor: cart.totalMinor,
       customer: {
-        email: user.email,
-        name: user.name ?? (isPlaceholderEmail(user.email) ? (user.phone ?? '') : user.email),
-        ...(user.phone === null ? {} : { phone: user.phone }),
-        ...(user.country === null ? {} : { country: user.country }),
+        email,
+        name,
+        phone,
+        ...(user?.country ? { country: user.country } : {}),
         locale,
+        ...(notes === null ? {} : { notes }),
       },
       termsVersion: TERMS_VERSION,
-      returnUrl,
+      returnUrl: returnUrlFor(locale, idempotencyKey),
       idempotencyKey,
     })
   } catch (error) {
-    // Backstop for a flag flipped between the check above and the call.
     // Matched by name, not instanceof: the guard module and this action can
     // land in different bundles, where instanceof fails across the boundary.
-    // Without this the refusal falls through to `unknown` and the traveller
-    // is told "Something went wrong" instead of the real reason.
     if (error instanceof Error && error.name === 'BookingsClosedError') {
       return { error: 'bookings_closed' }
     }
@@ -193,6 +246,11 @@ export async function startCheckoutAction(
             error: 'price_changed',
             newTotalMinor: error.quote?.totalMinor ?? cart.totalMinor,
             currency: error.quote?.currency ?? cart.currency,
+            newTotalLabel: formatPrice(
+              error.quote?.totalMinor ?? cart.totalMinor,
+              error.quote?.currency ?? cart.currency,
+              locale,
+            ),
           }
         default:
           return { error: 'unknown' }
@@ -205,21 +263,50 @@ export async function startCheckoutAction(
     return { error: 'unknown' }
   }
 
-  /**
-   * Follow the provider. Every intent requires 3-D Secure by contract, so the
-   * redirect branch is the normal one — the others exist so a provider that
-   * settles in-page, or one that needs no step-up, does not fall through to a
-   * blank screen.
-   */
-  const next = result.payment.nextAction
-  if (next !== null && typeof next === 'object' && 'type' in next) {
-    const action = next as { type: string; url?: string }
-    if (action.type === 'redirect' && typeof action.url === 'string') {
-      // Absolute, provider-owned URL: the plain Next redirect, not the
-      // locale-aware one, which would try to prefix it.
-      redirect(action.url)
-    }
-  }
+  followProvider(result.payment.nextAction, locale, result.orderNumber)
+}
 
-  redirect(getPathname({ href: `${CONFIRMATION_HREF}/${result.orderNumber}`, locale }))
+/**
+ * "Try again" on a failed payment. Opens a new attempt on the SAME order —
+ * same number, same frozen lines and total — and sends the traveller to the
+ * provider. Refusals come back to the order page as `?retry=<reason>`.
+ */
+export async function retryPaymentAction(formData: FormData): Promise<never> {
+  const locale = localeOf(formData.get('locale'))
+  const orderNumber = text(formData, 'orderNumber')
+  const back: (reason: string) => never = (reason) =>
+    redirect(
+      getPathname({
+        href: { pathname: `${CONFIRMATION_HREF}/${orderNumber}`, query: { retry: reason } },
+        locale,
+      }),
+    )
+
+  if (!bookingsOpen()) back('closed')
+
+  const [order] = await db
+    .select({ id: orders.id, userId: orders.userId, guestTokenHash: orders.guestTokenHash })
+    .from(orders)
+    .where(eq(orders.orderNumber, orderNumber))
+    .limit(1)
+  const user = await getSessionUser()
+  const viewer = { userId: user?.id ?? null, guestTokenHash: await readGuestTokenHash() }
+  if (!order || !canViewOrder(order, viewer)) back('not_found')
+  if (user && (await activeUserOrNull('checkout')) === null) back('not_found')
+
+  let next: unknown
+  try {
+    const result = await retryOrderPayment({
+      orderId: order.id,
+      returnUrlFor: (key) => returnUrlFor(locale, key),
+    })
+    next = result.nextAction
+  } catch (error) {
+    if (error instanceof RetryError) back(error.code)
+    if (error instanceof Error && error.name === 'BookingsClosedError') back('closed')
+    if (error instanceof Error && error.name === 'PaymentProviderError') back('payment')
+    console.error('[retryPaymentAction]', error)
+    back('error')
+  }
+  followProvider(next, locale, orderNumber)
 }

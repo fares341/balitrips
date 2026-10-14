@@ -37,7 +37,7 @@ import type { PricingMode } from '@/lib/content/types'
 import { formatMoney, lineTotalMinor } from '@/lib/money'
 
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
-import { addToCartAction } from '../../cart/actions'
+import { addToCartAction } from '../../my-trip/actions'
 
 export type PackageBookingBoxProps = {
   /** Cart lines reference the row, not the slug, which is editable. */

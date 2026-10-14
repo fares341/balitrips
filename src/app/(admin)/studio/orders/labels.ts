@@ -19,6 +19,16 @@ const FULFILMENT_KEYS: Record<string, string> = {
   refunded: 'orders.fulfil_refunded',
 }
 
+const BOOKING_STATUS_KEYS: Record<string, string> = {
+  created: 'orders.bs_created',
+  sent_to_provider: 'orders.bs_sent_to_provider',
+  confirmed: 'orders.bs_confirmed',
+  completed: 'orders.bs_completed',
+  cancel_requested: 'orders.bs_cancel_requested',
+  cancelled: 'orders.bs_cancelled',
+  refunded: 'orders.bs_refunded',
+}
+
 const PAYMENT_STATUS_KEYS: Record<string, string> = {
   requires_action: 'payments.status_requires_action',
   processing: 'payments.status_processing',
@@ -48,6 +58,11 @@ export function orderStatusLabel(t: Translate, status: string): string {
 
 export function fulfilmentLabel(t: Translate, status: string): string {
   return label(t, FULFILMENT_KEYS, status)
+}
+
+/** Provider-facing booking status of one item (`order_items.booking_status`). */
+export function bookingStatusLabel(t: Translate, status: string): string {
+  return label(t, BOOKING_STATUS_KEYS, status)
 }
 
 export function paymentStatusLabel(t: Translate, status: string): string {
