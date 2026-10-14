@@ -18,6 +18,27 @@ import { currency, localized, moneyMinor, priceMinor, timestamps, type Localized
 import { plans } from './product'
 import { users } from './auth'
 
+/** Add-on selection stored on a cart line. */
+export interface BookingOptions {
+  addons?: { id: string; qty: number }[]
+}
+
+/** One priced line of a booking, frozen on the order item. */
+export interface OrderItemPriceLine {
+  kind: 'package' | 'addon'
+  refId: string | null
+  name: Localized | null
+  unitMinor: number
+  quantity: number
+  totalMinor: number
+  /** Included in the package: shown, never charged. */
+  included?: boolean
+}
+
+export interface OrderItemOptions extends BookingOptions {
+  lines?: OrderItemPriceLine[]
+}
+
 // ---------------------------------------------------------------------------
 // Cart — server-owned, so prices cannot be tampered with client-side
 // ---------------------------------------------------------------------------
@@ -78,6 +99,15 @@ export const cartItems = pgTable(
      * activity cannot leave an orphaned driver charge.
      */
     parentItemId: uuid('parent_item_id'),
+
+    /**
+     * Booking choices of an activity line (handoff OrderItem): the add-ons
+     * picked and, for a multi-day activity, nothing else — the package is
+     * `refId` (kind `activity_tier`), dates/time/people are the columns above,
+     * and a driver is its own linked line. Ids and quantities only: the
+     * server prices them from `activity_addons`, never from this column.
+     */
+    options: jsonb('options').$type<BookingOptions>(),
 
     ...timestamps,
   },
@@ -166,6 +196,13 @@ export const orderItems = pgTable(
     refundedMinor: moneyMinor('refunded_minor').notNull().default(0),
 
     parentItemId: uuid('parent_item_id'),
+    /**
+     * Frozen booking breakdown: the add-ons bought and the priced lines
+     * (package × units, each add-on, included ones at zero) exactly as
+     * charged, with their names, so the order page and the provider see
+     * what was sold even after the catalogue changes.
+     */
+    options: jsonb('options').$type<OrderItemOptions>(),
     ...timestamps,
   },
   (t) => [index('order_items_order_idx').on(t.orderId)],

@@ -11,6 +11,8 @@ import {
   TextInput,
 } from '../../../_ui/field'
 import { getAdminI18n } from '../../../_lib/i18n'
+import type { Option } from '../../../_lib/lookups'
+import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { addActivityTier, removeActivityTier, saveActivityTier } from '../actions'
 
@@ -22,7 +24,12 @@ export interface TierRow {
   priceMinor: number
   currency: string
   pricingMode: string
+  groupMax: number | null
   maxGuests: number | null
+  includes: Localized[] | null
+  excludes: Localized[] | null
+  includesAddons: string[] | null
+  available: boolean
   isPopular: boolean
   features: Localized[] | null
   highlights: Localized[] | null
@@ -47,12 +54,18 @@ export async function TierEditor({
   activityId,
   tiers,
   currency,
+  addons,
 }: {
   activityId: string
   tiers: readonly TierRow[]
   currency: string
+  /** This activity's add-ons, for "included in this package". */
+  addons: readonly Option[]
 }) {
   const { t } = await getAdminI18n()
+  // Rows saved before migration 0013 may still say per_guest / flat.
+  const mode = (value: string) =>
+    value === 'per_group' || value === 'flat' ? 'per_group' : 'per_person'
   return (
     <div className="a-card">
       <h2>{t('activities.tiers_title')}</h2>
@@ -122,11 +135,26 @@ export async function TierEditor({
                 <Select
                   id={`pricingMode_${tier.id}`}
                   name="pricingMode"
-                  defaultValue={tier.pricingMode}
+                  defaultValue={mode(tier.pricingMode)}
                 >
-                  <option value="per_guest">{t('activities.per_guest')}</option>
-                  <option value="flat">{t('activities.flat')}</option>
+                  <option value="per_person">{t('activities.per_person')}</option>
+                  <option value="per_group">{t('activities.per_group')}</option>
                 </Select>
+              </Field>
+
+              <Field
+                label={t('activities.group_max')}
+                htmlFor={`groupMax_${tier.id}`}
+                hint={t('activities.group_max_hint')}
+              >
+                <TextInput
+                  id={`groupMax_${tier.id}`}
+                  name="groupMax"
+                  type="number"
+                  min={1}
+                  dir="ltr"
+                  defaultValue={tier.groupMax ?? ''}
+                />
               </Field>
 
               <Field
@@ -145,10 +173,35 @@ export async function TierEditor({
             </div>
 
             <Checkbox
+              name="available"
+              label={t('activities.pkg_available')}
+              defaultChecked={tier.available}
+              hint={t('activities.pkg_available_hint')}
+            />
+            <Checkbox
               name="isPopular"
               label={t('activities.tier_popular')}
               defaultChecked={tier.isPopular}
               hint={t('activities.tier_popular_hint')}
+            />
+
+            <LocalizedListField
+              name="includes"
+              label={t('activities.pkg_includes')}
+              values={tier.includes}
+              hint={t('activities.pkg_includes_hint')}
+            />
+            <LocalizedListField
+              name="excludes"
+              label={t('activities.pkg_excludes')}
+              values={tier.excludes}
+            />
+            <OptionChecklist
+              name="includesAddons"
+              label={t('activities.pkg_includes_addons')}
+              options={addons}
+              values={tier.includesAddons ?? []}
+              hint={t('activities.pkg_includes_addons_hint')}
             />
 
             <LocalizedListField
@@ -206,10 +259,17 @@ export async function TierEditor({
 
           <div className="a-row">
             <Field label={t('activities.pricing_mode')} htmlFor="new_tier_mode">
-              <Select id="new_tier_mode" name="pricingMode" defaultValue="per_guest">
-                <option value="per_guest">{t('activities.per_guest')}</option>
-                <option value="flat">{t('activities.flat')}</option>
+              <Select id="new_tier_mode" name="pricingMode" defaultValue="per_person">
+                <option value="per_person">{t('activities.per_person')}</option>
+                <option value="per_group">{t('activities.per_group')}</option>
               </Select>
+            </Field>
+            <Field
+              label={t('activities.group_max')}
+              htmlFor="new_tier_group"
+              hint={t('activities.group_max_hint')}
+            >
+              <TextInput id="new_tier_group" name="groupMax" type="number" min={1} dir="ltr" />
             </Field>
             <Field
               label={t('activities.max_guests')}
@@ -220,7 +280,16 @@ export async function TierEditor({
             </Field>
           </div>
 
+          <Checkbox name="available" label={t('activities.pkg_available')} defaultChecked />
           <Checkbox name="isPopular" label={t('activities.tier_popular')} />
+          <LocalizedListField name="includes" label={t('activities.pkg_includes')} />
+          <LocalizedListField name="excludes" label={t('activities.pkg_excludes')} />
+          <OptionChecklist
+            name="includesAddons"
+            label={t('activities.pkg_includes_addons')}
+            options={addons}
+            values={[]}
+          />
 
           <LocalizedListField name="features" label={t('activities.tier_features')} />
           <LocalizedListField name="highlights" label={t('activities.tier_highlights')} />

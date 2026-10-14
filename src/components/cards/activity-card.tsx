@@ -22,6 +22,7 @@ import {
   CardFoot,
   CardMedia,
   CardMeta,
+  CardText,
   CardTitle,
   formatPrice,
   PriceFrom,
@@ -49,6 +50,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
   const name = pick(activity.name, locale, activity.slug)
   const area = pickOptional(activity.area, locale)
   const duration = pickOptional(activity.duration, locale)
+  const blurb = pickOptional(activity.blurb, locale)
   const category = activity.categories[0]
   const badge = category ? pick(category.label, locale, category.key) : null
 
@@ -73,6 +75,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
           end={<Stars value={activity.rating} count={activity.reviewCount} />}
         />
         <CardTitle href={activity.href}>{name}</CardTitle>
+        {blurb !== null && <CardText>{blurb}</CardText>}
         <CardFoot>
           <PriceFrom
             label={t('bt_from')}

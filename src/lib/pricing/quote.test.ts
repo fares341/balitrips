@@ -510,3 +510,151 @@ describe('custom itinerary quotes', () => {
     expect(q.issues[0]?.code).toBe('unknown_item')
   })
 })
+
+describe('activity packages and add-ons (v3 handoff formula)', () => {
+  const addon = (id: string, over: Record<string, unknown> = {}) => ({
+    id,
+    priceMinor: 1000,
+    currency: 'USD',
+    pricing: 'per_booking' as const,
+    maxQty: null,
+    onlyPackages: [] as string[],
+    requiresAddonId: null as string | null,
+    available: true,
+    ...over,
+  })
+
+  function withAddons(): CatalogSnapshot {
+    const c = catalog()
+    c.activityTiers.set('batur-family', {
+      activityId: 'batur',
+      priceMinor: 16000,
+      currency: 'USD',
+      pricingMode: 'per_group',
+      groupMax: 4,
+      maxGuests: null,
+      includesAddons: ['breakfast'],
+    })
+    c.activityAddons = new Map([
+      [
+        'batur',
+        [
+          addon('breakfast', { priceMinor: 800, pricing: 'per_person' }),
+          addon('photo', { priceMinor: 2500 }),
+          addon('video', { priceMinor: 1800, requiresAddonId: 'photo' }),
+          addon('extra', {
+            priceMinor: 2000,
+            pricing: 'per_qty',
+            maxQty: 3,
+            onlyPackages: ['batur-premium'],
+          }),
+          addon('off', { available: false }),
+        ],
+      ],
+    ])
+    return c
+  }
+
+  const booking = (over: Partial<QuoteRequestItem> = {}): QuoteRequestItem =>
+    item({ kind: 'activity_tier', refId: 'batur-premium', guests: 3, quantity: 3, ...over })
+
+  it('line total = package + Σ add-ons, with a breakdown', () => {
+    const q = buildQuote(
+      [
+        booking({
+          options: {
+            addons: [
+              { id: 'breakfast', qty: 1 },
+              { id: 'photo', qty: 1 },
+              { id: 'extra', qty: 5 },
+            ],
+          },
+        }),
+      ],
+      withAddons(),
+      NOW,
+    )
+    expect(q.ok).toBe(true)
+    // 3 × 99 + 3 × 8 + 25 + 3 × 20
+    expect(q.totalMinor).toBe(29700 + 2400 + 2500 + 6000)
+    expect(q.lines[0]?.unitPriceMinor).toBe(9900)
+    expect(q.lines[0]?.quantity).toBe(3)
+    expect(q.lines[0]?.breakdown?.map((l) => l.totalMinor)).toEqual([29700, 2400, 2500, 6000])
+  })
+
+  it('per_group package: ceil(people / group_max) groups, included add-on free', () => {
+    const q = buildQuote(
+      [
+        booking({
+          refId: 'batur-family',
+          guests: 5,
+          quantity: 5,
+          options: { addons: [{ id: 'breakfast', qty: 1 }] },
+        }),
+      ],
+      withAddons(),
+      NOW,
+    )
+    expect(q.ok).toBe(true)
+    expect(q.totalMinor).toBe(32000)
+    expect(q.lines[0]?.breakdown?.[1]).toMatchObject({ refId: 'breakfast', included: true })
+  })
+
+  it('rejects add-ons that break a rule instead of dropping them', () => {
+    const code = (addons: { id: string; qty: number }[], refId = 'batur-premium') =>
+      buildQuote([booking({ refId, options: { addons } })], withAddons(), NOW).issues[0]
+    expect(code([{ id: 'video', qty: 1 }])?.detail).toBe('video:requires')
+    expect(code([{ id: 'extra', qty: 1 }], 'batur-family')?.detail).toBe('extra:not_for_package')
+    expect(code([{ id: 'off', qty: 1 }])?.detail).toBe('off:unavailable')
+    expect(code([{ id: 'ghost', qty: 1 }])?.code).toBe('invalid_addon')
+  })
+
+  it('an unavailable package cannot be booked', () => {
+    const c = withAddons()
+    const premium = c.activityTiers.get('batur-premium')
+    if (premium) c.activityTiers.set('batur-premium', { ...premium, available: false })
+    expect(buildQuote([booking()], c, NOW).issues[0]?.code).toBe('package_unavailable')
+  })
+
+  it('time is optional when the activity has no fixed slots', () => {
+    const c = withAddons()
+    const batur = c.activities.get('batur')
+    if (batur) c.activities.set('batur', { ...batur, timeSlots: [] })
+    expect(buildQuote([booking({ travelTime: null })], c, NOW).ok).toBe(true)
+  })
+
+  it('a multi-day activity needs a valid range', () => {
+    const c = withAddons()
+    const batur = c.activities.get('batur')
+    if (batur) c.activities.set('batur', { ...batur, multiDay: true })
+    expect(buildQuote([booking()], c, NOW).issues[0]?.code).toBe('invalid_date_range')
+    expect(buildQuote([booking({ endDate: '2026-08-10' })], c, NOW).issues[0]?.code).toBe(
+      'invalid_date_range',
+    )
+    expect(buildQuote([booking({ endDate: '2026-08-14' })], c, NOW).ok).toBe(true)
+  })
+
+  it('a driver linked to the booking is priced over the same days', () => {
+    const q = buildQuote(
+      [
+        booking(),
+        {
+          id: 'd1',
+          kind: 'driver',
+          refId: null,
+          quantity: 1,
+          travelDate: '2026-08-12',
+          travelTime: null,
+          guests: 3,
+          endDate: '2026-08-12',
+          parentItemId: 'i1',
+        },
+      ],
+      withAddons(),
+      NOW,
+    )
+    expect(q.ok).toBe(true)
+    // package 3 × 99 + sedan 1 day × 45
+    expect(q.totalMinor).toBe(29700 + 4500)
+  })
+})

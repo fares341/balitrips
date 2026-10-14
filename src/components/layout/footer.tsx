@@ -20,7 +20,6 @@ import { getTranslations } from 'next-intl/server'
 
 import { Icon, Logo, type IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
-import { APP_VERSION } from '@/lib/app-version'
 
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from './contact-config'
 import { FOOTER_QUICK_ROUTES, INFO_ROUTES, POLICY_ROUTES } from './routes'
@@ -134,12 +133,6 @@ export async function Footer() {
           <Logo variant="light" height={26} />
           <span>
             © <span dir="ltr">{year}</span> {t('foot_rights')}
-          </span>
-          <span style={{ opacity: 0.7 }}>
-            {t('bt_site_version')}{' '}
-            <span className="num" dir="ltr">
-              {APP_VERSION}
-            </span>
           </span>
         </div>
       </div>

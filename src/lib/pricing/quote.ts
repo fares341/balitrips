@@ -7,6 +7,13 @@ import {
   vehicleForPassengers,
   type VehicleClass,
 } from '@/lib/booking-rules'
+import {
+  priceBooking,
+  tierPricing,
+  type AddonRule,
+  type PackageRule,
+  type PriceLine,
+} from '@/lib/booking/price'
 
 /**
  * Server-authoritative pricing.
@@ -50,6 +57,8 @@ export interface QuoteRequestItem {
   guests: number | null
   endDate: string | null
   parentItemId: string | null
+  /** Add-ons picked for an activity line (`cart_items.options`). Ids and quantities only. */
+  options?: { addons?: { id: string; qty: number }[] } | null
 }
 
 /** The catalog facts pricing needs, already loaded from the database. */
@@ -62,6 +71,8 @@ export interface CatalogSnapshot {
       maxGuests: number
       leadTimeHours: number
       timeSlots: string[]
+      /** Booked as a date range (`activities.multi_day`). Absent = single day. */
+      multiDay?: boolean
     }
   >
   /**
@@ -76,11 +87,27 @@ export interface CatalogSnapshot {
       activityId: string
       priceMinor: number
       currency: string
-      pricingMode: 'flat' | 'per_guest'
+      /**
+       * `per_person` | `per_group` (the pre-0013 `per_guest` / `flat` are read
+       * through `tierPricing`, so `flat` stays one price for the party).
+       */
+      pricingMode: string
+      /** People one per_group unit covers. Null = the whole party is one unit. */
+      groupMax?: number | null
       /** Null means "whatever the activity allows". */
       maxGuests: number | null
+      /** Add-on ids that come with this package. */
+      includesAddons?: string[]
+      /** False = shown but not bookable. Absent = bookable. */
+      available?: boolean
     }
   >
+  /**
+   * Live add-ons per activity id (available or not — an unavailable one must
+   * be *rejected*, not reported as unknown). Optional so a catalogue built for
+   * carts without activities need not carry it.
+   */
+  activityAddons?: Map<string, AddonRule[]>
   itineraries: Map<string, { priceMinor: number; currency: string; version: number }>
   /** الباقات المنشورة (`plans`). سعرها من هنا دائماً، لا من العميل. */
   plans: Map<string, { priceMinor: number; currency: string }>
@@ -108,6 +135,12 @@ export interface QuoteLine {
   /** Set for itineraries so the order pins the version bought. */
   refVersion?: number
   vehicleClass?: VehicleClass
+  /**
+   * Activity lines: package × units, then each add-on (included ones at zero).
+   * `lineTotalMinor` is their sum; `unitPriceMinor` × `quantity` is the
+   * package part only.
+   */
+  breakdown?: PriceLine[]
 }
 
 export type QuoteIssueCode =
@@ -121,6 +154,10 @@ export type QuoteIssueCode =
   | 'guests_exceed_max'
   | 'invalid_quantity'
   | 'currency_mismatch'
+  /** An add-on that is unknown, unavailable, not for this package or missing its prerequisite. */
+  | 'invalid_addon'
+  /** The chosen package is switched off. */
+  | 'package_unavailable'
   /**
    * A cart line whose kind this engine does not price.
    *
@@ -254,47 +291,30 @@ function priceActivity(
   issues: QuoteIssue[],
 ): void {
   const activity = item.refId ? catalog.activities.get(item.refId) : undefined
-  if (!activity) {
+  if (!activity || !item.refId) {
     issues.push({ itemId: item.id, code: 'unknown_item' })
     return
   }
-  if (!item.travelDate) {
-    issues.push({ itemId: item.id, code: 'missing_date' })
-    return
-  }
-  if (!item.travelTime) {
-    issues.push({ itemId: item.id, code: 'missing_time' })
-    return
-  }
-  if (isPastInBali(item.travelDate, now)) {
-    issues.push({ itemId: item.id, code: 'date_in_past' })
-    return
-  }
-  if (
-    activity.timeSlots.length > 0 &&
-    !activity.timeSlots.map(toHourMinute).includes(toHourMinute(item.travelTime))
-  ) {
-    issues.push({ itemId: item.id, code: 'invalid_time_slot', detail: item.travelTime })
-    return
-  }
-  if (!isWithinLeadTime(item.travelDate, item.travelTime, activity.leadTimeHours, now)) {
-    issues.push({ itemId: item.id, code: 'lead_time_passed' })
-    return
-  }
-  if (item.quantity > activity.maxGuests) {
-    issues.push({ itemId: item.id, code: 'guests_exceed_max', detail: String(activity.maxGuests) })
-    return
-  }
-
-  lines.push({
-    itemId: item.id,
-    kind: 'activity',
-    refId: item.refId,
-    unitPriceMinor: activity.priceMinor,
-    quantity: item.quantity,
-    lineTotalMinor: lineTotalMinor(activity.priceMinor, item.quantity),
-    currency: activity.currency,
-  })
+  // The activity sold at its own price: a per-person "package" with no id,
+  // so add-ons restricted to named packages are refused for it.
+  priceActivityBooking(
+    item,
+    item.refId,
+    activity,
+    {
+      id: null,
+      priceMinor: activity.priceMinor,
+      currency: activity.currency,
+      pricing: 'per_person',
+      groupMax: null,
+      includesAddons: [],
+    },
+    activity.maxGuests,
+    catalog,
+    now,
+    lines,
+    issues,
+  )
 }
 
 function priceDriver(
@@ -460,14 +480,12 @@ function pricePackage(
 }
 
 /**
- * Price one service level of an activity.
+ * Price one package (service level) of an activity.
  *
- * Every rule the activity enforces still applies -- a Premium tier of the
+ * Every rule the activity enforces still applies -- a Premium package of the
  * sunrise hike is the same hike, leaving at the same times, closing to
- * bookings at the same hour. Only the price and the party-size cap come from
- * the tier. Re-deriving that validation here instead of reusing the activity's
- * would have let the two drift, and the way that shows up is a tier bookable
- * at a time the tour does not run.
+ * bookings at the same hour. Only the price, the pricing mode, the included
+ * add-ons and the party-size cap come from the package.
  */
 function priceActivityTier(
   item: QuoteRequestItem,
@@ -477,7 +495,7 @@ function priceActivityTier(
   issues: QuoteIssue[],
 ): void {
   const tier = item.refId ? catalog.activityTiers.get(item.refId) : undefined
-  if (!tier) {
+  if (!tier || !item.refId) {
     issues.push({ itemId: item.id, code: 'unknown_item' })
     return
   }
@@ -488,49 +506,121 @@ function priceActivityTier(
     issues.push({ itemId: item.id, code: 'unknown_item' })
     return
   }
-  if (!item.travelDate) {
-    issues.push({ itemId: item.id, code: 'missing_date' })
+  if (tier.available === false) {
+    issues.push({ itemId: item.id, code: 'package_unavailable' })
     return
   }
-  if (!item.travelTime) {
-    issues.push({ itemId: item.id, code: 'missing_time' })
+  // The tier may cap the party tighter than the activity -- a couples tier at
+  // two on a tour that seats twenty -- but never looser.
+  const cap = Math.min(tier.maxGuests ?? activity.maxGuests, activity.maxGuests)
+  priceActivityBooking(
+    item,
+    tier.activityId,
+    activity,
+    {
+      id: item.refId,
+      priceMinor: tier.priceMinor,
+      currency: tier.currency,
+      pricing: tierPricing(tier.pricingMode),
+      groupMax: tier.groupMax ?? null,
+      includesAddons: tier.includesAddons ?? [],
+    },
+    cap,
+    catalog,
+    now,
+    lines,
+    issues,
+  )
+}
+
+type ActivityFacts = CatalogSnapshot['activities'] extends Map<string, infer V> ? V : never
+
+/**
+ * The shared half of an activity line, plain or packaged: date (or range),
+ * time slot, lead time, party cap, then `priceBooking` — the handoff formula
+ * — for the package and its add-ons. The driver is NOT priced here: it is its
+ * own linked line (`kind: 'driver'`, `parentItemId`) priced by `priceDriver`
+ * over the same dates, so fleet capacity keeps being reserved per vehicle.
+ */
+function priceActivityBooking(
+  item: QuoteRequestItem,
+  activityId: string,
+  activity: ActivityFacts,
+  pkg: PackageRule,
+  cap: number,
+  catalog: CatalogSnapshot,
+  now: Date,
+  lines: QuoteLine[],
+  issues: QuoteIssue[],
+): void {
+  if (!item.travelDate) {
+    issues.push({ itemId: item.id, code: 'missing_date' })
     return
   }
   if (isPastInBali(item.travelDate, now)) {
     issues.push({ itemId: item.id, code: 'date_in_past' })
     return
   }
-  if (
-    activity.timeSlots.length > 0 &&
-    !activity.timeSlots.map(toHourMinute).includes(toHourMinute(item.travelTime))
-  ) {
-    issues.push({ itemId: item.id, code: 'invalid_time_slot', detail: item.travelTime })
-    return
+  if (activity.multiDay === true) {
+    // A multi-day activity is a range; both ends are required and ordered.
+    if (!item.endDate || !isValidDateRange(item.travelDate, item.endDate)) {
+      issues.push({ itemId: item.id, code: 'invalid_date_range' })
+      return
+    }
   }
-  if (!isWithinLeadTime(item.travelDate, item.travelTime, activity.leadTimeHours, now)) {
+  // A time is required only when the activity has fixed departures.
+  if (activity.timeSlots.length > 0) {
+    if (!item.travelTime) {
+      issues.push({ itemId: item.id, code: 'missing_time' })
+      return
+    }
+    if (!activity.timeSlots.map(toHourMinute).includes(toHourMinute(item.travelTime))) {
+      issues.push({ itemId: item.id, code: 'invalid_time_slot', detail: item.travelTime })
+      return
+    }
+  }
+  // No slot: the lead time counts from the start of the day, the earliest
+  // the operator could be asked to turn up.
+  if (!isWithinLeadTime(item.travelDate, item.travelTime ?? '00:00', activity.leadTimeHours, now)) {
     issues.push({ itemId: item.id, code: 'lead_time_passed' })
     return
   }
 
-  // The tier may cap the party tighter than the activity -- a couples tier at
-  // two on a tour that seats twenty -- but never looser.
-  const cap = Math.min(tier.maxGuests ?? activity.maxGuests, activity.maxGuests)
-  const guests = item.guests ?? item.quantity
-  if (guests > cap) {
+  const people = item.guests ?? item.quantity
+  if (people > cap) {
     issues.push({ itemId: item.id, code: 'guests_exceed_max', detail: String(cap) })
     return
   }
 
-  const quantity = tier.pricingMode === 'per_guest' ? guests : 1
+  const picks = item.options?.addons ?? []
+  const price = priceBooking({
+    pkg,
+    addons: catalog.activityAddons?.get(activityId) ?? [],
+    picks,
+    people,
+  })
+  // Refuse rather than silently drop: the traveller saw these add-ons in the
+  // summary, and charging less than shown is as wrong as charging more.
+  const firstRejected = price.resolution.rejected[0]
+  if (firstRejected) {
+    issues.push({
+      itemId: item.id,
+      code: 'invalid_addon',
+      detail: `${firstRejected.id}:${firstRejected.reason}`,
+    })
+    return
+  }
 
+  const packageLine = price.lines[0]
   lines.push({
     itemId: item.id,
-    kind: 'activity_tier',
+    kind: item.kind,
     refId: item.refId,
-    unitPriceMinor: tier.priceMinor,
-    quantity,
-    lineTotalMinor: lineTotalMinor(tier.priceMinor, quantity),
-    currency: tier.currency,
+    unitPriceMinor: pkg.priceMinor,
+    quantity: packageLine?.quantity ?? 1,
+    lineTotalMinor: price.totalMinor,
+    currency: pkg.currency,
+    breakdown: price.lines,
   })
 }
 

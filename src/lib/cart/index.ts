@@ -48,6 +48,7 @@ import { cartItems, carts } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
 import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/routes'
 import { vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
+import { getDriverAvailability } from '@/lib/availability/capacity'
 import { assertBookingsOpen } from '@/lib/bookings-open'
 import { loadEntitlements } from '@/lib/entitlements'
 import { loadPayableCustomQuotes } from '@/lib/orders/custom-request'
@@ -464,7 +465,10 @@ function sameBooking(row: CartItemRow, input: AddItemInput): boolean {
     row.travelDate === normalise(input.travelDate) &&
     row.travelTime === normalise(input.travelTime) &&
     row.endDate === normalise(input.endDate) &&
-    row.parentItemId === null
+    row.parentItemId === null &&
+    // A line booked through the activity booking box (package, add-ons) is
+    // its own booking; a bare "add to trip" never merges into it.
+    row.options === null
   )
 }
 
@@ -622,6 +626,206 @@ async function attachDriver(
   return inserted[0]?.id ?? null
 }
 
+// ---------------------------------------------------------------------------
+// Activity booking (v3 booking box)
+// ---------------------------------------------------------------------------
+
+export interface ActivityBookingInput {
+  activityId: string
+  /** `activity_tiers.id`, or null to book the activity at its own price. */
+  packageId: string | null
+  /** YYYY-MM-DD, Bali calendar date. */
+  date: string
+  /** Last day, multi-day activities only. Ignored otherwise. */
+  endDate?: string | null
+  /** HH:mm; required when the activity has time slots. */
+  time: string | null
+  people: number
+  addons: { id: string; qty: number }[]
+  /** Hire a driver for the booking: vehicle from `vehicleFor(people)`, same dates. */
+  driver: boolean
+}
+
+export type ActivityBookingIssue = QuoteIssue['code'] | 'driver_full'
+
+export type ActivityBookingResult =
+  | { ok: true; itemId: string; itemCount: number; totalMinor: number; currency: string }
+  | { ok: false; issues: { code: ActivityBookingIssue; detail?: string; driver?: boolean }[] }
+
+/** Add-on picks in a stable order, so "the same booking" compares equal. */
+function canonicalAddons(addons: readonly { id: string; qty: number }[]) {
+  return [...addons]
+    .map((a) => ({ id: a.id, qty: a.qty }))
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+/**
+ * Add one activity booking — package, date(s), time, people, add-ons and an
+ * optional driver — to the caller's trip.
+ *
+ * Validated by the SAME `buildQuote` checkout uses, against the catalogue,
+ * before anything is written: a booking that checkout would refuse (bad
+ * slot, lead time passed, add-on rule broken, party over the cap) is
+ * refused here with the reason, rather than stored and blocked later. The
+ * client never sends a price; the total returned is the server's.
+ *
+ * Re-submitting the same booking (same package, dates, time and add-ons)
+ * updates the party size instead of stacking a duplicate. The driver is a
+ * linked `driver` line over the same dates, so fleet capacity is reserved at
+ * checkout exactly as for a driver booked on its own.
+ */
+export async function addActivityBooking(
+  raw: ActivityBookingInput,
+): Promise<ActivityBookingResult> {
+  assertBookingsOpen('addItem')
+
+  const people = clampQuantity(raw.people, CART_MAX_QUANTITY)
+  const addons = canonicalAddons(raw.addons.slice(0, 40))
+  const kind: CartItemKind = raw.packageId === null ? 'activity' : 'activity_tier'
+  const refId = raw.packageId ?? raw.activityId
+
+  const draft = (endDate: string | null): QuoteRequestItem[] => {
+    const main: QuoteRequestItem = {
+      id: 'booking',
+      kind,
+      refId,
+      quantity: people,
+      travelDate: normalise(raw.date),
+      travelTime: normalise(raw.time),
+      guests: people,
+      endDate,
+      parentItemId: null,
+      options: { addons },
+    }
+    if (!raw.driver) return [main]
+    return [
+      main,
+      {
+        id: 'driver',
+        kind: 'driver',
+        refId: null,
+        quantity: 1,
+        travelDate: normalise(raw.date),
+        travelTime: null,
+        guests: people,
+        endDate: endDate ?? normalise(raw.date),
+        parentItemId: 'booking',
+      },
+    ]
+  }
+
+  // First pass only to learn whether the activity is multi-day (and that the
+  // package really belongs to it): the end date is meaningless otherwise.
+  const probe = await loadCartCatalog(draft(null), await loadEntitlements(null))
+  const parentId =
+    kind === 'activity_tier'
+      ? probe.snapshot.activityTiers.get(refId)?.activityId
+      : probe.snapshot.activities.has(refId)
+        ? refId
+        : undefined
+  if (parentId !== raw.activityId) {
+    return { ok: false, issues: [{ code: 'unknown_item' }] }
+  }
+  const multiDay = probe.snapshot.activities.get(raw.activityId)?.multiDay === true
+  const endDate = multiDay ? normalise(raw.endDate) : null
+
+  const items = draft(endDate)
+  const quote = buildQuote(items, probe.snapshot)
+  if (!quote.ok) {
+    return {
+      ok: false,
+      issues: quote.issues.map((issue) => ({
+        code: issue.code,
+        detail: issue.detail,
+        driver: issue.itemId === 'driver',
+      })),
+    }
+  }
+
+  // Read-only fleet check so a sold-out day is said now, not at payment.
+  // Not an authorisation: checkout's conditional UPDATE is what reserves.
+  const driverLine = quote.lines.find((line) => line.kind === 'driver')
+  if (driverLine?.vehicleClass && raw.date) {
+    const days = await getDriverAvailability(driverLine.vehicleClass, raw.date, endDate ?? raw.date)
+    if (days.some((day) => day.available < 1)) {
+      return { ok: false, issues: [{ code: 'driver_full', driver: true }] }
+    }
+  }
+
+  const bookingLine = quote.lines.find((line) => line.itemId === 'booking')
+  const cart = await getOrCreateCart()
+  const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
+  const key = JSON.stringify(addons)
+  const existing = rows.find(
+    (row) =>
+      row.kind === kind &&
+      row.refId === refId &&
+      row.parentItemId === null &&
+      row.travelDate === normalise(raw.date) &&
+      (row.travelTime ?? '').slice(0, 5) === (normalise(raw.time) ?? '') &&
+      row.endDate === endDate &&
+      row.options !== null &&
+      JSON.stringify(canonicalAddons(row.options.addons ?? [])) === key,
+  )
+
+  let itemId: string
+  if (existing) {
+    await db
+      .update(cartItems)
+      .set({ quantity: people, guests: people, unitPriceMinor: bookingLine?.unitPriceMinor ?? 0 })
+      .where(eq(cartItems.id, existing.id))
+    itemId = existing.id
+  } else {
+    const [row] = await db
+      .insert(cartItems)
+      .values({
+        cartId: cart.id,
+        kind,
+        refId,
+        quantity: people,
+        travelDate: normalise(raw.date),
+        travelTime: normalise(raw.time),
+        guests: people,
+        vehicleClass: null,
+        endDate,
+        unitPriceMinor: bookingLine?.unitPriceMinor ?? 0,
+        parentItemId: null,
+        options: { addons },
+      })
+      .returning({ id: cartItems.id })
+    if (!row) throw new Error('Failed to add the booking to the cart')
+    itemId = row.id
+  }
+
+  // The driver follows the booking: replaced, so a changed party size or
+  // range re-derives the vehicle, and removed when no longer wanted.
+  await db
+    .delete(cartItems)
+    .where(
+      and(
+        eq(cartItems.cartId, cart.id),
+        eq(cartItems.parentItemId, itemId),
+        eq(cartItems.kind, 'driver'),
+      ),
+    )
+  if (raw.driver) {
+    await attachDriver(
+      cart.id,
+      itemId,
+      { kind, travelDate: raw.date, guests: people },
+      { guests: people, endDate: endDate ?? raw.date },
+      [],
+    )
+  }
+
+  if (rows.length === 0 && quote.currency) {
+    await db.update(carts).set({ currency: quote.currency }).where(eq(carts.id, cart.id))
+  }
+
+  const itemCount = await writeCartCount(cart.id)
+  return { ok: true, itemId, itemCount, totalMinor: quote.totalMinor, currency: quote.currency }
+}
+
 /**
  * Change a line's quantity.
  *
@@ -676,6 +880,7 @@ async function maxQuantityFor(row: CartItemRow): Promise<number> {
     guests: row.guests,
     endDate: row.endDate,
     parentItemId: row.parentItemId,
+    options: row.options,
   }
   const { display } = await loadCartCatalog([item], await loadEntitlements(null))
   const max = display.get(displayKey(row.kind, row.refId))?.maxQuantity
@@ -764,6 +969,23 @@ export interface CartLineView {
   pricedQuantity: number | null
   /** Why the line could not be priced. */
   issue: QuoteIssue | null
+  /**
+   * Activity lines: package × units and each add-on, as priced by the
+   * server (handoff `lines[]`). Null for every other kind.
+   */
+  breakdown: CartBreakdownLine[] | null
+}
+
+export interface CartBreakdownLine {
+  kind: 'package' | 'addon' | 'driver'
+  refId: string | null
+  /** Package or add-on name; null for an activity sold at its base price. */
+  name: Localized | null
+  unitMinor: number
+  quantity: number
+  totalMinor: number
+  /** Comes with the package: listed, not charged. */
+  included: boolean
 }
 
 export interface CartGroupView {
@@ -818,10 +1040,11 @@ export async function getCartWithTotals(): Promise<CartView | null> {
     guests: row.guests,
     endDate: row.endDate,
     parentItemId: row.parentItemId,
+    options: row.options,
   }))
 
   const held = await loadEntitlements(cart.userId)
-  const { snapshot, display } = await loadCartCatalog(requestItems, held, cart.userId)
+  const { snapshot, display, partNames } = await loadCartCatalog(requestItems, held, cart.userId)
   const quote = buildQuote(requestItems, snapshot)
 
   const lineById = new Map(quote.lines.map((line) => [line.itemId, line]))
@@ -854,13 +1077,28 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       imageUrl: info?.imageUrl ?? null,
       imageAlt: info?.imageAlt ?? null,
       href: info?.href ?? null,
-      maxQuantity: kind === 'activity' ? (info?.maxQuantity ?? CART_MAX_QUANTITY) : null,
+      // An activity booked through the booking box (add-ons, package) is
+      // edited on its page, not with a bare quantity stepper.
+      maxQuantity:
+        kind === 'activity' && row.options === null
+          ? (info?.maxQuantity ?? CART_MAX_QUANTITY)
+          : null,
 
       unitPriceMinor: line?.unitPriceMinor ?? null,
       lineTotalMinor: line?.lineTotalMinor ?? null,
       currency: line?.currency ?? null,
       pricedQuantity: line?.quantity ?? null,
       issue: issueById.get(row.id) ?? null,
+      breakdown:
+        line?.breakdown?.map((part) => ({
+          kind: part.kind,
+          refId: part.refId,
+          name: part.refId === null ? null : (partNames.get(part.refId) ?? null),
+          unitMinor: part.unitMinor,
+          quantity: part.quantity,
+          totalMinor: part.totalMinor,
+          included: part.included === true,
+        })) ?? null,
     }
   })
 

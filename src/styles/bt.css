@@ -2114,6 +2114,12 @@ body:has(> .tabbar) {
 .card-text {
   font-size: 14.5px;
   color: var(--muted);
+  /* Fed from a full description: two lines, as on the v3 cards. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .card-acts {
   display: inline-flex;

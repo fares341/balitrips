@@ -19,6 +19,7 @@
  * these types without pulling a connection into the bundle.
  */
 
+import type { AddonPricing, PackagePricing } from '@/lib/booking/price'
 import type { IconName } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import type { VehicleClass } from '@/lib/booking-rules'
@@ -136,6 +137,8 @@ export interface ActivitySummary {
   rating: number | null
   reviewCount: number
   hero: MediaDto | null
+  /** Card line under the title (the description, clamped by CSS). */
+  blurb?: LocalizedText | null
 }
 
 /**
@@ -152,10 +155,19 @@ export interface ActivityTierDto {
   tagline: LocalizedText | null
   priceMinor: number
   currency: string
-  pricingMode: PricingMode
+  /** v3 package pricing: per person, or per group of up to `groupMax`. */
+  pricing: PackagePricing
+  groupMax: number | null
   /** Null means "whatever the activity allows". */
   maxGuests: number | null
   isPopular: boolean
+  /** Package card lists. */
+  includes: LocalizedText[]
+  excludes: LocalizedText[]
+  /** Add-on ids that come with this package (included, not charged). */
+  includesAddons: string[]
+  /** False = shown, not selectable. */
+  available: boolean
   /** Chips on the card. */
   features: LocalizedText[]
   /** Expanded panel. */
@@ -178,6 +190,25 @@ export interface ActivityDetail extends ActivitySummary {
   gallery: MediaDto[]
   /** Published service levels, cheapest first. Empty when none are defined. */
   tiers: ActivityTierDto[]
+  /** Booked as a date range; a driver is then hired for every day of it. */
+  multiDay: boolean
+  /** Region centre for the location map (approximate by design). */
+  location: { lat: number; lon: number } | null
+  /** Optional extras, in display order (switched-off ones included, shown disabled). */
+  addons: ActivityAddonDto[]
+}
+
+export interface ActivityAddonDto {
+  id: string
+  name: LocalizedText
+  description: LocalizedText | null
+  priceMinor: number
+  currency: string
+  pricing: AddonPricing
+  maxQty: number | null
+  onlyPackages: string[]
+  requiresAddonId: string | null
+  available: boolean
 }
 
 // ---------------------------------------------------------------------------

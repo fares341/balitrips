@@ -43,6 +43,7 @@ import {
   customRequestName,
   loadPayableCustomQuotes,
 } from '@/lib/orders/custom-request'
+import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
 
 const PUBLISHED = 'published'
@@ -67,6 +68,11 @@ export interface CartCatalog {
   snapshot: CatalogSnapshot
   /** Keyed by `${kind}:${refId}`, or `driver:${vehicleClass}` for drivers. */
   display: Map<string, CartDisplay>
+  /**
+   * Names for an activity line's breakdown, keyed by package (tier) id and
+   * add-on id. Display only.
+   */
+  partNames: Map<string, Localized>
 }
 
 export function displayKey(kind: string, ref: string | null): string {
@@ -122,6 +128,9 @@ export async function loadCartCatalog(
           currency: activityTiers.currency,
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
+          groupMax: activityTiers.groupMax,
+          includesAddons: activityTiers.includesAddons,
+          available: activityTiers.available,
           status: activityTiers.status,
         })
         .from(activityTiers)
@@ -147,6 +156,7 @@ export async function loadCartCatalog(
             maxGuests: activities.maxGuests,
             leadTimeHours: activities.leadTimeHours,
             timeSlots: activities.timeSlots,
+            multiDay: activities.multiDay,
             status: activities.status,
             heroImageId: activities.heroImageId,
           })
@@ -292,6 +302,27 @@ export async function loadCartCatalog(
     })
   }
 
+  // A package line reads as its activity: "Nusa Dua Water Sports", with the
+  // package itself named in the breakdown underneath.
+  const activityById = new Map(activityRows.map((row) => [row.id, row]))
+  const partNames = new Map<string, Localized>()
+  for (const row of tierRows) {
+    partNames.set(row.id, row.name)
+    const parent = activityById.get(row.activityId)
+    if (!parent) continue
+    const image = heroFor(parent.heroImageId)
+    display.set(displayKey('activity_tier', row.id), {
+      name: parent.name,
+      imageUrl: image.url,
+      imageAlt: image.alt,
+      href: entityHref('activity', parent.slug),
+      maxQuantity: Math.min(row.maxGuests ?? parent.maxGuests, parent.maxGuests),
+    })
+  }
+
+  const addonRows = await loadActivityAddons(activityRows.map((row) => row.id))
+  for (const list of addonRows.values()) for (const row of list) partNames.set(row.id, row.name)
+
   const planRows = await planRowsPromise
   for (const row of planRows) {
     display.set(displayKey('plan', row.id), {
@@ -339,6 +370,7 @@ export async function loadCartCatalog(
             maxGuests: row.maxGuests,
             leadTimeHours: row.leadTimeHours,
             timeSlots: row.timeSlots ?? [],
+            multiDay: row.multiDay,
           },
         ]),
     ),
@@ -351,11 +383,15 @@ export async function loadCartCatalog(
             activityId: row.activityId,
             priceMinor: row.priceMinor,
             currency: row.currency,
-            pricingMode: row.pricingMode === 'flat' ? ('flat' as const) : ('per_guest' as const),
+            pricingMode: row.pricingMode,
+            groupMax: row.groupMax,
             maxGuests: row.maxGuests,
+            includesAddons: row.includesAddons ?? [],
+            available: row.available,
           },
         ]),
     ),
+    activityAddons: addonRules(addonRows),
     itineraries: new Map(
       itineraryRows
         .filter((row) => row.status === PUBLISHED)
@@ -389,7 +425,7 @@ export async function loadCartCatalog(
     ),
   }
 
-  return { snapshot, display }
+  return { snapshot, display, partNames }
 }
 
 /**
@@ -425,6 +461,16 @@ export async function snapshotUnitPrice(
       .select({ priceMinor: activities.priceMinor, currency: activities.currency })
       .from(activities)
       .where(eq(activities.id, refId))
+      .limit(1)
+    const row = rows[0]
+    return row ?? { priceMinor: 0, currency: null }
+  }
+
+  if (kind === 'activity_tier') {
+    const rows = await db
+      .select({ priceMinor: activityTiers.priceMinor, currency: activityTiers.currency })
+      .from(activityTiers)
+      .where(eq(activityTiers.id, refId))
       .limit(1)
     const row = rows[0]
     return row ?? { priceMinor: 0, currency: null }

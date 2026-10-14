@@ -30,6 +30,7 @@ import { TRIP_KIND_ICON } from '@/components/trip'
 import { Icon } from '@/components/ui'
 import { db } from '@/db'
 import { orderItems, orders } from '@/db/schema'
+import { PriceBreakdown } from '@/components/trip/price-breakdown'
 import { getSessionUser } from '@/lib/cart'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
@@ -233,10 +234,19 @@ export default async function ConfirmationPage({ params }: { params: PageParams 
                           {meta.join(' · ')}
                         </div>
                       )}
-                      <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                        {formatMoney(line.unitPriceMinor, order.presentmentCurrency, locale)} ×{' '}
-                        {format.number(line.quantity)}
-                      </div>
+                      {line.options?.lines && line.options.lines.length > 0 ? (
+                        // An activity booking: package and add-ons as charged.
+                        <PriceBreakdown
+                          parts={line.options.lines}
+                          currency={order.presentmentCurrency}
+                          locale={locale}
+                        />
+                      ) : (
+                        <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
+                          {formatMoney(line.unitPriceMinor, order.presentmentCurrency, locale)} ×{' '}
+                          {format.number(line.quantity)}
+                        </div>
+                      )}
                     </div>
 
                     <div

@@ -1,48 +1,35 @@
 /**
- * Activities hub.
+ * Activities hub — v3 screen 05 (design-reference/prototype/activities.html).
  *
- * Ported from `ActivitiesPage` in design/handoff/sections-bt/page-activities.jsx.
+ * Banner, the three "how to choose" steps, a sticky toolbar (search, sort,
+ * more filters, grid/list) with category chips, the card grid and the
+ * "need a driver?" panel.
  *
- * The handoff held the category and the sort in `React.useState`, which made
- * the whole page a client component and made the filtered view unaddressable:
- * "adventures, cheapest first" was not a URL, so it could not be shared,
- * bookmarked, linked to from an article, or indexed. Both live in the query
- * string here and the filtering happens in Postgres, so the chips are plain
- * anchors and the page needs no JavaScript at all to work.
- *
- * The one cost is that reading `searchParams` opts this route out of static
- * prerendering — it is request-rendered. That is inherent to a shareable
- * filtered list and is scoped to this page; every other route in the tree,
- * including the detail pages below it, stays static.
+ * Filtering is live on the client, as in the prototype (skeleton, then the
+ * results — 260ms, instant with reduced motion), over the full published
+ * catalogue rendered here. The filter state is mirrored into the query
+ * string (`?cat=&region=&max=&sort=&q=&view=`) and read back on the server,
+ * so a filtered view is still a shareable, server-rendered URL.
  */
 
 import type { Metadata } from 'next'
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { ActivityCard } from '@/components/cards'
-import { Breadcrumbs } from '@/components/shared'
-import { Icon } from '@/components/ui'
+import { Breadcrumbs, LinkButton } from '@/components/bt'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
-import { getPathname, Link } from '@/i18n/routing'
+import { getPathname } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
 import { listActivities, listCategories } from '@/lib/content/queries'
-import { ENTITY_PATHS, type ActivitySort, type CategoryDto } from '@/lib/content/types'
+import { ENTITY_PATHS } from '@/lib/content/types'
+
+import { ActivitiesExplorer, type ExplorerFilters } from './activities-explorer'
+import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
+
+import '@/styles/bt-activity.css'
 
 const HUB_PATH = ENTITY_PATHS.activity
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
-
-/** The design's "no filter" sentinel. `listActivities` understands it too. */
-const ALL = 'all'
-
-const SORTS = ['top', 'price', 'region'] as const
-
-/** Label key per sort. Kept beside the union so a new sort cannot ship untranslated. */
-const SORT_LABEL: Record<ActivitySort, string> = {
-  top: 'ah_sort_top',
-  price: 'ah_sort_price',
-  region: 'ah_sort_region',
-}
 
 type SearchParams = Record<string, string | string[] | undefined>
 
@@ -55,29 +42,8 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
 }
 
-/** `?cat=a&cat=b` is not a thing this page supports; take the first value. */
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
-}
-
-function toSort(value: string | undefined): ActivitySort | null {
-  if (value === undefined) return null
-  return (SORTS as readonly string[]).includes(value) ? (value as ActivitySort) : null
-}
-
-/**
- * Canonical URL for one filter combination.
- *
- * Defaults are omitted rather than serialised, so `/activities`,
- * `/activities?cat=all` and `/activities?sort=` are not three URLs for one
- * page. Order is fixed for the same reason.
- */
-function hubHref(categoryKey: string, sort: ActivitySort | null): string {
-  const query = new URLSearchParams()
-  if (categoryKey !== ALL) query.set('cat', categoryKey)
-  if (sort !== null) query.set('sort', sort)
-  const search = query.toString()
-  return search === '' ? HUB_PATH : `${HUB_PATH}?${search}`
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -88,8 +54,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const url = (target: Locale) => `${SITE_URL}${getPathname({ href: HUB_PATH, locale: target })}`
 
   return {
-    title: t('ah_title'),
-    description: t('ah_sub'),
+    title: t('act_hub_title'),
+    description: t('act_hub_sub'),
     alternates: {
       canonical: url(lang),
       languages: {
@@ -98,8 +64,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     },
     openGraph: {
-      title: t('ah_title'),
-      description: t('ah_sub'),
+      title: t('act_hub_title'),
+      description: t('act_hub_sub'),
       url: url(lang),
       type: 'website',
     },
@@ -109,159 +75,108 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ActivitiesPage({ params, searchParams }: PageProps) {
   const { locale } = await params
   setRequestLocale(locale)
-
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
   const query = await searchParams
 
-  const [t, format, categories] = await Promise.all([
+  const [t, categories, activities] = await Promise.all([
     getTranslations(),
-    getFormatter(),
     listCategories(),
+    listActivities({ limit: 200, locale: lang }),
   ])
 
-  // An unknown ?cat= is treated as no filter rather than as an empty result:
-  // a stale link from an old category should show the catalogue, not a dead
-  // end that also reads as a soft 404 to a crawler.
-  const requested = firstValue(query.cat)
-  const activeCategory =
-    requested !== undefined && categories.some((category) => category.key === requested)
-      ? requested
-      : ALL
+  // Only the areas that actually have activities, in label order.
+  const regionMap = new Map<string, { key: string; label: string }>()
+  for (const activity of activities) {
+    if (activity.region) {
+      regionMap.set(activity.region.key, {
+        key: activity.region.key,
+        label: pick(activity.region.label, lang, activity.region.key),
+      })
+    }
+  }
+  const regions = [...regionMap.values()].sort((a, b) => a.label.localeCompare(b.label, lang))
 
-  const activeSort = toSort(firstValue(query.sort))
-
-  const activities = await listActivities({
-    categoryKey: activeCategory,
-    sort: activeSort,
-    locale: lang,
-  })
+  // An unknown value in a stale link means "no filter", never an empty page.
+  const cat = firstValue(query.cat)
+  const region = firstValue(query.region)
+  const sort = firstValue(query.sort)
+  const max = Number(firstValue(query.max))
+  const initial: ExplorerFilters = {
+    cat: cat !== undefined && categories.some((c) => c.key === cat) ? cat : 'all',
+    region: region !== undefined && regionMap.has(region) ? region : 'all',
+    max: Number.isFinite(max) && max > 0 ? max : null,
+    sort: (ACTIVITY_SORTS as readonly string[]).includes(sort ?? '')
+      ? (sort as ExplorerSort)
+      : 'rating',
+    q: (firstValue(query.q) ?? '').slice(0, 80),
+    view: firstValue(query.view) === 'list' ? 'list' : 'grid',
+  }
 
   return (
-    <main>
-      <div className="bt-banner" style={{ background: 'var(--forest)' }}>
-        <div className="bt-banner-veil" />
-        <div className="wrap bt-banner-inner">
+    <main className="act-hub">
+      <section className="banner">
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative banner, CSS-cropped */}
+        <img className="bg" src="/brand/jeep.jpg" alt="" style={{ objectPosition: '50% 60%' }} />
+        <div className="wrap">
           <Breadcrumbs
             light
             label={t('c_breadcrumb')}
             trail={[{ label: t('c_home'), href: '/' }, { label: t('navr_act') }]}
           />
-          <span
-            className="tag"
-            style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
-          >
-            {t('ev_eyebrow')}
+          <span className="eyebrow" style={{ color: 'var(--palm)' }}>
+            {t('act_hub_eyebrow')}
           </span>
-          <h1 className="bt-banner-title">{t('ah_title')}</h1>
-          <p className="bt-banner-sub">{t('ah_sub')}</p>
+          <h1>{t('act_hub_title')}</h1>
+          <p>{t('act_hub_sub')}</p>
         </div>
-      </div>
+      </section>
 
-      <section className="bg-ivory" style={{ paddingBlock: '32px 64px' }}>
+      <section className="sec-tight">
+        <div className="wrap stack" style={{ gap: 16 }}>
+          <h2 className="h3">{t('act_how_t')}</h2>
+          <ol className="how3">
+            {([1, 2, 3] as const).map((n) => (
+              <li key={n}>
+                <span className="n" dir="ltr">
+                  {n}
+                </span>
+                <span>
+                  <b>{t(`act_how${n}_t`)}</b>
+                  <span className="muted">{t(`act_how${n}_b`)}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <ActivitiesExplorer
+        activities={activities}
+        categories={categories.map((c) => ({ key: c.key, label: pick(c.label, lang, c.key) }))}
+        regions={regions}
+        initial={initial}
+      />
+
+      <section className="sec-tight">
         <div className="wrap">
-          <FilterBar
-            categories={categories}
-            activeCategory={activeCategory}
-            activeSort={activeSort}
-            allLabel={t('map_f_all')}
-            sortLabel={(sort) => t(SORT_LABEL[sort])}
-            locale={lang}
-          />
-
-          <p
-            className="muted"
-            style={{ fontSize: 13.5, fontWeight: 600, margin: '18px 0 20px' }}
-            aria-live="polite"
-          >
-            {format.number(activities.length)} {t('ah_count')}
-          </p>
-
-          {activities.length === 0 ? (
-            <p className="muted" style={{ padding: '40px 0', textAlign: 'center' }}>
-              {t('ah_none')}
-            </p>
-          ) : (
-            <div className="grid bt-grid-3auto">
-              {activities.map((activity, index) => (
-                <ActivityCard key={activity.id} activity={activity} priority={index < 3} />
-              ))}
+          <div className="panel row between act-driver-cta">
+            <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
+              <b className="h3" style={{ color: 'var(--forest)' }}>
+                {t('act_driver_t')}
+              </b>
+              <span className="muted">{t('act_driver_b')}</span>
             </div>
-          )}
+            <div className="row">
+              <LinkButton href="/driver" variant="forest">
+                {t('act_driver_cta')}
+              </LinkButton>
+              <LinkButton href="/packages" variant="ghost">
+                {t('act_driver_pkgs')}
+              </LinkButton>
+            </div>
+          </div>
         </div>
       </section>
     </main>
-  )
-}
-
-/**
- * Filter + sort rail.
- *
- * Ported from `FilterBar` in design/handoff/bt-ui.jsx, with the buttons turned
- * into links. `Chip` from '@/components/shared' is deliberately not used: it
- * renders a `<button>` with `aria-pressed`, which is the right control for
- * client-side state and the wrong one for a navigation that changes the URL.
- * The classes are identical, so the two look the same.
- */
-function FilterBar({
-  categories,
-  activeCategory,
-  activeSort,
-  allLabel,
-  sortLabel,
-  locale,
-}: {
-  categories: CategoryDto[]
-  activeCategory: string
-  activeSort: ActivitySort | null
-  allLabel: string
-  sortLabel: (sort: ActivitySort) => string
-  locale: Locale
-}) {
-  const chips = [
-    { key: ALL, label: allLabel },
-    ...categories.map((category) => ({
-      key: category.key,
-      label: pick(category.label, locale, category.key),
-    })),
-  ]
-
-  return (
-    <div className="bt-filterbar">
-      <div className="bt-filterchips">
-        {chips.map((chip) => {
-          const isActive = chip.key === activeCategory
-          return (
-            <Link
-              key={chip.key}
-              href={hubHref(chip.key, activeSort)}
-              className={isActive ? 'chip active' : 'chip'}
-              style={{ minHeight: 44 }}
-              aria-current={isActive ? 'true' : undefined}
-            >
-              {chip.label}
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="bt-filtersort">
-        <Icon name="filter" size={16} color="var(--muted)" />
-        {SORTS.map((sort) => {
-          const isActive = sort === activeSort
-          return (
-            <Link
-              key={sort}
-              // Clicking the active sort clears it, as in the handoff.
-              href={hubHref(activeCategory, isActive ? null : sort)}
-              className={isActive ? 'chip orange active' : 'chip orange'}
-              style={{ minHeight: 44 }}
-              aria-current={isActive ? 'true' : undefined}
-            >
-              {sortLabel(sort)}
-            </Link>
-          )
-        })}
-      </div>
-    </div>
   )
 }

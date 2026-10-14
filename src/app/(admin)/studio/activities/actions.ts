@@ -4,7 +4,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { activities, activityCategories, activityTiers } from '@/db/schema'
+import { activities, activityAddons, activityCategories, activityTiers } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
 import { feventRange } from '../../_lib/bali-time'
@@ -72,6 +72,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
       timeSlots: normaliseTimeSlots(flines(form, 'timeSlots'), t),
       leadTimeHours: fint(form, 'leadTimeHours', 24, t('activities.lead_time')),
       maxGuests: fint(form, 'maxGuests', 20, t('activities.max_guests')),
+      multiDay: fbool(form, 'multiDay'),
       sortOrder: fint(form, 'sortOrder', 0, t('activities.sort_order')),
       // Dated events (category "events") — the Events page orders and expires by these.
       ...feventRange(form, {
@@ -279,20 +280,53 @@ function normaliseTimeSlots(lines: readonly string[], t: Translate): string[] {
  */
 const tierEditor = (activityId: string) => adminHref(`/activities/${activityId}`)
 
-function tierValuesFrom(form: FormData, t: Translate) {
+/** Ids posted from a checklist that must all be rows of this activity. */
+async function ownIds(
+  form: FormData,
+  name: string,
+  allowed: readonly string[],
+  t: Translate,
+): Promise<string[]> {
+  const ids = [...new Set(fmulti(form, name))]
+  for (const id of ids) {
+    if (!allowed.includes(id)) throw new Error(t('activities.err_foreign_ref'))
+  }
+  return ids
+}
+
+async function addonIdsOf(activityId: string): Promise<string[]> {
+  const rows = await db
+    .select({ id: activityAddons.id })
+    .from(activityAddons)
+    .where(and(eq(activityAddons.activityId, activityId), isNull(activityAddons.deletedAt)))
+  return rows.map((row) => row.id)
+}
+
+async function tierValuesFrom(form: FormData, t: Translate, activityId: string) {
   const priceMinor = fminor(form, 'priceMinor', t('common.price'))
   if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
   const maxGuests = fintOrNull(form, 'maxGuests', t('activities.max_guests'))
   if (maxGuests !== null && maxGuests < 1) throw new Error(t('activities.err_max_guests_min'))
 
+  const pricingMode = fenum(form, 'pricingMode', ['per_person', 'per_group'] as const, 'per_person')
+  const groupMax = fintOrNull(form, 'groupMax', t('activities.group_max'))
+  if (pricingMode === 'per_group' && (groupMax === null || groupMax < 1)) {
+    throw new Error(t('activities.err_group_max'))
+  }
+
   return {
     name: flocalizedRequired(form, 'name', t('activities.tier_name')),
     tagline: flocalizedOrNull(form, 'tagline'),
     priceMinor,
     currency: fcurrency(form, 'currency'),
-    pricingMode: fenum(form, 'pricingMode', ['flat', 'per_guest'] as const, 'per_guest'),
+    pricingMode,
+    groupMax: pricingMode === 'per_group' ? groupMax : null,
     maxGuests,
+    includes: flocalizedList(form, 'includes'),
+    excludes: flocalizedList(form, 'excludes'),
+    includesAddons: await ownIds(form, 'includesAddons', await addonIdsOf(activityId), t),
+    available: fbool(form, 'available'),
     isPopular: fbool(form, 'isPopular'),
     features: flocalizedList(form, 'features'),
     highlights: flocalizedList(form, 'highlights'),
@@ -326,7 +360,7 @@ export async function addActivityTier(activityId: string, form: FormData): Promi
   let outcome: { ok: string } | { err: string }
 
   try {
-    const values = tierValuesFrom(form, t)
+    const values = await tierValuesFrom(form, t, activityId)
     const key = assertSlug(freq(form, 'key', t('activities.tier_key')))
 
     await db.transaction(async (tx) => {
@@ -390,7 +424,7 @@ export async function saveActivityTier(
   let outcome: { ok: string } | { err: string }
 
   try {
-    const values = tierValuesFrom(form, t)
+    const values = await tierValuesFrom(form, t, activityId)
 
     await db.transaction(async (tx) => {
       const [before] = await tx
@@ -474,6 +508,220 @@ export async function removeActivityTier(activityId: string, tierId: string): Pr
     })
 
     outcome = { ok: t('activities.ok_tier_removed') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(tierEditor(activityId), outcome))
+}
+
+// ---------------------------------------------------------------------------
+// Add-ons
+// ---------------------------------------------------------------------------
+
+/**
+ * Optional extras of one activity (handoff "Addon"). Edited beside the
+ * packages because their rules point at them: `only_packages` lists package
+ * ids and a package's `includes_addons` lists add-on ids. Every reference is
+ * checked to belong to this same activity, and `requires` may not loop.
+ */
+async function addonValuesFrom(
+  form: FormData,
+  t: Translate,
+  activityId: string,
+  selfId: string | null,
+) {
+  const priceMinor = fminor(form, 'priceMinor', t('common.price'))
+  if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
+
+  const pricing = fenum(
+    form,
+    'pricing',
+    ['per_person', 'per_booking', 'per_qty'] as const,
+    'per_booking',
+  )
+  const maxQty = fintOrNull(form, 'maxQty', t('activities.addon_max_qty'))
+  if (maxQty !== null && maxQty < 1) throw new Error(t('activities.err_addon_max_qty'))
+
+  const tierRows = await db
+    .select({ id: activityTiers.id })
+    .from(activityTiers)
+    .where(and(eq(activityTiers.activityId, activityId), isNull(activityTiers.deletedAt)))
+  const onlyPackages = await ownIds(
+    form,
+    'onlyPackages',
+    tierRows.map((row) => row.id),
+    t,
+  )
+
+  const addonRows = await db
+    .select({ id: activityAddons.id, requiresAddonId: activityAddons.requiresAddonId })
+    .from(activityAddons)
+    .where(and(eq(activityAddons.activityId, activityId), isNull(activityAddons.deletedAt)))
+  const requiresAddonId = fuuidOrNull(form, 'requiresAddonId', t('activities.addon_requires'))
+  if (requiresAddonId !== null) {
+    if (requiresAddonId === selfId || !addonRows.some((row) => row.id === requiresAddonId)) {
+      throw new Error(t('activities.err_foreign_ref'))
+    }
+    // Walk the chain from the prerequisite: reaching this add-on is a loop.
+    const next = new Map(addonRows.map((row) => [row.id, row.requiresAddonId]))
+    let cursor: string | null | undefined = requiresAddonId
+    for (let hops = 0; cursor && hops <= addonRows.length; hops++) {
+      if (cursor === selfId) throw new Error(t('activities.err_addon_loop'))
+      cursor = next.get(cursor)
+    }
+  }
+
+  return {
+    name: flocalizedRequired(form, 'name', t('activities.addon_name')),
+    description: flocalizedOrNull(form, 'description'),
+    priceMinor,
+    currency: fcurrency(form, 'currency'),
+    pricing,
+    maxQty: pricing === 'per_qty' ? (maxQty ?? 1) : null,
+    onlyPackages,
+    requiresAddonId,
+    available: fbool(form, 'available'),
+    sortOrder: fint(form, 'sortOrder', 0, t('activities.sort_order')),
+  }
+}
+
+const addonOf = (activityId: string, addonId: string) =>
+  and(
+    eq(activityAddons.id, addonId),
+    eq(activityAddons.activityId, activityId),
+    isNull(activityAddons.deletedAt),
+  )
+
+export async function addActivityAddon(activityId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: { ok: string } | { err: string }
+
+  try {
+    const values = await addonValuesFrom(form, t, activityId, null)
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(activityAddons)
+        .values({ activityId, ...values })
+        .returning()
+      await writeAudit(
+        {
+          actor: session,
+          action: 'activity_addon.create',
+          entityType: 'activity_addon',
+          entityId: row?.id ?? null,
+          before: null,
+          after: row ?? null,
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('activities.ok_addon_added') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(tierEditor(activityId), outcome))
+}
+
+export async function saveActivityAddon(
+  activityId: string,
+  addonId: string,
+  form: FormData,
+): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: { ok: string } | { err: string }
+
+  try {
+    const values = await addonValuesFrom(form, t, activityId, addonId)
+    await db.transaction(async (tx) => {
+      const [before] = await tx
+        .select()
+        .from(activityAddons)
+        .where(addonOf(activityId, addonId))
+        .limit(1)
+      if (!before) throw new Error(t('activities.err_addon_gone'))
+      const [row] = await tx
+        .update(activityAddons)
+        .set({ ...values, updatedAt: new Date() })
+        .where(addonOf(activityId, addonId))
+        .returning()
+      await writeAudit(
+        {
+          actor: session,
+          action: 'activity_addon.update',
+          entityType: 'activity_addon',
+          entityId: addonId,
+          before,
+          after: row ?? null,
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('activities.ok_addon_saved') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(tierEditor(activityId), outcome))
+}
+
+/**
+ * Soft delete. A cart line may still name this add-on; checkout then refuses
+ * it as unknown rather than charging for something withdrawn. Dependants
+ * lose their requirement and packages stop including it.
+ */
+export async function removeActivityAddon(activityId: string, addonId: string): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: { ok: string } | { err: string }
+
+  try {
+    await db.transaction(async (tx) => {
+      const [before] = await tx
+        .select()
+        .from(activityAddons)
+        .where(addonOf(activityId, addonId))
+        .limit(1)
+      if (!before) throw new Error(t('activities.err_addon_gone'))
+      await tx
+        .update(activityAddons)
+        .set({ deletedAt: new Date(), available: false, updatedAt: new Date() })
+        .where(addonOf(activityId, addonId))
+      await tx
+        .update(activityAddons)
+        .set({ requiresAddonId: null, updatedAt: new Date() })
+        .where(
+          and(
+            eq(activityAddons.activityId, activityId),
+            eq(activityAddons.requiresAddonId, addonId),
+          ),
+        )
+      await tx
+        .update(activityTiers)
+        .set({
+          includesAddons: sql`coalesce(${activityTiers.includesAddons}, '[]'::jsonb) - ${addonId}::text`,
+          updatedAt: new Date(),
+        })
+        .where(eq(activityTiers.activityId, activityId))
+      await writeAudit(
+        {
+          actor: session,
+          action: 'activity_addon.delete',
+          entityType: 'activity_addon',
+          entityId: addonId,
+          before,
+          after: null,
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('activities.ok_addon_removed') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

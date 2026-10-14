@@ -135,6 +135,13 @@ export const activities = pgTable(
     maxGuests: integer('max_guests').notNull().default(20),
 
     /**
+     * Multi-day activity (handoff `multi_day`): booked as a date range rather
+     * than one day, and a driver added to it is hired for every day of the
+     * range. False = the usual single-day activity, driver days = 1.
+     */
+    multiDay: boolean('multi_day').notNull().default(false),
+
+    /**
      * فعالية بتاريخ (تصنيف `events`): البداية والنهاية. NULL = نشاط دائم بلا
      * تاريخ. صفحة الفعاليات تعرض القادمة أولاً وتخفي المنتهية.
      */
@@ -225,15 +232,30 @@ export const activityTiers = pgTable(
     currency: currency(),
 
     /**
-     * Whether the price multiplies by party size. The screenshot's "للشخص"
-     * is per_guest; a tier priced for a couple as a unit is flat, and showing
-     * a guest count against a flat price is how a family of six gets charged
-     * for one.
+     * How the package price applies (handoff "Package.pricing"):
+     *  - `per_person`: price × people.
+     *  - `per_group`:  price × ceil(people / group_max) — a family package
+     *    covering up to four people costs one unit for 1–4 and two for 5–8.
+     * Rows written before migration 0013 said `per_guest` / `flat`; the
+     * migration rewrote them and `tierPricing()` still reads the old spelling.
      */
-    pricingMode: varchar('pricing_mode', { length: 16 }).notNull().default('per_guest'),
+    pricingMode: varchar('pricing_mode', { length: 16 }).notNull().default('per_person'),
+    /** People one unit of a `per_group` package covers. Ignored for per_person. */
+    groupMax: integer('group_max'),
 
     /** Caps party size for this tier, e.g. a couples tier at 2. Null = the activity's own cap. */
     maxGuests: integer('max_guests'),
+
+    /** Package card: what this package includes / leaves out (localized lists). */
+    includes: jsonb('includes').$type<Localized[]>(),
+    excludes: jsonb('excludes').$type<Localized[]>(),
+    /**
+     * `activity_addons.id`s that come with this package. Shown as "included
+     * in your package", locked, and never charged.
+     */
+    includesAddons: jsonb('includes_addons').$type<string[]>(),
+    /** Bookable right now. False keeps the package visible but unselectable. */
+    available: boolean('available').notNull().default(true),
 
     /** Draws the "Most popular" ribbon. At most one per activity, enforced in the admin. */
     isPopular: boolean('is_popular').notNull().default(false),
@@ -256,6 +278,57 @@ export const activityTiers = pgTable(
     index('activity_tier_activity_idx').on(t.activityId, t.sortOrder),
     uniqueIndex('activity_tier_key_idx').on(t.activityId, t.key),
   ],
+)
+
+// ---------------------------------------------------------------------------
+// Activity add-ons
+// ---------------------------------------------------------------------------
+
+/**
+ * Optional extras sold with one activity (handoff "Addon"): a banana-boat
+ * ride, a photo package, an extra parasailing round.
+ *
+ * Pricing (`@/lib/booking/price`, the only place that does the arithmetic):
+ *  - `per_person`:  price × people
+ *  - `per_booking`: price once
+ *  - `per_qty`:     price × min(qty, max_qty)
+ *
+ * Rules, enforced on the server at add-to-cart AND at checkout:
+ *  - listed in the chosen package's `includes_addons` → included, not charged;
+ *  - `only_packages` non-empty and without the chosen package → rejected;
+ *  - `requires_addon_id` set and that add-on not selected → rejected.
+ */
+export const activityAddons = pgTable(
+  'activity_addons',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    activityId: uuid('activity_id')
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+
+    name: localized('name').notNull(),
+    description: localized('description'),
+
+    priceMinor: priceMinor(),
+    currency: currency(),
+    /** per_person | per_booking | per_qty */
+    pricing: varchar('pricing', { length: 16 }).notNull().default('per_booking'),
+    /** Upper bound for a `per_qty` add-on. Null = 1. */
+    maxQty: integer('max_qty'),
+
+    /** `activity_tiers.id`s this add-on may be bought with. Empty/null = all. */
+    onlyPackages: jsonb('only_packages').$type<string[]>(),
+    /** Another add-on of the same activity that must be selected first. */
+    requiresAddonId: uuid('requires_addon_id').references((): AnyPgColumn => activityAddons.id, {
+      onDelete: 'set null',
+    }),
+
+    available: boolean('available').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [index('activity_addons_activity_idx').on(t.activityId, t.sortOrder)],
 )
 
 // ---------------------------------------------------------------------------
@@ -639,11 +712,19 @@ export const activitiesRelations = relations(activities, ({ one, many }) => ({
   images: many(activityImages),
   reviews: many(reviews),
   tiers: many(activityTiers),
+  addons: many(activityAddons),
 }))
 
 export const activityTiersRelations = relations(activityTiers, ({ one }) => ({
   activity: one(activities, {
     fields: [activityTiers.activityId],
+    references: [activities.id],
+  }),
+}))
+
+export const activityAddonsRelations = relations(activityAddons, ({ one }) => ({
+  activity: one(activities, {
+    fields: [activityAddons.activityId],
     references: [activities.id],
   }),
 }))

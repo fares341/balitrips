@@ -45,8 +45,7 @@ section {
  * selector would strip the padding from those too.
  */
 .bt-detail-block,
-.bt-related,
-.bt-tiers-sec {
+.bt-related {
   padding-block: 0;
 }
 
@@ -433,19 +432,6 @@ section {
   }
 }
 
-/* Time slots. */
-.bt-timeslots {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-@media (min-width: 400px) {
-  .bt-timeslots {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
 /* Gallery + included/excluded. */
 .bt-gallery-grid {
   display: grid;
@@ -666,26 +652,6 @@ section {
 
 .bt-detail-main {
   min-width: 0;
-}
-
-.bt-detail-head {
-  margin-top: 22px;
-}
-
-.bt-detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 12px;
-  color: var(--muted);
-  font-size: 14px;
-  align-items: center;
-}
-
-.bt-detail-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /**

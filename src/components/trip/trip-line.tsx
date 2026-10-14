@@ -24,6 +24,8 @@ import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import type { CartItemKind } from '@/lib/pricing/quote'
 
+import { PriceBreakdown } from './price-breakdown'
+
 /** Glyph per group, matching the handoff's `bt-cart-grouphead` icon map. */
 export const TRIP_KIND_ICON: Record<CartItemKind, IconName> = {
   activity: 'compass',
@@ -169,6 +171,10 @@ export async function TripLine({ line, locale, controls, size = 72 }: TripLinePr
           <div className="muted" style={{ fontSize: 12.5, marginTop: 2 }}>
             {meta}
           </div>
+        )}
+
+        {line.breakdown !== null && currency !== null && (
+          <PriceBreakdown parts={line.breakdown} currency={currency} locale={locale} />
         )}
 
         {!priced && (

@@ -84,6 +84,8 @@ import { entityHref } from './types'
 import { placeAccess, type FullMapPlace } from '@/lib/entitlements/redaction'
 import type { MapTaxonomy } from '@/lib/search/query'
 import { buildSrcSet, derivativeKey, fallbackRung, isUnoptimised } from '@/lib/media/ladder'
+import { loadActivityAddons } from '@/lib/booking/addons'
+import { tierPricing } from '@/lib/booking/price'
 
 // ---------------------------------------------------------------------------
 // Shared predicates
@@ -244,6 +246,7 @@ function toActivitySummary(
     rating: row.rating,
     reviewCount: row.reviewCount,
     hero: toMedia(hero),
+    blurb: row.description,
   }
 }
 
@@ -570,6 +573,28 @@ export async function listActivities(
   )
 }
 
+/**
+ * Approximate location of an activity: its region's centre, or the parent
+ * region's. Never a map place's exact coordinates — those are gated.
+ */
+async function regionCenter(
+  region: RegionRow | null,
+): Promise<{ lat: number; lon: number } | null> {
+  if (!region) return null
+  if (region.centerLat !== null && region.centerLon !== null) {
+    return { lat: region.centerLat, lon: region.centerLon }
+  }
+  if (region.parentId === null) return null
+  const [parent] = await db
+    .select({ lat: regions.centerLat, lon: regions.centerLon })
+    .from(regions)
+    .where(eq(regions.id, region.parentId))
+    .limit(1)
+  return parent && parent.lat !== null && parent.lon !== null
+    ? { lat: parent.lat, lon: parent.lon }
+    : null
+}
+
 export async function getActivityBySlug(slug: string): Promise<ActivityDetail | null> {
   const rows = await db
     .select({ activity: activities, region: regions, hero: media })
@@ -582,7 +607,7 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
   const row = rows[0]
   if (!row) return null
 
-  const [cats, gallery, tierRows] = await Promise.all([
+  const [cats, gallery, tierRows, addonRows] = await Promise.all([
     categoriesByActivity([row.activity.id]),
     db
       .select({ image: media })
@@ -608,6 +633,7 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
         ),
       )
       .orderBy(asc(activityTiers.priceMinor), asc(activityTiers.sortOrder)),
+    loadActivityAddons([row.activity.id]),
   ])
 
   const summary = toActivitySummary(
@@ -629,6 +655,20 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
     timeSlots: Array.isArray(row.activity.timeSlots) ? row.activity.timeSlots : [],
     leadTimeHours: row.activity.leadTimeHours,
     maxGuests: row.activity.maxGuests,
+    multiDay: row.activity.multiDay,
+    location: await regionCenter(row.region),
+    addons: (addonRows.get(row.activity.id) ?? []).map((addon) => ({
+      id: addon.id,
+      name: addon.name,
+      description: addon.description,
+      priceMinor: addon.priceMinor,
+      currency: addon.currency,
+      pricing: addon.pricing,
+      maxQty: addon.maxQty,
+      onlyPackages: [...addon.onlyPackages],
+      requiresAddonId: addon.requiresAddonId,
+      available: addon.available,
+    })),
     tiers: tierRows.map((tier) => ({
       id: tier.id,
       key: tier.key,
@@ -636,9 +676,14 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       tagline: tier.tagline,
       priceMinor: tier.priceMinor,
       currency: tier.currency,
-      pricingMode: tier.pricingMode === 'flat' ? ('flat' as const) : ('per_guest' as const),
+      pricing: tierPricing(tier.pricingMode),
+      groupMax: tier.groupMax,
       maxGuests: tier.maxGuests,
       isPopular: tier.isPopular,
+      includes: toLocalizedList(tier.includes),
+      excludes: toLocalizedList(tier.excludes),
+      includesAddons: Array.isArray(tier.includesAddons) ? tier.includesAddons : [],
+      available: tier.available,
       features: toLocalizedList(tier.features),
       highlights: toLocalizedList(tier.highlights),
       details: toLocalizedList(tier.details),

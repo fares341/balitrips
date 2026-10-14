@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
-import { activities, activityCategories, activityTiers } from '@/db/schema'
+import { activities, activityAddons, activityCategories, activityTiers } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
@@ -12,6 +12,7 @@ import { baliInputValue } from '../../../_lib/bali-time'
 import { categoryOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import {
+  Checkbox,
   Field,
   LocalizedField,
   LocalizedListField,
@@ -26,6 +27,7 @@ import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { getAdminI18n } from '../../../_lib/i18n'
+import { AddonEditor } from './addon-editor'
 import { TierEditor } from './tier-editor'
 import { deleteActivity, saveActivity } from '../actions'
 
@@ -69,6 +71,14 @@ export default async function ActivityEditorPage({
         .from(activityTiers)
         .where(and(eq(activityTiers.activityId, activity.id), isNull(activityTiers.deletedAt)))
         .orderBy(asc(activityTiers.sortOrder), asc(activityTiers.priceMinor))
+    : []
+
+  const addons = activity
+    ? await db
+        .select()
+        .from(activityAddons)
+        .where(and(eq(activityAddons.activityId, activity.id), isNull(activityAddons.deletedAt)))
+        .orderBy(asc(activityAddons.sortOrder), asc(activityAddons.createdAt))
     : []
 
   const [regions, categories, mediaList, selectedCategories] = await Promise.all([
@@ -243,6 +253,12 @@ export default async function ActivityEditorPage({
               />
             </Field>
           </div>
+          <Checkbox
+            name="multiDay"
+            label={t('activities.f_multi_day')}
+            defaultChecked={activity?.multiDay ?? false}
+            hint={t('activities.f_multi_day_hint')}
+          />
           <div className="a-row">
             <Field
               label={t('activities.f_event_starts')}
@@ -322,7 +338,12 @@ export default async function ActivityEditorPage({
             priceMinor: tier.priceMinor,
             currency: tier.currency,
             pricingMode: tier.pricingMode,
+            groupMax: tier.groupMax,
             maxGuests: tier.maxGuests,
+            includes: tier.includes,
+            excludes: tier.excludes,
+            includesAddons: tier.includesAddons,
+            available: tier.available,
             isPopular: tier.isPopular,
             features: tier.features,
             highlights: tier.highlights,
@@ -331,6 +352,34 @@ export default async function ActivityEditorPage({
             status: tier.status,
           }))}
           currency={activity.currency}
+          addons={addons.map((addon) => ({
+            value: addon.id,
+            label: pick(addon.name, locale),
+          }))}
+        />
+      ) : null}
+
+      {activity ? (
+        <AddonEditor
+          activityId={activity.id}
+          currency={activity.currency}
+          packages={tiers.map((tier) => ({
+            value: tier.id,
+            label: pick(tier.name, locale, tier.key),
+          }))}
+          addons={addons.map((addon) => ({
+            id: addon.id,
+            name: addon.name,
+            description: addon.description,
+            priceMinor: addon.priceMinor,
+            currency: addon.currency,
+            pricing: addon.pricing,
+            maxQty: addon.maxQty,
+            onlyPackages: addon.onlyPackages,
+            requiresAddonId: addon.requiresAddonId,
+            available: addon.available,
+            sortOrder: addon.sortOrder,
+          }))}
         />
       ) : null}
 

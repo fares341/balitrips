@@ -4,6 +4,7 @@ import { db } from '@/db'
 import { loadPlansById, planPriceMap } from '@/lib/entitlements/plans'
 import {
   activities,
+  activityAddons,
   activityTiers,
   cartItems,
   customTripRequests,
@@ -16,6 +17,8 @@ import {
   plans,
 } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
+import type { OrderItemOptions } from '@/db/schema'
+import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
@@ -105,6 +108,9 @@ async function loadCatalog(
           currency: activityTiers.currency,
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
+          groupMax: activityTiers.groupMax,
+          includesAddons: activityTiers.includesAddons,
+          available: activityTiers.available,
           status: activityTiers.status,
         })
         .from(activityTiers)
@@ -125,6 +131,7 @@ async function loadCatalog(
             maxGuests: activities.maxGuests,
             leadTimeHours: activities.leadTimeHours,
             timeSlots: activities.timeSlots,
+            multiDay: activities.multiDay,
             status: activities.status,
           })
           .from(activities)
@@ -166,6 +173,7 @@ async function loadCatalog(
   ])
 
   const planRows = await loadPlansById(idsOf('plan'))
+  const addonRows = await loadActivityAddons(activityRows.map((r) => r.id))
   // عروض الجداول المخصصة: للمالك وحده، مسعّرة وغير مدفوعة — وإلا unknown_item.
   const customRows = await loadPayableCustomQuotes(idsOf('custom'), userId)
 
@@ -185,6 +193,7 @@ async function loadCatalog(
             maxGuests: r.maxGuests,
             leadTimeHours: r.leadTimeHours,
             timeSlots: r.timeSlots ?? [],
+            multiDay: r.multiDay,
           },
         ]),
     ),
@@ -197,11 +206,15 @@ async function loadCatalog(
             activityId: r.activityId,
             priceMinor: r.priceMinor,
             currency: r.currency,
-            pricingMode: r.pricingMode === 'flat' ? ('flat' as const) : ('per_guest' as const),
+            pricingMode: r.pricingMode,
+            groupMax: r.groupMax,
             maxGuests: r.maxGuests,
+            includesAddons: r.includesAddons ?? [],
+            available: r.available,
           },
         ]),
     ),
+    activityAddons: addonRules(addonRows),
     itineraries: new Map(
       itineraryRows
         .filter((r) => r.status === 'published')
@@ -255,6 +268,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     guests: r.guests,
     endDate: r.endDate,
     parentItemId: r.parentItemId,
+    options: r.options,
   }))
 
   const catalog = await loadCatalog(requestItems, input.userId)
@@ -347,6 +361,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
           vehicleClass: line.vehicleClass ?? null,
           endDate: item?.endDate ?? null,
           parentItemId: item?.parentItemId ?? null,
+          options: orderItemOptions(line, item, nameByRef),
         }
       }),
     )
@@ -454,6 +469,31 @@ async function loadNameSnapshots(tx: Tx, quote: Quote): Promise<Map<string, Loca
   ])
 
   for (const row of [...a, ...i, ...p]) if (row.name) out.set(row.id, row.name)
+
+  // A package line is named "Activity — Package"; each part of its breakdown
+  // keeps its own name (package, add-on) for the order page.
+  const tierIds = byKind('activity_tier')
+  if (tierIds.length > 0) {
+    const tierRows = await tx
+      .select({ id: activityTiers.id, name: activityTiers.name, activityName: activities.name })
+      .from(activityTiers)
+      .innerJoin(activities, eq(activities.id, activityTiers.activityId))
+      .where(inArray(activityTiers.id, tierIds))
+    for (const row of tierRows) {
+      out.set(row.id, joinLocalized(row.activityName, row.name))
+      out.set(`part:${row.id}`, row.name)
+    }
+  }
+  const addonIds = quote.lines.flatMap((l) =>
+    (l.breakdown ?? []).filter((b) => b.kind === 'addon' && b.refId).map((b) => b.refId as string),
+  )
+  if (addonIds.length > 0) {
+    const addonRows = await tx
+      .select({ id: activityAddons.id, name: activityAddons.name })
+      .from(activityAddons)
+      .where(inArray(activityAddons.id, [...new Set(addonIds)]))
+    for (const row of addonRows) out.set(`part:${row.id}`, row.name)
+  }
   const planIds = byKind('plan')
   if (planIds.length > 0) {
     const planRows = await tx
@@ -482,6 +522,39 @@ async function loadNameSnapshots(tx: Tx, quote: Quote): Promise<Map<string, Loca
   }
 
   return out
+}
+
+function joinLocalized(a: Localized, b: Localized): Localized {
+  const out = {} as Localized
+  for (const key of Object.keys(a) as (keyof Localized)[]) {
+    const left = a[key] ?? ''
+    const right = b[key] ?? ''
+    out[key] = left && right ? `${left} — ${right}` : left || right
+  }
+  return out
+}
+
+/** The add-ons bought and the priced breakdown, frozen with names. */
+function orderItemOptions(
+  line: Quote['lines'][number],
+  item: QuoteRequestItem | undefined,
+  names: Map<string, Localized>,
+): OrderItemOptions | null {
+  if (!line.breakdown) return null
+  return {
+    addons: item?.options?.addons ?? [],
+    lines: line.breakdown
+      .filter((part) => part.kind !== 'driver')
+      .map((part) => ({
+        kind: part.kind === 'package' ? 'package' : 'addon',
+        refId: part.refId,
+        name: part.refId === null ? null : (names.get(`part:${part.refId}`) ?? null),
+        unitMinor: part.unitMinor,
+        quantity: part.quantity,
+        totalMinor: part.totalMinor,
+        ...(part.included ? { included: true } : {}),
+      })),
+  }
 }
 
 /**
