@@ -8,7 +8,7 @@
  * Filtering is live on the client, as in the prototype (skeleton, then the
  * results — 260ms, instant with reduced motion), over the full published
  * catalogue rendered here. The filter state is mirrored into the query
- * string (`?cat=&region=&max=&sort=&q=&view=`) and read back on the server,
+ * string (`?cat=&region=&budget=&sort=&q=&view=`) and read back on the server,
  * so a filtered view is still a shareable, server-rendered URL.
  */
 
@@ -18,6 +18,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Breadcrumbs, LinkButton } from '@/components/bt'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { parseBudgetTier } from '@/lib/budget-tier'
 import { pick } from '@/lib/content/localize'
 import { listActivities, listCategories } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
@@ -100,11 +101,10 @@ export default async function ActivitiesPage({ params, searchParams }: PageProps
   const cat = firstValue(query.cat)
   const region = firstValue(query.region)
   const sort = firstValue(query.sort)
-  const max = Number(firstValue(query.max))
   const initial: ExplorerFilters = {
     cat: cat !== undefined && categories.some((c) => c.key === cat) ? cat : 'all',
     region: region !== undefined && regionMap.has(region) ? region : 'all',
-    max: Number.isFinite(max) && max > 0 ? max : null,
+    budget: parseBudgetTier(query.budget),
     sort: (ACTIVITY_SORTS as readonly string[]).includes(sort ?? '')
       ? (sort as ExplorerSort)
       : 'rating',

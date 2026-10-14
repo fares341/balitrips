@@ -4,7 +4,7 @@
  * Custom-trip questionnaire and proposal.
  *
  * Ported from `CustomPage` in design/handoff/sections-bt/page-content.jsx: the
- * date range, traveller stepper, four theme pills, budget slider, six interest
+ * date range, traveller stepper, theme pills, three budget categories, interest
  * toggles, driver toggle and notes field — then the recommendations view with
  * its answer chips, activity grid and WhatsApp hand-off.
  *
@@ -35,15 +35,13 @@ import { Button, LinkButton, Stepper, Tag, useToast } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { useRouter } from '@/i18n/routing'
-import { formatMoney, minorUnitExponent } from '@/lib/money'
+import { BUDGET_TIER_LABEL, BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
 
 import { submitCustomTrip } from './actions'
 import {
   AREAS_MAX,
-  BUDGET_DEFAULT,
-  BUDGET_MAX,
-  BUDGET_MIN,
-  BUDGET_STEP,
+  BUDGET_TIER_DEFAULT,
+  FORM_THEMES,
   NAME_MAX,
   NOTES_MAX,
   PAX_DEFAULT,
@@ -77,16 +75,16 @@ export type CustomTripFormProps = {
   areas: readonly AreaOption[]
   /** Which of them start selected. Server-chosen, so it is a real key. */
   defaultInterests: readonly string[]
-  /** Currency the budget slider quotes in, from the catalogue. */
-  currency: string
 }
 
-export function CustomTripForm({
-  interests,
-  areas,
-  defaultInterests,
-  currency,
-}: CustomTripFormProps) {
+/** One-line description under each budget category. */
+const BUDGET_TIER_HINT: Record<BudgetTier, string> = {
+  economy: 'bud_economy_b',
+  mid: 'bud_mid_b',
+  luxury: 'bud_luxury_b',
+}
+
+export function CustomTripForm({ interests, areas, defaultInterests }: CustomTripFormProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -100,7 +98,7 @@ export function CustomTripForm({
   // value into the payload through a hidden input.
   const [travellers, setTravellers] = useState(PAX_DEFAULT)
   const [theme, setTheme] = useState<ThemeKey>(THEMES[0].key)
-  const [budget, setBudget] = useState(BUDGET_DEFAULT)
+  const [budgetTier, setBudgetTier] = useState<BudgetTier>(BUDGET_TIER_DEFAULT)
   const [selected, setSelected] = useState<string[]>(() =>
     interests.filter((one) => defaultInterests.includes(one.key)).map((one) => one.key),
   )
@@ -134,9 +132,6 @@ export function CustomTripForm({
     setSelected((previous) =>
       previous.includes(key) ? previous.filter((one) => one !== key) : [...previous, key],
     )
-
-  const money = (minor: number) => formatMoney(minor, currency, locale)
-  const budgetMinor = (whole: number) => whole * 10 ** minorUnitExponent(currency)
 
   if (done && state.status === 'done') {
     return (
@@ -291,7 +286,7 @@ export function CustomTripForm({
           {t('cp_theme')}
         </h2>
         <div className="bt-ct-row" role="radiogroup" aria-labelledby={`${baseId}-theme`}>
-          {THEMES.map((option) => (
+          {FORM_THEMES.map((option) => (
             <button
               key={option.key}
               type="button"
@@ -307,34 +302,27 @@ export function CustomTripForm({
         <input type="hidden" name="theme" value={theme} />
       </div>
 
-      {/* ---------------- budget ---------------- */}
+      {/* ---------------- budget: a category, never a number ---------------- */}
       <div>
-        <h2 className="bt-form-q">
-          <label htmlFor={`${baseId}-budget`}>{t('cp_budget')}</label>
+        <h2 className="bt-form-q" id={`${baseId}-budget`}>
+          {t('cp_budget')}
         </h2>
-        <div className="bt-slider-wrap">
-          <input
-            id={`${baseId}-budget`}
-            name="budget"
-            type="range"
-            className="bt-range"
-            min={BUDGET_MIN}
-            max={BUDGET_MAX}
-            step={BUDGET_STEP}
-            value={budget}
-            onChange={(event) => setBudget(Number(event.target.value))}
-            // The thumb's position is a number; the readout is money. Screen
-            // readers get the formatted amount rather than "1450".
-            aria-valuetext={money(budgetMinor(budget))}
-          />
-          <output htmlFor={`${baseId}-budget`} className="bt-range-val">
-            {money(budgetMinor(budget))}
-            <span className="muted" style={{ fontSize: 13, fontWeight: 500 }}>
-              {' '}
-              / {t('c_pp')}
-            </span>
-          </output>
+        <div className="bt-tier-row" role="radiogroup" aria-labelledby={`${baseId}-budget`}>
+          {BUDGET_TIERS.map((tier) => (
+            <button
+              key={tier}
+              type="button"
+              role="radio"
+              aria-checked={budgetTier === tier}
+              className={budgetTier === tier ? 'bt-tier on' : 'bt-tier'}
+              onClick={() => setBudgetTier(tier)}
+            >
+              <b>{t(BUDGET_TIER_LABEL[tier])}</b>
+              <small>{t(BUDGET_TIER_HINT[tier])}</small>
+            </button>
+          ))}
         </div>
+        <input type="hidden" name="budgetTier" value={budgetTier} />
       </div>
 
       {/* ---------------- interests ---------------- */}
@@ -499,7 +487,6 @@ function Proposal({
   onAddAll: () => void
 }) {
   const t = useTranslations()
-  const locale = useLocale() as Locale
   const format = useFormatter()
 
   const { answers, recommendations } = state
@@ -520,10 +507,7 @@ function Proposal({
         [t('dp_end'), answers.endDate === null ? '—' : calendarDate(answers.endDate)],
         [t('cp_pax'), format.number(answers.travellers)],
         [t('cp_theme'), t(themeLabelKey(answers.theme))],
-        [
-          t('cp_budget'),
-          `${formatMoney(answers.budgetPerPersonMinor, answers.currency, locale)} / ${t('c_pp')}`,
-        ],
+        [t('cp_budget'), t(BUDGET_TIER_LABEL[answers.budgetTier])],
         [t('cp_acts'), answers.interests.map(labelFor).join(', ')],
         [t('cp_driver'), answers.wantsDriver ? t('c_yes') : t('c_no')],
         [t('cp_notes'), answers.notes === '' ? '—' : answers.notes],
@@ -568,9 +552,7 @@ function Proposal({
         <Tag variant="forest">
           {format.number(answers.travellers)} {t('c_guests')}
         </Tag>
-        <Tag variant="forest">
-          {formatMoney(answers.budgetPerPersonMinor, answers.currency, locale)} / {t('c_pp')}
-        </Tag>
+        <Tag variant="forest">{t(BUDGET_TIER_LABEL[answers.budgetTier])}</Tag>
         <Tag variant="forest">{t(themeLabelKey(answers.theme))}</Tag>
         {answers.interests.map((key) => (
           <Tag key={key} variant="palm">

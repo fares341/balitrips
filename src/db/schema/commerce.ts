@@ -427,6 +427,12 @@ export const customTripRequests = pgTable('custom_trip_requests', {
   days: integer('days'),
   travellers: integer('travellers'),
   theme: varchar('theme', { length: 32 }),
+  /**
+   * Client revision 1: the traveller picks a budget category, never a number —
+   * 'economy' | 'mid' | 'luxury' (src/lib/budget-tier.ts). Migration 0015.
+   */
+  budgetTier: varchar('budget_tier', { length: 16 }),
+  /** Legacy (before 0015): the per-person amount from the old slider. */
   budgetPerPersonMinor: moneyMinor('budget_per_person_minor'),
   currency: varchar('currency', { length: 3 }),
   interests: jsonb('interests').$type<string[]>(),

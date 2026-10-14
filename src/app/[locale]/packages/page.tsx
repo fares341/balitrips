@@ -13,19 +13,28 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { PackageCard } from '@/components/cards'
+import { TierFilter } from '@/components/bt/tier-filter'
+import { PackageCompact } from '@/components/cards'
 import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs } from '@/components/shared'
 import { Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
+import { BUDGET_TIERS, parseBudgetTier, tierForPrice, type BudgetTier } from '@/lib/budget-tier'
 import { listPackages } from '@/lib/content/queries'
-import { ENTITY_PATHS } from '@/lib/content/types'
+import { ENTITY_PATHS, type PackageSummary } from '@/lib/content/types'
 import { alternates } from './_meta'
 
 const HREF = ENTITY_PATHS.package
 
-/** Above-the-fold row on the widest breakpoint is three cards. */
-const PRIORITY_CARDS = 3
+/** Above-the-fold row on the widest breakpoint is four cards. */
+const PRIORITY_CARDS = 4
+
+/** A package's budget category, from its real price (lib/budget-tier.ts). */
+function packageTier(pkg: PackageSummary): BudgetTier | null {
+  return tierForPrice(pkg.priceMinor, pkg.currency, 'package', {
+    perGuest: pkg.pricingMode === 'per_guest',
+  })
+}
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -55,14 +64,33 @@ export async function generateMetadata({
   }
 }
 
-export default async function PackagesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function PackagesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { locale } = await params
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, packages] = await Promise.all([getTranslations({ locale }), listPackages()])
+  const [t, packages, query] = await Promise.all([
+    getTranslations({ locale }),
+    listPackages(),
+    searchParams,
+  ])
 
   const banner = packages[0]?.hero ?? null
+
+  // Budget category filter (?budget=economy|mid|luxury); unknown → all.
+  const tier = parseBudgetTier(query.budget)
+  const tiers = packages.map((pkg) => ({ pkg, tier: packageTier(pkg) }))
+  const counts = Object.fromEntries(
+    BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.tier === key).length]),
+  ) as Record<BudgetTier, number>
+  const shown =
+    tier === null ? packages : tiers.filter((one) => one.tier === tier).map((one) => one.pkg)
 
   return (
     <main>
@@ -90,14 +118,17 @@ export default async function PackagesPage({ params }: { params: Promise<{ local
         </div>
       </div>
 
-      <section className="bg-ivory">
-        <div className="wrap">
-          {packages.length === 0 ? (
+      <section className="bg-ivory sec-tight">
+        <div className="wrap stack" style={{ gap: 16 }}>
+          {packages.length > 0 && (
+            <TierFilter basePath={HREF} active={tier} counts={counts} total={packages.length} />
+          )}
+          {shown.length === 0 ? (
             <p className="muted center">{t('ah_none')}</p>
           ) : (
-            <div className="grid bt-grid-tp">
-              {packages.map((pkg, index) => (
-                <PackageCard key={pkg.id} pkg={pkg} priority={index < PRIORITY_CARDS} />
+            <div className="cc-grid cc-g4">
+              {shown.map((pkg, index) => (
+                <PackageCompact key={pkg.id} pkg={pkg} priority={index < PRIORITY_CARDS} />
               ))}
             </div>
           )}

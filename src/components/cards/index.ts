@@ -32,3 +32,5 @@ export type { PlaceCardProps } from './place-card'
 
 export { ReviewCard } from './review-card'
 export type { ReviewCardProps } from './review-card'
+
+export { ActivityCompact, ItineraryCompact, PackageCompact } from './compact'

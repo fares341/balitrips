@@ -18,10 +18,12 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { ItineraryCard } from '@/components/cards'
+import { TierFilter } from '@/components/bt/tier-filter'
+import { ItineraryCompact } from '@/components/cards'
 import { Breadcrumbs } from '@/components/shared'
 import { Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
+import { BUDGET_TIERS, parseBudgetTier, tierForPrice, type BudgetTier } from '@/lib/budget-tier'
 import { listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { HOME_HREF } from '@/components/layout'
@@ -60,14 +62,38 @@ export async function generateMetadata({
   }
 }
 
-export default async function ItinerariesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function ItinerariesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { locale } = await params
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, itineraries] = await Promise.all([getTranslations({ locale }), listItineraries()])
+  const [t, itineraries, query] = await Promise.all([
+    getTranslations({ locale }),
+    listItineraries(),
+    searchParams,
+  ])
 
   const banner = itineraries[0]?.hero ?? null
+
+  // Budget category filter (?budget=economy|mid|luxury); unknown → all.
+  const tier = parseBudgetTier(query.budget)
+  const tiers = itineraries.map((itinerary) => ({
+    itinerary,
+    tier: tierForPrice(itinerary.priceMinor, itinerary.currency, 'itinerary'),
+  }))
+  const counts = Object.fromEntries(
+    BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.tier === key).length]),
+  ) as Record<BudgetTier, number>
+  const shown =
+    tier === null
+      ? itineraries
+      : tiers.filter((one) => one.tier === tier).map((one) => one.itinerary)
 
   return (
     <main>
@@ -95,14 +121,17 @@ export default async function ItinerariesPage({ params }: { params: Promise<{ lo
         </div>
       </div>
 
-      <section className="bg-ivory">
-        <div className="wrap">
-          {itineraries.length === 0 ? (
+      <section className="bg-ivory sec-tight">
+        <div className="wrap stack" style={{ gap: 16 }}>
+          {itineraries.length > 0 && (
+            <TierFilter basePath={HREF} active={tier} counts={counts} total={itineraries.length} />
+          )}
+          {shown.length === 0 ? (
             <p className="muted center">{t('ah_none')}</p>
           ) : (
-            <div className="grid bt-grid-4">
-              {itineraries.map((itinerary, index) => (
-                <ItineraryCard
+            <div className="cc-grid cc-g4">
+              {shown.map((itinerary, index) => (
+                <ItineraryCompact
                   key={itinerary.id}
                   itinerary={itinerary}
                   priority={index < PRIORITY_CARDS}

@@ -24,9 +24,11 @@
  *    list contained a key the catalogue did not carry, and its label lookup
  *    `(ACT_CATS.find((c) => c.key === k) || {}).label?.[lang]` resolved to
  *    `undefined`, so that chip rendered as an icon with no text;
- *  - the currency and the vehicle class come from the database, never from the
- *    form. A lead is not an order, but the same rule applies: the browser does
- *    not get to name a price or a vehicle.
+ *  - the budget is one of three categories (economy / mid / luxury — client
+ *    revision 1), validated against the fixed list;
+ *  - the vehicle class comes from the server, never from the form. A lead is
+ *    not an order, but the same rule applies: the browser does not get to
+ *    name a price or a vehicle.
  */
 
 import { revalidatePath } from 'next/cache'
@@ -39,6 +41,7 @@ import { db } from '@/db'
 import { customTripRequests, users } from '@/db/schema'
 import { defaultLocale, isLocale } from '@/i18n/config'
 import { redirect } from '@/i18n/routing'
+import { BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
 import { addItem, CartRejectedError } from '@/lib/cart'
 import {
   daysBetweenInclusive,
@@ -46,24 +49,16 @@ import {
   isValidDateRange,
   vehicleForPassengers,
 } from '@/lib/booking-rules'
-import {
-  listActivities,
-  listCategories,
-  listDriverVehicles,
-  listRegions,
-} from '@/lib/content/queries'
+import { listActivities, listCategories, listRegions } from '@/lib/content/queries'
 
 import { notifyStaff, notifyUser } from '@/lib/notify'
 import { emailGuest } from '@/lib/notify/guest'
 import { logActivity } from '@/lib/security/activity'
 
 import { currentUserId } from '../_viewer/session'
-import { catalogueCurrency, rankActivities, toMinorUnits } from './match'
+import { rankActivities } from './match'
 import {
   AREAS_MAX,
-  BUDGET_MAX,
-  BUDGET_MIN,
-  BUDGET_STEP,
   EMAIL_MAX,
   NAME_MAX,
   NOTES_MAX,
@@ -97,7 +92,7 @@ const schema = z.object({
   endDate: z.string().trim(),
   travellers: z.coerce.number().int().min(PAX_MIN).max(PAX_MAX),
   theme: z.enum(THEME_KEYS as readonly [ThemeKey, ...ThemeKey[]]),
-  budget: z.coerce.number().int().min(BUDGET_MIN).max(BUDGET_MAX),
+  budgetTier: z.enum(BUDGET_TIERS as readonly [BudgetTier, ...BudgetTier[]]),
   interests: z.array(z.string().trim()),
   wantsDriver: z.boolean(),
   hasChildren: z.boolean(),
@@ -121,7 +116,7 @@ export async function submitCustomTrip(
     endDate: formData.get('endDate') ?? '',
     travellers: formData.get('travellers') ?? '',
     theme: formData.get('theme') ?? '',
-    budget: formData.get('budget') ?? '',
+    budgetTier: formData.get('budgetTier') ?? '',
     interests: formData.getAll('interests').map(String),
     // A checkbox that is off is simply absent from the payload.
     wantsDriver: formData.get('wantsDriver') !== null,
@@ -172,19 +167,11 @@ export async function submitCustomTrip(
   }
 
   // -------------------------------------------------------------------
-  // Budget granularity
-  // -------------------------------------------------------------------
-
-  // The slider steps in 50s; a hand-crafted post should not slip between them.
-  const budget = Math.round(input.budget / BUDGET_STEP) * BUDGET_STEP
-
-  // -------------------------------------------------------------------
   // Interests, against the real taxonomy
   // -------------------------------------------------------------------
 
-  const [categories, vehicles, regionRows] = await Promise.all([
+  const [categories, regionRows] = await Promise.all([
     listCategories(),
-    listDriverVehicles(),
     listRegions({ includeAreas: true }),
   ])
 
@@ -218,19 +205,7 @@ export async function submitCustomTrip(
 
   const activities = await listActivities({ locale, limit: CANDIDATE_LIMIT })
 
-  const currency = catalogueCurrency(vehicles, activities)
-  const budgetPerPersonMinor = toMinorUnits(budget, currency)
-
   const vehicleClass = input.wantsDriver ? vehicleForPassengers(input.travellers) : null
-  const vehicle =
-    vehicleClass === null
-      ? null
-      : (vehicles.find((one) => one.vehicleClass === vehicleClass) ?? null)
-
-  // Left out of the budget entirely when the fleet row is priced in another
-  // currency — converting without a rate would be inventing a number.
-  const driverDayRateMinor =
-    vehicle !== null && vehicle.currency.toUpperCase() === currency ? vehicle.dayRateMinor : null
 
   const recommendations = rankActivities({
     activities,
@@ -238,10 +213,8 @@ export async function submitCustomTrip(
     theme: input.theme,
     travellers: input.travellers,
     days,
-    budgetPerPersonMinor,
-    currency,
+    budgetTier: input.budgetTier,
     wantsDriver: input.wantsDriver,
-    driverDayRateMinor,
   })
 
   // -------------------------------------------------------------------
@@ -269,8 +242,9 @@ export async function submitCustomTrip(
         days,
         travellers: input.travellers,
         theme: input.theme,
-        budgetPerPersonMinor,
-        currency,
+        // Client revision 1: a category, not an amount. The legacy numeric
+        // column stays for older requests and is left empty here.
+        budgetTier: input.budgetTier,
         interests,
         wantsDriver: input.wantsDriver,
         hasChildren: input.hasChildren,
@@ -338,8 +312,7 @@ export async function submitCustomTrip(
         days,
         travellers: input.travellers,
         theme: input.theme,
-        budgetPerPersonMinor,
-        currency,
+        budgetTier: input.budgetTier,
         interests,
         wantsDriver: input.wantsDriver,
         vehicleClass,
@@ -398,7 +371,7 @@ function fieldErrorsFrom(error: z.ZodError): CustomTripErrors {
     else if (path === 'interests') fields.interests = 'cp_err_ints'
   }
 
-  // A malformed theme, traveller count or budget can only come from a payload
+  // A malformed theme, traveller count or budget category can only come from a payload
   // the form did not produce; report it against the dates line rather than
   // failing silently with no visible message.
   if (Object.keys(fields).length === 0) fields.dates = 'cp_err_dates'

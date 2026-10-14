@@ -2,7 +2,7 @@
 
 /**
  * The activities toolbar + results (prototype activities.html `F`, `list()`,
- * `render()`): search, sort, "more filters" (area, max price per person),
+ * `render()`): search, sort, "more filters" (area, budget category),
  * grid/list, category chips with counts, active-filter chips, the result
  * count, the skeleton between filter changes and the empty state.
  *
@@ -15,22 +15,27 @@ import { useMemo, useRef, useState } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
 import { Button, EmptyState, LinkButton } from '@/components/bt'
-import { formatPrice } from '@/components/bt/card'
 import { CardSkeleton } from '@/components/bt/states'
-import { ActivityCard } from '@/components/cards/activity-card'
+import { ActivityCompact } from '@/components/cards/compact'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
+import {
+  BUDGET_TIER_LABEL,
+  BUDGET_TIERS,
+  isBudgetTier,
+  tierForPrice,
+  type BudgetTier,
+} from '@/lib/budget-tier'
 import { pick, searchableText } from '@/lib/content/localize'
 import type { ActivitySummary } from '@/lib/content/types'
-import { minorUnitExponent } from '@/lib/money'
 
 import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
 
 export type ExplorerFilters = {
   cat: string
   region: string
-  /** Max price per person, minor units. Null = no limit. */
-  max: number | null
+  /** Budget category, derived from each activity's real price. Null = any. */
+  budget: BudgetTier | null
   sort: ExplorerSort
   q: string
   view: 'grid' | 'list'
@@ -70,19 +75,17 @@ export function ActivitiesExplorer({
 
   const [filters, setFilters] = useState<ExplorerFilters>(initial)
   const [pending, setPending] = useState(false)
-  const [moreOpen, setMoreOpen] = useState(initial.region !== 'all' || initial.max !== null)
+  const [moreOpen, setMoreOpen] = useState(initial.region !== 'all' || initial.budget !== null)
   const [draftQ, setDraftQ] = useState(initial.q)
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // The price slider works in the catalogue's main currency (the first one).
-  const currency = activities[0]?.currency ?? 'USD'
-  const unit = 10 ** minorUnitExponent(currency)
-  const step = 5 * unit
-  const priced = activities.filter((a) => a.currency === currency).map((a) => a.priceMinor)
-  const priceCeil = priced.length ? Math.ceil(Math.max(...priced) / step) * step : step
-  const priceFloor = priced.length ? Math.floor(Math.min(...priced) / step) * step : 0
-  const money = (minor: number) => formatPrice(minor, currency, locale)
+  // Each activity's budget category, from its real "from" price.
+  const tierOf = useMemo(() => {
+    const out = new Map<string, BudgetTier | null>()
+    for (const a of activities) out.set(a.id, tierForPrice(a.priceMinor, a.currency, 'activity'))
+    return out
+  }, [activities])
 
   function apply(patch: Partial<ExplorerFilters>, skeleton = true) {
     const next = { ...filters, ...patch }
@@ -91,7 +94,7 @@ export function ActivitiesExplorer({
     const params = new URLSearchParams()
     if (next.cat !== 'all') params.set('cat', next.cat)
     if (next.region !== 'all') params.set('region', next.region)
-    if (next.max !== null) params.set('max', String(next.max))
+    if (next.budget !== null) params.set('budget', next.budget)
     if (next.sort !== 'rating') params.set('sort', next.sort)
     if (next.q !== '') params.set('q', next.q)
     if (next.view === 'list') params.set('view', 'list')
@@ -110,7 +113,7 @@ export function ActivitiesExplorer({
 
   function resetAll() {
     setDraftQ('')
-    apply({ cat: 'all', region: 'all', max: null, q: '' })
+    apply({ cat: 'all', region: 'all', budget: null, q: '' })
   }
 
   const counts = useMemo(() => {
@@ -126,7 +129,7 @@ export function ActivitiesExplorer({
       (a) =>
         (filters.cat === 'all' || a.categories.some((c) => c.key === filters.cat)) &&
         (filters.region === 'all' || a.region?.key === filters.region) &&
-        (filters.max === null || a.currency !== currency || a.priceMinor <= filters.max) &&
+        (filters.budget === null || tierOf.get(a.id) === filters.budget) &&
         (q === '' ||
           `${searchableText(a.name, locale)} ${searchableText(a.blurb ?? null, locale)} ${searchableText(a.area, locale)}`
             .toLowerCase()
@@ -144,12 +147,13 @@ export function ActivitiesExplorer({
       region: (a, b) => regionName(a).localeCompare(regionName(b), locale),
     }
     return [...list].sort(by[filters.sort])
-  }, [activities, filters, currency, locale])
+  }, [activities, filters, tierOf, locale])
 
   const regionLabel = regions.find((r) => r.key === filters.region)?.label
-  const active: { key: 'region' | 'max' | 'q'; label: string }[] = []
+  const active: { key: 'region' | 'budget' | 'q'; label: string }[] = []
   if (filters.region !== 'all' && regionLabel) active.push({ key: 'region', label: regionLabel })
-  if (filters.max !== null) active.push({ key: 'max', label: `≤ ${money(filters.max)}` })
+  if (filters.budget !== null)
+    active.push({ key: 'budget', label: t(BUDGET_TIER_LABEL[filters.budget]) })
   if (filters.q !== '') active.push({ key: 'q', label: `“${filters.q}”` })
 
   return (
@@ -253,24 +257,23 @@ export function ActivitiesExplorer({
               </select>
             </div>
             <div className="field">
-              <label htmlFor="act-f-price">
-                {t('act_f_price')}:{' '}
-                <span className="range-out" dir="ltr">
-                  {money(filters.max ?? priceCeil)}
-                </span>
-              </label>
-              <input
-                id="act-f-price"
-                type="range"
-                min={priceFloor}
-                max={priceCeil}
-                step={step}
-                value={filters.max ?? priceCeil}
+              <label htmlFor="act-f-budget">{t('ct_budget')}</label>
+              <select
+                id="act-f-budget"
+                className="select"
+                value={filters.budget ?? 'all'}
                 onChange={(event) => {
-                  const value = Number(event.target.value)
-                  apply({ max: value >= priceCeil ? null : value })
+                  const value = event.target.value
+                  apply({ budget: isBudgetTier(value) ? value : null })
                 }}
-              />
+              >
+                <option value="all">{t('bud_all')}</option>
+                {BUDGET_TIERS.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {t(BUDGET_TIER_LABEL[tier])}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -297,8 +300,8 @@ export function ActivitiesExplorer({
                       apply(
                         chip.key === 'region'
                           ? { region: 'all' }
-                          : chip.key === 'max'
-                            ? { max: null }
+                          : chip.key === 'budget'
+                            ? { budget: null }
                             : { q: '' },
                       )
                     }}
@@ -312,7 +315,9 @@ export function ActivitiesExplorer({
           </div>
 
           <div
-            className={filters.view === 'list' ? 'grid g3 act-grid list-view' : 'grid g3 act-grid'}
+            className={
+              filters.view === 'list' ? 'cc-grid cc-list act-grid' : 'cc-grid cc-g4 act-grid'
+            }
             aria-busy={pending || undefined}
           >
             {pending ? (
@@ -339,7 +344,12 @@ export function ActivitiesExplorer({
               />
             ) : (
               results.map((activity, index) => (
-                <ActivityCard key={activity.id} activity={activity} priority={index < 3} />
+                <ActivityCompact
+                  key={activity.id}
+                  activity={activity}
+                  layout={filters.view === 'list' ? 'row' : 'auto'}
+                  priority={index < 4}
+                />
               ))
             )}
           </div>

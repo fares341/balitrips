@@ -8,6 +8,7 @@
  */
 
 import type { IconName } from '@/components/ui'
+import type { BudgetTier } from '@/lib/budget-tier'
 import type { VehicleClass } from '@/lib/booking-rules'
 import type { ActivitySummary } from '@/lib/content/types'
 
@@ -36,11 +37,17 @@ export function isThemeKey(value: string): value is ThemeKey {
   return (THEME_KEYS as readonly string[]).includes(value)
 }
 
-/** Budget slider bounds, in whole currency units. Matches the handoff. */
-export const BUDGET_MIN = 200
-export const BUDGET_MAX = 3000
-export const BUDGET_STEP = 50
-export const BUDGET_DEFAULT = 800
+/**
+ * The trip types the form offers. "Luxury" and "Economy" are budget
+ * categories now (the budget question below), so they are not offered twice;
+ * they stay valid THEME_KEYS because older requests carry them.
+ */
+export const FORM_THEMES = THEMES.filter(
+  (theme) => theme.key !== 'luxury' && theme.key !== 'budget',
+)
+
+/** The budget question's default answer (client revision 1: no numbers). */
+export const BUDGET_TIER_DEFAULT: BudgetTier = 'mid'
 
 export const PAX_MIN = 1
 export const PAX_MAX = 20
@@ -88,9 +95,8 @@ export interface TripAnswers {
   days: number | null
   travellers: number
   theme: ThemeKey
-  /** Per person, for the whole trip, in minor units of `currency`. */
-  budgetPerPersonMinor: number
-  currency: string
+  /** Economy / mid-range / luxury — the traveller's budget category. */
+  budgetTier: BudgetTier
   interests: string[]
   wantsDriver: boolean
   /** Auto-assigned from the group size; null when no driver was requested. */

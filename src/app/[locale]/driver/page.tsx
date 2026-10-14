@@ -29,15 +29,19 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { formatPrice } from '@/components/bt/card'
+import { CompactCard } from '@/components/bt/compact-card'
 import { HOME_HREF } from '@/components/layout'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
+import { pick, pickOptional } from '@/lib/content/localize'
 import { listActivities, listDriverVehicles } from '@/lib/content/queries'
 
 import { pageMetadata } from '../_meta'
 import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { DriverBooking } from './driver-booking'
+import { VEHICLE_BLURB, VEHICLE_ICON, VEHICLE_LABEL } from './vehicles'
 
 /** Locale-agnostic path. The nav table already declares it. */
 const DRIVER_HREF = '/driver'
@@ -121,6 +125,43 @@ export default async function DriverPage({ params }: { params: Promise<{ locale:
       <section className="bg-ivory">
         <div className="wrap bt-detail-grid">
           <div className="bt-detail-main">
+            {/* Vehicle options: the real fleet, each card preselects its group
+                size in the booking column (`?pax=` → #book). */}
+            {vehicles.length > 0 && (
+              <section className="bt-detail-block">
+                <h2 className="bt-detail-h">{t('dp_fleet_t')}</h2>
+                <div className="cc-grid cc-fleet">
+                  {vehicles.map((vehicle) => (
+                    <CompactCard
+                      key={vehicle.id}
+                      href={`${DRIVER_HREF}?pax=${vehicle.maxPassengers}#book`}
+                      title={pick(vehicle.label, locale, t(VEHICLE_LABEL[vehicle.vehicleClass]))}
+                      description={
+                        pickOptional(vehicle.description, locale) ??
+                        t(VEHICLE_BLURB[vehicle.vehicleClass])
+                      }
+                      icon={VEHICLE_ICON[vehicle.vehicleClass]}
+                      badge={
+                        <bdi dir="ltr">
+                          {vehicle.minPassengers}–{vehicle.maxPassengers}
+                        </bdi>
+                      }
+                      meta={t('bt_up_to_people', { n: vehicle.maxPassengers })}
+                      price={
+                        vehicle.dayRateMinor > 0
+                          ? {
+                              label: t('bt_from'),
+                              amount: formatPrice(vehicle.dayRateMinor, vehicle.currency, locale),
+                              unit: t('dp_unit_day'),
+                            }
+                          : null
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section className="bt-detail-block">
               <h2 className="bt-detail-h">{t('dp_vp_t')}</h2>
               <div className="bt-vpgrid">

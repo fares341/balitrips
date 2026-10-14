@@ -11,7 +11,7 @@ import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans } from 'next/font/google'
  *
  * Both stacks list Jakarta first: its Latin glyphs win for English words,
  * prices and brand names everywhere (also inside Arabic text), and every
- * Arabic character falls through to Plex Arabic. The two weights line up
+ * Arabic character falls through to the Arabic face. The two weights line up
  * (400 body, 600 headings, 700 emphasis) so mixed lines look like one face.
  * next/font self-hosts and preloads both — no third-party request.
  */
@@ -23,11 +23,23 @@ export const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 })
 
-export const plexArabic = IBM_Plex_Sans_Arabic({
+/**
+ * ARABIC FACE — the single swap point.
+ *
+ * Every Arabic glyph on the site (public pages, Studio, not-found) comes from
+ * this one export through the `--font-arabic` CSS variable (tokens.css
+ * `--f-ar` / `--f-en`). To change the Arabic typeface, replace the loader
+ * below — e.g. `import { Tajawal } from 'next/font/google'` and
+ * `export const arabicFont = Tajawal({ subsets: ['arabic'], weight: [...],
+ * variable: '--font-arabic', display: 'swap' })` — keeping
+ * `variable: '--font-arabic'`. Nothing else needs to change. (A self-hosted
+ * face works the same way with `next/font/local`.)
+ */
+export const arabicFont = IBM_Plex_Sans_Arabic({
   subsets: ['arabic'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-arabic',
   display: 'swap',
 })
 
-export const fontVariables = [jakarta.variable, plexArabic.variable].join(' ')
+export const fontVariables = [jakarta.variable, arabicFont.variable].join(' ')

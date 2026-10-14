@@ -8,7 +8,7 @@
  *
  * Theme, budget, party size, dates and the driver toggle were collected,
  * displayed back as chips, and then discarded — so a honeymooning couple on a
- * $3000 budget and a family of nine on $250 got the same four cards in
+ * luxury budget and a family of nine on an economy one got the same four cards in
  * declaration order, and anyone whose interests matched nothing got the first
  * four activities in the file presented as "recommended for you".
  *
@@ -21,8 +21,8 @@
  * a three-day trip without one should not be three ends of the island.
  */
 
+import { BUDGET_TIERS, tierForPrice, type BudgetTier } from '@/lib/budget-tier'
 import type { ActivitySummary } from '@/lib/content/types'
-import { minorUnitExponent } from '@/lib/money'
 
 import type { ThemeKey } from './types'
 
@@ -39,14 +39,18 @@ const THEME_WEIGHT = 2
 /** Party-size affinity, applied per matching category. */
 const GROUP_WEIGHT = 2
 
-/** Budget fit, from comfortably affordable to well over. */
-const BUDGET_SCORE = {
-  cheap: 3,
-  affordable: 2,
-  stretch: 0,
-  over: -3,
-  wayOver: -6,
-} as const
+/**
+ * Budget fit, by how many categories the activity sits from the traveller's
+ * (activity tier − requested tier): on target is best, a step cheaper is
+ * fine, a step dearer is a stretch, two steps dearer is out of reach.
+ */
+const TIER_SCORE: Record<number, number> = {
+  [-2]: 0,
+  [-1]: 1,
+  0: 3,
+  1: -3,
+  2: -6,
+}
 
 /**
  * Applied per activity already chosen from the same region.
@@ -61,9 +65,6 @@ const REGION_CLUSTER_BONUS = 1
 /** Trip lengths outside this range still produce a usable proposal. */
 const MIN_RECOMMENDATIONS = 3
 const MAX_RECOMMENDATIONS = 8
-
-/** Used for budget-per-day when the traveller has not fixed their dates. */
-const ASSUMED_DAYS = 3
 
 // ---------------------------------------------------------------------------
 // Affinities, by `categories.key`
@@ -106,19 +107,9 @@ export interface MatchInput {
   travellers: number
   /** Inclusive trip length, or null when the dates are incomplete. */
   days: number | null
-  /** Per person, for the whole trip, in minor units of `currency`. */
-  budgetPerPersonMinor: number
-  currency: string
+  /** Economy / mid-range / luxury. */
+  budgetTier: BudgetTier
   wantsDriver: boolean
-  /**
-   * Day rate of the auto-assigned vehicle, in minor units of `currency`.
-   *
-   * Null when no driver was requested, when the fleet has no row for the
-   * implied class, or when that row is priced in another currency — in which
-   * case it is left out of the budget rather than converted at a rate this
-   * system does not have.
-   */
-  driverDayRateMinor: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -137,38 +128,16 @@ export function recommendationCount(days: number | null): number {
 }
 
 /**
- * What one person can spend per day on activities, after their share of the
- * driver.
- *
- * The driver is a per-vehicle cost, so a family of six splits it six ways —
- * which is exactly why the same budget buys a large group more.
+ * How well an activity's price category fits the requested one. An activity
+ * whose price cannot be classified (another currency) is not scored on
+ * budget at all — comparing raw integers across currencies would be a
+ * category error.
  */
-export function perPersonDailyBudgetMinor(input: MatchInput): number {
-  const days = input.days ?? ASSUMED_DAYS
-  const effectiveDays = days > 0 ? days : 1
-
-  const driverTotal =
-    input.wantsDriver && input.driverDayRateMinor !== null
-      ? input.driverDayRateMinor * effectiveDays
-      : 0
-
-  const driverShare = Math.ceil(driverTotal / Math.max(1, input.travellers))
-  const spendable = Math.max(0, input.budgetPerPersonMinor - driverShare)
-
-  return Math.floor(spendable / effectiveDays)
-}
-
-function budgetScore(priceMinor: number, allowanceMinor: number): number {
-  // No allowance left after the driver: everything is over budget, but the
-  // cheapest things are still the least wrong.
-  if (allowanceMinor <= 0) return priceMinor === 0 ? BUDGET_SCORE.affordable : BUDGET_SCORE.over
-
-  const ratio = priceMinor / allowanceMinor
-  if (ratio <= 0.5) return BUDGET_SCORE.cheap
-  if (ratio <= 1) return BUDGET_SCORE.affordable
-  if (ratio <= 1.5) return BUDGET_SCORE.stretch
-  if (ratio <= 2.5) return BUDGET_SCORE.over
-  return BUDGET_SCORE.wayOver
+export function budgetScore(activity: ActivitySummary, requested: BudgetTier): number {
+  const tier = tierForPrice(activity.priceMinor, activity.currency, 'activity')
+  if (tier === null) return 0
+  const distance = BUDGET_TIERS.indexOf(tier) - BUDGET_TIERS.indexOf(requested)
+  return TIER_SCORE[distance] ?? 0
 }
 
 function groupScore(categoryKeys: ReadonlySet<string>, travellers: number): number {
@@ -204,15 +173,7 @@ export function scoreActivity(activity: ActivitySummary, input: MatchInput): num
 
   score += groupScore(keys, input.travellers)
 
-  /**
-   * Budget only counts when the two amounts are in the same currency.
-   *
-   * Comparing minor units across currencies is not a rounding error, it is a
-   * category error — 500 JPY and 500 USD are the same integer.
-   */
-  if (activity.currency.toUpperCase() === input.currency.toUpperCase()) {
-    score += budgetScore(activity.priceMinor, perPersonDailyBudgetMinor(input))
-  }
+  score += budgetScore(activity, input.budgetTier)
 
   return score
 }
@@ -284,47 +245,4 @@ function beats(a: ActivitySummary, b: ActivitySummary): boolean {
   if (ratingA !== ratingB) return ratingA > ratingB
   if (a.reviewCount !== b.reviewCount) return a.reviewCount > b.reviewCount
   return a.slug < b.slug
-}
-
-// ---------------------------------------------------------------------------
-// Currency
-// ---------------------------------------------------------------------------
-
-/**
- * The currency this catalogue quotes in.
- *
- * Pass the most authoritative list first — the driver fleet is three rows and
- * changes rarely, so the questionnaire's budget slider and the server action
- * that reads it back agree without either of them hard-coding a code. Falls
- * back to USD, which is what the seed and the design's copy use.
- */
-export function catalogueCurrency(...groups: readonly (readonly { currency: string }[])[]): string {
-  for (const group of groups) {
-    const counts = new Map<string, number>()
-    for (const item of group) {
-      const code = item.currency.toUpperCase()
-      if (code === '') continue
-      counts.set(code, (counts.get(code) ?? 0) + 1)
-    }
-
-    let best: string | null = null
-    let bestCount = 0
-    // Sorted so a tie resolves the same way every time rather than by
-    // insertion order, which is a database ordering detail.
-    for (const [code, count] of [...counts].sort((a, b) => a[0].localeCompare(b[0]))) {
-      if (count > bestCount) {
-        best = code
-        bestCount = count
-      }
-    }
-
-    if (best !== null) return best
-  }
-
-  return 'USD'
-}
-
-/** Whole units of `currency` → minor units, using the currency's own exponent. */
-export function toMinorUnits(whole: number, currency: string): number {
-  return Math.round(whole * 10 ** minorUnitExponent(currency))
 }

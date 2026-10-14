@@ -10,12 +10,10 @@ import { describe, expect, it } from 'vitest'
 import type { ActivitySummary } from '@/lib/content/types'
 
 import {
-  catalogueCurrency,
-  perPersonDailyBudgetMinor,
+  budgetScore,
   rankActivities,
   recommendationCount,
   scoreActivity,
-  toMinorUnits,
   type MatchInput,
 } from './match'
 
@@ -68,10 +66,8 @@ function input(overrides: Partial<MatchInput> = {}): MatchInput {
     theme: 'family',
     travellers: 2,
     days: 4,
-    budgetPerPersonMinor: 80_000,
-    currency: 'USD',
+    budgetTier: 'mid',
     wantsDriver: false,
-    driverDayRateMinor: null,
     ...overrides,
   }
 }
@@ -90,44 +86,15 @@ describe('recommendationCount', () => {
   })
 })
 
-describe('perPersonDailyBudgetMinor', () => {
-  it('splits the driver across the party, so a bigger group can afford more', () => {
-    const shared = {
-      budgetPerPersonMinor: 60_000,
-      days: 3,
-      wantsDriver: true,
-      driverDayRateMinor: 9_000,
-    }
-
-    const couple = perPersonDailyBudgetMinor(input({ ...shared, travellers: 2 }))
-    const group = perPersonDailyBudgetMinor(input({ ...shared, travellers: 6 }))
-
-    expect(group).toBeGreaterThan(couple)
-  })
-
-  it('ignores the driver entirely when none was requested', () => {
-    const withRate = perPersonDailyBudgetMinor(
-      input({
-        wantsDriver: false,
-        driverDayRateMinor: 9_000,
-        days: 2,
-        budgetPerPersonMinor: 20_000,
-      }),
-    )
-    expect(withRate).toBe(10_000)
-  })
-
-  it('never goes negative when the driver eats the whole budget', () => {
-    expect(
-      perPersonDailyBudgetMinor(
-        input({
-          wantsDriver: true,
-          driverDayRateMinor: 99_000,
-          days: 5,
-          budgetPerPersonMinor: 1_000,
-        }),
-      ),
-    ).toBe(0)
+describe('budgetScore', () => {
+  it('rewards the requested category and penalises dearer ones', () => {
+    const economy = activity('economy', ['nature'], 2_000)
+    const mid = activity('mid', ['nature'], 6_000)
+    const luxury = activity('luxury', ['nature'], 15_000)
+    expect(budgetScore(mid, 'mid')).toBeGreaterThan(budgetScore(economy, 'mid'))
+    expect(budgetScore(economy, 'mid')).toBeGreaterThan(budgetScore(luxury, 'mid'))
+    expect(budgetScore(luxury, 'economy')).toBeLessThan(budgetScore(luxury, 'mid'))
+    expect(budgetScore(luxury, 'luxury')).toBeGreaterThan(budgetScore(economy, 'luxury'))
   })
 })
 
@@ -146,19 +113,19 @@ describe('scoreActivity', () => {
     )
   })
 
-  it('prefers what fits the budget', () => {
+  it('prefers what fits the budget category', () => {
     const cheap = activity('cheap', ['nature'], 2_000)
     const dear = activity('dear', ['nature'], 90_000)
-    const answers = input({ interests: ['nature'], budgetPerPersonMinor: 40_000, days: 4 })
+    const answers = input({ interests: ['nature'], budgetTier: 'economy', days: 4 })
     expect(scoreActivity(cheap, answers)).toBeGreaterThan(scoreActivity(dear, answers))
   })
 
   it('ignores price in another currency rather than comparing raw integers', () => {
     const foreign = { ...activity('foreign', ['nature'], 9_000_000), currency: 'IDR' }
     const local = activity('local', ['nature'], 9_000_000)
-    const answers = input({ interests: ['nature'], budgetPerPersonMinor: 40_000 })
-    // The local one is punished for being over budget; the foreign one is not
-    // scored on budget at all, so it must come out ahead.
+    const answers = input({ interests: ['nature'], budgetTier: 'economy' })
+    // The local one is punished for being a luxury price on an economy
+    // budget; the foreign one is not scored on budget at all.
     expect(scoreActivity(foreign, answers)).toBeGreaterThan(scoreActivity(local, answers))
   })
 
@@ -197,7 +164,6 @@ describe('rankActivities', () => {
         activities: catalogue,
         interests: ['culture'],
         wantsDriver: true,
-        driverDayRateMinor: 4_500,
         days: 3,
       }),
       3,
@@ -230,29 +196,5 @@ describe('rankActivities', () => {
     const answers = { activities: catalogue, interests: ['culture'] }
     expect(rankActivities(input({ ...answers, days: 2 }))).toHaveLength(3)
     expect(rankActivities(input({ ...answers, days: 5 }))).toHaveLength(5)
-  })
-})
-
-describe('catalogueCurrency', () => {
-  it('takes the first non-empty group', () => {
-    expect(catalogueCurrency([], [{ currency: 'idr' }])).toBe('IDR')
-  })
-
-  it('takes the most common code within a group', () => {
-    expect(catalogueCurrency([{ currency: 'USD' }, { currency: 'USD' }, { currency: 'EUR' }])).toBe(
-      'USD',
-    )
-  })
-
-  it('falls back to USD rather than to an empty string', () => {
-    expect(catalogueCurrency([], [])).toBe('USD')
-  })
-})
-
-describe('toMinorUnits', () => {
-  it('uses the currency exponent rather than assuming 100', () => {
-    expect(toMinorUnits(19, 'USD')).toBe(1_900)
-    expect(toMinorUnits(19, 'JPY')).toBe(19)
-    expect(toMinorUnits(19, 'KWD')).toBe(19_000)
   })
 })

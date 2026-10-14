@@ -2369,12 +2369,430 @@ body:has(> .tabbar) {
 html {
   scroll-padding-top: var(--scroll-pad);
 }
-/* next/image sets an inline height on the logo; the package sizes it per breakpoint. */
+/* next/image sets an inline height on the logo; the package sizes it per breakpoint.
+ * Client revision 1: a larger, more prominent logo. On phones and tablets the
+ * logo takes the space between the two icon groups (up to 44px tall), so it
+ * grows with the screen and can never push the icons out (390px: ~39px). */
 .hdr .hdr-logo img {
-  height: 30px !important;
+  height: auto !important;
+  width: 100% !important;
+  max-width: 150px;
+  max-height: 44px;
+  object-fit: contain;
+}
+@media (max-width: 1023px) {
+  .hdr-top {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .hdr .hdr-logo {
+    justify-self: center;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+    padding-inline: 6px;
+  }
 }
 @media (min-width: 1024px) {
+  .hdr-top {
+    height: 76px;
+  }
   .hdr .hdr-logo img {
-    height: 40px !important;
+    width: auto !important;
+    max-width: none;
+    max-height: none;
+    height: 56px !important;
+  }
+}
+
+/* ---------- Compact cards (client revision 1: CompactCard) ----------
+ * Photo or icon · small badge · title · 2-line description · real price.
+ * `.cc-auto` is a list row on phones and a tile from 600px; `.cc-tile` and
+ * `.cc-row` force one layout. The title's link is stretched over the card.
+ */
+.cc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--sh-1);
+  transition:
+    transform var(--d-base) var(--ease),
+    box-shadow var(--d-base),
+    border-color var(--d-base);
+}
+.cc:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-2);
+  border-color: var(--palm-mid);
+}
+.cc:has(.cc-link:focus-visible) {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.cc-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--ivory-2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cc-media picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cc-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s var(--ease);
+}
+.cc:hover .cc-media img {
+  transform: scale(1.04);
+}
+.cc-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--palm-soft);
+  color: var(--forest);
+}
+.cc-noimg .cc-media {
+  aspect-ratio: auto;
+  background: transparent;
+  padding: 16px 16px 0;
+}
+.cc-badge {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  max-width: calc(100% - 20px);
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--forest);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--sh-1);
+}
+.cc-noimg .cc-badge {
+  max-width: none;
+  overflow: visible;
+  position: static;
+  display: inline-block;
+  margin-inline-start: 10px;
+  vertical-align: middle;
+  background: var(--orange-soft);
+  color: #8a4b00;
+  box-shadow: none;
+}
+.cc-noimg .cc-media {
+  display: flex;
+  align-items: center;
+}
+.cc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 14px;
+  flex: 1;
+  min-width: 0;
+}
+.cc-meta {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cc-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--forest);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cc-link {
+  color: inherit;
+}
+.cc-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+.cc-link:focus-visible {
+  outline: none;
+}
+.cc-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cc-foot {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 36px;
+}
+.cc-price {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.cc-price b {
+  color: var(--forest);
+  font-size: 16px;
+  font-weight: 800;
+}
+.cc-end {
+  margin-inline-start: auto;
+  font-size: 13px;
+}
+.cc-go {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--palm-soft);
+  color: var(--forest);
+  flex-shrink: 0;
+  transition: background var(--d-base);
+}
+.cc:hover .cc-go {
+  background: var(--orange);
+  color: var(--forest-ink);
+}
+.cc-fav {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  inset-inline-end: 8px;
+}
+.cc-fav .fav-btn {
+  width: 36px;
+  height: 36px;
+}
+
+/* list row: thumbnail at the start */
+.cc-row {
+  flex-direction: row;
+}
+.cc-row .cc-media {
+  flex: 0 0 112px;
+  aspect-ratio: auto;
+  min-height: 112px;
+}
+.cc-row.cc-noimg .cc-media {
+  flex-basis: auto;
+  min-height: 0;
+  padding: 14px 0 14px;
+  padding-inline-start: 14px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.cc-row.cc-noimg .cc-badge {
+  margin: 0;
+}
+.cc-row .cc-body {
+  padding: 10px 12px;
+  gap: 3px;
+}
+.cc-row .cc-badge {
+  top: 6px;
+  inset-inline-start: 6px;
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.cc-row .cc-fav {
+  top: auto;
+  bottom: 6px;
+  inset-inline-end: auto;
+  inset-inline-start: 6px;
+}
+.cc-row .cc-fav .fav-btn {
+  width: 32px;
+  height: 32px;
+}
+.cc-row .cc-foot {
+  padding-top: 4px;
+  min-height: 30px;
+}
+.cc-row .cc-go {
+  width: 26px;
+  height: 26px;
+}
+@media (max-width: 599px) {
+  .cc-auto {
+    flex-direction: row;
+  }
+  .cc-auto .cc-media {
+    flex: 0 0 108px;
+    aspect-ratio: auto;
+    min-height: 108px;
+  }
+  .cc-auto.cc-noimg .cc-media {
+    flex-basis: auto;
+    min-height: 0;
+    padding: 14px 0;
+    padding-inline-start: 14px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cc-auto.cc-noimg .cc-badge {
+    margin: 0;
+  }
+  .cc-auto .cc-body {
+    padding: 10px 12px;
+    gap: 3px;
+  }
+  .cc-auto .cc-badge {
+    top: 6px;
+    inset-inline-start: 6px;
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  .cc-auto .cc-fav {
+    top: auto;
+    bottom: 6px;
+    inset-inline-end: auto;
+    inset-inline-start: 6px;
+  }
+  .cc-auto .cc-fav .fav-btn {
+    width: 32px;
+    height: 32px;
+  }
+  .cc-auto .cc-title {
+    font-size: 15px;
+  }
+  .cc-auto .cc-desc {
+    font-size: 13px;
+  }
+  .cc-auto .cc-foot {
+    padding-top: 4px;
+    min-height: 30px;
+  }
+  .cc-auto .cc-go {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* grids of compact cards */
+.cc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.cc-grid.cc-2m {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 600px) {
+  .cc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+@media (min-width: 900px) {
+  .cc-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1200px) {
+  .cc-grid.cc-g4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.cc-grid.cc-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 900px) {
+  .cc-grid.cc-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* horizontal scroller of tiles on phones, a grid from 900px */
+.cc-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(212px, 62%);
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  margin-inline: calc(var(--gutter) * -1);
+  padding: 2px var(--gutter) 6px;
+  scroll-padding-inline: var(--gutter);
+  list-style: none;
+}
+.cc-scroll::-webkit-scrollbar {
+  display: none;
+}
+.cc-scroll > * {
+  scroll-snap-align: start;
+}
+@media (min-width: 600px) {
+  .cc-scroll {
+    grid-auto-columns: minmax(240px, 40%);
+  }
+}
+@media (min-width: 900px) {
+  .cc-scroll {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cc,
+  .cc-media img {
+    transition: none;
+  }
+  .cc:hover {
+    transform: none;
+  }
+  .cc:hover .cc-media img {
+    transform: none;
+  }
+}
+/* driver vehicle options: icon cards, 1 col phone → 3 across */
+@media (min-width: 600px) {
+  .cc-grid.cc-fleet {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

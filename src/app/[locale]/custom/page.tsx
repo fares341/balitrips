@@ -4,7 +4,7 @@
  * Ported from `CustomPage` in design/handoff/sections-bt/page-content.jsx.
  *
  * The interactive half lives in `custom-trip-form.tsx`; this page's job is to
- * hand it three things it must not invent for itself:
+ * hand it the things it must not invent for itself:
  *
  *  1. **The interest toggles**, built from the `categories` table and localized
  *     here. The handoff hard-coded six `[key, icon]` pairs and looked the label
@@ -15,8 +15,9 @@
  *     taxonomy does not carry is dropped here, and the list is topped back up
  *     from real categories so the row still has six.
  *  2. **The default selection**, filtered through the same check.
- *  3. **The currency** the budget slider quotes, read from the catalogue rather
- *     than assumed — the handoff printed `${budget}` behind a literal `$`.
+ *
+ * The budget is asked as a category (economy / mid-range / luxury — client
+ * revision 1), so no currency or amount is needed here any more.
  *
  * Statically renderable: nothing here reads cookies or headers. The server
  * action the form posts to does, which is where that belongs.
@@ -30,12 +31,7 @@ import { HOME_HREF } from '@/components/layout'
 import type { IconName } from '@/components/ui'
 import { isLocale, locales, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
-import {
-  listActivities,
-  listCategories,
-  listDriverVehicles,
-  listRegions,
-} from '@/lib/content/queries'
+import { listActivities, listCategories, listRegions } from '@/lib/content/queries'
 import type { CategoryDto } from '@/lib/content/types'
 
 import { pageMetadata } from '../_meta'
@@ -43,7 +39,6 @@ import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { CustomTripForm } from './custom-trip-form'
-import { catalogueCurrency } from './match'
 import type { InterestOption } from './types'
 
 /** The taxonomy's "everything" sentinel — a list filter, not an interest. */
@@ -72,7 +67,7 @@ const FALLBACK_ICON: IconName = 'sparkle'
 /** Pre-ticked, as in the handoff — subject to the same existence check. */
 const DEFAULT_INTERESTS = ['beach', 'nature']
 
-/** How much of the catalogue to sample for imagery and currency. */
+/** How much of the catalogue to sample for imagery. */
 const SAMPLE_LIMIT = 12
 
 export function generateStaticParams() {
@@ -102,11 +97,10 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, categories, activities, vehicles, regionRows] = await Promise.all([
+  const [t, categories, activities, regionRows] = await Promise.all([
     getTranslations({ locale }),
     listCategories(),
     listActivities({ locale, limit: SAMPLE_LIMIT }),
-    listDriverVehicles(),
     listRegions({ includeAreas: true }),
   ])
   const areas = regionRows.map((row) => ({ key: row.key, label: pick(row.label, locale, row.key) }))
@@ -130,12 +124,7 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
 
       <section className="bg-ivory">
         <div className="wrap" style={{ maxWidth: 900 }}>
-          <CustomTripForm
-            interests={interests}
-            areas={areas}
-            defaultInterests={defaults}
-            currency={catalogueCurrency(vehicles, activities)}
-          />
+          <CustomTripForm interests={interests} areas={areas} defaultInterests={defaults} />
         </div>
       </section>
     </main>

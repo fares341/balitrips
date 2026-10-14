@@ -17,6 +17,7 @@ import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { setTripRequestStatus } from '../actions'
+import { budgetLabel } from '../budget'
 import {
   linkRequestToUser,
   saveRequestNotes,
@@ -78,12 +79,7 @@ export default async function LeadDetailPage({
     [t('leads.days'), request.days === null ? '—' : String(request.days)],
     [t('leads.travellers'), String(request.travellers ?? '—')],
     [t('leads.trip_type'), request.theme ?? '—'],
-    [
-      t('leads.budget_per_person'),
-      request.budgetPerPersonMinor !== null && request.currency
-        ? formatMoney(request.budgetPerPersonMinor, request.currency, intl)
-        : '—',
-    ],
+    [t('leads.budget'), budgetLabel(t, intl, request)],
     [t('leads.interests'), (request.interests ?? []).join(', ') || '—'],
     [t('leads.wants_driver'), yesNo(request.wantsDriver)],
     [t('leads.children'), yesNo(request.hasChildren)],

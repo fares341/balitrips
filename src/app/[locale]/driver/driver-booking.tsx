@@ -33,7 +33,7 @@ import { useSearchParams } from 'next/navigation'
 
 import { CART_CHANGED_EVENT, CART_HREF } from '@/components/layout/routes'
 import { Button, Stepper, useToast } from '@/components/shared'
-import { Icon, type IconName } from '@/components/ui'
+import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { useRouter } from '@/i18n/routing'
 import {
@@ -42,35 +42,17 @@ import {
   isValidDateRange,
   todayInBali,
   vehicleForPassengers,
-  type VehicleClass,
 } from '@/lib/booking-rules'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { DriverVehicleDto } from '@/lib/content/types'
 import { formatMoney } from '@/lib/money'
 
+import { VEHICLE_BLURB, VEHICLE_ICON, VEHICLE_LABEL } from './vehicles'
+
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /** Placeholder for a value the traveller has not supplied yet. */
 const EMPTY = '—'
-
-/** Message key per vehicle class — the fallback when the row has no label. */
-const VEHICLE_LABEL: Record<VehicleClass, string> = {
-  sedan: 'dp_veh_sedan',
-  suv: 'dp_veh_suv',
-  van: 'dp_veh_van',
-}
-
-const VEHICLE_BLURB: Record<VehicleClass, string> = {
-  sedan: 'dp_veh_sedan_b',
-  suv: 'dp_veh_suv_b',
-  van: 'dp_veh_van_b',
-}
-
-const VEHICLE_ICON: Record<VehicleClass, IconName> = {
-  sedan: 'car',
-  suv: 'suv',
-  van: 'van',
-}
 
 /** Used only when the fleet table is empty, so the stepper still has a bound. */
 const FALLBACK_MAX_PASSENGERS = 20
@@ -85,7 +67,16 @@ type FieldErrors = {
   end?: string
 }
 
+/**
+ * Keyed by `?pax=`: the vehicle options on the page link here with a group
+ * size, and a new size has to re-seed the form (its state is read once).
+ */
 export function DriverBooking({ vehicles }: DriverBookingProps) {
+  const params = useSearchParams()
+  return <DriverBookingForm key={params.get('pax') ?? ''} vehicles={vehicles} />
+}
+
+function DriverBookingForm({ vehicles }: DriverBookingProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const format = useFormatter()
@@ -235,7 +226,7 @@ export function DriverBooking({ vehicles }: DriverBookingProps) {
     days === null ? EMPTY : days === 1 ? t('dp_days_one') : t('c_days_n', { n: days })
 
   return (
-    <aside className="bt-booking" aria-labelledby={headingId}>
+    <aside className="bt-booking" id="book" aria-labelledby={headingId}>
       <h2 id={headingId} style={{ fontSize: 18, marginBottom: 16 }}>
         {t('dp_book')}
       </h2>

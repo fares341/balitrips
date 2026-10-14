@@ -3,7 +3,6 @@ import Link from 'next/link'
 
 import { db } from '@/db'
 import { contactMessages, customTripRequests } from '@/db/schema'
-import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
@@ -14,6 +13,7 @@ import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { CONTACT_STATUSES, LEAD_TONES, TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { setContactMessageStatus, setTripRequestStatus } from './actions'
+import { budgetLabel } from './budget'
 
 export const dynamic = 'force-dynamic'
 
@@ -172,13 +172,7 @@ export default async function LeadsPage({
                   <td className="num">{lead.travellers ?? '—'}</td>
                   <td>
                     {lead.theme ?? <span className="a-muted">—</span>}
-                    <div className="a-muted">
-                      {lead.budgetPerPersonMinor !== null && lead.currency
-                        ? t('leads.per_person', {
-                            amount: formatMoney(lead.budgetPerPersonMinor, lead.currency, intl),
-                          })
-                        : ''}
-                    </div>
+                    <div className="a-muted">{budgetLabel(t, intl, lead)}</div>
                     <div className="a-muted">{(lead.interests ?? []).join(', ')}</div>
                     {lead.wantsDriver ? (
                       <Pill tone="info">{t('leads.wants_driver_tag')}</Pill>

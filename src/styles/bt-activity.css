@@ -93,15 +93,6 @@
 .act-more[hidden] {
   display: none;
 }
-.range-out {
-  font: 700 14px var(--f-en);
-  color: var(--forest);
-}
-.act-more input[type='range'] {
-  width: 100%;
-  accent-color: var(--forest);
-  min-height: 44px;
-}
 .active-f {
   display: flex;
   flex-wrap: wrap;
@@ -119,33 +110,6 @@
   border: 0;
   font-size: 13px;
   font-weight: 600;
-}
-.act-grid.list-view {
-  grid-template-columns: 1fr;
-}
-.act-grid.list-view .card {
-  flex-direction: row;
-}
-.act-grid.list-view .card .card-media {
-  width: 38%;
-  aspect-ratio: auto;
-  min-height: 220px;
-  flex-shrink: 0;
-}
-/* The photo fills the row instead of setting its height. */
-.act-grid.list-view .card .card-media > :first-child {
-  position: absolute;
-  inset: 0;
-}
-@media (max-width: 640px) {
-  .act-grid.list-view .card {
-    flex-direction: column;
-  }
-  .act-grid.list-view .card .card-media {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    min-height: 0;
-  }
 }
 .act-driver-cta {
   padding: 24px;

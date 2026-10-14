@@ -50,6 +50,14 @@ export type {
   StarsProps,
 } from './card'
 
+export { CompactCard } from './compact-card'
+export type {
+  CompactCardImage,
+  CompactCardLayout,
+  CompactCardPrice,
+  CompactCardProps,
+} from './compact-card'
+
 export { FavButton } from './fav-button'
 export type { FavButtonProps } from './fav-button'
 export {
@@ -113,3 +121,5 @@ export { Breadcrumbs } from '@/components/shared/breadcrumbs'
 export type { BreadcrumbsProps, Crumb } from '@/components/shared/breadcrumbs'
 export { ToastProvider, useToast } from '@/components/shared/toast'
 export type { ToastApi, ToastOptions } from '@/components/shared/toast'
+export { TierFilter } from './tier-filter'
+export type { TierFilterProps } from './tier-filter'
