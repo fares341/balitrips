@@ -175,9 +175,9 @@ root.innerHTML = `
           <div class="bstep" id="s-time"><span class="lbl"><span class="n">3</span>${L("الوقت", "Time")}</span><div class="slots" id="slots"></div><span class="err" role="alert">${icon("alert", 16)} ${L("اختر وقت البدء.", "Choose a start time.")}</span></div>
           <div class="bstep" id="s-ppl"><span class="lbl"><span class="n">4</span>${L("عدد الأفراد", "Travelers")}</span><div class="row between"><div id="ppl"></div><small class="muted" id="ppl-note"></small></div><span class="err" role="alert">${icon("alert", 16)} ${L("حدد عدد الأفراد.", "Set the number of travelers.")}</span></div>
           <div class="bstep" id="s-add"><span class="lbl"><span class="n">5</span>${L("خدمات إضافية (اختيارية)", "Extras (optional)")}</span><div class="stack" style="gap:8px" id="addons"></div></div>
-          <div class="bstep"><span class="lbl"><span class="n">6</span>${L("السائق", "Driver")}</span>
+          ${BT.FEAT.driver ? `<div class="bstep"><span class="lbl"><span class="n">6</span>${L("السائق", "Driver")}</span>
             <label class="drv-toggle"><span class="switch"><input type="checkbox" id="drv"><span></span></span><span class="addon"><b>${L("أضف سائقًا لهذه الفعالية", "Add a driver for this activity")}</b><small id="drv-info"></small></span><span class="ad-price" id="drv-price"></span></label>
-          </div>
+          </div>` : ""}
           <div class="sum" aria-live="polite"><div id="sum-lines"></div><div class="sum-total"><span>${L("الإجمالي التقديري", "Estimated total")}</span><b class="price" id="total">—</b></div><small class="muted">${L("لا رسوم إضافية عند الدفع. الأسعار تجريبية.", "No extra fees at checkout. Demo prices.")}</small></div>
           <div class="stack" style="gap:8px">
             <button class="btn btn-primary btn-block btn-lg" type="submit" id="book-now">${editing ? L("حفظ التعديلات", "Save changes") : L("احجز الآن", "Book now")}</button>
@@ -254,8 +254,8 @@ function renderAddons() {
 document.getElementById("addons").addEventListener("change", (e) => { const c = e.target.closest("[data-ad]"); if (!c) return; if (c.checked) st.addons[c.dataset.ad] = 1; else delete st.addons[c.dataset.ad]; renderAddons(); calc(); });
 
 /* driver */
-document.getElementById("drv").checked = !!st.driver;
-document.getElementById("drv").onchange = (e) => { st.driver = e.target.checked; calc(); };
+const drvEl = document.getElementById("drv");
+if (drvEl) { drvEl.checked = !!st.driver; drvEl.onchange = (e) => { st.driver = e.target.checked; calc(); }; }
 
 /* ---------- pricing ---------- */
 function lines() {
@@ -270,8 +270,8 @@ let lastTotal = 0;
 function calc() {
   const ls = lines(), total = ls.reduce((s, x) => s + x.v, 0);
   const v = BT.vehicleFor(st.people);
-  document.getElementById("drv-info").textContent = L(`${t(v.name)} لـ ${BT.cnt(st.people, "p")}، بنفس تاريخ الفعالية`, `${t(v.name)} for ${st.people}, same date as the activity`);
-  document.getElementById("drv-price").textContent = "+" + money(v.perDay);
+  if (document.getElementById("drv-info")) document.getElementById("drv-info").textContent = L(`${t(v.name)} لـ ${BT.cnt(st.people, "p")}، بنفس تاريخ الفعالية`, `${t(v.name)} for ${st.people}, same date as the activity`);
+  if (document.getElementById("drv-price")) document.getElementById("drv-price").textContent = "+" + money(v.perDay);
   const p = curPkg(); document.getElementById("ppl-note").textContent = p.per === "group" ? L(`الباقة تغطي حتى ${numAr(p.groupMax)} أشخاص لكل مجموعة`, `Covers up to ${p.groupMax} per group`) : L(`${money(p.price)} للشخص`, `${money(p.price)} per person`);
   document.getElementById("sum-lines").innerHTML = `<div class="sum-row"><span>${L("التاريخ والوقت", "Date & time")}</span><span>${st.date ? BT.fmtDate(st.date) : "—"} · <span class="num">${st.time || "—"}</span></span></div>` + ls.map(x => `<div class="sum-row"><span>${t(x.l)}</span><span class="price">${money(x.v)}</span></div>`).join("");
   const el = document.getElementById("total"); el.textContent = money(total); document.getElementById("mbar-total").textContent = money(total);
@@ -296,10 +296,10 @@ function save(go) {
   if (go) { BT.store.set("checkout", [it.key]); location.href = "checkout.html"; }
   else toast(L("أُضيفت الفعالية إلى رحلتي", "Activity added to My Trip"), { link: [L("عرض رحلتي", "View My Trip"), "my-trip.html"] });
 }
-const dm = document.getElementById("drv-modal");
+const dm = document.getElementById("drv-modal") || document.createElement("div");
 document.getElementById("bk").onsubmit = (e) => {
   e.preventDefault(); if (!validate()) return;
-  if (!st.driver && !editing) {
+  if (BT.FEAT.driver && !st.driver && !editing) {
     const v = BT.vehicleFor(st.people);
     document.getElementById("drv-modal-body").innerHTML = `<span style="width:60px;height:60px;border-radius:18px;background:var(--palm-soft);display:grid;place-items:center;color:var(--forest)">${icon("car", 30)}</span><h2 class="h3" id="dm-h">${L("هل ترغب في إضافة سائق لهذه الرحلة؟", "Would you like to add a driver for this trip?")}</h2><p class="muted">${L(`${t(v.name)} تأخذك من فندقك إلى الفعالية وتعيدك، بنفس التاريخ وعدد الأشخاص.`, `A ${t(v.name).toLowerCase()} takes you from your hotel and back, same date and party size.`)}</p><div class="sum-row" style="background:var(--ivory-2);padding:12px 14px;border-radius:12px"><span>${t(v.name)} · ${L("يوم واحد", "1 day")}</span><b class="price">+${money(v.perDay)}</b></div><div class="row"><button class="btn btn-primary" id="dm-add">${L("أضف السائق وتابع", "Add driver & continue")}</button><button class="btn btn-ghost" id="dm-skip">${L("متابعة بدون سائق", "Continue without")}</button></div>`;
     dm.classList.add("open"); document.getElementById("dm-add").focus();

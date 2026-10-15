@@ -174,7 +174,7 @@ const PAGES = [
   ["السياسات", [["الخصوصية", "policy.html#privacy", 1], ["الشروط والأحكام", "policy.html#terms", 1], ["الإلغاء والاسترجاع", "policy.html#cancellation", 1], ["استخدام المنصة", "policy.html#platform", 1], ["استخدام الخريطة", "policy.html#map", 1]]],
   ["الحالات والأخطاء", [["404", "404.html", 1], ["التحميل، الأخطاء، الفراغ، انقطاع الاتصال", "states.html", 1]]],
   ["لوحة التحكم", [["الرئيسية والمؤشرات", "admin.html", 1], ["الفعاليات والباقات والإضافات", "admin.html#activities", 1], ["إدارة الخريطة", "admin.html#map", 1], ["الحجوزات والعملاء والمدفوعات", "admin.html#bookings", 1], ["المحتوى والعروض والإعدادات والصلاحيات", "admin.html#settings", 1]]],
-  ["التوثيق", [["Design System", "design-system.html", 1], ["Motion + Developer Handoff", "handoff.html", 1]]],
+  ["التوثيق", [["Design System", "design-system.html", 1], ["اقتراحات القسم الأول (٤ أفكار)", "heroes.html", 1], ["خيارات الخط العربي (للعميل)", "fonts.html", 1], ["Motion + Developer Handoff", "handoff.html", 1]]],
 ];
 let ready = 0, all = 0;
 document.getElementById("smap").innerHTML = PAGES.map(([g, ps]) => `<div class="sm-g"><h3>${g}</h3>${ps.map(([n, h, ok]) => { all++; if (ok) ready++; return ok ? `<a href="${h}">${n}<span class="st ok">جاهزة</span></a>` : `<span class="pl">${n}<span class="st nx">التالية</span></span>`; }).join("")}</div>`).join("");

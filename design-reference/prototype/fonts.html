@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bali Trips — اختيار الخط العربي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/bt.css">
+<style>
+.fhead { padding-block: 40px 16px; }
+.fhead p { max-width: 62ch; }
+.fgrid { display: grid; gap: 16px; padding-block: 8px 72px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .fgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fopt { position: relative; display: flex; flex-direction: column; gap: 14px; padding: 22px; border-radius: 22px; background: var(--white); border: 1.5px solid var(--line-soft); box-shadow: var(--sh-1); }
+.fopt.cur { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-soft), var(--sh-2); }
+.fopt .fname { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 700 13px var(--f-en); color: var(--muted); direction: ltr; }
+.fopt .fname .tag { direction: rtl; }
+.fopt .s-h { font-size: clamp(30px, 4vw, 44px); line-height: 1.15; color: var(--forest); font-weight: 800; margin: 0; }
+.fopt .s-h em { font-style: normal; color: var(--orange-deep); }
+.fopt .s-p { margin: 0; color: var(--text); font-size: 16px; line-height: 1.8; }
+.fopt .s-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fopt .s-chip { padding: 6px 12px; border-radius: 99px; background: var(--ivory-2); color: var(--forest); font-weight: 700; font-size: 14px; }
+.fopt .s-btn { padding: 9px 16px; border-radius: 99px; background: var(--orange); color: var(--forest-ink); font-weight: 800; font-size: 14px; }
+.fopt .s-nums { font-size: 15px; color: var(--muted); }
+.fopt .use { align-self: flex-start; }
+.fopt .s-h, .fopt .s-p, .fopt .s-chip, .fopt .s-btn, .fopt .s-nums, .fopt .s-h em { font-family: inherit; }
+</style>
+</head>
+<body data-page="fonts" data-section="fonts">
+<div id="hdr"></div>
+<main id="main">
+  <section class="wrap fhead stack" style="gap:10px">
+    <span class="eyebrow" data-en="Pick a font">اختر الخط</span>
+    <h1 class="h1" data-en="Arabic font options">خيارات الخط العربي</h1>
+    <p class="lede" data-en="Each card shows the same text in a different Arabic font. Choose one and the whole site switches to it, so you can browse and compare. English stays in Outfit.">كل بطاقة تعرض نفس النص بخط عربي مختلف. اختر خطًا وسيتغيّر الموقع كله إليه لتتصفحه وتقارن. الإنجليزي يبقى بخط Outfit.</p>
+  </section>
+  <section class="wrap fgrid" id="fgrid"></section>
+</main>
+<div id="ftr"></div>
+<script src="assets/data.js"></script>
+<script src="assets/bt.js"></script>
+<script>
+BT.boot();
+(function () {
+  const { FONTS, FONT, L, store } = BT;
+  // load every Google font once so all samples render
+  const fams = FONTS.filter(f => f[2]).map(f => "family=" + f[2]).join("&");
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?" + fams + "&display=swap"; document.head.appendChild(l);
+  const notes = { almarai: L("هندسي ونظيف، مريح للقراءة على الجوال", "Geometric and clean, easy on mobile"), ibm: L("عصري ومتوازن، ممتاز للنصوص الطويلة", "Modern and balanced, great for long text"), tajawal: L("خفيف وواضح، أوزان كثيرة", "Light and clear, many weights"), alexandria: L("حديث بطابع فاخر، عناوين قوية", "Contemporary and premium, bold headings"), readex: L("عريض وودود، قريب من الإنجليزي", "Wide and friendly, pairs well with English"), cairo: L("مألوف ومقروء، منتشر في المواقع العربية", "Familiar and legible, common on Arabic sites"), kufi: L("كوفي هندسي بطابع رسمي", "Geometric Kufi with a formal feel"), noor: L("خط الهوية الحالي (ملف التصميم)", "Current brand font (design file)") };
+  document.getElementById("fgrid").innerHTML = FONTS.map(f => `<article class="fopt ${f[0] === FONT[0] ? "cur" : ""}" style="font-family:'${f[1]}', 'Noor', sans-serif">
+    <div class="fname"><span>${f[1]}</span>${f[0] === FONT[0] ? `<span class="tag tag-palm">${L("المستخدم الآن", "In use")}</span>` : ""}</div>
+    <h2 class="s-h"><span style="display:block">بالي</span>كما <em>لم تكتشفها</em> من قبل</h2>
+    <p class="s-p">جداول سياحية جاهزة، وخريطة تفاعلية لأماكن مختارة بعناية، وأنشطة تحجزها بخطوات قليلة.</p>
+    <div class="s-row"><span class="s-btn">ابدأ التخطيط</span><span class="s-chip">الأنشطة والفعاليات</span><span class="s-chip">الباقات السياحية</span></div>
+    <div class="s-nums">باقة شهر العسل · ٦ أيام · يبدأ من 690$</div>
+    <small class="muted" style="font-family:var(--f)">${notes[f[0]] || ""}</small>
+    <button class="btn ${f[0] === FONT[0] ? "btn-ghost" : "btn-primary"} btn-sm use" data-font="${f[0]}" style="font-family:var(--f)">${f[0] === FONT[0] ? L("الخط الحالي", "Current font") : L("استخدم هذا الخط في الموقع", "Use this font on the site")}</button>
+  </article>`).join("");
+  document.getElementById("fgrid").onclick = (e) => { const b = e.target.closest("[data-font]"); if (!b) return; store.set("font", b.dataset.font); location.href = "home.html"; };
+})();
+</script>
+</body>
+</html>

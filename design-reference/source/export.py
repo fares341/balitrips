@@ -12,7 +12,7 @@ SC=[
  ("03-map","map.html",None,False),("03b-map-region-ubud","map.html#region-ubud",None,False),("03c-map-place-card","map.html#place-tegallalang",None,False),("03d-map-3d","map.html","3d",False),
  ("04-place-detail","place.html#locavore",None,False),("05-activities","activities.html",None,False),("06-activity-detail","activity.html#water-sports",None,False),
  ("07-itineraries","itineraries.html",None,False),("08-itinerary-detail","itinerary.html#5-days",None,False),("09-packages","packages.html",None,False),("10-package-detail","package.html#honeymoon",None,False),
- ("11-driver","driver.html",None,False),("12-custom-trip","custom-trip.html",None,False),("13-explore","explore.html",None,False),("14-region","region.html#ubud",None,False),
+ ("12-custom-trip","custom-trip.html",None,False),("13-explore","explore.html",None,False),("14-region","region.html#ubud",None,False),
  ("15-my-trip","my-trip.html",None,True),("15b-my-trip-empty","my-trip.html",None,False),("16-checkout","checkout.html",None,True),("16b-checkout-payment","checkout.html#pay",None,True),
  ("17-confirmation-success","confirmation.html#success",None,True),("17b-payment-failed","confirmation.html#failed",None,True),("17c-payment-processing","confirmation.html#processing",None,True),("17d-awaiting-transfer","confirmation.html#transfer",None,True),
  ("18-account","account.html#overview",None,True),("18b-account-bookings","account.html#bookings",None,True),("18c-booking-detail","account.html#booking/BT-2026-1042/water-sports",None,True),("18d-account-files","account.html#files",None,True),("18e-account-notifications","account.html#notifications",None,True),
@@ -24,7 +24,7 @@ SC=[
  ("30f-admin-addons","admin.html#addons",None,False),("30g-admin-map","admin.html#map","mapclick",False),("30h-admin-settings","admin.html#settings",None,False),("30i-admin-payments","admin.html#payments",None,False),
  ("31-design-system","design-system.html",None,False),("32-developer-handoff","handoff.html",None,False),
 ]
-CSS=".rv{animation:none!important;opacity:1!important;transform:none!important}.proto-pill{display:none!important}.toasts{display:none!important}.tabbar{position:absolute!important}body{position:relative}.arch img{animation:none!important}"
+CSS=".hv-pl-in b{transform:none!important;opacity:1!important;transition:none!important}.hv-bali,.hv-sub .w,.hv-lede,.hv-search,.hv-link{animation:none!important;opacity:1!important;transform:none!important;clip-path:none!important}.hv-bali::after{width:64px!important;animation:none!important}.svc .ncard,.hero-h .w,.hero-h .l1{opacity:1!important;transform:none!important;animation:none!important;filter:none!important}.hero-h em::after{transform:none!important;animation:none!important}.rv{animation:none!important;opacity:1!important;transform:none!important}.proto-pill{display:none!important}.toasts{display:none!important}.tabbar{position:absolute!important}body{position:relative}.arch img{animation:none!important}"
 async def run(lang, w, h, dpr, folder, only=None):
     os.makedirs(f'{OUT}/{folder}', exist_ok=True)
     async with async_playwright() as p:

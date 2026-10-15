@@ -1,0 +1,289 @@
+<!--title: Bali Trips — اقتراحات القسم الأول|page: heroes|section: heroes-->
+<style>
+/* ---------- page chrome ---------- */
+.hx-intro { padding-block: 32px 18px; }
+.hx-intro p { max-width: 60ch; margin: 0; }
+.hx-nav { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h)); z-index: 40; background: rgba(255,251,248,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-block: 1px solid var(--line-soft); padding-block: 10px; }
+.hx-nav .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.hx-note { padding-block: 22px 56px; }
+.hx-note .wrap { display: grid; gap: 14px; }
+@media (min-width: 900px) { .hx-note .wrap { grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: start; } }
+.hx-note h2 { margin: 0 0 6px; font-size: 24px; color: var(--forest); }
+.hx-note ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 6px; color: var(--text); }
+.hx-tag { position: absolute; z-index: 20; top: 16px; inset-inline-start: 16px; padding: 6px 12px; border-radius: 99px; background: rgba(255,251,248,.92); color: var(--forest); font-weight: 800; font-size: 13px; box-shadow: var(--sh-1); }
+
+/* shared hero bits */
+.hx { position: relative; overflow: hidden; isolation: isolate; }
+.hx .t1 { display: block; font-weight: 800; line-height: 1; padding-block: .06em .22em; }
+.hx .t2 { display: block; font-weight: 700; line-height: 1.3; }
+.hx .lede-d { font-size: 16.5px; line-height: 1.8; max-width: 44ch; margin: 0; }
+.hx .srch { display: flex; gap: 6px; padding: 6px; border-radius: 99px; background: rgba(255,251,248,.96); box-shadow: 0 20px 40px -18px rgba(0,0,0,.5); max-width: 460px; }
+.hx .srch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding-inline: 16px; font: inherit; font-size: 15px; color: var(--ink); }
+.hx .srch .btn { border-radius: 99px; }
+.hx .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ================= E — Full-screen video slider (one place per slide) ================= */
+.hxE { min-height: min(100svh, 860px); color: #fff; display: grid; align-items: end; background: #0F2615; }
+.hxE .sl { position: absolute; inset: 0; z-index: -2; opacity: 0; transition: opacity 1.2s var(--ease); }
+.hxE .sl.on { opacity: 1; }
+.hxE .sl video, .hxE .sl img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hxE .sl.on img { animation: kbE 9s linear forwards; }
+@keyframes kbE { from { transform: scale(1.04); } to { transform: scale(1.16); } }
+.hxE::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(15,38,21,.92) 0%, rgba(15,38,21,.45) 42%, rgba(15,38,21,.1) 70%, rgba(15,38,21,.35) 100%); }
+.hxE .in { padding-block: 120px 28px; display: grid; gap: 16px; }
+.hxE .place { display: inline-flex; align-items: center; gap: 8px; align-self: start; padding: 6px 14px; border-radius: 99px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-weight: 700; font-size: 14px; justify-self: start; }
+.hxE .place i { width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.hxE .place span { transition: opacity .4s; }
+.hxE .t1 { font-size: clamp(96px, 24vw, 200px); color: #fff; text-shadow: 0 10px 40px rgba(0,0,0,.35); }
+.hxE .t2 { font-size: clamp(26px, 6vw, 44px); color: #fff; }
+.hxE .lede-d { color: rgba(255,255,255,.88); }
+.hxE .etabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+.hxE .etab { display: flex; flex-direction: column; gap: 8px; padding: 0; border: 0; background: none; color: rgba(255,255,255,.7); font: 700 13px var(--f); text-align: start; cursor: pointer; }
+.hxE .etab .bar { height: 3px; border-radius: 3px; background: rgba(255,255,255,.28); overflow: hidden; }
+.hxE .etab .bar i { display: block; height: 100%; width: 0; background: var(--orange); }
+.hxE .etab.on { color: #fff; } .hxE .etab.on .bar i { animation: barE var(--dur, 7s) linear forwards; }
+.hxE .etab.done .bar i { width: 100%; }
+@keyframes barE { to { width: 100%; } }
+.hxE .ph-note { position: absolute; top: 16px; inset-inline-end: 16px; z-index: 5; padding: 5px 10px; border-radius: 99px; background: rgba(255,144,0,.92); color: var(--forest-ink); font-size: 12px; font-weight: 800; }
+@media (max-width: 560px) { .hxE .etab span { font-size: 11px; } }
+@media (min-width: 1000px) { .hxE .in { padding-block: 160px 40px; } .hxE .copy-w { max-width: 620px; } }
+
+/* ================= A — The temple gate ================= */
+.hxA { background: radial-gradient(120% 90% at 50% 100%, #2E6A38 0%, var(--forest-deep) 55%, #0F2615 100%); color: var(--ivory); padding-block: 40px 0; }
+.hxA .in { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.hxA .stage { position: relative; width: min(100%, 620px); aspect-ratio: 550 / 470; margin-top: 4px; }
+.hxA .sun { position: absolute; left: 50%; top: 4%; width: 46%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle at 50% 45%, #FFD08A, #FF9000 55%, rgba(255,144,0,0) 72%); filter: blur(1px); animation: sunUp 2.4s var(--ease) both; }
+.hxA .word { position: absolute; z-index: 3; inset-inline: 0; bottom: -4%; text-align: center; font-size: clamp(110px, 30vw, 230px); font-weight: 800; line-height: 1; color: rgba(255,251,248,.96); text-shadow: 0 6px 0 rgba(15,38,21,.55), 0 18px 50px rgba(0,0,0,.55); animation: wordIn 1.4s var(--ease) .5s both; }
+.hxA .vid { position: absolute; left: 34%; width: 32%; top: 18%; bottom: 0; overflow: hidden; }
+.hxA .vid video, .hxA .vid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hxA svg.gate { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hxA .gl, .hxA .gr { animation: gateL 1.6s var(--ease) both; transform-box: fill-box; }
+.hxA .gr { animation-name: gateR; }
+.hxA .copy { display: grid; gap: 16px; justify-items: center; padding-block: 34px 44px; }
+.hxA .t2 { font-size: clamp(26px, 6.5vw, 42px); color: var(--ivory); }
+.hxA .t2 em { font-style: normal; color: #FFB04A; }
+.hxA .lede-d { color: rgba(255,251,248,.8); }
+@keyframes gateL { from { transform: translateX(-26%); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes gateR { from { transform: translateX(26%); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes sunUp { from { transform: translate(-50%, 40%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@keyframes wordIn { from { opacity: 0; transform: translateY(20px); letter-spacing: 0; filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@media (min-width: 1000px) {
+  .hxA { padding-block: 24px 56px; }
+  .hxA .word { bottom: 4%; }
+  .hxA .in { grid-template-columns: 1fr 1.15fr; text-align: start; justify-items: start; align-items: end; gap: 40px; }
+  .hxA .copy { justify-items: start; padding-block: 0 80px; }
+  .hxA .stage { order: 2; width: 100%; }
+}
+
+/* ================= B — Postcards on the forest ================= */
+.hxB { background: var(--forest-deep); color: var(--ivory); padding-block: 44px 56px; }
+.hxB::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
+  radial-gradient(60% 50% at 85% 20%, rgba(113,255,133,.12), transparent 70%),
+  radial-gradient(50% 50% at 10% 90%, rgba(255,144,0,.16), transparent 70%); }
+.hxB .in { display: grid; gap: 34px; align-items: center; }
+@media (min-width: 960px) { .hxB .in { grid-template-columns: 1fr 1fr; gap: 56px; } }
+.hxB .copy { display: grid; gap: 18px; }
+.hxB .t1 { font-size: clamp(88px, 22vw, 170px); color: transparent; -webkit-text-stroke: 2px var(--palm); }
+.hxB .t1 span { color: var(--ivory); -webkit-text-stroke: 0; }
+.hxB .t2 { font-size: clamp(26px, 6vw, 40px); color: var(--ivory); }
+.hxB .lede-d { color: rgba(255,251,248,.78); }
+.hxB .deck { position: relative; height: 420px; max-width: 460px; width: 100%; margin-inline: auto; }
+.hxB .pc { position: absolute; top: 10px; left: 50%; width: 250px; padding: 12px 12px 46px; background: #FFFDF9; border-radius: 6px; box-shadow: 0 30px 50px -25px rgba(0,0,0,.7); transform-origin: 50% 120%; transition: transform .9s var(--ease), opacity .6s, z-index 0s .45s; cursor: pointer; }
+.hxB .pc img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 3px; }
+.hxB .pc b { position: absolute; bottom: 12px; inset-inline: 14px; color: var(--forest); font-size: 17px; display: flex; justify-content: space-between; align-items: center; }
+.hxB .pc small { font: 600 12px var(--f-en); color: var(--muted); }
+.hxB .stamp { position: absolute; z-index: 30; top: -6px; inset-inline-end: 4px; width: 104px; height: 104px; border-radius: 50%; border: 2px dashed var(--orange); color: var(--orange); display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 13px; line-height: 1.3; transform: rotate(-12deg); background: rgba(19,48,26,.6); animation: spin 26s linear infinite; }
+@keyframes spin { to { transform: rotate(348deg); } }
+@media (max-width: 420px) { .hxB .deck { height: 380px; } .hxB .pc { width: 220px; } }
+
+/* ================= C — The map is the hero ================= */
+.hxC { min-height: 640px; color: var(--ivory); display: grid; align-items: end; background: #0b2f45; }
+.hxC svg.map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; }
+.hxC::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(0deg, rgba(15,38,21,.92) 0%, rgba(15,38,21,.35) 45%, rgba(15,38,21,.15) 100%); }
+.hxC .route { fill: none; stroke: #FFB04A; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 16 18; }
+.hxC .route-draw { fill: none; stroke: rgba(255,176,74,.35); stroke-width: 22; stroke-linecap: round; stroke-dasharray: 2600; stroke-dashoffset: 2600; animation: draw 3.4s var(--ease) .6s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.hxC .pin { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; animation: pinIn .6s var(--ease) forwards; }
+@keyframes pinIn { from { opacity: 0; transform: translateY(-30px) scale(.6); } to { opacity: 1; transform: none; } }
+.hxC .in { padding-block: 120px 40px; display: grid; gap: 16px; }
+.hxC .t1 { font-size: clamp(90px, 22vw, 180px); color: var(--ivory); text-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.hxC .t2 { font-size: clamp(24px, 5.6vw, 40px); color: var(--ivory); }
+.hxC .lede-d { color: rgba(255,251,248,.85); }
+.hxC .legend { display: flex; flex-wrap: wrap; gap: 8px; }
+.hxC .legend span { padding: 6px 12px; border-radius: 99px; background: rgba(255,251,248,.14); border: 1px solid rgba(255,251,248,.25); font-size: 13px; font-weight: 700; backdrop-filter: blur(8px); }
+@media (min-width: 1000px) { .hxC { min-height: 720px; align-items: center; } .hxC .in { padding-block: 80px; max-width: 560px; margin-inline-start: max(var(--gutter), calc((100vw - var(--maxw)) / 2)); } .hxC::after { background: linear-gradient(var(--dir, 270deg), rgba(15,38,21,.92) 0%, rgba(15,38,21,.55) 38%, rgba(15,38,21,0) 70%); } html[dir="ltr"] .hxC::after { --dir: 90deg; } }
+
+/* ================= D — Moving columns of Bali ================= */
+.hxD { background: linear-gradient(160deg, var(--forest) 0%, var(--forest-deep) 70%); color: var(--ivory); }
+.hxD .in { display: grid; gap: 28px; padding-block: 44px 0; }
+@media (min-width: 960px) { .hxD .in { grid-template-columns: 1fr 1.05fr; gap: 48px; padding-block: 0; align-items: center; } }
+.hxD .copy { display: grid; gap: 18px; }
+.hxD .t1 { font-size: clamp(90px, 22vw, 168px); color: var(--palm); }
+.hxD .t2 { font-size: clamp(26px, 6vw, 40px); color: var(--ivory); }
+.hxD .lede-d { color: rgba(255,251,248,.8); }
+.hxD .cols { position: relative; height: 460px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent); margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+@media (min-width: 960px) { .hxD .cols { height: 680px; margin: 0; padding: 0; } }
+.hxD .col { display: flex; flex-direction: column; gap: 10px; animation: colUp 34s linear infinite; }
+.hxD .col:nth-child(2) { animation-name: colDown; animation-duration: 40s; margin-top: -60px; }
+.hxD .col:nth-child(3) { animation-duration: 30s; }
+.hxD .col > * { width: 100%; aspect-ratio: 3 / 4.6; object-fit: cover; border-radius: 16px; display: block; flex-shrink: 0; }
+@keyframes colUp { to { transform: translateY(calc(-50% - 5px)); } }
+@keyframes colDown { from { transform: translateY(calc(-50% - 5px)); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) { .hx *, .hx *::before, .hx *::after { animation: none !important; } .hxC .route-draw { stroke-dashoffset: 0; } .hxC .pin { opacity: 1; } }
+</style>
+<main id="main">
+  <section class="wrap hx-intro stack" style="gap:10px">
+    <h1 class="h1" data-en="Five ideas for the first section">٥ اقتراحات للقسم الأول</h1>
+    <p class="lede" data-en="Each idea below is a working hero with its own motion. Scroll through them on your phone, then tell us the letter you like — we'll build the homepage around it.">كل اقتراح هنا قسم أول حقيقي بحركته. تصفّحها من الجوال، واختر الحرف اللي عجبك، ونبني الصفحة الرئيسية عليه.</p>
+  </section>
+  <nav class="hx-nav" aria-label="الاقتراحات" data-en-aria="Ideas"><div class="wrap"><div class="chips">
+    <a class="chip" href="#E" data-en="E · Video slider">E · فيديو المناطق</a><a class="chip" href="#A" data-en="A · The temple gate">A · بوابة المعبد</a><a class="chip" href="#B" data-en="B · Postcards">B · البطاقات البريدية</a><a class="chip" href="#C" data-en="C · The map">C · الخريطة</a><a class="chip" href="#D" data-en="D · Moving columns">D · أعمدة الصور</a>
+  </div></div></nav>
+
+  <!-- ===== E ===== -->
+  <section class="hx hxE" id="E" aria-labelledby="e-h">
+    <span class="hx-tag">E</span>
+    <span class="ph-note" data-en="Temporary clips — real footage coming">فيديو مؤقت — يُستبدل بالتصوير الحقيقي</span>
+    <div id="e-slides"></div>
+    <div class="wrap in">
+      <div class="copy-w stack" style="gap:14px">
+        <span class="place"><i></i><span id="e-place"></span></span>
+        <h2 class="t1" id="e-h">بالي</h2>
+        <span class="t2" data-en="like you've never seen it before">كما لم تكتشفها من قبل</span>
+        <form class="srch" onsubmit="event.preventDefault();location.href='search.html'"><input placeholder="إلى أين في بالي؟" data-en-ph="Where in Bali?" aria-label="بحث" data-en-aria="Search"><button class="btn btn-primary" data-en="Explore">استكشف</button></form>
+      </div>
+      <div class="etabs" id="e-tabs" role="tablist" aria-label="المناطق" data-en-aria="Places"></div>
+    </div>
+  </section>
+  <section class="hx-note"><div class="wrap"><div><h2 data-en="E · Video slider">E · فيديو المناطق</h2><p class="muted" data-en="A full-screen video for each of Bali's best-known places — Nusa Penida, Ubud's rice terraces, Uluwatu, Ulun Danu and Tanah Lot — that changes on its own, with a progress bar under each name.">فيديو بملء الشاشة لكل منطقة من أشهر أماكن بالي: نوسا بينيدا، ومدرجات أوبود، وأولواتو، وأولون دانو، وتانا لوت. بيتغيّر لوحده، وتحت كل اسم شريط بيوضّح الوقت.</p></div>
+    <ul><li data-en="The most cinematic option; it sells the destination straight away.">الأكثر سينمائية، وبيبيع الوجهة من أول ثانية.</li><li data-en="The visitor can jump to any place by tapping its name.">الزائر يقدر ينتقل لأي منطقة بالضغط على اسمها.</li><li data-en="Uses free licensed footage (Pexels) — 5 short clips, compressed for speed.">بيستخدم فيديوهات مرخّصة مجانًا من Pexels: ٥ لقطات قصيرة مضغوطة عشان السرعة.</li></ul></div></section>
+
+  <!-- ===== A ===== -->
+  <section class="hx hxA" id="A" aria-labelledby="a-h">
+    <span class="hx-tag">A</span>
+    <div class="wrap in">
+      <div class="stage" aria-hidden="true">
+        <div class="sun"></div>
+        <div class="word">بالي</div>
+        <div class="vid"><video muted loop playsinline autoplay preload="metadata" poster="assets/img/lempuyang.jpg" data-name="arch-lempuyang"></video></div>
+        <svg class="gate" viewBox="0 0 550 470" preserveAspectRatio="xMidYMax meet">
+          <defs><linearGradient id="gt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#173A20"/><stop offset="1" stop-color="#0C2012"/></linearGradient></defs>
+          <g class="gl"><path fill="url(#gt)" d="M187 470V60h-12V36h-14V14h-16V0h-10v14h-16v22h-14v24h-12v40H86v42H70v46H54v48H38v56H22v62H0v116z"/><path d="M187 60V470" stroke="#71FF85" stroke-opacity=".55" stroke-width="2"/><path d="M103 100h84M86 142h101M70 188h117M54 236h133M38 292h149M22 354h165" stroke="#71FF85" stroke-opacity=".18" stroke-width="2"/></g>
+          <g class="gr"><path fill="url(#gt)" d="M363 470V60h12V36h14V14h16V0h10v14h16v22h14v24h12v40h11v42h16v46h16v48h16v56h16v62h22v116z"/><path d="M363 60V470" stroke="#71FF85" stroke-opacity=".55" stroke-width="2"/><path d="M447 100h-84M464 142H363M480 188H363M496 236H363M512 292H363M528 354H363" stroke="#71FF85" stroke-opacity=".18" stroke-width="2"/></g>
+        </svg>
+      </div>
+      <div class="copy">
+        <h2 class="sr-only" id="a-h">بالي</h2>
+        <span class="t2" data-en="like you've <em>never seen</em> it before">كما <em>لم تكتشفها</em> من قبل</span>
+        <p class="lede-d" data-en="Ready itineraries, a map of hand-picked places and activities you book in a few steps.">جداول جاهزة، وخريطة لأماكن مختارة، وأنشطة تحجزها بخطوات قليلة.</p>
+        <form class="srch" onsubmit="event.preventDefault();location.href='search.html'"><input placeholder="إلى أين في بالي؟" data-en-ph="Where in Bali?" aria-label="بحث" data-en-aria="Search"><button class="btn btn-primary" data-en="Explore">استكشف</button></form>
+      </div>
+    </div>
+  </section>
+  <section class="hx-note"><div class="wrap"><div><h2 data-en="A · The temple gate">A · بوابة المعبد</h2><p class="muted" data-en="Bali's split gate (candi bentar) frames the island: the two halves slide in, the sun rises, and a live clip plays through the opening.">البوابة المنقسمة (Candi Bentar) هي رمز بالي الأشهر. نصفاها ينزلقان للداخل، والشمس تطلع، ومن الفتحة يظهر فيديو حي للجزيرة.</p></div>
+    <ul><li data-en="The most 'Bali' of the four — no other travel site opens like this.">الأكثر ارتباطًا ببالي، ومفيش موقع سياحي بيفتح بالشكل ده.</li><li data-en="Dark forest background: premium, no white at all.">خلفية خضراء داكنة: فخامة وبدون أي أبيض.</li><li data-en="Needs one good vertical clip for the gate opening.">يحتاج فيديو طولي واحد قوي للفتحة.</li></ul></div></section>
+
+  <!-- ===== B ===== -->
+  <section class="hx hxB" id="B" aria-labelledby="b-h">
+    <span class="hx-tag">B</span>
+    <div class="wrap in">
+      <div class="copy">
+        <h2 class="t1" id="b-h"><span>بالي</span></h2>
+        <span class="t2" data-en="like you've never seen it before">كما لم تكتشفها من قبل</span>
+        <p class="lede-d" data-en="Swipe the cards — each one is a place our team picked for you.">اسحب البطاقات — كل بطاقة مكان اختاره فريقنا لك.</p>
+        <div class="cta"><a class="btn btn-primary btn-lg" href="map.html" data-en="Explore Bali">استكشف بالي</a><a class="btn btn-glass btn-lg" href="services.html" data-en="Plan your trip">خطط رحلتك</a></div>
+      </div>
+      <div class="deck" id="deck"><span class="stamp" aria-hidden="true">BALI TRIPS<br>بالي ٢٠٢٦</span></div>
+    </div>
+  </section>
+  <section class="hx-note"><div class="wrap"><div><h2 data-en="B · Postcards">B · البطاقات البريدية</h2><p class="muted" data-en="A stack of postcards from Bali that shuffles by itself; tap or swipe to send the top one to the back.">مجموعة بطاقات بريدية من بالي بتتقلّب لوحدها؛ اضغط أو اسحب عشان تبعت البطاقة اللي فوق لآخر المجموعة.</p></div>
+    <ul><li data-en="Playful and personal — feels like someone sharing their trip.">مرح وشخصي، كأن حد بيشاركك صور رحلته.</li><li data-en="Outline title over deep green; the photos carry the colour.">العنوان مفرّغ على أخضر داكن، والألوان جاية من الصور.</li><li data-en="Easy to update: just swap the photos.">سهل التحديث: بس غيّر الصور.</li></ul></div></section>
+
+  <!-- ===== C ===== -->
+  <section class="hx hxC" id="C" aria-labelledby="c-h">
+    <span class="hx-tag">C</span>
+    <svg class="map" viewBox="760 400 1300 760" preserveAspectRatio="xMinYMid slice" aria-hidden="true">
+      <image href="assets/img/bali-sat.jpg" x="0" y="0" width="2048" height="1399"/>
+      <path class="route-draw" d="M1093 891C1150 820 1180 790 1216 751S1300 600 1328 488M1216 751C1180 860 1120 900 1111 935S1050 1030 1040 1071M1111 935C1250 980 1330 1010 1426 993"/>
+      <path class="route" d="M1093 891C1150 820 1180 790 1216 751S1300 600 1328 488M1216 751C1180 860 1120 900 1111 935S1050 1030 1040 1071M1111 935C1250 980 1330 1010 1426 993"/>
+      <g id="pins"></g>
+    </svg>
+    <div class="in wrap">
+      <h2 class="t1" id="c-h">بالي</h2>
+      <span class="t2" data-en="like you've never seen it before">كما لم تكتشفها من قبل</span>
+      <p class="lede-d" data-en="Our map shows only the places we picked — follow the route, then open any stop.">خريطتنا تعرض فقط الأماكن اللي اخترناها — تابع المسار وافتح أي محطة.</p>
+      <div class="legend"><span data-en="Ubud">أوبود</span><span data-en="Uluwatu">أولواتو</span><span data-en="Nusa Penida">نوسا بينيدا</span><span data-en="Kintamani">كينتاماني</span></div>
+      <div class="cta"><a class="btn btn-primary btn-lg" href="map.html" data-en="Open the map">افتح الخريطة</a><a class="btn btn-glass btn-lg" href="services.html" data-en="Plan your trip">خطط رحلتك</a></div>
+    </div>
+  </section>
+  <section class="hx-note"><div class="wrap"><div><h2 data-en="C · The map">C · الخريطة</h2><p class="muted" data-en="The satellite map is the whole first screen: a route draws itself across the island and the stops pop up one by one.">الخريطة نفسها هي الشاشة الأولى: مسار بيترسم على الجزيرة والمحطات بتظهر واحدة ورا التانية.</p></div>
+    <ul><li data-en="Shows the platform's main feature from the first second.">يعرض أهم ميزة في المنصة من أول ثانية.</li><li data-en="Feels like an adventure, not a brochure.">إحساس مغامرة، مش كتالوج.</li><li data-en="Strong on desktop; on mobile the text sits over the map.">قوي جدًا على الديسكتوب؛ وعلى الموبايل النص فوق الخريطة.</li></ul></div></section>
+
+  <!-- ===== D ===== -->
+  <section class="hx hxD" id="D" aria-labelledby="d-h">
+    <span class="hx-tag">D</span>
+    <div class="wrap in">
+      <div class="copy">
+        <h2 class="t1" id="d-h">بالي</h2>
+        <span class="t2" data-en="like you've never seen it before">كما لم تكتشفها من قبل</span>
+        <p class="lede-d" data-en="Beaches, temples, rice terraces and islands — all in one place, picked by a local team.">شواطئ ومعابد ومدرجات أرز وجزر — كلها في مكان واحد، يختارها فريق محلي.</p>
+        <form class="srch" onsubmit="event.preventDefault();location.href='search.html'"><input placeholder="ابحث عن منطقة أو نشاط" data-en-ph="Search an area or activity" aria-label="بحث" data-en-aria="Search"><button class="btn btn-primary" data-en="Search">ابحث</button></form>
+      </div>
+      <div class="cols" id="cols" aria-hidden="true"></div>
+    </div>
+  </section>
+  <section class="hx-note"><div class="wrap"><div><h2 data-en="D · Moving columns">D · أعمدة الصور</h2><p class="muted" data-en="Three columns of photos and clips glide up and down next to a big, quiet title.">ثلاثة أعمدة من الصور والفيديوهات بتتحرك لفوق ولتحت جنب عنوان كبير وهادي.</p></div>
+    <ul><li data-en="Shows the variety of Bali at a glance.">يوري تنوّع بالي من أول نظرة.</li><li data-en="Uses the clips we already have.">بيستخدم الفيديوهات الموجودة عندنا.</li><li data-en="The calmest of the four; very readable on mobile.">الأهدأ بين الأربعة، ومقروء جدًا على الموبايل.</li></ul></div></section>
+</main>
+<script>
+BT.boot();
+(function () {
+  const { L } = BT;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const vsrc = (v) => { v.innerHTML = `<source src="assets/img/${v.dataset.name}.webm" type="video/webm"><source src="assets/img/${v.dataset.name}.mp4" type="video/mp4">`; v.load(); if (!reduce) { const p = v.play(); p && p.catch && p.catch(() => {}); } };
+
+  // E — one full-screen clip per place; real 1080p footage replaces these temporary clips
+  (function () {
+    const S = [["kelingking", "v:arch-penida", "نوسا بينيدا", "Nusa Penida"], ["rice", "v:arch-ubud", "مدرجات أوبود", "Ubud rice terraces"], ["uluwatu", "v:arch-uluwatu", "أولواتو", "Uluwatu"], ["ulundanu", "i:ulun-danu", "أولون دانو", "Ulun Danu"], ["tanahlot", "i:sunset", "تانا لوت", "Tanah Lot"]];
+    const host = document.getElementById("e-slides"), tabs = document.getElementById("e-tabs"), place = document.getElementById("e-place");
+    host.innerHTML = S.map(([id, src]) => `<div class="sl" data-id="${id}">${src.startsWith("v:") ? `<video muted playsinline preload="metadata" data-name="${src.slice(2)}"></video>` : `<img src="assets/img/${src.slice(2)}.jpg" alt="">`}</div>`).join("");
+    tabs.innerHTML = S.map(([id, , ar, en], i) => `<button class="etab" type="button" role="tab" data-i="${i}"><span class="bar"><i></i></span><span>${L(ar, en)}</span></button>`).join("");
+    const sl = [...host.children], tb = [...tabs.children]; let cur = -1, timer;
+    sl.forEach(d => { const v = d.querySelector("video"); if (v) { v.innerHTML = `<source src="assets/img/${v.dataset.name}.webm" type="video/webm"><source src="assets/img/${v.dataset.name}.mp4" type="video/mp4">`; v.loop = true; v.load(); } });
+    function go(i) { clearTimeout(timer); cur = (i + S.length) % S.length;
+      sl.forEach((d, j) => { d.classList.toggle("on", j === cur); const v = d.querySelector("video"); if (v) { if (j === cur) { v.currentTime = 0; const p = v.play(); p && p.catch && p.catch(() => {}); } else v.pause(); } });
+      tb.forEach((t, j) => { t.classList.toggle("on", j === cur); t.classList.toggle("done", j < cur); t.setAttribute("aria-selected", j === cur); const b = t.querySelector("i"); b.style.animation = "none"; void b.offsetWidth; b.style.animation = ""; });
+      place.style.opacity = 0; setTimeout(() => { place.textContent = L(S[cur][2], S[cur][3]); place.style.opacity = 1; }, 250);
+      if (!reduce) timer = setTimeout(() => go(cur + 1), 7000); }
+    tabs.onclick = (e) => { const b = e.target.closest("[data-i]"); if (b) go(+b.dataset.i); };
+    go(0);
+  })();
+
+  // A — gate clip
+  document.querySelectorAll(".hxA video").forEach(vsrc);
+
+  // B — postcard deck
+  const cards = [["kelingking", "نوسا بينيدا", "Nusa Penida"], ["rice-walk", "أوبود", "Ubud"], ["lempuyang", "ليمبويانغ", "Lempuyang"], ["cliff-beach", "أولواتو", "Uluwatu"], ["swing", "أرجوحة بالي", "Bali Swing"]];
+  const deck = document.getElementById("deck");
+  deck.insertAdjacentHTML("beforeend", cards.map(([im, ar, en]) => `<figure class="pc" style="margin:0"><img src="assets/img/${im}.jpg" alt=""><b>${L(ar, en)}<small>${en.toUpperCase()}</small></b></figure>`).join(""));
+  let order = [...deck.querySelectorAll(".pc")];
+  const lay = () => order.forEach((c, i) => { const k = innerWidth < 500 ? .45 : 1, r = [-4, 7, -9, 12, -14][i] || 0, x = ([0, 34, -40, 60, -64][i] || 0) * k, y = i * 8; c.style.zIndex = 20 - i; c.style.transform = `translate(calc(-50% + ${x}px), ${y}px) rotate(${r}deg)`; c.style.opacity = i > 3 ? 0 : 1; });
+  const next = () => { const top = order.shift(); order.push(top); top.style.transform += " translateY(-40px)"; setTimeout(lay, 40); };
+  lay(); deck.onclick = next;
+  let sx = null; deck.addEventListener("pointerdown", e => sx = e.clientX); deck.addEventListener("pointerup", e => { if (sx != null && Math.abs(e.clientX - sx) > 30) next(); sx = null; });
+  if (!reduce) { let t = setInterval(next, 3200); deck.addEventListener("pointerenter", () => clearInterval(t)); deck.addEventListener("pointerleave", () => t = setInterval(next, 3200)); }
+
+  // C — keep the island centred on phones, pushed to the side on wide screens
+  const fitMap = () => document.querySelector(".hxC svg.map").setAttribute("preserveAspectRatio", innerWidth < 1000 ? "xMidYMid slice" : "xMinYMid slice"); fitMap(); addEventListener("resize", fitMap);
+  // C — pins along the route
+  const P = [[1093, 891, "canggu", "beach-palms"], [1216, 751, "ubud", "rice-walk"], [1328, 488, "kintamani", "aerial-cliff"], [1111, 935, "seminyak", "sunset"], [1040, 1071, "uluwatu", "cliff-beach"], [1426, 993, "penida", "kelingking"]];
+  document.getElementById("pins").innerHTML = P.map(([x, y, id, im], i) => `<g class="pin" style="animation-delay:${.9 + i * .45}s"><clipPath id="cp${i}"><circle cx="${x}" cy="${y - 62}" r="34"/></clipPath><path d="M${x} ${y}l-16-22h32z" fill="#FFFDF9"/><circle cx="${x}" cy="${y - 62}" r="42" fill="#FFFDF9"/><image href="assets/img/${im}.jpg" x="${x - 34}" y="${y - 96}" width="68" height="68" preserveAspectRatio="xMidYMid slice" clip-path="url(#cp${i})"/><circle cx="${x}" cy="${y}" r="9" fill="#FF9000" stroke="#FFFDF9" stroke-width="4"/></g>`).join("");
+
+  // D — moving columns (photos + clips), each column duplicated for a seamless loop
+  const colsData = [["v:arch-ubud", "temple-gate", "penida-cove", "v:arch-uluwatu", "ulun-danu"], ["kelingking", "v:arch-penida", "swing", "jungle-pool", "rice-walk"], ["v:arch-lempuyang", "beach-palms", "green-dress", "cliff-beach", "sunset"]];
+  const tile = (x) => x.startsWith("v:") ? `<video muted loop playsinline preload="metadata" poster="assets/img/${{ "arch-ubud": "rice-walk", "arch-uluwatu": "cliff-beach", "arch-penida": "kelingking", "arch-lempuyang": "lempuyang" }[x.slice(2)]}.jpg" data-name="${x.slice(2)}"></video>` : `<img src="assets/img/${x}.jpg" alt="" loading="lazy">`;
+  document.getElementById("cols").innerHTML = colsData.map(c => `<div class="col">${c.map(tile).join("")}${c.map(tile).join("")}</div>`).join("");
+  document.querySelectorAll("#cols video").forEach(vsrc);
+})();
+</script>

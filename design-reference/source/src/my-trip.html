@@ -29,7 +29,7 @@
   <div class="wrap">
     <div id="crumbs"></div>
     <div class="row between" style="padding-bottom:18px;gap:14px">
-      <div class="stack" style="gap:6px"><h1 class="h1" style="font-size:clamp(28px,3.6vw,42px)" data-en="My Trip">رحلتي</h1><p class="muted" data-en="Everything you've added before booking: activities, driver, itineraries, packages and saved places.">كل ما أضفته قبل إتمام الحجز: الأنشطة والسائق والجداول والباقات والأماكن المحفوظة.</p></div>
+      <div class="stack" style="gap:6px"><h1 class="h1" style="font-size:clamp(28px,3.6vw,42px)" data-en="My Trip">رحلتي</h1><p class="muted" data-en="Everything you've added before booking: activities, itineraries, packages and saved places.">كل ما أضفته قبل إتمام الحجز: الأنشطة والجداول والباقات والأماكن المحفوظة.</p></div>
       <div class="row" id="top-actions"></div>
     </div>
     <div id="root"></div>
@@ -42,7 +42,7 @@ BT.boot();
 const { D, t, L, icon, money, numAr, esc, img, Trip, toast, byId } = BT;
 document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("رحلتي", "My Trip"), "my-trip.html"]]);
 const GROUPS = [
-  ["activity", L("الأنشطة والفعاليات", "Activities"), "compass"], ["driver", L("السائق", "Driver"), "car"], ["package", L("الباقات السياحية", "Tour packages"), "box"],
+  ["activity", L("الأنشطة والفعاليات", "Activities"), "compass"], ["package", L("الباقات السياحية", "Tour packages"), "box"],
   ["itinerary", L("الجداول السياحية", "Itineraries"), "doc"], ["map", L("الخريطة التفاعلية", "Interactive map"), "map"], ["place", L("الأماكن المحفوظة", "Saved places"), "pin"],
 ];
 const editHref = (i) => i.type === "activity" ? `activity.html#${i.ref}/edit-${i.key}` : i.type === "driver" ? `driver.html#edit-${i.key}` : i.type === "package" ? `package.html#${i.ref}` : i.type === "itinerary" ? `itinerary.html#${i.ref}` : i.type === "place" ? `place.html#${i.ref}` : "map.html";
@@ -86,7 +86,7 @@ function render() {
             <div class="acts"><a class="btn btn-ghost btn-sm" href="${editHref(i)}">${icon(type === "place" ? "eye" : "edit", 15)} ${type === "place" || type === "itinerary" || type === "map" ? L("عرض", "View") : L("تعديل", "Edit")}</a><button class="btn btn-ghost btn-sm" data-rm="${i.key}">${icon("trash", 15)} ${L("إزالة", "Remove")}</button></div>
           </div>
         </article>`).join("")}</section>`; }).join("")}
-    <div class="panel panel-ivory row between" style="gap:14px"><span><b style="color:var(--forest)">${L("أكمل رحلتك", "Complete your trip")}</b><br><small class="muted">${L("أضف نشاطًا أو سائقًا أو جدولًا جاهزًا.", "Add an activity, a driver or a ready itinerary.")}</small></span><div class="row"><a class="btn btn-ghost btn-sm" href="activities.html">${L("الأنشطة", "Activities")}</a><a class="btn btn-ghost btn-sm" href="driver.html">${L("السائق", "Driver")}</a><a class="btn btn-ghost btn-sm" href="itineraries.html">${L("الجداول", "Itineraries")}</a></div></div>
+    <div class="panel panel-ivory row between" style="gap:14px"><span><b style="color:var(--forest)">${L("أكمل رحلتك", "Complete your trip")}</b><br><small class="muted">${L("أضف نشاطًا أو جدولًا جاهزًا.", "Add an activity or a ready itinerary.")}</small></span><div class="row"><a class="btn btn-ghost btn-sm" href="activities.html">${L("الأنشطة", "Activities")}</a><a class="btn btn-ghost btn-sm" href="itineraries.html">${L("الجداول", "Itineraries")}</a></div></div>
   </div>
   <aside class="side-sum">
     <div class="panel stack" style="gap:12px">
@@ -100,7 +100,7 @@ function render() {
       ${cf.length ? `<small style="color:var(--err);font-weight:600">${L("حل تعارض المواعيد أولًا.", "Resolve the schedule conflict first.")}</small>` : ""}
       ${!payable.length ? `<small class="muted">${L("أضف خدمة قابلة للحجز لإتمام الطلب.", "Add a bookable service to check out.")}</small>` : ""}
     </div>
-    <div class="panel panel-ivory stack" style="gap:6px;font-size:13.5px"><b style="color:var(--forest)">${icon("shield", 16)} ${L("ماذا يحدث بعد الدفع؟", "What happens after payment?")}</b><span class="muted">${L("الجداول والخريطة تُفعّل فورًا. الأنشطة والسائق تظهر «بانتظار التأكيد» حتى يؤكدها المزود، ونبلغك بالبريد وواتساب.", "Itineraries and the map unlock instantly. Activities and the driver show 'Awaiting confirmation' until the provider confirms; we notify you by email and WhatsApp.")}</span></div>
+    <div class="panel panel-ivory stack" style="gap:6px;font-size:13.5px"><b style="color:var(--forest)">${icon("shield", 16)} ${L("ماذا يحدث بعد الدفع؟", "What happens after payment?")}</b><span class="muted">${L("الجداول والخريطة تُفعّل فورًا. الأنشطة تظهر «بانتظار التأكيد» حتى يؤكدها المزود، ونبلغك بالبريد وواتساب.", "Itineraries and the map unlock instantly. Activities show 'Awaiting confirmation' until the provider confirms; we notify you by email and WhatsApp.")}</span></div>
   </aside></div>`;
   document.getElementById("go").onclick = () => { BT.store.set("checkout", null); location.href = "checkout.html"; };
   document.getElementById("code").onsubmit = (e) => { e.preventDefault(); const v = document.getElementById("code-in").value.trim().toUpperCase(); if (v === "BALI10") { discount = .1; BT.store.set("disc", .1); toast(L("طُبق خصم ١٠٪", "10% discount applied")); } else if (!v) { discount = 0; BT.store.set("disc", 0); } else { toast(L("الكود غير صالح أو منتهي.", "This code is invalid or expired."), { err: true }); } render(); };

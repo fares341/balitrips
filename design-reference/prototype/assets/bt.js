@@ -16,6 +16,25 @@ let LANG = store.get("lang", "ar");
 if (location.hash === "#en") LANG = "en";
 const html = document.documentElement;
 html.lang = LANG; html.dir = LANG === "ar" ? "rtl" : "ltr";
+/* ---------------- Arabic font (client is choosing — see fonts.html) ---------------- */
+const FONTS = [
+  ["almarai", "Almarai", "Almarai:wght@300;400;700;800"],
+  ["ibm", "IBM Plex Sans Arabic", "IBM+Plex+Sans+Arabic:wght@300;400;500;600;700"],
+  ["tajawal", "Tajawal", "Tajawal:wght@300;400;500;700;800"],
+  ["alexandria", "Alexandria", "Alexandria:wght@300;400;500;600;700;800"],
+  ["readex", "Readex Pro", "Readex+Pro:wght@300;400;500;600;700"],
+  ["cairo", "Cairo", "Cairo:wght@300;400;500;600;700;800"],
+  ["kufi", "Noto Kufi Arabic", "Noto+Kufi+Arabic:wght@300;400;500;600;700;800"],
+  ["noor", "Noor", null],
+];
+const FONT = (FONTS.find(f => f[0] === store.get("font", "almarai")) || FONTS[0]);
+function useFont(f) {
+  if (f[2]) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=" + f[2] + "&display=swap"; document.head.appendChild(l); }
+  html.style.setProperty("--f-ar", `"${f[1]}", "Noor", "Tajawal", "Segoe UI", Tahoma, sans-serif`);
+}
+useFont(FONT);
+/* Feature flags — the private driver service is postponed (client decision). */
+const FEAT = { driver: false };
 const t = (o) => (o == null ? "" : typeof o === "string" ? o : (o[LANG] != null ? o[LANG] : o.ar));
 const L = (ar, en) => (LANG === "ar" ? ar : en);
 function applyStatic(root) {
@@ -70,6 +89,11 @@ const P = {
   box: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/>',
   wand: '<path d="m4 20 11-11M14 4l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2ZM19 11l.6 1.4L21 13l-1.4.6L19 15l-.6-1.4L17 13l1.4-.6L19 11Z"/>',
   sparkle: '<path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.5l-1.9-5.7L4.5 11 10.1 9 12 3.5Z"/>',
+  boat: '<path d="M3 15.5h18l-2.2 3.6a2 2 0 0 1-1.7.9H6.9a2 2 0 0 1-1.7-.9L3 15.5Z"/><path d="M6 15.5V11h10l3 4.5M9 11V7.5h5V11M11.5 7.5V4"/>',
+  mountain: '<path d="m2.5 19.5 6.5-11 4 6.5 2.5-4 6 8.5h-19Z"/><path d="m7.4 11.2 1.6 1.3 1.5-1.3"/>',
+  camera: '<path d="M4 8h3l1.6-2.5h6.8L17 8h3a1 1 0 0 1 1 1v9.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.6"/>',
+  leaf: '<path d="M5 19c0-8 5-13.5 15-14-.4 10-6 15-14 15"/><path d="M5 19c3.5-4 6.5-6.5 10-8.5"/>',
+  sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
   bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/>',
   wave: '<path d="M2.5 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 4 2M2.5 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 4 2"/>',
   drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/>',
@@ -143,7 +167,6 @@ const NAV = [
   ["services", "services.html", "خدماتنا", "Services"],
   ["map", "map.html", "الخريطة التفاعلية", "Interactive Map"],
   ["activities", "activities.html", "الأنشطة والفعاليات", "Activities"],
-  ["driver", "driver.html", "السائق", "Driver"],
   ["about", "about.html", "من نحن", "About"],
   ["articles", "articles.html", "المقالات", "Articles"],
 ];
@@ -167,7 +190,6 @@ function renderHeader() {
               <button data-lang="id">Bahasa Indonesia <span class="tag tag-forest" style="font-size:11px">${L("قريبًا", "Soon")}</span></button>
             </div>
           </div>
-          <a class="icon-btn only-desk" href="search.html" aria-label="${L("البحث", "Search")}">${icon("search", 21)}</a>
           <div class="lang-menu">
             <button class="icon-btn only-desk" id="acct-btn" aria-haspopup="true" aria-expanded="false" aria-label="${L("الحساب", "Account")}">${icon("user", 21)}</button>
             <div class="acct-pop" id="acct-pop" hidden style="inset-inline-start:0;inset-inline-end:auto">
@@ -183,7 +205,6 @@ function renderHeader() {
         </div>
         <a class="hdr-logo" href="home.html" aria-label="Bali Trips — ${L("الرئيسية", "Home")}"><img src="assets/logo.png" alt="Bali Trips" width="137" height="40"></a>
         <div class="hdr-end">
-          <a class="icon-btn" href="search.html" aria-label="${L("البحث", "Search")}" style="display:var(--m-search,inline-grid)" id="m-search">${icon("search", 21)}</a>
           <a class="icon-btn" href="account.html#favorites" aria-label="${L("المفضلة", "Favorites")}" title="${L("المفضلة", "Favorites")}">${icon("heart", 21)}<span class="badge" data-fav-badge hidden>0</span></a>
           <a class="icon-btn" href="my-trip.html" aria-label="${L("رحلتي", "My Trip")}" title="${L("رحلتي", "My Trip")}">${icon("suitcase", 22)}<span class="badge" data-trip-badge hidden>0</span></a>
           <a class="btn btn-primary btn-sm cta-plan" href="services.html">${L("ابدأ التخطيط", "Start Planning")}</a>
@@ -250,7 +271,7 @@ function renderFooter() {
             <a href="contact.html" aria-label="WhatsApp">${icon("whatsapp", 18)}</a>
           </div>
         </div>
-        ${col(L("روابط سريعة", "Quick links"), [["home.html", "الرئيسية", "Home"], ["services.html", "خدماتنا", "Services"], ["map.html", "الخريطة التفاعلية", "Interactive map"], ["activities.html", "الأنشطة والفعاليات", "Activities"], ["driver.html", "السائق", "Driver"], ["itineraries.html", "الجداول السياحية", "Itineraries"], ["packages.html", "الباقات السياحية", "Tour packages"], ["articles.html", "المقالات", "Articles"], ["about.html", "من نحن", "About"]])}
+        ${col(L("روابط سريعة", "Quick links"), [["home.html", "الرئيسية", "Home"], ["services.html", "خدماتنا", "Services"], ["map.html", "الخريطة التفاعلية", "Interactive map"], ["activities.html", "الأنشطة والفعاليات", "Activities"], ["itineraries.html", "الجداول السياحية", "Itineraries"], ["packages.html", "الباقات السياحية", "Tour packages"], ["articles.html", "المقالات", "Articles"], ["about.html", "من نحن", "About"]])}
         ${col(L("السياسات", "Policies"), [["policy.html#privacy", "سياسة الخصوصية", "Privacy policy"], ["policy.html#terms", "الشروط والأحكام", "Terms & conditions"], ["policy.html#cancellation", "سياسة الإلغاء والاسترجاع", "Cancellation & refunds"], ["policy.html#platform", "سياسة استخدام المنصة", "Platform use"], ["policy.html#map", "سياسة استخدام الخريطة التفاعلية", "Interactive map use"]])}
         <div><h4>${L("معلومات عامة", "General")}</h4><ul>
           <li><a href="faq.html">${L("الأسئلة الشائعة", "FAQ")}</a></li><li><a href="contact.html">${L("تواصل معنا", "Contact us")}</a></li><li><a href="help.html">${L("مركز المساعدة", "Help center")}</a></li>
@@ -275,7 +296,37 @@ function protoPill() {
   if (document.body.dataset.noproto != null) return;
   const a = document.createElement("a"); a.className = "proto-pill"; a.href = "index.html";
   a.innerHTML = `${icon("layers", 14, 2.2)} ${L("نموذج أولي · بيانات تجريبية", "Prototype · demo data")}`; document.body.appendChild(a);
+  if (document.body.dataset.page !== "fonts") { const f = document.createElement("a"); f.className = "proto-pill font-pill"; f.href = "fonts.html"; f.innerHTML = `<b style="font-family:var(--f-ar)">أبجد</b> ${L("الخط", "Font")}: ${FONT[1]}`; document.body.appendChild(f); }
 }
+
+/* ---------------- Numbered compact cards (client reference: bluuu.tours) ----------------
+   icon · title · 2-line description · meta, with a large index number.
+   The highlight walks through the cards while they're on screen. */
+function ncard(o, i) {
+  return `<a class="ncard" href="${o.href}"><span class="nc-ic" aria-hidden="true">${icon(o.icon, 30, 1.6)}</span>
+    <span class="nc-b"><b class="nc-t">${o.title}</b><span class="nc-d">${o.desc}</span>${o.meta || o.price ? `<span class="nc-f">${o.meta ? `<span class="nc-m">${o.meta}</span>` : "<span></span>"}${o.price ? `<span class="nc-p">${o.price}</span>` : ""}</span>` : ""}</span></a>`;
+}
+function ncycle(root) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (root || document).querySelectorAll(".ncards:not([data-cy])").forEach(g => {
+    g.dataset.cy = 1; const cards = [...g.children].filter(c => c.classList.contains("ncard")); if (!cards.length) return;
+    let i = 0, timer = null, hold = false;
+    const set = (k) => { cards.forEach((c, j) => c.classList.toggle("on", j === k)); i = k; };
+    const step = () => { if (!hold) set((i + 1) % cards.length); };
+    set(0);
+    if (reduce) return;
+    const start = () => { if (!timer) timer = setInterval(step, 2800); }, stop = () => { clearInterval(timer); timer = null; };
+    if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => e.isIntersecting ? start() : stop(), { threshold: .25 }).observe(g); else start();
+    cards.forEach((c, j) => { c.addEventListener("pointerenter", () => { hold = true; set(j); }); c.addEventListener("pointerleave", () => { hold = false; }); c.addEventListener("focus", () => { hold = true; set(j); }); c.addEventListener("blur", () => { hold = false; }); });
+  });
+}
+const actIcon = (a) => ({ adventure: "mountain", beaches: "wave", restaurants: "food", cafes: "coffee", nature: "leaf", families: "users", kids: "users", photo: "camera", culture: "temple" }[a.cats[0]] || "compass");
+const actNcard = (a, i) => ncard({ href: "activity.html#" + a.id, icon: /water|penida|snork|boat/.test(a.id) ? "boat" : /spa/.test(a.id) ? "leaf" : /batur|sunrise/.test(a.id) ? "sun" : actIcon(a), title: t(a.title), desc: t(a.short),
+  meta: `${icon("pin", 13)} ${t(region(a.region).name)}`, price: `<small>${L("من", "From")}</small> ${money(a.priceFrom)}` }, i);
+const itiNcard = (it, i) => ncard({ href: "itinerary.html#" + it.id, icon: "cal", title: t(it.name), desc: t(it.short),
+  meta: `${icon("cal", 13)} ${cnt(it.days, "d")} · ${L("ملف PDF + خريطة", "PDF + map")}`, price: money(it.price) }, i);
+const pkgNcard = (p, i) => ncard({ href: "package.html#" + p.id, icon: { honeymoon: "heart", adventure: "mountain", family: "users", relax: "leaf" }[p.id] || "box", title: t(p.name), desc: t(p.short),
+  meta: `${icon("cal", 13)} ${cnt(p.days, "d")}`, price: `<small>${L("من", "From")}</small> ${money(p.price)}` }, i);
 
 /* ---------------- Card renderers ---------------- */
 function favBtn(id) { return `<button class="fav-btn" data-fav="${id}" aria-pressed="${Fav.has(id)}" aria-label="${L("أضف إلى المفضلة", "Save to favorites")}">${icon("heart", 19, 2)}</button>`; }
@@ -310,7 +361,7 @@ function packageCard(p) {
     <div class="card-media" style="aspect-ratio:16/11"><img src="${img(p.img)}" alt="" loading="lazy"><div class="tl"><span class="tag tag-glass">${t(p.theme)}</span></div><div class="tr">${favBtn("pkg:" + p.id)}</div></div>
     <div class="card-body">
       <h3 class="card-title">${t(p.name)}</h3>
-      <div class="card-meta"><span>${icon("cal", 15)} ${BT.cnt(p.days, "d")}</span><span>${icon("users", 15)} ${p.people === 2 && BT.LANG === "ar" ? "لشخصين" : L("حتى", "Up to") + " " + BT.cnt(p.people, "p")}</span><span>${icon("car", 15)} ${p.driver ? L("يشمل السائق", "Driver included") : L("بدون سائق", "No driver")}</span></div>
+      <div class="card-meta"><span>${icon("cal", 15)} ${BT.cnt(p.days, "d")}</span><span>${icon("users", 15)} ${p.people === 2 && BT.LANG === "ar" ? "لشخصين" : L("حتى", "Up to") + " " + BT.cnt(p.people, "p")}</span></div>
       <p class="muted" style="font-size:14.5px">${t(p.short)}</p>
       <div class="card-foot"><div class="from"><small>${L("يبدأ من", "From")}</small><b class="price">${money(p.price)}</b></div><span class="btn btn-forest btn-sm">${L("التفاصيل", "Details")} ${icon("arrow", 16)}</span></div>
     </div></a>`;
@@ -358,8 +409,8 @@ function addItinerary(it, go) {
 }
 
 /* Generic helpers for pages */
-function mount(sel, htmlStr) { const el = typeof sel === "string" ? document.querySelector(sel) : sel; if (el) { el.innerHTML = htmlStr; applyStatic(el); } return el; }
-function boot() { renderHeader(); renderFooter(); renderTabbar(); protoPill(); applyStatic(); updateBadges(); }
+function mount(sel, htmlStr) { const el = typeof sel === "string" ? document.querySelector(sel) : sel; if (el) { el.innerHTML = htmlStr; applyStatic(el); el.removeAttribute("data-cy"); ncycle(el.parentElement || el); } return el; }
+function boot() { renderHeader(); renderFooter(); renderTabbar(); protoPill(); applyStatic(); updateBadges(); ncycle(); }
 
-window.BT = { cnt, cntAr, D, LANG, t, L, money, numAr, esc, img, icon, starIcon, fmtDate, byId, region, hashId, Trip, Fav, Auth, MapAccess, store, toast, crumbs, mount, applyStatic, activityCard, itineraryCard, packageCard, regionCard, articleCard, placeCard, stars, favBtn, addItinerary, boot, setLang };
+window.BT = { FEAT, FONTS, FONT, ncard, ncycle, actNcard, itiNcard, pkgNcard, cnt, cntAr, D, LANG, t, L, money, numAr, esc, img, icon, starIcon, fmtDate, byId, region, hashId, Trip, Fav, Auth, MapAccess, store, toast, crumbs, mount, applyStatic, activityCard, itineraryCard, packageCard, regionCard, articleCard, placeCard, stars, favBtn, addItinerary, boot, setLang };
 })();

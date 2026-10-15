@@ -76,8 +76,8 @@ const PLACES = [
   P("tanah-lot", "landmarks", null, "canggu", -8.6212, 115.0868, "temple-gate", "معبد تانا لوت", "Tanah Lot", "معبد على صخرة في البحر، مشهور وقت الغروب.", "A sea-rock temple, famous at sunset.", ["photo", "family"], 4.6),
   P("seminyak-beach", "beaches", null, "seminyak", -8.6913, 115.1569, "sunset", "شاطئ سيمينياك", "Seminyak Beach", "شاطئ رملي واسع ومطاعم على البحر.", "Wide sand and beachfront dining.", ["romantic", "family"], 4.4),
   P("italian-sem", "restaurants", "italian", "seminyak", -8.6870, 115.1630, "polaroids", "مطعم إيطالي (نموذج)", "Italian trattoria (sample)", "باستا طازجة وبيتزا على الحطب.", "Fresh pasta and wood-fired pizza.", ["romantic"], 4.5, { price: "$$" }),
-  P("indian-sem", "restaurants", "indian", "seminyak", -8.6800, 115.1610, "flatlay", "مطعم هندي (نموذج)", "Indian kitchen (sample)", "أطباق هندية حلال بخيارات نباتية.", "Halal Indian plates with vegetarian options.", ["family"], 4.3, { price: "$$" }),
-  P("arabic-kuta", "restaurants", "arabic", "seminyak", -8.7180, 115.1700, "flatlay-wide", "مطعم عربي (نموذج)", "Arabic restaurant (sample)", "مشاوي ومقبلات عربية حلال.", "Halal Arabic grills and mezze.", ["family"], 4.4, { price: "$$" }),
+  P("indian-sem", "restaurants", "indian", "seminyak", -8.6800, 115.1610, "flatlay", "مطعم هندي (نموذج)", "Indian kitchen (sample)", "أطباق هندية بخيارات نباتية.", "Indian plates with vegetarian options.", ["family"], 4.3, { price: "$$" }),
+  P("arabic-kuta", "restaurants", "arabic", "seminyak", -8.7180, 115.1700, "flatlay-wide", "مطعم عربي (نموذج)", "Arabic restaurant (sample)", "مشاوي ومقبلات عربية.", "Arabic grills and mezze.", ["family"], 4.4, { price: "$$" }),
   P("waterbom", "activities", null, "seminyak", -8.7284, 115.1688, "beach-palms", "ووتربوم بالي", "Waterbom Bali", "حديقة ألعاب مائية مناسبة للعائلات والأطفال.", "A water park for families and kids.", ["family"], 4.7, { activity: "waterbom" }),
   P("uluwatu-temple", "landmarks", null, "uluwatu", -8.8291, 115.0849, "cliff-beach", "معبد أولواتو", "Uluwatu Temple", "معبد على حافة المنحدر وعرض رقصة كيتشاك وقت الغروب.", "Clifftop temple with the Kecak fire dance at sunset.", ["photo", "romantic"], 4.7, { activity: "kecak-uluwatu" }),
   P("padang", "beaches", null, "uluwatu", -8.8110, 115.1000, "cliff-beach", "شاطئ بادانغ بادانغ", "Padang Padang Beach", "خليج صغير بين الصخور بمياه صافية.", "A small cove between rocks with clear water.", ["romantic"], 4.5),
@@ -201,7 +201,7 @@ ACTIVITIES.forEach(a => {
   a.excludes = a.excludes || STD_EXCL;
   a.cancel = a.cancel || CANCEL_STD;
   a.faq = a.faq || [
-    [{ ar: "هل يشمل السعر التوصيل من الفندق؟", en: "Is hotel transfer included?" }, { ar: "لا، يمكنك إضافة سائق للفعالية من نموذج الحجز ويُحسب سعره ضمن الإجمالي.", en: "No — add a driver in the booking form and it's added to your total." }],
+    [{ ar: "هل يشمل السعر التوصيل من الفندق؟", en: "Is hotel transfer included?" }, { ar: "لا، الانتقال إلى مكان الفعالية غير مشمول. ستجد الموقع وطريقة الوصول في تفاصيل الحجز.", en: "No — getting to the venue isn't included. The location and directions are in your booking details." }],
     [{ ar: "متى يصلني تأكيد الحجز؟", en: "When is my booking confirmed?" }, { ar: "بعد الدفع يظهر الطلب بحالة «بانتظار تأكيد المزود»، ثم يصلك التأكيد النهائي عبر البريد وواتساب.", en: "After payment the booking shows 'Awaiting provider'; final confirmation arrives by email and WhatsApp." }],
     [{ ar: "ماذا أرتدي؟", en: "What should I wear?" }, { ar: "ملابس مريحة وحذاء مناسب للنشاط. تُذكر أي متطلبات خاصة في تعليمات المشاركة.", en: "Comfortable clothes and suitable shoes; special requirements are listed in the instructions." }],
   ];
@@ -262,11 +262,11 @@ const ARTICLES = [
     title: { ar: "بالي مع الأطفال: أنشطة آمنة ومناسبة", en: "Bali with kids: safe, fun activities" },
     ex: { ar: "اختيارات للأيام الماطرة والمشمسة، ونصائح التنقل.", en: "Picks for rainy and sunny days, plus transport tips." }, link: "packages" },
   { id: "halal-food", img: "flatlay-wide", cat: { ar: "طعام", en: "Food" }, mins: 4, date: "2026-07-28",
-    title: { ar: "أين تجد الطعام الحلال في بالي؟", en: "Where to find halal food in Bali" },
+    title: { ar: "دليل المطاعم في بالي للمسافر العربي", en: "A Bali dining guide for Arab travelers" },
     ex: { ar: "مطاعم عربية وهندية وخيارات بحرية في الجنوب.", en: "Arabic, Indian and seafood options in the south." }, link: "map" },
-  { id: "driver-tips", img: "driver-car", cat: { ar: "تنقل", en: "Getting around" }, mins: 4, date: "2026-07-12",
-    title: { ar: "سائق خاص أم تطبيقات النقل؟", en: "Private driver or ride apps?" },
-    ex: { ar: "متى يكون السائق الخاص الخيار الأوفر والأريح.", en: "When a private driver is cheaper and easier." }, link: "driver" },
+  { id: "best-time", img: "sunset", cat: { ar: "تخطيط", en: "Planning" }, mins: 4, date: "2026-07-12",
+    title: { ar: "أفضل وقت لزيارة بالي", en: "The best time to visit Bali" },
+    ex: { ar: "المواسم والطقس وأنسب شهور السفر للعائلات.", en: "Seasons, weather and the best months for families." }, link: "map" },
   { id: "temples", img: "lempuyang", cat: { ar: "ثقافة", en: "Culture" }, mins: 7, date: "2026-06-30",
     title: { ar: "آداب زيارة المعابد في بالي", en: "Temple etiquette in Bali" },
     ex: { ar: "اللباس، والأوقات، وما يجب تجنبه.", en: "Dress, timing, and what to avoid." }, link: "explore" },
@@ -275,7 +275,7 @@ const ARTICLES = [
 /* ---------------- Sample reviews (to be replaced by verified reviews) ---------------- */
 const REVIEWS = [
   { n: { ar: "مسافر من الرياض", en: "Traveler from Riyadh" }, i: "م", s: 5, svc: { ar: "جدول ٧ أيام", en: "7-day itinerary" }, t: { ar: "نص تجربة حقيقية يُضاف هنا بعد موافقة العميل على النشر.", en: "A real traveler's words go here once they approve publishing." } },
-  { n: { ar: "عائلة من الكويت", en: "Family from Kuwait" }, i: "ع", s: 5, svc: { ar: "السائق الخاص", en: "Private driver" }, t: { ar: "مكان مخصص لتقييم موثّق مرتبط بحجز فعلي، مع اسم مختصر وبلد.", en: "Slot for a verified review tied to a real booking, with short name and country." } },
+  { n: { ar: "عائلة من الكويت", en: "Family from Kuwait" }, i: "ع", s: 5, svc: { ar: "باقة العائلة", en: "Family package" }, t: { ar: "مكان مخصص لتقييم موثّق مرتبط بحجز فعلي، مع اسم مختصر وبلد.", en: "Slot for a verified review tied to a real booking, with short name and country." } },
   { n: { ar: "زوجان من دبي", en: "Couple from Dubai" }, i: "ز", s: 4, svc: { ar: "باقة شهر العسل", en: "Honeymoon package" }, t: { ar: "يظهر التقييم أسفل الخدمة التي يخصها فقط، كما طلب صاحب المشروع.", en: "Each review shows only under the service it belongs to." } },
 ];
 

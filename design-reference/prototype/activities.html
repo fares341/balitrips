@@ -64,7 +64,7 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
       <div class="chips scroll" id="cats" role="group" aria-label="التصنيفات" data-en-aria="Categories"></div>
       <div class="more" id="more" hidden>
         <div class="field"><label for="f-region" data-en="Area">المنطقة</label><select class="select" id="f-region"></select></div>
-        <div class="field"><label for="f-price"><span data-en="Max price per person">أعلى سعر للشخص</span>: <span class="range-out" id="price-out"></span></label><input type="range" id="f-price" min="10" max="130" step="5" value="130"></div>
+        <div class="field"><span class="label" data-en="Budget">الفئة السعرية</span><div class="seg" role="group" id="f-tier" aria-label="الفئة السعرية" data-en-aria="Budget"><button type="button" data-tier="all" aria-pressed="true" data-en="All">الكل</button><button type="button" data-tier="eco" aria-pressed="false" data-en="Economy">اقتصادية</button><button type="button" data-tier="mid" aria-pressed="false" data-en="Mid-range">متوسطة</button><button type="button" data-tier="lux" aria-pressed="false" data-en="Luxury">فاخرة</button></div></div>
         <div class="field"><label for="f-dur" data-en="Duration">المدة</label><select class="select" id="f-dur"><option value="all" data-en="Any duration">أي مدة</option><option value="short" data-en="Up to 3 hours">حتى ٣ ساعات</option><option value="half" data-en="3–6 hours">٣ – ٦ ساعات</option><option value="day" data-en="Full day">يوم كامل</option></select></div>
         <div class="field"><label for="f-aud" data-en="Best for">مناسب لـ</label><select class="select" id="f-aud"><option value="all" data-en="Everyone">الجميع</option><option value="families" data-en="Families">العائلات</option><option value="couples" data-en="Couples">الأزواج</option><option value="adventure" data-en="Adventurers">المغامرين</option></select></div>
       </div>
@@ -81,8 +81,8 @@ input[type=range] { width: 100%; accent-color: var(--forest); }
   <section class="sec-tight">
     <div class="wrap">
       <div class="panel row between" style="padding:24px;gap:18px">
-        <div class="stack" style="gap:6px;max-width:620px"><b class="h3" style="color:var(--forest)" data-en="Need a driver for the day?">تحتاج سائقًا لليوم؟</b><span class="muted" data-en="Add a driver while booking any activity, or book one separately by the day.">أضف سائقًا أثناء حجز أي نشاط، أو احجزه منفصلًا بالأيام.</span></div>
-        <div class="row"><a class="btn btn-forest" href="driver.html" data-en="Book a driver">احجز سائقًا</a><a class="btn btn-ghost" href="packages.html" data-en="See packages">شاهد الباقات</a></div>
+        <div class="stack" style="gap:6px;max-width:620px"><b class="h3" style="color:var(--forest)" data-en="Want a full program?">تريد برنامجًا متكاملًا؟</b><span class="muted" data-en="Packages combine activities and a day-by-day plan — or tell us what you want and we'll build it.">الباقات تجمع الأنشطة وجدول الأيام — أو أخبرنا بما تريده ونصممه لك.</span></div>
+        <div class="row"><a class="btn btn-forest" href="custom-trip.html" data-en="Custom trip">الرحلة المخصصة</a><a class="btn btn-ghost" href="packages.html" data-en="See packages">شاهد الباقات</a></div>
       </div>
     </div>
   </section>
@@ -95,14 +95,15 @@ BT.boot();
 (function () {
 const { D, t, L, mount, activityCard, money, icon } = BT;
 document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("الأنشطة والفعاليات", "Activities"), "activities.html"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
-const F = { cat: "all", q: "", region: "all", max: 130, dur: "all", aud: "all", sort: "rating", view: "grid" };
+const TIER = { all: () => true, eco: (p) => p < 35, mid: (p) => p >= 35 && p <= 60, lux: (p) => p > 60 };
+const F = { cat: "all", q: "", region: "all", tier: "all", dur: "all", aud: "all", sort: "rating", view: "grid" };
 const h = BT.hashId(); if (h && D.ACT_CATS.some(c => c[0] === h)) F.cat = h;
 const cats = document.getElementById("cats");
 function renderCats() { cats.innerHTML = D.ACT_CATS.map(([k, n]) => { const c = k === "all" ? D.ACTIVITIES.length : D.ACTIVITIES.filter(a => a.cats.includes(k)).length; return `<button class="chip" data-c="${k}" aria-pressed="${F.cat === k}">${t(n)} <span class="ct">${c}</span></button>`; }).join(""); }
 document.getElementById("f-region").innerHTML = `<option value="all">${L("كل المناطق", "All areas")}</option>` + D.REGIONS.map(r => `<option value="${r.id}">${t(r.name)}</option>`).join("");
 const audMap = { families: ["families", "kids"], couples: ["restaurants", "photo", "culture"], adventure: ["adventure"] };
 function list() {
-  let l = D.ACTIVITIES.filter(a => (F.cat === "all" || a.cats.includes(F.cat)) && (F.region === "all" || a.region === F.region) && a.priceFrom <= F.max &&
+  let l = D.ACTIVITIES.filter(a => (F.cat === "all" || a.cats.includes(F.cat)) && (F.region === "all" || a.region === F.region) && TIER[F.tier](a.priceFrom) &&
     (F.dur === "all" || (F.dur === "short" ? a.durH <= 3 : F.dur === "half" ? a.durH > 3 && a.durH <= 6 : a.durH > 6)) &&
     (F.aud === "all" || a.cats.some(c => audMap[F.aud].includes(c))) &&
     (!F.q || (a.title.ar + a.title.en + a.short.ar + a.short.en).toLowerCase().includes(F.q.toLowerCase())));
@@ -112,7 +113,7 @@ function list() {
 function skeleton() { return Array.from({ length: 3 }, () => `<div class="card"><div class="skel" style="aspect-ratio:4/3;border-radius:0"></div><div class="card-body"><div class="skel" style="height:14px;width:50%"></div><div class="skel" style="height:20px;width:80%"></div><div class="skel" style="height:14px;width:90%"></div><div class="skel" style="height:40px;margin-top:12px"></div></div></div>`).join(""); }
 let tmr;
 function render() {
-  const g = document.getElementById("grid"); g.classList.toggle("list-view", F.view === "list");
+  const g = document.getElementById("grid"); g.className = "grid g3" + (F.view === "list" ? " list-view" : "");
   g.innerHTML = skeleton(); clearTimeout(tmr);
   tmr = setTimeout(() => {
     const l = list();
@@ -125,19 +126,19 @@ function render() {
 function activeChips() {
   const a = [];
   if (F.region !== "all") a.push(["region", t(BT.region(F.region).name)]);
-  if (F.max < 130) a.push(["max", `≤ ${money(F.max)}`]);
+  if (F.tier !== "all") a.push(["tier", document.querySelector(`#f-tier [data-tier=${F.tier}]`).textContent]);
   if (F.dur !== "all") a.push(["dur", document.querySelector(`#f-dur option[value=${F.dur}]`).textContent]);
   if (F.aud !== "all") a.push(["aud", document.querySelector(`#f-aud option[value=${F.aud}]`).textContent]);
   if (F.q) a.push(["q", `"${BT.esc(F.q)}"`]);
   document.getElementById("active-f").innerHTML = a.map(([k, v]) => `<button data-rm="${k}" aria-label="${L("إزالة", "Remove")} ${v}">${v} ${icon("x", 14, 2.2)}</button>`).join("");
 }
 document.getElementById("active-f").onclick = (e) => { const b = e.target.closest("[data-rm]"); if (!b) return; const k = b.dataset.rm;
-  if (k === "region") { F.region = "all"; document.getElementById("f-region").value = "all"; } if (k === "max") { F.max = 130; document.getElementById("f-price").value = 130; priceOut(); }
+  if (k === "region") { F.region = "all"; document.getElementById("f-region").value = "all"; } if (k === "tier") setTier("all");
   if (k === "dur") { F.dur = "all"; document.getElementById("f-dur").value = "all"; } if (k === "aud") { F.aud = "all"; document.getElementById("f-aud").value = "all"; } if (k === "q") { F.q = ""; document.getElementById("q").value = ""; } render(); };
-function resetAll() { Object.assign(F, { cat: "all", q: "", region: "all", max: 130, dur: "all", aud: "all" }); ["q"].forEach(i => document.getElementById(i).value = ""); document.getElementById("f-region").value = "all"; document.getElementById("f-price").value = 130; document.getElementById("f-dur").value = "all"; document.getElementById("f-aud").value = "all"; priceOut(); renderCats(); render(); }
+function resetAll() { Object.assign(F, { cat: "all", q: "", region: "all", tier: "all", dur: "all", aud: "all" }); ["q"].forEach(i => document.getElementById(i).value = ""); document.getElementById("f-region").value = "all"; setTier("all"); document.getElementById("f-dur").value = "all"; document.getElementById("f-aud").value = "all"; renderCats(); render(); }
 cats.onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; F.cat = b.dataset.c; renderCats(); render(); history.replaceState(null, "", "#" + F.cat); };
-const priceOut = () => document.getElementById("price-out").textContent = money(F.max);
-document.getElementById("f-price").oninput = (e) => { F.max = +e.target.value; priceOut(); render(); };
+function setTier(v) { F.tier = v; document.querySelectorAll("#f-tier [data-tier]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tier === v)); }
+document.getElementById("f-tier").onclick = (e) => { const b = e.target.closest("[data-tier]"); if (!b) return; setTier(b.dataset.tier); render(); };
 document.getElementById("f-region").onchange = (e) => { F.region = e.target.value; render(); };
 document.getElementById("f-dur").onchange = (e) => { F.dur = e.target.value; render(); };
 document.getElementById("f-aud").onchange = (e) => { F.aud = e.target.value; render(); };
@@ -145,7 +146,7 @@ document.getElementById("sort").onchange = (e) => { F.sort = e.target.value; ren
 let qt; document.getElementById("q").oninput = (e) => { clearTimeout(qt); qt = setTimeout(() => { F.q = e.target.value.trim(); render(); }, 220); };
 const mb = document.getElementById("more-btn"); mb.onclick = () => { const m = document.getElementById("more"); m.hidden = !m.hidden; mb.setAttribute("aria-expanded", !m.hidden); };
 ["vg", "vl"].forEach(id => document.getElementById(id).onclick = () => { F.view = id === "vg" ? "grid" : "list"; document.getElementById("vg").setAttribute("aria-pressed", F.view === "grid"); document.getElementById("vl").setAttribute("aria-pressed", F.view === "list"); render(); });
-priceOut(); renderCats(); render();
+renderCats(); render();
 })();
 </script>
 </body>

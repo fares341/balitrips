@@ -14,7 +14,7 @@
     <div class="wrap"><div id="crumbs"></div>
       <span class="eyebrow" style="color:var(--palm)" data-en="Tour packages">الباقات السياحية</span>
       <h1 data-en="Ready-made Bali programs">برامج بالي الجاهزة</h1>
-      <p data-en="A package combines activities, a day plan and, in most cases, a driver — for a set number of days and travelers.">الباقة تجمع الأنشطة وجدول الأيام، والسائق في أغلبها — لعدد محدد من الأيام والأشخاص.</p>
+      <p data-en="A package combines activities, a day plan and, in most cases, transfers — for a set number of days and travelers.">الباقة تجمع الأنشطة وجدول الأيام، والتنقلات في أغلبها — لعدد محدد من الأيام والأشخاص.</p>
     </div></section>
   <section class="sec-tight"><div class="wrap pk-intro">
     <div><b data-en="Package vs itinerary">الباقة أم الجدول؟</b><span class="muted" data-en="An itinerary is a file to guide you. A package is booked services: activities, transport and a plan.">الجدول ملف يرشدك. الباقة خدمات محجوزة: أنشطة وتنقل وخطة.</span></div>
@@ -37,7 +37,6 @@ document.getElementById("cmp").innerHTML = `<table class="cmp"><thead><tr><th></
   <tr><td>${L("السعر يبدأ من", "From")}</td>${P.map(p => `<td class="num"><b>${money(p.price)}</b></td>`).join("")}</tr>
   <tr><td>${L("عدد الأيام", "Days")}</td>${P.map(p => `<td class="num">${p.days}</td>`).join("")}</tr>
   <tr><td>${L("حتى عدد أشخاص", "Up to")}</td>${P.map(p => `<td class="num">${p.people}</td>`).join("")}</tr>
-  <tr><td>${L("يشمل السائق", "Driver")}</td>${P.map(p => `<td style="color:var(--ok)">${p.driver ? yes : no}</td>`).join("")}</tr>
   <tr><td>${L("عدد الأنشطة", "Activities")}</td>${P.map(p => `<td class="num">${p.acts.length}</td>`).join("")}</tr>
   <tr><td></td>${P.map(p => `<td><a class="btn btn-forest btn-sm" href="package.html#${p.id}">${L("التفاصيل", "Details")}</a></td>`).join("")}</tr></tbody></table>`;
 })();

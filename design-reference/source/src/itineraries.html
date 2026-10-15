@@ -35,7 +35,7 @@
 <script>
 BT.boot();
 (function () {
-const { D, t, L, mount, itineraryCard, icon, numAr } = BT;
+const { D, t, L, mount, itineraryCard, itiNcard, icon, numAr } = BT;
 document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("الجداول السياحية", "Itineraries"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark"');
 const F = { days: "all", region: "all", type: "all" };
 const types = [["all", L("كل الأنواع", "All types")], ["family", L("عائلية", "Family")], ["honeymoon", L("شهر عسل", "Honeymoon")], ["couples", L("أزواج", "Couples")], ["adventure", L("مغامرات", "Adventure")], ["economy", L("اقتصادية", "Budget")]];

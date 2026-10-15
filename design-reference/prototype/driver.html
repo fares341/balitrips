@@ -46,19 +46,14 @@
         <span class="eyebrow" style="color:var(--palm)" data-en="Private driver">السائق الخاص</span>
         <h1 data-en="Your own car and driver in Bali">سيارتك وسائقك الخاص في بالي</h1>
         <p style="font-size:17px;max-width:52ch" data-en="Pick your days and the number of travelers. We choose the right car automatically and show the final price before you book.">اختر أيامك وعدد المسافرين، ونختار السيارة المناسبة تلقائيًا ونعرض السعر النهائي قبل الحجز.</p>
-        <div class="feat">
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Private car">سيارة خاصة</span></div>
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Air-conditioned">سيارة مكيفة</span></div>
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Family friendly">مناسبة للعائلات</span></div>
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Good for groups">مناسبة للمجموعات</span></div>
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Knows the best spots">سائق يعرف أهم الأماكن</span></div>
-          <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg><span data-en="Comfortable around Bali">تنقل مريح داخل بالي</span></div>
-        </div>
+        
         <a class="btn btn-primary btn-lg" href="#book" style="align-self:flex-start" id="jump" data-en="Book the driver">احجز السائق</a>
       </div>
       <div class="car"><img src="assets/img/driver-car.jpg" alt="سيارة Bali Trips" data-en-aria="A Bali Trips car"></div>
     </div>
   </section>
+  <section class="sec-tight"><div class="wrap stack" style="gap:16px"><h2 class="h3" data-en="What you get with the driver">ماذا تحصل عليه مع السائق</h2><div class="ncards"><a class="ncard" href="#book"><span class="nc-ic" aria-hidden="true" data-ic="car"></span><span class="nc-b"><b class="nc-t" data-en="Air-conditioned car">سيارة مكيفة</b><span class="nc-d" data-en="Clean and comfortable for every ride on the island.">نظيفة ومريحة لكل المشاوير داخل الجزيرة.</span></span></a><a class="ncard" href="#book"><span class="nc-ic" aria-hidden="true" data-ic="users"></span><span class="nc-b"><b class="nc-t" data-en="For families & groups">للعائلات والمجموعات</b><span class="nc-d" data-en="The car is matched to your group, from 1 to 14.">السيارة تُختار حسب عدد المسافرين من ١ إلى ١٤.</span></span></a><a class="ncard" href="#book"><span class="nc-ic" aria-hidden="true" data-ic="compass"></span><span class="nc-b"><b class="nc-t" data-en="A driver who knows Bali">سائق يعرف أهم الأماكن</b><span class="nc-d" data-en="Suggests the best timing and route for each stop.">يقترح التوقيت والطريق الأنسب لكل مكان.</span></span></a><a class="ncard" href="#book"><span class="nc-ic" aria-hidden="true" data-ic="route"></span><span class="nc-b"><b class="nc-t" data-en="Flexible, by the day">تنقّل مرن بالأيام</b><span class="nc-d" data-en="Book one day or several, around your plan.">احجز يومًا واحدًا أو عدة أيام حسب جدولك.</span></span></a></div></div></section>
+
 
   <div class="wrap dlayout" id="book">
     <form class="stack" style="gap:28px" id="df" novalidate>
@@ -95,6 +90,7 @@
 <script src="assets/booking.js"></script>
 <script>
 BT.boot();
+document.querySelectorAll(".nc-ic[data-ic]").forEach(e => e.innerHTML = BT.icon(e.dataset.ic, 30, 1.6)); BT.ncycle();
 (function () {
 const { D, t, L, icon, money, numAr, img, Trip, toast } = BT;
 document.getElementById("crumbs").outerHTML = BT.crumbs([[L("الرئيسية", "Home"), "home.html"], [L("خدماتنا", "Services"), "services.html"], [L("السائق", "Driver"), "#"]]).replace('class="crumbs"', 'class="crumbs on-dark" style="padding-block:14px 0"');
