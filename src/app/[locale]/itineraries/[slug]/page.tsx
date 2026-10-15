@@ -51,6 +51,7 @@ import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
+import { FEATURES } from '@/lib/features'
 import { alternates } from '../_meta'
 import { formatPrice } from '../../_ui/price'
 import { LinkedPlaces } from './linked-places'
@@ -70,7 +71,8 @@ const TRUST_KEYS: readonly { icon: IconName; key: string }[] = [
 const FAQ_KEYS = [
   { q: 'home_faq2_q', a: 'home_faq2_a' },
   { q: 'it_faq_change_q', a: 'it_faq_change_a' },
-  { q: 'it_faq_driver_q', a: 'it_faq_driver_a' },
+  // Asked only while the driver service is on (lib/features.ts).
+  ...(FEATURES.driver ? [{ q: 'it_faq_driver_q', a: 'it_faq_driver_a' } as const] : []),
 ] as const
 
 /**

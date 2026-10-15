@@ -17,6 +17,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { bookingsOpen } from '@/lib/bookings-open'
+import { FEATURES } from '@/lib/features'
 import {
   addDriverToBooking,
   addItem,
@@ -83,6 +84,10 @@ export async function addToCartAction(input: AddItemInput): Promise<CartActionRe
   // updateQuantity/removeItem/clearCart: a traveller whose trip is stranded by
   // the freeze must still be able to empty it.
   if (!bookingsOpen()) return { ok: false, itemCount: 0, reason: 'bookings_closed' }
+  // The driver service is switched off on the public site (lib/features.ts).
+  if (!FEATURES.driver && (input.kind === 'driver' || input.driver)) {
+    return { ok: false, itemCount: 0 }
+  }
 
   const result = await addItem(input)
   revalidateCartRoutes()
@@ -106,6 +111,7 @@ export interface DriversActionResult {
  */
 export async function addDriversAction(itemIds: unknown): Promise<DriversActionResult> {
   if (!bookingsOpen()) return { ok: false, itemCount: 0, reason: 'bookings_closed' }
+  if (!FEATURES.driver) return { ok: false, itemCount: 0, reason: 'invalid' }
   if (!Array.isArray(itemIds) || itemIds.length === 0 || itemIds.length > 20) {
     return { ok: false, itemCount: 0, reason: 'invalid' }
   }

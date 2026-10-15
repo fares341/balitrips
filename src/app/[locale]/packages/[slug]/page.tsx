@@ -34,6 +34,7 @@ import { Breadcrumbs } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
+import { FEATURES } from '@/lib/features'
 import { getPackageBySlug, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { alternates } from '../_meta'
@@ -135,7 +136,7 @@ export default async function PackageDetailPage({
                 <span className="tag" style={{ background: 'var(--orange)', color: '#fff' }}>
                   {t('c_days_n', { n: pkg.days })}
                 </span>
-                {pkg.driverIncluded && (
+                {FEATURES.driver && pkg.driverIncluded && (
                   <span className="tag tag-palm">
                     <Icon name="car" size={13} /> {t('pd_driver_inc')}
                   </span>
@@ -189,13 +190,15 @@ export default async function PackageDetailPage({
                 </div>
               )}
 
-              <div className="bt-pkgfact">
-                <Icon name="car" size={18} color="var(--forest)" />
-                <div>
-                  <dt>{t('pd_fact_driver')}</dt>
-                  <dd>{pkg.driverIncluded ? t('pd_fact_yes') : t('pd_fact_no')}</dd>
+              {FEATURES.driver && (
+                <div className="bt-pkgfact">
+                  <Icon name="car" size={18} color="var(--forest)" />
+                  <div>
+                    <dt>{t('pd_fact_driver')}</dt>
+                    <dd>{pkg.driverIncluded ? t('pd_fact_yes') : t('pd_fact_no')}</dd>
+                  </div>
                 </div>
-              </div>
+              )}
             </dl>
           </div>
 

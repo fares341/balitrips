@@ -3,7 +3,8 @@
  *
  * Banner, the three "how to choose" steps, a sticky toolbar (search, sort,
  * more filters, grid/list) with category chips, the card grid and the
- * "need a driver?" panel.
+ * "want a full program?" panel (the "need a driver?" one while the driver
+ * service is on, lib/features.ts).
  *
  * Filtering is live on the client, as in the prototype (skeleton, then the
  * results — 260ms, instant with reduced motion), over the full published
@@ -22,9 +23,11 @@ import { parseBudgetTier } from '@/lib/budget-tier'
 import { pick } from '@/lib/content/localize'
 import { listActivities, listCategories } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
+import { FEATURES } from '@/lib/features'
 
 import { ActivitiesExplorer, type ExplorerFilters } from './activities-explorer'
 import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
+import { CUSTOM_HREF } from '../_ui/routes-extra'
 
 import '@/styles/bt-activity.css'
 
@@ -160,20 +163,42 @@ export default async function ActivitiesPage({ params, searchParams }: PageProps
       <section className="sec-tight">
         <div className="wrap">
           <div className="panel row between act-driver-cta">
-            <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
-              <b className="h3" style={{ color: 'var(--forest)' }}>
-                {t('act_driver_t')}
-              </b>
-              <span className="muted">{t('act_driver_b')}</span>
-            </div>
-            <div className="row">
-              <LinkButton href="/driver" variant="forest">
-                {t('act_driver_cta')}
-              </LinkButton>
-              <LinkButton href="/packages" variant="ghost">
-                {t('act_driver_pkgs')}
-              </LinkButton>
-            </div>
+            {FEATURES.driver ? (
+              <>
+                <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
+                  <b className="h3" style={{ color: 'var(--forest)' }}>
+                    {t('act_driver_t')}
+                  </b>
+                  <span className="muted">{t('act_driver_b')}</span>
+                </div>
+                <div className="row">
+                  <LinkButton href="/driver" variant="forest">
+                    {t('act_driver_cta')}
+                  </LinkButton>
+                  <LinkButton href="/packages" variant="ghost">
+                    {t('act_driver_pkgs')}
+                  </LinkButton>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* v3.2: the driver panel became "Want a full program?" */}
+                <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
+                  <b className="h3" style={{ color: 'var(--forest)' }}>
+                    {t('act_prog_t')}
+                  </b>
+                  <span className="muted">{t('act_prog_b')}</span>
+                </div>
+                <div className="row">
+                  <LinkButton href={CUSTOM_HREF} variant="forest">
+                    {t('svc_cust_t')}
+                  </LinkButton>
+                  <LinkButton href="/packages" variant="ghost">
+                    {t('act_driver_pkgs')}
+                  </LinkButton>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

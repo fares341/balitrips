@@ -36,6 +36,7 @@ import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { listActivities, listDriverVehicles } from '@/lib/content/queries'
+import { FEATURES } from '@/lib/features'
 
 import { pageMetadata } from '../_meta'
 import { imageAt, imagePool } from '../_ui/imagery'
@@ -75,7 +76,8 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
-  if (!isLocale(locale)) notFound()
+  // The driver service is switched off on the public site (lib/features.ts).
+  if (!isLocale(locale) || !FEATURES.driver) notFound()
 
   const t = await getTranslations({ locale })
 
@@ -89,7 +91,7 @@ export async function generateMetadata({
 
 export default async function DriverPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
-  if (!isLocale(locale)) notFound()
+  if (!isLocale(locale) || !FEATURES.driver) notFound()
   setRequestLocale(locale)
 
   const [t, vehicles, activities] = await Promise.all([

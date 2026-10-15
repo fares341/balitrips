@@ -49,6 +49,7 @@ import {
   type ReviewDto,
 } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
+import { FEATURES } from '@/lib/features'
 
 import { pageMetadata } from './_meta'
 import { AboutSlider } from './_home/about-slider'
@@ -82,7 +83,7 @@ const ARCHES: readonly Arch[] = [
 ]
 
 /** "What are you planning today?" — one tile per service page. */
-const SERVICES: readonly { href: string; icon: IconName; key: string; tone?: 'orange' }[] = [
+const ALL_SERVICES: readonly { href: string; icon: IconName; key: string; tone?: 'orange' }[] = [
   { href: '/packages', icon: 'box', key: 'pkg' },
   { href: '/itineraries', icon: 'doc', key: 'itin' },
   { href: '/driver', icon: 'car', key: 'drv', tone: 'orange' },
@@ -90,6 +91,7 @@ const SERVICES: readonly { href: string; icon: IconName; key: string; tone?: 'or
   { href: '/map', icon: 'map', key: 'map' },
   { href: CUSTOM_HREF, icon: 'wand', key: 'cust' },
 ]
+const SERVICES = ALL_SERVICES.filter((service) => FEATURES.driver || service.href !== '/driver')
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(
   (name) => `/brand/${name}.jpg`,
@@ -390,13 +392,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           />
           <StepCards
             label={t('hv3_st_title')}
-            items={PLAN_STEPS.map((step) => ({
-              key: step.key,
-              art: step.art,
-              href: step.href,
-              title: t(`hv3_st_${step.key}_t`),
-              body: t(`hv3_st_${step.key}_d`),
-            }))}
+            items={PLAN_STEPS.filter((step) => FEATURES.driver || step.href !== '/driver').map(
+              (step) => ({
+                key: step.key,
+                art: step.art,
+                href: step.href,
+                title: t(`hv3_st_${step.key}_t`),
+                body: t(`hv3_st_${step.key}_d`),
+              }),
+            )}
           />
         </div>
       </section>

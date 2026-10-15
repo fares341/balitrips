@@ -18,6 +18,7 @@ import { CART_CHANGED_EVENT } from '@/components/layout/routes'
 import { Icon } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { BUDGET_TIER_LABEL, type BudgetTier } from '@/lib/budget-tier'
+import { FEATURES } from '@/lib/features'
 import {
   postJson,
   sendMessage,
@@ -253,7 +254,13 @@ export function AssistantPanel({
     return String(raw)
   }
 
-  const chips = ['ai_chip_1', 'ai_chip_2', 'ai_chip_3', 'ai_chip_4'].map((key) => t(key))
+  // Chip 4 asks about driver prices: shown only while that service is on.
+  const chips = [
+    'ai_chip_1',
+    'ai_chip_2',
+    'ai_chip_3',
+    ...(FEATURES.driver ? ['ai_chip_4'] : []),
+  ].map((key) => t(key))
   const showChips = status.state === 'ok' && messages.length === 0
 
   return (

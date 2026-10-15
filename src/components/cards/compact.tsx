@@ -14,6 +14,7 @@ import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { ActivitySummary, ItinerarySummary, PackageSummary } from '@/lib/content/types'
+import { FEATURES } from '@/lib/features'
 
 type Common = {
   layout?: CompactCardLayout
@@ -82,7 +83,7 @@ export function PackageCompact({
   const region = pkg.regions[0]
   const meta = [
     region !== undefined ? pick(region.label, locale, region.key) : null,
-    t(pkg.driverIncluded ? 'bt_driver_included' : 'bt_no_driver'),
+    FEATURES.driver ? t(pkg.driverIncluded ? 'bt_driver_included' : 'bt_no_driver') : null,
   ]
     .filter((part): part is string => part !== null)
     .join(SEP)

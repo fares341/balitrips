@@ -41,8 +41,7 @@ export const metadata: Metadata = {
     default: 'Bali Trips',
     template: '%s · Bali Trips',
   },
-  description:
-    'Your gateway to Bali — activities, private drivers, itineraries and an interactive map.',
+  description: 'Your gateway to Bali — activities, itineraries, packages and an interactive map.',
 }
 
 export default async function LocaleLayout({

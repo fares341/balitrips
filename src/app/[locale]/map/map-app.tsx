@@ -46,6 +46,7 @@ import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { haversineKm } from '@/lib/geo'
 import type { MapTaxonomy } from '@/lib/search/query'
+import { FEATURES } from '@/lib/features'
 
 import { ART_FULL_URL, ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from './art-warp'
 import { categoryIcon, circleRing, declutter, inBounds, type ViewBounds } from './geo'
@@ -1170,14 +1171,16 @@ export function MapApp(props: MapAppProps) {
                 <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
               </svg>
             </button>
-            <Link
-              href={DRIVER_HREF}
-              className="mp-gbtn"
-              aria-label={t('mp3_driver')}
-              title={t('mp3_driver')}
-            >
-              <Icon name="car" size={20} />
-            </Link>
+            {FEATURES.driver && (
+              <Link
+                href={DRIVER_HREF}
+                className="mp-gbtn"
+                aria-label={t('mp3_driver')}
+                title={t('mp3_driver')}
+              >
+                <Icon name="car" size={20} />
+              </Link>
+            )}
           </div>
 
           <div className="mp-unlockbar" ref={barRef}>

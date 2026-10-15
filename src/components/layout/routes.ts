@@ -13,11 +13,18 @@
  * import it.
  */
 
+import { FEATURES } from '@/lib/features'
+
 export interface NavRoute {
   /** Locale-agnostic path, e.g. `/activities`. */
   href: string
   /** Translation key in messages/{en,ar,id}.json. */
   key: string
+}
+
+/** Hides a route whose service is switched off in `FEATURES` (the driver). */
+function available(route: NavRoute): boolean {
+  return FEATURES.driver || route.href !== '/driver'
 }
 
 /**
@@ -46,7 +53,7 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: '/about', key: 'navr_about' },
   { href: '/blog', key: 'navr_blog' },
   { href: '/contact', key: 'navr_contact' },
-]
+].filter(available)
 
 /**
  * The header's second row (v3 package, bt.js NAV): seven pills, the current
@@ -61,7 +68,7 @@ export const HEADER_ROUTES: readonly NavRoute[] = [
   { href: '/driver', key: 'bt_nav_driver' },
   { href: '/about', key: 'bt_nav_about' },
   { href: '/blog', key: 'bt_nav_articles' },
-]
+].filter(available)
 
 /** The drawer's links after the seven above (bt.js drawer). */
 export const DRAWER_EXTRA: readonly NavRoute[] = [
@@ -82,7 +89,7 @@ export const FOOTER_QUICK_ROUTES: readonly NavRoute[] = [
   { href: '/packages', key: 'navr_packages' },
   { href: '/blog', key: 'bt_nav_articles' },
   { href: '/about', key: 'bt_nav_about' },
-]
+].filter(available)
 
 /**
  * Policy pages.

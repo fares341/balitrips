@@ -41,6 +41,7 @@ import type { IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { contactLabel } from '@/lib/auth/phone'
 import { pick, pickOptional } from '@/lib/content/localize'
+import { FEATURES } from '@/lib/features'
 import {
   getArticleBodyForViewer,
   getArticleHead,
@@ -186,7 +187,9 @@ export default async function ArticlePage({ params }: { params: PageParams }) {
   const publishedAt = article.publishedAt === null ? null : new Date(article.publishedAt)
 
   const paragraphs = gate.locked ? [] : paragraphsOf(gate.body, locale)
-  const bridge = article.bridge === null ? undefined : BRIDGES[article.bridge]
+  // A driver bridge points at the map while the driver service is off.
+  const bridgeKey = article.bridge === 'driver' && !FEATURES.driver ? 'map' : article.bridge
+  const bridge = bridgeKey === null ? undefined : BRIDGES[bridgeKey]
   const related = await relatedArticles(article, locale)
 
   return (

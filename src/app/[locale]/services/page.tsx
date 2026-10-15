@@ -23,6 +23,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import type { IconName } from '@/components/ui'
 import { locales } from '@/i18n/config'
 import { listActivities, listLandmarks, listPackages } from '@/lib/content/queries'
+import { FEATURES } from '@/lib/features'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { imageAt, imagePool } from '../_ui/imagery'
@@ -46,7 +47,7 @@ type Pillar = {
 }
 
 /** The six services, in the design's order. */
-const PILLARS: readonly Pillar[] = [
+const ALL_PILLARS: readonly Pillar[] = [
   { icon: 'pin', title: 'svc_map_t', body: 'svc_map_b', href: '/map' },
   { icon: 'compass', title: 'svc_act_t', body: 'svc_act_b', href: '/activities' },
   { icon: 'car', title: 'svc_drv_t', body: 'svc_drv_b', href: '/driver' },
@@ -54,6 +55,9 @@ const PILLARS: readonly Pillar[] = [
   { icon: 'star', title: 'svc_pkg_t', body: 'svc_pkg_b', href: '/packages' },
   { icon: 'sparkle', title: 'svc_cust_t', body: 'svc_cust_b', href: CUSTOM_HREF },
 ]
+
+/** The driver tile is listed only while the service is on (lib/features.ts). */
+const PILLARS = ALL_PILLARS.filter((pillar) => FEATURES.driver || pillar.href !== '/driver')
 
 type PageParams = Promise<{ locale: string }>
 

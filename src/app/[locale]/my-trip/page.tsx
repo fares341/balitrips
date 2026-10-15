@@ -34,6 +34,7 @@ import { bookingsOpen } from '@/lib/bookings-open'
 import { scheduleConflicts, tripDays } from '@/lib/booking/trip'
 import { getCartWithTotals, type CartLineView } from '@/lib/cart'
 import { pick } from '@/lib/content/localize'
+import { FEATURES } from '@/lib/features'
 
 import { toLocale } from '../_seo-hreflang'
 import { ClearTripButton, QuantityControl, RemoveItemButton } from './trip-controls'
@@ -256,9 +257,11 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
                 <LinkButton href="/activities" variant="ghost" size="sm">
                   {t('trip_more_act')}
                 </LinkButton>
-                <LinkButton href="/driver" variant="ghost" size="sm">
-                  {t('trip_g_driver')}
-                </LinkButton>
+                {FEATURES.driver && (
+                  <LinkButton href="/driver" variant="ghost" size="sm">
+                    {t('trip_g_driver')}
+                  </LinkButton>
+                )}
                 <LinkButton href="/itineraries" variant="ghost" size="sm">
                   {t('trip_more_itin')}
                 </LinkButton>

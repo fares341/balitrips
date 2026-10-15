@@ -27,6 +27,7 @@ import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { PackageSummary } from '@/lib/content/types'
+import { FEATURES } from '@/lib/features'
 
 export type PackageCardProps = {
   pkg: PackageSummary
@@ -65,7 +66,14 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
           items={[
             { icon: 'cal', label: t('c_days_n', { n: pkg.days }) },
             { icon: 'users', label: t('bt_up_to_people', { n: pkg.maxGuests }) },
-            { icon: 'car', label: t(pkg.driverIncluded ? 'bt_driver_included' : 'bt_no_driver') },
+            ...(FEATURES.driver
+              ? [
+                  {
+                    icon: 'car' as const,
+                    label: t(pkg.driverIncluded ? 'bt_driver_included' : 'bt_no_driver'),
+                  },
+                ]
+              : []),
           ]}
         />
         {blurb !== null && <CardText>{blurb}</CardText>}

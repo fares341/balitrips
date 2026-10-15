@@ -43,6 +43,7 @@ import {
 } from '@/lib/cart'
 import { pick } from '@/lib/content/localize'
 import { splitPhone } from '@/lib/orders/contact'
+import { FEATURES } from '@/lib/features'
 
 import { toLocale } from '../_seo-hreflang'
 import { beginSignInAction } from './actions'
@@ -64,6 +65,18 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
     description: t('chk_sub'),
     robots: { index: false, follow: false },
   }
+}
+
+/** The fleet's day rates, for the driver suggestion shown before payment. */
+async function loadDriverRates() {
+  return db
+    .select({
+      vehicleClass: driverVehicles.vehicleClass,
+      dayRateMinor: driverVehicles.dayRateMinor,
+      currency: driverVehicles.currency,
+      label: driverVehicles.label,
+    })
+    .from(driverVehicles)
 }
 
 export default async function CheckoutPage({ params }: { params: PageParams }) {
@@ -169,14 +182,10 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
   }
 
   // ---- Driver suggestion (activities but no driver) ----
-  const rates = await db
-    .select({
-      vehicleClass: driverVehicles.vehicleClass,
-      dayRateMinor: driverVehicles.dayRateMinor,
-      currency: driverVehicles.currency,
-      label: driverVehicles.label,
-    })
-    .from(driverVehicles)
+  // None while the driver service is off (lib/features.ts).
+  const rates: Awaited<ReturnType<typeof loadDriverRates>> = FEATURES.driver
+    ? await loadDriverRates()
+    : []
   const sameCurrency = rates.filter((rate) => rate.currency === cart.currency)
   const driverOffers: DriverOffer[] = driverSuggestions(
     lines,

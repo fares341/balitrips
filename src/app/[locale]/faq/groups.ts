@@ -2,7 +2,12 @@
  * The FAQ page's questions: topic heading key, then question/answer message
  * keys. Shared with the website assistant (`site_info` tool), so the answers
  * it gives are the exact wording on /faq.
+ *
+ * The driver group is listed only while the driver service is on
+ * (lib/features.ts).
  */
+import { FEATURES } from '@/lib/features'
+
 export const FAQ_GROUPS: readonly { title: string; items: readonly { q: string; a: string }[] }[] =
   [
     {
@@ -34,4 +39,4 @@ export const FAQ_GROUPS: readonly { title: string; items: readonly { q: string; 
       title: 'faq_g_help',
       items: [{ q: 'home_faq5_q', a: 'home_faq5_a' }],
     },
-  ]
+  ].filter((group) => FEATURES.driver || group.title !== 'faq_g_driver')

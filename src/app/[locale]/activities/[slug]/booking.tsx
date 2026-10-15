@@ -29,6 +29,7 @@ import { Icon } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import { Link, useRouter } from '@/i18n/routing'
 import { isWithinLeadTime, todayInBali, type VehicleClass } from '@/lib/booking-rules'
+import { FEATURES } from '@/lib/features'
 import {
   addonState,
   driverDays,
@@ -279,7 +280,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const vehicle = data.vehicles.find(
     (v) => v.vehicleClass === price.vehicleClass && v.currency === data.currency,
   )
-  const driverAvailable = vehicle !== undefined
+  // No driver step or suggestion while the service is off (lib/features.ts).
+  const driverAvailable = FEATURES.driver && vehicle !== undefined
 
   const money = (minor: number) => formatPrice(minor, data.currency, locale)
 

@@ -13,6 +13,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { bookingsOpen } from '@/lib/bookings-open'
+import { FEATURES } from '@/lib/features'
 import {
   addActivityBooking,
   getBookingForEdit,
@@ -79,7 +80,8 @@ function parse(input: unknown): BookActivityRequest | null {
     time,
     people,
     addons,
-    driver: v.driver === true,
+    // No driver while the service is switched off (lib/features.ts).
+    driver: FEATURES.driver && v.driver === true,
     replaceItemId:
       typeof v.replaceItemId === 'string' && UUID.test(v.replaceItemId) ? v.replaceItemId : null,
   }

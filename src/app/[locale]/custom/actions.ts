@@ -43,6 +43,7 @@ import { defaultLocale, isLocale } from '@/i18n/config'
 import { redirect } from '@/i18n/routing'
 import { BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
 import { addItem, CartRejectedError } from '@/lib/cart'
+import { FEATURES } from '@/lib/features'
 import {
   daysBetweenInclusive,
   isPastInBali,
@@ -119,7 +120,7 @@ export async function submitCustomTrip(
     budgetTier: formData.get('budgetTier') ?? '',
     interests: formData.getAll('interests').map(String),
     // A checkbox that is off is simply absent from the payload.
-    wantsDriver: formData.get('wantsDriver') !== null,
+    wantsDriver: FEATURES.driver && formData.get('wantsDriver') !== null,
     hasChildren: formData.get('hasChildren') !== null,
     wantsVipMap: formData.get('wantsVipMap') !== null,
     wantsLuxuryDining: formData.get('wantsLuxuryDining') !== null,

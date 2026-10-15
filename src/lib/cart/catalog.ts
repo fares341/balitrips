@@ -45,6 +45,7 @@ import {
 } from '@/lib/orders/custom-request'
 import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
+import { FEATURES } from '@/lib/features'
 
 const PUBLISHED = 'published'
 
@@ -350,7 +351,8 @@ export async function loadCartCatalog(
       name: row.label,
       imageUrl: null,
       imageAlt: null,
-      href: '/driver',
+      // No link while the driver page is switched off (lib/features.ts).
+      href: FEATURES.driver ? '/driver' : null,
       // Quantity for a driver line is days, derived from the date range.
       maxQuantity: null,
     })

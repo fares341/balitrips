@@ -45,6 +45,7 @@ import {
   type EntitlementSet,
   type FullMapPlace,
 } from '@/lib/entitlements/redaction'
+import { FEATURES } from '@/lib/features'
 import { formatMoney } from '@/lib/money'
 import type { PlaceSearchInput, PlaceSearchResult } from '@/lib/search/places'
 
@@ -680,7 +681,7 @@ async function priceBooking(args: BookingArgs, ctx: PublicCtx) {
     time: args.time ?? null,
     people: args.people,
     addons: args.addons ?? [],
-    driver: args.driver === true,
+    driver: FEATURES.driver && args.driver === true,
   }
   const quote = await ctx.deps.quote(draft)
   if (!quote.ok) {
@@ -919,7 +920,7 @@ const proposeCustomTool = tool({
       budget: args.budgetTier,
       interests: label(interests, categories),
       areas: label(areas, regions),
-      driver: args.wantsDriver === true,
+      driver: FEATURES.driver && args.wantsDriver === true,
       notes: args.notes ?? null,
     }
     const id = await ctx.deps.createAction({
@@ -948,7 +949,8 @@ export const PUBLIC_TOOLS: readonly Tool[] = [
   taxonomyTool,
   searchPlacesTool,
   getPlaceTool,
-  driversTool,
+  // Hidden while the driver service is switched off (lib/features.ts).
+  ...(FEATURES.driver ? [driversTool] : []),
   siteInfoTool,
   quoteTool,
   myTripTool,

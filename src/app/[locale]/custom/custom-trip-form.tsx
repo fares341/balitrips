@@ -36,6 +36,7 @@ import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { useRouter } from '@/i18n/routing'
 import { BUDGET_TIER_LABEL, BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
+import { FEATURES } from '@/lib/features'
 
 import { submitCustomTrip } from './actions'
 import {
@@ -102,7 +103,7 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
   const [selected, setSelected] = useState<string[]>(() =>
     interests.filter((one) => defaultInterests.includes(one.key)).map((one) => one.key),
   )
-  const [wantsDriver, setWantsDriver] = useState(true)
+  const [wantsDriver, setWantsDriver] = useState(FEATURES.driver)
   const [pickedAreas, setPickedAreas] = useState<string[]>([])
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
@@ -385,30 +386,32 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
         </div>
       )}
 
-      {/* ---------------- driver ---------------- */}
-      <div>
-        <button
-          type="button"
-          className={wantsDriver ? 'bt-toggle on' : 'bt-toggle'}
-          aria-pressed={wantsDriver}
-          style={{ maxWidth: 420 }}
-          onClick={() => setWantsDriver((previous) => !previous)}
-        >
-          <span className="bt-toggle-sw" aria-hidden="true" />
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 14,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
+      {/* ---------------- driver (only while the service is on, lib/features.ts) ---------------- */}
+      {FEATURES.driver && (
+        <div>
+          <button
+            type="button"
+            className={wantsDriver ? 'bt-toggle on' : 'bt-toggle'}
+            aria-pressed={wantsDriver}
+            style={{ maxWidth: 420 }}
+            onClick={() => setWantsDriver((previous) => !previous)}
           >
-            <Icon name="car" size={16} color="var(--forest)" /> {t('cp_driver')}
-          </span>
-        </button>
-        {wantsDriver && <input type="hidden" name="wantsDriver" value="on" />}
-      </div>
+            <span className="bt-toggle-sw" aria-hidden="true" />
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <Icon name="car" size={16} color="var(--forest)" /> {t('cp_driver')}
+            </span>
+          </button>
+          {wantsDriver && <input type="hidden" name="wantsDriver" value="on" />}
+        </div>
+      )}
 
       {/* ---------------- children / VIP map ---------------- */}
       <div className="row" style={{ gap: 18, flexWrap: 'wrap' }}>
@@ -509,7 +512,9 @@ function Proposal({
         [t('cp_theme'), t(themeLabelKey(answers.theme))],
         [t('cp_budget'), t(BUDGET_TIER_LABEL[answers.budgetTier])],
         [t('cp_acts'), answers.interests.map(labelFor).join(', ')],
-        [t('cp_driver'), answers.wantsDriver ? t('c_yes') : t('c_no')],
+        ...(FEATURES.driver
+          ? [[t('cp_driver'), answers.wantsDriver ? t('c_yes') : t('c_no')] as [string, string]]
+          : []),
         [t('cp_notes'), answers.notes === '' ? '—' : answers.notes],
       ],
     }),
