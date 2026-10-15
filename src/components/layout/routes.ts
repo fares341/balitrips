@@ -118,6 +118,7 @@ export const POLICY_ROUTES: readonly NavRoute[] = [
 export const INFO_ROUTES: readonly NavRoute[] = [
   { href: '/faq', key: 'faq_title' },
   { href: '/contact', key: 'navr_contact' },
+  { href: '/help', key: 'hp_nav' },
 ]
 
 export const HOME_HREF = '/'

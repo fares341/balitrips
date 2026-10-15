@@ -30,6 +30,7 @@ import { Breadcrumbs, LinkButton } from '@/components/shared'
 import { POLICY_ROUTES } from '@/components/layout/routes'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
+import { Link } from '@/i18n/routing'
 
 import { alternatesFor } from '../_seo-hreflang'
 
@@ -165,79 +166,97 @@ export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale 
 
   return (
     <main className="bt-detailwrap">
-      <div className="wrap" style={{ maxWidth: 820 }}>
+      <div className="wrap">
         <Breadcrumbs
           label={t('c_breadcrumb')}
           trail={[{ label: t('c_home'), href: '/' }, { label: title }]}
         />
+        <div className="pol-lay">
+          {/* The policies side by side (v3 policy.html), the current one filled */}
+          <nav className="pol-nav" aria-label={t('pol_eyebrow')}>
+            {POLICY_ROUTES.map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                aria-current={route.key === copy.titleKey ? 'page' : undefined}
+              >
+                {t(route.key)}
+              </Link>
+            ))}
+          </nav>
+          <div className="pol-body">
+            <div className="eyebrow" style={{ marginTop: 18 }}>
+              <span
+                aria-hidden="true"
+                style={{ width: 18, height: 2, background: 'var(--orange)', borderRadius: 2 }}
+              />
+              {t('pol_eyebrow')}
+            </div>
 
-        <div className="eyebrow" style={{ marginTop: 18 }}>
-          <span
-            aria-hidden="true"
-            style={{ width: 18, height: 2, background: 'var(--orange)', borderRadius: 2 }}
-          />
-          {t('pol_eyebrow')}
-        </div>
+            <h1 style={{ fontSize: 'clamp(28px,5vw,44px)', marginTop: 14 }}>{title}</h1>
 
-        <h1 style={{ fontSize: 'clamp(28px,5vw,44px)', marginTop: 14 }}>{title}</h1>
+            <p className="lede" style={{ marginTop: 16 }}>
+              {t(copy.subKey)}
+            </p>
 
-        <p className="lede" style={{ marginTop: 16 }}>
-          {t(copy.subKey)}
-        </p>
+            <p className="muted" style={{ fontSize: 13.5, fontWeight: 600, marginTop: 16 }}>
+              {t('pol_updated')}:{' '}
+              <time dateTime={copy.updated}>
+                {format.dateTime(updatedAt, { dateStyle: 'long', timeZone: 'UTC' })}
+              </time>
+            </p>
 
-        <p className="muted" style={{ fontSize: 13.5, fontWeight: 600, marginTop: 16 }}>
-          {t('pol_updated')}:{' '}
-          <time dateTime={copy.updated}>
-            {format.dateTime(updatedAt, { dateStyle: 'long', timeZone: 'UTC' })}
-          </time>
-        </p>
-
-        {/*
+            {/*
           The placeholder marker. A `note` landmark with its own heading, so it
           is reachable and announced as a distinct block rather than read as
           part of the policy it is standing in for.
         */}
-        <div
-          role="note"
-          aria-labelledby="policy-placeholder"
-          className="card card-pad"
-          style={{ marginTop: 28, borderColor: 'var(--orange)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span className="bt-vm-ic" style={{ background: 'rgba(255,144,0,0.16)' }}>
-              <Icon name="shield" size={18} color="var(--orange-deep)" />
-            </span>
-            <h2 id="policy-placeholder" style={{ fontSize: 17 }}>
-              {t('pol_placeholder_t')}
-            </h2>
-          </div>
-          <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-            {t('pol_placeholder_b')}
-          </p>
-        </div>
-
-        {copy.sections !== undefined ? (
-          <div className="bt-article-body">
-            {copy.sections.map((section, index) => (
-              <div key={section.titleKey}>
-                <h2 id={`policy-s${index + 1}`} style={{ fontSize: 21, marginBottom: 10 }}>
-                  {index + 1}. {t(section.titleKey)}
+            <div
+              role="note"
+              aria-labelledby="policy-placeholder"
+              className="card card-pad"
+              style={{ marginTop: 28, borderColor: 'var(--orange)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                <span className="bt-vm-ic" style={{ background: 'rgba(255,144,0,0.16)' }}>
+                  <Icon name="shield" size={18} color="var(--orange-deep)" />
+                </span>
+                <h2 id="policy-placeholder" style={{ fontSize: 17 }}>
+                  {t('pol_placeholder_t')}
                 </h2>
-                <p>{t(section.bodyKey)}</p>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bt-article-body">
-            <h2 style={{ fontSize: 21, marginBottom: 14 }}>{t('pol_scope')}</h2>
-            <p>{t(copy.scopeKey)}</p>
-            <p>{t('pol_help')}</p>
-          </div>
-        )}
+              <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+                {t('pol_placeholder_b')}
+              </p>
+            </div>
 
-        <LinkButton href="/contact" variant="forest">
-          {t('navr_contact')} <Icon name="arrow" size={17} color="#fff" className="flip" />
-        </LinkButton>
+            {copy.sections !== undefined ? (
+              <div className="bt-article-body">
+                {copy.sections.map((section, index) => (
+                  <div key={section.titleKey}>
+                    <h2 id={`policy-s${index + 1}`} style={{ fontSize: 21, marginBottom: 10 }}>
+                      {index + 1}. {t(section.titleKey)}
+                    </h2>
+                    <p>{t(section.bodyKey)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bt-article-body">
+                <h2 style={{ fontSize: 21, marginBottom: 14 }}>{t('pol_scope')}</h2>
+                <p>{t(copy.scopeKey)}</p>
+                <p>{t('pol_help')}</p>
+              </div>
+            )}
+
+            <div className="panel row between pol-ask">
+              <b style={{ color: 'var(--forest)' }}>{t('pol4_ask')}</b>
+              <LinkButton href="/contact" variant="ghost" size="sm">
+                {t('navr_contact')}
+              </LinkButton>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   )
