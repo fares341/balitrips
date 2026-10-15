@@ -126,7 +126,7 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
             {SERVICES.map((service, index) => (
               <li key={service.key}>
                 <Link href={service.href} className="sv-card">
-                  <span className="m">
+                  <div className="m">
                     {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
                     <img src={service.image} alt="" loading={index < 3 ? 'eager' : 'lazy'} />
                     {service.signature === true && (
@@ -135,14 +135,14 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
                     <span className="ic" aria-hidden="true">
                       <Icon name={service.icon} size={26} />
                     </span>
-                  </span>
-                  <span className="b">
+                  </div>
+                  <div className="b">
                     <h2>{t(`sv4_${service.key}_t`)}</h2>
                     <span className="muted">{t(`sv4_${service.key}_d`)}</span>
                     <span className="btn btn-forest btn-sm">
                       {t(`sv4_${service.key}_go`)} <Icon name="arrow" size={16} className="flip" />
                     </span>
-                  </span>
+                  </div>
                 </Link>
               </li>
             ))}

@@ -155,7 +155,10 @@ export default async function ActivitiesPage({ params, searchParams }: PageProps
 
       <ActivitiesExplorer
         activities={activities}
-        categories={categories.map((c) => ({ key: c.key, label: pick(c.label, lang, c.key) }))}
+        // The taxonomy's own "all" row is a list sentinel; the explorer adds its own chip.
+        categories={categories
+          .filter((c) => c.key !== 'all')
+          .map((c) => ({ key: c.key, label: pick(c.label, lang, c.key) }))}
         regions={regions}
         initial={initial}
       />

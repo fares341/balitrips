@@ -95,6 +95,8 @@ export default async function ItinerariesPage({
   ])
 
   const banner = itineraries[0]?.hero ?? null
+  /** The package's banner photo when no itinerary has one. */
+  const bannerSrc = banner?.url ?? '/brand/flatlay.jpg'
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)
@@ -132,7 +134,7 @@ export default async function ItinerariesPage({
     <main>
       <div className="bt-banner">
         <Photo
-          src={banner?.url}
+          src={bannerSrc}
           alt=""
           priority
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
@@ -176,32 +178,42 @@ export default async function ItinerariesPage({
           {itineraries.length > 0 && (
             <div className="panel it-filter">
               {dayOptions.length > 1 && (
-                <ChipRow scroll label={t('it_f_days')}>
-                  <ChipLink href={hrefWith({ days: null })} active={days === null}>
+                <div className="it-frow">
+                  <span className="label" aria-hidden="true">
+                    {t('it_f_days')}
+                  </span>
+                  <ChipRow scroll label={t('it_f_days')}>
+                    <ChipLink href={hrefWith({ days: null })} active={days === null}>
+                      {t('it_f_all')}
+                    </ChipLink>
+                    {dayOptions.map((n) => (
+                      <ChipLink key={n} href={hrefWith({ days: n })} active={days === n}>
+                        {t('c_days_n', { n })}
+                      </ChipLink>
+                    ))}
+                  </ChipRow>
+                </div>
+              )}
+              <div className="it-frow">
+                <span className="label" aria-hidden="true">
+                  {t('it_f_budget')}
+                </span>
+                <ChipRow scroll label={t('ct_budget')}>
+                  <ChipLink href={hrefWith({ budget: null })} active={tier === null}>
                     {t('bud_all')}
                   </ChipLink>
-                  {dayOptions.map((n) => (
-                    <ChipLink key={n} href={hrefWith({ days: n })} active={days === n}>
-                      {t('c_days_n', { n })}
+                  {BUDGET_TIERS.filter((key) => counts[key] > 0).map((key) => (
+                    <ChipLink
+                      key={key}
+                      href={hrefWith({ budget: key })}
+                      active={tier === key}
+                      count={counts[key]}
+                    >
+                      {t(BUDGET_TIER_LABEL[key])}
                     </ChipLink>
                   ))}
                 </ChipRow>
-              )}
-              <ChipRow scroll label={t('ct_budget')}>
-                <ChipLink href={hrefWith({ budget: null })} active={tier === null}>
-                  {t('bud_all')}
-                </ChipLink>
-                {BUDGET_TIERS.filter((key) => counts[key] > 0).map((key) => (
-                  <ChipLink
-                    key={key}
-                    href={hrefWith({ budget: key })}
-                    active={tier === key}
-                    count={counts[key]}
-                  >
-                    {t(BUDGET_TIER_LABEL[key])}
-                  </ChipLink>
-                ))}
-              </ChipRow>
+              </div>
             </div>
           )}
           <p className="muted it-count">{t('it_count', { n: shown.length })}</p>

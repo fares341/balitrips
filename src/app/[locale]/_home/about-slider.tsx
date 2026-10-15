@@ -31,7 +31,7 @@ function Column({ images, direction }: { images: readonly string[]; direction: '
       <div className="mq-track">
         {track.map((src, index) => (
           // eslint-disable-next-line @next/next/no-img-element -- fixed brand photos in a CSS marquee
-          <img key={`${src}-${index}`} src={src} alt="" loading="lazy" decoding="async" />
+          <img key={`${src}-${index}`} src={src} alt="" decoding="async" />
         ))}
       </div>
     </div>

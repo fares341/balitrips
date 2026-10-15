@@ -86,6 +86,8 @@ export default async function PackagesPage({
   ])
 
   const banner = packages[0]?.hero ?? null
+  /** The package's banner photo when no package has one. */
+  const bannerSrc = banner?.url ?? '/brand/green-dress.jpg'
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)
@@ -100,7 +102,7 @@ export default async function PackagesPage({
     <main>
       <div className="bt-banner">
         <Photo
-          src={banner?.url}
+          src={bannerSrc}
           alt=""
           priority
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
