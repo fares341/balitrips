@@ -96,7 +96,7 @@ const section: Section = {
     'assistant.studio_enabled': 'Studio assistant on',
     'assistant.model': 'Model id',
     'assistant.model_hint':
-      'OpenRouter id, e.g. deepseek/deepseek-v4.1-flash. Empty = the server default ({model}).',
+      'OpenRouter id, e.g. google/gemini-2.5-flash. Empty = the server default ({model}).',
     'assistant.fallback': 'Fallback model id',
     'assistant.fallback_hint': 'Used when the first model is down. Empty = {model}.',
     'assistant.daily_ip': 'Messages per visitor (IP) per day',
@@ -201,7 +201,7 @@ const section: Section = {
     'assistant.studio_enabled': 'تشغيل مساعد الاستوديو',
     'assistant.model': 'معرّف النموذج',
     'assistant.model_hint':
-      'معرّف OpenRouter، مثل deepseek/deepseek-v4.1-flash. فارغ = افتراضي الخادم ({model}).',
+      'معرّف OpenRouter، مثل google/gemini-2.5-flash. فارغ = افتراضي الخادم ({model}).',
     'assistant.fallback': 'معرّف النموذج البديل',
     'assistant.fallback_hint': 'يُستخدم عند تعطّل النموذج الأول. فارغ = {model}.',
     'assistant.daily_ip': 'الرسائل لكل زائر (IP) يومياً',

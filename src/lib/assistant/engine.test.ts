@@ -8,7 +8,7 @@ import { buildRequestBody } from './openrouter'
 const runtime: AssistantRuntime = {
   apiKey: 'sk-or-test-key',
   baseUrl: 'https://openrouter.test/api/v1',
-  models: ['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna'],
+  models: ['google/gemini-2.5-flash', 'openai/gpt-6-luna'],
   siteUrl: 'https://balitrips.co',
   settings: {
     publicEnabled: true,
@@ -35,7 +35,7 @@ function sse(chunks: string[]): Response {
 }
 
 const delta = (d: Record<string, unknown>) =>
-  JSON.stringify({ model: 'deepseek/deepseek-v4.1-flash', choices: [{ delta: d }] })
+  JSON.stringify({ model: 'google/gemini-2.5-flash', choices: [{ delta: d }] })
 
 interface Ctx {
   userId: string
@@ -99,7 +99,7 @@ describe('runAgent', () => {
     expect(result.text).toBe('Let me check. \n\nYou are user-7.')
     expect(result.tools).toEqual(['whoami'])
     expect(result.usage.tokensIn).toBe(250)
-    expect(result.usage.costMicros).toBe(10 + Math.round(150 * 0.1 + 5 * 0.89))
+    expect(result.usage.costMicros).toBe(10 + Math.round(150 * 0.3 + 5 * 2.5))
     expect(events.filter((e) => e.t === 'tool')).toEqual([{ t: 'tool', name: 'whoami' }])
 
     // The request: both models, no data collection, caps, attribution, key in the header only.
@@ -109,7 +109,7 @@ describe('runAgent', () => {
     expect(headers['HTTP-Referer']).toBe('https://balitrips.co')
     expect(headers['X-Title']).toBe('Bali Trips')
     const first = JSON.parse(String(requests[0]?.init.body))
-    expect(first.models).toEqual(['deepseek/deepseek-v4.1-flash', 'openai/gpt-6-luna'])
+    expect(first.models).toEqual(['google/gemini-2.5-flash', 'openai/gpt-6-luna'])
     expect(first.provider).toEqual({ data_collection: 'deny' })
     expect(first.max_tokens).toBe(300)
     expect(first.stream).toBe(true)

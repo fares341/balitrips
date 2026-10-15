@@ -3,13 +3,14 @@
  *
  * OpenRouter reports the real cost when asked (`usage: { include: true }`);
  * that number is used whenever it is present. Without it the spend is
- * estimated from the token counts at deliberately high prices (the fallback
- * model's input price, the primary's output price), so the daily budget trips
- * early rather than late.
+ * estimated from the token counts at the higher of the two default models'
+ * prices (google/gemini-2.5-flash: $0.30 in / $2.50 out per million tokens;
+ * openai/gpt-6-luna: $0.10 / $0.50), so the daily budget trips early rather
+ * than late.
  */
 
 /** USD per million tokens, for the estimate only. */
-export const ESTIMATE_PRICE = { inPerM: 0.1, outPerM: 0.89 }
+export const ESTIMATE_PRICE = { inPerM: 0.3, outPerM: 2.5 }
 
 export function costMicros(usage: {
   promptTokens: number

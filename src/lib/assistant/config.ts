@@ -11,7 +11,7 @@
 import { readSetting, type AssistantSetting } from '@/app/(admin)/_lib/settings'
 
 /** Shipped defaults (2026-10): fast, cheap, tool-capable. */
-export const DEFAULT_MODEL = 'deepseek/deepseek-v4.1-flash'
+export const DEFAULT_MODEL = 'google/gemini-2.5-flash'
 export const DEFAULT_FALLBACK_MODEL = 'openai/gpt-6-luna'
 export const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1'
 

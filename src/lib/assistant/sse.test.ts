@@ -54,14 +54,14 @@ describe('SseParser', () => {
 
 describe('CompletionAccumulator', () => {
   const chunk = (delta: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
-    JSON.stringify({ model: 'deepseek/deepseek-v4.1-flash', choices: [{ delta }], ...extra })
+    JSON.stringify({ model: 'google/gemini-2.5-flash', choices: [{ delta }], ...extra })
 
   it('returns text deltas and accumulates the text', () => {
     const acc = new CompletionAccumulator()
     expect(acc.push(chunk({ content: 'Sel' }))).toBe('Sel')
     expect(acc.push(chunk({ content: 'amat' }))).toBe('amat')
     expect(acc.text).toBe('Selamat')
-    expect(acc.model).toBe('deepseek/deepseek-v4.1-flash')
+    expect(acc.model).toBe('google/gemini-2.5-flash')
   })
 
   it('assembles tool calls whose arguments arrive in fragments, in index order', () => {
