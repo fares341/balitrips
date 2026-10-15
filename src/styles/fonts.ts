@@ -1,4 +1,4 @@
-import { Almarai, Plus_Jakarta_Sans } from 'next/font/google'
+import localFont from 'next/font/local'
 
 /**
  * Two families, chosen as a pair.
@@ -13,12 +13,17 @@ import { Almarai, Plus_Jakarta_Sans } from 'next/font/google'
  * prices and brand names everywhere (also inside Arabic text), and every
  * Arabic character falls through to the Arabic face. The two weights line up
  * (400 body, 600 headings, 700 emphasis) so mixed lines look like one face.
- * next/font self-hosts and preloads both — no third-party request.
+ *
+ * Both faces are bundled in src/styles/fonts/ (OFL licences alongside) and
+ * loaded with next/font/local, so the build never downloads anything from
+ * Google: the server build cannot fail or fall back to a system font because
+ * fonts.googleapis.com is slow or unreachable.
  */
-export const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['300', '400', '500', '600', '700', '800'],
-  style: ['normal', 'italic'],
+export const jakarta = localFont({
+  src: [
+    { path: './fonts/plus-jakarta-sans.woff', weight: '200 800', style: 'normal' },
+    { path: './fonts/plus-jakarta-sans-italic.woff', weight: '200 800', style: 'italic' },
+  ],
   variable: '--font-latin',
   display: 'swap',
 })
@@ -31,11 +36,16 @@ export const jakarta = Plus_Jakarta_Sans({
  * `--f-ar` / `--f-en`). To change the face, replace its loader and keep
  * `variable: '--font-arabic'`.
  */
-export const arabicFont = Almarai({
-  subsets: ['arabic'],
-  weight: ['300', '400', '700', '800'],
+export const arabicFont = localFont({
+  src: [
+    { path: './fonts/almarai-300.woff', weight: '300', style: 'normal' },
+    { path: './fonts/almarai-400.woff', weight: '400', style: 'normal' },
+    { path: './fonts/almarai-700.woff', weight: '700', style: 'normal' },
+    { path: './fonts/almarai-800.woff', weight: '800', style: 'normal' },
+  ],
   variable: '--font-arabic',
   display: 'swap',
+  fallback: ['Tahoma', 'Arial', 'sans-serif'],
 })
 
 export const fontVariables = [jakarta.variable, arabicFont.variable].join(' ')

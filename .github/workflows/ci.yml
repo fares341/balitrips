@@ -131,13 +131,21 @@ jobs:
           done
           tail -25 build.log | while IFS= read -r line; do echo "::warning::${line:0:900}"; done
 
-      - uses: docker/setup-buildx-action@v3
+      # Same command the server runs (deploy/start-production.sh): the image
+      # build prerenders pages, so it reaches the CI Postgres via the host network.
+      - name: Build production image (as on the server)
+        shell: bash
+        run: |
+          set -o pipefail
+          DOCKER_BUILDKIT=1 docker build --network host --target runner -t bali-app:ci \
+            --build-arg "DATABASE_URL=$DATABASE_URL" \
+            --build-arg "NEXT_PUBLIC_SITE_URL=http://localhost:3000" . 2>&1 | tee docker-build.log
 
-      - name: Build production image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          target: runner
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Report image build errors
+        if: failure()
+        shell: bash
+        run: |
+          [ -f docker-build.log ] || exit 0
+          grep -nE "Error|error|Failed|failed|Cannot|not found" docker-build.log | tail -40 | while IFS= read -r line; do
+            echo "::error::${line:0:900}"
+          done
