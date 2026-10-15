@@ -2893,3 +2893,99 @@ html {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ---------- Packages listing (v3 packages.html) ---------- */
+.pk-intro-sec {
+  padding-block-end: 0;
+}
+.pk-intro {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr;
+  list-style: none;
+  margin-block: 0;
+}
+.pk-intro > li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--sh-1);
+  font-size: 14px;
+}
+.pk-intro b {
+  color: var(--forest);
+  font-size: 15px;
+}
+.pk-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+@media (min-width: 760px) {
+  .pk-intro {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1200px) {
+  .pk-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Itineraries listing (v3 itineraries.html) ---------- */
+.it-feat-sec {
+  padding-block-end: 0;
+}
+.it-feat {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin-block: 0;
+}
+.it-feat > li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--sh-1);
+  font-size: 13.5px;
+  min-width: 0;
+}
+.it-feat .ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--palm-soft);
+  color: var(--forest);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.it-feat b {
+  display: block;
+  color: var(--forest);
+  font-size: 14.5px;
+}
+.it-filter {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+.it-count {
+  margin: 0;
+}
+.it-custom {
+  gap: 16px;
+  padding: 24px;
+}
+@media (min-width: 900px) {
+  .it-feat {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

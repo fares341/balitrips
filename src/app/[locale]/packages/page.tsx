@@ -14,15 +14,19 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { TierFilter } from '@/components/bt/tier-filter'
-import { PackageCompact } from '@/components/cards'
+import { formatPrice } from '@/components/bt/card'
+import { PackageCard } from '@/components/cards'
 import { HOME_HREF } from '@/components/layout'
-import { Breadcrumbs } from '@/components/shared'
+import { Breadcrumbs, LinkButton } from '@/components/shared'
 import { Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { BUDGET_TIERS, parseBudgetTier, tierForPrice, type BudgetTier } from '@/lib/budget-tier'
 import { listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS, type PackageSummary } from '@/lib/content/types'
+import { pick } from '@/lib/content/localize'
 import { alternates } from './_meta'
+
+import '@/styles/bt-activity.css'
 
 const HREF = ENTITY_PATHS.package
 
@@ -118,6 +122,18 @@ export default async function PackagesPage({
         </div>
       </div>
 
+      {/* Package vs itinerary, fixed group price, start date (v3 packages.html) */}
+      <section className="sec-tight pk-intro-sec">
+        <ul className="wrap pk-intro" role="list">
+          {(['pk_i1', 'pk_i2', 'pk_i3'] as const).map((key) => (
+            <li key={key}>
+              <b>{t(`${key}_t`)}</b>
+              <span className="muted">{t(`${key}_b`)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section className="bg-ivory sec-tight">
         <div className="wrap stack" style={{ gap: 16 }}>
           {packages.length > 0 && (
@@ -126,10 +142,69 @@ export default async function PackagesPage({
           {shown.length === 0 ? (
             <p className="muted center">{t('ah_none')}</p>
           ) : (
-            <div className="cc-grid cc-g4">
+            <div className="grid pk-grid">
               {shown.map((pkg, index) => (
-                <PackageCompact key={pkg.id} pkg={pkg} priority={index < PRIORITY_CARDS} />
+                <PackageCard key={pkg.id} pkg={pkg} priority={index < PRIORITY_CARDS} />
               ))}
+            </div>
+          )}
+
+          {/* Compare packages (v3 packages.html) — real figures only */}
+          {shown.length > 1 && (
+            <div className="stack" style={{ gap: 12 }}>
+              <h2 className="h3">{t('pk_cmp_t')}</h2>
+              <div className="cmp-wrap">
+                <table className="cmp">
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        <span className="sr-only">{t('pk_cmp_t')}</span>
+                      </th>
+                      {shown.map((pkg) => (
+                        <th key={pkg.id} scope="col">
+                          {pick(pkg.name, locale, pkg.slug)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row">{t('pk_cmp_from')}</th>
+                      {shown.map((pkg) => (
+                        <td key={pkg.id}>
+                          <b dir="ltr">{formatPrice(pkg.priceMinor, pkg.currency, locale)}</b>
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <th scope="row">{t('pk_cmp_days')}</th>
+                      {shown.map((pkg) => (
+                        <td key={pkg.id} dir="ltr">
+                          {pkg.days}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <th scope="row">{t('pk_cmp_people')}</th>
+                      {shown.map((pkg) => (
+                        <td key={pkg.id} dir="ltr">
+                          {pkg.maxGuests}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td />
+                      {shown.map((pkg) => (
+                        <td key={pkg.id}>
+                          <LinkButton href={pkg.href} variant="forest" size="sm">
+                            {t('bt_details')}
+                          </LinkButton>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

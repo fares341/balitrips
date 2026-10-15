@@ -16,7 +16,7 @@ import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
 import { Button, EmptyState, LinkButton } from '@/components/bt'
 import { CardSkeleton } from '@/components/bt/states'
-import { ActivityCompact } from '@/components/cards/compact'
+import { ActivityCard } from '@/components/cards/activity-card'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import {
@@ -315,9 +315,7 @@ export function ActivitiesExplorer({
           </div>
 
           <div
-            className={
-              filters.view === 'list' ? 'cc-grid cc-list act-grid' : 'cc-grid cc-g4 act-grid'
-            }
+            className={filters.view === 'list' ? 'grid g3 act-grid list-view' : 'grid g3 act-grid'}
             aria-busy={pending || undefined}
           >
             {pending ? (
@@ -344,12 +342,7 @@ export function ActivitiesExplorer({
               />
             ) : (
               results.map((activity, index) => (
-                <ActivityCompact
-                  key={activity.id}
-                  activity={activity}
-                  layout={filters.view === 'list' ? 'row' : 'auto'}
-                  priority={index < 4}
-                />
+                <ActivityCard key={activity.id} activity={activity} priority={index < 3} />
               ))
             )}
           </div>
