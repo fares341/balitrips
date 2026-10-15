@@ -401,9 +401,22 @@ const pageErrors = []
   const placesShot = await shot(page, 'en-1440-places-answer')
   const locked = db('locked') ?? []
   const mockLog = existsSync(MOCK_LOG) ? readFileSync(MOCK_LOG, 'utf8') : ''
+  // Only what the model received during this places turn: every logged
+  // request also lists the tool names, and public activities may share a word
+  // with a locked place (e.g. "Sekumpul Waterfall Trek"), so whole lines would
+  // give false alarms.
   const placeLines = mockLog
     .split('\n')
-    .filter((l) => l.includes('"search_places"') || l.includes('"lockedCount"'))
+    .filter(Boolean)
+    .map((l) => {
+      try {
+        return JSON.parse(l)
+      } catch {
+        return null
+      }
+    })
+    .filter((e) => e && !e.studio && String(e.user).includes('hidden places'))
+    .map((e) => JSON.stringify(e.toolResults))
   const leaks = []
   for (const place of locked) {
     for (const name of [place.slug, ...place.names].filter((n) => n && n.length > 2)) {
@@ -413,8 +426,8 @@ const pageErrors = []
   }
   record(
     'locked places: none reach the model or the panel',
-    locked.length > 0 && leaks.length === 0,
-    `${locked.length} locked in DB; leaks: ${leaks.join(', ') || 'none'} | ${answer.slice(0, 200)}`,
+    locked.length > 0 && placeLines.length > 0 && leaks.length === 0,
+    `${locked.length} locked in DB; ${placeLines.length} model requests checked; leaks: ${leaks.join(', ') || 'none'} | ${answer.slice(0, 200)}`,
     placesShot,
   )
   record(
@@ -567,7 +580,19 @@ for (const width of [390, 1440]) {
       '',
       await shot(page, 'studio-390-assistant'),
     )
+    // The same page in English (Studio language cookie), at both widths.
+    await ctx.addCookies([{ name: 'studio_lang', value: 'en', url: BASE }])
+    await page.goto(`${BASE}${ADMIN}/assistant`, { waitUntil: 'networkidle', timeout: 60000 })
+    const enShot390 = await shot(page, 'studio-en-390-assistant')
     await page.setViewportSize({ width: 1440, height: 900 })
+    await page.waitForTimeout(500)
+    record(
+      'Studio en: assistant page in English (LTR)',
+      (await page.locator('html').getAttribute('dir')) !== 'rtl',
+      enShot390,
+      await shot(page, 'studio-en-1440-assistant'),
+    )
+    await ctx.addCookies([{ name: 'studio_lang', value: 'ar', url: BASE }])
   }
   await page.goto(`${BASE}${ADMIN}/assistant/conversations`, {
     waitUntil: 'networkidle',
@@ -579,7 +604,14 @@ for (const width of [390, 1440]) {
   const first = page.locator('.a-table tbody tr a').first()
   if (await first.isVisible().catch(() => false)) {
     await first.click()
-    await page.waitForLoadState('networkidle')
+    // Client-side navigation: wait for the detail page itself, not just idle.
+    await page
+      .waitForURL(/\/assistant\/conversations\/[0-9a-f-]{36}/, { timeout: 30000 })
+      .catch(() => {})
+    await page
+      .locator('.a-ai-convo')
+      .waitFor({ timeout: 30000 })
+      .catch(() => {})
     record(
       'Studio: a conversation opens',
       (await page.locator('.a-ai-convo .a-ai-msg').count()) > 0,
