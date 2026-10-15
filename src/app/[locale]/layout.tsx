@@ -7,6 +7,7 @@ import { hasLocale } from 'next-intl'
 import { Footer, Header, Tabbar } from '@/components/layout'
 import { PageViewBeacon } from '@/components/layout/page-view-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
+import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
@@ -28,6 +29,8 @@ import '@/styles/premium.css'
 import '@/styles/bt.css'
 // v3 home page sections (scoped to `.home-v3`), after bt.css.
 import '@/styles/bt-home.css'
+// Website assistant (floating button + chat panel).
+import '@/styles/bt-assistant.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -84,6 +87,7 @@ export default async function LocaleLayout({
             </div>
             <Footer />
             <WhatsAppFab />
+            <AssistantLauncher />
             <PageViewBeacon />
             {/* Mobile bottom tab bar. Must stay a direct child of <body>
                 (providers render no DOM): bt.css reserves its height with
