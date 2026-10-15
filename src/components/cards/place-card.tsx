@@ -24,7 +24,6 @@ import { FavButton } from '@/components/bt/fav-button'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
-import { entityHref } from '@/lib/content/types'
 import type { MapPlaceForClient } from '@/lib/entitlements/redaction'
 
 const PLANS_HREF = '/plans'
@@ -64,7 +63,8 @@ export function PlaceCard({ place, priority = false, showFree = true }: PlaceCar
   const category = pickOptional(place.category, locale)
   const description = pickOptional(place.description, locale)
   const area = pickOptional(place.regionLabel, locale)
-  const href = entityHref('place', place.slug)
+  // The card opens the place's own page (photos, details, its mini map).
+  const href = `/places/${encodeURIComponent(place.slug)}`
 
   return (
     <Card>
