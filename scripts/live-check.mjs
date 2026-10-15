@@ -60,7 +60,16 @@ for (const path of ['/ar', '/en', '/ar/map']) {
 }
 
 // Studio entry points: only the default paths (the real one is a server secret).
-for (const path of ['/studio', '/studio-8f2a', '/en/account', '/ar/account', '/api/admin-link']) {
+// `/en/account?signin=1` opening the dialog by itself shows the Studio
+// sign-in fix (d27107a) is deployed.
+for (const path of [
+  '/studio',
+  '/studio-8f2a',
+  '/en/account?signin=1',
+  '/ar/account',
+  '/api/admin-link',
+  '/api/health',
+]) {
   for (const [w, h] of [
     [1440, 900],
     [390, 844],
@@ -90,6 +99,7 @@ for (const path of ['/studio', '/studio-8f2a', '/en/account', '/ar/account', '/a
         title: document.title,
         h1: document.querySelector('h1')?.textContent?.trim().slice(0, 100) ?? '',
         text: document.body?.innerText?.slice(0, 200) ?? '',
+        signInDialogOpen: !!document.querySelector('input[autocomplete="current-password"]'),
         signInButton: [...document.querySelectorAll('main button')].some((b) =>
           /sign in|تسجيل الدخول|دخول|masuk/i.test(b.textContent ?? ''),
         ),
@@ -98,7 +108,7 @@ for (const path of ['/studio', '/studio-8f2a', '/en/account', '/ar/account', '/a
         `STUDIO ${path} ${w} status=${res?.status()} final=${page.url()} robots=${headers['x-robots-tag'] ?? ''} ` +
           `cache=${headers['cache-control'] ?? ''} csp=${headers['content-security-policy'] ?? ''} ${JSON.stringify(info)} errors=${JSON.stringify(errs)}`,
       )
-      await page.screenshot({ path: `${OUT}/studio${path.replace(/\//g, '_')}-${w}.png` })
+      await page.screenshot({ path: `${OUT}/studio${path.replace(/[/?=]/g, '_')}-${w}.png` })
     } catch (e) {
       log.push(
         `STUDIO ${path} ${w} ERROR ${e.message.split('\n')[0]} errors=${JSON.stringify(errs)}`,
