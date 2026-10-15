@@ -1,0 +1,40 @@
+# Manual: open the LIVE site in a real browser and report fonts/build info to the `live-check` branch.
+name: Live check
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Site URL
+        default: https://152-42-252-61.sslip.io
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Check
+        env:
+          LIVE_URL: ${{ inputs.url }}
+        run: node scripts/live-check.mjs
+      - name: Push results
+        if: always()
+        run: |
+          cd live
+          git init -q
+          git config user.name "live-check"
+          git config user.email "live-check@users.noreply.github.com"
+          git checkout -q -b live-check
+          git add -A
+          git commit -q -m "Live check ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" live-check
