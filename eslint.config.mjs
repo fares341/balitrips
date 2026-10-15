@@ -6,6 +6,7 @@ const config = [
   {
     ignores: [
       'design/**',
+      'design-reference/**',
       '.next/**',
       'node_modules/**',
       'drizzle/**',
