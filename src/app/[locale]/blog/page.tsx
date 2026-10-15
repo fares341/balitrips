@@ -31,17 +31,20 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ArticleCard } from '@/components/cards'
 import { Breadcrumbs } from '@/components/shared'
-import { Icon } from '@/components/ui'
+import { Icon, Photo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import type { Locale } from '@/i18n/config'
 import { articleRequirementsByIds } from '@/lib/content/extra-queries'
-import { pick } from '@/lib/content/localize'
+import { pick, pickOptional } from '@/lib/content/localize'
 import { listArticleCategories, listArticles } from '@/lib/content/queries'
 import type { EntitlementKind } from '@/lib/entitlements'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 
 const BLOG_HREF = '/blog'
+
+/** The hub's banner photo (v3 articles.html). */
+const BANNER_PHOTO = '/brand/polaroids.webp'
 
 /** How many articles the sidebar carries. Matches the handoff's `slice(0, 4)`. */
 const SIDEBAR_COUNT = 4
@@ -106,6 +109,12 @@ export default async function BlogPage({
         the white title clears contrast whatever sits behind it.
       */}
       <div className="bt-banner" style={{ background: 'var(--forest)' }}>
+        <Photo
+          src={BANNER_PHOTO}
+          alt=""
+          priority
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        />
         <div className="bt-banner-veil" />
         <div className="wrap bt-banner-inner">
           <Breadcrumbs
@@ -117,45 +126,47 @@ export default async function BlogPage({
             className="tag"
             style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
           >
-            {t('art_eyebrow')}
+            {t('bh4_eyebrow')}
           </span>
-          <h1 className="bt-banner-title">{t('bh_title')}</h1>
-          <p className="bt-banner-sub">{t('bh_sub')}</p>
+          <h1 className="bt-banner-title">{t('bh4_title')}</h1>
+          <p className="bt-banner-sub">{t('bh4_sub')}</p>
         </div>
       </div>
 
       <section className="bg-ivory">
-        <div className="wrap bt-blog-grid">
-          <div>
-            <Suspense fallback={<ResultsSkeleton label={t('c_loading')} />}>
-              <BlogResults locale={locale} searchParams={searchParams} />
-            </Suspense>
-          </div>
-
-          <aside className="bt-blog-side">
-            <div className="card card-pad">
-              {/*
-                The design labels this rail "Most read". There is no view
-                counter anywhere in the schema, so the list is recency-ordered
-                and is labelled as such — the same call already made for the
-                handoff's hard-coded "6 min" reading time. Labelling the newest
-                four as the most read is a claim the data cannot support.
-              */}
-              <h2 style={{ fontSize: 18, marginBottom: 14 }}>{t('bh_latest')}</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {sidebar.map((article) => (
-                  <Locked
-                    key={article.id}
-                    requirement={sidebarLocks.get(article.id)}
-                    labels={lockLabels}
-                    compact
-                  >
-                    <ArticleCard article={article} compact />
-                  </Locked>
-                ))}
-              </div>
-            </div>
-          </aside>
+        <div className="wrap stack" style={{ gap: 28 }}>
+          <Suspense fallback={<ResultsSkeleton label={t('c_loading')} />}>
+            <BlogResults
+              locale={locale}
+              searchParams={searchParams}
+              sidebar={
+                <aside className="bt-blog-side">
+                  <div className="card card-pad">
+                    {/*
+                      The design labels this rail "Most read". There is no view
+                      counter anywhere in the schema, so the list is
+                      recency-ordered and labelled as such — labelling the
+                      newest four as the most read is a claim the data cannot
+                      support.
+                    */}
+                    <h2 style={{ fontSize: 18, marginBottom: 14 }}>{t('bh_latest')}</h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {sidebar.map((article) => (
+                        <Locked
+                          key={article.id}
+                          requirement={sidebarLocks.get(article.id)}
+                          labels={lockLabels}
+                          compact
+                        >
+                          <ArticleCard article={article} compact />
+                        </Locked>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
+              }
+            />
+          </Suspense>
         </div>
       </section>
     </main>
@@ -215,7 +226,15 @@ function ResultsSkeleton({ label }: { label: string }) {
  * Split out so that awaiting `searchParams` happens inside a Suspense
  * boundary rather than at the top of the route.
  */
-async function BlogResults({ locale, searchParams }: { locale: Locale; searchParams: PageSearch }) {
+async function BlogResults({
+  locale,
+  searchParams,
+  sidebar,
+}: {
+  locale: Locale
+  searchParams: PageSearch
+  sidebar: ReactNode
+}) {
   const sp = await searchParams
   const q = firstParam(sp['q'])
   const categoryKey = firstParam(sp['cat'])
@@ -250,8 +269,34 @@ async function BlogResults({ locale, searchParams }: { locale: Locale; searchPar
     },
   })
 
+  // The newest article leads the unfiltered hub as the featured story (v3 articles.html).
+  const featured = q === null && activeKey === null ? articles[0] : undefined
+  const featuredTitle = featured ? pick(featured.title, locale, featured.slug) : ''
+  const featuredExcerpt = featured ? pickOptional(featured.excerpt, locale) : null
+
   return (
     <>
+      {featured !== undefined && (
+        <Link href={featured.href} className="feat-art">
+          <Photo
+            src={featured.hero?.url}
+            alt=""
+            priority
+            srcSetAvif={featured.hero?.srcSetAvif}
+            srcSetWebp={featured.hero?.srcSetWebp}
+            sizes="(min-width: 900px) 660px, 100vw"
+          />
+          <span className="c">
+            <span className="tag feat-tag">{t('bh4_featured')}</span>
+            <span className="h2 feat-t">{featuredTitle}</span>
+            {featuredExcerpt !== null && <span>{featuredExcerpt}</span>}
+            <span className="feat-go">
+              {t('art_read')} <Icon name="arrow" size={16} className="flip" />
+            </span>
+          </span>
+        </Link>
+      )}
+
       <div className="bt-blog-controls">
         <form
           method="get"
@@ -332,19 +377,25 @@ async function BlogResults({ locale, searchParams }: { locale: Locale; searchPar
         </div>
       </div>
 
-      {articles.length === 0 ? (
-        <div className="muted" style={{ padding: '40px 0', textAlign: 'center' }}>
-          {t('c_search_empty')}
+      <div className="bt-blog-grid">
+        <div className="stack" style={{ gap: 16 }}>
+          <h2 className="h3">{t('bh4_newest')}</h2>
+          {articles.length === 0 ? (
+            <div className="muted" style={{ padding: '40px 0', textAlign: 'center' }}>
+              {t('c_search_empty')}
+            </div>
+          ) : (
+            <div className="grid bt-grid-2">
+              {articles.map((article, index) => (
+                <Locked key={article.id} requirement={locks.get(article.id)} labels={lockLabels}>
+                  <ArticleCard article={article} priority={index < 2} />
+                </Locked>
+              ))}
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="grid bt-grid-2" style={{ marginTop: 24 }}>
-          {articles.map((article, index) => (
-            <Locked key={article.id} requirement={locks.get(article.id)} labels={lockLabels}>
-              <ArticleCard article={article} priority={index < 2} />
-            </Locked>
-          ))}
-        </div>
-      )}
+        {sidebar}
+      </div>
     </>
   )
 }

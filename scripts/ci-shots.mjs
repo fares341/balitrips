@@ -145,7 +145,7 @@ const SWEEP = [
   ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
   ['packages', '/packages'],
   ['package', { from: '/packages', match: '/packages/' }],
-  ['place', { from: '/explore', match: '/places/' }],
+  ['place', { from: '/', match: '/places/' }],
   ['custom', '/custom'],
   ['my-trip', '/my-trip'],
   ['checkout', '/checkout'],
