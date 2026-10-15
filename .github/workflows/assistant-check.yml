@@ -1,0 +1,88 @@
+# Manual: build the site, run it against a MOCK OpenRouter (scripts/mock-openrouter.mjs)
+# and drive both AI assistants in a real browser (scripts/assistant-check.mjs):
+# website answers from tool calls, add-to-My-Trip with the confirm button,
+# locked places staying redacted, the Studio flow (orders, a confirmed write,
+# audit row), settings and the "unavailable" state. Screenshots at 390 and 1440,
+# ar and en. Results are pushed to the `assistant-check` branch.
+name: Assistant check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  assistant:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bali
+          POSTGRES_PASSWORD: bali
+          POSTGRES_DB: bali
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bali"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bali:bali@localhost:5433/bali
+      BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_WHATSAPP_NUMBER: '6281234567890'
+      ADMIN_BASE_PATH: /studio-ci7
+      TEST_ACCOUNT_DOMAIN: test.balitrips.local
+      TEST_ACCOUNT_PASSWORD: Ci-Studio-Check-2026
+      # The mock, never the real API: a dummy key and a localhost base URL.
+      OPENROUTER_API_KEY: mock-key
+      OPENROUTER_BASE_URL: http://127.0.0.1:4011/api/v1
+      MOCK_LOG: assistant-check/mock-requests.jsonl
+      MOCK_VIOLATIONS: assistant-check/mock-violations.txt
+      # Add-to-My-Trip writes a cart line; bookings are closed by default.
+      ALLOW_BOOKINGS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: mkdir -p assistant-check
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - name: Build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee assistant-check/build.log
+      - name: Create test accounts
+        run: pnpm exec tsx scripts/create-test-accounts.ts > "$RUNNER_TEMP/accounts.txt" 2>&1 || (tail -5 "$RUNNER_TEMP/accounts.txt" | sed 's/^/::error::/'; exit 1)
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Start the mock OpenRouter and the site
+        run: |
+          (node scripts/mock-openrouter.mjs > assistant-check/mock.log 2>&1 &)
+          cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+          (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
+      - name: Assistant end-to-end
+        env:
+          ACCOUNTS_FILE: ${{ runner.temp }}/accounts.txt
+        run: node scripts/assistant-check.mjs
+      - name: Push results to the assistant-check branch
+        if: always()
+        run: |
+          cp server.log assistant-check/server.log 2>/dev/null || true
+          cd assistant-check
+          git init -q
+          git config user.name "assistant-check"
+          git config user.email "assistant-check@users.noreply.github.com"
+          git checkout -q -b assistant-check
+          git add -A
+          git commit -q -m "Assistant check for ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" assistant-check
