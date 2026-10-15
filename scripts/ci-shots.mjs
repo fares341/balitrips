@@ -60,7 +60,7 @@ for (const [name, path, wait] of pages) {
         }
       })
       log.push(`${path} ${w}: diag ${JSON.stringify(diag)}`)
-      if (name === 'mapdbg') {
+      if (name === 'mapdbg' && w > 1000) {
         const info = await page.evaluate(() => {
           const m = window.__btMap
           if (!m) return { none: true }
@@ -130,6 +130,74 @@ for (const [name, path, wait] of pages) {
     await page.close()
   }
 }
+// Phone flow on the real map: region bubble → pin → card → details → list.
+for (const lang of ['ar', 'en']) {
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+  })
+  const page = await ctx.newPage()
+  const shot = (tag) =>
+    page.screenshot({ path: `${OUT}/phone-${lang}-${tag}.png`, timeout: 120000 })
+  page.on('pageerror', (e) => log.push(`phone ${lang}: pageerror ${e.message}`))
+  try {
+    await page.goto(`${BASE}/${lang}/map`, { waitUntil: 'networkidle', timeout: 60000 })
+    await page.waitForSelector('.mp-view.is-map', { timeout: 30000 }).catch(() => {})
+    await page.waitForTimeout(6000)
+    await shot('1-map')
+    const bubble = page.locator('.mp-rb').filter({ hasText: lang === 'ar' ? 'أوبود' : 'Ubud' })
+    if (await bubble.count()) {
+      await bubble.first().tap()
+      await page.waitForTimeout(5000)
+      await shot('2-region')
+    } else log.push(`phone ${lang}: no Ubud bubble`)
+    const pin = page.locator('.mp-pin:not(.is-locked) .mp-dot')
+    const n = await pin.count()
+    let tapped = false
+    for (let i = 0; i < n && !tapped; i += 1) {
+      const box = await pin.nth(i).boundingBox()
+      if (box && box.y > 160 && box.y < 600 && box.x > 20 && box.x < 330) {
+        await pin.nth(i).tap()
+        tapped = true
+      }
+    }
+    log.push(`phone ${lang}: pins ${n}, tapped ${tapped}`)
+    await page.waitForTimeout(2500)
+    await shot('3-card')
+    const details = page.locator('.mp-mcard a', { hasText: lang === 'ar' ? 'التفاصيل' : 'Details' })
+    if (await details.count()) {
+      await Promise.all([page.waitForURL(/\/places\//, { timeout: 30000 }), details.first().tap()])
+      await page.waitForTimeout(3000)
+      await page
+        .locator('.pl-mini')
+        .scrollIntoViewIfNeeded()
+        .catch(() => {})
+      await page.waitForTimeout(7000)
+      await page.screenshot({
+        path: `${OUT}/phone-${lang}-4-details.png`,
+        fullPage: true,
+        timeout: 120000,
+      })
+      log.push(
+        `phone ${lang}: details ${page.url()} mini=${await page.locator('.pl-mini').getAttribute('class')}`,
+      )
+      await page.goBack({ waitUntil: 'networkidle' }).catch(() => {})
+      await page.waitForTimeout(6000)
+    } else log.push(`phone ${lang}: no card / Details button`)
+    await page.locator('.mp-mtoggle button').nth(1).tap()
+    await page.waitForTimeout(1500)
+    await shot('5-list')
+    log.push(
+      `phone ${lang}: list rows ${await page.locator('.mp-side.is-list .mp-res').count()} overflow ${await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)}`,
+    )
+  } catch (e) {
+    log.push(`phone ${lang}: SCRIPT ERROR ${e.message}`)
+  }
+  await ctx.close()
+}
+
 // Control: a bare MapLibre page with OpenFreeMap's own style (is WebGL rendering at all?)
 {
   const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
