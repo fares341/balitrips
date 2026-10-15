@@ -297,6 +297,56 @@ for (const [name, target] of SWEEP) {
   }
 }
 writeFileSync(`${OUT}/overflow.txt`, overflow.join('\n') + '\n')
+// Signed-in pages: a customer created through the real sign-up page.
+if (!ONLY.length || ONLY.includes('account')) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const page = await ctx.newPage()
+  try {
+    await page.goto(`${BASE}/ar/register`, { waitUntil: 'networkidle', timeout: 60000 })
+    const stamp = String(Date.now()).slice(-6)
+    await page.locator('input[autocomplete="name"]').fill('Sara CI')
+    await page.locator('input[autocomplete="email"]').fill(`ci-${stamp}@example.com`)
+    await page.locator('input[autocomplete="tel"]').fill(`+62812${stamp}`)
+    const pw = page.locator('input[autocomplete="new-password"]')
+    await pw.nth(0).fill('Bali-Trips-2026!')
+    await pw.nth(1).fill('Bali-Trips-2026!')
+    await page
+      .locator('form:has(input[autocomplete="new-password"]) button[type="submit"]')
+      .first()
+      .click()
+    await page.waitForTimeout(6000)
+    log.push(`account: after sign-up at ${page.url()}`)
+    const ACCOUNT = [
+      ['acct', '/ar/account'],
+      ['acct-trip', '/ar/account/trip'],
+      ['acct-files', '/ar/account/schedules'],
+      ['acct-fav', '/ar/account/favorites'],
+      ['acct-notif', '/ar/account/notifications'],
+      ['my-trip-in', '/ar/my-trip'],
+    ]
+    for (const [name, path] of ACCOUNT) {
+      for (const [w, h] of [
+        [390, 844],
+        [1440, 900],
+      ]) {
+        await page.setViewportSize({ width: w, height: h })
+        const res = await page
+          .goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 })
+          .catch(() => null)
+        await page.waitForTimeout(1200)
+        const ov = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+        overflow.push(`${ov > 0 ? 'OVERFLOW' : 'ok'} ${name}-ar-${w} +${ov}`)
+        log.push(`account ${name} ${w}: HTTP ${res?.status()} ${page.url()}`)
+        await page.screenshot({ path: `${OUT}/p/${name}-ar-${w}.png`, fullPage: true })
+      }
+    }
+    writeFileSync(`${OUT}/overflow.txt`, overflow.join('\n') + '\n')
+  } catch (e) {
+    log.push(`account: SCRIPT ERROR ${e.message}`)
+  }
+  await ctx.close()
+}
+
 // Home hero: a few frames over time (video slider), phone + desktop.
 for (const [w, h] of [
   [390, 844],
