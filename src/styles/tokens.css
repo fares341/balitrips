@@ -3,8 +3,7 @@
 
    Source of truth: design-reference/prototype/assets/bt.css :root. Every
    value below is copied from it verbatim, with ONE client decision applied:
-   the typefaces are Plus Jakarta Sans (Latin) + Noto Sans Arabic (Arabic
-   text) + Noto Kufi Arabic (Arabic headlines), injected by
+   the typefaces are Plus Jakarta Sans (Latin) + Almarai (Arabic), injected by
    src/styles/fonts.ts, instead of the package's Noor / Outfit.
 
    The second half of the file aliases the names the codebase used before v3
@@ -56,10 +55,6 @@
   --f-ar: var(--font-latin), var(--font-arabic), 'Segoe UI', Tahoma, sans-serif;
   --f-en: var(--font-latin), var(--font-arabic), 'Segoe UI', system-ui, sans-serif;
   --f: var(--f-ar);
-  /* Arabic headlines (h1/h2): Noto Kufi Arabic; falls back to the body face. */
-  --f-ar-display:
-    var(--font-latin), var(--font-arabic-display), var(--font-arabic), 'Segoe UI', Tahoma,
-    sans-serif;
   --t-display: clamp(38px, 6.6vw, 82px);
   --t-h1: clamp(32px, 4.8vw, 56px);
   --t-h2: clamp(26px, 3.6vw, 42px);
