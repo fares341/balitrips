@@ -88,6 +88,10 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://bali:bali@localhost:5433/bali
+      # build-only placeholders (no real secrets in CI)
+      BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
