@@ -316,6 +316,18 @@ if (!ONLY.length || ONLY.includes('account')) {
       .click()
     await page.waitForTimeout(6000)
     log.push(`account: after sign-up at ${page.url()}`)
+    // Something in the trip: an itinerary through the real "add to trip" link.
+    const itinerary = await resolvePath('ar', { from: '/itineraries', match: '/itineraries/' })
+    const itinerarySlug = itinerary?.split('/').pop()
+    if (itinerarySlug) {
+      await page
+        .goto(`${BASE}/ar/my-trip?add=itinerary&slug=${itinerarySlug}`, {
+          waitUntil: 'networkidle',
+          timeout: 60000,
+        })
+        .catch(() => null)
+      log.push(`account: added ${itinerarySlug}, at ${page.url()}`)
+    }
     const ACCOUNT = [
       ['acct', '/ar/account'],
       ['acct-trip', '/ar/account/trip'],
@@ -323,6 +335,7 @@ if (!ONLY.length || ONLY.includes('account')) {
       ['acct-fav', '/ar/account/favorites'],
       ['acct-notif', '/ar/account/notifications'],
       ['my-trip-in', '/ar/my-trip'],
+      ['checkout-in', '/ar/checkout'],
     ]
     for (const [name, path] of ACCOUNT) {
       for (const [w, h] of [
