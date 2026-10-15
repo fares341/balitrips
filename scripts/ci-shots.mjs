@@ -99,6 +99,22 @@ for (const [name, path, wait] of pages) {
     await page.close()
   }
 }
+// Control: a bare MapLibre page with OpenFreeMap's own style (is WebGL rendering at all?)
+{
+  const page = await browser.newPage({ viewport: { width: 900, height: 600 } })
+  page.on('console', (m) => log.push(`gltest: ${m.type()} ${m.text().slice(0, 300)}`))
+  await page.setContent(`<!doctype html><html><head>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+    <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+    <style>html,body,#m{margin:0;height:100%}</style></head><body><div id="m"></div><script>
+    const map = new maplibregl.Map({ container: 'm', style: 'https://tiles.openfreemap.org/styles/liberty', center: [115.19, -8.41], zoom: 9 });
+    map.on('error', (e) => console.error('maperror', e.error && e.error.message));
+    map.on('idle', () => console.log('idle'));
+    </script></body></html>`)
+  await page.waitForTimeout(12000)
+  await page.screenshot({ path: `${OUT}/gltest.png` })
+  await page.close()
+}
 await browser.close()
 const { writeFileSync } = await import('node:fs')
 writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n')
