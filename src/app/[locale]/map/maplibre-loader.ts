@@ -67,6 +67,12 @@ export interface MapLike {
   resize(): unknown
   remove(): void
   getCanvas?(): HTMLCanvasElement
+  hasImage?(id: string): boolean
+  addImage?(
+    id: string,
+    image: { width: number; height: number; data: Uint8Array | Uint8ClampedArray },
+    options?: { pixelRatio?: number },
+  ): unknown
 }
 
 export interface MapOptions {

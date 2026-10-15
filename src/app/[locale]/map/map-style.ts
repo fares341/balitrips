@@ -147,6 +147,9 @@ export const REAL_MAX_ZOOM = 19
 export const REAL_MAX_PITCH = 80
 
 /** MapLibre's RTL text plugin (Arabic shaping), pinned; loaded lazily. */
+/** Water ripple texture, drawn at runtime by real-map.ts (no sprite file). */
+export const WAVES_IMAGE = 'bt-waves'
+
 export const RTL_TEXT_PLUGIN_URL =
   'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js'
 
@@ -164,6 +167,8 @@ const C = {
   shallow: '#2fb3bd',
   surf: '#86e0d4',
   river: '#2f8fb0',
+  inland: '#3aa9d8',
+  shore: '#155f86',
   road: 'rgba(255,248,235,',
   building: '#e9dccb',
 }
@@ -314,25 +319,99 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
       'source-layer': 'park',
       paint: { 'fill-color': C.park, 'fill-opacity': 0.45 },
     },
+    // The sea: deep blue from afar, turning clearer blue as you come closer,
+    // so it still reads as water at street level.
     {
       id: 'water',
       type: 'fill',
       source: 'omt',
       'source-layer': 'water',
-      paint: { 'fill-color': C.ocean, 'fill-antialias': true },
+      filter: ['==', ['get', 'class'], 'ocean'],
+      paint: {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          6,
+          C.ocean,
+          11,
+          '#16658f',
+          14,
+          '#2386b5',
+          17,
+          '#2f9bc9',
+        ],
+        'fill-antialias': true,
+      },
+    },
+    // Lakes, rivers, ponds, pools: a brighter water blue with a clear shoreline.
+    {
+      id: 'water-inland',
+      type: 'fill',
+      source: 'omt',
+      'source-layer': 'water',
+      filter: ['!=', ['get', 'class'], 'ocean'],
+      paint: { 'fill-color': C.inland, 'fill-antialias': true },
     },
     coastGlow('coast-shallows', C.shallow, [5, 16, 48, 120], 0.75),
     coastGlow('coast-surf', C.surf, [1.5, 3, 7, 16], 0.85),
+    // Ripples on all water when close, so the surface looks like water.
+    {
+      id: 'water-texture',
+      type: 'fill',
+      source: 'omt',
+      'source-layer': 'water',
+      minzoom: 11,
+      paint: {
+        'fill-pattern': WAVES_IMAGE,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 11, 0, 13, 0.35, 16, 0.6],
+      },
+    },
+    {
+      id: 'water-shore',
+      type: 'line',
+      source: 'omt',
+      'source-layer': 'water',
+      minzoom: 10,
+      paint: {
+        'line-color': C.shore,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.4, 14, 1.2, 18, 2.4],
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 10, 0, 12, 0.8],
+      },
+    },
+    {
+      id: 'waterway-casing',
+      type: 'line',
+      source: 'omt',
+      'source-layer': 'waterway',
+      minzoom: 12,
+      filter: ['in', ['get', 'class'], ['literal', ['river', 'stream', 'canal']]],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': C.shore,
+        'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 12, 1.6, 18, 9],
+        'line-opacity': 0.7,
+      },
+    },
     {
       id: 'waterway',
       type: 'line',
       source: 'omt',
       'source-layer': 'waterway',
-      minzoom: 11,
+      minzoom: 10,
       filter: ['in', ['get', 'class'], ['literal', ['river', 'stream', 'canal']]],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: {
-        'line-color': C.river,
-        'line-width': ['interpolate', ['exponential', 1.4], ['zoom'], 11, 0.6, 18, 4],
+        'line-color': C.inland,
+        'line-width': [
+          'interpolate',
+          ['exponential', 1.4],
+          ['zoom'],
+          10,
+          ['match', ['get', 'class'], 'river', 1.2, 0.5],
+          18,
+          ['match', ['get', 'class'], 'river', 7, 3.5],
+        ],
       },
     },
   ]
@@ -401,6 +480,21 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
       filter: ['==', ['geometry-type'], 'Point'],
       layout: { 'text-field': NAME, 'text-font': FONT_ITALIC, 'text-size': 12 },
       paint: { 'text-color': '#bff1f8', 'text-halo-color': HALO, 'text-halo-width': 1.2 },
+    },
+    {
+      id: 'osm-waterway-names',
+      type: 'symbol',
+      source: 'omt',
+      'source-layer': 'waterway',
+      minzoom: 13,
+      filter: ['==', ['get', 'class'], 'river'],
+      layout: {
+        'symbol-placement': 'line',
+        'text-field': NAME,
+        'text-font': FONT_ITALIC,
+        'text-size': 11.5,
+      },
+      paint: { 'text-color': '#d9f6ff', 'text-halo-color': C.shore, 'text-halo-width': 1.4 },
     },
     {
       id: 'osm-poi',

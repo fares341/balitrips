@@ -99,8 +99,12 @@ for (const [name, path, wait] of pages) {
         log.push(`${path} ${w}: MAP ${JSON.stringify(info).slice(0, 3000)}`)
         for (const [tag, fn] of [
           ['ubud', 'm.jumpTo({center:[115.262,-8.507],zoom:13.5,pitch:55,bearing:-15})'],
-          ['batur', 'm.jumpTo({center:[115.375,-8.242],zoom:12,pitch:60,bearing:20})'],
-          ['street', 'm.jumpTo({center:[115.2635,-8.5069],zoom:17,pitch:45,bearing:0})'],
+          [
+            'lake',
+            "m.getLayer('outside-free')&&m.setLayoutProperty('outside-free','visibility','none');m.jumpTo({center:[115.395,-8.255],zoom:14,pitch:50,bearing:20})",
+          ],
+          ['coast', 'm.jumpTo({center:[115.2655,-8.688],zoom:15.5,pitch:45,bearing:0})'],
+          ['river', 'm.jumpTo({center:[115.2455,-8.497],zoom:16,pitch:45,bearing:0})'],
         ]) {
           await page.evaluate((code) => {
             const m = window.__btMap
