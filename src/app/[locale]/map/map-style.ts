@@ -245,6 +245,8 @@ function coastGlow(id: string, color: string, widths: number[], opacity: number)
     type: 'line',
     source: 'omt',
     'source-layer': 'water',
+    // the sea only: no glow around ponds, pools and rivers inland
+    filter: ['==', ['get', 'class'], 'ocean'],
     paint: {
       'line-color': color,
       'line-width': width,

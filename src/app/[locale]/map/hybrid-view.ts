@@ -290,7 +290,9 @@ export class HybridView {
     map.jumpTo({
       center: start ? [start.lng, start.lat] : home.center,
       // a tilted view foreshortens the island, so come a little closer
-      zoom: start ? Math.max(start.zoom, home.zoom) : home.zoom + (pitch > 0 ? 0.3 : 0),
+      zoom: start
+        ? Math.max(start.zoom, home.zoom)
+        : home.zoom + (pitch > 0 && (map.getCanvas?.()?.clientWidth ?? 0) > 700 ? 0.3 : 0),
       pitch,
       bearing: HOME_BEARING,
     })
