@@ -80,6 +80,12 @@ const GLYPHS = {
       <circle cx="12" cy="10" r="3" />
     </>
   ),
+  map: (
+    <>
+      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" />
+      <path d="M9 4v14M15 6v14" />
+    </>
+  ),
   route: (
     <>
       <circle cx="6" cy="19" r="3" />

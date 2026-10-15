@@ -24,6 +24,7 @@ const NAV_ICONS: Record<string, IconName> = {
   'nav.entitlements': 'key',
   'nav.capacity': 'car',
   'nav.places': 'pin',
+  'nav.map': 'map',
   'nav.itineraries': 'route',
   'nav.activities': 'compass',
   'nav.packages': 'box',
