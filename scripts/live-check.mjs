@@ -65,6 +65,7 @@ for (const path of ['/ar', '/en', '/ar/map']) {
 for (const path of [
   '/studio',
   '/studio-8f2a',
+  ...(process.env.EXTRA_PATHS ?? '').split(',').filter(Boolean),
   '/en/account?signin=1',
   '/ar/account',
   '/api/admin-link',

@@ -7,6 +7,9 @@ on:
       url:
         description: Site URL
         default: https://152-42-252-61.sslip.io
+      paths:
+        description: Extra comma-separated paths to probe
+        default: ''
 
 permissions:
   contents: write
@@ -26,6 +29,7 @@ jobs:
       - name: Check
         env:
           LIVE_URL: ${{ inputs.url }}
+          EXTRA_PATHS: ${{ inputs.paths }}
         run: node scripts/live-check.mjs
       - name: Push results
         if: always()
