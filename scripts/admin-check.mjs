@@ -157,10 +157,19 @@ const ERROR_TEXT =
   /Application error|Internal Server Error|This page couldn.t load|Unhandled Runtime Error|a server-side exception has occurred|a client-side exception has occurred/i
 
 let shotNo = 0
-async function visit(page, role, path, width, { expectNotFound = false, label = '' } = {}) {
+async function visit(
+  page,
+  role,
+  path,
+  width,
+  { expectNotFound = false, expectSignIn = false, expectText = null, label = '' } = {},
+) {
   const errors = []
   const onConsole = (m) => {
-    if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 300)}`)
+    if (m.type() !== 'error') return
+    // The browser logs the expected 404 document itself as a console error.
+    if (expectNotFound && /status of 404/.test(m.text())) return
+    errors.push(`console: ${m.text().slice(0, 300)}`)
   }
   const onPageError = (e) => errors.push(`pageerror: ${e.message.slice(0, 300)}`)
   const onFailed = (r) => {
@@ -186,6 +195,14 @@ async function visit(page, role, path, width, { expectNotFound = false, label = 
     errors.push(`goto: ${e.message.split('\n')[0]}`)
   }
   await page.waitForTimeout(800)
+  let passwordVisible = false
+  if (expectSignIn) {
+    passwordVisible = await page
+      .locator('input[autocomplete="current-password"]')
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .then(() => true)
+      .catch(() => false)
+  }
   const final = page.url().replace(BASE, '')
   const info = await page
     .evaluate(() => ({
@@ -203,7 +220,12 @@ async function visit(page, role, path, width, { expectNotFound = false, label = 
   const problems = [...errors]
   if (ERROR_TEXT.test(info.text))
     problems.push(`error text on page: ${info.text.match(ERROR_TEXT)[0]}`)
-  if (expectNotFound) {
+  if (expectText && !info.text.includes(expectText)) problems.push(`missing text "${expectText}"`)
+  if (expectSignIn) {
+    if (!/^\/(ar|en|id)\/account\?signin=1/.test(final))
+      problems.push(`expected sign-in page, at ${final}`)
+    if (!passwordVisible) problems.push('sign-in dialog not open')
+  } else if (expectNotFound) {
     if (status !== 404) problems.push(`expected 404, got ${status}`)
   } else {
     if (status >= 400 || status === 0) problems.push(`status ${status}`)
@@ -246,15 +268,22 @@ async function visit(page, role, path, width, { expectNotFound = false, label = 
   return entry
 }
 
-async function signIn(page, email, secret) {
+async function signIn(page, email, secret, start) {
   const steps = []
   await page.setViewportSize({ width: 1440, height: 900 })
-  await page.goto(`${BASE}/en/account`, { waitUntil: 'networkidle', timeout: 60000 })
-  await page
-    .locator('main')
-    .getByRole('button', { name: /^sign in$/i })
-    .first()
-    .click()
+  // Staff start where they really do: the Studio link, which (logged out)
+  // sends them to the site's sign-in with the dialog already open.
+  await page.goto(BASE + start, { waitUntil: 'networkidle', timeout: 60000 })
+  steps.push(`opened ${start} -> ${page.url().replace(BASE, '')}`)
+  const password = page.locator('input[autocomplete="current-password"]')
+  if (!(await password.isVisible().catch(() => false))) {
+    steps.push('dialog was not open; clicking Sign in')
+    await page
+      .locator('button:visible', { hasText: /^\s*Sign in\s*$/ })
+      .last()
+      .click()
+  }
+  await password.waitFor({ state: 'visible', timeout: 15000 })
   await page.locator('input[autocomplete="username"]').fill(email)
   await page.locator('input[autocomplete="current-password"]').fill(PASSWORD)
   await page
@@ -300,10 +329,11 @@ const browser = await chromium.launch()
   const ctx = await browser.newContext()
   const page = await ctx.newPage()
   for (const w of [1440, 390]) {
-    await visit(page, 'anonymous', ADMIN, w, { expectNotFound: true })
-    await visit(page, 'anonymous', `${ADMIN}/orders`, w, { expectNotFound: true })
+    await visit(page, 'anonymous', ADMIN, w, { expectSignIn: true })
+    await visit(page, 'anonymous', `${ADMIN}/orders`, w, { expectSignIn: true })
   }
-  await visit(page, 'anonymous', '/en/account', 1440)
+  // The internal mount is not a public URL.
+  await visit(page, 'anonymous', '/studio', 1440, { expectNotFound: true })
   await ctx.close()
 }
 
@@ -316,7 +346,12 @@ for (const role of ['admin', 'staff', 'customer']) {
   page.on('pageerror', (e) => pageErrors.push(e.message))
   let steps
   try {
-    steps = await signIn(page, email, secrets.get(email))
+    steps = await signIn(
+      page,
+      email,
+      secrets.get(email),
+      role === 'customer' ? '/en/account?signin=1' : ADMIN,
+    )
   } catch (e) {
     steps = [`sign-in threw: ${e.message.split('\n')[0]}`]
   }
@@ -334,7 +369,8 @@ for (const role of ['admin', 'staff', 'customer']) {
       problems: okCustomer ? [] : ['customer was sent to the Studio'],
       shot: '',
     })
-    for (const w of [1440, 390]) await visit(page, role, ADMIN, w, { expectNotFound: true })
+    for (const w of [1440, 390])
+      await visit(page, role, ADMIN, w, { expectNotFound: true, expectText: email })
     await ctx.close()
     continue
   }
