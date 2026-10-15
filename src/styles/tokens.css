@@ -49,10 +49,10 @@
   --info-bg: #e5f0f9;
 
   /* --- Type ------------------------------------------------------------- */
-  /* Client decision: the site's own fonts, not Noor/Outfit. Jakarta is
-     listed first in both stacks so Latin words, prices and brand names use
-     it everywhere; every Arabic glyph falls through to the Arabic face. */
-  --f-ar: var(--font-latin), var(--font-arabic), 'Segoe UI', Tahoma, sans-serif;
+  /* Client decision: Almarai leads on Arabic pages (the whole line, spaces
+     and punctuation included, is set in the Arabic face); English pages lead
+     with Jakarta. Prices and numbers use --f-en everywhere (.num/.price). */
+  --f-ar: var(--font-arabic), var(--font-latin), 'Segoe UI', Tahoma, sans-serif;
   --f-en: var(--font-latin), var(--font-arabic), 'Segoe UI', system-ui, sans-serif;
   --f: var(--f-ar);
   --t-display: clamp(38px, 6.6vw, 82px);
