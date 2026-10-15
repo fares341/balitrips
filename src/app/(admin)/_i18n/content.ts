@@ -297,6 +297,79 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     'تعذّر تحميل الخريطة (لا اتصال بخوادم الخرائط). اكتب الإحداثيات بدلاً من ذلك.',
   ],
   'places.on_map': ['See on the map', 'عرض على الخريطة'],
+  'places.pick_paste_label': [
+    'Paste a Google Maps link or “lat, lng”',
+    'الصق رابط خرائط Google أو «خط العرض، خط الطول»',
+  ],
+  'places.pick_paste_btn': ['Read coordinates', 'استخرج الإحداثيات'],
+  'places.pick_paste_hint': [
+    'In Google Maps: drop a pin on the place, then copy the address from the browser bar (or the coordinates shown under the pin).',
+    'في خرائط Google: ضع دبوساً على المكان، ثم انسخ الرابط من شريط المتصفح (أو الإحداثيات الظاهرة تحت الدبوس).',
+  ],
+  'places.pick_paste_ok': [
+    'Coordinates read from the {source}. Check the pin below.',
+    'استُخرجت الإحداثيات من {source}. تحقّق من الدبوس أدناه.',
+  ],
+  'places.pick_src_pin': ['dropped pin in the link', 'الدبوس الموجود في الرابط'],
+  'places.pick_src_centre': [
+    'map centre in the link (not a pin — it may be a little off)',
+    'مركز الخريطة في الرابط (ليس دبوساً — قد يكون منحرفاً قليلاً)',
+  ],
+  'places.pick_src_query': ['link', 'الرابط'],
+  'places.pick_src_pair': ['text', 'النص'],
+  'places.pick_paste_err': [
+    'No coordinates in that text. Short links (maps.app.goo.gl) don’t contain them — open the link and copy the full address from the browser bar.',
+    'لا توجد إحداثيات في هذا النص. الروابط المختصرة (maps.app.goo.gl) لا تحتويها — افتح الرابط وانسخ العنوان الكامل من شريط المتصفح.',
+  ],
+  'places.pick_search_label': [
+    'Or search by name or address (Bali)',
+    'أو ابحث بالاسم أو العنوان (بالي)',
+  ],
+  'places.pick_search_placeholder': [
+    'e.g. Tegallalang rice terraces',
+    'مثال: Tegallalang rice terraces',
+  ],
+  'places.pick_searching': ['Searching…', 'جارٍ البحث…'],
+  'places.pick_search_none': ['No matches in Bali.', 'لا نتائج في بالي.'],
+  'places.pick_search_err': [
+    'Search is unavailable right now — paste a link or click the map instead.',
+    'البحث غير متاح الآن — الصق رابطاً أو اضغط على الخريطة بدلاً من ذلك.',
+  ],
+  'places.pick_search_credit': [
+    'Search: Photon by komoot · © OpenStreetMap contributors',
+    'البحث: Photon من komoot · © OpenStreetMap contributors',
+  ],
+  'places.pick_water': [
+    'The pin is in the sea or a lake — check it is on the place itself.',
+    'الدبوس في البحر أو في بحيرة — تأكد أنه على المكان نفسه.',
+  ],
+  'places.pick_dupe': [
+    'Another place is within 50 m: “{name}” — possible duplicate.',
+    'يوجد مكان آخر على بعد أقل من 50 م: «{name}» — قد يكون مكرراً.',
+  ],
+  'places.pick_dupe_open': ['Open it', 'افتحه'],
+  'places.pick_gmaps': ['Open in Google Maps', 'افتح في خرائط Google'],
+  'places.preview': ['Preview as visitor', 'معاينة كما يراها الزائر'],
+  'places.preview_hint': [
+    'The place card visitors get on the public map, as last saved.',
+    'بطاقة المكان كما يراها الزوار على الخريطة العامة، حسب آخر حفظ.',
+  ],
+  'places.warn_no_photo': [
+    'No hero photo — visitors see a plain placeholder instead of the place.',
+    'لا توجد صورة رئيسية — سيرى الزوار عنصراً نائباً بدل صورة المكان.',
+  ],
+  'places.warn_no_name': ['The {lang} name is missing.', 'الاسم باللغة {lang} غير موجود.'],
+  'places.warn_draft': [
+    'Saved as a draft — it is not on the public map until it is published.',
+    'محفوظ كمسودة — لن يظهر على الخريطة العامة حتى يُنشر.',
+  ],
+  'places.warn_hidden': [
+    'Hidden — it is not shown on the public map.',
+    'مخفي — لا يظهر على الخريطة العامة.',
+  ],
+  'places.saved_live': ['Saved and live.', 'تم الحفظ وهو منشور.'],
+  'places.saved_on_map': ['See it on the public map', 'شاهده على الخريطة العامة'],
+  'places.saved_page': ['Public page', 'الصفحة العامة'],
   'places.opening_hours': ['Opening hours', 'ساعات العمل'],
   'places.rating': ['Rating', 'التقييم'],
   'places.rating_tenths': ['Rating (tenths)', 'التقييم (بالأعشار)'],

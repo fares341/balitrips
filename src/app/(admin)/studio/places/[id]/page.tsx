@@ -15,6 +15,7 @@ import {
   mediaOptions,
   regionOptions,
 } from '../../../_lib/lookups'
+import { param } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { readSetting } from '../../../_lib/settings'
 import { CoordPicker } from '../../../_ui/coord-picker'
@@ -32,6 +33,7 @@ import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { baliInputValue } from '../../../_lib/bali-time'
 import { PageHead } from '../../../_ui/shell'
 import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
+import { VisitorPreview } from './preview'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +45,7 @@ export default async function PlaceEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   await requireCapability('content.write')
-  const { t } = await getAdminI18n()
+  const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
 
@@ -61,7 +63,7 @@ export default async function PlaceEditorPage({
 
   if (!isNew && !place) notFound()
 
-  const [regions, activities, mediaList, categoryList, tagList, placeTagRows, mapSettings] =
+  const [regions, activities, mediaList, categoryList, tagList, placeTagRows, mapSettings, all] =
     await Promise.all([
       regionOptions(),
       activityOptions(),
@@ -75,8 +77,32 @@ export default async function PlaceEditorPage({
             .where(eq(placeTags.placeId, place.id))
         : [],
       readSetting('map'),
+      // every other place, for the "possible duplicate within 50 m" check
+      db
+        .select({
+          id: mapPlaces.id,
+          slug: mapPlaces.slug,
+          name: mapPlaces.name,
+          lat: mapPlaces.lat,
+          lon: mapPlaces.lon,
+        })
+        .from(mapPlaces)
+        .where(isNull(mapPlaces.deletedAt)),
     ])
   const chosenTags = new Set(placeTagRows.map((row) => row.tagId))
+  const others = all
+    .filter((row) => row.id !== place?.id)
+    .map((row) => ({
+      id: row.id,
+      name: pick(row.name, locale, row.slug),
+      lat: row.lat,
+      lon: row.lon,
+      href: adminHref(`/places/${row.id}`),
+    }))
+  // After a save: straight to the place as visitors will see it.
+  const justSaved = place !== null && param(query, 'ok') !== null
+  const site = locale === 'ar' ? 'ar' : 'en'
+  const live = place !== null && place.status === 'published' && !place.isHidden
 
   return (
     <>
@@ -97,6 +123,36 @@ export default async function PlaceEditorPage({
         }
       />
       <Flash searchParams={query} />
+      {justSaved && place ? (
+        <div className="a-card a-saved-links" role="status">
+          {live ? (
+            <>
+              <span>{t('places.saved_live')}</span>
+              <a
+                className="a-btn"
+                href={`/${site}/map?place=${encodeURIComponent(place.slug)}`}
+                target="_blank"
+                rel="noopener"
+              >
+                {t('places.saved_on_map')}
+              </a>
+              <a
+                className="a-btn ghost"
+                href={`/${site}/places/${encodeURIComponent(place.slug)}`}
+                target="_blank"
+                rel="noopener"
+              >
+                {t('places.saved_page')}
+              </a>
+            </>
+          ) : (
+            <span>
+              {place.status !== 'published' ? t('places.warn_draft') : t('places.warn_hidden')}
+            </span>
+          )}
+        </div>
+      ) : null}
+      {place ? <VisitorPreview place={place} t={t} /> : null}
 
       <form className="a-form" action={savePlace.bind(null, isNew ? 'new' : id)}>
         <div className="a-card">
@@ -218,6 +274,7 @@ export default async function PlaceEditorPage({
             lat={place ? String(place.lat) : ''}
             lon={place ? String(place.lon) : ''}
             settings={mapViewSettings(mapSettings)}
+            others={others}
           />
           <div className="a-row">
             <Field label={t('places.opening_hours')} htmlFor="openingHours">
