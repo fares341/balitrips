@@ -87,7 +87,7 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
           <p style={{ color: 'var(--muted)', fontSize: 14, marginBlockEnd: 14 }}>
             {t('security.setup_text')}
           </p>
-          <button type="submit" className="btn btn-orange">
+          <button type="submit" className="a-btn">
             {t('security.start_setup')}
           </button>
         </form>
@@ -129,9 +129,10 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
             pattern="[0-9]*"
             maxLength={6}
             required
+            className="a-input"
             style={{ width: 140, marginInlineEnd: 10 }}
           />
-          <button type="submit" className="btn btn-orange" disabled={confirming}>
+          <button type="submit" className="a-btn" disabled={confirming}>
             {confirming ? t('security.checking') : t('security.confirm')}
           </button>
 
@@ -165,9 +166,10 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
               inputMode="text"
               autoComplete="one-time-code"
               required
+              className="a-input"
               style={{ width: 200, marginInlineEnd: 10 }}
             />
-            <button type="submit" className="btn btn-orange">
+            <button type="submit" className="a-btn">
               {t('security.verify')}
             </button>
           </form>
@@ -186,9 +188,10 @@ export function EnrolmentForms({ enabled, pending, recoveryCodesRemaining, secre
               inputMode="numeric"
               autoComplete="one-time-code"
               required
+              className="a-input"
               style={{ width: 140, marginInlineEnd: 10 }}
             />
-            <button type="submit" className="btn btn-ghost" disabled={regenerating}>
+            <button type="submit" className="a-btn ghost" disabled={regenerating}>
               {regenerating ? t('security.working') : t('security.replace_codes')}
             </button>
 
