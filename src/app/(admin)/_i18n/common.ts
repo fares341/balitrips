@@ -116,6 +116,9 @@ const section: Section = {
     'shell.twofa_challenge_link': 'Enter a code',
     'shell.not_found_title': 'Page not found',
     'shell.not_found_body': 'This page could not be found.',
+    'shell.no_access_body':
+      'You are signed in as {email}, which has no Studio access. Sign out from your account page, then sign in with a staff or admin account.',
+    'shell.no_access_link': 'Go to my account',
 
     // Sidebar groups and links
     'nav.aria': 'Studio sections',
@@ -328,6 +331,9 @@ const section: Section = {
     'shell.twofa_challenge_link': 'أدخل الرمز',
     'shell.not_found_title': 'الصفحة غير موجودة',
     'shell.not_found_body': 'تعذّر العثور على هذه الصفحة.',
+    'shell.no_access_body':
+      'أنت مسجّل الدخول بالحساب {email}، وهو لا يملك صلاحية دخول لوحة التحكم. سجّل الخروج من صفحة حسابك، ثم ادخل بحساب موظف أو مدير.',
+    'shell.no_access_link': 'الذهاب إلى حسابي',
 
     'nav.aria': 'أقسام لوحة الإدارة',
     'nav.group_overview': 'نظرة عامة',

@@ -80,7 +80,11 @@ export default async function AccountProfilePage({
     return (
       <>
         {blockedNotice}
-        <SignedOutPane providers={enabledSocialProviders()} next={safeNext(query.next)} />
+        <SignedOutPane
+          providers={enabledSocialProviders()}
+          next={safeNext(query.next)}
+          autoOpen={query.signin === '1'}
+        />
       </>
     )
   }

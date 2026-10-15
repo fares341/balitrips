@@ -8,7 +8,7 @@
  * `/account` to `/account` forever.
  *
  * The dialog opens by itself only when the visitor was sent here mid-flow
- * (`?next=/checkout`). Arriving at the account page under your own steam and
+ * (`?next=/checkout`, or `?signin=1` from the Studio link). Arriving at the account page under your own steam and
  * being met by a modal you did not ask for is the sort of thing the handoff
  * did; a visible card with a button is not.
  */
@@ -32,12 +32,18 @@ export type SignedOutPaneProps = {
    * internal path — never pass a raw query parameter here.
    */
   next: string | null
+  /**
+   * Open the dialog straight away (`?signin=1`). The Studio sends staff here
+   * when they open its link without a session, so they land on the form
+   * rather than on a card with one more button to find.
+   */
+  autoOpen?: boolean
 }
 
-export function SignedOutPane({ providers, next }: SignedOutPaneProps) {
+export function SignedOutPane({ providers, next, autoOpen = false }: SignedOutPaneProps) {
   const t = useTranslations()
   const router = useRouter()
-  const [open, setOpen] = useState(next !== null)
+  const [open, setOpen] = useState(next !== null || autoOpen)
 
   return (
     <div className="wrap" style={{ paddingBlock: 40 }}>

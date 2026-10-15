@@ -16,11 +16,14 @@ import { clientIp } from '@/lib/security/ip'
  * the soft-delete and unknown-role rules. This wrapper adds the two things
  * the admin needs on top of it:
  *
- *  1. **Every failure is a 404, including "not signed in".** The shared
- *     `requireCapability()` redirects an anonymous visitor to `/account`,
- *     which is right for the customer-facing gated pages and wrong here — a
- *     redirect confirms that something exists at the guessed path, which is
- *     the one fact `ADMIN_BASE_PATH` is trying not to leak.
+ *  1. **Not signed in → the sign-in page; signed in without the role → 404.**
+ *     It used to be a bare 404 for "not signed in" too, so as not to confirm
+ *     that the guessed path exists. In practice that made the Studio link look
+ *     broken for the very staff it is for: they open the link they were
+ *     given, see "This page could not be found", and conclude the dashboard
+ *     is down. The path is already a secret only staff are handed, so
+ *     answering it with a sign-in prompt leaks nothing a guesser could use;
+ *     every capability is still checked below on every page and action.
  *  2. **The caller's IP**, which every audit row records so a mutation is
  *     always attributable.
  *  3. **Two-factor enforcement.** `roles.ts` has always said TOTP is
@@ -38,6 +41,18 @@ import { clientIp } from '@/lib/security/ip'
 
 /** Where enrolment and the challenge live. Exempt from the 2FA gate itself. */
 export const SECURITY_PATH = '/security'
+
+/**
+ * Where a visitor with no session is sent: the site's own sign-in (the
+ * account page opens its dialog on `?signin=1`). Unprefixed, so the locale
+ * proxy picks the visitor's language. After signing in, a staff session is
+ * taken straight to the Studio (see `submitSignIn` in auth-modal.tsx).
+ */
+export const STUDIO_SIGN_IN_HREF = '/account?signin=1'
+
+function signInFirst(): never {
+  return redirect(STUDIO_SIGN_IN_HREF)
+}
 
 export interface AdminSession {
   userId: string
@@ -79,11 +94,10 @@ export async function getAdminSession(): Promise<AdminSession | null> {
  */
 export async function requireElevated(): Promise<AdminSession> {
   const session = await getAdminSession()
+  if (!session) signInFirst()
 
-  if (!session || !isElevated(session.role)) {
-    console.warn(
-      `[admin] denied entry for ${session ? `${session.email} (${session.role})` : 'anonymous'}`,
-    )
+  if (!isElevated(session.role)) {
+    console.warn(`[admin] denied entry for ${session.email} (${session.role})`)
     notFound()
   }
 
@@ -96,13 +110,12 @@ export async function requireElevated(): Promise<AdminSession> {
  */
 export async function requireCapability(capability: Capability): Promise<AdminSession> {
   const session = await getAdminSession()
+  if (!session) signInFirst()
 
-  if (!session || !isElevated(session.role) || !can(session.role, capability)) {
+  if (!isElevated(session.role) || !can(session.role, capability)) {
     // Logged server-side so a genuine misconfiguration is diagnosable
     // without the response telling an attacker anything.
-    console.warn(
-      `[admin] denied ${capability} for ${session ? `${session.email} (${session.role})` : 'anonymous'}`,
-    )
+    console.warn(`[admin] denied ${capability} for ${session.email} (${session.role})`)
     notFound()
   }
 
