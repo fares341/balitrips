@@ -35,11 +35,28 @@ for (const [name, path, wait] of pages) {
         log.push(`${path} ${w}: ${m.type()} ${m.text()}`)
     })
     page.on('pageerror', (e) => log.push(`${path} ${w}: pageerror ${e.message}`))
+    page.on('requestfailed', (r) =>
+      log.push(`${path} ${w}: FAILED ${r.url().slice(0, 160)} ${r.failure()?.errorText}`),
+    )
+    page.on('response', (r) => {
+      if (r.status() >= 400) log.push(`${path} ${w}: HTTP ${r.status()} ${r.url().slice(0, 160)}`)
+    })
     await page
       .goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 })
       .catch((e) => log.push(`${path}: ${e.message}`))
     await page.waitForTimeout(wait || 1500)
     const lang = path.split('/')[1]
+    const diag = await page.evaluate(() => {
+      const c = document.createElement('canvas')
+      const gl = c.getContext('webgl2') || c.getContext('webgl')
+      return {
+        webgl: !!gl,
+        maplibre: typeof window.maplibregl,
+        canvases: document.querySelectorAll('canvas.maplibregl-canvas').length,
+        mapClass: document.querySelector('[class*="map"]')?.className?.toString().slice(0, 120),
+      }
+    })
+    log.push(`${path} ${w}: diag ${JSON.stringify(diag)}`)
     const fonts = await page.evaluate(() =>
       [...document.fonts]
         .filter((f) => f.status === 'loaded')

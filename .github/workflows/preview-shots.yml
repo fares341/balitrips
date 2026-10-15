@@ -47,7 +47,8 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site
         run: |
-          (pnpm start > server.log 2>&1 &)
+          cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+          (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
           for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
       - name: Screenshots
         run: node scripts/ci-shots.mjs
