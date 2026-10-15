@@ -3,21 +3,22 @@
  *
  * Order = the number shown on the card (01, 02 …). Each entry needs two
  * message keys in messages/{ar,en,id}.json: `hv3_st_<key>_t` (title) and
- * `hv3_st_<key>_d` (two-line description). To add a card (e.g. a future
- * driver variant), append an entry here and add its keys.
+ * `hv3_st_<key>_d` (two-line description). `art` picks the illustration from
+ * src/components/bt/step-art.tsx. To add a card, append an entry here and add
+ * its keys.
  */
 
-import type { IconName } from '@/components/ui/icon'
+import type { StepArtName } from '@/components/bt/step-art'
 
 export type PlanStep = {
   key: string
-  icon: IconName
+  art: StepArtName
   href: string
 }
 
 export const PLAN_STEPS: PlanStep[] = [
-  { key: 'itin', icon: 'route', href: '/itineraries' },
-  { key: 'pkg', icon: 'suitcase', href: '/packages' },
-  { key: 'act', icon: 'compass', href: '/activities' },
-  { key: 'drv', icon: 'car', href: '/driver' },
+  { key: 'itin', art: 'itinerary', href: '/itineraries' },
+  { key: 'pkg', art: 'package', href: '/packages' },
+  { key: 'act', art: 'activity', href: '/activities' },
+  { key: 'drv', art: 'driver', href: '/driver' },
 ]

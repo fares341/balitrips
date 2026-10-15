@@ -2798,11 +2798,15 @@ html {
 }
 
 /* ---------- Step cards (StepCards: numbered feature cards) ----------
- * Light card · big faint number in the top inline-end corner · line icon ·
- * bold title · 2-line description. Title link stretched over the card.
- * 1 column on phones, 2 from 600px, 4 from 1024px. Logical properties only.
+ * Client reference (bluuu.tours video): white card on a light ground, soft
+ * shadow, two-tone illustration at the start, bold title + 2-line text, a
+ * number in the top inline-end corner. One card at a time is "active"
+ * (StepCycle sets data-active on its <li>): the number turns brand green and
+ * a thin line fills along the card's top edge over --stc-step.
+ * Row layout on phones (1 col) and tablets (2 cols), tiles from 1024px.
  */
 .stc-grid {
+  --stc-step: 2600ms; /* = STEP_MS in step-cycle.tsx */
   list-style: none;
   margin: 0;
   padding: 0;
@@ -2819,25 +2823,51 @@ html {
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 72px minmax(0, 1fr);
   align-items: center;
   gap: var(--s4);
-  padding: var(--s5);
+  padding: var(--s5) var(--s4);
+  padding-inline-end: var(--s7);
   background: var(--white);
-  border: 1px solid var(--line-soft);
   border-radius: var(--r-md);
   box-shadow: var(--sh-1);
   overflow: hidden;
-  isolation: isolate;
   transition:
     transform var(--d-base) var(--ease),
-    box-shadow var(--d-base),
-    border-color var(--d-base);
+    box-shadow var(--d-base);
+}
+/* the progress line along the top edge */
+.stc::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: var(--forest);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+[dir='rtl'] .stc::before {
+  transform-origin: right;
+}
+.stc-grid > li[data-active] .stc {
+  box-shadow: var(--sh-2);
+}
+.stc-grid > li[data-active] .stc::before {
+  animation: stc-line var(--stc-step) linear forwards;
+}
+.stc-grid[data-paused] > li[data-active] .stc::before {
+  animation: none;
+  transform: scaleX(1);
+}
+@keyframes stc-line {
+  to {
+    transform: scaleX(1);
+  }
 }
 .stc:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   box-shadow: var(--sh-2);
-  border-color: var(--palm-mid);
 }
 .stc:has(.stc-link:focus-visible) {
   outline: 3px solid var(--orange);
@@ -2845,33 +2875,74 @@ html {
 }
 .stc-num {
   position: absolute;
-  inset-block-start: 4px;
+  inset-block-start: 8px;
   inset-inline-end: 14px;
-  z-index: -1;
-  font-size: 56px;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: 0.02em;
   color: var(--forest);
-  opacity: 0.08;
+  opacity: 0.12;
   pointer-events: none;
   user-select: none;
-}
-.stc-ic {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--r-md);
-  display: grid;
-  place-items: center;
-  background: var(--ivory-2);
-  color: var(--forest);
-  border: 1px solid var(--line-soft);
   transition:
-    background var(--d-base),
+    opacity var(--d-base),
     color var(--d-base);
 }
-.stc:hover .stc-ic {
-  background: var(--palm-soft);
+.stc-grid > li[data-active] .stc-num,
+.stc:hover .stc-num {
+  opacity: 1;
+}
+.stc-art {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+}
+.step-art {
+  width: 72px;
+  height: 72px;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.step-art .sa-line {
+  stroke: var(--forest);
+  stroke-width: 2;
+  fill: none;
+}
+.step-art .sa-paper {
+  fill: var(--white);
+  stroke: none;
+}
+.step-art .sa-paper-line {
+  stroke: var(--white);
+  stroke-width: 1.8;
+}
+.step-art .sa-fill {
+  fill: var(--sa-fill);
+  stroke: none;
+}
+.step-art .sa-stop-a {
+  stop-color: var(--palm-mid);
+}
+.step-art .sa-stop-b {
+  stop-color: var(--forest-soft);
+}
+.step-art .sa-accent {
+  fill: var(--orange);
+  stroke: var(--forest);
+  stroke-width: 1.6;
+}
+.step-art .sa-route {
+  stroke: var(--forest);
+  stroke-width: 1.8;
+  stroke-dasharray: 2 4;
+}
+.step-art .sa-wave {
+  stroke: var(--white);
+  stroke-width: 1.8;
 }
 .stc-copy {
   min-width: 0;
@@ -2880,7 +2951,7 @@ html {
   gap: 4px;
 }
 .stc-t {
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.35;
   color: var(--forest);
 }
@@ -2915,16 +2986,6 @@ html {
   border-radius: var(--r-pill);
   padding: 2px 10px;
 }
-.stc-go {
-  color: var(--forest);
-  opacity: 0.45;
-  transition:
-    opacity var(--d-base),
-    translate var(--d-base) var(--ease);
-}
-.stc:hover .stc-go {
-  opacity: 1;
-}
 @media (min-width: 600px) {
   .stc-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2935,7 +2996,6 @@ html {
   .stc-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  /* tiles: icon on top, number stays in the corner */
   .stc {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
@@ -2943,22 +3003,26 @@ html {
     padding: var(--s6);
     gap: var(--s4);
   }
-  .stc-num {
-    font-size: 72px;
-    inset-block-start: 10px;
-    inset-inline-end: 18px;
+  .stc-art,
+  .step-art {
+    width: 84px;
+    height: 84px;
   }
-  .stc-go {
-    display: none;
+  .stc-num {
+    font-size: 34px;
+    inset-block-start: 14px;
+    inset-inline-end: 18px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .stc,
-  .stc-ic,
-  .stc-go {
+  .stc-num {
     transition: none;
   }
   .stc:hover {
     transform: none;
+  }
+  .stc::before {
+    display: none;
   }
 }

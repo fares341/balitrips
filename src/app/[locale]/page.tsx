@@ -392,7 +392,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             label={t('hv3_st_title')}
             items={PLAN_STEPS.map((step) => ({
               key: step.key,
-              icon: step.icon,
+              art: step.art,
               href: step.href,
               title: t(`hv3_st_${step.key}_t`),
               body: t(`hv3_st_${step.key}_d`),
