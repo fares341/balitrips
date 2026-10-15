@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { entitlements, plans } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
+import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -20,7 +21,10 @@ export default async function PlansPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('content.read')
+  const session = await requireCapability('content.read')
+  // Prices and plan rules are admin-only (config.write): staff see the list
+  // but get no links into an editor that would answer them with a 404.
+  const canEdit = can(session.role, 'config.write')
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
@@ -48,9 +52,11 @@ export default async function PlansPage({
         title={t('plans.title')}
         description={t('plans.description')}
         actions={
-          <Link className="a-btn" href={adminHref('/plans/new')}>
-            {t('plans.new')}
-          </Link>
+          canEdit ? (
+            <Link className="a-btn" href={adminHref('/plans/new')}>
+              {t('plans.new')}
+            </Link>
+          ) : undefined
         }
       />
       <Flash searchParams={params} />
@@ -74,9 +80,13 @@ export default async function PlansPage({
             {rows.map(({ plan, active }) => (
               <tr key={plan.id}>
                 <td>
-                  <Link href={adminHref(`/plans/${plan.id}`)}>
-                    {pick(plan.name, locale, plan.slug)}
-                  </Link>
+                  {canEdit ? (
+                    <Link href={adminHref(`/plans/${plan.id}`)}>
+                      {pick(plan.name, locale, plan.slug)}
+                    </Link>
+                  ) : (
+                    pick(plan.name, locale, plan.slug)
+                  )}
                   <div className="a-mono a-muted">{plan.slug}</div>
                 </td>
                 <td>{formatMoney(plan.priceMinor, plan.currency, intl)}</td>
