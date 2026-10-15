@@ -1,22 +1,27 @@
 /**
- * Homepage — v3, reshaped by client revision 1 ("too long, too distracting").
+ * Homepage — v3.4 package (design-reference/prototype/home.html, screens 01-home).
  *
- * A short page, each section with its data source and own page:
+ * Sections, each with its data source and its own page:
  *
- *   hero            4 arched video portals (public/brand/arch-*), search
- *                   (input + button) → /search?q=, CTAs → /explore, /custom
- *   planning today  6 service tiles → /map, /activities, /itineraries,
- *                   /packages, /driver, /custom
+ *   hero            full-screen video slider (one clip on phones, four side by
+ *                   side on desktop; media in _home/hero-media.ts), the place
+ *                   name changing with each clip, search → /search?q=,
+ *                   "Plan your trip" → /services
+ *   planning today  photo + icon cards, one per service page (svc-cards.tsx)
  *   in the mood     free map places by category (listMapPlaces, redacted for
- *                   an anonymous visitor) in compact cards → /places/…
- *   most requested  4 compact cards mixing the top activities (events
- *                   excluded) and packages → their own pages
+ *                   an anonymous visitor) as photo cards → /places/…
+ *   most requested  photo cards of the top activities (events excluded),
+ *                   itineraries and packages, with type tabs; a swipe row on
+ *                   phones/tablets, three per row on desktop
  *   who we are      short strip: image marquee + three values → /about
- *   reviews         the top activities' own reviews (hidden when none)
+ *   reviews         the top activities' own reviews in two endless rows
+ *                   moving in opposite directions (hidden when none)
  *   custom trip     → /custom, /contact (photo: _home/media.ts)
+ *   blog            the three latest articles, magazine layout → /blog/…
  *
  * Nothing is invented: every name, price, rating and count comes from the
- * catalogue; a section with nothing real to show is left out.
+ * catalogue; a section with nothing real to show is left out. No numbered
+ * cards (v3.3).
  *
  * `setRequestLocale` keeps the route statically renderable. The map data is
  * redacted with an empty entitlement set, so only free places (which every
@@ -25,39 +30,40 @@
 
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
-import { CompactCard, LinkButton, SectionHead, Stars, StepCards } from '@/components/bt'
-import { FavButton } from '@/components/bt/fav-button'
-import { ActivityCompact, PackageCompact } from '@/components/cards'
-import { Icon, type IconName } from '@/components/ui'
+import { LinkButton, SectionHead } from '@/components/bt'
+import { ActivityCard, ItineraryCard, PackageCard, PlaceCard } from '@/components/cards'
+import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { EVENTS_CATEGORY_KEY } from '@/lib/content/extra-queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import {
   listActivities,
+  listArticles,
+  listItineraries,
   listMapPlaces,
   listMapTaxonomy,
   listPackages,
   reviewsForActivity,
 } from '@/lib/content/queries'
-import {
-  entityHref,
-  type ActivitySummary,
-  type PackageSummary,
-  type ReviewDto,
+import type {
+  ActivitySummary,
+  ArticleSummary,
+  ItinerarySummary,
+  PackageSummary,
+  ReviewDto,
 } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
-import { FEATURES } from '@/lib/features'
 
 import { pageMetadata } from './_meta'
 import { AboutSlider } from './_home/about-slider'
-import { HeroArches, type Arch } from './_home/hero-arches'
+import { HERO_CLIPS } from './_home/hero-media'
+import { HeroVideo } from './_home/hero-video'
 import { CUSTOM_TRIP_PHOTO } from './_home/media'
 import { MoodTabs, type MoodTab } from './_home/mood-tabs'
-import { PLAN_STEPS } from './_home/plan-steps'
-import { ReviewSlider } from './_home/review-slider'
+import { SvcCards } from './_home/svc-cards'
 import { CUSTOM_HREF } from './_ui/routes-extra'
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
@@ -69,29 +75,25 @@ type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 const CATALOGUE_LIMIT = 40
 /** Places per mood tab. */
 const MOOD_CARD_COUNT = 4
-const MOOD_TAB_LIMIT = 6
-/** "Most requested": this many cards, alternating activity / package. */
-const MOST_REQUESTED = 4
+const MOOD_TAB_LIMIT = 7
+/** "Most requested": the package's mix, in its order (2 itineraries, 4 activities, 3 packages). */
+const MR_PATTERN = ['iti', 'act', 'pkg', 'act', 'iti', 'act', 'pkg', 'act', 'pkg'] as const
+/** Cards shown per tab. */
+const MR_SHOWN = 6
 const REVIEW_SOURCE_COUNT = 8
-const REVIEW_COUNT = 6
+const REVIEW_COUNT = 10
+/** Each marquee half holds at least this many cards so the loop never shows a gap. */
+const MARQUEE_MIN = 6
+const BLOG_COUNT = 3
 
-const ARCHES: readonly Arch[] = [
-  { name: 'Ubud', video: 'arch-ubud', poster: '/brand/rice-walk.jpg' },
-  { name: 'Nusa Penida', video: 'arch-penida', poster: '/brand/kelingking.jpg' },
-  { name: 'Lempuyang', video: 'arch-lempuyang', poster: '/brand/lempuyang.jpg' },
-  { name: 'Uluwatu', video: 'arch-uluwatu', poster: '/brand/cliff-beach.jpg' },
+/** "What are you planning today?" — one card per service page (no driver: v3.2). */
+const SERVICES: readonly { href: string; icon: IconName; image: string; key: string }[] = [
+  { href: '/map', icon: 'map', image: '/map/bali-satellite.webp', key: 'map' },
+  { href: '/activities', icon: 'compass', image: '/brand/jeep.jpg', key: 'act' },
+  { href: '/itineraries', icon: 'doc', image: '/brand/rice-walk.jpg', key: 'itin' },
+  { href: '/packages', icon: 'box', image: '/brand/green-dress.jpg', key: 'pkg' },
+  { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
 ]
-
-/** "What are you planning today?" — one tile per service page. */
-const ALL_SERVICES: readonly { href: string; icon: IconName; key: string; tone?: 'orange' }[] = [
-  { href: '/packages', icon: 'box', key: 'pkg' },
-  { href: '/itineraries', icon: 'doc', key: 'itin' },
-  { href: '/driver', icon: 'car', key: 'drv', tone: 'orange' },
-  { href: '/activities', icon: 'compass', key: 'act', tone: 'orange' },
-  { href: '/map', icon: 'map', key: 'map' },
-  { href: CUSTOM_HREF, icon: 'wand', key: 'cust' },
-]
-const SERVICES = ALL_SERVICES.filter((service) => FEATURES.driver || service.href !== '/driver')
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(
   (name) => `/brand/${name}.jpg`,
@@ -122,27 +124,48 @@ function firstGrapheme(value: string): string {
 }
 
 type Requested =
-  | { kind: 'activity'; activity: ActivitySummary }
-  | { kind: 'package'; pkg: PackageSummary }
+  | { kind: 'act'; activity: ActivitySummary }
+  | { kind: 'iti'; itinerary: ItinerarySummary }
+  | { kind: 'pkg'; pkg: PackageSummary }
 
-/** Alternate the two lists (activity, package, …), topping up from either. */
+/** The package's mix of the three lists; a short list is topped up from the others. */
 function mostRequested(
   activities: readonly ActivitySummary[],
+  itineraries: readonly ItinerarySummary[],
   packages: readonly PackageSummary[],
 ): Requested[] {
-  const out: Requested[] = []
-  let a = 0
-  let p = 0
-  while (out.length < MOST_REQUESTED && (a < activities.length || p < packages.length)) {
-    const takeActivity = out.length % 2 === 0 ? a < activities.length : p >= packages.length
-    if (takeActivity) {
-      const activity = activities[a++]
-      if (activity !== undefined) out.push({ kind: 'activity', activity })
-    } else {
-      const pkg = packages[p++]
-      if (pkg !== undefined) out.push({ kind: 'package', pkg })
+  const queues = { act: [...activities], iti: [...itineraries], pkg: [...packages] }
+  const take = (kind: Requested['kind']): Requested | null => {
+    if (kind === 'act') {
+      const activity = queues.act.shift()
+      return activity ? { kind, activity } : null
     }
+    if (kind === 'iti') {
+      const itinerary = queues.iti.shift()
+      return itinerary ? { kind, itinerary } : null
+    }
+    const pkg = queues.pkg.shift()
+    return pkg ? { kind, pkg } : null
   }
+  const out: Requested[] = []
+  for (const kind of MR_PATTERN) {
+    const item = take(kind) ?? take('act') ?? take('pkg') ?? take('iti')
+    if (item) out.push(item)
+  }
+  return out
+}
+
+function requestedKey(item: Requested): string {
+  if (item.kind === 'act') return item.activity.id
+  if (item.kind === 'iti') return item.itinerary.id
+  return item.pkg.id
+}
+
+/** Repeat a short list until it has at least `min` entries. */
+function fill<T>(items: readonly T[], min: number): T[] {
+  if (items.length === 0) return []
+  const out = [...items]
+  while (out.length < min) out.push(...items)
   return out
 }
 
@@ -176,16 +199,48 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const t = await getTranslations()
 
-  const [catalogue, packages, mapPlaces, taxonomy] = await Promise.all([
+  const [catalogue, itineraries, packages, mapPlaces, taxonomy, articles] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
+    listItineraries(),
     listPackages(),
     listMapPlaces(),
     listMapTaxonomy(),
+    listArticles({ limit: BLOG_COUNT, locale }),
   ])
 
-  // --- most requested (activities without events, then packages) -----------
+  // --- most requested (activities without events, itineraries, packages) ----
   const topActivities = catalogue.filter((activity) => !inCategory(activity, EVENTS_CATEGORY_KEY))
-  const requested = mostRequested(topActivities, packages)
+  const requested = mostRequested(topActivities, itineraries, packages)
+  const mrCard = (item: Requested) => (
+    <div key={requestedKey(item)} className="mr-item">
+      {item.kind === 'act' ? (
+        <ActivityCard activity={item.activity} />
+      ) : item.kind === 'iti' ? (
+        <ItineraryCard itinerary={item.itinerary} />
+      ) : (
+        <PackageCard pkg={item.pkg} />
+      )}
+    </div>
+  )
+  const mrTabs: MoodTab[] = (
+    [
+      ['all', 'hv4_mr_t_all'],
+      ['act', 'hv4_mr_t_act'],
+      ['iti', 'hv4_mr_t_iti'],
+      ['pkg', 'hv4_mr_t_pkg'],
+    ] as const
+  )
+    .map(([key, label]) => ({
+      key,
+      label: t(label),
+      count: key === 'all' ? requested.length : requested.filter((r) => r.kind === key).length,
+    }))
+    .filter((tab) => tab.count > 0)
+  const mrPanels: Record<string, ReactNode> = {}
+  for (const tab of mrTabs) {
+    const items = requested.filter((r) => tab.key === 'all' || r.kind === tab.key)
+    mrPanels[tab.key] = <div className="mr-row">{items.slice(0, MR_SHOWN).map(mrCard)}</div>
+  }
 
   // --- reviews ----------------------------------------------------------------
   const reviewSources = catalogue.slice(0, REVIEW_SOURCE_COUNT)
@@ -200,6 +255,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     )
     .sort((a, b) => b.review.createdAt.localeCompare(a.review.createdAt))
     .slice(0, REVIEW_COUNT)
+  const half = Math.ceil(reviews.length / 2)
+  const rowA = fill(reviews, MARQUEE_MIN)
+  const rowB = fill([...reviews.slice(half), ...reviews.slice(0, half)], MARQUEE_MIN)
+  const reviewTiles = (row: typeof reviews, copy: boolean, keyPrefix: string) =>
+    row.map(({ review, activity }, index) => (
+      <ReviewTile
+        key={`${keyPrefix}-${index}-${review.id}`}
+        review={review}
+        href={activity.href}
+        about={pick(activity.name, locale, activity.slug)}
+        locale={locale}
+        verifiedLabel={t('hv3_rv_verified')}
+        copy={copy}
+      />
+    ))
 
   // --- map places (free only: redacted for an anonymous visitor) ------------
   const openPlaces = buildMapPayload(mapPlaces, emptyEntitlements()).places.filter(isOpen)
@@ -209,9 +279,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   )
 
   const placeCards = (places: readonly OpenPlace[]) => (
-    <div className="cc-grid cc-g4">
+    <div className="grid fs-grid">
       {places.slice(0, MOOD_CARD_COUNT).map((place) => (
-        <PlaceCompact key={place.id} place={place} locale={locale} />
+        <PlaceCard key={place.id} place={place} showFree={false} />
       ))}
     </div>
   )
@@ -229,102 +299,130 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const searchAction = getPathname({ href: '/search', locale })
 
+  // Hero sentence, word by word (each word rises in after "Bali").
+  const words: { text: string; em: boolean }[] = [
+    ...t('hv4_sub_a')
+      .split(/\s+/)
+      .map((text) => ({ text, em: false })),
+    ...t('hv4_sub_em')
+      .split(/\s+/)
+      .map((text) => ({ text, em: true })),
+    ...t('hv4_sub_b')
+      .split(/\s+/)
+      .map((text) => ({ text, em: false })),
+  ].filter((word) => word.text !== '')
+
   return (
     <main className="home-v3">
-      {/* 1 — hero */}
-      <section className="hero" aria-labelledby="hero-h">
-        <div className="arc" aria-hidden="true" />
-        <div className="wrap hero-grid">
-          <div className="hero-copy">
-            <span className="eyebrow">{t('hv3_hero_eyebrow')}</span>
-            <h1 className="display hero-title" id="hero-h">
-              {t.rich('hv3_hero_title', {
-                l: (chunks) => <span className="hl">{chunks}</span>,
-                em: (chunks) => <em>{chunks}</em>,
-              })}
-            </h1>
-            <p className="lede">{t('hv3_hero_lede')}</p>
-
-            <form className="hsearch" action={searchAction} method="get" role="search">
-              <label htmlFor="hq">
-                <Icon name="search" size={20} color="var(--forest)" />
-                <span className="sr-only">{t('hv3_search_label')}</span>
-                <input
-                  id="hq"
-                  name="q"
-                  type="search"
-                  placeholder={t('hv3_search_ph')}
-                  autoComplete="off"
-                  enterKeyHint="search"
-                />
-              </label>
-              <button className="btn btn-forest" type="submit">
-                {t('hv3_search_btn')}
-              </button>
-            </form>
-
-            <div className="row">
-              <LinkButton href="/explore" size="lg" iconEnd="arrow">
-                {t('hv3_cta_explore')}
-              </LinkButton>
-              <LinkButton href={CUSTOM_HREF} size="lg" variant="ghost">
-                {t('hv3_cta_plan')}
-              </LinkButton>
-            </div>
-
-            <ul className="trust" aria-label={t('hv3_trust_label')}>
-              {(['hv3_check_1', 'hv3_check_2', 'hv3_check_3'] as const).map((key) => (
-                <li key={key}>
-                  <Icon name="check" size={18} stroke={2.2} />
-                  {t(key)}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <HeroArches
-            arches={ARCHES}
-            pauseLabel={t('hv3_vid_pause')}
-            playLabel={t('hv3_vid_play')}
+      {/* 1 — hero: full-screen video slider */}
+      <HeroVideo
+        labelledBy="hero-h"
+        clips={HERO_CLIPS.map((clip) => ({
+          id: clip.id,
+          webm: clip.webm,
+          mp4: clip.mp4,
+          poster: clip.poster,
+          label: t(clip.label),
+          short: t(clip.short),
+        }))}
+        pauseLabel={t('hv3_vid_pause')}
+        playLabel={t('hv3_vid_play')}
+        tabsLabel={t('hv4_tabs_label')}
+      >
+        <h1 className="hv-title" id="hero-h">
+          <span className="hv-bali">{t('hv4_bali')}</span>
+          <span className="hv-sub">
+            {words.map((word, index) => {
+              const span = (
+                <span key={index} className="w" style={{ '--i': index } as CSSProperties}>
+                  {word.text}
+                </span>
+              )
+              return (
+                <span key={index}>
+                  {index > 0 ? ' ' : null}
+                  {word.em ? <em>{span}</em> : span}
+                </span>
+              )
+            })}
+          </span>
+        </h1>
+        <p className="hv-lede">{t('hv4_lede')}</p>
+        <form className="hv-search" action={searchAction} method="get" role="search">
+          <Icon name="search" size={20} />
+          <label htmlFor="hq" className="sr-only">
+            {t('hv3_search_label')}
+          </label>
+          <input
+            id="hq"
+            name="q"
+            type="search"
+            placeholder={t('hv4_search_ph')}
+            autoComplete="off"
+            enterKeyHint="search"
           />
-        </div>
+          <button className="btn btn-primary" type="submit">
+            {t('hv4_search_btn')}
+          </button>
+        </form>
+        <Link className="hv-link" href="/services">
+          {t('hv3_cta_plan')} <Icon name="arrow" size={16} stroke={2.2} className="flip" />
+        </Link>
+      </HeroVideo>
 
-        {/* What are you planning today? — one icon per service page */}
-        <div className="wrap qd-wrap">
-          <div className="qd-head">
-            <h2 className="qd-title" id="qd-h">
+      {/* 2 — what are you planning today? (icon cards only here: v3.3) */}
+      <section className="sec-tight svc-sec" aria-labelledby="qd-h">
+        <div className="wrap">
+          <div className="svc-head">
+            <span className="eyebrow">{t('hv4_svc_eyebrow')}</span>
+            <h2 className="h2" id="qd-h">
               {t('hv3_qd_title')}
             </h2>
-            <p className="muted">{t('hv3_qd_sub')}</p>
           </div>
-          <nav className="qd" aria-labelledby="qd-h">
-            {SERVICES.map((service) => (
-              <Link key={service.key} href={service.href}>
-                <span className={service.tone === 'orange' ? 'ic is-orange' : 'ic'}>
-                  <Icon name={service.icon} size={22} />
+          <SvcCards labelledBy="qd-h">
+            {SERVICES.map((service, index) => (
+              <Link
+                key={service.key}
+                href={service.href}
+                className="ncard"
+                style={{ '--i': index } as CSSProperties}
+              >
+                <span className="nc-ph" aria-hidden="true">
+                  <span className="clip">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
+                    <img src={service.image} alt="" loading="lazy" />
+                  </span>
+                  <span className="nc-ic">
+                    <Icon name={service.icon} size={24} stroke={1.7} />
+                  </span>
                 </span>
-                <span>
-                  <span className="qd-t">{t(`hv3_qd_${service.key}`)}</span>
-                  <small>{t(`hv3_qd_${service.key}_s`)}</small>
+                <span className="nc-b">
+                  <b className="nc-t">{t(`hv4_svc_${service.key}_t`)}</b>
+                  <span className="nc-d">{t(`hv4_svc_${service.key}_d`)}</span>
+                  <span className="nc-go">
+                    {t(`hv4_svc_${service.key}_go`)}{' '}
+                    <Icon name="arrow" size={14} stroke={2.2} className="flip" />
+                  </span>
                 </span>
               </Link>
             ))}
-          </nav>
+          </SvcCards>
         </div>
       </section>
 
-      {/* 2 — what are you in the mood for? */}
+      {/* 3 — what are you in the mood for? */}
       {openPlaces.length > 0 && (
-        <section className="sec-tight" aria-labelledby="fs-h">
+        <section className="sec" aria-labelledby="fs-h">
           <div className="wrap">
             <SectionHead
               id="fs-h"
               eyebrow={t('hv3_fs_eyebrow')}
               title={t('hv3_fs_title')}
+              lede={t('hv4_fs_lede')}
               action={
-                <Link className="link sec-link" href="/map">
-                  {t('hv3_fs_onmap')} <Icon name="arrow" size={16} className="flip" />
-                </Link>
+                <LinkButton href="/map" variant="ghost">
+                  {t('hv3_fs_onmap')}
+                </LinkButton>
               }
             />
             {moodFallback ?? (
@@ -334,28 +432,34 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </section>
       )}
 
-      {/* 3 — most requested (compact) */}
+      {/* 4 — most requested: photo cards with type tabs */}
       {requested.length > 0 && (
-        <section className="sec-tight bg-ivory2" aria-labelledby="mr-h">
+        <section className="sec-tight bg-ivory2 mr-sec" aria-labelledby="mr-h">
           <div className="wrap">
-            <SectionHead id="mr-h" title={t('hv3_mr_title')} lede={t('hv3_mr_lede')} />
-            <ul className="cc-scroll" role="list">
-              {requested.map((item) => (
-                <li key={item.kind === 'activity' ? item.activity.id : item.pkg.id}>
-                  {item.kind === 'activity' ? (
-                    <ActivityCompact activity={item.activity} layout="tile" fav={false} />
-                  ) : (
-                    <PackageCompact pkg={item.pkg} layout="tile" fav={false} />
-                  )}
-                </li>
-              ))}
-            </ul>
+            <SectionHead
+              id="mr-h"
+              eyebrow={t('hv4_mr_eyebrow')}
+              title={t('hv4_mr_title')}
+              action={
+                <LinkButton href="/services" variant="ghost">
+                  {t('hv4_mr_all')}
+                </LinkButton>
+              }
+            />
+            <MoodTabs
+              id="mr"
+              tabs={mrTabs}
+              panels={mrPanels}
+              label={t('hv4_mr_tabs')}
+              className="mr-tabs"
+              panelClassName="mr-panel"
+            />
           </div>
         </section>
       )}
 
-      {/* 4 — who we are (short strip) */}
-      <section className="sec-tight" aria-labelledby="ab-h">
+      {/* 5 — who we are (short strip) */}
+      <section className="sec" aria-labelledby="ab-h">
         <div className="wrap about-grid">
           <AboutSlider up={SLIDER_UP} down={SLIDER_DOWN} />
           <div className="stack about-copy">
@@ -370,7 +474,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   <span className="ic" aria-hidden="true">
                     <Icon name={value.icon} size={18} />
                   </span>
-                  <b>{t(`hv3_ab_${value.key}_t`)}</b>
+                  <span>
+                    <b>{t(`hv3_ab_${value.key}_t`)}</b>
+                    <span className="muted">{t(`hv4_ab_${value.key}_d`)}</span>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -381,66 +488,37 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* 4b — plan your trip in steps (numbered cards; list in _home/plan-steps.ts) */}
-      <section className="sec-tight bg-ivory2" aria-labelledby="st-h">
-        <div className="wrap">
-          <SectionHead
-            id="st-h"
-            eyebrow={t('hv3_st_eyebrow')}
-            title={t('hv3_st_title')}
-            lede={t('hv3_st_lede')}
-          />
-          <StepCards
-            label={t('hv3_st_title')}
-            items={PLAN_STEPS.filter((step) => FEATURES.driver || step.href !== '/driver').map(
-              (step) => ({
-                key: step.key,
-                art: step.art,
-                href: step.href,
-                title: t(`hv3_st_${step.key}_t`),
-                body: t(`hv3_st_${step.key}_d`),
-              }),
-            )}
-          />
-        </div>
-      </section>
-
-      {/* 5 — reviews (real only) */}
+      {/* 6 — reviews: two endless rows, opposite directions (real reviews only) */}
       {reviews.length > 0 && (
-        <section className="sec-tight" aria-labelledby="rv-h">
+        <section className="sec bg-ivory2 rv-sec" aria-labelledby="rv-h">
           <div className="wrap">
             <SectionHead
               id="rv-h"
               eyebrow={t('hv3_rv_eyebrow')}
               title={t('hv3_rv_title')}
-              lede={t('hv3_rv_lede')}
               action={
                 <Link className="link sec-link" href="/reviews">
                   {t('hv3_rv_all')} <Icon name="arrow" size={16} className="flip" />
                 </Link>
               }
             />
-            <ReviewSlider
-              label={t('hv3_rv_title')}
-              prevLabel={t('hv3_rv_prev')}
-              nextLabel={t('hv3_rv_next')}
-            >
-              {reviews.map(({ review, activity }) => (
-                <ReviewTile
-                  key={review.id}
-                  review={review}
-                  href={activity.href}
-                  about={pick(activity.name, locale, activity.slug)}
-                  locale={locale}
-                  verifiedLabel={t('hv3_rv_verified')}
-                />
-              ))}
-            </ReviewSlider>
+          </div>
+          <div className="rmarq" role="region" aria-label={t('hv4_rv_label')}>
+            <ul className="rm-track" role="list">
+              {reviewTiles(rowA, false, 'a')}
+              {reviewTiles(rowA, true, 'a2')}
+            </ul>
+          </div>
+          <div className="rmarq rev2" aria-hidden="true">
+            <ul className="rm-track" role="list">
+              {reviewTiles(rowB, true, 'b')}
+              {reviewTiles(rowB, true, 'b2')}
+            </ul>
           </div>
         </section>
       )}
 
-      {/* 6 — custom trip */}
+      {/* 7 — custom trip */}
       <section className="sec-tight" aria-labelledby="ct-h">
         <div className="wrap">
           <div className="ct">
@@ -462,6 +540,29 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </div>
       </section>
+
+      {/* 8 — blog: three real articles, magazine layout */}
+      {articles.length > 0 && (
+        <section className="sec" aria-labelledby="bl-h">
+          <div className="wrap">
+            <SectionHead
+              id="bl-h"
+              eyebrow={t('hv4_bl_eyebrow')}
+              title={t('hv4_bl_title')}
+              action={
+                <LinkButton href="/blog" variant="ghost">
+                  {t('hv4_bl_all')}
+                </LinkButton>
+              }
+            />
+            <div className="blog">
+              {articles.map((article, index) => (
+                <BlogPost key={article.id} article={article} locale={locale} lead={index === 0} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   )
 }
@@ -470,21 +571,47 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 // Fragments
 // ---------------------------------------------------------------------------
 
-/** A free map place as a compact card → its own place page. */
-function PlaceCompact({ place, locale }: { place: OpenPlace; locale: Locale }) {
-  const category = pickOptional(place.category, locale)
+/** One article as a photo tile with its category and title → its own page. */
+function BlogPost({
+  article,
+  locale,
+  lead,
+}: {
+  article: ArticleSummary
+  locale: Locale
+  lead: boolean
+}) {
+  const title = pick(article.title, locale, article.slug)
+  const excerpt = pickOptional(article.excerpt, locale)
+  const category = article.category
+    ? pick(article.category.label, locale, article.category.key)
+    : null
+  const date =
+    article.publishedAt === null
+      ? null
+      : new Intl.DateTimeFormat(locale === 'ar' ? 'ar-u-nu-latn' : locale, {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(new Date(article.publishedAt))
   return (
-    <CompactCard
-      href={entityHref('place', place.slug)}
-      title={pick(place.name, locale, place.slug)}
-      description={pickOptional(place.description, locale)}
-      image={{ src: place.heroImageUrl }}
-      icon="pin"
-      badge={category}
-      meta={pickOptional(place.regionLabel, locale)}
-      end={<Stars value={place.rating} />}
-      fav={<FavButton kind="place" refId={place.id} />}
-    />
+    <Link href={article.href} className="post">
+      <Photo
+        src={article.hero?.url}
+        alt=""
+        srcSetAvif={article.hero?.srcSetAvif}
+        srcSetWebp={article.hero?.srcSetWebp}
+        sizes={lead ? '(min-width: 760px) 640px, 100vw' : '(min-width: 760px) 480px, 100vw'}
+      />
+      <span className="pb">
+        <span className="pm">
+          {category !== null && <span className="tag">{category}</span>}
+          {date !== null && <span dir="ltr">{date}</span>}
+        </span>
+        <h3>{title}</h3>
+        {excerpt !== null && <span className="px">{excerpt}</span>}
+      </span>
+    </Link>
   )
 }
 
@@ -495,19 +622,22 @@ function ReviewTile({
   about,
   locale,
   verifiedLabel,
+  copy = false,
 }: {
   review: ReviewDto
   href: string
   about: string
   locale: Locale
   verifiedLabel: string
+  /** A marquee duplicate: hidden from assistive tech and out of the tab order. */
+  copy?: boolean
 }) {
   const body = pickOptional(review.body, locale)
   const country = pickOptional(review.authorCountry, locale)
   const stars = Math.max(0, Math.min(5, Math.round(review.stars)))
 
   return (
-    <li>
+    <li aria-hidden={copy || undefined} inert={copy || undefined}>
       <Link href={href} className="card rev">
         <span className="row between">
           <span className="stars" role="img" aria-label={`${review.stars}/5`}>

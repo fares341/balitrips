@@ -2797,232 +2797,99 @@ html {
   }
 }
 
-/* ---------- Step cards (StepCards: numbered feature cards) ----------
- * Client reference (bluuu.tours video): white card on a light ground, soft
- * shadow, two-tone illustration at the start, bold title + 2-line text, a
- * number in the top inline-end corner. One card at a time is "active"
- * (StepCycle sets data-active on its <li>): the number turns brand green and
- * a thin line fills along the card's top edge over --stc-step.
- * Row layout on phones (1 col) and tablets (2 cols), tiles from 1024px.
- */
-.stc-grid {
-  --stc-step: 2600ms; /* = STEP_MS in step-cycle.tsx */
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* ---------- Icon cards (.ncard, package v3.1–v3.3) ----------
+ * Since v3.3 used ONLY in the home page's "What are you planning today?"
+ * (bt-home.css `.svc`), with a small photo carrying the icon. No index
+ * numbers (v3.3 removed them from every card). */
+.ncards {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--s3);
+  gap: 12px;
+  grid-template-columns: 1fr;
 }
-.stc-grid > li {
-  min-width: 0;
-  display: flex;
-}
-.stc {
+.ncard {
   position: relative;
-  flex: 1;
-  min-width: 0;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
   align-items: center;
-  gap: var(--s4);
-  padding: var(--s5) var(--s4);
-  padding-inline-end: var(--s7);
+  padding: 20px 18px 18px;
+  padding-inline-end: 22px;
+  border-radius: 20px;
   background: var(--white);
-  border-radius: var(--r-md);
+  border: 1px solid var(--line-soft);
   box-shadow: var(--sh-1);
+  color: var(--text);
   overflow: hidden;
+  isolation: isolate;
+  min-width: 0;
   transition:
     transform var(--d-base) var(--ease),
-    box-shadow var(--d-base);
+    box-shadow var(--d-base),
+    border-color var(--d-base);
 }
-/* the progress line along the top edge */
-.stc::before {
+.ncard::before {
   content: '';
   position: absolute;
-  inset-block-start: 0;
-  inset-inline: 0;
+  top: 0;
+  inset-inline-start: 0;
   height: 3px;
-  background: var(--forest);
-  transform: scaleX(0);
-  transform-origin: left;
+  width: 0;
+  background: var(--orange);
+  border-radius: 0 0 3px 3px;
 }
-[dir='rtl'] .stc::before {
-  transform-origin: right;
+.ncard:hover {
+  border-color: rgba(38, 85, 46, 0.2);
 }
-.stc-grid > li[data-active] .stc {
-  box-shadow: var(--sh-2);
+.ncard:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
 }
-.stc-grid > li[data-active] .stc::before {
-  animation: stc-line var(--stc-step) linear forwards;
-}
-.stc-grid[data-paused] > li[data-active] .stc::before {
-  animation: none;
-  transform: scaleX(1);
-}
-@keyframes stc-line {
+@keyframes ncbar {
+  from {
+    width: 0;
+  }
   to {
-    transform: scaleX(1);
+    width: 100%;
   }
 }
-.stc:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sh-2);
-}
-.stc:has(.stc-link:focus-visible) {
-  outline: 3px solid var(--orange);
-  outline-offset: 2px;
-}
-.stc-num {
-  position: absolute;
-  inset-block-start: 8px;
-  inset-inline-end: 14px;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: 0.02em;
-  color: var(--forest);
-  opacity: 0.12;
-  pointer-events: none;
-  user-select: none;
-  transition:
-    opacity var(--d-base),
-    color var(--d-base);
-}
-.stc-grid > li[data-active] .stc-num,
-.stc:hover .stc-num {
-  opacity: 1;
-}
-.stc-art {
+.nc-ic {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
+  color: var(--forest);
+  background: radial-gradient(
+    circle at 35% 30%,
+    #fff 0,
+    var(--palm-soft) 55%,
+    var(--palm-mid) 100%
+  );
+  box-shadow: inset 0 -6px 0 rgba(38, 85, 46, 0.08);
+  transition:
+    background var(--d-base),
+    color var(--d-base);
 }
-.step-art {
-  width: 72px;
-  height: 72px;
-  overflow: visible;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.step-art .sa-line {
-  stroke: var(--forest);
-  stroke-width: 2;
-  fill: none;
-}
-.step-art .sa-paper {
-  fill: var(--white);
-  stroke: none;
-}
-.step-art .sa-paper-line {
-  stroke: var(--white);
-  stroke-width: 1.8;
-}
-.step-art .sa-fill {
-  fill: var(--sa-fill);
-  stroke: none;
-}
-.step-art .sa-stop-a {
-  stop-color: var(--palm-mid);
-}
-.step-art .sa-stop-b {
-  stop-color: var(--forest-soft);
-}
-.step-art .sa-accent {
-  fill: var(--orange);
-  stroke: var(--forest);
-  stroke-width: 1.6;
-}
-.step-art .sa-route {
-  stroke: var(--forest);
-  stroke-width: 1.8;
-  stroke-dasharray: 2 4;
-}
-.step-art .sa-wave {
-  stroke: var(--white);
-  stroke-width: 1.8;
-}
-.stc-copy {
-  min-width: 0;
+.nc-b {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
 }
-.stc-t {
+.nc-t {
+  color: var(--forest);
   font-size: 16px;
   line-height: 1.35;
-  color: var(--forest);
+  font-weight: 800;
 }
-.stc-link {
-  color: inherit;
-}
-.stc-link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.stc-link:focus-visible {
-  outline: none;
-}
-.stc-d {
-  font-size: var(--t-small);
-  line-height: 1.6;
+.nc-d {
   color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-.stc-tag {
-  align-self: flex-start;
-  margin-block-start: 4px;
-  font-size: var(--t-micro);
-  font-weight: 700;
-  color: var(--forest-ink);
-  background: var(--orange-soft);
-  border-radius: var(--r-pill);
-  padding: 2px 10px;
-}
-@media (min-width: 600px) {
-  .stc-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--s4);
-  }
-}
-@media (min-width: 1024px) {
-  .stc-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .stc {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    align-content: start;
-    padding: var(--s6);
-    gap: var(--s4);
-  }
-  .stc-art,
-  .step-art {
-    width: 84px;
-    height: 84px;
-  }
-  .stc-num {
-    font-size: 34px;
-    inset-block-start: 14px;
-    inset-inline-end: 18px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .stc,
-  .stc-num {
-    transition: none;
-  }
-  .stc:hover {
-    transform: none;
-  }
-  .stc::before {
-    display: none;
-  }
 }

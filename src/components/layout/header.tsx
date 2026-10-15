@@ -4,9 +4,9 @@
  * Header — v3 package (bt.js `renderHeader`, screens 01-home).
  *
  * Desktop (≥1024px), two rows:
- *   [language pill · search · account]   logo   [favorites · My Trip · Start Planning]
+ *   [language pill · account]   logo   [favorites · My Trip · Start Planning]
  *   then the seven section links as pills, the current one filled forest.
- * Phones/tablets: [menu · language]  logo  [search · favorites · My Trip]; the
+ * Phones/tablets: [menu · language]  logo  [favorites · My Trip]; the
  * seven links, four more destinations, "Start Planning", the account and the
  * languages live in the drawer. The bottom tab bar is `<Tabbar>`.
  *
@@ -42,7 +42,6 @@ import {
   HEADER_ROUTES,
   HOME_HREF,
   isActivePath,
-  SEARCH_HREF,
   START_PLANNING_HREF,
 } from './routes'
 import { useCartCount } from './use-cart-count'
@@ -214,14 +213,6 @@ export function Header() {
                 <Icon name="menu" size={24} />
               </button>
               <LanguageSwitcher variant="menu" />
-              <Link
-                href={SEARCH_HREF}
-                className="icon-btn only-desk"
-                aria-label={t('bt_search')}
-                title={t('bt_search')}
-              >
-                <Icon name="search" size={21} />
-              </Link>
               <AccountMenu signedIn={favorites.signedIn} />
               <span className="only-desk-flex">
                 <NotificationBell />
@@ -238,14 +229,6 @@ export function Header() {
             </Link>
 
             <div className="hdr-end">
-              <Link
-                href={SEARCH_HREF}
-                className="icon-btn only-mob"
-                aria-label={t('bt_search')}
-                title={t('bt_search')}
-              >
-                <Icon name="search" size={21} />
-              </Link>
               <Link
                 href={FAVORITES_HREF}
                 className="icon-btn"

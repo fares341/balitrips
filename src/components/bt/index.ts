@@ -51,8 +51,6 @@ export type {
 } from './card'
 
 export { CompactCard } from './compact-card'
-export { StepArt, type StepArtName } from './step-art'
-export { StepCards, type StepCardItem } from './step-cards'
 export type {
   CompactCardImage,
   CompactCardLayout,
