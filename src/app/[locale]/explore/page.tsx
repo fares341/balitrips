@@ -1,42 +1,32 @@
 /**
- * Explore Bali — landmarks by region.
+ * Explore Bali — v3 screen 13 (design-reference/prototype/explore.html).
  *
- * Ported from `ExplorePage` in design/handoff/sections-bt/page-explore.jsx.
+ *   banner · one photo card per region → /explore/[region] · "compare areas"
+ *   with real counts (activities, open map places, itineraries) · the
+ *   landmarks, filterable by region in the URL (?region=)
  *
- * The handoff held the active region in `React.useState`, which made the
- * filtered view unaddressable: "Explore Bali, Ubud only" was not a URL, so it
- * could not be shared, bookmarked, linked from an article or indexed. The
- * region lives in the query string here and the filtering happens in Postgres,
- * so the chips are plain anchors and the page works with JavaScript disabled.
- *
- * Reading `searchParams` opts this route out of static prerendering — that is
- * inherent to a shareable filtered list and is scoped to this page.
- *
- * Each card links to the activity that sells the landmark; `LandmarkCard`
- * already falls back to the map when there is no *published* activity behind
- * it, rather than the handoff's link straight to `l.actId`, which pointed at
- * detail pages for records that may since have been unpublished.
+ * The package's comparison used editorial dot ratings and suggested stays;
+ * those are not in the data, so the table shows what is: real counts.
  */
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { RegionCard } from '@/components/bt'
 import { LandmarkCard } from '@/components/cards'
-import { LinkButton, SectionHead } from '@/components/shared'
-import { Icon } from '@/components/ui'
 import { locales, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
-import { listLandmarks, listRegions } from '@/lib/content/queries'
+import { listLandmarks } from '@/lib/content/queries'
 import { ENTITY_PATHS, type RegionDto } from '@/lib/content/types'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
-import { imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
+import { regionHref, regionViews } from './region-data'
+
+import '@/styles/bt-activity.css'
 
 const EXPLORE_HREF = ENTITY_PATHS.landmark
-
-const MAP_HREF = ENTITY_PATHS.place
 
 /** The design's "no filter" sentinel. `listLandmarks` understands it too. */
 const ALL = 'all'
@@ -57,16 +47,10 @@ function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
-/**
- * Canonical URL for one region filter.
- *
- * The default is omitted rather than serialised, so `/explore` and
- * `/explore?region=all` are not two URLs for one page.
- */
 function exploreHref(regionKey: string): string {
   return regionKey === ALL
     ? EXPLORE_HREF
-    : `${EXPLORE_HREF}?region=${encodeURIComponent(regionKey)}`
+    : `${EXPLORE_HREF}?region=${encodeURIComponent(regionKey)}#landmarks`
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -76,15 +60,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: t('navr_explore'),
-    description: t('ex_sub'),
-    // Always the unfiltered page: a region view is a facet of this one, not a
-    // page of its own, and letting each `?region=` self-canonicalise would put
-    // nine near-duplicate URLs into the index.
+    description: t('ex4_sub'),
     alternates: alternatesFor(EXPLORE_HREF, locale),
     openGraph: {
       type: 'website',
-      title: t('ex_title'),
-      description: t('ex_sub'),
+      title: t('ex4_title'),
+      description: t('ex4_sub'),
       locale,
     },
   }
@@ -97,32 +78,88 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
   const locale = toLocale(raw)
   const query = await searchParams
 
-  const [t, regions] = await Promise.all([getTranslations({ locale }), listRegions()])
+  const [t, views] = await Promise.all([getTranslations({ locale }), regionViews(locale)])
+  const regions = views.map((view) => view.region)
 
-  // An unknown ?region= is treated as no filter rather than as an empty
-  // result: a stale link from a renamed region should show the island, not a
-  // dead end that also reads as a soft 404 to a crawler.
   const requested = firstValue(query['region'])
   const activeRegion =
     requested !== undefined && regions.some((region) => region.key === requested) ? requested : ALL
-
   const landmarks = await listLandmarks({ regionKey: activeRegion })
-
-  const pool = imagePool(landmarks)
 
   return (
     <main>
       <PageBanner
-        image={pool[0] ?? null}
+        imageSrc="/brand/aerial-cliff.jpg"
         tag={t('navr_explore')}
-        title={t('ex_title')}
-        subtitle={t('ex_sub')}
+        title={t('ex4_title')}
+        subtitle={t('ex4_sub')}
         breadcrumbLabel={t('c_breadcrumb')}
         trail={[{ label: t('c_home'), href: '/' }, { label: t('navr_explore') }]}
       />
 
-      <section className="bg-ivory">
+      <section className="sec">
+        <div className="wrap stack" style={{ gap: 28 }}>
+          {views.length > 0 && (
+            <ul className="ex-regions" role="list">
+              {views.map((view, index) => (
+                <li key={view.region.id}>
+                  <RegionCard
+                    href={regionHref(view.region.key)}
+                    image={view.image}
+                    name={pick(view.region.label, locale, view.region.key)}
+                    tagline={t('ex4_counts', {
+                      a: view.activities.length,
+                      p: view.places.length,
+                    })}
+                    cta={t('ex4_cta')}
+                    tall
+                    priority={index < 3}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {views.length > 1 && (
+            <div className="stack" style={{ gap: 12 }}>
+              <h2 className="h3">{t('ex4_cmp_t')}</h2>
+              <div className="cmp-wrap">
+                <table className="cmp">
+                  <thead>
+                    <tr>
+                      <th scope="col">{t('ex4_cmp_area')}</th>
+                      <th scope="col">{t('sr4_t_activity')}</th>
+                      <th scope="col">{t('sr4_t_place')}</th>
+                      <th scope="col">{t('sr4_t_itinerary')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {views.map((view) => (
+                      <tr key={view.region.id}>
+                        <th scope="row">
+                          <Link className="link" href={regionHref(view.region.key)}>
+                            {pick(view.region.label, locale, view.region.key)}
+                          </Link>
+                        </th>
+                        <td dir="ltr">{view.activities.length}</td>
+                        <td dir="ltr">{view.places.length}</td>
+                        <td dir="ltr">{view.itineraries.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <small className="muted">{t('ex4_cmp_note')}</small>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="sec bg-ivory2" id="landmarks" aria-labelledby="ex-landmarks">
         <div className="wrap">
+          <h2 className="h2" id="ex-landmarks" style={{ marginBottom: 16 }}>
+            {t('ex4_landmarks')}
+          </h2>
           <RegionChips
             regions={regions}
             activeRegion={activeRegion}
@@ -136,23 +173,11 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
             </p>
           ) : (
             <div className="grid bt-grid-3auto">
-              {landmarks.map((landmark, index) => (
-                <LandmarkCard key={landmark.id} landmark={landmark} priority={index < 3} />
+              {landmarks.map((landmark) => (
+                <LandmarkCard key={landmark.id} landmark={landmark} />
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="bg-ivory-2" aria-labelledby="explore-map">
-        <div className="wrap">
-          <SectionHead id="explore-map" eyebrow={t('map_eyebrow')} title={t('hm_title')} centered />
-          <div className="center">
-            {/* A link, not the handoff's `<button onClick={navigate}>`. */}
-            <LinkButton href={MAP_HREF} variant="orange">
-              <Icon name="pin" size={18} color="#fff" /> {t('hm_cta')}
-            </LinkButton>
-          </div>
         </div>
       </section>
     </main>
@@ -160,12 +185,8 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
 }
 
 /**
- * Region rail.
- *
- * `Chip` from '@/components/shared' is deliberately not used: it renders a
- * `<button>` with `aria-pressed`, which is the right control for client-side
- * state and the wrong one for a navigation that changes the URL. The classes
- * are identical, so the two look the same.
+ * Region rail for the landmarks: links (the filter lives in the URL), so
+ * the plain chip classes rather than the button `Chip`.
  */
 function RegionChips({
   regions,
@@ -175,7 +196,6 @@ function RegionChips({
 }: {
   regions: readonly RegionDto[]
   activeRegion: string
-  /** Label of the "no filter" chip, and the accessible name of the rail. */
   allLabel: string
   locale: Locale
 }) {
