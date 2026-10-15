@@ -112,7 +112,20 @@ jobs:
       # 1.5-3 GB, and on the 4 GiB box the OOM killer takes Postgres rather
       # than Node — a deploy would become a database outage.
       - name: Build
-        run: pnpm build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          # surface the failure as annotations (readable from the API/UI summary)
+          grep -nE "Error|error|Failed|failed|Cannot|cannot|not found|Type " build.log | tail -40 | while IFS= read -r line; do
+            echo "::error::${line:0:900}"
+          done
+          tail -25 build.log | while IFS= read -r line; do echo "::warning::${line:0:900}"; done
 
       - uses: docker/setup-buildx-action@v3
 
