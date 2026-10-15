@@ -1,6 +1,7 @@
 'use server'
 
 import { eq, sql } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
@@ -11,7 +12,18 @@ import { locales } from '@/i18n/config'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import type { Translate } from '../../_i18n'
-import { fcurrency, fdate, fint, flines, freq, localeFieldName } from '../../_lib/form'
+import { IMAGERY_PROVIDERS } from '@/app/[locale]/map/map-style'
+
+import {
+  fcurrency,
+  fdate,
+  fenum,
+  ffloat,
+  fint,
+  flines,
+  freq,
+  localeFieldName,
+} from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -53,6 +65,8 @@ async function save<K extends SettingKey>(
   key: K,
   build: (t: Translate) => SettingsShape[K],
   successKey: string,
+  /** Where the form lives (the banner shows there). */
+  back: string = LIST,
 ): Promise<void> {
   const session = await requireCapability('config.write')
   const { t } = await getAdminI18n()
@@ -107,7 +121,7 @@ async function save<K extends SettingKey>(
     outcome = { err: readableError(t, error) }
   }
 
-  redirect(withOutcome(LIST, outcome))
+  redirect(withOutcome(back, outcome))
 }
 
 /**
@@ -228,5 +242,24 @@ export async function savePolicy(id: string, form: FormData): Promise<void> {
       return { updated, body }
     },
     'config.ok_policy',
+  )
+}
+
+/**
+ * The public map's real (3D) view — edited from Studio → Map, saved through
+ * the same validated, audited path as every other setting.
+ */
+export async function saveMapSettings(form: FormData): Promise<void> {
+  // Before `save()`, which ends in a redirect. Harmless if validation fails.
+  revalidatePath('/[locale]/map', 'page')
+  await save(
+    'map',
+    (t) => ({
+      imagery: fenum(form, 'imagery', IMAGERY_PROVIDERS, 'esri'),
+      exaggeration: ffloat(form, 'exaggeration', t('map.exaggeration')),
+      tiltOnEnter: fint(form, 'tiltOnEnter', 50, t('map.tilt')),
+    }),
+    'map.ok_saved',
+    adminHref('/map'),
   )
 }

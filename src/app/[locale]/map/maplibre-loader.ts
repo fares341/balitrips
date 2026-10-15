@@ -6,7 +6,7 @@
  * lets a test harness inject a stand-in engine (`EngineLoader`).
  */
 
-export const MAPLIBRE_VERSION = '4.7.1'
+export const MAPLIBRE_VERSION = '5.6.0'
 export const MAPLIBRE_JS = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.js`
 export const MAPLIBRE_CSS = `https://unpkg.com/maplibre-gl@${MAPLIBRE_VERSION}/dist/maplibre-gl.css`
 
@@ -32,9 +32,14 @@ export interface CameraOptions {
 
 export interface MapLike {
   on(type: string, listener: (event?: unknown) => void): unknown
+  on(type: string, layerId: string, listener: (event?: unknown) => void): unknown
   off(type: string, listener: (event?: unknown) => void): unknown
   once(type: string, listener: (event?: unknown) => void): unknown
   project(lngLat: LngLatLike): { x: number; y: number }
+  unproject(point: [number, number]): { lng: number; lat: number }
+  getCenter(): { lng: number; lat: number }
+  stop(): unknown
+  loaded?(): boolean
   getBounds(): LngLatBoundsLike
   getZoom(): number
   getPitch(): number
@@ -48,7 +53,8 @@ export interface MapLike {
   cameraForBounds(
     bounds: [LngLatLike, LngLatLike],
     options?: { padding?: CameraOptions['padding'] },
-  ): { zoom?: number } | undefined
+  ): { zoom?: number; center?: LngLatLike | { lng: number; lat: number } } | undefined
+  setMinZoom?(zoom: number): unknown
   zoomIn(options?: { duration?: number }): unknown
   zoomOut(options?: { duration?: number }): unknown
   panBy(offset: [number, number], options?: { duration?: number }): unknown
@@ -72,13 +78,19 @@ export interface MapOptions {
   maxZoom?: number
   maxPitch?: number
   attributionControl?: false
+  pixelRatio?: number
+  center?: LngLatLike
+  zoom?: number
+  pitch?: number
   keyboard?: boolean
   dragRotate?: boolean
   pitchWithRotate?: boolean
   touchPitch?: boolean
   renderWorldCopies?: boolean
   fadeDuration?: number
-  fitBoundsOptions?: { padding?: CameraOptions['padding'] }
+  fitBoundsOptions?: { padding?: CameraOptions['padding'] | number }
+  /** MapLibre 5: keep the canvas for `toDataURL` (off — the map is protected). */
+  canvasContextAttributes?: { antialias?: boolean; preserveDrawingBuffer?: boolean }
 }
 
 export interface MapEngine {

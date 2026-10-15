@@ -23,7 +23,8 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
-import { categoryIcon, geoToImagePx, IMAGE_SIZE } from '../../map/geo'
+import { ART_H, ART_SMALL_URL, ART_W, geoToArt } from '../../map/art-warp'
+import { categoryIcon } from '../../map/geo'
 import { PlaceActions } from '../../map/place-actions'
 
 export const dynamic = 'force-dynamic'
@@ -103,9 +104,11 @@ export default async function PlacePage({ params }: PageProps) {
     .sort((a, b) => a.km - b.km)
     .slice(0, 4)
 
-  const px = geoToImagePx(place.lat, place.lon)
-  const fx = (px.x / IMAGE_SIZE.w) * 100
-  const fy = (px.y / IMAGE_SIZE.h) * 100
+  // The illustrated artwork, centred on the place (approximate between the
+  // artwork's control points — it is an overview, the map link is exact).
+  const [ax, ay] = geoToArt(place.lon, place.lat)
+  const fx = (Math.max(0, Math.min(ART_W, ax)) / ART_W) * 100
+  const fy = (Math.max(0, Math.min(ART_H, ay)) / ART_H) * 100
 
   return (
     <div className="wrap">
@@ -156,7 +159,7 @@ export default async function PlacePage({ params }: PageProps) {
             aria-label={t('map_view')}
           >
             <img
-              src="/brand/bali-sat.jpg"
+              src={ART_SMALL_URL}
               alt=""
               style={{
                 position: 'absolute',

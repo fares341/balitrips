@@ -138,6 +138,18 @@
 		# script-src needs nonce wiring in the app (next.config.ts plus the
 		# root layout), which this file cannot do on its own. See
 		# docs/deployment.md.
+		#
+		# The interactive map loads third-party resources at runtime, all
+		# allowed today because no fetch directive is set. If script-src /
+		# style-src / connect-src / img-src / worker-src are ever added, the
+		# map (src/app/[locale]/map/map-style.ts + maplibre-loader.ts) needs
+		# exactly:
+		#   script-src, style-src  https://unpkg.com  (maplibre-gl@5.6.0, pinned)
+		#   connect-src, img-src   https://server.arcgisonline.com (Esri imagery)
+		#                          https://tiles.maps.eox.at (only if Studio picks Sentinel-2)
+		#                          https://s3.amazonaws.com (elevation-tiles-prod terrain)
+		#                          https://tiles.openfreemap.org (vector tiles, glyphs)
+		#   worker-src             blob:  (MapLibre's web worker)
 		Content-Security-Policy "base-uri 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests"
 
 		-Server

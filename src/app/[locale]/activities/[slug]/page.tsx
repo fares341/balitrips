@@ -35,7 +35,7 @@ import {
 } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 
-import { geoToImagePx } from '../../map/geo'
+import { ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from '../../map/art-warp'
 import {
   BookingBox,
   BookingProvider,
@@ -50,7 +50,7 @@ import '@/styles/bt-activity.css'
 const HUB_PATH = ENTITY_PATHS.activity
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
 
-/** Location map: the satellite raster at this scale, centred on the area. */
+/** Location map: the illustrated artwork at this scale, centred on the area. */
 const MINIMAP_SCALE = 1.15
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> }
@@ -216,7 +216,13 @@ export default async function ActivityDetailPage({ params }: PageProps) {
   })
   if (place) facts.push({ icon: 'pin', label: t('act_fact_area'), value: place })
 
-  const pin = activity.location ? geoToImagePx(activity.location.lat, activity.location.lon) : null
+  // Position on the illustrated artwork (the small copy's pixels).
+  const pin = activity.location
+    ? (([x, y]) => ({
+        x: (Math.max(0, Math.min(ART_W, x)) * ART_SMALL_W) / ART_W,
+        y: (Math.max(0, Math.min(ART_H, y)) * ART_SMALL_W) / ART_W,
+      }))(geoToArt(activity.location.lon, activity.location.lat))
+    : null
 
   return (
     <main className="act-detail">
@@ -374,17 +380,17 @@ export default async function ActivityDetailPage({ params }: PageProps) {
               {pin ? (
                 <section className="blk" id="location">
                   <h2>{t('act_loc_t')}</h2>
-                  {/* The raster is not mirrored in RTL: positioned left-to-right. */}
+                  {/* The artwork is not mirrored in RTL: positioned left-to-right. */}
                   <div className="minimap" dir="ltr">
                     {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand raster, positioned by CSS */}
                     <img
-                      src="/brand/bali-sat.jpg"
+                      src={ART_SMALL_URL}
                       alt=""
                       loading="lazy"
                       decoding="async"
                       style={{
-                        width: 2048 * MINIMAP_SCALE,
-                        height: 1399 * MINIMAP_SCALE,
+                        width: ART_SMALL_W * MINIMAP_SCALE,
+                        height: Math.round((ART_SMALL_W * ART_H) / ART_W) * MINIMAP_SCALE,
                         insetInlineStart: `calc(50% - ${Math.round(pin.x * MINIMAP_SCALE)}px)`,
                         insetBlockStart: `calc(50% - ${Math.round(pin.y * MINIMAP_SCALE)}px)`,
                       }}

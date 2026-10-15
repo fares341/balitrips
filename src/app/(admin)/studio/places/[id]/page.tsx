@@ -15,6 +15,8 @@ import {
   regionOptions,
 } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
+import { readSetting } from '../../../_lib/settings'
+import { CoordPicker } from '../../../_ui/coord-picker'
 import {
   Checkbox,
   Field,
@@ -58,16 +60,21 @@ export default async function PlaceEditorPage({
 
   if (!isNew && !place) notFound()
 
-  const [regions, activities, mediaList, categoryList, tagList, placeTagRows] = await Promise.all([
-    regionOptions(),
-    activityOptions(),
-    mediaOptions(),
-    categoryOptions(),
-    db.select().from(tags).orderBy(asc(tags.sortOrder), asc(tags.key)),
-    place
-      ? db.select({ tagId: placeTags.tagId }).from(placeTags).where(eq(placeTags.placeId, place.id))
-      : [],
-  ])
+  const [regions, activities, mediaList, categoryList, tagList, placeTagRows, mapSettings] =
+    await Promise.all([
+      regionOptions(),
+      activityOptions(),
+      mediaOptions(),
+      categoryOptions(),
+      db.select().from(tags).orderBy(asc(tags.sortOrder), asc(tags.key)),
+      place
+        ? db
+            .select({ tagId: placeTags.tagId })
+            .from(placeTags)
+            .where(eq(placeTags.placeId, place.id))
+        : [],
+      readSetting('map'),
+    ])
   const chosenTags = new Set(placeTagRows.map((row) => row.tagId))
 
   return (
@@ -76,9 +83,16 @@ export default async function PlaceEditorPage({
         title={place ? pick(place.name, 'en', place.slug) : t('places.new_title')}
         description={t('places.editor_description')}
         actions={
-          <Link className="a-btn ghost" href={adminHref('/places')}>
-            {t('places.back')}
-          </Link>
+          <>
+            {place ? (
+              <Link className="a-btn ghost" href={adminHref(`/map?focus=${place.id}`)}>
+                {t('places.on_map')}
+              </Link>
+            ) : null}
+            <Link className="a-btn ghost" href={adminHref('/places')}>
+              {t('places.back')}
+            </Link>
+          </>
         }
       />
       <Flash searchParams={query} />
@@ -199,33 +213,12 @@ export default async function PlaceEditorPage({
 
         <div className="a-card">
           <h2>{t('places.location')}</h2>
+          <CoordPicker
+            lat={place ? String(place.lat) : ''}
+            lon={place ? String(place.lon) : ''}
+            settings={mapSettings}
+          />
           <div className="a-row">
-            <Field
-              label={`${t('places.latitude')} *`}
-              htmlFor="lat"
-              hint={t('places.latitude_hint')}
-            >
-              <TextInput
-                id="lat"
-                name="lat"
-                defaultValue={place ? String(place.lat) : ''}
-                required
-                inputMode="decimal"
-              />
-            </Field>
-            <Field
-              label={`${t('places.longitude')} *`}
-              htmlFor="lon"
-              hint={t('places.longitude_hint')}
-            >
-              <TextInput
-                id="lon"
-                name="lon"
-                defaultValue={place ? String(place.lon) : ''}
-                required
-                inputMode="decimal"
-              />
-            </Field>
             <Field label={t('places.opening_hours')} htmlFor="openingHours">
               <TextInput
                 id="openingHours"

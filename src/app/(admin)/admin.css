@@ -1588,3 +1588,198 @@ details > summary.a-btn::-webkit-details-marker {
     background: #ffffff;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Real map (MapLibre) — place editor coordinate picker and Studio → Map.
+   The map boxes are dir="ltr": pins are positioned from map.project() in
+   screen pixels, so their insets are the box's physical left/top.
+   --------------------------------------------------------------------------- */
+.a-coord {
+  display: grid;
+  gap: 12px;
+  margin-block-end: 16px;
+}
+.a-coord-map,
+.a-pmap-box {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--a-radius);
+  border: 1px solid var(--a-line);
+  background: #0b2a3d;
+  block-size: 340px;
+}
+.a-pmap-box {
+  block-size: min(70vh, 640px);
+  min-block-size: 360px;
+}
+.a-coord-canvas,
+.a-pmap-canvas {
+  position: absolute;
+  inset: 0;
+}
+.a-coord-canvas .maplibregl-canvas,
+.a-pmap-canvas .maplibregl-canvas {
+  outline: none;
+}
+.a-coord-pin {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  z-index: 2;
+  cursor: grab;
+  touch-action: none;
+}
+.a-coord-pin:active {
+  cursor: grabbing;
+}
+.a-coord-pin i {
+  position: absolute;
+  inset-inline-start: -14px;
+  inset-block-start: -34px;
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--a-accent);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+.a-coord-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+.a-coord-attrib {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 3;
+  margin: 0;
+  max-inline-size: 100%;
+  padding-block: 2px;
+  padding-inline: 8px;
+  border-end-end-radius: 8px;
+  background: rgba(8, 20, 26, 0.62);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+.a-coord-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.a-coord-warn {
+  color: var(--a-warn);
+  font-weight: 700;
+}
+
+.a-pmap {
+  display: grid;
+  gap: 12px;
+}
+.a-pmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+}
+.a-pmap-key i,
+.a-pmap-pin i {
+  display: inline-block;
+  inline-size: 12px;
+  block-size: 12px;
+  border-radius: 50%;
+  background: var(--k);
+  box-shadow: 0 0 0 2px #fff;
+}
+.a-pmap .is-free {
+  --k: #2fbf5b;
+}
+.a-pmap .is-locked {
+  --k: #ff9000;
+}
+.a-pmap .is-draft {
+  --k: #8a8f98;
+}
+.a-pmap .is-hidden {
+  --k: #7a4cc2;
+}
+.a-pmap-pin {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  z-index: 2;
+  color: var(--a-ink);
+  text-decoration: none;
+}
+.a-pmap-pin i {
+  position: absolute;
+  inset-inline-start: -8px;
+  inset-block-start: -8px;
+  inline-size: 16px;
+  block-size: 16px;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.a-pmap-pin.is-focus i {
+  inset-inline-start: -11px;
+  inset-block-start: -11px;
+  inline-size: 22px;
+  block-size: 22px;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 7px rgba(255, 144, 0, 0.45);
+}
+.a-pmap-pin span {
+  display: none;
+  position: absolute;
+  inset-inline-start: 14px;
+  inset-block-start: -18px;
+  inline-size: max-content;
+  max-inline-size: 240px;
+  padding-block: 5px;
+  padding-inline: 9px;
+  border-radius: 8px;
+  background: var(--a-surface);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.a-pmap-pin span b,
+.a-pmap-pin span small {
+  display: block;
+}
+.a-pmap-pin span small {
+  color: var(--a-muted);
+}
+.a-pmap-pin:hover,
+.a-pmap-pin:focus-visible,
+.a-pmap-pin.is-focus {
+  z-index: 4;
+}
+.a-pmap-pin:hover span,
+.a-pmap-pin:focus-visible span,
+.a-pmap-pin.is-focus span {
+  display: block;
+}
+.a-pmap-pin:focus-visible {
+  outline: none;
+}
+.a-pmap-pin:focus-visible i {
+  outline: 3px solid var(--a-focus);
+  outline-offset: 2px;
+}

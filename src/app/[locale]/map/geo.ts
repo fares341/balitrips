@@ -1,69 +1,14 @@
 /**
- * The map's geography — pure, no React, no MapLibre.
+ * Map helpers — pure, no React, no MapLibre: the free-zone ring, camera
+ * easing, view-box tests, the bubble declutter and category glyphs.
  *
- * The base is the package's satellite raster (public/brand/bali-sat.jpg,
- * 2048×1399), an equirectangular image. Its georeference comes from the
- * prototype's data.js formula
- *
- *   x = (190 + (lon − 114.43) · 485) · 2.048
- *   y = (155 + (−lat − 8.07) · 485) · 2.048
- *
- * solved for the image edges: x = 0 → lon 114.0382, x = 2048 → lon 116.1001,
- * y = 0 → lat −7.7504, y = 1399 → lat −9.1589. MapLibre draws it as an
- * `image` source pinned to those four corners — no tiles, no API key.
+ * Positions on the artwork come from `./art-warp.ts`; on the real map,
+ * MapLibre places everything from lat/lon.
  */
 
 import type { IconName } from '@/components/ui'
 
-export const IMAGE_SIZE = { w: 2048, h: 1399 } as const
-
-/** The raster's corners, solved from the package formula (see above). */
-export const IMAGE_BOUNDS = {
-  west: 114.43 - 190 / 485,
-  east: 114.43 + (2048 / 2.048 - 190) / 485,
-  north: -(8.07 - 155 / 485),
-  south: -(8.07 + (1399 / 2.048 - 155) / 485),
-} as const
-
 export type LngLat = [number, number]
-
-/** MapLibre `image` source corners: top-left, top-right, bottom-right, bottom-left. */
-export function imageCorners(): [LngLat, LngLat, LngLat, LngLat] {
-  const { west, east, north, south } = IMAGE_BOUNDS
-  return [
-    [west, north],
-    [east, north],
-    [east, south],
-    [west, south],
-  ]
-}
-
-/** Panning stops a little past the raster, never into the blank world around it. */
-export const MAX_BOUNDS: [LngLat, LngLat] = [
-  [IMAGE_BOUNDS.west + 0.15, IMAGE_BOUNDS.south + 0.1],
-  [IMAGE_BOUNDS.east - 0.15, IMAGE_BOUNDS.north - 0.1],
-]
-
-/** The main island (what "Whole island" fits), excluding the empty sea. */
-export const ISLAND_BOUNDS: [LngLat, LngLat] = [
-  [114.43, -8.86],
-  [115.72, -8.06],
-]
-
-/**
- * Zoom range. The raster is ~0.001° per pixel, i.e. native resolution at
- * zoom ≈ 9.45 (512 px tiles); beyond ~11.5 it is a 4× upscale and only blur.
- */
-export const MIN_ZOOM = 7.4
-export const MAX_ZOOM = 11.6
-
-/** Geographic → raster pixel (the package formula). */
-export function geoToImagePx(lat: number, lon: number): { x: number; y: number } {
-  return {
-    x: (190 + (lon - 114.43) * 485) * 2.048,
-    y: (155 + (-lat - 8.07) * 485) * 2.048,
-  }
-}
 
 /** A circle on the ground as a closed lon/lat ring (for the free-zone outline). */
 export function circleRing(

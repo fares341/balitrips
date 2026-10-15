@@ -10,11 +10,15 @@
  * Region bubbles and the free zone (`./regions.ts`) are computed here from
  * REGION data (centres from the `regions` table + a locked COUNT per region);
  * no locked place's id, name or coordinate is in them.
+ *
+ * Studio edits show up on the next request: the page is dynamic and reads the
+ * places table directly (Studio's place actions also revalidate this path).
  */
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { readSetting } from '@/app/(admin)/_lib/settings'
 import { formatPrice } from '@/components/bt'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
@@ -27,6 +31,7 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
+import { LANDMARKS, localizeLandmarks, visibleLandmarks } from './landmarks'
 import { MapApp } from './map-app'
 import type { MapClientPlace } from './projection'
 import { buildFreeZone, buildRegionBubbles, freeRegionKey } from './regions'
@@ -98,19 +103,32 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     await logActivity({ action: 'open_map', userId, ip: access.ip, deviceId: access.deviceId })
   }
 
-  const [places, held, taxonomy, plans] = await Promise.all([
+  const [places, held, taxonomy, plans, settings] = await Promise.all([
     listMapPlaces(),
     loadEntitlements(userId),
     listMapTaxonomy(),
     listPublishedPlans(),
+    readSetting('map'),
   ])
 
-  // Everything sent to the client derives from `payload` (places) or from
-  // region-level aggregates (bubbles). `places` is not read again after this.
+  // Everything sent to the client derives from `payload` (places), from
+  // region-level aggregates (bubbles), or is public data FILTERED by the
+  // locked places (landmarks). No field of a locked place is sent.
   const payload = buildMapPayload(places, held)
   const freeKey = freeRegionKey()
   const regions = buildRegionBubbles(places, taxonomy.regions, held, freeKey)
   const freeZone = buildFreeZone(taxonomy.regions, freeKey, places)
+
+  // The client's landmarks, minus any that would name or pinpoint a place this
+  // viewer cannot see (several share a name and spot with a gated place).
+  const lockedIds = new Set(payload.places.filter((p) => p.locked).map((p) => p.id))
+  const landmarks = localizeLandmarks(
+    visibleLandmarks(
+      LANDMARKS,
+      places.filter((place) => lockedIds.has(place.id)),
+    ),
+    lang,
+  )
 
   // حقلا الترتيب (الوثيقة 8.6) يُضافان للمفتوح وحده؛ المقفل يبقى
   // `{ id, locked, requiredEntitlement }`.
@@ -152,6 +170,8 @@ export default async function MapPage({ params, searchParams }: PageProps) {
       regions={regions}
       freeZone={freeZone}
       price={price}
+      settings={settings}
+      landmarks={landmarks}
     />
   )
 }

@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { eq, inArray } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -38,6 +39,17 @@ const LIST = adminHref('/places')
 const ENTITLEMENTS = ['map_access', 'vip'] as const
 
 type Outcome = { ok: string } | { err: string }
+
+/**
+ * The public map and place pages read the places table on every request
+ * (they are per-viewer, so never cached), but anything Next did cache for
+ * them — the client router cache included — is dropped here so a Studio
+ * edit shows up on the very next visit.
+ */
+function refreshPublicMap(): void {
+  revalidatePath('/[locale]/map', 'page')
+  revalidatePath('/[locale]/places/[slug]', 'page')
+}
 
 export async function savePlace(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
@@ -171,6 +183,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
     })
 
     target = adminHref(`/places/${savedId}`)
+    refreshPublicMap()
     outcome = { ok: t('places.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -215,6 +228,7 @@ export async function setPlaceFree(id: string, isFree: boolean): Promise<void> {
       )
     })
 
+    refreshPublicMap()
     outcome = { ok: isFree ? t('places.ok_free') : t('places.ok_locked') }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -252,6 +266,7 @@ export async function deletePlace(id: string): Promise<void> {
       )
     })
 
+    refreshPublicMap()
     outcome = { ok: t('places.ok_archived') }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -327,6 +342,7 @@ export async function uploadPlaceVideo(id: string, form: FormData): Promise<void
       before: { videos: before.videos },
       after: { videos, bytes: bytes.byteLength },
     })
+    refreshPublicMap()
     outcome = { ok: t('places.ok_video') }
   } catch (error) {
     if (isRedirectError(error)) throw error

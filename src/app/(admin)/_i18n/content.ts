@@ -277,6 +277,26 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'places.latitude_hint': ['Decimal degrees, -90 to 90.', 'درجات عشرية، من -90 إلى 90.'],
   'places.longitude': ['Longitude', 'خط الطول'],
   'places.longitude_hint': ['Decimal degrees, -180 to 180.', 'درجات عشرية، من -180 إلى 180.'],
+  'places.pick_label': ['Map for picking the location', 'خريطة لاختيار الموقع'],
+  'places.pick_hint': [
+    'Click the map or drag the pin to set the location — or type the numbers.',
+    'اضغط على الخريطة أو اسحب الدبوس لتحديد الموقع — أو اكتب الأرقام.',
+  ],
+  'places.pick_none': [
+    'No location yet — click the map to place the pin, or type the numbers.',
+    'لا موقع بعد — اضغط على الخريطة لوضع الدبوس، أو اكتب الأرقام.',
+  ],
+  'places.pick_outside': [
+    'This point is outside Bali — check the numbers.',
+    'هذه النقطة خارج بالي — تحقّق من الأرقام.',
+  ],
+  'places.pick_center': ['Centre on the pin', 'توسيط الخريطة على الدبوس'],
+  'places.pick_loading': ['Loading the map…', 'جارٍ تحميل الخريطة…'],
+  'places.pick_failed': [
+    'The map couldn’t load (no connection to the map servers). Type the coordinates instead.',
+    'تعذّر تحميل الخريطة (لا اتصال بخوادم الخرائط). اكتب الإحداثيات بدلاً من ذلك.',
+  ],
+  'places.on_map': ['See on the map', 'عرض على الخريطة'],
   'places.opening_hours': ['Opening hours', 'ساعات العمل'],
   'places.rating': ['Rating', 'التقييم'],
   'places.rating_tenths': ['Rating (tenths)', 'التقييم (بالأعشار)'],
@@ -497,6 +517,54 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     'Tag deleted and removed from every place.',
     'تم حذف الوسم وإزالته من جميع الأماكن.',
   ],
+  // -------------------------------------------------------------------------
+  // Map overview (Studio → Map)
+  // -------------------------------------------------------------------------
+  'map.title': ['Map', 'الخريطة'],
+  'map.description': [
+    'Every place on the real map — drafts, hidden and locked ones included. Click a pin to edit the place.',
+    'كل الأماكن على الخريطة الحقيقية — بما فيها المسودات والمخفية والمقفلة. اضغط على أي دبوس لتعديل المكان.',
+  ],
+  'map.places_list': ['Places list', 'قائمة الأماكن'],
+  'map.legend': ['Show', 'إظهار'],
+  'map.legend_free': ['Free', 'مجاني'],
+  'map.legend_locked': ['Locked (needs a plan)', 'مقفل (يتطلب اشتراكاً)'],
+  'map.legend_draft': ['Draft', 'مسودة'],
+  'map.legend_hidden': ['Hidden', 'مخفي'],
+  'map.count': ['{shown} of {total} places shown', 'يُعرض {shown} من {total} مكاناً'],
+  'map.edit': ['edit', 'تعديل'],
+  'map.loading': ['Loading the map…', 'جارٍ تحميل الخريطة…'],
+  'map.failed': [
+    'The map couldn’t load (no connection to the map servers). The places list still works.',
+    'تعذّر تحميل الخريطة (لا اتصال بخوادم الخرائط). قائمة الأماكن ما زالت تعمل.',
+  ],
+  'map.settings': ['3D map settings', 'إعدادات الخريطة ثلاثية الأبعاد'],
+  'map.settings_hint': [
+    'Applies to the public map’s 3D satellite view, the place editor and this page.',
+    'تنطبق على عرض القمر الصناعي ثلاثي الأبعاد في الخريطة العامة وعلى محرر الأماكن وهذه الصفحة.',
+  ],
+  'map.imagery': ['Satellite imagery', 'صور القمر الصناعي'],
+  'map.imagery_esri': ['Esri World Imagery (sharpest)', 'Esri World Imagery (الأوضح)'],
+  'map.imagery_sentinel2': [
+    'Sentinel-2 cloudless 2020 by EOX (up to zoom 14)',
+    'Sentinel-2 بلا غيوم 2020 من EOX (حتى مستوى التكبير 14)',
+  ],
+  'map.imagery_hint': [
+    'Check the provider’s licence terms for commercial use before going live.',
+    'راجِع شروط ترخيص المزوّد للاستخدام التجاري قبل الإطلاق.',
+  ],
+  'map.exaggeration': ['Terrain exaggeration', 'تضخيم التضاريس'],
+  'map.exaggeration_hint': [
+    '{min} = true scale, up to {max}.',
+    '{min} = المقياس الحقيقي، وحتى {max}.',
+  ],
+  'map.tilt': [
+    'Tilt when the 3D map opens (degrees)',
+    'الميل عند فتح الخريطة ثلاثية الأبعاد (بالدرجات)',
+  ],
+  'map.tilt_hint': ['{min} = straight down, up to {max}.', '{min} = من الأعلى مباشرة، وحتى {max}.'],
+  'map.save': ['Save map settings', 'حفظ إعدادات الخريطة'],
+  'map.ok_saved': ['Map settings saved.', 'تم حفظ إعدادات الخريطة.'],
 }
 
 function split(index: 0 | 1): Messages {

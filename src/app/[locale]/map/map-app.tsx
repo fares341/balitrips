@@ -4,11 +4,13 @@
  * The interactive map (v3): design-reference/prototype/map.html, screens
  * 03-map, 03b-map-region-ubud, 03c-map-place-card, 03d-map-3d.
  *
- * Engine: MapLibre GL from a pinned CDN build (./maplibre-loader.ts) drawing
- * the package satellite raster as an `image` source (./geo.ts). Everything
- * interactive on top of it — region bubbles, place pins, the glass place
- * label — is an HTML overlay positioned with `map.project()` on every camera
- * move, so it follows pan, zoom and the 3D tilt.
+ * Engine (`./hybrid-view.ts`): the real 3D map (MapLibre GL 5 from a pinned
+ * CDN build: terrain, satellite, OpenStreetMap, sky/fog), opening on the
+ * whole island tilted ~50°. The client's illustrated artwork is its poster
+ * while it loads and the fallback if it cannot run. Everything interactive on
+ * top — region bubbles, place pins, landmarks, "you are here" — is an HTML
+ * overlay positioned with `view.project()` on every camera move, so the same
+ * markers (in the site font, shaped correctly in Arabic) work on both.
  *
  * Data: only what the server decided this viewer may have (`page.tsx` →
  * `buildMapPayload`). A locked place is `{ id, locked, requiredEntitlement }`
@@ -16,7 +18,11 @@
  * region-level data (`regions` prop: region centre + a count), computed on the
  * server.
  *
- * Accessibility: the canvas is `role="application"` with arrow-key panning
+ * Without the real map (CDN blocked, no WebGL, tiles failing) the artwork
+ * stays (pannable, zoomable) and every list / filter keeps working; a small
+ * note says so, with "Try again".
+ *
+ * Accessibility: the view is `role="application"` with arrow-key panning
  * and +/− zoom; the side list (rendered on the server too) is the text
  * alternative — every visible place is a real button there.
  */
@@ -40,31 +46,18 @@ import { pick, pickOptional } from '@/lib/content/localize'
 import { haversineKm } from '@/lib/geo'
 import type { MapTaxonomy } from '@/lib/search/query'
 
-import {
-  FLY_MS,
-  IMAGE_SIZE,
-  ISLAND_BOUNDS,
-  MAX_BOUNDS,
-  MAX_ZOOM,
-  MIN_ZOOM,
-  categoryIcon,
-  circleRing,
-  declutter,
-  easeInOutCubic,
-  geoToImagePx,
-  imageCorners,
-  inBounds,
-  type ViewBounds,
-} from './geo'
+import { ART_FULL_URL, ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from './art-warp'
+import { categoryIcon, circleRing, declutter, inBounds, type ViewBounds } from './geo'
+import { HybridView, type Pad, type RealMapState, type ViewMode } from './hybrid-view'
+import { LANDMARK_COLORS, RANK_MINZOOM, type MapLandmark } from './landmark-style'
 import { useMapFilters } from './map-filters'
 import { MapWatermark, protectionHandlers } from './map-protect'
-import { loadMapLibre, type EngineLoader, type MapLike } from './maplibre-loader'
+import { attributionsFor, MAP_SETTING_DEFAULTS, type MapSettings } from './map-style'
+import { loadMapLibre, type EngineLoader } from './maplibre-loader'
 import { PlaceActions } from './place-actions'
 import { buildPins, type MapClientPlace, type MapPin, type OpenMapPlace } from './projection'
 import type { FreeZone, RegionBubble } from './regions'
 
-const SAT_URL = '/brand/bali-sat.jpg'
-const SAT_LOCKED_URL = '/brand/bali-sat-locked.jpg'
 const FALLBACK_THUMB = '/brand/jungle.jpg'
 const PLANS_HREF = '/plans'
 const DRIVER_HREF = '/driver'
@@ -76,6 +69,8 @@ const PINS_AT = 0.63
 const LABELS_AT = 1.23
 
 type Sheet = 'peek' | 'half' | 'full'
+
+const NO_LANDMARKS: MapLandmark[] = []
 
 export interface MapAppProps {
   places: MapClientPlace[]
@@ -93,6 +88,13 @@ export interface MapAppProps {
   freeZone: FreeZone | null
   /** The map plan's real price, formatted; null when no plan is on sale. */
   price: string | null
+  /**
+   * The client's landmarks for the real map, in the page language — already
+   * filtered on the server so none names a place this viewer cannot see.
+   */
+  landmarks?: MapLandmark[]
+  /** Studio → Map settings (imagery, terrain exaggeration, tilt). */
+  settings?: MapSettings
   /** Test seam: replaces the CDN loader. */
   loadEngine?: EngineLoader
 }
@@ -102,7 +104,11 @@ interface ScreenState {
   labels: boolean
   bubbles: { key: string; x: number; y: number; ox: number; oy: number }[]
   pins: { slug: string; x: number; y: number }[]
+  landmarks: { id: string; x: number; y: number }[]
   me: { x: number; y: number } | null
+  /** View box size, for keeping the landmark card on screen. */
+  w: number
+  h: number
 }
 
 const EMPTY_SCREEN: ScreenState = {
@@ -110,7 +116,10 @@ const EMPTY_SCREEN: ScreenState = {
   labels: false,
   bubbles: [],
   pins: [],
+  landmarks: [],
   me: null,
+  w: 0,
+  h: 0,
 }
 
 function isMobile(): boolean {
@@ -134,38 +143,37 @@ function bubbleSize(label: string, locked: boolean, mobile: boolean) {
     : { w: 92 + label.length * 8.6 + (locked ? 22 : 0), h: 48 }
 }
 
-/** Builds the paywall layer: the blurred raster with the free area cut out. */
-function lockedCanvas(img: HTMLImageElement, zone: FreeZone): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = IMAGE_SIZE.w
-  canvas.height = IMAGE_SIZE.h
-  const ctx = canvas.getContext('2d')
-  if (ctx === null) return canvas
-  ctx.drawImage(img, 0, 0, IMAGE_SIZE.w, IMAGE_SIZE.h)
-  const c = geoToImagePx(zone.lat, zone.lon)
-  const dLat = zone.radiusKm / 111.32
-  const dLon = zone.radiusKm / (111.32 * Math.cos((zone.lat * Math.PI) / 180))
-  const rx = dLon * 485 * 2.048
-  const ry = dLat * 485 * 2.048
-  ctx.save()
-  ctx.globalCompositeOperation = 'destination-out'
-  ctx.translate(c.x, c.y)
-  ctx.scale(1, ry / rx)
-  const g = ctx.createRadialGradient(0, 0, rx * 0.86, 0, 0, rx * 1.02)
-  g.addColorStop(0, 'rgba(0,0,0,1)')
-  g.addColorStop(1, 'rgba(0,0,0,0)')
-  ctx.fillStyle = g
-  ctx.beginPath()
-  ctx.arc(0, 0, rx * 1.02, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.restore()
-  return canvas
+/**
+ * Where the landmark card sits relative to its marker: above it (below when the
+ * marker is near the top), shifted sideways to stay inside the view. Screen
+ * geometry, hence physical `left`.
+ */
+function landmarkCardBox(at: { x: number; y: number }, viewW: number): CSSProperties {
+  const width = Math.min(260, Math.max(200, viewW - 24))
+  const left = Math.max(12, Math.min(viewW - width - 12, at.x - width / 2)) - at.x
+  return at.y < 230
+    ? { width, left, insetInlineStart: 'auto', top: 16, bottom: 'auto' }
+    : { width, left, insetInlineStart: 'auto' }
+}
+
+/**
+ * The paywall on the artwork: everything outside the free area dimmed, with
+ * the area's dashed outline — an SVG path in ARTWORK pixels (the same space
+ * as the image, so it pans and zooms with it).
+ */
+function artMaskPaths(zone: FreeZone): { mask: string; outline: string } {
+  const ring = circleRing(zone, zone.radiusKm, 72).map(([lon, lat]) => geoToArt(lon, lat))
+  const poly =
+    ring.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join('') + 'Z'
+  return { mask: `M0 0H${ART_W}V${ART_H}H0Z${poly}`, outline: poly }
 }
 
 export function MapApp(props: MapAppProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const { unlocked, freeZone, regions, price, viewerLabel } = props
+  const settings = props.settings ?? MAP_SETTING_DEFAULTS
+  const landmarks = props.landmarks ?? NO_LANDMARKS
 
   const pins = useMemo<MapPin[]>(
     () => buildPins(props.places, props.taxonomy.categories),
@@ -174,9 +182,14 @@ export function MapApp(props: MapAppProps) {
 
   const [selectedSlug, setSelectedSlug] = useState<string | null>(props.initialSlug)
   const [lockedPick, setLockedPick] = useState<string | null>(null)
+  const [landmarkPick, setLandmarkPick] = useState<string | null>(null)
   const [sheet, setSheet] = useState<Sheet>(props.initialSlug === null ? 'peek' : 'half')
-  const [is3d, setIs3d] = useState(false)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading')
+  const [viewMode, setViewMode] = useState<ViewMode>('art')
+  const [mapShown, setMapShown] = useState(false)
+  const [realState, setRealState] = useState<RealMapState>('idle')
+  const [tilted, setTilted] = useState(true)
+  const [tilesFailed, setTilesFailed] = useState(false)
+  const [noteHidden, setNoteHidden] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [bounds, setBounds] = useState<ViewBounds | null>(null)
   const [screen, setScreen] = useState<ScreenState>(EMPTY_SCREEN)
@@ -185,21 +198,23 @@ export function MapApp(props: MapAppProps) {
   const [howto, setHowto] = useState(false)
 
   const appRef = useRef<HTMLElement>(null)
+  const viewBoxRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const sideRef = useRef<HTMLElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<MapLike | null>(null)
-  const z0Ref = useRef(8.6)
+  const viewRef = useRef<HybridView | null>(null)
   const frameRef = useRef(0)
   const settleRef = useRef(0)
 
+  const artMask = useMemo(
+    () => (unlocked || freeZone === null ? null : artMaskPaths(freeZone)),
+    [unlocked, freeZone],
+  )
+
   const flyToPlace = useCallback((place: OpenMapPlace) => {
-    const map = mapRef.current
-    if (map === null) return
-    const zoom = Math.min(MAX_ZOOM, Math.max(map.getZoom(), z0Ref.current + 1.6))
-    const options = { center: [place.lon, place.lat] as [number, number], zoom }
-    if (reducedMotion()) map.jumpTo(options)
-    else map.flyTo({ ...options, duration: FLY_MS, easing: easeInOutCubic, essential: true })
+    viewRef.current?.flyTo(place.lon, place.lat, 1.6, 14)
   }, [])
 
   const select = useCallback(
@@ -222,29 +237,29 @@ export function MapApp(props: MapAppProps) {
   })
   const { matched, near } = filters
 
-  // Everything the camera handlers read lives here, so the MapLibre listeners
+  // Everything the camera handlers read lives here, so the view's listeners
   // (registered once) always see the current render's values.
-  const live = useRef({ matched, near, regions, pins, initialSlug: props.initialSlug })
+  const live = useRef({ matched, near, regions, pins, landmarks, initialSlug: props.initialSlug })
   useEffect(() => {
-    live.current = { matched, near, regions, pins, initialSlug: props.initialSlug }
+    live.current = { matched, near, regions, pins, landmarks, initialSlug: props.initialSlug }
   })
 
-  /** Camera padding that keeps the island clear of the sheet / unlock bar. */
-  const padding = useCallback(() => {
-    const app = canvasRef.current?.getBoundingClientRect()
+  /** Screen area kept clear of the sheet / unlock bar / floating controls. */
+  const padding = useCallback((): Pad => {
+    const app = viewBoxRef.current?.getBoundingClientRect()
     const pad = { top: 16, bottom: 16, left: 16, right: 16 }
     if (app === undefined) return pad
     if (isMobile()) {
-      pad.top = 64
+      pad.top = 56
       const side = sideRef.current?.getBoundingClientRect()
-      if (side) pad.bottom = Math.max(16, app.bottom - side.top + 12)
-      pad.left = 12
-      pad.right = 12
+      if (side) pad.bottom = Math.max(16, Math.min(app.height * 0.45, app.bottom - side.top + 8))
+      pad.left = 8
+      pad.right = 8
     } else {
       pad.top = 64
       const bar = barRef.current?.getBoundingClientRect()
       if (bar && bar.height > 0) pad.bottom = Math.max(16, app.bottom - bar.top + 12)
-      pad.left = 72
+      pad.left = 24
       pad.right = 72
     }
     return pad
@@ -252,18 +267,22 @@ export function MapApp(props: MapAppProps) {
 
   /** Re-project the overlay for the current camera. */
   const measure = useCallback(() => {
-    const map = mapRef.current
-    const box = canvasRef.current
-    if (map === null || box === null) return
+    const view = viewRef.current
+    const box = viewBoxRef.current
+    if (view === null || box === null) return
     const W = box.clientWidth
     const H = box.clientHeight
-    const zoom = map.getZoom()
+    const onMap = view.mode === 'map'
+    const zoom = view.zoom()
+    const levels = view.levels()
     const mobile = isMobile()
-    const mode = zoom < z0Ref.current + PINS_AT ? 'regions' : 'places'
+    const mode = levels >= PINS_AT ? 'places' : 'regions'
     const { matched: list, near: here, regions: bubbles } = live.current
+    const visible = (p: { x: number; y: number }, m: number) =>
+      Number.isFinite(p.x) && p.x > -m && p.y > -m && p.x < W + m && p.y < H + m
 
     const anchors = bubbles.map((region) => {
-      const p = map.project([region.lon, region.lat])
+      const p = view.project(region.lon, region.lat)
       const label = region.label.en ?? region.key
       return { key: region.key, ...p, ...bubbleSize(label, region.locked, mobile) }
     })
@@ -272,14 +291,32 @@ export function MapApp(props: MapAppProps) {
     const placed: ScreenState['pins'] = []
     if (mode === 'places') {
       for (const pin of list) {
-        const p = map.project([pin.place.lon, pin.place.lat])
-        if (p.x < -60 || p.y < -60 || p.x > W + 60 || p.y > H + 60) continue
-        placed.push({ slug: pin.place.slug, x: p.x, y: p.y })
+        const p = view.project(pin.place.lon, pin.place.lat)
+        if (visible(p, 60)) placed.push({ slug: pin.place.slug, x: p.x, y: p.y })
       }
     }
+    // The client's landmarks: on the real map only (the artwork has them painted).
+    const marks: ScreenState['landmarks'] = []
+    if (onMap) {
+      for (const l of live.current.landmarks) {
+        if (zoom < RANK_MINZOOM[l.rank]) continue
+        const p = view.project(l.lng, l.lat)
+        // A site pin or region bubble wins over a landmark label in the same spot.
+        const crowded =
+          placed.some((pin) => Math.hypot(pin.x - p.x, pin.y - p.y) < 44) ||
+          (mode === 'regions' &&
+            anchors.some((b, i) => {
+              const dx = b.x + (offsets[i]?.ox ?? 0) - p.x
+              const dy = b.y + (offsets[i]?.oy ?? 0) - p.y
+              return Math.abs(dx) < b.w / 2 + 50 && Math.abs(dy) < b.h / 2 + 12
+            }))
+        if (visible(p, 20) && !crowded) marks.push({ id: l.id, x: p.x, y: p.y })
+      }
+    }
+    const me = here === null ? null : view.project(here.lon, here.lat)
     setScreen({
       mode,
-      labels: zoom >= z0Ref.current + LABELS_AT,
+      labels: levels >= LABELS_AT,
       bubbles: anchors.map((a, i) => ({
         key: a.key,
         x: a.x,
@@ -288,7 +325,10 @@ export function MapApp(props: MapAppProps) {
         oy: offsets[i]?.oy ?? 0,
       })),
       pins: placed,
-      me: here === null ? null : map.project([here.lon, here.lat]),
+      landmarks: marks,
+      me: me !== null && visible(me, 20) ? me : null,
+      w: W,
+      h: H,
     })
   }, [])
 
@@ -300,183 +340,80 @@ export function MapApp(props: MapAppProps) {
   const settle = useCallback(() => {
     window.clearTimeout(settleRef.current)
     settleRef.current = window.setTimeout(() => {
-      const map = mapRef.current
-      if (map === null) return
-      const b = map.getBounds()
-      setBounds({ west: b.getWest(), east: b.getEast(), north: b.getNorth(), south: b.getSouth() })
+      const view = viewRef.current
+      if (view !== null) setBounds(view.bounds())
     }, BOUNDS_DEBOUNCE_MS)
   }, [])
 
-  /**
-   * The "whole island" camera (the prototype's `fit`): zoom to the region
-   * bubbles' extent, but never further out than the whole island fits — so on
-   * a wide screen the bubbles fill the view instead of floating in the sea.
-   */
-  const homeCamera = useCallback(() => {
-    const map = mapRef.current
-    if (map === null) return null
-    const pad = padding()
-    const list = live.current.regions
-    const mobile = isMobile()
-    const island = map.cameraForBounds(ISLAND_BOUNDS, { padding: pad })?.zoom ?? 8.6
-    if (list.length < 2) return { bounds: ISLAND_BOUNDS, padding: pad, zoom: island }
-    const lons = list.map((r) => r.lon)
-    const lats = list.map((r) => r.lat)
-    const box: [[number, number], [number, number]] = [
-      [Math.min(...lons), Math.min(...lats)],
-      [Math.max(...lons), Math.max(...lats)],
-    ]
-    // Room for the bubbles themselves around their anchors.
-    const bw = mobile ? 56 : 110
-    const bh = mobile ? 22 : 34
-    const roomy = {
-      top: pad.top + bh,
-      bottom: pad.bottom + bh,
-      left: pad.left + bw,
-      right: pad.right + bw,
-    }
-    const regionsZoom = map.cameraForBounds(box, { padding: roomy })?.zoom ?? island
-    if (regionsZoom > island) return { bounds: box, padding: roomy, zoom: regionsZoom }
-    return { bounds: ISLAND_BOUNDS, padding: pad, zoom: island }
-  }, [padding])
-
-  const fitIsland = useCallback(
-    (animate: boolean) => {
-      const map = mapRef.current
-      const camera = homeCamera()
-      if (map === null || camera === null) return
-      z0Ref.current = camera.zoom
-      map.fitBounds(camera.bounds, {
-        padding: camera.padding,
-        duration: animate && !reducedMotion() ? FLY_MS : 0,
-      })
-    },
-    [homeCamera],
-  )
-
   // ---- engine lifecycle ---------------------------------------------------
   const loadEngine = props.loadEngine ?? loadMapLibre
+  const freeRing = useMemo(
+    () => (unlocked || freeZone === null ? null : circleRing(freeZone, freeZone.radiusKm, 96)),
+    [unlocked, freeZone],
+  )
   useEffect(() => {
+    const root = viewBoxRef.current
+    const stage = stageRef.current
+    const img = imgRef.current
+    const mapContainer = canvasRef.current
+    if (!root || !stage || !img || !mapContainer) return
     let cancelled = false
-    let map: MapLike | null = null
-    const onResize = () => {
-      const m = mapRef.current
-      if (m === null) return
-      const camera = homeCamera()
-      if (camera !== null) z0Ref.current = camera.zoom
-      schedule()
-    }
-    loadEngine()
-      .then((engine) => {
-        const container = canvasRef.current
-        if (cancelled || container === null) return
-        map = new engine.Map({
-          container,
-          style: {
-            version: 8,
-            sources: { sat: { type: 'image', url: SAT_URL, coordinates: imageCorners() } },
-            layers: [
-              { id: 'sea', type: 'background', paint: { 'background-color': '#0a2d40' } },
-              { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-fade-duration': 0 } },
-            ],
-          },
-          bounds: ISLAND_BOUNDS,
-          maxBounds: MAX_BOUNDS,
-          minZoom: MIN_ZOOM,
-          maxZoom: MAX_ZOOM,
-          maxPitch: 60,
-          attributionControl: false,
-          // Arrow keys and +/− are handled on the application wrapper.
-          keyboard: false,
-          dragRotate: false,
-          pitchWithRotate: false,
-          touchPitch: false,
-          renderWorldCopies: false,
-          fadeDuration: 0,
-        })
-        mapRef.current = map
-        // One tab stop: the application wrapper owns the keyboard, not the canvas.
-        const canvas = map.getCanvas?.()
-        if (canvas) canvas.tabIndex = -1
-        const m = map
-        m.on('move', schedule)
-        m.on('moveend', settle)
-        m.on('resize', onResize)
-        m.on('error', () => undefined)
-        m.once('load', () => {
-          if (cancelled) return
-          if (!unlocked && freeZone !== null) {
-            const ring = circleRing(freeZone, freeZone.radiusKm)
-            m.addSource('free-zone', {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                properties: {},
-                geometry: { type: 'Polygon', coordinates: [ring] },
-              },
-            })
-            m.addLayer({
-              id: 'free-zone-glow',
-              type: 'fill',
-              source: 'free-zone',
-              paint: { 'fill-color': '#71FF85', 'fill-opacity': 0.07 },
-            })
-            m.addLayer({
-              id: 'free-zone-line',
-              type: 'line',
-              source: 'free-zone',
-              paint: { 'line-color': '#71FF85', 'line-width': 2.5, 'line-dasharray': [3, 2.8] },
-            })
-            const img = new Image()
-            img.decoding = 'async'
-            img.onload = () => {
-              if (cancelled || mapRef.current !== m) return
-              m.addSource('locked', {
-                type: 'canvas',
-                canvas: lockedCanvas(img, freeZone),
-                coordinates: imageCorners(),
-                animate: false,
-              })
-              m.addLayer({
-                id: 'locked',
-                type: 'raster',
-                source: 'locked',
-                paint: { 'raster-fade-duration': 0 },
-              })
-              // Keep the dashed outline above the blur.
-              if (m.getLayer('free-zone-line')) {
-                m.removeLayer('free-zone-line')
-                m.addLayer({
-                  id: 'free-zone-line',
-                  type: 'line',
-                  source: 'free-zone',
-                  paint: { 'line-color': '#71FF85', 'line-width': 2.5, 'line-dasharray': [3, 2.8] },
-                })
-              }
-            }
-            img.src = SAT_LOCKED_URL
-          }
-          fitIsland(false)
-          setStatus('ready')
-          const first = live.current.initialSlug
-          const target =
-            first === null ? undefined : live.current.pins.find((p) => p.place.slug === first)
-          if (target) flyToPlace(target.place)
+    // Deep link (`/map?place=slug`): the real map opens on that place (and the
+    // poster artwork flies there meanwhile).
+    const first = live.current.initialSlug
+    const target =
+      first === null ? undefined : live.current.pins.find((p) => p.place.slug === first)
+    const view: HybridView = new HybridView({
+      root,
+      stage,
+      img,
+      fullSrc: ART_FULL_URL,
+      smallWidth: ART_SMALL_W,
+      mapContainer,
+      settings,
+      freeZone: freeRing,
+      initial: target ? { lng: target.place.lon, lat: target.place.lat, zoom: 14 } : null,
+      padding,
+      reducedMotion,
+      onEvent: (event) => {
+        if (event === 'move') schedule()
+        else if (event === 'moveend') settle()
+        else if (event === 'mode') {
+          setViewMode(view.mode)
+          setMapShown(view.mapVisible)
+          if (view.mode !== 'map') setLandmarkPick(null)
           schedule()
           settle()
-        })
+        } else {
+          setRealState(view.realMapState)
+          setTilesFailed(view.tilesFailed)
+        }
+      },
+    })
+    viewRef.current = view
+    const kick = requestAnimationFrame(() => {
+      if (target) flyToPlace(target.place)
+      schedule()
+      settle()
+    })
+    // The real map is the map: load it straight away (the artwork is its
+    // poster until the first tiles are in, and the fallback if it fails).
+    loadEngine()
+      .then((engine) => {
+        if (!cancelled) view.attachEngine(engine)
       })
       .catch(() => {
-        if (!cancelled) setStatus('failed')
+        if (!cancelled) view.engineFailed()
       })
     return () => {
       cancelled = true
+      cancelAnimationFrame(kick)
       cancelAnimationFrame(frameRef.current)
       window.clearTimeout(settleRef.current)
-      map?.remove()
-      mapRef.current = null
+      view.destroy()
+      viewRef.current = null
     }
-  }, [loadEngine, attempt, unlocked, freeZone, schedule, settle, fitIsland, flyToPlace, homeCamera])
+  }, [loadEngine, attempt, settings, freeRing, padding, schedule, settle, flyToPlace])
 
   // Filters changed: re-project the pins (async — no setState in the effect body).
   useEffect(() => {
@@ -486,18 +423,15 @@ export function MapApp(props: MapAppProps) {
 
   // Near me granted: go there.
   useEffect(() => {
-    const map = mapRef.current
-    if (near === null || map === null) return
-    const options = { center: [near.lon, near.lat] as [number, number], zoom: z0Ref.current + 1.8 }
-    if (reducedMotion()) map.jumpTo(options)
-    else map.flyTo({ ...options, duration: FLY_MS, easing: easeInOutCubic, essential: true })
+    if (near === null) return
+    viewRef.current?.flyTo(near.lon, near.lat, 1.8, 14)
   }, [near])
 
   // Fullscreen state follows the browser (Esc exits without our button).
   useEffect(() => {
     const onChange = () => {
       setFullscreen(document.fullscreenElement === appRef.current)
-      window.setTimeout(() => mapRef.current?.resize(), 60)
+      window.setTimeout(() => viewRef.current?.layout(), 60)
     }
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
@@ -508,39 +442,24 @@ export function MapApp(props: MapAppProps) {
     filters.chooseRegion(key)
     setSelectedSlug(null)
     setLockedPick(null)
-    const map = mapRef.current
-    if (map === null) return
+    const view = viewRef.current
+    if (view === null) return
     if (key === null) {
-      fitIsland(true)
+      view.home()
       return
     }
     const region = regions.find((entry) => entry.key === key)
     if (region === undefined) return
-    const zoom = Math.min(MAX_ZOOM, z0Ref.current + (region.radiusKm >= 10 ? 1.05 : 1.35))
-    const options = { center: [region.lon, region.lat] as [number, number], zoom }
-    if (reducedMotion()) map.jumpTo(options)
-    else map.flyTo({ ...options, duration: FLY_MS, easing: easeInOutCubic, essential: true })
+    const wide = region.radiusKm >= 10
+    view.flyTo(region.lon, region.lat, wide ? 1.05 : 1.35, wide ? 11.5 : 12.5)
   }
 
-  const set3d = (on: boolean) => {
-    setIs3d(on)
-    const map = mapRef.current
-    if (map === null) return
-    const rtl = locale === 'ar'
-    map.easeTo({
-      pitch: on ? 55 : 0,
-      bearing: on ? (rtl ? 12 : -12) : 0,
-      duration: reducedMotion() ? 0 : FLY_MS,
-      easing: easeInOutCubic,
-    })
+  const setTilt = (on: boolean) => {
+    setTilted(on)
+    viewRef.current?.setTilt(on)
   }
 
-  const zoomBy = (dir: 1 | -1) => {
-    const map = mapRef.current
-    if (map === null) return
-    if (dir > 0) map.zoomIn({ duration: 300 })
-    else map.zoomOut({ duration: 300 })
-  }
+  const zoomBy = (dir: 1 | -1) => viewRef.current?.zoomBy(dir)
 
   const toggleFullscreen = () => {
     const el = appRef.current
@@ -550,8 +469,8 @@ export function MapApp(props: MapAppProps) {
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const map = mapRef.current
-    if (map === null || event.target !== event.currentTarget) return
+    const view = viewRef.current
+    if (view === null || event.target !== event.currentTarget) return
     const step = 80
     const moves: Record<string, [number, number]> = {
       ArrowLeft: [-step, 0],
@@ -562,7 +481,7 @@ export function MapApp(props: MapAppProps) {
     const move = moves[event.key]
     if (move) {
       event.preventDefault()
-      map.panBy(move, { duration: 200 })
+      view.panBy(move[0], move[1])
     } else if (event.key === '+' || event.key === '=') {
       event.preventDefault()
       zoomBy(1)
@@ -576,6 +495,12 @@ export function MapApp(props: MapAppProps) {
     if (near !== null) filters.locate()
     else setGeoAsk(true)
   }
+
+  const realBroken = realState === 'failed' || tilesFailed
+  const landmark =
+    landmarkPick === null ? undefined : landmarks.find((entry) => entry.id === landmarkPick)
+  const landmarkAt =
+    landmark === undefined ? undefined : screen.landmarks.find((m) => m.id === landmark.id)
 
   // ---- derived ------------------------------------------------------------
   const selected =
@@ -885,9 +810,10 @@ export function MapApp(props: MapAppProps) {
         {/* Map column */}
         <div className="mp-col" {...protectionHandlers(viewerLabel !== null)}>
           <div
+            ref={viewBoxRef}
             className={[
               'mp-view',
-              is3d ? 'is-3d' : null,
+              mapShown ? 'is-map' : null,
               `is-${screen.mode}`,
               screen.labels ? 'show-labels' : null,
             ]
@@ -899,8 +825,26 @@ export function MapApp(props: MapAppProps) {
             tabIndex={0}
             onKeyDown={onKeyDown}
           >
-            <div ref={canvasRef} className="mp-canvas" />
-            <div className="mp-sky" aria-hidden="true" />
+            <div ref={canvasRef} className="mp-canvas" aria-hidden={!mapShown} />
+            <div className="mp-art">
+              <div ref={stageRef} className="mp-art-stage">
+                <img
+                  ref={imgRef}
+                  src={ART_SMALL_URL}
+                  srcSet={`${ART_SMALL_URL} ${ART_SMALL_W}w, ${ART_FULL_URL} ${ART_W}w`}
+                  sizes="(max-width: 1023px) 100vw, 70vw"
+                  alt=""
+                  draggable={false}
+                  decoding="async"
+                />
+                {artMask !== null && (
+                  <svg viewBox={`0 0 ${ART_W} ${ART_H}`} aria-hidden="true">
+                    <path className="mp-art-dim" d={artMask.mask} fillRule="evenodd" />
+                    <path className="mp-art-zone" d={artMask.outline} />
+                  </svg>
+                )}
+              </div>
+            </div>
             <div className="mp-overlay">
               {screen.mode === 'regions' &&
                 screen.bubbles.map((b) => {
@@ -1011,6 +955,65 @@ export function MapApp(props: MapAppProps) {
                     </div>
                   )
                 })}
+              {screen.landmarks.map((m) => {
+                const l = landmarks.find((entry) => entry.id === m.id)
+                if (l === undefined) return null
+                const name = l.name
+                return (
+                  <div
+                    key={m.id}
+                    className={`mp-lm is-r${l.rank}`}
+                    style={
+                      {
+                        transform: `translate(${m.x}px, ${m.y}px)`,
+                        '--lm': LANDMARK_COLORS[l.cat],
+                      } as CSSProperties
+                    }
+                  >
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      aria-pressed={landmarkPick === l.id}
+                      onClick={() => setLandmarkPick(landmarkPick === l.id ? null : l.id)}
+                    >
+                      <i aria-hidden="true" />
+                      <span>{name}</span>
+                    </button>
+                  </div>
+                )
+              })}
+              {landmark !== undefined && landmarkAt !== undefined && (
+                <div
+                  className="mp-lm-card"
+                  role="dialog"
+                  aria-labelledby="mp-lm-h"
+                  style={{ transform: `translate(${landmarkAt.x}px, ${landmarkAt.y}px)` }}
+                >
+                  <div style={landmarkCardBox(landmarkAt, screen.w)}>
+                    <button
+                      type="button"
+                      className="mp-lm-x"
+                      aria-label={t('c_close')}
+                      onClick={() => setLandmarkPick(null)}
+                    >
+                      <Icon name="cross" size={16} />
+                    </button>
+                    <b id="mp-lm-h">{landmark.name}</b>
+                    {landmark.latin !== landmark.name && (
+                      <span className="mp-lm-latin" lang="en" dir="ltr">
+                        {landmark.latin}
+                      </span>
+                    )}
+                    {landmark.ele !== null && (
+                      <span className="mp-lm-ele">
+                        {t('mp4_elevation')}{' '}
+                        <span dir="ltr">{landmark.ele.toLocaleString('en')} m</span>
+                      </span>
+                    )}
+                    <p>{landmark.desc}</p>
+                  </div>
+                </div>
+              )}
               {screen.me !== null && (
                 <div
                   className="mp-me"
@@ -1020,20 +1023,36 @@ export function MapApp(props: MapAppProps) {
                 </div>
               )}
             </div>
-            {status === 'loading' && <div className="mp-state">{t('bt_loading')}</div>}
-            {status === 'failed' && (
-              <div className="mp-state">
-                <p>{t('mp3_map_failed')}</p>
-                <Button
-                  variant="light"
-                  size="sm"
+          </div>
+
+          <div className="mp-notes">
+            {mapShown && (
+              <p className="mp-attrib" lang="en" dir="ltr">
+                {attributionsFor(settings).join(' · ')}
+              </p>
+            )}
+            {realBroken && !noteHidden && (
+              <div className="mp-chipnote" role="status">
+                <Icon name="info" size={16} />
+                <span>{t('mp4_real_failed')}</span>
+                <button
+                  type="button"
                   onClick={() => {
-                    setStatus('loading')
+                    setRealState('idle')
+                    setTilesFailed(false)
                     setAttempt((n) => n + 1)
                   }}
                 >
                   {t('bt_retry')}
-                </Button>
+                </button>
+                <button
+                  type="button"
+                  className="mp-chipnote-x"
+                  aria-label={t('c_close')}
+                  onClick={() => setNoteHidden(true)}
+                >
+                  <Icon name="cross" size={14} />
+                </button>
               </div>
             )}
           </div>
@@ -1047,10 +1066,20 @@ export function MapApp(props: MapAppProps) {
 
           <div className="mp-ctrl mp-ctrl-top">
             <div className="mp-seg" role="group" aria-label={t('mp3_view_mode')}>
-              <button type="button" aria-pressed={!is3d} onClick={() => set3d(false)}>
+              <button
+                type="button"
+                aria-pressed={!tilted}
+                disabled={viewMode !== 'map'}
+                onClick={() => setTilt(false)}
+              >
                 2D
               </button>
-              <button type="button" aria-pressed={is3d} onClick={() => set3d(true)}>
+              <button
+                type="button"
+                aria-pressed={tilted}
+                disabled={viewMode !== 'map'}
+                onClick={() => setTilt(true)}
+              >
                 <Icon name="cube" size={15} />
                 3D
               </button>
@@ -1059,11 +1088,6 @@ export function MapApp(props: MapAppProps) {
               <Icon name="pin" size={15} /> <b dir="ltr">{viewCount}</b> {t('mp3_places_view')}
             </span>
           </div>
-          {is3d && (
-            <div className="mp-legend3d" role="note">
-              <b>{t('mp3_3d_t')}</b> {t('mp3_3d_b')}
-            </div>
-          )}
 
           <div className="mp-ctrl mp-ctrl-zoom">
             <button

@@ -8,6 +8,13 @@ import {
 import { inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
+import {
+  EXAGGERATION_RANGE,
+  IMAGERY_PROVIDERS,
+  MAP_SETTING_DEFAULTS,
+  TILT_RANGE,
+  type MapSettings,
+} from '@/app/[locale]/map/map-style'
 import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
@@ -131,6 +138,16 @@ export const securitySchema = z.object({
   autoBan: z.boolean(),
 })
 
+/**
+ * The public map's real (3D) view — Studio → Map. The shape and defaults live
+ * with the map style (`map-style.ts`) so the page and the form cannot drift.
+ */
+export const mapSchema = z.object({
+  imagery: z.enum(IMAGERY_PROVIDERS),
+  exaggeration: z.number().min(EXAGGERATION_RANGE.min).max(EXAGGERATION_RANGE.max),
+  tiltOnEnter: z.number().int().min(TILT_RANGE.min).max(TILT_RANGE.max),
+}) satisfies z.ZodType<MapSettings>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -144,13 +161,20 @@ export type PolicySetting = z.infer<typeof policySchema>
 export const POLICY_IDS = ['terms', 'privacy', 'refund', 'cookies'] as const
 export type PolicyId = (typeof POLICY_IDS)[number]
 
-export type SettingKey = 'currencies' | 'fees' | 'contact' | 'security' | `policy.${PolicyId}`
+export type SettingKey =
+  | 'currencies'
+  | 'fees'
+  | 'contact'
+  | 'security'
+  | 'map'
+  | `policy.${PolicyId}`
 
 export interface SettingsShape {
   currencies: CurrenciesSetting
   fees: FeesSetting
   contact: ContactSetting
   security: SecuritySetting
+  map: MapSettings
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -210,6 +234,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     maxDownloadsPerItem: 0,
     autoBan: true,
   },
+  map: { ...MAP_SETTING_DEFAULTS },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -221,6 +246,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   fees: feesSchema,
   contact: contactSchema,
   security: securitySchema,
+  map: mapSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

@@ -1,36 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { IMAGE_BOUNDS, IMAGE_SIZE, circleRing, declutter, geoToImagePx, imageCorners } from './geo'
-
-/**
- * The georeference is the map's single source of position: a silent drift
- * moves every pin off its landmark while the page still renders perfectly.
- */
-describe('image georeference', () => {
-  it('solves the package formula to the documented corners', () => {
-    expect(IMAGE_BOUNDS.west).toBeCloseTo(114.0382, 4)
-    expect(IMAGE_BOUNDS.east).toBeCloseTo(116.1001, 4)
-    expect(IMAGE_BOUNDS.north).toBeCloseTo(-7.7504, 4)
-    expect(IMAGE_BOUNDS.south).toBeCloseTo(-9.1589, 4)
-  })
-
-  it('maps the corners to the raster edges', () => {
-    const tl = geoToImagePx(IMAGE_BOUNDS.north, IMAGE_BOUNDS.west)
-    const br = geoToImagePx(IMAGE_BOUNDS.south, IMAGE_BOUNDS.east)
-    expect(tl.x).toBeCloseTo(0, 6)
-    expect(tl.y).toBeCloseTo(0, 6)
-    expect(br.x).toBeCloseTo(IMAGE_SIZE.w, 6)
-    expect(br.y).toBeCloseTo(IMAGE_SIZE.h, 6)
-  })
-
-  it('orders the MapLibre corners TL, TR, BR, BL', () => {
-    const [tl, tr, br, bl] = imageCorners()
-    expect(tl[0]).toBeLessThan(tr[0])
-    expect(tl[1]).toBeGreaterThan(bl[1])
-    expect(br[0]).toBe(tr[0])
-    expect(br[1]).toBe(bl[1])
-  })
-})
+import { circleRing, declutter, inBounds } from './geo'
 
 describe('circleRing', () => {
   it('is closed and roughly the requested radius', () => {
@@ -66,5 +36,13 @@ describe('declutter', () => {
       { ox: 0, oy: 0 },
       { ox: 0, oy: 0 },
     ])
+  })
+})
+
+describe('inBounds', () => {
+  it('accepts a point inside and rejects one outside', () => {
+    const b = { west: 115, east: 115.5, north: -8.3, south: -8.8 }
+    expect(inBounds(b, -8.5, 115.26)).toBe(true)
+    expect(inBounds(b, -8.2, 115.26)).toBe(false)
   })
 })
