@@ -220,6 +220,7 @@ async function visit(
   const problems = [...errors]
   if (ERROR_TEXT.test(info.text))
     problems.push(`error text on page: ${info.text.match(ERROR_TEXT)[0]}`)
+  if (info.overflow > 1) problems.push(`horizontal overflow ${info.overflow}px`)
   if (expectText && !info.text.includes(expectText)) problems.push(`missing text "${expectText}"`)
   if (expectSignIn) {
     if (!/^\/(ar|en|id)\/account\?signin=1/.test(final))
@@ -290,6 +291,13 @@ async function signIn(page, email, secret, start) {
     .locator('form:has(input[autocomplete="current-password"]) button[type="submit"]')
     .first()
     .click()
+  if (!start.startsWith(ADMIN)) {
+    // A customer: the dialog closes and they stay on the site.
+    await page.waitForTimeout(4000)
+    await page.waitForLoadState('networkidle')
+    steps.push(`after sign-in: ${page.url().replace(BASE, '')}`)
+    return steps
+  }
   try {
     await page.waitForURL((url) => url.pathname.startsWith(ADMIN), { timeout: 30000 })
   } catch {
