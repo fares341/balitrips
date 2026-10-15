@@ -74,6 +74,10 @@ h4 {
   line-height: 1.25;
   text-wrap: balance;
 }
+html[lang='ar'] :is(h1, h2) {
+  font-family: var(--f-ar-display);
+  line-height: 1.35;
+}
 :is(html[lang='en'], html[lang='id']) h1,
 :is(html[lang='en'], html[lang='id']) h2,
 :is(html[lang='en'], html[lang='id']) h3 {

@@ -29,7 +29,7 @@ body {
 }
 
 /*
- * Arabic: IBM Plex Sans Arabic at the same 16px (its x-height already matches
+ * Arabic: Noto Sans Arabic at the same 16px (its x-height already matches
  * Jakarta's) with noticeably more leading — ascenders/descenders (ل، ك، ي)
  * need the room. Tracking is always 0 in Arabic: letter-spacing breaks the
  * joins between letters, so the negative display tracking used for Latin

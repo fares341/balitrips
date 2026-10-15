@@ -1,4 +1,4 @@
-import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans } from 'next/font/google'
+import { Noto_Kufi_Arabic, Noto_Sans_Arabic, Plus_Jakarta_Sans } from 'next/font/google'
 
 /**
  * Two families, chosen as a pair.
@@ -6,8 +6,10 @@ import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans } from 'next/font/google'
  * - Latin: Plus Jakarta Sans — a modern geometric grotesk (drawn for the city
  *   of Jakarta), crisp at display sizes with tight tracking and very readable
  *   in body copy; it has a true italic for the highlighted hero word.
- * - Arabic: IBM Plex Sans Arabic — a professional, highly legible Naskh-based
- *   sans with a full weight range, built to sit next to a Latin grotesk.
+ * - Arabic (client choice: a news-portal feel): Noto Sans Arabic for running
+ *   text — a clean Naskh-based sans that reads like a news site's body copy —
+ *   and Noto Kufi Arabic for the big headlines (h1/h2), the firm Kufi look
+ *   Arabic news sites use for headlines.
  *
  * Both stacks list Jakarta first: its Latin glyphs win for English words,
  * prices and brand names everywhere (also inside Arabic text), and every
@@ -26,20 +28,28 @@ export const jakarta = Plus_Jakarta_Sans({
 /**
  * ARABIC FACE — the single swap point.
  *
- * Every Arabic glyph on the site (public pages, Studio, not-found) comes from
- * this one export through the `--font-arabic` CSS variable (tokens.css
- * `--f-ar` / `--f-en`). To change the Arabic typeface, replace the loader
- * below — e.g. `import { Tajawal } from 'next/font/google'` and
- * `export const arabicFont = Tajawal({ subsets: ['arabic'], weight: [...],
- * variable: '--font-arabic', display: 'swap' })` — keeping
- * `variable: '--font-arabic'`. Nothing else needs to change. (A self-hosted
- * face works the same way with `next/font/local`.)
+ * Every Arabic glyph in running text (public pages, Studio, not-found) comes
+ * from this export through the `--font-arabic` CSS variable (tokens.css
+ * `--f-ar` / `--f-en`); Arabic h1/h2 use `arabicDisplayFont` below. To change
+ * a face, replace its loader and keep its `variable` name.
  */
-export const arabicFont = IBM_Plex_Sans_Arabic({
+export const arabicFont = Noto_Sans_Arabic({
   subsets: ['arabic'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-arabic',
   display: 'swap',
 })
 
-export const fontVariables = [jakarta.variable, arabicFont.variable].join(' ')
+/** Arabic headline face (h1/h2 only, via `--f-ar-display` in tokens.css). */
+export const arabicDisplayFont = Noto_Kufi_Arabic({
+  subsets: ['arabic'],
+  weight: ['600', '700'],
+  variable: '--font-arabic-display',
+  display: 'swap',
+})
+
+export const fontVariables = [
+  jakarta.variable,
+  arabicFont.variable,
+  arabicDisplayFont.variable,
+].join(' ')
