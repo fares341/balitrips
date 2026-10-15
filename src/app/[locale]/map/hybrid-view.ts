@@ -219,6 +219,10 @@ export class HybridView {
       return
     }
     this.map = map
+    // Diagnostics hook for the CI screenshot run (?debugmap); harmless otherwise.
+    if (typeof window !== 'undefined' && window.location.search.includes('debugmap')) {
+      ;(window as unknown as { __btMap?: unknown }).__btMap = map
+    }
     map.on('load', () => {
       if (this.destroyed) return
       this.setReal('ready')

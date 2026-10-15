@@ -12,6 +12,7 @@ const pages = [
   ['home', '/en', 0],
   ['map', '/ar/map', 14000],
   ['map', '/en/map', 14000],
+  ['mapdbg', '/en/map?debugmap=1', 14000],
 ]
 const sizes = [
   [1440, 900],
@@ -57,6 +58,37 @@ for (const [name, path, wait] of pages) {
       }
     })
     log.push(`${path} ${w}: diag ${JSON.stringify(diag)}`)
+    if (name === 'mapdbg') {
+      const info = await page.evaluate(() => {
+        const m = window.__btMap
+        if (!m) return { none: true }
+        const st = m.getStyle()
+        return {
+          zoom: m.getZoom(),
+          pitch: m.getPitch(),
+          center: m.getCenter(),
+          loaded: m.loaded(),
+          tilesLoaded: m.areTilesLoaded(),
+          layers: st.layers.map((l) => l.id).join(','),
+          sky: st.sky,
+          terrain: st.terrain,
+          rendered: m.queryRenderedFeatures().length,
+        }
+      })
+      log.push(`${path} ${w}: MAP ${JSON.stringify(info).slice(0, 3000)}`)
+      for (const [tag, fn] of [
+        ['nosky', 'm.setSky(undefined)'],
+        ['noterrain', 'm.setTerrain(null)'],
+        ['flat', 'm.jumpTo({pitch:0,bearing:0})'],
+      ]) {
+        await page.evaluate((code) => {
+          const m = window.__btMap
+          if (m) new Function('m', code)(m)
+        }, fn)
+        await page.waitForTimeout(5000)
+        await page.screenshot({ path: `${OUT}/${name}-${lang}-${w}-${tag}.png` })
+      }
+    }
     const fonts = await page.evaluate(() =>
       [...document.fonts]
         .filter((f) => f.status === 'loaded')
