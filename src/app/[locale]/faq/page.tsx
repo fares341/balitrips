@@ -17,7 +17,7 @@ import { Link } from '@/i18n/routing'
 
 import { pageMetadata } from '../_meta'
 import { toLocale } from '../_seo-hreflang'
-import { PageBanner } from '../_ui/page-banner'
+import { PlainHead } from '../_ui/plain-head'
 import { FAQ_GROUPS as GROUPS } from './groups'
 
 const FAQ_PATH = '/faq'
@@ -45,43 +45,63 @@ export default async function FaqPage({ params }: PageProps) {
 
   return (
     <main>
-      <PageBanner
-        tag={t('ad_faq')}
+      <PlainHead
         title={t('faq_title')}
-        subtitle={t('faq_sub')}
+        lede={t('faq_sub')}
         trail={[{ label: t('c_home'), href: '/' }, { label: t('faq_title') }]}
         breadcrumbLabel={t('c_breadcrumb')}
       />
 
-      <div className="bt-band bt-band-ivory">
-        <div className="wrap bt-pfaq">
-          {GROUPS.map((group, index) => (
-            <div key={group.title} style={{ marginTop: index === 0 ? 0 : 48 }}>
-              <h2 id={`faq-${group.title}`} className="bt-faq-h">
+      <div className="sec-tight">
+        <div className="wrap faq-lay">
+          {/* Topics (v3 faq.html side list): jump to a group */}
+          <nav className="faq-topics" aria-label={t('faq4_topics')}>
+            {GROUPS.map((group) => (
+              <a key={group.title} href={`#faq-${group.title}`}>
                 {t(group.title)}
-              </h2>
-              <Accordion
-                className="bt-pacc"
-                defaultOpen={-1}
-                items={group.items.map((item) => ({
-                  id: item.q,
-                  question: t(item.q),
-                  answer: t(item.a),
-                }))}
-              />
-            </div>
-          ))}
-
-          <p className="bt-pfaq-more">
-            {t('home_faq_more')}{' '}
-            {wa !== null ? (
-              <a href={wa} target="_blank" rel="noopener noreferrer">
-                {t('wa_chat')}
               </a>
-            ) : (
-              <Link href="/contact">{t('navr_contact')}</Link>
-            )}
-          </p>
+            ))}
+          </nav>
+          <div className="bt-pfaq">
+            {GROUPS.map((group, index) => (
+              <div key={group.title} style={{ marginTop: index === 0 ? 0 : 36 }}>
+                <h2 id={`faq-${group.title}`} className="bt-faq-h">
+                  {t(group.title)}
+                </h2>
+                <Accordion
+                  className="bt-pacc"
+                  defaultOpen={-1}
+                  items={group.items.map((item) => ({
+                    id: item.q,
+                    question: t(item.q),
+                    answer: t(item.a),
+                  }))}
+                />
+              </div>
+            ))}
+
+            <div className="panel row between faq-help">
+              <span className="stack" style={{ gap: 4 }}>
+                <b style={{ color: 'var(--forest)' }}>{t('faq4_help_t')}</b>
+                <span className="muted">{t('faq4_help_b')}</span>
+              </span>
+              <span className="row">
+                {wa !== null && (
+                  <a
+                    className="btn btn-ghost btn-sm"
+                    href={wa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t('wa_chat')}
+                  </a>
+                )}
+                <Link className="btn btn-forest btn-sm" href="/contact">
+                  {t('navr_contact')}
+                </Link>
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </main>

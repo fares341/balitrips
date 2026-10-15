@@ -21,9 +21,10 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Icon } from '@/components/ui'
 import { locales } from '@/i18n/config'
+import { Link } from '@/i18n/routing'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
-import { PageBanner } from '../_ui/page-banner'
+import { PlainHead } from '../_ui/plain-head'
 import { ContactForm } from './contact-form'
 
 const CONTACT_HREF = '/contact'
@@ -83,15 +84,14 @@ export default async function ContactPage({ params }: { params: PageParams }) {
         `flickr("canggu,beach")`, which was a placeholder service, not content.
         `PageBanner` renders its neutral surface behind the veil instead.
       */}
-      <PageBanner
-        tag={t('navr_contact')}
-        title={t('co_title')}
-        subtitle={t('co_sub')}
+      <PlainHead
+        title={t('navr_contact')}
+        lede={t('co4_sub')}
         breadcrumbLabel={t('c_breadcrumb')}
         trail={[{ label: t('c_home'), href: '/' }, { label: t('navr_contact') }]}
       />
 
-      <section className="bg-ivory">
+      <section className="bg-ivory sec-tight">
         <div className="wrap bt-contact-grid">
           <div className="bt-contact-cards">
             <a
@@ -159,6 +159,17 @@ export default async function ContactPage({ params }: { params: PageParams }) {
                 <span className="bt-contact-b">{t('co_hours_b')}</span>
               </span>
             </div>
+
+            <Link href="/faq" className="bt-contact-card">
+              <span className="bt-contact-ic" style={{ background: 'var(--palm-soft)' }}>
+                <Icon name="info" size={22} color="var(--forest)" />
+              </span>
+              <span style={{ flex: 1 }}>
+                <span className="bt-contact-t">{t('co4_quick_t')}</span>
+                <span className="bt-contact-b muted">{t('co4_quick_b')}</span>
+              </span>
+              <Icon name="chevronr" size={18} className="flip" />
+            </Link>
           </div>
 
           <div className="card card-pad">
