@@ -11,6 +11,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { readSetting } from '@/app/(admin)/_lib/settings'
 import { Breadcrumbs, LinkButton, Stars, Tag } from '@/components/bt'
 import { Icon, Photo } from '@/components/ui'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
@@ -23,15 +24,15 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
-import { ART_H, ART_SMALL_URL, ART_W, geoToArt } from '../../map/art-warp'
 import { categoryIcon } from '../../map/geo'
+import { mapViewSettings } from '../../map/map-style'
 import { PlaceActions } from '../../map/place-actions'
+import { PlaceMiniMap } from '../../map/place-mini-map'
+import { PlaceThumb } from '../../map/place-thumb'
 
 export const dynamic = 'force-dynamic'
 
 type PageProps = { params: Promise<{ locale: string; slug: string }> }
-
-const FALLBACK_IMG = '/brand/jungle.jpg'
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params
@@ -53,10 +54,11 @@ export default async function PlacePage({ params }: PageProps) {
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
 
   const access = await checkSecureAccess(`place:${slug}`)
-  const [t, places, held] = await Promise.all([
+  const [t, places, held, mapSettings] = await Promise.all([
     getTranslations(),
     listMapPlaces(),
     loadEntitlements(access.ok ? access.user.id : null),
+    readSetting('map'),
   ])
   const full = places.find((entry) => entry.slug === slug)
   if (full === undefined) notFound()
@@ -104,11 +106,10 @@ export default async function PlacePage({ params }: PageProps) {
     .sort((a, b) => a.km - b.km)
     .slice(0, 4)
 
-  // The illustrated artwork, centred on the place (approximate between the
-  // artwork's control points — it is an overview, the map link is exact).
-  const [ax, ay] = geoToArt(place.lon, place.lat)
-  const fx = (Math.max(0, Math.min(ART_W, ax)) / ART_W) * 100
-  const fy = (Math.max(0, Math.min(ART_H, ay)) / ART_H) * 100
+  // The place's own photos only; a neutral placeholder when it has none.
+  const photos = [place.heroImageUrl, ...place.gallery].filter(
+    (src, index, all): src is string => !!src && all.indexOf(src) === index,
+  )
 
   return (
     <div className="wrap">
@@ -122,9 +123,23 @@ export default async function PlacePage({ params }: PageProps) {
       />
       <div className="pl-wrap">
         <div className="pl-main">
-          <div className="pl-hero">
-            <Photo src={place.heroImageUrl ?? FALLBACK_IMG} alt={name} priority />
-          </div>
+          <PlaceThumb
+            className="pl-hero"
+            src={photos[0]}
+            alt={photos[0] ? name : t('mp5_no_photo')}
+            icon={categoryIcon(place.categoryKey)}
+            size={56}
+            priority
+          />
+          {photos.length > 1 && (
+            <ul className="pl-gallery" aria-label={t('mp5_gallery')}>
+              {photos.slice(1, 9).map((src) => (
+                <li key={src}>
+                  <Photo src={src} alt="" />
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             {category && (
               <Tag variant="palm" icon={categoryIcon(place.categoryKey)}>
@@ -153,25 +168,13 @@ export default async function PlacePage({ params }: PageProps) {
           {description && <p className="pl-desc">{description}</p>}
           {detailed && <p className="muted">{detailed}</p>}
 
-          <Link
-            href={`/map?place=${encodeURIComponent(place.slug)}`}
-            className="pl-mini"
-            aria-label={t('map_view')}
-          >
-            <img
-              src={ART_SMALL_URL}
-              alt=""
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                width: '420%',
-                maxWidth: 'none',
-                transform: `translate(-${fx.toFixed(2)}%, -${fy.toFixed(2)}%)`,
-              }}
-            />
-            <i aria-hidden="true" />
-          </Link>
+          <PlaceMiniMap
+            lat={place.lat}
+            lon={place.lon}
+            slug={place.slug}
+            label={t('mp5_mini_map')}
+            settings={mapViewSettings(mapSettings)}
+          />
 
           {nearby.length > 0 && (
             <section className="stack" style={{ gap: 8 }}>
@@ -181,9 +184,11 @@ export default async function PlacePage({ params }: PageProps) {
                   entry.locked ? null : (
                     <li key={entry.id}>
                       <Link href={`/places/${entry.slug}`}>
-                        <span className="mp-res-img">
-                          <Photo src={entry.heroImageUrl ?? FALLBACK_IMG} alt="" />
-                        </span>
+                        <PlaceThumb
+                          className="mp-res-img"
+                          src={entry.heroImageUrl}
+                          icon={categoryIcon(entry.categoryKey)}
+                        />
                         <span className="mp-res-meta">
                           <span className="mp-res-name">{pick(entry.name, lang, entry.slug)}</span>
                           <span className="mp-res-sub">

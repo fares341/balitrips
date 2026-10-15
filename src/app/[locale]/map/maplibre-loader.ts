@@ -55,6 +55,7 @@ export interface MapLike {
     options?: { padding?: CameraOptions['padding'] },
   ): { zoom?: number; center?: LngLatLike | { lng: number; lat: number } } | undefined
   setMinZoom?(zoom: number): unknown
+  queryRenderedFeatures?(point: [number, number], options?: { layers?: string[] }): unknown[]
   zoomIn(options?: { duration?: number }): unknown
   zoomOut(options?: { duration?: number }): unknown
   panBy(offset: [number, number], options?: { duration?: number }): unknown
@@ -89,6 +90,9 @@ export interface MapOptions {
   zoom?: number
   pitch?: number
   keyboard?: boolean
+  /** false: a static preview (no pan / zoom / rotate handlers). */
+  interactive?: boolean
+  bearing?: number
   dragRotate?: boolean
   pitchWithRotate?: boolean
   touchPitch?: boolean

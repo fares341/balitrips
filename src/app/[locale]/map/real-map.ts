@@ -26,6 +26,11 @@ export interface RealMapOptions {
   /** Open on this point instead of the whole island. */
   center?: [number, number]
   zoom?: number
+  /** Opening tilt / turn (with `center`). */
+  pitch?: number
+  bearing?: number
+  /** false: a static preview that ignores pointer input (place page). */
+  interactive?: boolean
 }
 
 /** Throws when the engine refuses (e.g. no WebGL) — callers fall back. */
@@ -40,7 +45,12 @@ export function createRealMap(
     container,
     style: buildStyle(settings, { freeZone: options.freeZone ?? null, locale: options.locale }),
     ...(options.center
-      ? { center: options.center, zoom: options.zoom ?? 14 }
+      ? {
+          center: options.center,
+          zoom: options.zoom ?? 14,
+          pitch: options.pitch ?? 0,
+          bearing: options.bearing ?? 0,
+        }
       : { bounds: REAL_BOUNDS, fitBoundsOptions: { padding: 20 } }),
     maxBounds: REAL_MAX_BOUNDS,
     minZoom: REAL_MIN_ZOOM,
@@ -51,6 +61,7 @@ export function createRealMap(
     attributionControl: false,
     // The page's own wrapper owns the keyboard.
     keyboard: false,
+    ...(options.interactive === false ? { interactive: false } : {}),
   })
   const canvas = map.getCanvas?.()
   if (canvas) canvas.tabIndex = -1

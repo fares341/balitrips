@@ -35,6 +35,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type PointerEvent,
 } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
@@ -55,10 +56,10 @@ import { MapWatermark, protectionHandlers } from './map-protect'
 import { attributionsFor, MAP_SETTING_DEFAULTS, type MapSettings } from './map-style'
 import { loadMapLibre, type EngineLoader } from './maplibre-loader'
 import { PlaceActions } from './place-actions'
+import { PlaceThumb } from './place-thumb'
 import { buildPins, type MapClientPlace, type MapPin, type OpenMapPlace } from './projection'
 import type { FreeZone, RegionBubble } from './regions'
 
-const FALLBACK_THUMB = '/brand/jungle.jpg'
 const PLANS_HREF = '/plans'
 const DRIVER_HREF = '/driver'
 /** Results follow the visible area once the camera settles. */
@@ -68,7 +69,8 @@ const PINS_AT = 0.63
 /** …and where every pin shows its glass label. */
 const LABELS_AT = 1.23
 
-type Sheet = 'peek' | 'half' | 'full'
+/** Phones: the map, or a full-screen list of the results. */
+type MobileView = 'map' | 'list'
 
 const NO_LANDMARKS: MapLandmark[] = []
 
@@ -183,7 +185,7 @@ export function MapApp(props: MapAppProps) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(props.initialSlug)
   const [lockedPick, setLockedPick] = useState<string | null>(null)
   const [landmarkPick, setLandmarkPick] = useState<string | null>(null)
-  const [sheet, setSheet] = useState<Sheet>(props.initialSlug === null ? 'peek' : 'half')
+  const [mobileView, setMobileView] = useState<MobileView>('map')
   const [viewMode, setViewMode] = useState<ViewMode>('art')
   const [mapShown, setMapShown] = useState(false)
   const [realState, setRealState] = useState<RealMapState>('idle')
@@ -205,6 +207,7 @@ export function MapApp(props: MapAppProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const sideRef = useRef<HTMLElement>(null)
   const barRef = useRef<HTMLDivElement>(null)
+  const mbarRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<HybridView | null>(null)
   const frameRef = useRef(0)
   const settleRef = useRef(0)
@@ -222,7 +225,7 @@ export function MapApp(props: MapAppProps) {
     (slug: string, fly: boolean) => {
       setSelectedSlug(slug)
       setLockedPick(null)
-      if (isMobile()) setSheet('half')
+      if (isMobile()) setMobileView('map')
       const pin = pins.find((entry) => entry.place.slug === slug)
       if (fly && pin) flyToPlace(pin.place)
     },
@@ -245,15 +248,16 @@ export function MapApp(props: MapAppProps) {
     live.current = { matched, near, regions, pins, landmarks, initialSlug: props.initialSlug }
   })
 
-  /** Screen area kept clear of the sheet / unlock bar / floating controls. */
+  /** Screen area kept clear of the chips / bottom bar / unlock bar / controls. */
   const padding = useCallback((): Pad => {
     const app = viewBoxRef.current?.getBoundingClientRect()
     const pad = { top: 16, bottom: 16, left: 16, right: 16 }
     if (app === undefined) return pad
     if (isMobile()) {
       pad.top = 56
-      const side = sideRef.current?.getBoundingClientRect()
-      if (side) pad.bottom = Math.max(16, Math.min(app.height * 0.45, app.bottom - side.top + 8))
+      // the Map / List bar along the bottom (the place card comes and goes)
+      const mbar = mbarRef.current?.getBoundingClientRect()
+      if (mbar && mbar.height > 0) pad.bottom = Math.max(16, app.bottom - mbar.top + 8)
       // room for the region bubbles' labels, which extend sideways
       pad.left = 56
       pad.right = 56
@@ -422,7 +426,7 @@ export function MapApp(props: MapAppProps) {
   useEffect(() => {
     const id = requestAnimationFrame(measure)
     return () => cancelAnimationFrame(id)
-  }, [matched, near, sheet, measure])
+  }, [matched, near, mobileView, measure])
 
   // Near me granted: go there.
   useEffect(() => {
@@ -561,7 +565,6 @@ export function MapApp(props: MapAppProps) {
           active={filters.category === entry.key}
           onClick={() => {
             filters.setCategory(filters.category === entry.key ? null : entry.key)
-            if (isMobile()) setSheet('half')
           }}
         >
           <bdi>{pick(entry.label, locale, entry.key)}</bdi>
@@ -634,15 +637,11 @@ export function MapApp(props: MapAppProps) {
         aria-label={t('bt_nav_map')}
       >
         {/* Side panel (desktop) / bottom sheet (mobile) */}
-        <aside ref={sideRef} className={`mp-side is-${sheet}`} aria-label={t('mp3_results_label')}>
-          <button
-            type="button"
-            className="mp-grab"
-            aria-label={t('mp3_expand')}
-            onClick={() => setSheet(sheet === 'peek' ? 'half' : sheet === 'half' ? 'full' : 'peek')}
-          >
-            <i />
-          </button>
+        <aside
+          ref={sideRef}
+          className={mobileView === 'list' ? 'mp-side is-list' : 'mp-side'}
+          aria-label={t('mp3_results_label')}
+        >
           <div className="mp-side-head">
             <SheetUnlock
               unlocked={unlocked}
@@ -658,9 +657,6 @@ export function MapApp(props: MapAppProps) {
                   type="search"
                   value={filters.query}
                   onChange={(event) => filters.setQuery(event.target.value)}
-                  onFocus={() => {
-                    if (isMobile() && sheet === 'peek') setSheet('half')
-                  }}
                   placeholder={t('map_search')}
                   autoComplete="off"
                 />
@@ -755,9 +751,11 @@ export function MapApp(props: MapAppProps) {
                           className="mp-res"
                           onClick={() => select(pin.place.slug, true)}
                         >
-                          <span className="mp-res-img">
-                            <Photo src={pin.place.heroImageUrl ?? FALLBACK_THUMB} alt="" />
-                          </span>
+                          <PlaceThumb
+                            className="mp-res-img"
+                            src={pin.place.heroImageUrl}
+                            icon={categoryIcon(pin.place.categoryKey)}
+                          />
                           <span className="mp-res-meta">
                             <span className="mp-res-name">
                               {pick(pin.place.name, locale, pin.place.slug)}
@@ -828,6 +826,14 @@ export function MapApp(props: MapAppProps) {
             aria-label={t('mp3_app_label')}
             tabIndex={0}
             onKeyDown={onKeyDown}
+            onClick={(event) => {
+              // Phones: a tap on the map itself (not a marker) puts the card away.
+              const target = event.target as HTMLElement
+              if (isMobile() && (target.tagName === 'CANVAS' || target.closest('.mp-art'))) {
+                setSelectedSlug(null)
+                setLockedPick(null)
+              }
+            }}
           >
             <div ref={canvasRef} className="mp-canvas" aria-hidden={!mapShown} />
             {!mapShown && !realBroken && (
@@ -919,7 +925,6 @@ export function MapApp(props: MapAppProps) {
                         onClick={() => {
                           setSelectedSlug(null)
                           setLockedPick(region.key)
-                          if (isMobile()) setSheet('half')
                         }}
                       >
                         <Icon name="lock" size={15} />
@@ -956,9 +961,12 @@ export function MapApp(props: MapAppProps) {
                         aria-hidden="true"
                         onClick={() => select(p.slug, false)}
                       >
-                        <span className="mp-lbl-img">
-                          <Photo src={pin.place.heroImageUrl ?? FALLBACK_THUMB} alt="" />
-                        </span>
+                        <PlaceThumb
+                          className="mp-lbl-img"
+                          src={pin.place.heroImageUrl}
+                          icon={categoryIcon(pin.place.categoryKey)}
+                          size={18}
+                        />
                         <span>
                           <b>{name}</b>
                           <small>
@@ -1204,6 +1212,63 @@ export function MapApp(props: MapAppProps) {
             )}
           </div>
 
+          {/* Phones: the place card and the Map / List switch, one-hand reach. */}
+          <div className="mp-mbar" ref={mbarRef}>
+            {mobileView === 'map' && selected !== null && (
+              <MobileCard
+                key={selected.id}
+                place={selected}
+                categoryName={categoryName(selected)}
+                regionName={regionName(selected)}
+                km={near === null ? null : haversineKm(near, selected)}
+                onClose={() => setSelectedSlug(null)}
+              />
+            )}
+            {mobileView === 'map' && selected === null && lockedPick !== null && (
+              <MobileLockedCard
+                regionName={pick(
+                  regions.find((r) => r.key === lockedPick)?.label,
+                  locale,
+                  lockedPick,
+                )}
+                price={price}
+                onClose={() => setLockedPick(null)}
+              />
+            )}
+            <div className="mp-mrow">
+              <div className="mp-mtoggle" role="group" aria-label={t('mp5_view')}>
+                <button
+                  type="button"
+                  aria-pressed={mobileView === 'map'}
+                  onClick={() => setMobileView('map')}
+                >
+                  <Icon name="map" size={18} />
+                  {t('mp5_map')}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={mobileView === 'list'}
+                  onClick={() => {
+                    setSelectedSlug(null)
+                    setLockedPick(null)
+                    setMobileView('list')
+                  }}
+                >
+                  <Icon name="list" size={18} />
+                  {t('mp5_list')}
+                  <span className="mp-mcount" dir="ltr">
+                    {listed.length}
+                  </span>
+                </button>
+              </div>
+              {!unlocked && (
+                <LinkButton href={PLANS_HREF} size="sm" icon="lock" className="mp-munlock">
+                  {t('mp5_unlock')}
+                </LinkButton>
+              )}
+            </div>
+          </div>
+
           {viewerLabel !== null && <MapWatermark label={viewerLabel} />}
         </div>
         {viewerLabel !== null && <p className="bt-map-printnote">{t('map_print_blocked')}</p>}
@@ -1302,7 +1367,7 @@ function PlaceDetail({
   const name = pick(place.name, locale, place.slug)
   const description = pickOptional(place.description, locale)
   const gallery = [place.heroImageUrl, ...place.gallery].filter((src): src is string => !!src)
-  const main = gallery[0] ?? FALLBACK_THUMB
+  const main = gallery[0]
   const side = gallery.slice(1, 3)
   return (
     <article className="mp-detail">
@@ -1310,7 +1375,7 @@ function PlaceDetail({
         {t('mp3_back')}
       </Button>
       <div className={side.length > 0 ? 'mp-gal' : 'mp-gal is-single'}>
-        <Photo src={main} alt={name} />
+        <PlaceThumb src={main} alt={name} icon={categoryIcon(place.categoryKey)} size={40} />
         {side.length > 0 && (
           <div>
             {side.map((src) => (
@@ -1399,5 +1464,145 @@ function LockedDetail({
         </LinkButton>
       </div>
     </div>
+  )
+}
+
+/** Swipe the card down to put it away (a plain tap still works on its buttons). */
+function useSwipeDown(onClose: () => void) {
+  const [dy, setDy] = useState(0)
+  const start = useRef<number | null>(null)
+  return {
+    style:
+      dy > 0
+        ? ({ transform: `translateY(${dy}px)`, transition: 'none' } as CSSProperties)
+        : undefined,
+    handlers: {
+      onPointerDown: (event: PointerEvent<HTMLElement>) => {
+        if ((event.target as HTMLElement).closest('a, button')) return
+        start.current = event.clientY
+      },
+      onPointerMove: (event: PointerEvent<HTMLElement>) => {
+        if (start.current === null) return
+        setDy(Math.max(0, event.clientY - start.current))
+      },
+      onPointerUp: () => {
+        if (start.current === null) return
+        start.current = null
+        if (dy > 70) onClose()
+        setDy(0)
+      },
+      onPointerCancel: () => {
+        start.current = null
+        setDy(0)
+      },
+    },
+  }
+}
+
+function MobileCard({
+  place,
+  categoryName,
+  regionName,
+  km,
+  onClose,
+}: {
+  place: OpenMapPlace
+  categoryName: string
+  regionName: string
+  km: number | null
+  onClose: () => void
+}) {
+  const t = useTranslations()
+  const locale = useLocale() as Locale
+  const name = pick(place.name, locale, place.slug)
+  const swipe = useSwipeDown(onClose)
+  return (
+    <article className="mp-mcard" aria-label={name} style={swipe.style} {...swipe.handlers}>
+      <span className="mp-mcard-grab" aria-hidden="true" />
+      <button type="button" className="mp-mcard-x" aria-label={t('c_close')} onClick={onClose}>
+        <Icon name="cross" size={18} />
+      </button>
+      <div className="mp-mcard-top">
+        <PlaceThumb
+          className="mp-mcard-img"
+          src={place.heroImageUrl}
+          icon={categoryIcon(place.categoryKey)}
+          size={26}
+        />
+        <div className="mp-mcard-meta">
+          <b>{name}</b>
+          <span>
+            {[categoryName, regionName].filter(Boolean).join(' · ')}
+            {km !== null && (
+              <>
+                {' · '}
+                <span dir="ltr">{km.toFixed(1)} km</span>
+              </>
+            )}
+          </span>
+          <Stars value={place.rating} />
+        </div>
+      </div>
+      <PlaceActions
+        placeId={place.id}
+        canFavorite={place.canFavorite}
+        canAddToTrip={false}
+        layout="row"
+      >
+        <LinkButton href={`/places/${place.slug}`} variant="forest" size="sm">
+          {t('mp5_details')}
+        </LinkButton>
+        <LinkButton
+          href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`}
+          target="_blank"
+          variant="ghost"
+          size="sm"
+          icon="route"
+        >
+          {t('mp3_directions')}
+        </LinkButton>
+      </PlaceActions>
+    </article>
+  )
+}
+
+function MobileLockedCard({
+  regionName,
+  price,
+  onClose,
+}: {
+  regionName: string
+  price: string | null
+  onClose: () => void
+}) {
+  const t = useTranslations()
+  const swipe = useSwipeDown(onClose)
+  return (
+    <article className="mp-mcard is-locked" style={swipe.style} {...swipe.handlers}>
+      <span className="mp-mcard-grab" aria-hidden="true" />
+      <button type="button" className="mp-mcard-x" aria-label={t('c_close')} onClick={onClose}>
+        <Icon name="cross" size={18} />
+      </button>
+      <div className="mp-mcard-top">
+        <span className="mp-mcard-img pl-ph">
+          <Icon name="lock" size={26} />
+        </span>
+        <div className="mp-mcard-meta">
+          <b>{t('mp3_pl_locked_t')}</b>
+          <span>{t('mp3_locked_region', { region: regionName })}</span>
+        </div>
+      </div>
+      <LinkButton href={PLANS_HREF} size="sm" className="mp-mcard-cta">
+        <span>
+          {t('mp3_unlock_full')}
+          {price !== null && (
+            <>
+              {' · '}
+              <span dir="ltr">{price}</span>
+            </>
+          )}
+        </span>
+      </LinkButton>
+    </article>
   )
 }

@@ -40,8 +40,11 @@ export function PlaceActions({
   placeId: string
   canFavorite: boolean
   canAddToTrip: boolean
-  /** `grid`: two columns (map card). `stack`: full-width column (place page). */
-  layout?: 'grid' | 'stack'
+  /**
+   * `grid`: two columns (map side card). `stack`: full-width column (place
+   * page). `row`: one row of equal, thumb-sized buttons (phone place card).
+   */
+  layout?: 'grid' | 'stack' | 'row'
   /** Extra buttons placed in the same group (Details, Directions…). */
   children?: ReactNode
 }) {
@@ -78,7 +81,7 @@ export function PlaceActions({
 
   return (
     <div className="mp-actions-wrap">
-      <div className={layout === 'grid' ? 'mp-actions' : 'mp-actions is-stack'}>
+      <div className={layout === 'grid' ? 'mp-actions' : `mp-actions is-${layout}`}>
         {children}
         {canAddToTrip && (
           <Button
