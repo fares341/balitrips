@@ -153,7 +153,7 @@ export function CoordPicker({
       }
       const at = map.project([p.lon, p.lat])
       setPin(at)
-      const layers = WATER_LAYERS.filter((id) => map.getLayer(id))
+      const layers = WATER_LAYERS.filter((id) => !!map.getLayer?.(id))
       const found =
         layers.length > 0 ? (map.queryRenderedFeatures?.([at.x, at.y], { layers }) ?? []) : []
       setInWater(found.length > 0)

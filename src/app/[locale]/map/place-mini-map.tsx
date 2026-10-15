@@ -41,6 +41,7 @@ export function PlaceMiniMap({
     if (box === null) return
     let cancelled = false
     let map: MapLike | null = null
+    let ro: ResizeObserver | null = null
     let tileOk = false
     let tileErrors = 0
     const start = () => {
@@ -61,7 +62,14 @@ export function PlaceMiniMap({
             return
           }
           const m = map
+          // The box can still change size after the map is made (fonts,
+          // images above it): keep the canvas filling it.
+          if (typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(() => m.resize())
+            ro.observe(box)
+          }
           m.on('load', () => {
+            m.resize()
             if (!cancelled) setState('ready')
           })
           m.on('data', (event) => {
@@ -96,6 +104,7 @@ export function PlaceMiniMap({
     return () => {
       cancelled = true
       io?.disconnect()
+      ro?.disconnect()
       map?.remove()
     }
   }, [lat, lon, settings, locale])

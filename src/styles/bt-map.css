@@ -1704,7 +1704,7 @@
   border-start-end-radius: 8px;
   background: rgba(8, 20, 26, 0.6);
   color: rgba(255, 255, 255, 0.9);
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.4;
 }
 .pl-mini.is-idle {
@@ -1728,4 +1728,11 @@
 }
 .pl-hero {
   display: block;
+}
+@media (max-width: 1023px) {
+  /* the glass controls need more body over the light land colours */
+  .mp-gbtn,
+  .mp-seg {
+    background: rgba(19, 48, 26, 0.88);
+  }
 }
