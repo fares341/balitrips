@@ -22,9 +22,12 @@ export type Pt = [number, number]
 
 /**
  * [artX, artY, landmark id, lng, lat] — the painted label dots and the
- * verified coordinates of the landmarks they name (`./landmarks.ts`; a unit
- * test keeps the two in step). Coordinates only: this module ships to the
- * browser, the landmark names do not.
+ * coordinates the client registered the painting with (bali-map.js).
+ * Deliberately frozen: they describe where the ARTIST put each dot, so they
+ * stay as delivered even where `./landmarks.ts` has since corrected a
+ * landmark (7 points, up to 3 km). They only position things on the artwork
+ * poster/fallback — the real map uses lat/lng directly.
+ * Coordinates only: this module ships to the browser, the landmark names do not.
  */
 export const CONTROL: readonly (readonly [number, number, string, number, number])[] = [
   [313, 130, 'menjangan', 114.517657, -8.09588],

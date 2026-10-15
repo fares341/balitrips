@@ -32,6 +32,7 @@ import { checkSecureAccess } from '@/lib/security/guard'
 import '@/styles/bt-map.css'
 
 import { LANDMARKS, localizeLandmarks, visibleLandmarks } from './landmarks'
+import { mapViewSettings } from './map-style'
 import { MapApp } from './map-app'
 import type { MapClientPlace } from './projection'
 import { buildFreeZone, buildRegionBubbles, freeRegionKey } from './regions'
@@ -170,7 +171,7 @@ export default async function MapPage({ params, searchParams }: PageProps) {
       regions={regions}
       freeZone={freeZone}
       price={price}
-      settings={settings}
+      settings={mapViewSettings(settings)}
       landmarks={landmarks}
     />
   )

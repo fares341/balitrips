@@ -2,6 +2,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { mapViewSettings } from '@/app/[locale]/map/map-style'
 import { db } from '@/db'
 import { mapPlaces, placeTags, tags } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
@@ -216,7 +217,7 @@ export default async function PlaceEditorPage({
           <CoordPicker
             lat={place ? String(place.lat) : ''}
             lon={place ? String(place.lon) : ''}
-            settings={mapSettings}
+            settings={mapViewSettings(mapSettings)}
           />
           <div className="a-row">
             <Field label={t('places.opening_hours')} htmlFor="openingHours">

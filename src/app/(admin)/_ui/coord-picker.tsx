@@ -37,7 +37,7 @@ export function CoordPicker({
   lon: string
   settings: MapSettings
 }) {
-  const { t } = useAdminT()
+  const { t, locale } = useAdminT()
   const [latText, setLatText] = useState(lat)
   const [lonText, setLonText] = useState(lon)
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
@@ -87,6 +87,7 @@ export function CoordPicker({
           map = createRealMap(engine, box, settings, {
             center: start === null ? undefined : [start.lon, start.lat],
             zoom: 15,
+            locale,
           })
         } catch {
           setState('failed')
@@ -124,7 +125,7 @@ export function CoordPicker({
       map?.remove()
       mapRef.current = null
     }
-  }, [settings, reproject, setFrom])
+  }, [settings, reproject, setFrom, locale])
 
   // Typed coordinates move the pin.
   useEffect(() => {

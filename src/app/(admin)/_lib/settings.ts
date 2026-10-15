@@ -10,10 +10,10 @@ import { z } from 'zod'
 
 import {
   EXAGGERATION_RANGE,
-  IMAGERY_PROVIDERS,
-  MAP_SETTING_DEFAULTS,
+  SATELLITE_PROVIDERS,
+  STORED_MAP_DEFAULTS,
   TILT_RANGE,
-  type MapSettings,
+  type StoredMapSettings,
 } from '@/app/[locale]/map/map-style'
 import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
@@ -141,12 +141,25 @@ export const securitySchema = z.object({
 /**
  * The public map's real (3D) view — Studio → Map. The shape and defaults live
  * with the map style (`map-style.ts`) so the page and the form cannot drift.
+ *
+ * Satellite keys are PUBLIC browser tokens (domain-restricted in the
+ * provider's console); only the active one reaches a page. Rows saved before
+ * the satellite fields existed (`{ imagery, … }`) parse to "no satellite".
  */
+const browserToken = z
+  .string()
+  .trim()
+  .max(600)
+  .regex(/^[A-Za-z0-9._~+/=-]*$/, 'Letters, digits and . _ ~ + / = - only')
+
 export const mapSchema = z.object({
-  imagery: z.enum(IMAGERY_PROVIDERS),
+  satellite: z.enum(SATELLITE_PROVIDERS).default('none'),
+  esriKey: browserToken.default(''),
+  mapboxToken: browserToken.default(''),
+  licenceConfirmed: z.boolean().default(false),
   exaggeration: z.number().min(EXAGGERATION_RANGE.min).max(EXAGGERATION_RANGE.max),
   tiltOnEnter: z.number().int().min(TILT_RANGE.min).max(TILT_RANGE.max),
-}) satisfies z.ZodType<MapSettings>
+}) satisfies z.ZodType<StoredMapSettings, unknown>
 
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
@@ -174,7 +187,7 @@ export interface SettingsShape {
   fees: FeesSetting
   contact: ContactSetting
   security: SecuritySetting
-  map: MapSettings
+  map: StoredMapSettings
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -234,7 +247,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     maxDownloadsPerItem: 0,
     autoBan: true,
   },
-  map: { ...MAP_SETTING_DEFAULTS },
+  map: { ...STORED_MAP_DEFAULTS },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),

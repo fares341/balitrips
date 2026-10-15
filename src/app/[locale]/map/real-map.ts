@@ -10,12 +10,15 @@ import {
   REAL_MAX_PITCH,
   REAL_MAX_ZOOM,
   REAL_MIN_ZOOM,
+  RTL_TEXT_PLUGIN_URL,
   buildStyle,
   type MapSettings,
 } from './map-style'
-import type { MapEngine, MapLike } from './maplibre-loader'
+import { ensureRtlTextPlugin, type MapEngine, type MapLike } from './maplibre-loader'
 
 export interface RealMapOptions {
+  /** Page / Studio language, for OSM labels (Arabic loads the RTL text plugin). */
+  locale?: string
   /** Free-area outline: dims everything outside it (public map, no full access). */
   freeZone?: [number, number][] | null
   /** Open on this point instead of the whole island. */
@@ -30,9 +33,10 @@ export function createRealMap(
   settings: MapSettings,
   options: RealMapOptions = {},
 ): MapLike {
+  if (options.locale === 'ar') ensureRtlTextPlugin(engine, RTL_TEXT_PLUGIN_URL)
   const map = new engine.Map({
     container,
-    style: buildStyle(settings, { freeZone: options.freeZone ?? null }),
+    style: buildStyle(settings, { freeZone: options.freeZone ?? null, locale: options.locale }),
     ...(options.center
       ? { center: options.center, zoom: options.zoom ?? 14 }
       : { bounds: REAL_BOUNDS, fitBoundsOptions: { padding: 20 } }),

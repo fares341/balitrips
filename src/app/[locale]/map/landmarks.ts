@@ -40,6 +40,36 @@ export interface Landmark {
   desc: LocalText
 }
 
+/**
+ * COORDINATE CHECK (2026-10-15). The client's list came from NGA, GeoNames,
+ * Wikipedia and the OSM wiki; each point was compared with a second source
+ * (GeoNames search, geonames.org, unless noted). Within ~300 m: kept.
+ *
+ *   menjangan 18 m, pemuteran 0 m (Desa Pemuteran), lovina 0 m, tamblingan
+ *   206 m, buyan 0 m, beratan 0 m, ulun-danu 31 m, batukaru 0 m, batur 235 m,
+ *   lake-batur 188 m, agung 261 m, amed 0 m, ubud 204 m, ceningan 0 m,
+ *   penida 17 m.
+ *   uluwatu — no GeoNames temple entry; Wikipedia "Uluwatu Temple"
+ *   (8°49′44″S 115°5′7″E) and the seeded site place agree.
+ *   lembongan — 411 m from GeoNames' island point; both are arbitrary points
+ *   on the same small island: kept.
+ *   canggu — kept at Wikipedia's 8°39′21″S 115°8′3″E (the coast, where the
+ *   artwork paints it); GeoNames' "Canggu" village point is 1.9 km inland.
+ *
+ * Corrected (old → new, source). The old values were Wikipedia's
+ * arc-minute-rounded infobox points (or, for Denpasar, the Renon government
+ * district rather than the city):
+ *   singaraja  -8.117, 115.083     → -8.111944, 115.088056  GeoNames Singaraja (791 m)
+ *   bedugul    -8.283, 115.167     → -8.285, 115.171389     GeoNames Banjar Bedugul (532 m)
+ *   seminyak   -8.683, 115.167     → -8.691944, 115.160278  GeoNames Seminyak (1.2 km)
+ *   denpasar   -8.6717, 115.2339   → -8.65, 115.216667      GeoNames Denpasar (3.1 km)
+ *   kuta       -8.733, 115.167     → -8.723056, 115.172222  GeoNames Kuta (1.2 km)
+ *   sanur      -8.683, 115.267     → -8.675, 115.261111     GeoNames Sanur (1.1 km)
+ *   nusa-dua   -8.8, 115.217       → -8.800278, 115.233333  GeoNames Nusa Dua (1.8 km)
+ *
+ * The real map places every landmark and site pin from these lat/lng values
+ * only; the artwork's control points (`./art-warp.ts`) never move them.
+ */
 export const LANDMARKS: readonly Landmark[] = [
   {
     id: 'menjangan',
@@ -88,8 +118,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Singaraja', ar: 'سينغاراجا', id: 'Singaraja' },
     cat: 'settlement',
     rank: 1,
-    lng: 115.083,
-    lat: -8.117,
+    lng: 115.088056,
+    lat: -8.111944,
     ele: null,
     desc: {
       en: 'Main town of northern Bali and seat of Buleleng Regency. It was the colonial capital of Bali and the Lesser Sunda Islands from 1849 to 1960.',
@@ -162,8 +192,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Bedugul', ar: 'بيدوغول', id: 'Bedugul' },
     cat: 'settlement',
     rank: 2,
-    lng: 115.167,
-    lat: -8.283,
+    lng: 115.171389,
+    lat: -8.285,
     ele: null,
     desc: {
       en: 'Highland resort area at the south end of Lake Beratan, home to the Bali Botanic Garden (founded 1959).',
@@ -274,8 +304,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Seminyak', ar: 'سمينياك', id: 'Seminyak' },
     cat: 'settlement',
     rank: 2,
-    lng: 115.167,
-    lat: -8.683,
+    lng: 115.160278,
+    lat: -8.691944,
     ele: null,
     desc: {
       en: 'Tourist and residential area just north of Kuta, known for shopping and restaurants.',
@@ -288,8 +318,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Denpasar', ar: 'دينباسار', id: 'Denpasar' },
     cat: 'settlement',
     rank: 1,
-    lng: 115.2339,
-    lat: -8.6717,
+    lng: 115.216667,
+    lat: -8.65,
     ele: null,
     desc: {
       en: 'Provincial capital of Bali and its largest city.',
@@ -302,8 +332,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Kuta', ar: 'كوتا', id: 'Kuta' },
     cat: 'settlement',
     rank: 1,
-    lng: 115.167,
-    lat: -8.733,
+    lng: 115.172222,
+    lat: -8.723056,
     ele: null,
     desc: {
       en: 'Former fishing village that became one of Bali’s first mass-tourism destinations.',
@@ -316,8 +346,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Sanur', ar: 'سانور', id: 'Sanur' },
     cat: 'settlement',
     rank: 2,
-    lng: 115.267,
-    lat: -8.683,
+    lng: 115.261111,
+    lat: -8.675,
     ele: null,
     desc: {
       en: 'East-coast beach area of Denpasar. Its Bali Beach hotel (1966) was the island’s first five-star resort.',
@@ -330,8 +360,8 @@ export const LANDMARKS: readonly Landmark[] = [
     name: { en: 'Nusa Dua', ar: 'نوسا دوا', id: 'Nusa Dua' },
     cat: 'settlement',
     rank: 2,
-    lng: 115.217,
-    lat: -8.8,
+    lng: 115.233333,
+    lat: -8.800278,
     ele: null,
     desc: {
       en: 'Planned resort enclave of about 350 ha built from the 1970s on the east side of the Bukit Peninsula.',

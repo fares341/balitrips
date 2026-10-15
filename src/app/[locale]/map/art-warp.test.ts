@@ -19,27 +19,28 @@ import { LANDMARKS, landmarkById } from './landmarks'
  * every pin off its painted label while the page still renders perfectly.
  */
 describe('art ↔ geo registration', () => {
-  it('uses the landmarks’ verified coordinates for its control points', () => {
+  it('registers each painted dot near its (verified) landmark', () => {
+    // Frozen client registration vs the corrected landmark list: same place
+    // within the 3.1 km Denpasar correction.
     for (const [, , id, lng, lat] of CONTROL) {
-      expect(landmarkById(id)?.lng).toBe(lng)
-      expect(landmarkById(id)?.lat).toBe(lat)
+      const l = landmarkById(id)
+      expect(l).toBeDefined()
+      const km = Math.hypot(((l?.lng ?? 0) - lng) * 109.9, ((l?.lat ?? 0) - lat) * 110.6)
+      expect(km).toBeLessThan(3.5)
     }
   })
 
-  it('lands every control point on its landmark (art → geo, 1e-6°)', () => {
-    for (const [x, y, id] of CONTROL) {
-      const l = landmarkById(id)
-      expect(l).toBeDefined()
-      const [lng, lat] = artToGeo(x, y)
-      expect(Math.abs(lng - (l?.lng ?? 0))).toBeLessThan(1e-6)
-      expect(Math.abs(lat - (l?.lat ?? 0))).toBeLessThan(1e-6)
+  it('lands every painted dot on its registered coordinate (art → geo, 1e-6°)', () => {
+    for (const [x, y, , lng, lat] of CONTROL) {
+      const [glng, glat] = artToGeo(x, y)
+      expect(Math.abs(glng - lng)).toBeLessThan(1e-6)
+      expect(Math.abs(glat - lat)).toBeLessThan(1e-6)
     }
   })
 
   it('round-trips every control point (geo → art within 1 px)', () => {
-    for (const [x, y, id] of CONTROL) {
-      const l = landmarkById(id)
-      const [ax, ay] = geoToArt(l?.lng ?? 0, l?.lat ?? 0)
+    for (const [x, y, , lng, lat] of CONTROL) {
+      const [ax, ay] = geoToArt(lng, lat)
       expect(Math.hypot(ax - x, ay - y)).toBeLessThan(1)
     }
   })

@@ -1,7 +1,12 @@
 import { asc, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 
-import { EXAGGERATION_RANGE, IMAGERY_PROVIDERS, TILT_RANGE } from '@/app/[locale]/map/map-style'
+import {
+  EXAGGERATION_RANGE,
+  SATELLITE_PROVIDERS,
+  TILT_RANGE,
+  mapViewSettings,
+} from '@/app/[locale]/map/map-style'
 import { db } from '@/db'
 import { mapPlaces } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
@@ -12,7 +17,7 @@ import { getAdminI18n } from '../../_lib/i18n'
 import { param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { readSetting } from '../../_lib/settings'
-import { Field, Select, TextInput } from '../../_ui/field'
+import { Field, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { saveMapSettings } from '../config/actions'
@@ -74,6 +79,7 @@ export default async function StudioMapPage({
   })
 
   const canConfigure = can(session.role, 'config.write')
+  const view = mapViewSettings(settings)
 
   return (
     <>
@@ -88,22 +94,78 @@ export default async function StudioMapPage({
       />
       <Flash searchParams={params} />
 
-      <PlacesMap pins={pins} settings={settings} focusId={focus ?? null} />
+      <PlacesMap pins={pins} settings={view} focusId={focus ?? null} />
 
       {canConfigure ? (
         <form className="a-card a-form" action={saveMapSettings}>
           <h2>{t('map.settings')}</h2>
           <p className="a-hint">{t('map.settings_hint')}</p>
+
+          <fieldset className="a-fieldset">
+            <legend>{t('map.satellite')}</legend>
+            <p className="a-hint">{t('map.satellite_intro')}</p>
+            <div className="a-field">
+              {SATELLITE_PROVIDERS.map((provider) => (
+                <label key={provider} className="a-check">
+                  <input
+                    type="radio"
+                    name="satellite"
+                    value={provider}
+                    defaultChecked={settings.satellite === provider}
+                  />
+                  <span>
+                    <b>{t(`map.sat_${provider}`)}</b>
+                    <br />
+                    <span className="a-hint">{t(`map.sat_${provider}_note`)}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="a-row">
+              <Field label={t('map.esri_key')} htmlFor="esriKey" hint={t('map.esri_key_hint')}>
+                <TextInput
+                  id="esriKey"
+                  name="esriKey"
+                  dir="ltr"
+                  autoComplete="off"
+                  spellCheck={false}
+                  defaultValue={settings.esriKey}
+                />
+              </Field>
+              <Field
+                label={t('map.mapbox_token')}
+                htmlFor="mapboxToken"
+                hint={t('map.mapbox_token_hint')}
+              >
+                <TextInput
+                  id="mapboxToken"
+                  name="mapboxToken"
+                  dir="ltr"
+                  autoComplete="off"
+                  spellCheck={false}
+                  defaultValue={settings.mapboxToken}
+                />
+              </Field>
+            </div>
+            <label className="a-check">
+              <input
+                type="checkbox"
+                name="licenceConfirmed"
+                defaultChecked={settings.licenceConfirmed}
+              />
+              {t('map.licence_confirm')}
+            </label>
+            <p className="a-hint">{t('map.keys_public')}</p>
+            <p className={view.satellite === 'none' ? 'a-hint' : 'a-hint a-good'} role="status">
+              {view.satellite === 'none'
+                ? settings.satellite === 'none'
+                  ? t('map.sat_status_off')
+                  : t('map.sat_status_inactive')
+                : t('map.sat_status_on', { provider: t(`map.sat_${view.satellite}`) })}
+            </p>
+          </fieldset>
+
           <div className="a-row">
-            <Field label={t('map.imagery')} htmlFor="imagery" hint={t('map.imagery_hint')}>
-              <Select id="imagery" name="imagery" defaultValue={settings.imagery}>
-                {IMAGERY_PROVIDERS.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {t(`map.imagery_${provider}`)}
-                  </option>
-                ))}
-              </Select>
-            </Field>
             <Field
               label={t('map.exaggeration')}
               htmlFor="exaggeration"

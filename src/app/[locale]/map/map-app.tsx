@@ -372,6 +372,7 @@ export function MapApp(props: MapAppProps) {
       mapContainer,
       settings,
       freeZone: freeRing,
+      locale,
       initial: target ? { lng: target.place.lon, lat: target.place.lat, zoom: 14 } : null,
       padding,
       reducedMotion,
@@ -413,7 +414,7 @@ export function MapApp(props: MapAppProps) {
       view.destroy()
       viewRef.current = null
     }
-  }, [loadEngine, attempt, settings, freeRing, padding, schedule, settle, flyToPlace])
+  }, [loadEngine, attempt, settings, freeRing, padding, schedule, settle, flyToPlace, locale])
 
   // Filters changed: re-project the pins (async — no setState in the effect body).
   useEffect(() => {

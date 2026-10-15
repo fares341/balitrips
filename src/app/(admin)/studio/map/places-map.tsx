@@ -38,7 +38,7 @@ export function PlacesMap({
   settings: MapSettings
   focusId: string | null
 }) {
-  const { t } = useAdminT()
+  const { t, locale } = useAdminT()
   const [shown, setShown] = useState<Record<PinKind, boolean>>({
     free: true,
     locked: true,
@@ -96,6 +96,7 @@ export function PlacesMap({
           map = createRealMap(engine, box, settings, {
             center: focus === null ? undefined : [focus.lon, focus.lat],
             zoom: 14,
+            locale,
           })
         } catch {
           setState('failed')
@@ -127,7 +128,7 @@ export function PlacesMap({
       map?.remove()
       mapRef.current = null
     }
-  }, [settings, focus, measure])
+  }, [settings, focus, measure, locale])
 
   // Legend toggles: re-place the pins.
   useEffect(() => {

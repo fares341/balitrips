@@ -12,9 +12,10 @@ import { locales } from '@/i18n/config'
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import type { Translate } from '../../_i18n'
-import { IMAGERY_PROVIDERS } from '@/app/[locale]/map/map-style'
+import { SATELLITE_PROVIDERS } from '@/app/[locale]/map/map-style'
 
 import {
+  fbool,
   fcurrency,
   fdate,
   fenum,
@@ -22,6 +23,7 @@ import {
   fint,
   flines,
   freq,
+  fstr,
   localeFieldName,
 } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
@@ -255,7 +257,12 @@ export async function saveMapSettings(form: FormData): Promise<void> {
   await save(
     'map',
     (t) => ({
-      imagery: fenum(form, 'imagery', IMAGERY_PROVIDERS, 'esri'),
+      // Off unless a key is entered AND the licence box is ticked (see
+      // `mapViewSettings`); the keys are public, domain-restricted tokens.
+      satellite: fenum(form, 'satellite', SATELLITE_PROVIDERS, 'none'),
+      esriKey: fstr(form, 'esriKey') ?? '',
+      mapboxToken: fstr(form, 'mapboxToken') ?? '',
+      licenceConfirmed: fbool(form, 'licenceConfirmed'),
       exaggeration: ffloat(form, 'exaggeration', t('map.exaggeration')),
       tiltOnEnter: fint(form, 'tiltOnEnter', 50, t('map.tilt')),
     }),

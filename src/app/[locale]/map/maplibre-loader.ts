@@ -95,6 +95,22 @@ export interface MapOptions {
 
 export interface MapEngine {
   Map: new (options: MapOptions) => MapLike
+  setRTLTextPlugin?(url: string, lazy: boolean): Promise<void> | void
+  getRTLTextPluginStatus?(): string
+}
+
+/**
+ * Arabic shaping for map labels: MapLibre's RTL text plugin, pinned and
+ * lazy (only fetched once a label actually needs it). Safe to call often.
+ */
+export function ensureRtlTextPlugin(engine: MapEngine, url: string): void {
+  try {
+    if (engine.getRTLTextPluginStatus?.() !== 'unavailable') return
+    const done = engine.setRTLTextPlugin?.(url, true)
+    if (done instanceof Promise) done.catch(() => undefined)
+  } catch {
+    // Labels fall back to unshaped text; the page's own markers are unaffected.
+  }
 }
 
 export type EngineLoader = () => Promise<MapEngine>

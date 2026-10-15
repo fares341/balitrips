@@ -59,6 +59,8 @@ export interface HybridOptions {
   settings: MapSettings
   /** Free-area outline (lon/lat ring) for the dimming mask; null = no mask. */
   freeZone: [number, number][] | null
+  /** Page language, for the map's own labels. */
+  locale: string
   /** Open on this point (deep link) instead of the whole island. */
   initial?: { lng: number; lat: number; zoom: number } | null
   /** Screen area kept clear of the panel / bars (physical px). */
@@ -209,6 +211,7 @@ export class HybridView {
     try {
       map = createRealMap(engine, this.o.mapContainer, this.o.settings, {
         freeZone: this.o.freeZone,
+        locale: this.o.locale,
       })
     } catch {
       // No WebGL, or the engine refused: the artwork stays fully usable.

@@ -540,28 +540,71 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   ],
   'map.settings': ['3D map settings', 'إعدادات الخريطة ثلاثية الأبعاد'],
   'map.settings_hint': [
-    'Applies to the public map’s 3D satellite view, the place editor and this page.',
-    'تنطبق على عرض القمر الصناعي ثلاثي الأبعاد في الخريطة العامة وعلى محرر الأماكن وهذه الصفحة.',
+    'Applies to the public 3D map, the place editor and this page.',
+    'تنطبق على الخريطة العامة ثلاثية الأبعاد وعلى محرر الأماكن وهذه الصفحة.',
   ],
-  'map.imagery': ['Satellite imagery', 'صور القمر الصناعي'],
-  'map.imagery_esri': ['Esri World Imagery (sharpest)', 'Esri World Imagery (الأوضح)'],
-  'map.imagery_sentinel2': [
-    'Sentinel-2 cloudless 2020 by EOX (up to zoom 14)',
-    'Sentinel-2 بلا غيوم 2020 من EOX (حتى مستوى التكبير 14)',
+  'map.satellite': ['Satellite imagery (optional)', 'صور القمر الصناعي (اختيارية)'],
+  'map.satellite_intro': [
+    'The map is a licence-clean vector map by default (OpenFreeMap + AWS terrain). Satellite imagery is only shown when a provider is chosen, its key is entered AND the licence box below is ticked — otherwise the vector map is used.',
+    'الخريطة افتراضياً خريطة متجهية نظيفة الترخيص (OpenFreeMap + تضاريس AWS). لا تظهر صور القمر الصناعي إلا عند اختيار مزوّد وإدخال مفتاحه ووضع علامة على مربع الترخيص أدناه — وإلا تُستخدم الخريطة المتجهية.',
   ],
-  'map.imagery_hint': [
-    'Check the provider’s licence terms for commercial use before going live.',
-    'راجِع شروط ترخيص المزوّد للاستخدام التجاري قبل الإطلاق.',
+  'map.sat_none': ['None — vector map only (default)', 'بدون — الخريطة المتجهية فقط (الافتراضي)'],
+  'map.sat_none_note': [
+    'No key, no cost. OpenFreeMap allows commercial use with attribution.',
+    'بلا مفتاح وبلا تكلفة. يسمح OpenFreeMap بالاستخدام التجاري مع ذكر المصدر.',
+  ],
+  'map.sat_esri': [
+    'Esri World Imagery (ArcGIS Location Platform)',
+    'Esri World Imagery (منصة ArcGIS Location Platform)',
+  ],
+  'map.sat_esri_note': [
+    'Needs an ArcGIS Location Platform account and API key. 2M basemap tiles/month free, then about $0.15 per 1,000 tiles.',
+    'يتطلب حساباً ومفتاح API على ArcGIS Location Platform. مليونا بلاطة شهرياً مجاناً، ثم نحو 0.15 دولار لكل 1000 بلاطة.',
+  ],
+  'map.sat_mapbox': [
+    'Mapbox Satellite (Mapbox Raster Tiles API)',
+    'Mapbox Satellite (واجهة Mapbox Raster Tiles)',
+  ],
+  'map.sat_mapbox_note': [
+    'Needs a Mapbox account and public access token. 750k tiles/month free, then about $0.25 per 1,000 tiles. Mapbox requires its wordmark on the map.',
+    'يتطلب حساباً ورمز وصول عاماً من Mapbox. 750 ألف بلاطة شهرياً مجاناً، ثم نحو 0.25 دولار لكل 1000 بلاطة. تشترط Mapbox إظهار شعارها على الخريطة.',
+  ],
+  'map.esri_key': ['ArcGIS API key', 'مفتاح ArcGIS API'],
+  'map.esri_key_hint': [
+    'With the basemap/imagery privilege, restricted to this site’s domain.',
+    'بصلاحية الخرائط الأساسية/الصور، ومقيّد بنطاق هذا الموقع.',
+  ],
+  'map.mapbox_token': ['Mapbox access token', 'رمز وصول Mapbox'],
+  'map.mapbox_token_hint': [
+    'A public token (pk.…) with a URL restriction to this site’s domain.',
+    'رمز عام (pk.…) مقيّد برابط نطاق هذا الموقع.',
+  ],
+  'map.licence_confirm': [
+    'I confirm we hold the licence/plan for commercial use of the chosen provider.',
+    'أؤكد أننا نملك الترخيص/الخطة المناسبة للاستخدام التجاري لدى المزوّد المختار.',
+  ],
+  'map.keys_public': [
+    'These keys are stored in the site settings and sent to visitors’ browsers (only the active one) — that is how map tiles work. Use public, domain-restricted keys only, never a secret key.',
+    'تُحفظ هذه المفاتيح في إعدادات الموقع وتُرسل إلى متصفحات الزوار (المفعّل منها فقط) — هكذا تعمل بلاطات الخرائط. استخدم مفاتيح عامة مقيّدة بالنطاق فقط، ولا تستخدم مفتاحاً سرياً أبداً.',
+  ],
+  'map.sat_status_off': [
+    'Satellite is off: the vector map is shown.',
+    'صور القمر الصناعي متوقفة: تُعرض الخريطة المتجهية.',
+  ],
+  'map.sat_status_inactive': [
+    'Satellite is NOT active — a key or the licence confirmation is missing, so the vector map is shown.',
+    'صور القمر الصناعي غير مفعّلة — ينقص المفتاح أو تأكيد الترخيص، لذا تُعرض الخريطة المتجهية.',
+  ],
+  'map.sat_status_on': [
+    'Satellite is active: {provider}.',
+    'صور القمر الصناعي مفعّلة: {provider}.',
   ],
   'map.exaggeration': ['Terrain exaggeration', 'تضخيم التضاريس'],
   'map.exaggeration_hint': [
     '{min} = true scale, up to {max}.',
     '{min} = المقياس الحقيقي، وحتى {max}.',
   ],
-  'map.tilt': [
-    'Tilt when the 3D map opens (degrees)',
-    'الميل عند فتح الخريطة ثلاثية الأبعاد (بالدرجات)',
-  ],
+  'map.tilt': ['Tilt of the 3D view (degrees)', 'ميل العرض ثلاثي الأبعاد (بالدرجات)'],
   'map.tilt_hint': ['{min} = straight down, up to {max}.', '{min} = من الأعلى مباشرة، وحتى {max}.'],
   'map.save': ['Save map settings', 'حفظ إعدادات الخريطة'],
   'map.ok_saved': ['Map settings saved.', 'تم حفظ إعدادات الخريطة.'],

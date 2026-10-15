@@ -1783,3 +1783,7 @@ details > summary.a-btn::-webkit-details-marker {
   outline: 3px solid var(--a-focus);
   outline-offset: 2px;
 }
+.a-hint.a-good {
+  color: var(--a-good);
+  font-weight: 700;
+}
