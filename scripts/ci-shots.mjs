@@ -29,7 +29,7 @@ const browser = await chromium.launch({
 })
 const log = []
 process.on('exit', () => writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n'))
-for (const [name, path, wait] of pages) {
+for (const [name, path, wait] of process.env.SHOTS_ONLY ? [] : pages) {
   for (const [w, h] of sizes) {
     const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
     try {
@@ -130,6 +130,181 @@ for (const [name, path, wait] of pages) {
     await page.close()
   }
 }
+// ---------------------------------------------------------------------------
+// Public pages sweep: every public page at 390 and 1440 (ar), key pages in en,
+// plus a horizontal-overflow probe at 360/390/768/1440. Files: p/<name>-<lang>-<w>.png
+// Detail pages are found from their listing page (first matching link).
+// ---------------------------------------------------------------------------
+const SWEEP = [
+  ['home', '/'],
+  ['services', '/services'],
+  ['explore', '/explore'],
+  ['activities', '/activities'],
+  ['activity', { from: '/activities', match: '/activities/' }],
+  ['itineraries', '/itineraries'],
+  ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
+  ['packages', '/packages'],
+  ['package', { from: '/packages', match: '/packages/' }],
+  ['place', { from: '/explore', match: '/places/' }],
+  ['custom', '/custom'],
+  ['my-trip', '/my-trip'],
+  ['checkout', '/checkout'],
+  ['account', '/account'],
+  ['signin', '/account?signin=1'],
+  ['search', '/search?q=ubud'],
+  ['search-empty', '/search?q=zzqxv'],
+  ['blog', '/blog'],
+  ['article', { from: '/blog', match: '/blog/' }],
+  ['about', '/about'],
+  ['contact', '/contact'],
+  ['faq', '/faq'],
+  ['privacy', '/privacy'],
+  ['refund', '/refund'],
+  ['events', '/events'],
+  ['plans', '/plans'],
+  ['reviews', '/reviews'],
+  ['driver', '/driver'],
+  ['404', '/no-such-page-xyz'],
+]
+const EN_KEY = new Set([
+  'home',
+  'services',
+  'activities',
+  'activity',
+  'my-trip',
+  'checkout',
+  'packages',
+])
+const ONLY = (process.env.SHOTS_ONLY ?? '').split(',').filter(Boolean)
+mkdirSync(`${OUT}/p`, { recursive: true })
+const overflow = []
+const resolved = {}
+async function resolvePath(lang, target) {
+  if (typeof target === 'string') return `/${lang}${target === '/' ? '' : target}`
+  const key = `${lang}:${target.from}:${target.match}`
+  if (resolved[key] !== undefined) return resolved[key]
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+  let found = null
+  try {
+    await page.goto(`${BASE}/${lang}${target.from}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
+    })
+    found = await page.evaluate((m) => {
+      for (const a of document.querySelectorAll('main a[href]')) {
+        const u = new URL(a.href)
+        const rest = u.pathname.split(m)[1]
+        if (rest && !rest.includes('/')) return u.pathname
+      }
+      return null
+    }, target.match)
+  } catch (e) {
+    log.push(`sweep resolve ${key}: ${e.message}`)
+  }
+  await page.close()
+  resolved[key] = found
+  return found
+}
+for (const [name, target] of SWEEP) {
+  if (ONLY.length && !ONLY.includes(name)) continue
+  for (const lang of EN_KEY.has(name) ? ['ar', 'en'] : ['ar']) {
+    const path = await resolvePath(lang, target)
+    if (!path) {
+      log.push(`sweep ${name} ${lang}: no path`)
+      continue
+    }
+    for (const w of [390, 1440, 360, 768]) {
+      const shoot = w === 390 || w === 1440
+      const page = await browser.newPage({
+        viewport: { width: w, height: w < 500 ? 844 : 900 },
+        deviceScaleFactor: 1,
+      })
+      try {
+        page.on('pageerror', (e) => log.push(`sweep ${path} ${w}: pageerror ${e.message}`))
+        const res = await page
+          .goto(BASE + path, { waitUntil: 'networkidle', timeout: 60000 })
+          .catch((e) => log.push(`sweep ${path} ${w}: ${e.message}`))
+        if (res && w === 1440)
+          log.push(`sweep ${name} ${lang}: ${path} -> HTTP ${res.status()} ${page.url()}`)
+        await page.waitForTimeout(1200)
+        // scroll through so lazy images and reveal-on-scroll sections render
+        await page.evaluate(async () => {
+          for (let y = 0; y < document.documentElement.scrollHeight; y += 600) {
+            window.scrollTo(0, y)
+            await new Promise((r) => setTimeout(r, 60))
+          }
+          window.scrollTo(0, 0)
+        })
+        await page.waitForTimeout(1500)
+        const ov = await page.evaluate(() => {
+          const iw = innerWidth
+          const sw = document.documentElement.scrollWidth
+          const off = []
+          if (sw > iw) {
+            for (const el of document.querySelectorAll('body *')) {
+              const r = el.getBoundingClientRect()
+              if (r.width && (r.right > iw + 1 || r.left < -1)) {
+                let p = el.parentElement
+                let clipped = false
+                while (p && p !== document.body) {
+                  if (getComputedStyle(p).overflowX !== 'visible') {
+                    clipped = true
+                    break
+                  }
+                  p = p.parentElement
+                }
+                if (!clipped)
+                  off.push(
+                    `${el.tagName}.${String(el.className).slice(0, 40)}[${Math.round(r.left)},${Math.round(r.right)}]`,
+                  )
+              }
+            }
+          }
+          return { iw, sw, off: off.slice(0, 6) }
+        })
+        overflow.push(
+          `${ov.sw > ov.iw ? 'OVERFLOW' : 'ok'} ${name}-${lang}-${w} sw=${ov.sw} ${ov.off.join(' ')}`,
+        )
+        if (shoot)
+          await page.screenshot({
+            path: `${OUT}/p/${name}-${lang}-${w}.png`,
+            fullPage: true,
+            timeout: 120000,
+          })
+      } catch (e) {
+        log.push(`sweep ${name} ${lang} ${w}: SCRIPT ERROR ${e.message}`)
+      }
+      await page.close()
+    }
+  }
+}
+writeFileSync(`${OUT}/overflow.txt`, overflow.join('\n') + '\n')
+// Home hero: a few frames over time (video slider), phone + desktop.
+for (const [w, h] of [
+  [390, 844],
+  [1440, 900],
+]) {
+  if (ONLY.length && !ONLY.includes('home')) break
+  const page = await browser.newPage({ viewport: { width: w, height: h } })
+  try {
+    await page.goto(`${BASE}/ar`, { waitUntil: 'networkidle', timeout: 60000 })
+    for (const t of [1, 4, 9]) {
+      await page.waitForTimeout(t === 1 ? 1000 : t === 4 ? 3000 : 5000)
+      await page.screenshot({ path: `${OUT}/p/hero-ar-${w}-t${t}.png` })
+    }
+    const st = await page.evaluate(() =>
+      [...document.querySelectorAll('video')].map(
+        (v) =>
+          `${v.currentSrc.split('/').pop()} paused=${v.paused} t=${v.currentTime.toFixed(1)} rs=${v.readyState}`,
+      ),
+    )
+    log.push(`hero ${w}: ${st.join(' | ')}`)
+  } catch (e) {
+    log.push(`hero ${w}: ${e.message}`)
+  }
+  await page.close()
+}
+
 // Phone flow on the real map: region bubble → pin → card → details → list.
 for (const lang of ['ar', 'en']) {
   const ctx = await browser.newContext({
