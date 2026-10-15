@@ -153,6 +153,8 @@ const SWEEP = [
   ['checkout', '/checkout'],
   ['account', '/account'],
   ['signin', '/account?signin=1'],
+  ['register', '/register'],
+  ['forgot', '/forgot-password'],
   ['search', '/search?q=ubud'],
   ['search-empty', '/search?q=zzqxv'],
   ['blog', '/blog'],

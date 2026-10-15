@@ -75,9 +75,17 @@ export type AuthModalProps = {
   socialProviders?: readonly SocialProviderId[]
   /** Called after a successful email sign-in or sign-up. */
   onAuthenticated?: () => void
+  /**
+   * `page` renders the same forms as a page section (v3 login.html: a photo
+   * beside the form) instead of a dialog — the package keeps popups for
+   * confirmations only. `open`/`onClose` are then ignored.
+   */
+  variant?: 'modal' | 'page'
 }
 
 const DEFAULT_CALLBACK_PATH = '/account'
+/** The photo beside the form on the sign-in page (v3 login.html). */
+const AUTH_PHOTO = '/brand/penida-cove.jpg'
 const RESET_PATH = '/reset-password'
 
 /** Which submit is in flight. `null` means the form is idle. */
@@ -161,6 +169,7 @@ export function AuthModal({
   callbackPath = DEFAULT_CALLBACK_PATH,
   socialProviders = [],
   onAuthenticated,
+  variant = 'modal',
 }: AuthModalProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
@@ -202,6 +211,8 @@ export function AuthModal({
   const countries = useMemo(() => countryOptions(locale), [locale])
 
   const headingId = 'bt-auth-heading'
+  /** The page variant's heading is the page's h1. */
+  const AuthHeading = variant === 'page' ? 'h1' : 'h3'
   const busy = pending !== null
 
   const update = (key: keyof FormState) => (value: string) => {
@@ -437,9 +448,9 @@ export function AuthModal({
   const signInPane = (
     <form onSubmit={submitSignIn} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
-        <h3 id={headingId} style={{ fontSize: 26 }}>
+        <AuthHeading id={headingId} style={{ fontSize: 26 }}>
           {t('auth_signin_t')}
-        </h3>
+        </AuthHeading>
         <p className="muted" style={{ margin: '6px 0 0', fontSize: 14.5 }}>
           {t('auth_signin_sub')}
         </p>
@@ -552,9 +563,9 @@ export function AuthModal({
   const signUpPane = (
     <form onSubmit={submitSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <h3 id={headingId} style={{ fontSize: 26 }}>
+        <AuthHeading id={headingId} style={{ fontSize: 26 }}>
           {t('auth_signup_t')}
-        </h3>
+        </AuthHeading>
         <p className="muted" style={{ margin: '6px 0 0', fontSize: 14.5 }}>
           {t('auth_signup_sub')}
         </p>
@@ -706,9 +717,9 @@ export function AuthModal({
   const forgotPane = (
     <form onSubmit={submitForgot} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
-        <h3 id={headingId} style={{ fontSize: 26 }}>
+        <AuthHeading id={headingId} style={{ fontSize: 26 }}>
           {t('auth_forgot_t')}
-        </h3>
+        </AuthHeading>
         <p className="muted" style={{ margin: '6px 0 0', fontSize: 14.5 }}>
           {t('auth_forgot_sub')}
         </p>
@@ -770,6 +781,52 @@ export function AuthModal({
       </button>
     </form>
   )
+
+  if (variant === 'page') {
+    return (
+      <section className="auth-page" aria-labelledby={headingId}>
+        <div className="auth-media" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
+          <img src={AUTH_PHOTO} alt="" />
+          <span className="auth-cap">{t('auth4_photo_cap')}</span>
+        </div>
+        <div className="auth-form">
+          <div className="auth-form-in">
+            <div className="bt-modal-body">
+              {mode !== 'forgot' && (
+                <div className="bt-auth-tabs" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'signin'}
+                    className={mode === 'signin' ? 'on' : ''}
+                    onClick={() => switchMode('signin')}
+                    disabled={busy}
+                  >
+                    {t('auth_tab_in')}
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === 'signup'}
+                    className={mode === 'signup' ? 'on' : ''}
+                    onClick={() => switchMode('signup')}
+                    disabled={busy}
+                  >
+                    {t('auth_tab_up')}
+                  </button>
+                </div>
+              )}
+
+              {mode === 'signin' && signInPane}
+              {mode === 'signup' && signUpPane}
+              {mode === 'forgot' && forgotPane}
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <Modal

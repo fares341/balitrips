@@ -3907,3 +3907,58 @@ html {
   font-size: 13.5px;
   color: var(--forest);
 }
+
+/* ---------- Sign-in / sign-up / forgot as a page (v3 login.html) ---------- */
+.auth-page {
+  display: grid;
+  min-height: calc(100svh - 120px);
+}
+.auth-media {
+  position: relative;
+  display: none;
+  overflow: hidden;
+  /* the photo sits at the inline end (left in Arabic), the form first */
+  order: 2;
+}
+.auth-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.auth-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(19, 48, 26, 0) 45%, rgba(19, 48, 26, 0.75));
+}
+.auth-media .auth-cap {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 28px;
+  bottom: 28px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.auth-form {
+  display: grid;
+  place-items: center;
+  padding: 32px 16px 56px;
+}
+.auth-form-in {
+  width: min(100%, 420px);
+}
+.auth-form-in .bt-modal-body {
+  padding: 0;
+}
+@media (min-width: 900px) {
+  .auth-page {
+    grid-template-columns: 1fr 1fr;
+  }
+  .auth-media {
+    display: block;
+  }
+}
