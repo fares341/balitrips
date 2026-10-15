@@ -149,6 +149,8 @@ export const REAL_MAX_PITCH = 80
 /** MapLibre's RTL text plugin (Arabic shaping), pinned; loaded lazily. */
 /** Water ripple texture, drawn at runtime by real-map.ts (no sprite file). */
 export const WAVES_IMAGE = 'bt-waves'
+/** Beach sand grain texture, drawn at runtime by real-map.ts. */
+export const SAND_IMAGE = 'bt-sand'
 
 export const RTL_TEXT_PLUGIN_URL =
   'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js'
@@ -160,7 +162,8 @@ const C = {
   grass: '#7ea955',
   farm: '#9cc365',
   wetland: '#5c9a73',
-  sand: '#ecdaa6',
+  sand: '#f3dca2',
+  sandEdge: '#d9b878',
   town: '#cdb894',
   park: '#4e8b46',
   ocean: '#0d4a73',
@@ -304,7 +307,33 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
     fill('landcover-grass', 'landcover', ['grass'], C.grass, 0.8),
     fill('landcover-wood', 'landcover', ['wood'], C.forest, 0.85),
     fill('landcover-wetland', 'landcover', ['wetland'], C.wetland, 0.7),
-    fill('landcover-sand', 'landcover', ['sand'], C.sand, 0.95),
+    // Beaches: warm sand with a grain texture up close and a soft edge.
+    fill('landcover-sand', 'landcover', ['sand'], C.sand, 1),
+    {
+      id: 'beach-grain',
+      type: 'fill',
+      source: 'omt',
+      'source-layer': 'landcover',
+      minzoom: 13,
+      filter: ['==', ['get', 'class'], 'sand'],
+      paint: {
+        'fill-pattern': SAND_IMAGE,
+        'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13, 0, 15, 0.7],
+      },
+    },
+    {
+      id: 'beach-edge',
+      type: 'line',
+      source: 'omt',
+      'source-layer': 'landcover',
+      minzoom: 13,
+      filter: ['==', ['get', 'class'], 'sand'],
+      paint: {
+        'line-color': C.sandEdge,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 13, 0.5, 18, 2],
+        'line-opacity': 0.6,
+      },
+    },
     fill(
       'landuse-town',
       'landuse',
@@ -353,8 +382,10 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
       filter: ['!=', ['get', 'class'], 'ocean'],
       paint: { 'fill-color': C.inland, 'fill-antialias': true },
     },
-    coastGlow('coast-shallows', C.shallow, [5, 16, 48, 120], 0.75),
-    coastGlow('coast-surf', C.surf, [1.5, 3, 7, 16], 0.85),
+    // Kept narrow on purpose: wide blurred lines leak past the vector-tile
+    // buffer and show as streaks across the sea along tile seams.
+    coastGlow('coast-shallows', C.shallow, [3, 6, 10, 14], 0.6),
+    coastGlow('coast-surf', C.surf, [1, 2, 3.5, 5], 0.9),
     // Ripples on all water when close, so the surface looks like water.
     {
       id: 'water-texture',

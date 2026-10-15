@@ -817,6 +817,7 @@ export function MapApp(props: MapAppProps) {
             className={[
               'mp-view',
               mapShown ? 'is-map' : null,
+              !mapShown && !realBroken ? 'is-loading' : null,
               `is-${screen.mode}`,
               screen.labels ? 'show-labels' : null,
             ]
@@ -829,12 +830,23 @@ export function MapApp(props: MapAppProps) {
             onKeyDown={onKeyDown}
           >
             <div ref={canvasRef} className="mp-canvas" aria-hidden={!mapShown} />
-            <div className="mp-art">
+            {!mapShown && !realBroken && (
+              <div className="mp-loading" role="status">
+                <span className="mp-spin" aria-hidden="true" />
+                <span>{t('mp4_loading')}</span>
+              </div>
+            )}
+            {/* the illustrated map is only the fallback when the 3D map can't load */}
+            <div className="mp-art" hidden={!realBroken}>
               <div ref={stageRef} className="mp-art-stage">
                 <img
                   ref={imgRef}
-                  src={ART_SMALL_URL}
-                  srcSet={`${ART_SMALL_URL} ${ART_SMALL_W}w, ${ART_FULL_URL} ${ART_W}w`}
+                  src={realBroken ? ART_SMALL_URL : undefined}
+                  srcSet={
+                    realBroken
+                      ? `${ART_SMALL_URL} ${ART_SMALL_W}w, ${ART_FULL_URL} ${ART_W}w`
+                      : undefined
+                  }
                   sizes="(max-width: 1023px) 100vw, 70vw"
                   alt=""
                   draggable={false}

@@ -5,6 +5,7 @@
  */
 
 import {
+  SAND_IMAGE,
   WAVES_IMAGE,
   REAL_BOUNDS,
   REAL_MAX_BOUNDS,
@@ -60,6 +61,10 @@ export function createRealMap(
       const img = wavesImage()
       if (img) map.addImage?.(WAVES_IMAGE, img, { pixelRatio: 2 })
     }
+    if (id === SAND_IMAGE && map.hasImage?.(SAND_IMAGE) === false) {
+      const img = sandImage()
+      if (img) map.addImage?.(SAND_IMAGE, img, { pixelRatio: 2 })
+    }
   })
   return map
 }
@@ -87,6 +92,31 @@ function wavesImage(): { width: number; height: number; data: Uint8ClampedArray 
   }
   ripple(4, 9)
   ripple(36, 25)
+  const data = g.getImageData(0, 0, W, H).data
+  return { width: W, height: H, data }
+}
+
+/** Fine sand grain: scattered warm specks on transparent (fixed seed). */
+function sandImage(): { width: number; height: number; data: Uint8ClampedArray } | null {
+  const W = 48
+  const H = 48
+  const c = document.createElement('canvas')
+  c.width = W
+  c.height = H
+  const g = c.getContext('2d')
+  if (!g) return null
+  let seed = 7
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  for (let i = 0; i < 70; i += 1) {
+    const light = rnd() > 0.5
+    g.fillStyle = light ? 'rgba(255,250,235,0.85)' : 'rgba(176,138,74,0.45)'
+    g.beginPath()
+    g.arc(rnd() * W, rnd() * H, 0.6 + rnd() * 0.9, 0, Math.PI * 2)
+    g.fill()
+  }
   const data = g.getImageData(0, 0, W, H).data
   return { width: W, height: H, data }
 }

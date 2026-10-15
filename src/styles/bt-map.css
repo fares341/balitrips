@@ -1387,3 +1387,38 @@
 .pl-aside .btn {
   width: 100%;
 }
+
+/* while the 3D map loads: a calm gradient with a small indicator, no pins */
+.mp-view.is-loading .mp-overlay {
+  visibility: hidden;
+}
+.mp-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--t-small);
+  pointer-events: none;
+}
+.mp-spin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: var(--palm);
+  animation: mp-spin 0.9s linear infinite;
+}
+@keyframes mp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-spin {
+    animation: none;
+  }
+}
