@@ -1,3 +1,4 @@
+import assistant from './assistant'
 import catalog from './catalog'
 import commerce from './commerce'
 import common from './common'
@@ -10,7 +11,17 @@ import { format, type AdminLocale, type Messages, type Vars } from './types'
 
 export * from './types'
 
-const SECTIONS = [common, dashboard, catalog, content, commerce, people, protection, system]
+const SECTIONS = [
+  common,
+  dashboard,
+  catalog,
+  content,
+  commerce,
+  people,
+  protection,
+  system,
+  assistant,
+]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
   en: Object.assign({}, ...SECTIONS.map((section) => section.en)) as Messages,

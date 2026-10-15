@@ -22,6 +22,7 @@ import {
   ffloat,
   fint,
   flines,
+  flocalized,
   freq,
   fstr,
   localeFieldName,
@@ -268,5 +269,26 @@ export async function saveMapSettings(form: FormData): Promise<void> {
     }),
     'map.ok_saved',
     adminHref('/map'),
+  )
+}
+
+/**
+ * The AI assistants (Studio → Assistant → Settings). Admin only, like every
+ * setting; the OpenRouter key is NOT a setting (it stays in the environment).
+ */
+export async function saveAssistantSettings(form: FormData): Promise<void> {
+  await save(
+    'assistant',
+    (t) => ({
+      publicEnabled: fbool(form, 'publicEnabled'),
+      studioEnabled: fbool(form, 'studioEnabled'),
+      model: fstr(form, 'model') ?? '',
+      fallbackModel: fstr(form, 'fallbackModel') ?? '',
+      dailyMessagesPerIp: fint(form, 'dailyMessagesPerIp', 40, t('assistant.daily_ip')),
+      dailyBudgetUsd: ffloat(form, 'dailyBudgetUsd', t('assistant.daily_budget')),
+      welcome: flocalized(form, 'welcome'),
+    }),
+    'assistant.ok_saved',
+    adminHref('/assistant/settings'),
   )
 }

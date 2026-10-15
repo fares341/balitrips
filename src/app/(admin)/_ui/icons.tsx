@@ -249,12 +249,24 @@ const GLYPHS = {
       <path d="m9 18 6-6-6-6" />
     </>
   ),
+  sparkle: (
+    <>
+      <path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.5l-1.9-5.7L4.5 11 10.1 9 12 3.5Z" />
+      <path d="M19 3v4M21 5h-4" />
+    </>
+  ),
+  send: (
+    <>
+      <path d="m22 2-7 20-4-9-9-4z" />
+      <path d="M22 2 11 13" />
+    </>
+  ),
 } as const
 
 export type IconName = keyof typeof GLYPHS
 
 /** Glyphs that point "forward" and must mirror in a right-to-left page. */
-const DIRECTIONAL = new Set<IconName>(['chevron'])
+const DIRECTIONAL = new Set<IconName>(['chevron', 'send'])
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   return (

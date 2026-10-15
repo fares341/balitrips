@@ -15,6 +15,7 @@ import { SideFrame, SideNav, type SideNavGroup } from './side-nav'
 const NAV_ICONS: Record<string, IconName> = {
   'nav.dashboard': 'home',
   'nav.inbox': 'inbox',
+  'nav.assistant': 'sparkle',
   'nav.notify': 'bell',
   'nav.customers': 'users',
   'nav.leads': 'message',
