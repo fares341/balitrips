@@ -418,7 +418,10 @@
 .mp-view:focus-visible {
   box-shadow: inset 0 0 0 3px var(--palm);
 }
-.mp-canvas {
+.mp-canvas,
+.mp-canvas.maplibregl-map {
+  /* maplibre-gl.css sets .maplibregl-map { position: relative }, which would
+     collapse this box to 0 px high; keep it absolutely filling the view. */
   position: absolute;
   inset: 0;
   z-index: 0;

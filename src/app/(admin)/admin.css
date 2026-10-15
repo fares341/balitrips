@@ -1613,7 +1613,10 @@ details > summary.a-btn::-webkit-details-marker {
   min-block-size: 360px;
 }
 .a-coord-canvas,
-.a-pmap-canvas {
+.a-pmap-canvas,
+.a-coord-canvas.maplibregl-map,
+.a-pmap-canvas.maplibregl-map {
+  /* beats maplibre-gl.css .maplibregl-map { position: relative } */
   position: absolute;
   inset: 0;
 }
