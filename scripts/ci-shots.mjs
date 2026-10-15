@@ -170,6 +170,7 @@ const SWEEP = [
   ['driver', '/driver'],
   ['404', '/no-such-page-xyz'],
 ]
+const TABLET = new Set(['home', 'activity', 'my-trip', 'checkout'])
 const EN_KEY = new Set([
   'home',
   'services',
@@ -218,7 +219,7 @@ for (const [name, target] of SWEEP) {
       continue
     }
     for (const w of [390, 1440, 360, 768]) {
-      const shoot = w === 390 || w === 1440
+      const shoot = w === 390 || w === 1440 || (w === 768 && TABLET.has(name))
       const page = await browser.newPage({
         viewport: { width: w, height: w < 500 ? 844 : 900 },
         deviceScaleFactor: 1,
