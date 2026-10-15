@@ -1,0 +1,320 @@
+[
+  {
+    "name": "GET /api/assistant reports available (key set, enabled)",
+    "ok": true,
+    "detail": "{\"available\":true,\"welcome\":null}",
+    "shot": ""
+  },
+  {
+    "name": "status response never contains the key",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "cross-origin POST refused (CSRF)",
+    "ok": true,
+    "detail": "status 403",
+    "shot": ""
+  },
+  {
+    "name": "form-encoded POST refused (CSRF)",
+    "ok": true,
+    "detail": "status 403",
+    "shot": ""
+  },
+  {
+    "name": "message over 1000 characters refused",
+    "ok": true,
+    "detail": "status 400",
+    "shot": ""
+  },
+  {
+    "name": "Studio assistant API refuses a signed-out caller",
+    "ok": true,
+    "detail": "status 401",
+    "shot": ""
+  },
+  {
+    "name": "en 1440: floating button visible",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/01-en-1440-home-button.png"
+  },
+  {
+    "name": "en 1440: panel opens with welcome and suggestions",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/02-en-1440-panel-open.png"
+  },
+  {
+    "name": "en 1440: panel header and composer flush with the panel edges",
+    "ok": true,
+    "detail": "{\"ok\":true,\"top\":1,\"bottom\":1}",
+    "shot": ""
+  },
+  {
+    "name": "en 1440: answer streamed from a tool call (activity links)",
+    "ok": true,
+    "detail": "links: /en/activities/ubud-jungle-spa-ritual /en/activities/locavore-ubud /en/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | Assistant:\n\nHere are some favourites:\n\nUbud Jungle Spa Ritual — from $60.00\nLocavore Ubud — from $120.00\nSekumpul Waterfall Trek — from $40.00\n\nAlso see this and <b>bold?</b> and Ubud on the map.",
+    "shot": "shots/03-en-1440-activity-answer.png"
+  },
+  {
+    "name": "sanitizer: no javascript: link rendered",
+    "ok": true,
+    "detail": "/en/activities/ubud-jungle-spa-ritual /en/activities/locavore-ubud /en/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625",
+    "shot": ""
+  },
+  {
+    "name": "sanitizer: raw HTML shown as text, not markup",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "sanitizer: Google Maps link kept, opens in a new tab",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "en 1440: no horizontal overflow",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "en 390: button above the tab bar and the WhatsApp button",
+    "ok": true,
+    "detail": "{\"fabBox\":{\"x\":322,\"y\":648,\"width\":52,\"height\":52},\"waBox\":{\"x\":322,\"y\":712,\"width\":52,\"height\":52},\"tabBox\":{\"x\":0,\"y\":779,\"width\":390,\"height\":65}}",
+    "shot": "shots/04-en-390-home-button.png"
+  },
+  {
+    "name": "en 390: panel is a full-screen sheet",
+    "ok": true,
+    "detail": "{\"x\":0,\"y\":0,\"width\":390,\"height\":844}",
+    "shot": "shots/05-en-390-sheet-open.png"
+  },
+  {
+    "name": "en 390: sheet header and composer flush with the edges",
+    "ok": true,
+    "detail": "{\"ok\":true,\"top\":0,\"bottom\":0}",
+    "shot": ""
+  },
+  {
+    "name": "add to My Trip: proposal shows a confirmation card (nothing added yet)",
+    "ok": true,
+    "detail": "Assistant:\n\nReady: Ubud Art Market for 2 people on 2026-11-05, total $20.00. Press Confirm to add it to My Trip.\n\nAdd this to My Trip?\n\nActivity\nUbud Art Market\nDate\n2026-11-05\nTime\n09:00\nPeople\n2\nPrivate driver\nNo\nTotal\n$20.00\nConfirm\nCancel",
+    "shot": "shots/06-en-390-confirm-card.png"
+  },
+  {
+    "name": "add to My Trip: cart unchanged before Confirm",
+    "ok": true,
+    "detail": "before 0, now 0",
+    "shot": ""
+  },
+  {
+    "name": "add to My Trip: Confirm adds it through the booking validation",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/07-en-390-confirmed.png"
+  },
+  {
+    "name": "add to My Trip: stored action finished",
+    "ok": true,
+    "detail": "[{\"kind\":\"add_to_trip\",\"status\":\"done\",\"result\":{\"ok\":true,\"code\":\"added\",\"href\":\"/my-trip\",\"itemCount\":1}}]",
+    "shot": ""
+  },
+  {
+    "name": "My Trip tool sees the added booking",
+    "ok": true,
+    "detail": "Assistant:\n\nYour trip total is $20.00 — open My Trip.",
+    "shot": "shots/08-en-390-my-trip-answer.png"
+  },
+  {
+    "name": "My Trip page shows the item",
+    "ok": true,
+    "detail": "cart count 0 → 1",
+    "shot": "shots/09-en-390-my-trip-page.png"
+  },
+  {
+    "name": "en 390: no horizontal overflow",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "map 1440: assistant button shown on the map",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/10-en-1440-map-button.png"
+  },
+  {
+    "name": "locked places: none reach the model or the panel",
+    "ok": true,
+    "detail": "5 locked in DB; 2 model requests checked; leaks: none | Assistant:\n\nI can show you 4 places: Canggu, Mount Batur, Tegallalang Rice Terraces, Ubud. 5 more are locked — see the map plans.",
+    "shot": "shots/11-en-1440-places-answer.png"
+  },
+  {
+    "name": "locked places: reported only as a count",
+    "ok": true,
+    "detail": "Assistant:\n\nI can show you 4 places: Canggu, Mount Batur, Tegallalang Rice Terraces, Ubud. 5 more are locked — see the map plans.",
+    "shot": ""
+  },
+  {
+    "name": "map 390: button sits above the Map/List bar",
+    "ok": true,
+    "detail": "{\"fab\":{\"x\":332,\"y\":654,\"width\":46,\"height\":46},\"toggle\":{\"x\":10,\"y\":719,\"width\":186,\"height\":52}}",
+    "shot": "shots/12-en-390-map-button.png"
+  },
+  {
+    "name": "ar 390: button on the inline-end (left in RTL)",
+    "ok": true,
+    "detail": "{\"x\":16,\"y\":648,\"width\":52,\"height\":52}",
+    "shot": "shots/13-ar-390-home-button.png"
+  },
+  {
+    "name": "ar 390: RTL panel answers with Arabic-locale links",
+    "ok": true,
+    "detail": "rtl /ar/activities/ubud-jungle-spa-ritual /ar/activities/locavore-ubud /ar/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | المساعد:\n\nHere are some favourites:\n\nطقوس سبا أدغال أوبود — from $60.00\nلوكافور أوبود — from $120.00\nرحلة شلال سيكومبول ",
+    "shot": "shots/15-ar-390-answer.png"
+  },
+  {
+    "name": "ar 390: no horizontal overflow",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "ar 1440: button on the inline-end (left in RTL)",
+    "ok": true,
+    "detail": "{\"x\":24,\"y\":760,\"width\":160,\"height\":52}",
+    "shot": "shots/16-ar-1440-home-button.png"
+  },
+  {
+    "name": "ar 1440: RTL panel answers with Arabic-locale links",
+    "ok": true,
+    "detail": "rtl /ar/activities/ubud-jungle-spa-ritual /ar/activities/locavore-ubud /ar/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | المساعد:\n\nHere are some favourites:\n\nطقوس سبا أدغال أوبود — from $60.00\nلوكافور أوبود — from $120.00\nرحلة شلال سيكومبول ",
+    "shot": "shots/18-ar-1440-answer.png"
+  },
+  {
+    "name": "ar 1440: no horizontal overflow",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "staff signs in to the Studio",
+    "ok": true,
+    "detail": "http://localhost:3000/studio-ci7",
+    "shot": ""
+  },
+  {
+    "name": "Studio assistant page opens for staff",
+    "ok": true,
+    "detail": "المساعد\n\nاسأل عن الطلبات والحجوزات والعملاء والطلبات الواردة والمدفوعات والمحتوى. التغييرات تُقترح فقط — لا يُنفَّذ شيء حتى تضغط «تأكيد»، وكل تغيير مؤكَّد يُسجَّل في سجل المراجعة.\n\nمحادثات الموقع\n\nجاه",
+    "shot": "shots/19-studio-1440-assistant.png"
+  },
+  {
+    "name": "Studio: \"today's orders\" answered from list_orders",
+    "ok": true,
+    "detail": "المساعد:\n\nThere are 0 orders today. Nothing is waiting.",
+    "shot": "shots/20-studio-1440-orders.png"
+  },
+  {
+    "name": "Studio: write action shows a confirmation card with the change",
+    "ok": true,
+    "detail": "المساعد:\n\nI prepared the change for Mount Batur Sunrise Hike. Press Confirm to unpublish it.\n\nأكّد هذا التغيير\n\nالنشاط\nMount Batur Sunrise Hike\nالتغيير\npublished → draft\nتأكيد\nإلغاء",
+    "shot": "shots/21-studio-1440-confirm-card.png"
+  },
+  {
+    "name": "Studio: nothing executed before Confirm",
+    "ok": true,
+    "detail": "assistant.execute rows: 0",
+    "shot": ""
+  },
+  {
+    "name": "Studio: Confirm runs the change",
+    "ok": true,
+    "detail": "أكّد هذا التغيير\n\nالنشاط\nMount Batur Sunrise Hike\nالتغيير\npublished → draft\n\nأُعيد النشاط إلى المسودة. فتح",
+    "shot": "shots/22-studio-1440-confirmed.png"
+  },
+  {
+    "name": "Studio: audit_log has assistant.execute and the Studio action row",
+    "ok": true,
+    "detail": "[{\"action\":\"assistant.execute\",\"entityType\":\"assistant_action\",\"after\":{\"ok\":true,\"kind\":\"content_status\",\"change\":{\"change\":\"published → draft\",\"activity\":\"Mount Batur Sunrise Hike\"},\"result\":\"أُعيد النشاط إلى المسودة.\"},\"at\":\"2026-10-15T08:50:35.233Z\"},{\"action\":\"activity.unpublish\",\"entityType\":\"activity\",\"after\":{\"status\":\"draft\",\"updatedAt\":\"2026-10-15T08:50:35.227Z\"},\"at\":\"2026-10-15T08:50:35.225Z\"}]",
+    "shot": ""
+  },
+  {
+    "name": "Studio 390: no horizontal overflow",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/23-studio-390-assistant.png"
+  },
+  {
+    "name": "Studio en: assistant page in English (LTR)",
+    "ok": true,
+    "detail": "shots/24-studio-en-390-assistant.png",
+    "shot": "shots/25-studio-en-1440-assistant.png"
+  },
+  {
+    "name": "Studio: website conversations listed for review",
+    "ok": true,
+    "detail": "5 rows",
+    "shot": "shots/26-studio-1440-conversations.png"
+  },
+  {
+    "name": "Studio: a conversation opens",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/27-studio-1440-conversation.png"
+  },
+  {
+    "name": "Studio: staff cannot open assistant settings (admin only)",
+    "ok": true,
+    "detail": "status 404",
+    "shot": ""
+  },
+  {
+    "name": "Studio assistant API refuses a customer",
+    "ok": true,
+    "detail": "status 404",
+    "shot": ""
+  },
+  {
+    "name": "admin signs in",
+    "ok": true,
+    "detail": "http://localhost:3000/studio-ci7",
+    "shot": ""
+  },
+  {
+    "name": "admin: assistant settings page",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/28-studio-1440-settings.png"
+  },
+  {
+    "name": "switched off: the website shows a polite \"unavailable\" state",
+    "ok": true,
+    "detail": "",
+    "shot": "shots/30-en-390-unavailable.png"
+  },
+  {
+    "name": "switched off: the chat endpoint answers 503",
+    "ok": true,
+    "detail": "status 503",
+    "shot": ""
+  },
+  {
+    "name": "every OpenRouter request: key, attribution, data_collection deny, two models, max_tokens, stream",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  },
+  {
+    "name": "no page errors in the browser",
+    "ok": true,
+    "detail": "",
+    "shot": ""
+  }
+]

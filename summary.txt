@@ -1,0 +1,126 @@
+Assistant check — 53 checks, 0 problem(s)
+
+OK   GET /api/assistant reports available (key set, enabled) — {"available":true,"welcome":null}
+OK   status response never contains the key
+OK   cross-origin POST refused (CSRF) — status 403
+OK   form-encoded POST refused (CSRF) — status 403
+OK   message over 1000 characters refused — status 400
+OK   Studio assistant API refuses a signed-out caller — status 401
+OK   en 1440: floating button visible  [shots/01-en-1440-home-button.png]
+OK   en 1440: panel opens with welcome and suggestions  [shots/02-en-1440-panel-open.png]
+OK   en 1440: panel header and composer flush with the panel edges — {"ok":true,"top":1,"bottom":1}
+OK   en 1440: answer streamed from a tool call (activity links) — links: /en/activities/ubud-jungle-spa-ritual /en/activities/locavore-ubud /en/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | Assistant:
+
+Here are some favourites:
+
+Ubud Jungle Spa Ritual — from $60.00
+Locavore Ubud — from $120.00
+Sekumpul Waterfall Trek — from $40.00
+
+Also see this and <b>bold?</b> and Ubud on the map.  [shots/03-en-1440-activity-answer.png]
+OK   sanitizer: no javascript: link rendered — /en/activities/ubud-jungle-spa-ritual /en/activities/locavore-ubud /en/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625
+OK   sanitizer: raw HTML shown as text, not markup
+OK   sanitizer: Google Maps link kept, opens in a new tab
+OK   en 1440: no horizontal overflow
+OK   en 390: button above the tab bar and the WhatsApp button — {"fabBox":{"x":322,"y":648,"width":52,"height":52},"waBox":{"x":322,"y":712,"width":52,"height":52},"tabBox":{"x":0,"y":779,"width":390,"height":65}}  [shots/04-en-390-home-button.png]
+OK   en 390: panel is a full-screen sheet — {"x":0,"y":0,"width":390,"height":844}  [shots/05-en-390-sheet-open.png]
+OK   en 390: sheet header and composer flush with the edges — {"ok":true,"top":0,"bottom":0}
+OK   add to My Trip: proposal shows a confirmation card (nothing added yet) — Assistant:
+
+Ready: Ubud Art Market for 2 people on 2026-11-05, total $20.00. Press Confirm to add it to My Trip.
+
+Add this to My Trip?
+
+Activity
+Ubud Art Market
+Date
+2026-11-05
+Time
+09:00
+People
+2
+Private driver
+No
+Total
+$20.00
+Confirm
+Cancel  [shots/06-en-390-confirm-card.png]
+OK   add to My Trip: cart unchanged before Confirm — before 0, now 0
+OK   add to My Trip: Confirm adds it through the booking validation  [shots/07-en-390-confirmed.png]
+OK   add to My Trip: stored action finished — [{"kind":"add_to_trip","status":"done","result":{"ok":true,"code":"added","href":"/my-trip","itemCount":1}}]
+OK   My Trip tool sees the added booking — Assistant:
+
+Your trip total is $20.00 — open My Trip.  [shots/08-en-390-my-trip-answer.png]
+OK   My Trip page shows the item — cart count 0 → 1  [shots/09-en-390-my-trip-page.png]
+OK   en 390: no horizontal overflow
+OK   map 1440: assistant button shown on the map  [shots/10-en-1440-map-button.png]
+OK   locked places: none reach the model or the panel — 5 locked in DB; 2 model requests checked; leaks: none | Assistant:
+
+I can show you 4 places: Canggu, Mount Batur, Tegallalang Rice Terraces, Ubud. 5 more are locked — see the map plans.  [shots/11-en-1440-places-answer.png]
+OK   locked places: reported only as a count — Assistant:
+
+I can show you 4 places: Canggu, Mount Batur, Tegallalang Rice Terraces, Ubud. 5 more are locked — see the map plans.
+OK   map 390: button sits above the Map/List bar — {"fab":{"x":332,"y":654,"width":46,"height":46},"toggle":{"x":10,"y":719,"width":186,"height":52}}  [shots/12-en-390-map-button.png]
+OK   ar 390: button on the inline-end (left in RTL) — {"x":16,"y":648,"width":52,"height":52}  [shots/13-ar-390-home-button.png]
+OK   ar 390: RTL panel answers with Arabic-locale links — rtl /ar/activities/ubud-jungle-spa-ritual /ar/activities/locavore-ubud /ar/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | المساعد:
+
+Here are some favourites:
+
+طقوس سبا أدغال أوبود — from $60.00
+لوكافور أوبود — from $120.00
+رحلة شلال سيكومبول   [shots/15-ar-390-answer.png]
+OK   ar 390: no horizontal overflow
+OK   ar 1440: button on the inline-end (left in RTL) — {"x":24,"y":760,"width":160,"height":52}  [shots/16-ar-1440-home-button.png]
+OK   ar 1440: RTL panel answers with Arabic-locale links — rtl /ar/activities/ubud-jungle-spa-ritual /ar/activities/locavore-ubud /ar/activities/sekumpul-waterfall-trek https://www.google.com/maps/search/?api=1&query=-8.5069,115.2625 | المساعد:
+
+Here are some favourites:
+
+طقوس سبا أدغال أوبود — from $60.00
+لوكافور أوبود — from $120.00
+رحلة شلال سيكومبول   [shots/18-ar-1440-answer.png]
+OK   ar 1440: no horizontal overflow
+OK   staff signs in to the Studio — http://localhost:3000/studio-ci7
+OK   Studio assistant page opens for staff — المساعد
+
+اسأل عن الطلبات والحجوزات والعملاء والطلبات الواردة والمدفوعات والمحتوى. التغييرات تُقترح فقط — لا يُنفَّذ شيء حتى تضغط «تأكيد»، وكل تغيير مؤكَّد يُسجَّل في سجل المراجعة.
+
+محادثات الموقع
+
+جاه  [shots/19-studio-1440-assistant.png]
+OK   Studio: "today's orders" answered from list_orders — المساعد:
+
+There are 0 orders today. Nothing is waiting.  [shots/20-studio-1440-orders.png]
+OK   Studio: write action shows a confirmation card with the change — المساعد:
+
+I prepared the change for Mount Batur Sunrise Hike. Press Confirm to unpublish it.
+
+أكّد هذا التغيير
+
+النشاط
+Mount Batur Sunrise Hike
+التغيير
+published → draft
+تأكيد
+إلغاء  [shots/21-studio-1440-confirm-card.png]
+OK   Studio: nothing executed before Confirm — assistant.execute rows: 0
+OK   Studio: Confirm runs the change — أكّد هذا التغيير
+
+النشاط
+Mount Batur Sunrise Hike
+التغيير
+published → draft
+
+أُعيد النشاط إلى المسودة. فتح  [shots/22-studio-1440-confirmed.png]
+OK   Studio: audit_log has assistant.execute and the Studio action row — [{"action":"assistant.execute","entityType":"assistant_action","after":{"ok":true,"kind":"content_status","change":{"change":"published → draft","activity":"Mount Batur Sunrise Hike"},"result":"أُعيد النشاط إلى المسودة."},"at":"2026-10-15T08:50:35.233Z"},{"action":"activity.unpublish","entityType":"activity","after":{"status":"draft","updatedAt":"2026-10-15T08:50:35.227Z"},"at":"2026-10-15T08:50:35.225Z"}]
+OK   Studio 390: no horizontal overflow  [shots/23-studio-390-assistant.png]
+OK   Studio en: assistant page in English (LTR) — shots/24-studio-en-390-assistant.png  [shots/25-studio-en-1440-assistant.png]
+OK   Studio: website conversations listed for review — 5 rows  [shots/26-studio-1440-conversations.png]
+OK   Studio: a conversation opens  [shots/27-studio-1440-conversation.png]
+OK   Studio: staff cannot open assistant settings (admin only) — status 404
+OK   Studio assistant API refuses a customer — status 404
+OK   admin signs in — http://localhost:3000/studio-ci7
+OK   admin: assistant settings page  [shots/28-studio-1440-settings.png]
+OK   switched off: the website shows a polite "unavailable" state  [shots/30-en-390-unavailable.png]
+OK   switched off: the chat endpoint answers 503 — status 503
+OK   every OpenRouter request: key, attribution, data_collection deny, two models, max_tokens, stream
+OK   no page errors in the browser

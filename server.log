@@ -1,0 +1,7 @@
+▲ Next.js 16.3.0
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+✓ Ready in 0ms
+✓ Running next.config took 4ms
+[assistant] tool list_orders failed: Failed query: select "orders"."id", "orders"."order_number", "orders"."status", "orders"."total_minor", "orders"."presentment_currency", "orders"."customer_snap
+[admin] denied config.write for staff@test.balitrips.local (staff)
