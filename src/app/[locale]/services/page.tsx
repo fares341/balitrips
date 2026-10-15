@@ -1,63 +1,52 @@
 /**
- * Services catalogue — the six pillars.
+ * Services — v3 screen 02 (design-reference/prototype/services.html).
  *
- * Ported from `ServicesPage` in design/handoff/sections-bt/page-static.jsx.
+ *   banner · one photo card per service (the map marked "Signature") ·
+ *   "how it works" in four steps · "answer two questions" suggestions
  *
- * The handoff's `svcs` array carried `to: "map"` — a key into the prototype's
- * `navigate()` switch, not a URL. Every tile here is a real path, so the six
- * entry points into the catalogue are crawlable, middle-clickable and
- * shareable. `ServiceCard` (already an anchor rather than the handoff's
- * `<button onClick>`) does the rest.
- *
- * Imagery is borrowed from published records via `imagePool` rather than the
- * handoff's `flickr("tegallalang,rice")` search phrases — see ./_ui/imagery.ts
- * for why those could not ship.
- *
- * Statically rendered in all three locales: nothing here reads cookies,
- * headers or search params.
+ * No driver card while that service is off (lib/features.ts). The
+ * suggestions come from the real catalogue (itineraries and packages), see
+ * `./start-quiz.tsx`; nothing is invented.
  */
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import type { IconName } from '@/components/ui'
+import { formatPrice } from '@/components/bt/card'
+import { Icon, type IconName } from '@/components/ui'
 import { locales } from '@/i18n/config'
-import { listActivities, listLandmarks, listPackages } from '@/lib/content/queries'
+import { Link } from '@/i18n/routing'
+import { pick } from '@/lib/content/localize'
+import { listItineraries, listPackages } from '@/lib/content/queries'
 import { FEATURES } from '@/lib/features'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
-import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
-import { ServiceCard } from '../_ui/service-card'
+import { StartQuiz, type QuizOption } from './start-quiz'
 
 const SERVICES_HREF = '/services'
 
-/** How many records each pool query contributes. Six tiles need six images. */
-const IMAGE_POOL_LIMIT = 6
-
-type Pillar = {
+type Service = {
   icon: IconName
-  /** Message key for the tile heading. */
-  title: string
-  /** Message key for the supporting line. */
-  body: string
-  /** Locale-agnostic destination — the next-intl `Link` adds the prefix. */
+  key: string
+  image: string
   href: string
+  /** The package marks the map as the signature service. */
+  signature?: boolean
 }
 
-/** The six services, in the design's order. */
-const ALL_PILLARS: readonly Pillar[] = [
-  { icon: 'pin', title: 'svc_map_t', body: 'svc_map_b', href: '/map' },
-  { icon: 'compass', title: 'svc_act_t', body: 'svc_act_b', href: '/activities' },
-  { icon: 'car', title: 'svc_drv_t', body: 'svc_drv_b', href: '/driver' },
-  { icon: 'cal', title: 'svc_itin_t', body: 'svc_itin_b', href: '/itineraries' },
-  { icon: 'star', title: 'svc_pkg_t', body: 'svc_pkg_b', href: '/packages' },
-  { icon: 'sparkle', title: 'svc_cust_t', body: 'svc_cust_b', href: CUSTOM_HREF },
+const ALL_SERVICES: readonly Service[] = [
+  { icon: 'map', key: 'map', image: '/map/bali-satellite.webp', href: '/map', signature: true },
+  { icon: 'compass', key: 'act', image: '/brand/jeep.jpg', href: '/activities' },
+  { icon: 'doc', key: 'itin', image: '/brand/flatlay.jpg', href: '/itineraries' },
+  { icon: 'box', key: 'pkg', image: '/brand/green-dress.jpg', href: '/packages' },
+  { icon: 'wand', key: 'cust', image: '/brand/consultant.jpg', href: CUSTOM_HREF },
+  { icon: 'car', key: 'drv', image: '/brand/driver-car.jpg', href: '/driver' },
 ]
 
-/** The driver tile is listed only while the service is on (lib/features.ts). */
-const PILLARS = ALL_PILLARS.filter((pillar) => FEATURES.driver || pillar.href !== '/driver')
+/** The driver card is listed only while the service is on (lib/features.ts). */
+const SERVICES = ALL_SERVICES.filter((service) => FEATURES.driver || service.key !== 'drv')
 
 type PageParams = Promise<{ locale: string }>
 
@@ -72,12 +61,12 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
 
   return {
     title: t('navr_services'),
-    description: t('svc_sub'),
+    description: t('sv4_sub'),
     alternates: alternatesFor(SERVICES_HREF, locale),
     openGraph: {
       type: 'website',
-      title: t('svc_title'),
-      description: t('svc_sub'),
+      title: t('sv4_title'),
+      description: t('sv4_sub'),
       locale,
     },
   }
@@ -89,46 +78,107 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
 
   const locale = toLocale(raw)
 
-  const [t, landmarks, activities, packages] = await Promise.all([
+  const [t, itineraries, packages] = await Promise.all([
     getTranslations({ locale }),
-    listLandmarks({ limit: IMAGE_POOL_LIMIT }),
-    listActivities({ sort: 'top', limit: IMAGE_POOL_LIMIT, locale }),
+    listItineraries(),
     listPackages(),
   ])
 
-  const pool = imagePool(landmarks, activities, packages)
+  const toOption = (
+    kind: 'itinerary' | 'package',
+    item: {
+      id: string
+      href: string
+      slug: string
+      name: Parameters<typeof pick>[0]
+      days: number
+      priceMinor: number
+      currency: string
+      hero: { url: string } | null
+    },
+    extra: { maxGuests?: number } = {},
+  ): QuizOption => ({
+    id: item.id,
+    kind,
+    href: item.href,
+    name: pick(item.name, locale, item.slug),
+    days: item.days,
+    maxGuests: extra.maxGuests ?? null,
+    price: formatPrice(item.priceMinor, item.currency, locale),
+    image: item.hero?.url ?? null,
+  })
 
   return (
     <main>
       <PageBanner
-        image={imageAt(pool, 0)}
-        tag={t('services_eyebrow')}
-        title={t('svc_title')}
-        subtitle={t('svc_sub')}
+        image={null}
+        imageSrc="/brand/flatlay-wide.jpg"
+        tag={t('sv4_eyebrow')}
+        title={t('sv4_title')}
+        subtitle={t('sv4_sub')}
         breadcrumbLabel={t('c_breadcrumb')}
         trail={[{ label: t('c_home'), href: '/' }, { label: t('navr_services') }]}
       />
 
-      <section className="bg-ivory">
+      <section className="sec">
         <div className="wrap">
-          <div className="grid bt-grid-3auto">
-            {PILLARS.map((pillar, index) => (
-              <ServiceCard
-                key={pillar.href}
-                icon={pillar.icon}
-                title={t(pillar.title)}
-                body={t(pillar.body)}
-                // The banner already claimed image 0; the tiles take the rest
-                // and wrap when the pool is smaller than six.
-                image={imageAt(pool, index + 1)}
-                href={pillar.href}
-                cta={t('c_startplan')}
-                priority={index < 3}
-              />
+          <ul className="sv-grid" role="list">
+            {SERVICES.map((service, index) => (
+              <li key={service.key}>
+                <Link href={service.href} className="sv-card">
+                  <span className="m">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
+                    <img src={service.image} alt="" loading={index < 3 ? 'eager' : 'lazy'} />
+                    {service.signature === true && (
+                      <span className="tag sv-usp">{t('sv4_signature')}</span>
+                    )}
+                    <span className="ic" aria-hidden="true">
+                      <Icon name={service.icon} size={26} />
+                    </span>
+                  </span>
+                  <span className="b">
+                    <h2>{t(`sv4_${service.key}_t`)}</h2>
+                    <span className="muted">{t(`sv4_${service.key}_d`)}</span>
+                    <span className="btn btn-forest btn-sm">
+                      {t(`sv4_${service.key}_go`)} <Icon name="arrow" size={16} className="flip" />
+                    </span>
+                  </span>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
+
+      <section className="sec bg-ivory2">
+        <div className="wrap stack" style={{ gap: 24 }}>
+          <div className="stack" style={{ gap: 8 }}>
+            <span className="eyebrow">{t('sv4_how_eyebrow')}</span>
+            <h2 className="h2">{t('sv4_how_title')}</h2>
+          </div>
+          <ol className="sv-steps">
+            {([1, 2, 3, 4] as const).map((n) => (
+              <li key={n}>
+                <span className="n" dir="ltr" aria-hidden="true">
+                  {n}
+                </span>
+                <b>{t(`sv4_how${n}_t`)}</b>
+                <span className="muted">{t(`sv4_how${n}_b`)}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {(itineraries.length > 0 || packages.length > 0) && (
+        <section className="sec">
+          <StartQuiz
+            itineraries={itineraries.map((itinerary) => toOption('itinerary', itinerary))}
+            packages={packages.map((pkg) => toOption('package', pkg, { maxGuests: pkg.maxGuests }))}
+            customHref={CUSTOM_HREF}
+          />
+        </section>
+      )}
     </main>
   )
 }

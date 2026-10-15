@@ -30,6 +30,8 @@ import type { MediaDto } from '@/lib/content/types'
 export type PageBannerProps = {
   /** Backdrop. Null renders the neutral placeholder, never a broken image. */
   image?: MediaDto | null
+  /** A fixed brand photo (public/brand) used when `image` is null. */
+  imageSrc?: string | null
   /** Small orange pill above the title. */
   tag?: string
   title: string
@@ -44,6 +46,7 @@ export type PageBannerProps = {
 
 export function PageBanner({
   image = null,
+  imageSrc = null,
   tag,
   title,
   subtitle = null,
@@ -55,7 +58,7 @@ export function PageBanner({
   return (
     <div className={tall ? 'bt-banner tall' : 'bt-banner'}>
       <Photo
-        src={image?.url}
+        src={image?.url ?? imageSrc}
         alt=""
         priority
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
