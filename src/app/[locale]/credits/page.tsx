@@ -101,7 +101,15 @@ export default async function CreditsPage({ params }: { params: PageParams }) {
           {rows.length === 0 ? (
             <p className="muted">No credited images yet.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0 0', display: 'grid', gap: 10 }}>
+            <ul
+              style={{
+                listStyle: 'none',
+                padding: 0,
+                margin: '24px 0 0',
+                display: 'grid',
+                gap: 10,
+              }}
+            >
               {rows.map((row) => {
                 const { text, url } = parseCredit(row.credit ?? '')
                 return (

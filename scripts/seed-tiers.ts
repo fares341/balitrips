@@ -43,25 +43,49 @@ interface TierSpec {
 
 /** Shared practicalities — true of every tier, so written once. */
 const DETAILS: Localized[] = [
-  L('Tour language: Arabic / English', 'لغة الجولة: العربية / الإنجليزية', 'Bahasa tur: Arab / Inggris'),
+  L(
+    'Tour language: Arabic / English',
+    'لغة الجولة: العربية / الإنجليزية',
+    'Bahasa tur: Arab / Inggris',
+  ),
   L('Flexible cancellation policy', 'إلغاء الحجز: سياسة مرنة', 'Pembatalan: kebijakan fleksibel'),
   L('Difficulty: easy', 'مستوى الصعوبة: سهل', 'Tingkat kesulitan: mudah'),
-  L('Suitable for families and couples', 'مناسب للعائلات والأزواج', 'Cocok untuk keluarga dan pasangan'),
+  L(
+    'Suitable for families and couples',
+    'مناسب للعائلات والأزواج',
+    'Cocok untuk keluarga dan pasangan',
+  ),
 ]
 
 const NOTES: Localized[] = [
-  L('Please wear comfortable clothing', 'يرجى ارتداء ملابس مريحة', 'Harap kenakan pakaian yang nyaman'),
+  L(
+    'Please wear comfortable clothing',
+    'يرجى ارتداء ملابس مريحة',
+    'Harap kenakan pakaian yang nyaman',
+  ),
   L('Early booking is recommended', 'يفضل الحجز المبكر', 'Disarankan memesan lebih awal'),
-  L('Driver details are sent after booking', 'يتم إرسال تفاصيل السائق بعد الحجز', 'Detail sopir dikirim setelah pemesanan'),
+  L(
+    'Driver details are sent after booking',
+    'يتم إرسال تفاصيل السائق بعد الحجز',
+    'Detail sopir dikirim setelah pemesanan',
+  ),
   L('Prices include all taxes', 'الأسعار تشمل جميع الضرائب', 'Harga sudah termasuk pajak'),
-  L('In bad weather the schedule is rearranged or refunded', 'في حالة الطقس السيئ يتم إعادة الجدولة أو استرداد المبلغ', 'Jika cuaca buruk, jadwal diatur ulang atau dana dikembalikan'),
+  L(
+    'In bad weather the schedule is rearranged or refunded',
+    'في حالة الطقس السيئ يتم إعادة الجدولة أو استرداد المبلغ',
+    'Jika cuaca buruk, jadwal diatur ulang atau dana dikembalikan',
+  ),
 ]
 
 const SPECS: TierSpec[] = [
   {
     key: 'basic',
     name: L('Basic', 'الباقة الأساسية', 'Paket Dasar'),
-    tagline: L('A standard experience at the best price', 'تجربة قياسية بأفضل سعر', 'Pengalaman standar dengan harga terbaik'),
+    tagline: L(
+      'A standard experience at the best price',
+      'تجربة قياسية بأفضل سعر',
+      'Pengalaman standar dengan harga terbaik',
+    ),
     factor: 1,
     pricingMode: 'per_guest',
     maxGuests: null,
@@ -80,7 +104,11 @@ const SPECS: TierSpec[] = [
   {
     key: 'couples',
     name: L('For couples', 'باقة الأزواج', 'Untuk pasangan'),
-    tagline: L('An ideal experience for two', 'تجربة مثالية للأزواج', 'Pengalaman ideal untuk berdua'),
+    tagline: L(
+      'An ideal experience for two',
+      'تجربة مثالية للأزواج',
+      'Pengalaman ideal untuk berdua',
+    ),
     factor: 1.5,
     // Priced for the pair, not per head. Charging a couples rate twice is
     // exactly the contradiction pricingMode exists to prevent.
@@ -102,7 +130,11 @@ const SPECS: TierSpec[] = [
   {
     key: 'comprehensive',
     name: L('Comprehensive', 'الباقة الشاملة', 'Paket Lengkap'),
-    tagline: L('A full experience with the key extras', 'تجربة شاملة مع أهم الإضافات', 'Pengalaman lengkap dengan tambahan utama'),
+    tagline: L(
+      'A full experience with the key extras',
+      'تجربة شاملة مع أهم الإضافات',
+      'Pengalaman lengkap dengan tambahan utama',
+    ),
     factor: 1.7,
     pricingMode: 'per_guest',
     maxGuests: null,
@@ -122,7 +154,11 @@ const SPECS: TierSpec[] = [
   {
     key: 'premium',
     name: L('Premium', 'الباقة المميزة', 'Paket Premium'),
-    tagline: L('A complete experience with exclusive extras', 'تجربة متكاملة مع إضافات حصرية', 'Pengalaman lengkap dengan tambahan eksklusif'),
+    tagline: L(
+      'A complete experience with exclusive extras',
+      'تجربة متكاملة مع إضافات حصرية',
+      'Pengalaman lengkap dengan tambahan eksklusif',
+    ),
     factor: 2,
     pricingMode: 'per_guest',
     maxGuests: null,
@@ -134,8 +170,16 @@ const SPECS: TierSpec[] = [
       L('Fast-track entry', 'دخول سريع', 'Masuk jalur cepat'),
     ],
     highlights: [
-      L('Private guide for your party only', 'مرشد خاص لمجموعتك وحدها', 'Pemandu pribadi hanya untuk rombongan Anda'),
-      L('Professional photo session (20 images)', 'جلسة تصوير احترافية (20 صورة)', 'Sesi foto profesional (20 gambar)'),
+      L(
+        'Private guide for your party only',
+        'مرشد خاص لمجموعتك وحدها',
+        'Pemandu pribadi hanya untuk rombongan Anda',
+      ),
+      L(
+        'Professional photo session (20 images)',
+        'جلسة تصوير احترافية (20 صورة)',
+        'Sesi foto profesional (20 gambar)',
+      ),
       L('Fast-track entry, no queuing', 'دخول سريع دون انتظار', 'Masuk jalur cepat tanpa antre'),
       L('Extra time for photography', 'وقت إضافي للتصوير', 'Waktu tambahan untuk fotografi'),
     ],

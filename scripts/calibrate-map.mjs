@@ -270,11 +270,15 @@ console.log(`  terrain mesh: ${source}`)
 const rasterM = await rasterMask(RASTER, GRID_W, H)
 
 const coverage = (m) => (m.reduce((a, b) => a + b, 0) / m.length) * 100
-console.log(`  land coverage — raster ${coverage(rasterM).toFixed(1)}%, model ${coverage(modelM).toFixed(1)}%`)
+console.log(
+  `  land coverage — raster ${coverage(rasterM).toFixed(1)}%, model ${coverage(modelM).toFixed(1)}%`,
+)
 
 console.log('\n  fitting…')
 const fit = search(rasterM, modelM, GRID_W, H)
-console.log(`\n  best IoU ${fit.score.toFixed(4)}  sx=${fit.sx.toFixed(4)} sz=${fit.sz.toFixed(4)} ox=${fit.ox.toFixed(2)} oz=${fit.oz.toFixed(2)}`)
+console.log(
+  `\n  best IoU ${fit.score.toFixed(4)}  sx=${fit.sx.toFixed(4)} sz=${fit.sz.toFixed(4)} ox=${fit.ox.toFixed(2)} oz=${fit.oz.toFixed(2)}`,
+)
 
 /**
  * Convert the pixel-space fit into the numbers the app needs: given a
@@ -350,14 +354,19 @@ for (const [name, lat, lon] of PLACES) {
   const gz = Math.round(((mz - bounds.minZ) / (bounds.maxZ - bounds.minZ)) * (H - 1))
   const land = gx >= 0 && gx < GRID_W && gz >= 0 && gz < H && modelM[gz * GRID_W + gx] === 1
   if (land) onLand++
-  console.log(`    ${land ? 'LAND' : 'SEA '}  ${name.padEnd(20)} x=${mx.toFixed(1)} z=${mz.toFixed(1)}`)
+  console.log(
+    `    ${land ? 'LAND' : 'SEA '}  ${name.padEnd(20)} x=${mx.toFixed(1)} z=${mz.toFixed(1)}`,
+  )
 
   // Draw at the RASTER position, which is where the overlay is drawn.
   const px0 = Math.round(u * (GRID_W - 1))
   const py0 = Math.round(v * (H - 1))
   const [cr, cg, cb] = land ? [255, 255, 255] : [255, 0, 255]
   for (let d = -4; d <= 4; d++) {
-    for (const [qx, qy] of [[px0 + d, py0], [px0, py0 + d]]) {
+    for (const [qx, qy] of [
+      [px0 + d, py0],
+      [px0, py0 + d],
+    ]) {
       if (qx < 0 || qx >= GRID_W || qy < 0 || qy >= H) continue
       const o = (qy * GRID_W + qx) * 3
       px[o] = cr
@@ -368,5 +377,7 @@ for (const [name, lat, lon] of PLACES) {
 }
 console.log(`\n  ${onLand}/${PLACES.length} pins land on model terrain`)
 
-await sharp(px, { raw: { width: GRID_W, height: H, channels: 3 } }).png().toFile(OUT_PREVIEW)
+await sharp(px, { raw: { width: GRID_W, height: H, channels: 3 } })
+  .png()
+  .toFile(OUT_PREVIEW)
 console.log(`  wrote ${OUT_PREVIEW} (red=satellite, green=model, yellow=agreement)\n`)

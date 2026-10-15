@@ -22,7 +22,15 @@ import { fileURLToPath } from 'node:url'
 import { eq } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { activities, articles, itineraries, landmarks, mapPlaces, media, packages } from '@/db/schema'
+import {
+  activities,
+  articles,
+  itineraries,
+  landmarks,
+  mapPlaces,
+  media,
+  packages,
+} from '@/db/schema'
 import { DERIVATIVE_FORMATS, derivativeKey, isUnoptimised, rungsFor } from '@/lib/media/ladder'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -40,7 +48,8 @@ const OWNERS = {
 /** Where each record's photo shows on the site. */
 const SHOWS_ON: Record<string, string> = {
   activities: 'activity card (/activities, home, search) + /activities/<slug> slider + tiers',
-  landmarks: 'landmark card (/explore, home highlights) + borrowed banners (/about, /services, /map)',
+  landmarks:
+    'landmark card (/explore, home highlights) + borrowed banners (/about, /services, /map)',
   map_places: '/map pin panel + results list + itinerary linked places',
   packages: 'package card (/packages, home) + /packages/<slug> hero',
   itineraries: 'itinerary card (/itineraries, home) + /itineraries/<slug> hero',
@@ -76,7 +85,9 @@ async function main(): Promise<void> {
     readFileSync(resolve(root, 'scripts/photo-manifest.json'), 'utf8'),
   ) as Entry[]
 
-  console.log(`\n  Checking ${entries.length} photos (${CDN === '' ? 'local public/media' : CDN})\n`)
+  console.log(
+    `\n  Checking ${entries.length} photos (${CDN === '' ? 'local public/media' : CDN})\n`,
+  )
 
   let ok = 0
   const problems: string[] = []
@@ -97,7 +108,8 @@ async function main(): Promise<void> {
       .where(eq((owner as typeof activities).slug, entry.slug))
       .limit(1)
     if (!record) issues.push('record with this slug not found')
-    else if (record.hero !== expectedId) issues.push(`hero_image_id is ${record.hero ?? 'NULL'}, expected ${expectedId}`)
+    else if (record.hero !== expectedId)
+      issues.push(`hero_image_id is ${record.hero ?? 'NULL'}, expected ${expectedId}`)
 
     if (row) {
       const keys = [row.objectKey]
@@ -108,7 +120,8 @@ async function main(): Promise<void> {
       }
       const missing: string[] = []
       for (const key of keys) if (!(await exists(key))) missing.push(key)
-      if (missing.length > 0) issues.push(`${missing.length}/${keys.length} files missing, e.g. ${missing[0]}`)
+      if (missing.length > 0)
+        issues.push(`${missing.length}/${keys.length} files missing, e.g. ${missing[0]}`)
     }
 
     if (issues.length === 0) {
