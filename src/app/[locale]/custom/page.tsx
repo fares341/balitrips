@@ -28,14 +28,13 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HOME_HREF } from '@/components/layout'
-import type { IconName } from '@/components/ui'
+import { Icon, type IconName } from '@/components/ui'
 import { isLocale, locales, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
-import { listActivities, listCategories, listRegions } from '@/lib/content/queries'
+import { listCategories, listRegions } from '@/lib/content/queries'
 import type { CategoryDto } from '@/lib/content/types'
 
 import { pageMetadata } from '../_meta'
-import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { CustomTripForm } from './custom-trip-form'
@@ -67,9 +66,6 @@ const FALLBACK_ICON: IconName = 'sparkle'
 /** Pre-ticked, as in the handoff — subject to the same existence check. */
 const DEFAULT_INTERESTS = ['beach', 'nature']
 
-/** How much of the catalogue to sample for imagery. */
-const SAMPLE_LIMIT = 12
-
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
 }
@@ -97,10 +93,9 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, categories, activities, regionRows] = await Promise.all([
+  const [t, categories, regionRows] = await Promise.all([
     getTranslations({ locale }),
     listCategories(),
-    listActivities({ locale, limit: SAMPLE_LIMIT }),
     listRegions({ includeAreas: true }),
   ])
   const areas = regionRows.map((row) => ({ key: row.key, label: pick(row.label, locale, row.key) }))
@@ -109,21 +104,38 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
   const available = new Set(interests.map((one) => one.key))
   const defaults = DEFAULT_INTERESTS.filter((key) => available.has(key))
 
-  const pool = imagePool(activities)
-
   return (
     <main>
       <PageBanner
-        image={imageAt(pool, 0)}
+        image={null}
+        imageSrc="/brand/consultant.jpg"
         tag={t('svc_cust_t')}
-        title={t('cp_title')}
-        subtitle={t('cp_sub')}
+        title={t('cp4_title')}
+        subtitle={t('cp4_sub')}
         breadcrumbLabel={t('c_breadcrumb')}
         trail={[{ label: t('c_home'), href: HOME_HREF }, { label: t('svc_cust_t') }]}
       />
 
-      <section className="bg-ivory">
-        <div className="wrap" style={{ maxWidth: 900 }}>
+      <section className="bg-ivory sec-tight">
+        <div className="wrap ct-grid">
+          {/* How the custom service works (v3 custom-trip.html side panel) */}
+          <aside className="ct-side">
+            <div className="panel stack" style={{ gap: 12 }}>
+              <b style={{ color: 'var(--forest)' }}>{t('cp4_how_t')}</b>
+              <ol className="ct-how">
+                {(['cp4_how1', 'cp4_how2', 'cp4_how3', 'cp4_how4'] as const).map((key, index) => (
+                  <li key={key} className={index === 3 ? 'pending' : undefined}>
+                    <b>{t(`${key}_t`)}</b>
+                    <small className="muted">{t(`${key}_b`)}</small>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <p className="alert alert-info ct-note">
+              <Icon name="info" size={18} />
+              <span>{t('cp4_note')}</span>
+            </p>
+          </aside>
           <CustomTripForm interests={interests} areas={areas} defaultInterests={defaults} />
         </div>
       </section>

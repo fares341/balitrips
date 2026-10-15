@@ -139,6 +139,8 @@ const SWEEP = [
   ['home', '/'],
   ['services', '/services'],
   ['explore', '/explore'],
+  ['region', { from: '/explore', match: '/explore/' }],
+  ['help', '/help'],
   ['activities', '/activities'],
   ['activity', { from: '/activities', match: '/activities/' }],
   ['itineraries', '/itineraries'],

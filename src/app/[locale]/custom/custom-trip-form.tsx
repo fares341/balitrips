@@ -26,7 +26,7 @@
  *    regardless of the language the visitor filled the form in.
  */
 
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
 import { ActivityCard } from '@/components/cards'
@@ -62,6 +62,37 @@ import {
  */
 const WA_MIN_DIGITS = 8
 const WA_MAX_DIGITS = 15
+
+/** Wizard steps, in order (titles). Must match the fieldsets below. */
+const STEP_LABELS = [
+  'cp4_s_dates',
+  'cp4_s_travellers',
+  'cp4_s_areas',
+  'cp4_s_interests',
+  'cp4_s_budget',
+  'cp4_s_extras',
+  'cp4_s_contact',
+] as const
+
+/** Which step holds a field the server rejected. */
+const FIELD_STEP: Record<string, number> = {
+  startDate: 0,
+  endDate: 0,
+  dates: 0,
+  travellers: 1,
+  areas: 2,
+  theme: 3,
+  interests: 3,
+  budgetTier: 4,
+  notes: 5,
+}
+
+function stepOfErrors(fields: readonly string[]): number {
+  const steps = fields.map((field) => FIELD_STEP[field] ?? STEP_LABELS.length - 1)
+  return steps.length === 0 ? STEP_LABELS.length - 1 : Math.min(...steps)
+}
+
+const subscribeNothing = () => () => {}
 
 const INITIAL_STATE: CustomTripState = { status: 'idle' }
 
@@ -120,6 +151,41 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
   const done = state.status === 'done' && state.requestId !== dismissed
   const errors = state.status === 'error' ? (state.fields ?? {}) : {}
 
+  // ---- wizard (v3 custom-trip.html): one question group per step ----------
+  // Before hydration (or without JavaScript) every step shows and the form
+  // submits in one go; once hydrated it becomes the stepped panel.
+  const wizard = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  )
+  const formRef = useRef<HTMLFormElement>(null)
+  const [chosenStep, setChosenStep] = useState(0)
+  /** The server reply the traveller has already been taken to (see below). */
+  const [seenReply, setSeenReply] = useState<unknown>(INITIAL_STATE)
+  // A fresh error reply jumps to the first step with a problem in it.
+  const errorStep =
+    state.status === 'error' && state !== seenReply ? stepOfErrors(Object.keys(errors)) : null
+  const step = errorStep ?? chosenStep
+  const goTo = (index: number) => {
+    setSeenReply(state)
+    setChosenStep(Math.max(0, Math.min(STEP_LABELS.length - 1, index)))
+    formRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }
+  const next = () => {
+    // The browser's own checks on the fields of this step (required, email…).
+    const fields = formRef.current?.querySelectorAll<HTMLInputElement>(
+      `fieldset[data-step]:not([hidden]) input, fieldset[data-step]:not([hidden]) textarea`,
+    )
+    for (const field of fields ?? []) {
+      if (!field.checkValidity()) {
+        field.reportValidity()
+        return
+      }
+    }
+    goTo(step + 1)
+  }
+
   const toggleArea = (key: string) =>
     setPickedAreas((previous) =>
       previous.includes(key)
@@ -152,324 +218,426 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
   }
 
   return (
-    <form action={action} className="bt-form">
+    <form
+      ref={formRef}
+      action={action}
+      className={wizard ? 'panel wiz bt-form is-wizard' : 'panel wiz bt-form'}
+      noValidate={wizard}
+    >
       {/* The catalogue is ordered in the language the form was rendered in. */}
       <input type="hidden" name="locale" value={locale} />
 
-      {/* ---------------- contact ---------------- */}
-      <div>
-        <h2 className="bt-form-q">{t('cp_contact')}</h2>
-        <div className="bt-daterange">
-          <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-            <span className="bt-flabel">{t('co_name')}</span>
-            <input
-              name="name"
-              type="text"
-              autoComplete="name"
-              required
-              maxLength={NAME_MAX}
-              className={errors.name === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-              aria-invalid={errors.name !== undefined}
-              aria-describedby={errors.name === undefined ? undefined : `${baseId}-name-err`}
-            />
-            {errors.name !== undefined && (
-              <FieldError id={`${baseId}-name-err`}>{t(errors.name)}</FieldError>
-            )}
-          </label>
-
-          <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-            <span className="bt-flabel">{t('co_email')}</span>
-            <input
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              required
-              className={errors.email === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-              aria-invalid={errors.email !== undefined}
-              aria-describedby={errors.email === undefined ? undefined : `${baseId}-email-err`}
-            />
-            {errors.email !== undefined && (
-              <FieldError id={`${baseId}-email-err`}>{t(errors.email)}</FieldError>
-            )}
-          </label>
+      {wizard && (
+        <div className="wiz-head">
+          <div className="row between">
+            <b style={{ color: 'var(--forest)' }}>{t(STEP_LABELS[step] ?? 'cp_title')}</b>
+            <small className="muted">
+              {t('cp4_step_of', { n: step + 1, total: STEP_LABELS.length })}
+            </small>
+          </div>
+          <div
+            className="wiz-bar"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={STEP_LABELS.length}
+            aria-valuenow={step + 1}
+            aria-label={t('cp4_progress')}
+          >
+            <i style={{ width: `${((step + 1) / STEP_LABELS.length) * 100}%` }} />
+          </div>
         </div>
-
-        <label className="bt-field" style={{ marginTop: 12, marginBottom: 0, maxWidth: 420 }}>
-          <span className="bt-flabel">{t('auth_phone')}</span>
-          <input
-            name="phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            maxLength={PHONE_MAX}
-            className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-            aria-invalid={errors.phone !== undefined}
-            aria-describedby={errors.phone === undefined ? undefined : `${baseId}-phone-err`}
-          />
-          {errors.phone !== undefined && (
-            <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
-          )}
-        </label>
-
-        {/* موافقة واتساب صريحة (سياسة Meta): غير محددة افتراضياً، وتُحفظ في الحساب
-            إن كان المرسل مسجّلاً. */}
-        <label
-          className="row"
-          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, marginTop: 10 }}
+      )}
+      <div className="wiz-body">
+        <fieldset
+          className="wiz-step"
+          data-step="dates"
+          hidden={wizard && step !== 0}
+          aria-labelledby={`${baseId}-step-0`}
         >
-          <input type="checkbox" name="whatsappOptIn" /> {t('cp_wa_optin')}
-        </label>
-        <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 0' }}>
-          {t('cp_wa_optin_hint')}
-        </p>
-      </div>
+          <legend className="sr-only" id={`${baseId}-step-0`}>
+            {t(STEP_LABELS[0] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- dates ---------------- */}
+          <div>
+            <h2 className="bt-form-q">{t('cp_when')}</h2>
+            <div className="bt-daterange">
+              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                <span className="bt-flabel">{t('dp_start')}</span>
+                <input
+                  name="startDate"
+                  type="date"
+                  value={start}
+                  onChange={(event) => {
+                    const next = event.target.value
+                    setStart(next)
+                    // An end before the start is not a range; clear it rather than
+                    // posting something the server has to reject.
+                    if (end !== '' && next !== '' && end < next) setEnd('')
+                  }}
+                  className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                  aria-invalid={errors.dates !== undefined}
+                />
+              </label>
 
-      {/* ---------------- dates ---------------- */}
-      <div>
-        <h2 className="bt-form-q">{t('cp_when')}</h2>
-        <div className="bt-daterange">
-          <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-            <span className="bt-flabel">{t('dp_start')}</span>
-            <input
-              name="startDate"
-              type="date"
-              value={start}
-              onChange={(event) => {
-                const next = event.target.value
-                setStart(next)
-                // An end before the start is not a range; clear it rather than
-                // posting something the server has to reject.
-                if (end !== '' && next !== '' && end < next) setEnd('')
-              }}
-              className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-              aria-invalid={errors.dates !== undefined}
+              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                <span className="bt-flabel">{t('dp_end')}</span>
+                <input
+                  name="endDate"
+                  type="date"
+                  value={end}
+                  min={start === '' ? undefined : start}
+                  onChange={(event) => setEnd(event.target.value)}
+                  className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                  aria-invalid={errors.dates !== undefined}
+                  aria-describedby={errors.dates === undefined ? undefined : `${baseId}-dates-err`}
+                />
+              </label>
+            </div>
+            {errors.dates !== undefined && (
+              <FieldError id={`${baseId}-dates-err`}>{t(errors.dates)}</FieldError>
+            )}
+          </div>
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="travellers"
+          hidden={wizard && step !== 1}
+          aria-labelledby={`${baseId}-step-1`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-1`}>
+            {t(STEP_LABELS[1] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- travellers ---------------- */}
+          <div>
+            <h2 className="bt-form-q">{t('cp_pax')}</h2>
+            <Stepper
+              value={travellers}
+              onChange={setTravellers}
+              min={PAX_MIN}
+              max={PAX_MAX}
+              label={t('cp_pax')}
+              decreaseLabel={t('c_qty_dec')}
+              increaseLabel={t('c_qty_inc')}
             />
-          </label>
-
-          <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-            <span className="bt-flabel">{t('dp_end')}</span>
-            <input
-              name="endDate"
-              type="date"
-              value={end}
-              min={start === '' ? undefined : start}
-              onChange={(event) => setEnd(event.target.value)}
-              className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-              aria-invalid={errors.dates !== undefined}
-              aria-describedby={errors.dates === undefined ? undefined : `${baseId}-dates-err`}
-            />
-          </label>
-        </div>
-        {errors.dates !== undefined && (
-          <FieldError id={`${baseId}-dates-err`}>{t(errors.dates)}</FieldError>
-        )}
-      </div>
-
-      {/* ---------------- travellers ---------------- */}
-      <div>
-        <h2 className="bt-form-q">{t('cp_pax')}</h2>
-        <Stepper
-          value={travellers}
-          onChange={setTravellers}
-          min={PAX_MIN}
-          max={PAX_MAX}
-          label={t('cp_pax')}
-          decreaseLabel={t('c_qty_dec')}
-          increaseLabel={t('c_qty_inc')}
-        />
-        <input type="hidden" name="travellers" value={travellers} />
-      </div>
-
-      {/* ---------------- theme ---------------- */}
-      <div>
-        <h2 className="bt-form-q" id={`${baseId}-theme`}>
-          {t('cp_theme')}
-        </h2>
-        <div className="bt-ct-row" role="radiogroup" aria-labelledby={`${baseId}-theme`}>
-          {FORM_THEMES.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              role="radio"
-              aria-checked={theme === option.key}
-              className={theme === option.key ? 'bt-ct-pick on' : 'bt-ct-pick'}
-              onClick={() => setTheme(option.key)}
+            <input type="hidden" name="travellers" value={travellers} />
+          </div>
+          {/* ---------------- children / VIP map ---------------- */}
+          <div className="row" style={{ gap: 18, flexWrap: 'wrap' }}>
+            <label
+              className="row"
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
             >
-              {t(option.labelKey)}
-            </button>
-          ))}
-        </div>
-        <input type="hidden" name="theme" value={theme} />
-      </div>
-
-      {/* ---------------- budget: a category, never a number ---------------- */}
-      <div>
-        <h2 className="bt-form-q" id={`${baseId}-budget`}>
-          {t('cp_budget')}
-        </h2>
-        <div className="bt-tier-row" role="radiogroup" aria-labelledby={`${baseId}-budget`}>
-          {BUDGET_TIERS.map((tier) => (
-            <button
-              key={tier}
-              type="button"
-              role="radio"
-              aria-checked={budgetTier === tier}
-              className={budgetTier === tier ? 'bt-tier on' : 'bt-tier'}
-              onClick={() => setBudgetTier(tier)}
+              <input type="checkbox" name="hasChildren" /> {t('cp_children')}
+            </label>
+            <label
+              className="row"
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
             >
-              <b>{t(BUDGET_TIER_LABEL[tier])}</b>
-              <small>{t(BUDGET_TIER_HINT[tier])}</small>
-            </button>
-          ))}
-        </div>
-        <input type="hidden" name="budgetTier" value={budgetTier} />
-      </div>
-
-      {/* ---------------- interests ---------------- */}
-      <div>
-        <h2 className="bt-form-q" id={`${baseId}-ints`}>
-          {t('cp_acts')}
-        </h2>
-        <div className="bt-ct-row" role="group" aria-labelledby={`${baseId}-ints`}>
-          {interests.map((option) => {
-            const on = selected.includes(option.key)
-            return (
-              <button
-                key={option.key}
-                type="button"
-                aria-pressed={on}
-                className={on ? 'bt-ct-pick bt-ct-int on' : 'bt-ct-pick bt-ct-int'}
-                onClick={() => toggleInterest(option.key)}
-              >
-                <Icon name={option.icon} size={16} color={on ? '#fff' : 'var(--forest-soft)'} />{' '}
-                {/* Always a real label: the server resolved it from the
-                    categories table, so there is no `undefined` to render. */}
-                {option.label}
-              </button>
-            )
-          })}
-        </div>
-        {selected.map((key) => (
-          <input key={key} type="hidden" name="interests" value={key} />
-        ))}
-        {errors.interests !== undefined && (
-          <FieldError id={`${baseId}-ints-err`}>{t(errors.interests)}</FieldError>
-        )}
-      </div>
-
-      {/* ---------------- preferred areas (spec 5.2) ---------------- */}
-      {areas.length > 0 && (
-        <div>
-          <h2 className="bt-form-q" id={`${baseId}-areas`}>
-            {t('cp_areas')}
-          </h2>
-          <div className="bt-ct-row" role="group" aria-labelledby={`${baseId}-areas`}>
-            {areas.map((option) => {
-              const on = pickedAreas.includes(option.key)
-              return (
+              <input type="checkbox" name="wantsVipMap" /> {t('cp_vipmap')}
+            </label>
+            <label
+              className="row"
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+            >
+              <input type="checkbox" name="wantsLuxuryDining" /> {t('cp_luxury_dining')}
+            </label>
+            <label
+              className="row"
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+            >
+              <input type="checkbox" name="wantsAdventure" /> {t('cp_adventure')}
+            </label>
+          </div>
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="areas"
+          hidden={wizard && step !== 2}
+          aria-labelledby={`${baseId}-step-2`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-2`}>
+            {t(STEP_LABELS[2] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- preferred areas (spec 5.2) ---------------- */}
+          {areas.length > 0 && (
+            <div>
+              <h2 className="bt-form-q" id={`${baseId}-areas`}>
+                {t('cp_areas')}
+              </h2>
+              <div className="bt-ct-row" role="group" aria-labelledby={`${baseId}-areas`}>
+                {areas.map((option) => {
+                  const on = pickedAreas.includes(option.key)
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      aria-pressed={on}
+                      className={on ? 'bt-ct-pick on' : 'bt-ct-pick'}
+                      onClick={() => toggleArea(option.key)}
+                    >
+                      <bdi>{option.label}</bdi>
+                    </button>
+                  )
+                })}
+              </div>
+              {pickedAreas.map((key) => (
+                <input key={key} type="hidden" name="areas" value={key} />
+              ))}
+            </div>
+          )}
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="interests"
+          hidden={wizard && step !== 3}
+          aria-labelledby={`${baseId}-step-3`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-3`}>
+            {t(STEP_LABELS[3] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- theme ---------------- */}
+          <div>
+            <h2 className="bt-form-q" id={`${baseId}-theme`}>
+              {t('cp_theme')}
+            </h2>
+            <div className="bt-ct-row" role="radiogroup" aria-labelledby={`${baseId}-theme`}>
+              {FORM_THEMES.map((option) => (
                 <button
                   key={option.key}
                   type="button"
-                  aria-pressed={on}
-                  className={on ? 'bt-ct-pick on' : 'bt-ct-pick'}
-                  onClick={() => toggleArea(option.key)}
+                  role="radio"
+                  aria-checked={theme === option.key}
+                  className={theme === option.key ? 'bt-ct-pick on' : 'bt-ct-pick'}
+                  onClick={() => setTheme(option.key)}
                 >
-                  <bdi>{option.label}</bdi>
+                  {t(option.labelKey)}
                 </button>
-              )
-            })}
+              ))}
+            </div>
+            <input type="hidden" name="theme" value={theme} />
           </div>
-          {pickedAreas.map((key) => (
-            <input key={key} type="hidden" name="areas" value={key} />
-          ))}
-        </div>
-      )}
+          {/* ---------------- interests ---------------- */}
+          <div>
+            <h2 className="bt-form-q" id={`${baseId}-ints`}>
+              {t('cp_acts')}
+            </h2>
+            <div className="bt-ct-row" role="group" aria-labelledby={`${baseId}-ints`}>
+              {interests.map((option) => {
+                const on = selected.includes(option.key)
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    aria-pressed={on}
+                    className={on ? 'bt-ct-pick bt-ct-int on' : 'bt-ct-pick bt-ct-int'}
+                    onClick={() => toggleInterest(option.key)}
+                  >
+                    <Icon name={option.icon} size={16} color={on ? '#fff' : 'var(--forest-soft)'} />{' '}
+                    {/* Always a real label: the server resolved it from the
+                        categories table, so there is no `undefined` to render. */}
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+            {selected.map((key) => (
+              <input key={key} type="hidden" name="interests" value={key} />
+            ))}
+            {errors.interests !== undefined && (
+              <FieldError id={`${baseId}-ints-err`}>{t(errors.interests)}</FieldError>
+            )}
+          </div>
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="budget"
+          hidden={wizard && step !== 4}
+          aria-labelledby={`${baseId}-step-4`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-4`}>
+            {t(STEP_LABELS[4] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- budget: a category, never a number ---------------- */}
+          <div>
+            <h2 className="bt-form-q" id={`${baseId}-budget`}>
+              {t('cp_budget')}
+            </h2>
+            <div className="bt-tier-row" role="radiogroup" aria-labelledby={`${baseId}-budget`}>
+              {BUDGET_TIERS.map((tier) => (
+                <button
+                  key={tier}
+                  type="button"
+                  role="radio"
+                  aria-checked={budgetTier === tier}
+                  className={budgetTier === tier ? 'bt-tier on' : 'bt-tier'}
+                  onClick={() => setBudgetTier(tier)}
+                >
+                  <b>{t(BUDGET_TIER_LABEL[tier])}</b>
+                  <small>{t(BUDGET_TIER_HINT[tier])}</small>
+                </button>
+              ))}
+            </div>
+            <input type="hidden" name="budgetTier" value={budgetTier} />
+          </div>
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="extras"
+          hidden={wizard && step !== 5}
+          aria-labelledby={`${baseId}-step-5`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-5`}>
+            {t(STEP_LABELS[5] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- driver (only while the service is on, lib/features.ts) ---------------- */}
+          {FEATURES.driver && (
+            <div>
+              <button
+                type="button"
+                className={wantsDriver ? 'bt-toggle on' : 'bt-toggle'}
+                aria-pressed={wantsDriver}
+                style={{ maxWidth: 420 }}
+                onClick={() => setWantsDriver((previous) => !previous)}
+              >
+                <span className="bt-toggle-sw" aria-hidden="true" />
+                <span
+                  style={{
+                    fontWeight: 700,
+                    fontSize: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Icon name="car" size={16} color="var(--forest)" /> {t('cp_driver')}
+                </span>
+              </button>
+              {wantsDriver && <input type="hidden" name="wantsDriver" value="on" />}
+            </div>
+          )}
+          {/* ---------------- notes ---------------- */}
+          <div>
+            <h2 className="bt-form-q">
+              <label htmlFor={`${baseId}-notes`}>{t('cp_notes')}</label>
+            </h2>
+            <textarea
+              id={`${baseId}-notes`}
+              name="notes"
+              maxLength={NOTES_MAX}
+              className={errors.notes === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+              style={{ minHeight: 110, resize: 'vertical' }}
+              placeholder={t('cp_notes_ph')}
+            />
+            {errors.notes !== undefined && (
+              <FieldError id={`${baseId}-notes-err`}>{t(errors.notes)}</FieldError>
+            )}
+          </div>
+        </fieldset>
+        <fieldset
+          className="wiz-step"
+          data-step="contact"
+          hidden={wizard && step !== 6}
+          aria-labelledby={`${baseId}-step-6`}
+        >
+          <legend className="sr-only" id={`${baseId}-step-6`}>
+            {t(STEP_LABELS[6] ?? 'cp_title')}
+          </legend>
+          {/* ---------------- contact ---------------- */}
+          <div>
+            <h2 className="bt-form-q">{t('cp_contact')}</h2>
+            <div className="bt-daterange">
+              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                <span className="bt-flabel">{t('co_name')}</span>
+                <input
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  maxLength={NAME_MAX}
+                  className={errors.name === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                  aria-invalid={errors.name !== undefined}
+                  aria-describedby={errors.name === undefined ? undefined : `${baseId}-name-err`}
+                />
+                {errors.name !== undefined && (
+                  <FieldError id={`${baseId}-name-err`}>{t(errors.name)}</FieldError>
+                )}
+              </label>
 
-      {/* ---------------- driver (only while the service is on, lib/features.ts) ---------------- */}
-      {FEATURES.driver && (
-        <div>
-          <button
-            type="button"
-            className={wantsDriver ? 'bt-toggle on' : 'bt-toggle'}
-            aria-pressed={wantsDriver}
-            style={{ maxWidth: 420 }}
-            onClick={() => setWantsDriver((previous) => !previous)}
-          >
-            <span className="bt-toggle-sw" aria-hidden="true" />
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 14,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
+              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                <span className="bt-flabel">{t('co_email')}</span>
+                <input
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  required
+                  className={errors.email === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                  aria-invalid={errors.email !== undefined}
+                  aria-describedby={errors.email === undefined ? undefined : `${baseId}-email-err`}
+                />
+                {errors.email !== undefined && (
+                  <FieldError id={`${baseId}-email-err`}>{t(errors.email)}</FieldError>
+                )}
+              </label>
+            </div>
+
+            <label className="bt-field" style={{ marginTop: 12, marginBottom: 0, maxWidth: 420 }}>
+              <span className="bt-flabel">{t('auth_phone')}</span>
+              <input
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                maxLength={PHONE_MAX}
+                className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                aria-invalid={errors.phone !== undefined}
+                aria-describedby={errors.phone === undefined ? undefined : `${baseId}-phone-err`}
+              />
+              {errors.phone !== undefined && (
+                <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
+              )}
+            </label>
+
+            {/* موافقة واتساب صريحة (سياسة Meta): غير محددة افتراضياً، وتُحفظ في الحساب
+                إن كان المرسل مسجّلاً. */}
+            <label
+              className="row"
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, marginTop: 10 }}
             >
-              <Icon name="car" size={16} color="var(--forest)" /> {t('cp_driver')}
-            </span>
-          </button>
-          {wantsDriver && <input type="hidden" name="wantsDriver" value="on" />}
-        </div>
-      )}
+              <input type="checkbox" name="whatsappOptIn" /> {t('cp_wa_optin')}
+            </label>
+            <p className="muted" style={{ fontSize: 12.5, margin: '4px 0 0' }}>
+              {t('cp_wa_optin_hint')}
+            </p>
+          </div>
+        </fieldset>
 
-      {/* ---------------- children / VIP map ---------------- */}
-      <div className="row" style={{ gap: 18, flexWrap: 'wrap' }}>
-        <label
-          className="row"
-          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
-        >
-          <input type="checkbox" name="hasChildren" /> {t('cp_children')}
-        </label>
-        <label
-          className="row"
-          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
-        >
-          <input type="checkbox" name="wantsVipMap" /> {t('cp_vipmap')}
-        </label>
-        <label
-          className="row"
-          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
-        >
-          <input type="checkbox" name="wantsLuxuryDining" /> {t('cp_luxury_dining')}
-        </label>
-        <label
-          className="row"
-          style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
-        >
-          <input type="checkbox" name="wantsAdventure" /> {t('cp_adventure')}
-        </label>
-      </div>
-
-      {/* ---------------- notes ---------------- */}
-      <div>
-        <h2 className="bt-form-q">
-          <label htmlFor={`${baseId}-notes`}>{t('cp_notes')}</label>
-        </h2>
-        <textarea
-          id={`${baseId}-notes`}
-          name="notes"
-          maxLength={NOTES_MAX}
-          className={errors.notes === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-          style={{ minHeight: 110, resize: 'vertical' }}
-          placeholder={t('cp_notes_ph')}
-        />
-        {errors.notes !== undefined && (
-          <FieldError id={`${baseId}-notes-err`}>{t(errors.notes)}</FieldError>
+        {state.status === 'error' && state.reason === 'server' && (
+          <p className="bt-errmsg" role="alert">
+            <Icon name="cross" size={12} color="var(--orange-deep)" />
+            {t('c_error')}
+          </p>
         )}
       </div>
-
-      {state.status === 'error' && state.reason === 'server' && (
-        <p className="bt-errmsg" role="alert">
-          <Icon name="cross" size={12} color="var(--orange-deep)" />
-          {t('c_error')}
-        </p>
-      )}
-
-      <Button type="submit" variant="orange" style={{ alignSelf: 'flex-start' }} disabled={pending}>
-        {pending ? t('cp_sending') : t('cp_submit')}{' '}
-        <Icon name="arrow" size={18} color="#fff" className="flip" />
-      </Button>
+      <div className="wiz-foot">
+        {wizard && step > 0 ? (
+          <button type="button" className="btn btn-ghost" onClick={() => goTo(step - 1)}>
+            {t('cp4_back')}
+          </button>
+        ) : (
+          <span />
+        )}
+        {wizard && step < STEP_LABELS.length - 1 ? (
+          <button type="button" className="btn btn-primary" onClick={next}>
+            {t('cp4_next')} <Icon name="arrow" size={18} className="flip" />
+          </button>
+        ) : (
+          <Button type="submit" variant="orange" disabled={pending}>
+            {pending ? t('cp_sending') : t('cp_submit')}{' '}
+            <Icon name="arrow" size={18} className="flip" />
+          </Button>
+        )}
+      </div>
     </form>
   )
 }

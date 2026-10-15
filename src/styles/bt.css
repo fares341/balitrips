@@ -3753,3 +3753,113 @@ html {
     gap: var(--s5);
   }
 }
+
+/* ---------- Custom trip (v3 custom-trip.html): side panel + stepped form ---------- */
+.ct-grid {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+}
+.ct-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ct-how {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  font-size: 14px;
+}
+.ct-how li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-inline-start: 26px;
+}
+.ct-how li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--forest);
+  background: var(--white);
+}
+.ct-how li.pending::before {
+  border-color: var(--line);
+}
+.ct-how b {
+  color: var(--forest);
+}
+.ct-note {
+  margin: 0;
+}
+.wiz {
+  padding: 0;
+  overflow: hidden;
+  gap: 0;
+}
+.wiz-head {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wiz-bar {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--ivory-3);
+  overflow: hidden;
+}
+.wiz-bar i {
+  display: block;
+  height: 100%;
+  background: var(--forest);
+  border-radius: 6px;
+  transition: width var(--d-slow) var(--ease);
+}
+.wiz-body {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.is-wizard .wiz-body {
+  min-height: 360px;
+}
+.wiz-step {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.wiz-step[hidden] {
+  display: none;
+}
+.wiz-foot {
+  padding: 16px 22px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--ivory);
+}
+@media (min-width: 1024px) {
+  .ct-grid {
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 48px;
+  }
+  .ct-side {
+    position: sticky;
+    top: 16px;
+  }
+}
