@@ -1,0 +1,65 @@
+# Manual: build the site, run it, take real-browser screenshots (home + map,
+# with live map tiles) and push them to the `ci-shots` branch for review.
+name: Preview screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bali
+          POSTGRES_PASSWORD: bali
+          POSTGRES_DB: bali
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bali"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bali:bali@localhost:5433/bali
+      BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Start the site
+        run: |
+          (pnpm start > server.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
+      - name: Screenshots
+        run: node scripts/ci-shots.mjs
+      - name: Push screenshots to the ci-shots branch
+        if: always()
+        run: |
+          cp server.log ci-shots/server.log 2>/dev/null || true
+          cd ci-shots
+          git init -q
+          git config user.name "ci-shots"
+          git config user.email "ci-shots@users.noreply.github.com"
+          git checkout -q -b ci-shots
+          git add -A
+          git commit -q -m "Screenshots for ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-shots
