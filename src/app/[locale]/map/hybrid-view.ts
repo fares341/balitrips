@@ -25,6 +25,11 @@ import { createRealMap } from './real-map'
 export const MAX_S = 7
 /** Slight bearing of the opening camera (degrees). */
 const HOME_BEARING = -8
+/** Phone opening frame: Tabanan coast to Amed, Lovina to Uluwatu and the Nusas. */
+const PHONE_BOUNDS: [[number, number], [number, number]] = [
+  [114.98, -8.86],
+  [115.72, -8.1],
+]
 /** How far past the framed island the visitor may zoom OUT (zoom levels). */
 const MIN_ZOOM_SLACK = 0.6
 
@@ -267,7 +272,10 @@ export class HybridView {
   /** The framed island, tilted: zoom from the bounds, then clamp zooming out. */
   private homeCamera(map: MapLike) {
     const p = this.pad
-    const fit = map.cameraForBounds(REAL_BOUNDS, {
+    // Phones frame the visited part of the island (the west is national park
+    // with no places), so the regions fill the narrow screen.
+    const narrow = (map.getCanvas?.()?.clientWidth ?? 1000) < 700
+    const fit = map.cameraForBounds(narrow ? PHONE_BOUNDS : REAL_BOUNDS, {
       padding: { top: p.top, bottom: p.bottom, left: p.left, right: p.right },
     })
     const zoom = fit?.zoom ?? 9
