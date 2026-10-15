@@ -27,7 +27,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
-import { CompactCard, LinkButton, SectionHead, Stars } from '@/components/bt'
+import { CompactCard, LinkButton, SectionHead, Stars, StepCards } from '@/components/bt'
 import { FavButton } from '@/components/bt/fav-button'
 import { ActivityCompact, PackageCompact } from '@/components/cards'
 import { Icon, type IconName } from '@/components/ui'
@@ -55,6 +55,7 @@ import { AboutSlider } from './_home/about-slider'
 import { HeroArches, type Arch } from './_home/hero-arches'
 import { CUSTOM_TRIP_PHOTO } from './_home/media'
 import { MoodTabs, type MoodTab } from './_home/mood-tabs'
+import { PLAN_STEPS } from './_home/plan-steps'
 import { ReviewSlider } from './_home/review-slider'
 import { CUSTOM_HREF } from './_ui/routes-extra'
 
@@ -378,9 +379,31 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
+      {/* 4b — plan your trip in steps (numbered cards; list in _home/plan-steps.ts) */}
+      <section className="sec-tight bg-ivory2" aria-labelledby="st-h">
+        <div className="wrap">
+          <SectionHead
+            id="st-h"
+            eyebrow={t('hv3_st_eyebrow')}
+            title={t('hv3_st_title')}
+            lede={t('hv3_st_lede')}
+          />
+          <StepCards
+            label={t('hv3_st_title')}
+            items={PLAN_STEPS.map((step) => ({
+              key: step.key,
+              icon: step.icon,
+              href: step.href,
+              title: t(`hv3_st_${step.key}_t`),
+              body: t(`hv3_st_${step.key}_d`),
+            }))}
+          />
+        </div>
+      </section>
+
       {/* 5 — reviews (real only) */}
       {reviews.length > 0 && (
-        <section className="sec-tight bg-ivory2" aria-labelledby="rv-h">
+        <section className="sec-tight" aria-labelledby="rv-h">
           <div className="wrap">
             <SectionHead
               id="rv-h"

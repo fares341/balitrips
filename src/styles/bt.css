@@ -2796,3 +2796,169 @@ html {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ---------- Step cards (StepCards: numbered feature cards) ----------
+ * Light card · big faint number in the top inline-end corner · line icon ·
+ * bold title · 2-line description. Title link stretched over the card.
+ * 1 column on phones, 2 from 600px, 4 from 1024px. Logical properties only.
+ */
+.stc-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s3);
+}
+.stc-grid > li {
+  min-width: 0;
+  display: flex;
+}
+.stc {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s5);
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    transform var(--d-base) var(--ease),
+    box-shadow var(--d-base),
+    border-color var(--d-base);
+}
+.stc:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sh-2);
+  border-color: var(--palm-mid);
+}
+.stc:has(.stc-link:focus-visible) {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.stc-num {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 14px;
+  z-index: -1;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--forest);
+  opacity: 0.08;
+  pointer-events: none;
+  user-select: none;
+}
+.stc-ic {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  background: var(--ivory-2);
+  color: var(--forest);
+  border: 1px solid var(--line-soft);
+  transition:
+    background var(--d-base),
+    color var(--d-base);
+}
+.stc:hover .stc-ic {
+  background: var(--palm-soft);
+}
+.stc-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stc-t {
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--forest);
+}
+.stc-link {
+  color: inherit;
+}
+.stc-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.stc-link:focus-visible {
+  outline: none;
+}
+.stc-d {
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.stc-tag {
+  align-self: flex-start;
+  margin-block-start: 4px;
+  font-size: var(--t-micro);
+  font-weight: 700;
+  color: var(--forest-ink);
+  background: var(--orange-soft);
+  border-radius: var(--r-pill);
+  padding: 2px 10px;
+}
+.stc-go {
+  color: var(--forest);
+  opacity: 0.45;
+  transition:
+    opacity var(--d-base),
+    translate var(--d-base) var(--ease);
+}
+.stc:hover .stc-go {
+  opacity: 1;
+}
+@media (min-width: 600px) {
+  .stc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s4);
+  }
+}
+@media (min-width: 1024px) {
+  .stc-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  /* tiles: icon on top, number stays in the corner */
+  .stc {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    align-content: start;
+    padding: var(--s6);
+    gap: var(--s4);
+  }
+  .stc-num {
+    font-size: 72px;
+    inset-block-start: 10px;
+    inset-inline-end: 18px;
+  }
+  .stc-go {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stc,
+  .stc-ic,
+  .stc-go {
+    transition: none;
+  }
+  .stc:hover {
+    transform: none;
+  }
+}
