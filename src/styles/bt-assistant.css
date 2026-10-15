@@ -93,6 +93,10 @@
   position: fixed;
   z-index: var(--z-modal);
   inset: 0;
+  /* The panel is a <section>: cancel layout.css's page-section padding
+     (64px, 96px from 768px), which pushed the header down and left a blank
+     strip under the composer. */
+  padding: 0;
   display: flex;
   flex-direction: column;
   background: var(--ivory);

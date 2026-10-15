@@ -50,6 +50,18 @@ function record(name, ok, detail = '', shot = '') {
   flush()
 }
 let shotNo = 0
+/** The panel header sits flush at the panel's top and the composer at its bottom. */
+async function panelFlush(page) {
+  return page.evaluate(() => {
+    const panel = document.querySelector('.ai-panel')?.getBoundingClientRect()
+    const head = document.querySelector('.ai-head')?.getBoundingClientRect()
+    const foot = document.querySelector('.ai-panel > :last-child')?.getBoundingClientRect()
+    if (!panel || !head || !foot) return { ok: false }
+    const top = Math.round(head.top - panel.top)
+    const bottom = Math.round(panel.bottom - foot.bottom)
+    return { ok: top <= 2 && bottom <= 2, top, bottom }
+  })
+}
 async function shot(page, label) {
   shotNo += 1
   const file = `shots/${String(shotNo).padStart(2, '0')}-${label.replace(/[^a-z0-9-]+/gi, '_')}.png`
@@ -246,6 +258,12 @@ const pageErrors = []
     '',
     open,
   )
+  const flushDesk = await panelFlush(page)
+  record(
+    'en 1440: panel header and composer flush with the panel edges',
+    flushDesk.ok,
+    JSON.stringify(flushDesk),
+  )
   const reply = await ask(page, 'Which activity do you recommend?')
   const reply1 = await shot(page, 'en-1440-activity-answer')
   const links = await page
@@ -313,6 +331,12 @@ const pageErrors = []
     sheet && sheet.width >= 389 && sheet.height >= 800,
     JSON.stringify(sheet),
     sheetShot,
+  )
+  const flushPhone = await panelFlush(page)
+  record(
+    'en 390: sheet header and composer flush with the edges',
+    flushPhone.ok,
+    JSON.stringify(flushPhone),
   )
   const before = await page.evaluate(() => document.cookie.match(/bt_cart_count=(\d+)/)?.[1] ?? '0')
   const answer = await ask(page, 'Please add an activity to my trip')
