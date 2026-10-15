@@ -28,17 +28,20 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { ActivityCard } from '@/components/cards'
+import { PackageCard } from '@/components/cards'
 import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
+import { Link } from '@/i18n/routing'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { FEATURES } from '@/lib/features'
 import { getPackageBySlug, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { alternates } from '../_meta'
 import { PackageBookingBox } from './booking-box'
+
+import '@/styles/bt-activity.css'
 
 const INDEX_HREF = ENTITY_PATHS.package
 
@@ -109,142 +112,150 @@ export default async function PackageDetailPage({
   const included = pickList(pkg.included, locale)
   const excluded = pickList(pkg.excluded, locale)
 
+  const others = (await listPackages()).filter((other) => other.id !== pkg.id).slice(0, 3)
+  const facts = [
+    { icon: 'cal' as const, label: t('pd_fact_duration'), value: t('c_days_n', { n: pkg.days }) },
+    {
+      icon: 'users' as const,
+      label: t('pd_fact_group'),
+      value: `${t('pd_fact_upto')} ${format.number(pkg.maxGuests)}`,
+    },
+    ...(pkg.activities.length > 0
+      ? [
+          {
+            icon: 'compass' as const,
+            label: t('pd4_fact_acts'),
+            value: t('pd4_acts_n', { n: pkg.activities.length }),
+          },
+        ]
+      : []),
+    ...(pkg.regions.length > 0
+      ? [
+          {
+            icon: 'pin' as const,
+            label: t('pd_fact_areas'),
+            value: pkg.regions.map((r) => pick(r.label, locale, r.key)).join(' · '),
+          },
+        ]
+      : []),
+  ]
+
   return (
-    <main className="bt-detailwrap">
-      <div className="wrap">
-        <Breadcrumbs
-          trail={[
-            { label: t('c_home'), href: HOME_HREF },
-            { label: t('svc_pkg_t'), href: INDEX_HREF },
-            { label: name },
-          ]}
+    <main className="bt-detailwrap pd-page">
+      {/* Banner (v3 package.html): the package photo, length tag, name, line */}
+      <div className="bt-banner pd-banner">
+        <Photo
+          src={pkg.hero?.url}
+          alt={pick(pkg.hero?.alt, locale)}
+          priority
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
         />
+        <div className="bt-banner-veil" aria-hidden="true" />
+        <div className="wrap bt-banner-inner">
+          <Breadcrumbs
+            light
+            trail={[
+              { label: t('c_home'), href: HOME_HREF },
+              { label: t('svc_pkg_t'), href: INDEX_HREF },
+              { label: name },
+            ]}
+          />
+          <span className="row" style={{ gap: 8 }}>
+            <span
+              className="tag"
+              style={{ background: 'var(--orange)', color: 'var(--on-orange)' }}
+            >
+              {t('c_days_n', { n: pkg.days })}
+            </span>
+            {FEATURES.driver && pkg.driverIncluded && (
+              <span className="tag tag-palm">
+                <Icon name="car" size={13} /> {t('pd_driver_inc')}
+              </span>
+            )}
+          </span>
+          <h1 className="bt-banner-title">{name}</h1>
+          {blurb !== null && <p className="bt-banner-sub">{blurb}</p>}
+        </div>
       </div>
 
       <div className="wrap bt-detail-grid">
         <div className="bt-detail-main">
-          <div className="bt-slider" style={{ borderRadius: 'var(--r-lg)' }}>
-            <Photo
-              src={pkg.hero?.url}
-              alt={pick(pkg.hero?.alt, locale)}
-              priority
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-            />
-            <div className="bt-dt-hero-veil" />
-            <div style={{ position: 'absolute', insetInline: 0, bottom: 0, padding: 28 }}>
-              <div className="row" style={{ gap: 8 }}>
-                <span className="tag" style={{ background: 'var(--orange)', color: '#fff' }}>
-                  {t('c_days_n', { n: pkg.days })}
-                </span>
-                {FEATURES.driver && pkg.driverIncluded && (
-                  <span className="tag tag-palm">
-                    <Icon name="car" size={13} /> {t('pd_driver_inc')}
-                  </span>
-                )}
-              </div>
-              <h1 style={{ fontSize: 'clamp(26px,4.5vw,40px)', color: '#fff', marginTop: 10 }}>
-                {name}
-              </h1>
+          <ul className="pd-facts" role="list">
+            {facts.map((fact) => (
+              <li key={fact.label}>
+                <small className="muted">
+                  <Icon name={fact.icon} size={14} /> {fact.label}
+                </small>
+                <b>{fact.value}</b>
+              </li>
+            ))}
+          </ul>
+
+          {pkg.activities.length > 0 && (
+            <div className="bt-detail-block">
+              <h2 className="bt-detail-h">{t('pd4_acts_t')}</h2>
+              <ul className="sr-list pd-acts" role="list">
+                {pkg.activities.map((activity) => {
+                  const area = pickOptional(activity.area, locale)
+                  const duration = pickOptional(activity.duration, locale)
+                  return (
+                    <li key={activity.id}>
+                      <Link href={activity.href} className="sr-row">
+                        {activity.hero?.url ? (
+                          // eslint-disable-next-line @next/next/no-img-element -- catalogue thumbnail
+                          <img src={activity.hero.url} alt="" loading="lazy" />
+                        ) : (
+                          <span className="sr-ph" aria-hidden="true">
+                            <Icon name="compass" size={22} />
+                          </span>
+                        )}
+                        <span className="sr-b">
+                          <b>{pick(activity.name, locale, activity.slug)}</b>
+                          {(area !== null || duration !== null) && (
+                            <small className="muted">
+                              {[area, duration].filter((part) => part !== null).join(' · ')}
+                            </small>
+                          )}
+                        </span>
+                        <Icon name="chevronr" size={18} className="flip" />
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
-          </div>
-
-          <div className="bt-detail-block">
-            <h2 className="bt-detail-h">{t('id_overview')}</h2>
-            {blurb !== null && (
-              <p className="lede" style={{ fontSize: 16 }}>
-                {blurb}
-              </p>
-            )}
-            {/*
-              The facts a traveller checks before anything else: how long, how
-              many people, where, and whether a driver comes with it. These
-              were three loose tags and regions were not shown at all, even
-              though every package has them.
-            */}
-            <dl className="bt-pkgfacts">
-              <div className="bt-pkgfact">
-                <Icon name="cal" size={18} color="var(--forest)" />
-                <div>
-                  <dt>{t('pd_fact_duration')}</dt>
-                  <dd>{t('c_days_n', { n: pkg.days })}</dd>
-                </div>
-              </div>
-
-              <div className="bt-pkgfact">
-                <Icon name="users" size={18} color="var(--forest)" />
-                <div>
-                  <dt>{t('pd_fact_group')}</dt>
-                  <dd>
-                    {t('pd_fact_upto')} {format.number(pkg.maxGuests)} {t('ph_guests')}
-                  </dd>
-                </div>
-              </div>
-
-              {pkg.regions.length > 0 && (
-                <div className="bt-pkgfact">
-                  <Icon name="pin" size={18} color="var(--forest)" />
-                  <div>
-                    <dt>{t('pd_fact_areas')}</dt>
-                    <dd>{pkg.regions.map((r) => pick(r.label, locale, r.key)).join(' · ')}</dd>
-                  </div>
-                </div>
-              )}
-
-              {FEATURES.driver && (
-                <div className="bt-pkgfact">
-                  <Icon name="car" size={18} color="var(--forest)" />
-                  <div>
-                    <dt>{t('pd_fact_driver')}</dt>
-                    <dd>{pkg.driverIncluded ? t('pd_fact_yes') : t('pd_fact_no')}</dd>
-                  </div>
-                </div>
-              )}
-            </dl>
-          </div>
+          )}
 
           {(included.length > 0 || excluded.length > 0) && (
-            <div className="bt-incexc">
+            <div className="ie">
               {included.length > 0 && (
-                <div>
-                  <h2 className="bt-detail-h">{t('pd_inc')}</h2>
-                  <ul className="bt-checklist">
+                <div className="panel">
+                  <b className="ie-h ok">
+                    <Icon name="check" size={18} stroke={2.4} /> {t('pd_inc')}
+                  </b>
+                  <ul>
                     {included.map((entry) => (
                       <li key={entry}>
-                        <span className="bt-check yes">
-                          <Icon name="check" size={14} color="var(--forest)" />
-                        </span>
-                        {entry}
+                        <Icon name="check" size={16} stroke={2.2} /> {entry}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
               {excluded.length > 0 && (
-                <div>
-                  <h2 className="bt-detail-h">{t('pd_exc')}</h2>
-                  <ul className="bt-checklist">
+                <div className="panel">
+                  <b className="ie-h no">
+                    <Icon name="cross" size={18} stroke={2.4} /> {t('pd_exc')}
+                  </b>
+                  <ul>
                     {excluded.map((entry) => (
-                      <li key={entry}>
-                        <span className="bt-check no">
-                          <Icon name="cross" size={13} color="var(--orange-deep)" />
-                        </span>
-                        {entry}
+                      <li key={entry} className="muted">
+                        <Icon name="cross" size={16} stroke={2} /> {entry}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-            </div>
-          )}
-
-          {pkg.activities.length > 0 && (
-            <div className="bt-detail-block">
-              <h2 className="bt-detail-h">{t('pd_roadmap')}</h2>
-              <div className="grid bt-grid-3auto">
-                {pkg.activities.map((activity) => (
-                  <ActivityCard key={activity.id} activity={activity} />
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -257,6 +268,21 @@ export default async function PackageDetailPage({
           maxGuests={pkg.maxGuests}
         />
       </div>
+
+      {others.length > 0 && (
+        <section className="sec bg-ivory2" aria-labelledby="pd-others">
+          <div className="wrap">
+            <h2 className="h2" id="pd-others" style={{ marginBottom: 20 }}>
+              {t('pd4_others')}
+            </h2>
+            <div className="grid pk-grid">
+              {others.map((other) => (
+                <PackageCard key={other.id} pkg={other} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   )
 }

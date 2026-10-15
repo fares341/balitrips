@@ -3863,3 +3863,35 @@ html {
     top: 16px;
   }
 }
+
+/* ---------- Package detail (v3 package.html) ---------- */
+.pd-page .pd-banner {
+  margin-bottom: 28px;
+}
+.pd-facts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.pd-facts > li {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--ivory-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pd-facts small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pd-facts b {
+  color: var(--forest);
+}
+.pd-acts {
+  max-width: none;
+}
