@@ -106,9 +106,10 @@ export function requiresTwoFactor(role: Role): boolean {
    *
    * NEVER set this on a server that takes real bookings.
    */
-  // في الوضع الحقيقي لا يمكن تعطيله (انظر src/lib/live-mode.ts).
-  if (process.env.LIVE_MODE === 'true') return true
-  return process.env.DISABLE_ADMIN_2FA !== 'true'
+  // TEMPORARY, at the owner's explicit request (Oct 2026): the second step is
+  // OFF unless the server sets REQUIRE_ADMIN_2FA=true. Restore before taking
+  // real bookings (set REQUIRE_ADMIN_2FA=true and restart, or revert this).
+  return process.env.REQUIRE_ADMIN_2FA === 'true'
 }
 
 export class AuthorizationError extends Error {
