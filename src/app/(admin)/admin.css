@@ -1236,6 +1236,14 @@ details > summary.a-btn::-webkit-details-marker {
   margin-block-start: 1px;
 }
 
+.a-flash > :not(.a-ico) {
+  min-inline-size: 0;
+}
+
+.a-flash code {
+  overflow-wrap: anywhere;
+}
+
 .a-flash a {
   font-weight: 700;
   text-decoration: underline;

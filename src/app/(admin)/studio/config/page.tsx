@@ -127,11 +127,14 @@ export default async function ConfigPage({
         because the alternative is discovering it from a customer.
       */}
       <div className="a-flash warn" role="status">
-        <strong>{t('config.not_wired_title')}</strong>{' '}
-        {rich(t('config.not_wired_body'), {
-          fn: <code>readSetting()</code>,
-          file: <code>(admin)/_lib/settings.ts</code>,
-        })}
+        {/* One flex item: bare text runs and <code> would each become their own column. */}
+        <div>
+          <strong>{t('config.not_wired_title')}</strong>{' '}
+          {rich(t('config.not_wired_body'), {
+            fn: <code>readSetting()</code>,
+            file: <code>(admin)/_lib/settings.ts</code>,
+          })}
+        </div>
       </div>
 
       <div className="a-card">
