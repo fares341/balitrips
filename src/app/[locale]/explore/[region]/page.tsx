@@ -16,29 +16,29 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { LinkButton, SectionHead } from '@/components/bt'
 import { ActivityCard, ItineraryCard, PlaceCard } from '@/components/cards'
 import { Icon } from '@/components/ui'
+import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
 
 import { alternatesFor, toLocale } from '../../_seo-hreflang'
 import { PageBanner } from '../../_ui/page-banner'
 import { CUSTOM_HREF } from '../../_ui/routes-extra'
-import { regionHref, regionViews } from '../region-data'
+import { regionHref, regionViews, type RegionView } from '../region-data'
 
 const SHOWN = 6
 
 type PageProps = { params: Promise<{ locale: string; region: string }> }
 
-async function load(raw: string, key: string) {
-  const locale = toLocale(raw)
+async function findRegion(locale: Locale, key: string): Promise<RegionView | null> {
   const views = await regionViews(locale)
-  const view = views.find((one) => one.region.key === key)
-  return { locale, view }
+  return views.find((one) => one.region.key === key) ?? null
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale: raw, region } = await params
-  const { locale, view } = await load(raw, region)
-  if (view === undefined) notFound()
+  const locale = toLocale(raw)
+  const view = await findRegion(locale, region)
+  if (!view) notFound()
   const t = await getTranslations({ locale })
   const name = pick(view.region.label, locale, view.region.key)
   return {
@@ -51,8 +51,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function RegionPage({ params }: PageProps) {
   const { locale: raw, region } = await params
   setRequestLocale(raw)
-  const { locale, view } = await load(raw, region)
-  if (view === undefined) notFound()
+  const locale = toLocale(raw)
+  const view = await findRegion(locale, region)
+  if (!view) notFound()
 
   const t = await getTranslations({ locale })
   const name = pick(view.region.label, locale, view.region.key)
