@@ -254,8 +254,9 @@ export function MapApp(props: MapAppProps) {
       pad.top = 56
       const side = sideRef.current?.getBoundingClientRect()
       if (side) pad.bottom = Math.max(16, Math.min(app.height * 0.45, app.bottom - side.top + 8))
-      pad.left = 8
-      pad.right = 8
+      // room for the region bubbles' labels, which extend sideways
+      pad.left = 56
+      pad.right = 56
     } else {
       pad.top = 64
       const bar = barRef.current?.getBoundingClientRect()
