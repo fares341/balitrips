@@ -286,12 +286,29 @@ export class HybridView {
     this.homeZoomMap = home.zoom
     map.setMinZoom?.(home.zoom - MIN_ZOOM_SLACK)
     const start = this.o.initial
+    const pitch = this.tilted ? this.o.settings.tiltOnEnter : 0
     map.jumpTo({
       center: start ? [start.lng, start.lat] : home.center,
-      zoom: start ? Math.max(start.zoom, home.zoom) : home.zoom,
-      pitch: this.tilted ? this.o.settings.tiltOnEnter : 0,
+      // a tilted view foreshortens the island, so come a little closer
+      zoom: start ? Math.max(start.zoom, home.zoom) : home.zoom + (pitch > 0 ? 0.3 : 0),
+      pitch,
       bearing: HOME_BEARING,
     })
+    if (start) return
+    // Centre the island in the area left free by the panel / sheet / unlock bar
+    // (cameraForBounds sized the zoom for that area but centres on the full box).
+    const p = this.pad
+    const canvas = map.getCanvas?.()
+    if (canvas) {
+      const W = canvas.clientWidth
+      const H = canvas.clientHeight
+      const dx = (p.left - p.right) / 2
+      const dy = (p.top - p.bottom) / 2
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        const c = map.unproject([W / 2 - dx, H / 2 - dy])
+        map.jumpTo({ center: [c.lng, c.lat] })
+      }
+    }
   }
 
   /** The engine script itself failed to load. */

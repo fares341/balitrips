@@ -189,6 +189,7 @@ export function MapApp(props: MapAppProps) {
   const [realState, setRealState] = useState<RealMapState>('idle')
   const [tilted, setTilted] = useState(true)
   const [tilesFailed, setTilesFailed] = useState(false)
+  const [attribOpen, setAttribOpen] = useState(false)
   const [noteHidden, setNoteHidden] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [bounds, setBounds] = useState<ViewBounds | null>(null)
@@ -1028,9 +1029,18 @@ export function MapApp(props: MapAppProps) {
 
           <div className="mp-notes">
             {mapShown && (
-              <p className="mp-attrib" lang="en" dir="ltr">
-                {attributionsFor(settings).join(' · ')}
-              </p>
+              <div className={attribOpen ? 'mp-attrib is-open' : 'mp-attrib'} lang="en" dir="ltr">
+                <button
+                  type="button"
+                  className="mp-attrib-btn"
+                  aria-expanded={attribOpen}
+                  aria-label="Map data sources"
+                  onClick={() => setAttribOpen((v) => !v)}
+                >
+                  i
+                </button>
+                <p>{attributionsFor(settings).join(' · ')}</p>
+              </div>
             )}
             {realBroken && !noteHidden && (
               <div className="mp-chipnote" role="status">

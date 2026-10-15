@@ -107,7 +107,7 @@ for (const [name, path, wait] of pages) {
             if (m) new Function('m', code)(m)
           }, fn)
           await page.waitForTimeout(5000)
-          await page.screenshot({ path: `${OUT}/${name}-${lang}-${w}-${tag}.png` })
+          await page.screenshot({ path: `${OUT}/${name}-${lang}-${w}-${tag}.png`, timeout: 120000 })
         }
       }
       const fonts = await page.evaluate(() =>

@@ -526,7 +526,7 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
         id: 'outside-free',
         type: 'fill',
         source: 'outside-free',
-        paint: { 'fill-color': '#06202c', 'fill-opacity': 0.55 },
+        paint: { 'fill-color': '#06202c', 'fill-opacity': 0.4 },
       },
       {
         id: 'free-zone-line',

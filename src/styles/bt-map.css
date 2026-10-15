@@ -955,6 +955,9 @@
   pointer-events: auto;
 }
 .mp-attrib {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin: 0;
   padding: 3px 8px;
   border-radius: 8px;
@@ -962,6 +965,26 @@
   color: rgba(255, 255, 255, 0.88);
   font-size: 10.5px;
   line-height: 1.4;
+  pointer-events: auto;
+}
+.mp-attrib p {
+  margin: 0;
+}
+/* phones: the sources sit behind an (i) button (OSMF guideline for small screens) */
+.mp-attrib-btn {
+  display: none;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--forest-ink);
+  font:
+    italic 700 13px/22px Georgia,
+    serif;
+  padding: 0;
+  cursor: pointer;
 }
 .mp-chipnote {
   display: flex;
@@ -1234,7 +1257,21 @@
   }
   .mp-attrib {
     font-size: 9.5px;
-    padding: 2px 6px;
+    padding: 2px;
+    border-radius: 999px;
+  }
+  .mp-attrib-btn {
+    display: block;
+  }
+  .mp-attrib p {
+    display: none;
+  }
+  .mp-attrib.is-open {
+    border-radius: 8px;
+    padding: 2px 8px 2px 2px;
+  }
+  .mp-attrib.is-open p {
+    display: block;
   }
   .mp-rb {
     gap: 5px;
