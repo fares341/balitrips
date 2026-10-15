@@ -14,7 +14,15 @@ import { and, inArray, lt, ne, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { activityLog, securityAlerts } from '@/db/schema'
 
+import { pruneAssistant } from '@/lib/assistant/store'
+
 import type { SecurityPruneJob } from '../queues'
+
+/** AI assistant conversations: ASSISTANT_RETENTION_DAYS, default 90. */
+export function assistantRetentionDays(): number {
+  const raw = Number.parseInt(process.env.ASSISTANT_RETENTION_DAYS ?? '', 10)
+  return Number.isFinite(raw) && raw >= 1 ? Math.min(raw, 3650) : 90
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const BATCH = 5000
@@ -55,7 +63,16 @@ export async function handleSecurityPruneJob(job: SecurityPruneJob) {
     )
     .returning({ id: securityAlerts.id })
 
-  const summary = { retentionDays: days, activityDeleted, alertsDeleted: alerts.length }
+  // Same daily job: assistant chats past their retention (messages and
+  // proposed actions cascade), and the old usage counters.
+  const assistant = await pruneAssistant(assistantRetentionDays())
+
+  const summary = {
+    retentionDays: days,
+    activityDeleted,
+    alertsDeleted: alerts.length,
+    assistantConversationsDeleted: assistant.conversations,
+  }
   console.info('[security] prune complete', summary)
   return summary
 }

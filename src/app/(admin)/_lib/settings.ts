@@ -161,6 +161,38 @@ export const mapSchema = z.object({
   tiltOnEnter: z.number().int().min(TILT_RANGE.min).max(TILT_RANGE.max),
 }) satisfies z.ZodType<StoredMapSettings, unknown>
 
+/**
+ * The AI assistants (Studio → Assistant → Settings, admin only).
+ *
+ * Model ids are OpenRouter ids (`vendor/model`). Empty means "use the server
+ * default" (OPENROUTER_MODEL / OPENROUTER_FALLBACK_MODEL, else the shipped
+ * ids in src/lib/assistant/config.ts). The API key is NOT here: it is a
+ * secret and lives only in the server environment (OPENROUTER_API_KEY).
+ */
+const modelId = z
+  .string()
+  .trim()
+  .max(100)
+  .regex(
+    /^$|^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._:-]*$/i,
+    'Use an OpenRouter id like vendor/model',
+  )
+
+export const assistantSchema = z.object({
+  publicEnabled: z.boolean().default(true),
+  studioEnabled: z.boolean().default(true),
+  model: modelId.default(''),
+  fallbackModel: modelId.default(''),
+  /** Visitor messages per IP per day (UTC). */
+  dailyMessagesPerIp: z.number().int().min(1).max(2000).default(40),
+  /** All assistant spend per day, USD. 0 switches both assistants off. */
+  dailyBudgetUsd: z.number().min(0).max(1000).default(5),
+  /** First bubble in the public chat, per locale; empty = the built-in greeting. */
+  welcome: localizedText,
+})
+
+export type AssistantSetting = z.infer<typeof assistantSchema>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -180,6 +212,7 @@ export type SettingKey =
   | 'contact'
   | 'security'
   | 'map'
+  | 'assistant'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -188,6 +221,7 @@ export interface SettingsShape {
   contact: ContactSetting
   security: SecuritySetting
   map: StoredMapSettings
+  assistant: AssistantSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -248,6 +282,15 @@ export const SETTING_DEFAULTS: SettingsShape = {
     autoBan: true,
   },
   map: { ...STORED_MAP_DEFAULTS },
+  assistant: {
+    publicEnabled: true,
+    studioEnabled: true,
+    model: '',
+    fallbackModel: '',
+    dailyMessagesPerIp: 40,
+    dailyBudgetUsd: 5,
+    welcome: { en: '', ar: '', id: '' },
+  },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -260,6 +303,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   contact: contactSchema,
   security: securitySchema,
   map: mapSchema,
+  assistant: assistantSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,
