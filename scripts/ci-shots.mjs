@@ -73,6 +73,25 @@ for (const [name, path, wait] of pages) {
           sky: st.sky,
           terrain: st.terrain,
           rendered: m.queryRenderedFeatures().length,
+          canvas: (() => {
+            const c = m.getCanvas()
+            const r = c.getBoundingClientRect()
+            const chain = []
+            for (let el = c; el && el !== document.body; el = el.parentElement) {
+              const cs = getComputedStyle(el)
+              chain.push(
+                `${el.tagName}.${el.className}|op=${cs.opacity}|vis=${cs.visibility}|disp=${cs.display}|z=${cs.zIndex}|${Math.round(el.getBoundingClientRect().width)}x${Math.round(el.getBoundingClientRect().height)}`,
+              )
+            }
+            const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+            return {
+              w: c.width,
+              h: c.height,
+              rect: [r.left, r.top, r.width, r.height],
+              chain,
+              top: top && `${top.tagName}.${top.className}`,
+            }
+          })(),
         }
       })
       log.push(`${path} ${w}: MAP ${JSON.stringify(info).slice(0, 3000)}`)
