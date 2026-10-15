@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import { isElevated } from '@/lib/auth/roles'
 import { getSession } from '@/lib/auth/session'
 
@@ -35,9 +37,9 @@ export default async function AdminNotFound() {
             {t('shell.no_access_body', { email: session?.user.email ?? '' })}
           </p>
           <p style={{ marginBlockStart: 16 }}>
-            <a href="/account" className="btn btn-orange">
+            <Link href="/account" className="a-btn">
               {t('shell.no_access_link')}
-            </a>
+            </Link>
           </p>
         </>
       )}
