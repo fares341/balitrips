@@ -104,6 +104,8 @@ for (const [name, path, wait] of pages) {
             "m.getLayer('outside-free')&&m.setLayoutProperty('outside-free','visibility','none');m.jumpTo({center:[115.395,-8.255],zoom:14,pitch:50,bearing:20})",
           ],
           ['coast', 'm.jumpTo({center:[115.2655,-8.688],zoom:15.5,pitch:45,bearing:0})'],
+          ['canggu14', 'm.jumpTo({center:[115.128,-8.655],zoom:14,pitch:45,bearing:0})'],
+          ['canggu16', 'm.jumpTo({center:[115.1305,-8.6595],zoom:16.3,pitch:40,bearing:0})'],
           ['river', 'm.jumpTo({center:[115.2455,-8.497],zoom:16,pitch:45,bearing:0})'],
         ]) {
           await page.evaluate((code) => {
