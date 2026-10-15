@@ -46,8 +46,9 @@ jobs:
       # Real photos of the seeded places (Wikimedia Commons, see the manifest),
       # so the shots show what production shows. Not fatal if Commons is slow.
       - name: Import place photos
-        run: pnpm exec tsx scripts/import-photos.ts
+        run: pnpm exec tsx scripts/import-photos.ts --only=map_places
         continue-on-error: true
+        timeout-minutes: 8
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site

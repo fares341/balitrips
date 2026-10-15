@@ -24,6 +24,7 @@
  *
  *   pnpm tsx scripts/import-photos.ts            # import
  *   pnpm tsx scripts/import-photos.ts --dry-run  # resolve and report only
+ *   pnpm tsx scripts/import-photos.ts --only=map_places  # just these tables
  */
 
 import { createHash } from 'node:crypto'
@@ -49,6 +50,12 @@ import { locales, type Locale } from '@/i18n/config'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dryRun = process.argv.includes('--dry-run')
+/** `--only=map_places,landmarks`: import just these tables (CI previews). */
+const only = process.argv
+  .find((arg) => arg.startsWith('--only='))
+  ?.slice('--only='.length)
+  .split(',')
+  .filter(Boolean)
 
 /** Wikimedia's own resizer. Far kinder than pulling 30 MB originals. */
 const TARGET_WIDTH = 2048
@@ -124,9 +131,9 @@ async function download(url: string): Promise<{ bytes: Uint8Array; mime: string 
 }
 
 async function main(): Promise<void> {
-  const entries = JSON.parse(
-    readFileSync(resolve(root, 'scripts/photo-manifest.json'), 'utf8'),
-  ) as Entry[]
+  const entries = (
+    JSON.parse(readFileSync(resolve(root, 'scripts/photo-manifest.json'), 'utf8')) as Entry[]
+  ).filter((entry) => only === undefined || only.includes(entry.table))
 
   console.log(`\n  ${entries.length} photographs to import${dryRun ? ' (dry run)' : ''}\n`)
 
