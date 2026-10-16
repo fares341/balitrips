@@ -3962,3 +3962,11 @@ html {
     display: block;
   }
 }
+
+/* Banner title on one line where it fits, as the package's `.banner h1`. */
+.bt-banner-title {
+  max-width: none;
+}
+.bt-banner-sub {
+  max-width: 60ch;
+}
