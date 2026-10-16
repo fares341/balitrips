@@ -175,7 +175,7 @@ export function HeroVideo({
       <div className="wrap hv-grid">
         <div className="hv-copy">
           {active !== undefined && (
-            <span className="hv-place" aria-live="polite">
+            <span className="hv-place">
               <i aria-hidden="true" />
               <span className="hv-pl-in">
                 <b key={active.id}>{active.label}</b>
