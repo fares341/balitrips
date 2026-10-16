@@ -18,10 +18,13 @@ import { users } from '@/db/schema'
 import { enabledSocialProviders } from '@/lib/auth/server'
 import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { getUser } from '@/lib/auth/session'
+import { Icon, type IconName } from '@/components/ui'
+import { Link } from '@/i18n/routing'
 import { BLOCKED_MESSAGE_KEYS, type BlockedReason } from '@/lib/security/require'
 
 import { toLocale } from '../_seo-hreflang'
 import { accountMetadata } from './_lib/meta'
+import { listFavorites, listSchedules, listTripDays } from './_lib/queries'
 import { ProfileForm } from './profile-form'
 import { SignedOutPane } from './signed-out-pane'
 import { VerifyEmailNotice } from './verify-email-notice'
@@ -113,6 +116,22 @@ export default async function AccountProfilePage({
     .limit(1)
 
   const memberSince = rows[0]?.createdAt ?? null
+
+  // Overview (v3 account.html): real counts, each tile opens its own page.
+  const [favorites, schedules, tripDays] = await Promise.all([
+    listFavorites(user.id).catch(() => []),
+    listSchedules(user.id, locale).catch(() => []),
+    listTripDays(user.id).catch(() => []),
+  ])
+  const today = new Date().toISOString().slice(0, 10)
+  const upcoming = tripDays
+    .filter((day) => day.date !== null && day.date >= today)
+    .reduce((sum, day) => sum + day.items.length, 0)
+  const stats: { href: string; icon: IconName; label: string; value: number }[] = [
+    { href: '/account/trip', icon: 'cal', label: t('acct4_s_upcoming'), value: upcoming },
+    { href: '/account/schedules', icon: 'doc', label: t('acct4_s_files'), value: schedules.length },
+    { href: '/account/favorites', icon: 'heart', label: t('acct4_s_fav'), value: favorites.length },
+  ]
   // حساب الجوال وحده (الوثيقة 3.1): بريده بديل داخلي لا يُعرض ولا يُطلب تأكيده.
   const phoneOnly = isPlaceholderEmail(user.email)
   const label = user.name ?? (phoneOnly ? (user.phone ?? '') : user.email)
@@ -135,6 +154,28 @@ export default async function AccountProfilePage({
       {rows[0]?.phone && rows[0].phoneVerifiedAt === null ? (
         <VerifyPhoneNotice phone={rows[0].phone} />
       ) : null}
+      <div className="acct-hello">
+        <span className="bt-avatar" aria-hidden="true">
+          {initial}
+        </span>
+        <span>
+          <b>{t('acct4_hello', { name: label })}</b>
+          {!phoneOnly && <small dir="ltr">{user.email}</small>}
+        </span>
+      </div>
+      <ul className="acct-stats" role="list">
+        {stats.map((stat) => (
+          <li key={stat.href}>
+            <Link href={stat.href}>
+              <small className="muted">
+                <Icon name={stat.icon} size={14} /> {stat.label}
+              </small>
+              <b dir="ltr">{stat.value}</b>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
       <div className="bt-acct-sechead">
         <h1 id="bt-acct-profile-h">{t('acct_profile_t')}</h1>
       </div>

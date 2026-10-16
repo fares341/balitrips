@@ -393,3 +393,56 @@
     border-radius: 16px;
   }
 }
+
+/* Overview strip (v3 account.html): greeting card + real counts. */
+.acct-hello {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--forest);
+  color: #fff;
+  margin-bottom: 14px;
+}
+.acct-hello .bt-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  background: var(--palm);
+  color: var(--forest-ink);
+}
+.acct-hello b {
+  display: block;
+  font-size: 18px;
+}
+.acct-hello small {
+  opacity: 0.8;
+}
+.acct-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+}
+.acct-stats a {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--sh-1);
+  color: var(--forest);
+}
+.acct-stats small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.acct-stats b {
+  font: 800 24px var(--f-en);
+}

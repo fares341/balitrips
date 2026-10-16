@@ -251,7 +251,7 @@ for (const [name, target] of SWEEP) {
                 })
                 .every((i) => i.complete),
             null,
-            { timeout: 12000 },
+            { timeout: 6000 },
           )
           .catch(() => log.push(`sweep ${path} ${w}: images still loading`))
         await page.waitForTimeout(1500)
