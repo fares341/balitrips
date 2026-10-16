@@ -52,6 +52,7 @@ import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
+import { ItineraryCard } from '@/components/cards'
 import { alternates } from '../_meta'
 import { BuyItineraryButton } from './buy-button'
 import { formatPrice } from '../../_ui/price'
@@ -146,7 +147,12 @@ export default async function ItineraryDetailPage({
   const itinerary = await loadItinerary(slug)
   if (!itinerary) notFound()
 
-  const [t, format] = await Promise.all([getTranslations({ locale }), getFormatter({ locale })])
+  const [t, format, all] = await Promise.all([
+    getTranslations({ locale }),
+    getFormatter({ locale }),
+    listItineraries(),
+  ])
+  const others = all.filter((other) => other.id !== itinerary.id).slice(0, 3)
 
   const name = pick(itinerary.name, locale, itinerary.slug)
   const blurb = pickOptional(itinerary.blurb, locale)
@@ -599,6 +605,22 @@ export default async function ItineraryDetailPage({
           </BuyItineraryButton>
         </aside>
       </div>
+
+      {/* Other itineraries (v3 itinerary.html) — real ones, photo cards */}
+      {others.length > 0 && (
+        <section className="sec bg-ivory2" aria-labelledby="it-others">
+          <div className="wrap">
+            <h2 className="h2" id="it-others" style={{ marginBottom: 20 }}>
+              {t('it4_others')}
+            </h2>
+            <div className="grid pk-grid">
+              {others.map((other) => (
+                <ItineraryCard key={other.id} itinerary={other} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   )
 }
