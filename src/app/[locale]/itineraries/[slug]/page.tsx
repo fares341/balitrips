@@ -41,7 +41,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { HOME_HREF } from '@/components/layout'
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '@/components/layout/contact-config'
-import { Accordion, Breadcrumbs, LinkButton } from '@/components/shared'
+import { Accordion, Breadcrumbs } from '@/components/shared'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
@@ -53,6 +53,7 @@ import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
 import { alternates } from '../_meta'
+import { BuyItineraryButton } from './buy-button'
 import { formatPrice } from '../../_ui/price'
 import { LinkedPlaces } from './linked-places'
 
@@ -74,18 +75,6 @@ const FAQ_KEYS = [
   // Asked only while the driver service is on (lib/features.ts).
   ...(FEATURES.driver ? [{ q: 'it_faq_driver_q', a: 'it_faq_driver_a' } as const] : []),
 ] as const
-
-/**
- * Where the buy CTA sends the visitor.
- *
- * The cart is server-owned and is being built separately; this is the seam.
- * The selection travels as query parameters so nothing the visitor chose is
- * lost on the way, and a cart that ignores them still opens correctly.
- */
-function addToTripHref(slug: string): string {
-  const query = new URLSearchParams({ add: 'itinerary', slug })
-  return `/my-trip?${query.toString()}`
-}
 
 /**
  * `generateMetadata` and the page body both need the record. React's `cache`
@@ -301,9 +290,9 @@ export default async function ItineraryDetailPage({
                 <strong className="bt-money">{price}</strong>
                 <span>{t('sub_once')}</span>
               </span>
-              <LinkButton href={addToTripHref(itinerary.slug)} variant="orange">
+              <BuyItineraryButton itineraryId={itinerary.id} className="btn btn-primary">
                 {t('ih_buy')}
-              </LinkButton>
+              </BuyItineraryButton>
             </div>
           </div>
         </div>
@@ -492,9 +481,9 @@ export default async function ItineraryDetailPage({
                   <span className="muted" style={{ fontSize: 13.5 }}>
                     {t('id_locked_b', { count: lockedDays.length })}
                   </span>
-                  <LinkButton href={addToTripHref(itinerary.slug)} variant="orange">
+                  <BuyItineraryButton itineraryId={itinerary.id} className="btn btn-primary">
                     {t('ih_buy')}
-                  </LinkButton>
+                  </BuyItineraryButton>
                 </div>
               )}
             </div>
@@ -601,14 +590,13 @@ export default async function ItineraryDetailPage({
             navigated afterwards; with a server-owned cart the add IS the
             navigation, so a second button would be the same link twice.
           */}
-          <LinkButton
-            href={addToTripHref(itinerary.slug)}
-            variant="orange"
-            block
+          <BuyItineraryButton
+            itineraryId={itinerary.id}
+            className="btn btn-primary btn-block"
             style={{ marginTop: 16 }}
           >
             {t('ih_buy')}
-          </LinkButton>
+          </BuyItineraryButton>
         </aside>
       </div>
     </main>

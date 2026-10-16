@@ -323,12 +323,18 @@ if (!ONLY.length || ONLY.includes('account')) {
     const itinerarySlug = itinerary?.split('/').pop()
     if (itinerarySlug) {
       await page
-        .goto(`${BASE}/ar/my-trip?add=itinerary&slug=${itinerarySlug}`, {
+        .goto(`${BASE}/ar/itineraries/${itinerarySlug}`, {
           waitUntil: 'networkidle',
           timeout: 60000,
         })
         .catch(() => null)
-      log.push(`account: added ${itinerarySlug}, at ${page.url()}`)
+      await page
+        .locator('aside button.btn-primary')
+        .first()
+        .click()
+        .catch((e) => log.push(`account: buy click ${e.message}`))
+      await page.waitForURL(/\/my-trip/, { timeout: 20000 }).catch(() => {})
+      log.push(`account: bought ${itinerarySlug}, at ${page.url()}`)
     }
     const ACCOUNT = [
       ['acct', '/ar/account'],
