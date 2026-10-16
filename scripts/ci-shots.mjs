@@ -241,19 +241,20 @@ for (const [name, target] of SWEEP) {
           window.scrollTo(0, 0)
         })
         // every image decoded (lazy ones were triggered by the scroll above)
-        await page
-          .waitForFunction(
-            () =>
-              [...document.images]
-                .filter((i) => {
-                  const r = i.getBoundingClientRect()
-                  return r.width > 0 && r.right > 0 && r.left < innerWidth
-                })
-                .every((i) => i.complete),
-            null,
-            { timeout: 6000 },
-          )
-          .catch(() => log.push(`sweep ${path} ${w}: images still loading`))
+        if (shoot)
+          await page
+            .waitForFunction(
+              () =>
+                [...document.images]
+                  .filter((i) => {
+                    const r = i.getBoundingClientRect()
+                    return r.width > 0 && r.right > 0 && r.left < innerWidth
+                  })
+                  .every((i) => i.complete),
+              null,
+              { timeout: 6000 },
+            )
+            .catch(() => log.push(`sweep ${path} ${w}: images still loading`))
         await page.waitForTimeout(1500)
         const ov = await page.evaluate(() => {
           const iw = innerWidth
