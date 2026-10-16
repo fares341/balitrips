@@ -236,7 +236,7 @@ for (const [name, target] of SWEEP) {
         await page.evaluate(async () => {
           for (let y = 0; y < document.documentElement.scrollHeight; y += 600) {
             window.scrollTo(0, y)
-            await new Promise((r) => setTimeout(r, 60))
+            await new Promise((r) => setTimeout(r, 120))
           }
           window.scrollTo(0, 0)
         })
@@ -371,6 +371,7 @@ if (!ONLY.length || ONLY.includes('account')) {
 // Home hero: a few frames over time (video slider), phone + desktop.
 for (const [w, h] of [
   [390, 844],
+  [768, 1024],
   [1440, 900],
 ]) {
   if (ONLY.length && !ONLY.includes('home')) break

@@ -7,6 +7,8 @@
  *  - the cards rise in, one after another, the first time the list is seen;
  *  - one card at a time is highlighted (`data-on`), every 2.8 s, while the
  *    list is on screen; hovering or focusing a card highlights it and holds.
+ *  - the cards are visible by default; they are hidden for the rise-in only
+ *    once the script has armed an observer (no JS / reduced motion: shown).
  *  - prefers-reduced-motion: the cards are simply there, the first one lit.
  *
  * The cards themselves are server-rendered links (children); this wrapper
@@ -38,7 +40,8 @@ export function SvcCards({ labelledBy, children }: { labelledBy: string; childre
     }
     set(0)
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduced || typeof IntersectionObserver === 'undefined') {
       list.setAttribute('data-in', '')
       return
     }
@@ -53,16 +56,26 @@ export function SvcCards({ labelledBy, children }: { labelledBy: string; childre
           if (!hold) set((index + 1) % cards.length)
         }, STEP_MS)
     }
+    // Only hide the cards (to rise them in) when the list is still below the
+    // fold; already on screen or scrolled past, they simply stay visible.
+    if (list.getBoundingClientRect().top > window.innerHeight) list.setAttribute('data-armed', '')
+    // Any pixel of the list, or of any single card, on screen reveals it
+    // (no ratio to reach, however tall the grid is at a given width).
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          list.setAttribute('data-in', '')
-          start()
-        } else stop()
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) list.setAttribute('data-in', '')
+          // the highlight cycle runs only while the list is on screen
+          if (entry.target === list) {
+            if (entry.isIntersecting) start()
+            else stop()
+          }
+        }
       },
-      { threshold: 0.12 },
+      { threshold: 0 },
     )
     observer.observe(list)
+    cards.forEach((card) => observer.observe(card))
 
     const cleanups = cards.map((card, i) => {
       const enter = () => {

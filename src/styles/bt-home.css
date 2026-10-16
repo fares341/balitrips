@@ -445,14 +445,25 @@
   padding-inline-end: 18px;
   border-radius: 24px;
   align-items: center;
+}
+/*
+ * Rise-in: visible by default (no JS, no IntersectionObserver, reduced
+ * motion). The script arms the list (`data-armed`) only when it is still
+ * below the fold and an observer is watching it; `data-in` then plays it.
+ */
+.home-v3 .svc[data-armed]:not([data-in]) .ncard {
   opacity: 0;
   transform: translateY(26px);
 }
-.home-v3 .svc[data-in] .ncard {
-  animation: svc-in 0.7s var(--ease) forwards;
+.home-v3 .svc[data-armed][data-in] .ncard {
+  animation: svc-in 0.7s var(--ease) both;
   animation-delay: calc(var(--i) * 0.09s);
 }
 @keyframes svc-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
   to {
     opacity: 1;
     transform: none;
