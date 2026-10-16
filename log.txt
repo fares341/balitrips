@@ -1,0 +1,393 @@
+/ar 1440: FAILED http://localhost:3000/ar/account/favorites?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/my-trip?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/activities?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/blog?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/account/favorites?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/map?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/activities?_rsc=idSD2LsV636cOitU net::ERR_ABORTED
+/ar 1440: FAILED http://localhost:3000/ar/blog?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 1440: diag {"webgl":true,"maplibre":"undefined","canvases":0}
+/ar 1440: fonts loaded: jakarta 200 800, arabicFont 400, arabicFont 700, arabicFont 800
+/ar 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar 390: FAILED http://localhost:3000/ar/my-trip?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/account/favorites?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/activities?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/blog?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/packages?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/account?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/my-trip?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/account/favorites?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/blog?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/itineraries?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/activities?_rsc=idSD2LsV636cOitU net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/packages?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: FAILED http://localhost:3000/ar/account?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED
+/ar 390: diag {"webgl":true,"maplibre":"undefined","canvases":0}
+/ar 390: fonts loaded: jakarta 200 800, arabicFont 400, arabicFont 700, arabicFont 800
+/ar 390: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar 390: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en 1440: FAILED http://localhost:3000/en/my-trip?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/account/favorites?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/blog?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/my-trip?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/account/favorites?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/map?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/activities?_rsc=M9hFyQZaG4EWtIWu net::ERR_ABORTED
+/en 1440: FAILED http://localhost:3000/en/blog?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 1440: diag {"webgl":true,"maplibre":"undefined","canvases":0}
+/en 1440: fonts loaded: jakarta 200 800
+/en 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en 390: FAILED http://localhost:3000/en/account/favorites?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/my-trip?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/map?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/activities?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/blog?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/packages?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/itineraries?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/account?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/my-trip?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/blog?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 390: FAILED http://localhost:3000/en/packages?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED
+/en 390: diag {"webgl":true,"maplibre":"undefined","canvases":0}
+/en 390: fonts loaded: jakarta 200 800, arabicFont 700
+/ar/map 1440: FAILED http://localhost:3000/ar/account/favorites?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/my-trip?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/activities?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/blog?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/plans?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/map?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/account/favorites?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/my-trip?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/blog?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/plans?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 1440: FAILED http://localhost:3000/ar/activities?_rsc=_OvLFoF_ZHtXqPcA net::ERR_ABORTED
+/ar/map 1440: warning [.WebGL-0x295c00cb9600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+/ar/map 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 1440: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/ar/map 1440: fonts loaded: jakarta 200 800, arabicFont 400, arabicFont 700, arabicFont 800
+/ar/map 390: FAILED http://localhost:3000/ar/account/favorites?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/my-trip?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/activities?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/blog?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/packages?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/itineraries?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/explore?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/plans?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/account?_rsc=2LZtDap-f6xTu6_z net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/blog?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/activities?_rsc=_OvLFoF_ZHtXqPcA net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/map?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/itineraries?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 390: FAILED http://localhost:3000/ar/packages?_rsc=AmD3gBL9RxkY4Qeb net::ERR_ABORTED
+/ar/map 390: warning [.WebGL-0x295c0015d000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+/ar/map 390: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/ar/map 390: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/ar/map 390: fonts loaded: jakarta 200 800, arabicFont 400, arabicFont 700
+/en/map 1440: FAILED http://localhost:3000/en/account/favorites?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 1440: FAILED http://localhost:3000/en/activities?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 1440: FAILED http://localhost:3000/en/blog?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 1440: FAILED http://localhost:3000/en/plans?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 1440: FAILED http://localhost:3000/en/activities?_rsc=tgwEd0jA8UeirIHH net::ERR_ABORTED
+/en/map 1440: FAILED http://localhost:3000/en/blog?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 1440: warning [.WebGL-0x295c0012e800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+/en/map 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/10/838/538.png net::ERR_ABORTED
+/en/map 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 1440: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/en/map 1440: fonts loaded: jakarta 200 800
+/en/map 390: FAILED http://localhost:3000/en/account/favorites?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/my-trip?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/activities?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/blog?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/itineraries?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/packages?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/account?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/explore?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/plans?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/account/favorites?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/my-trip?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/map?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/blog?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/itineraries?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/packages?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/plans?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: FAILED http://localhost:3000/en/account?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map 390: warning [.WebGL-0x295c01098000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+/en/map 390: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map 390: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/en/map 390: fonts loaded: jakarta 200 800, arabicFont 400, arabicFont 700
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/account/favorites?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/my-trip?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/activities?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/blog?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/plans?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/account/favorites?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/map?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/blog?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/activities?_rsc=tgwEd0jA8UeirIHH net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED http://localhost:3000/en/plans?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/en/map?debugmap=1 1440: MAP {"zoom":8.86253689117414,"pitch":50,"center":{"lng":115.14495849609375,"lat":-8.526700610450163},"loaded":true,"tilesLoaded":true,"layers":"land,landcover-farm,landcover-grass,landcover-wood,landcover-wetland,landcover-sand,beach-grain,beach-edge,landuse-town,park,water,water-inland,coast-shallows,coast-surf,water-texture,water-shore,waterway-casing,waterway,hillshade,road-path,road-minor,road-tertiary,road-secondary,road-primary,buildings-3d,osm-road-names,osm-water-names,osm-waterway-names,osm-poi,osm-peaks,osm-places,outside-free,free-zone-line","sky":{"sky-color":"#2f74c2","horizon-color":"#f3d9b1","fog-color":"#cfe0ea","sky-horizon-blend":0.55,"horizon-fog-blend":0.6,"fog-ground-blend":0.82,"atmosphere-blend":["interpolate",["linear"],["zoom"],7,1,12,0.4,14,0]},"terrain":{"source":"terrain","exaggeration":1.5},"rendered":353,"canvas":{"w":1040,"h":612,"rect":[400,295.59375,1040,612],"chain":["CANVAS.maplibregl-canvas|op=1|vis=visible|disp=block|z=auto|1040x612","DIV.maplibregl-canvas-container maplibregl-interactive maplibregl-touch-drag-pan maplibregl-touch-zoom-rotate|op=1|vis=visible|disp=block|z=auto|1040x0","DIV.mp-canvas maplibregl-map|op=1|vis=visible|disp=block|z=0|1040x612","DIV.mp-view is-map is-regions|op=1|vis=visible|disp=block|z=auto|1040x612","DIV.mp-col|op=1|vis=visible|disp=block|z=auto|1040x612","SECTION.mp-app|op=1|vis=visible|disp=grid|z=auto|1440x612","DIV.|op=1|vis=visible|disp=block|z=auto|1440x782"],"top":"CANVAS.maplibregl-canvas"}}
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/13/6720/4290.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/13/6720/4291.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/12/3360/2145.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26884/17139.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26884/17136.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26884/17140.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13446/8570.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13446/8569.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17177.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17178.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13439/8589.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13439/8588.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13436/8589.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13436/8588.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13436/8588.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13436/8589.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13439/8588.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13439/8589.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6719/4293.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6718/4293.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6719/4292.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6718/4292.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/12/3360/2147.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/12/3360/2146.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/12/3358/2147.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/12/3358/2146.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/11/1680/1072.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/11/1679/1072.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning cannot calculate elevation if elevation maxzoom > source.maxzoom
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17177.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17178.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17177.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26877/17178.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13433/8587.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/14/13433/8588.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13433/8587.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13433/8588.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6717/4294.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6717/4293.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6717/4292.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6714/4294.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/12/3356/2146.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/13/6716/4292.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/14/13433/8588.pbf net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26875/17159.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/15/26875/17159.png net::ERR_ABORTED
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 1440: fonts loaded: jakarta 200 800
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/account/favorites?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/my-trip?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/activities?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/blog?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/itineraries?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/packages?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/explore?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/plans?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/account?_rsc=Rmp5neRNbooxZWei net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/account/favorites?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/map?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/my-trip?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/itineraries?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/activities?_rsc=tgwEd0jA8UeirIHH net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/blog?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/explore?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/account?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/packages?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED http://localhost:3000/en/plans?_rsc=D695Jz8f05x1uhm8 net::ERR_ABORTED
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/jungle-pool.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/green-dress.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/temple-gate.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/flatlay.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/jeep.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/penida-cove.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/swing.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/map/bali-satellite.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/brand/ulun-danu.jpg was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: warning The resource http://localhost:3000/_next/static/chunks/2z9hoh3pi5__x.css was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.
+/en/map?debugmap=1 390: diag {"webgl":true,"maplibre":"object","canvases":1,"mapClass":"mp-view is-map is-regions"}
+/en/map?debugmap=1 390: fonts loaded: jakarta 200 800, arabicFont 700
+/en/map?debugmap=1 390: FAILED https://s3.amazonaws.com/elevation-tiles-prod/terrarium/8/209/135.png net::ERR_ABORTED
+/en/map?debugmap=1 390: FAILED https://tiles.openfreemap.org/planet/20261011_080001_pt/8/209/135.pbf net::ERR_ABORTED
+sweep /ar 390: images still loading
+sweep home ar: /ar -> HTTP 200 http://localhost:3000/ar
+sweep /ar 1440: images still loading
+sweep /ar 768: images still loading
+sweep /en 390: images still loading
+sweep home en: /en -> HTTP 200 http://localhost:3000/en
+sweep /en 1440: images still loading
+sweep /en 768: images still loading
+sweep services ar: /ar/services -> HTTP 200 http://localhost:3000/ar/services
+sweep services en: /en/services -> HTTP 200 http://localhost:3000/en/services
+sweep /ar/explore 390: images still loading
+sweep explore ar: /ar/explore -> HTTP 200 http://localhost:3000/ar/explore
+sweep region ar: /ar/explore/south -> HTTP 200 http://localhost:3000/ar/explore/south
+sweep help ar: /ar/help -> HTTP 200 http://localhost:3000/ar/help
+sweep /ar/activities 390: images still loading
+sweep activities ar: /ar/activities -> HTTP 200 http://localhost:3000/ar/activities
+sweep activities en: /en/activities -> HTTP 200 http://localhost:3000/en/activities
+sweep activity ar: /ar/activities/ubud-jungle-spa-ritual -> HTTP 200 http://localhost:3000/ar/activities/ubud-jungle-spa-ritual
+sweep activity en: /en/activities/ubud-jungle-spa-ritual -> HTTP 200 http://localhost:3000/en/activities/ubud-jungle-spa-ritual
+sweep itineraries ar: /ar/itineraries -> HTTP 200 http://localhost:3000/ar/itineraries
+sweep itinerary ar: /ar/itineraries/5-day-itinerary -> HTTP 200 http://localhost:3000/ar/itineraries/5-day-itinerary
+sweep packages ar: /ar/packages -> HTTP 200 http://localhost:3000/ar/packages
+sweep packages en: /en/packages -> HTTP 200 http://localhost:3000/en/packages
+sweep package ar: /ar/packages/driver-itinerary -> HTTP 200 http://localhost:3000/ar/packages/driver-itinerary
+sweep place ar: /ar/places/canggu -> HTTP 200 http://localhost:3000/ar/places/canggu
+sweep custom ar: /ar/custom -> HTTP 200 http://localhost:3000/ar/custom
+sweep my-trip ar: /ar/my-trip -> HTTP 200 http://localhost:3000/ar/my-trip
+sweep my-trip en: /en/my-trip -> HTTP 200 http://localhost:3000/en/my-trip
+sweep checkout ar: /ar/checkout -> HTTP 200 http://localhost:3000/ar/checkout
+sweep checkout en: /en/checkout -> HTTP 200 http://localhost:3000/en/checkout
+sweep account ar: /ar/account -> HTTP 200 http://localhost:3000/ar/account
+sweep signin ar: /ar/account?signin=1 -> HTTP 200 http://localhost:3000/ar/account?signin=1
+sweep register ar: /ar/register -> HTTP 200 http://localhost:3000/ar/register
+sweep forgot ar: /ar/forgot-password -> HTTP 200 http://localhost:3000/ar/forgot-password
+sweep search ar: /ar/search?q=ubud -> HTTP 200 http://localhost:3000/ar/search?q=ubud
+sweep search-empty ar: /ar/search?q=zzqxv -> HTTP 200 http://localhost:3000/ar/search?q=zzqxv
+sweep blog ar: /ar/blog -> HTTP 200 http://localhost:3000/ar/blog
+sweep article ar: /ar/blog/a-respectful-guide-to-balis-temples -> HTTP 200 http://localhost:3000/ar/blog/a-respectful-guide-to-balis-temples
+sweep about ar: /ar/about -> HTTP 200 http://localhost:3000/ar/about
+sweep contact ar: /ar/contact -> HTTP 200 http://localhost:3000/ar/contact
+sweep faq ar: /ar/faq -> HTTP 200 http://localhost:3000/ar/faq
+sweep privacy ar: /ar/privacy -> HTTP 200 http://localhost:3000/ar/privacy
+sweep refund ar: /ar/refund -> HTTP 200 http://localhost:3000/ar/refund
+sweep events ar: /ar/events -> HTTP 200 http://localhost:3000/ar/events
+sweep plans ar: /ar/plans -> HTTP 200 http://localhost:3000/ar/plans
+sweep reviews ar: /ar/reviews -> HTTP 200 http://localhost:3000/ar/reviews
+sweep driver ar: /ar/driver -> HTTP 404 http://localhost:3000/ar/driver
+sweep 404 ar: /ar/no-such-page-xyz -> HTTP 404 http://localhost:3000/ar/no-such-page-xyz
+account: after sign-up at http://localhost:3000/ar/account
+account: bought 5-day-itinerary, at http://localhost:3000/ar/my-trip
+account acct 390: HTTP 200 http://localhost:3000/ar/account
+account acct 1440: HTTP 200 http://localhost:3000/ar/account
+account acct-trip 390: HTTP 200 http://localhost:3000/ar/account/trip
+account acct-trip 1440: HTTP 200 http://localhost:3000/ar/account/trip
+account acct-files 390: HTTP 200 http://localhost:3000/ar/account/schedules
+account acct-files 1440: HTTP 200 http://localhost:3000/ar/account/schedules
+account acct-fav 390: HTTP 200 http://localhost:3000/ar/account/favorites
+account acct-fav 1440: HTTP 200 http://localhost:3000/ar/account/favorites
+account acct-notif 390: HTTP 200 http://localhost:3000/ar/account/notifications
+account acct-notif 1440: HTTP 200 http://localhost:3000/ar/account/notifications
+account my-trip-in 390: HTTP 200 http://localhost:3000/ar/my-trip
+account my-trip-in 1440: HTTP 200 http://localhost:3000/ar/my-trip
+account checkout-in 390: HTTP 200 http://localhost:3000/ar/checkout
+account checkout-in 1440: HTTP 200 http://localhost:3000/ar/checkout
+hero 390: hero-penida.webm paused=true t=6.9 rs=4 | hero-rice.webm paused=false t=3.1 rs=4 | hero-uluwatu.webm paused=true t=0.0 rs=0 | hero-ulundanu.webm paused=true t=0.0 rs=0
+hero 768: hero-penida.webm paused=true t=6.9 rs=4 | hero-rice.webm paused=false t=3.5 rs=4 | hero-uluwatu.webm paused=true t=0.0 rs=0 | hero-ulundanu.webm paused=true t=0.0 rs=0
+hero 1440: hero-penida.webm paused=false t=4.9 rs=4 | hero-rice.webm paused=false t=4.9 rs=4 | hero-uluwatu.webm paused=false t=4.8 rs=4 | hero-ulundanu.webm paused=false t=4.9 rs=4
+phone ar: pins 2, tapped true
+phone ar: details http://localhost:3000/ar/places/ubud mini=pl-mini is-ready
+phone ar: list rows 4 overflow false
+phone en: pins 2, tapped true
+phone en: details http://localhost:3000/en/places/ubud mini=pl-mini is-ready
+phone en: list rows 4 overflow false
+gltest: warning A parser-blocking, cross site (i.e. different eTLD+1) script, https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js, is invoked via document.write. The network request for this script MAY be blocked by the browser in this or a future page load due to poor network connectivity. If blocked in this p
+gltest: warning A parser-blocking, cross site (i.e. different eTLD+1) script, https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js, is invoked via document.write. The network request for this script MAY be blocked by the browser in this or a future page load due to poor network connectivity. If blocked in this p
+gltest: log idle
