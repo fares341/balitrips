@@ -37,6 +37,8 @@ import type { Locale } from '@/i18n/config'
 import { useRouter } from '@/i18n/routing'
 import { BUDGET_TIER_LABEL, BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
 import { FEATURES } from '@/lib/features'
+import { todayInBali } from '@/lib/booking-rules'
+import { Calendar } from '@/components/booking/calendar'
 
 import { submitCustomTrip } from './actions'
 import {
@@ -260,39 +262,61 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
           {/* ---------------- dates ---------------- */}
           <div>
             <h2 className="bt-form-q">{t('cp_when')}</h2>
-            <div className="bt-daterange">
-              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-                <span className="bt-flabel">{t('dp_start')}</span>
-                <input
-                  name="startDate"
-                  type="date"
-                  value={start}
-                  onChange={(event) => {
-                    const next = event.target.value
-                    setStart(next)
-                    // An end before the start is not a range; clear it rather than
-                    // posting something the server has to reject.
-                    if (end !== '' && next !== '' && end < next) setEnd('')
+            {wizard ? (
+              <>
+                {/* The shared calendar (v3 custom-trip.html): pick the first and
+                    last day; the two hidden fields carry them to the server. */}
+                <Calendar
+                  mode="range"
+                  value={[start === '' ? null : start, end === '' ? null : end]}
+                  onChange={([from, to]) => {
+                    setStart(from ?? '')
+                    setEnd(to ?? '')
                   }}
-                  className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-                  aria-invalid={errors.dates !== undefined}
+                  today={todayInBali()}
+                  label={t('cp_when')}
+                  invalid={errors.dates !== undefined}
                 />
-              </label>
+                <input type="hidden" name="startDate" value={start} />
+                <input type="hidden" name="endDate" value={end} />
+              </>
+            ) : (
+              <div className="bt-daterange">
+                <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                  <span className="bt-flabel">{t('dp_start')}</span>
+                  <input
+                    name="startDate"
+                    type="date"
+                    value={start}
+                    onChange={(event) => {
+                      const next = event.target.value
+                      setStart(next)
+                      // An end before the start is not a range; clear it rather than
+                      // posting something the server has to reject.
+                      if (end !== '' && next !== '' && end < next) setEnd('')
+                    }}
+                    className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                    aria-invalid={errors.dates !== undefined}
+                  />
+                </label>
 
-              <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-                <span className="bt-flabel">{t('dp_end')}</span>
-                <input
-                  name="endDate"
-                  type="date"
-                  value={end}
-                  min={start === '' ? undefined : start}
-                  onChange={(event) => setEnd(event.target.value)}
-                  className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-                  aria-invalid={errors.dates !== undefined}
-                  aria-describedby={errors.dates === undefined ? undefined : `${baseId}-dates-err`}
-                />
-              </label>
-            </div>
+                <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
+                  <span className="bt-flabel">{t('dp_end')}</span>
+                  <input
+                    name="endDate"
+                    type="date"
+                    value={end}
+                    min={start === '' ? undefined : start}
+                    onChange={(event) => setEnd(event.target.value)}
+                    className={errors.dates === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                    aria-invalid={errors.dates !== undefined}
+                    aria-describedby={
+                      errors.dates === undefined ? undefined : `${baseId}-dates-err`
+                    }
+                  />
+                </label>
+              </div>
+            )}
             {errors.dates !== undefined && (
               <FieldError id={`${baseId}-dates-err`}>{t(errors.dates)}</FieldError>
             )}
