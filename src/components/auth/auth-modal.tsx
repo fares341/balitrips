@@ -31,7 +31,7 @@
  * whole auth client in the shell bundle.
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Button, Modal } from '@/components/shared'
@@ -140,6 +140,10 @@ function ProviderMark({ provider }: { provider: SocialProviderId }) {
   )
 }
 
+const subscribeNothing = () => () => undefined
+const isClient = () => true
+const isServer = () => false
+
 function Divider({ label }: { label: string }) {
   return (
     <div
@@ -208,7 +212,14 @@ export function AuthModal({
     }
   }
 
-  const countries = useMemo(() => countryOptions(locale), [locale])
+  /*
+   * Country names come from the runtime's CLDR data, which differs between
+   * Node and the browser. The page variant is server-rendered, so the list is
+   * built only once hydrated (the server and the first client render show
+   * the placeholder alone) — otherwise React reports a text mismatch.
+   */
+  const hydrated = useSyncExternalStore(subscribeNothing, isClient, isServer)
+  const countries = useMemo(() => (hydrated ? countryOptions(locale) : []), [hydrated, locale])
 
   const headingId = 'bt-auth-heading'
   /** The page variant's heading is the page's h1. */
