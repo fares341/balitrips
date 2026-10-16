@@ -35,6 +35,7 @@ import type { Locale } from '@/i18n/config'
 import { BALI_TIME_ZONE, todayInBali } from '@/lib/booking-rules'
 import type { PricingMode } from '@/lib/content/types'
 import { formatMoney, lineTotalMinor } from '@/lib/money'
+import { Calendar } from '@/components/booking/calendar'
 
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
 import { addToCartAction } from '../../my-trip/actions'
@@ -123,16 +124,22 @@ export function PackageBookingBox({
         )}
       </div>
 
-      <label className="bt-field">
+      {/* The start date on the shared calendar (v3 package.html), from Bali's
+          today; rendered once that is known on the client. */}
+      <div className="bt-field">
         <span className="bt-flabel">{t('c_date')}</span>
-        <input
-          type="date"
-          className="bt-input"
-          value={date}
-          min={minDate === '' ? undefined : minDate}
-          onChange={(event) => setDate(event.target.value)}
-        />
-      </label>
+        {minDate === '' ? (
+          <div style={{ minHeight: 290 }} aria-hidden="true" />
+        ) : (
+          <Calendar
+            mode="single"
+            value={date === '' ? null : date}
+            onChange={setDate}
+            today={minDate}
+            label={t('c_date')}
+          />
+        )}
+      </div>
 
       <div className="bt-field">
         <div className="bt-flabel">
