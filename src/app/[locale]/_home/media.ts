@@ -6,4 +6,4 @@
  * later: drop it into public/brand/ and change this one path — nothing else
  * references the file.
  */
-export const CUSTOM_TRIP_PHOTO = '/brand/jungle-pool.jpg'
+export const CUSTOM_TRIP_PHOTO = '/brand/polaroids.webp'

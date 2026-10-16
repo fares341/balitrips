@@ -381,6 +381,16 @@ for (const [w, h] of [
       ),
     )
     log.push(`hero ${w}: ${st.join(' | ')}`)
+    // Viewport (not full-page) captures of the animated sections.
+    for (const sel of ['.about-media', '.rmarq', '.svc']) {
+      await page
+        .locator(sel)
+        .first()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {})
+      await page.waitForTimeout(2500)
+      await page.screenshot({ path: `${OUT}/p/home-view-${sel.slice(1)}-ar-${w}.png` })
+    }
   } catch (e) {
     log.push(`hero ${w}: ${e.message}`)
   }
