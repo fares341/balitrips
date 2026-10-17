@@ -1,0 +1,491 @@
+/studio-ci7/itineraries/0a8e1a47-e8ae-490a-94ce-32943b963eb1
+
+تخطَّ إلى المحتوى
+B
+بالي تريبس
+لوحة الإدارة
+نظرة عامة
+الرئيسية
+صندوق الوارد
+المساعد
+إرسال إشعار
+العملاء
+العملاء
+الطلبات الخاصة
+المبيعات
+الطلبات
+المدفوعات
+الخطط
+وصول العملاء
+سعة السائقين
+المحتوى
+أماكن الخريطة
+الخريطة
+خطط الرحلات
+الأنشطة
+الباقات
+المقالات
+المعالم
+التقييمات
+التصنيفات والمناطق
+مكتبة الوسائط
+ملفات PDF
+الحماية
+الحظر والحماية
+التنبيهات
+عمليات الدخول الحالية
+الأجهزة
+سجل النشاط
+النظام
+نصوص الموقع
+الإعدادات
+سجل التغييرات
+الدخول بخطوتين
+English
+T
+Test Admin
+مدير النظام
+جدول 10 أيام
+
+الإصدار 1 · الأيام المخطَّطة: 10 · /itineraries/10-day-itinerary
+
+منشور
+العودة إلى القائمة
+البيانات الأساسية
+رابط الصفحة *
+آخر جزء في رابط الصفحة. تغييره يعطّل الروابط التي شاركها الناس سابقاً.
+إعدادات متقدمة (لفريقك التقني)
+المحطات
+عدد المحطات المعروض في البطاقة. اتركه فارغاً لإخفائه.
+
+عدد الأيام يُحسب من خطة الأيام أدناه، لذلك لا يُعدَّل هنا.
+
+النصوص
+الاسم*
+English
+العربية
+Indonesia
+نوع الرحلة
+English
+العربية
+Indonesia
+نبذة
+English
+العربية
+Indonesia
+لمن يناسب
+فئة واحدة في كل سطر. عنصر واحد في كل سطر. حافظ على الترتيب نفسه في كل لغة — السطر الفارغ بالإنجليزية يُحذف.
+English
+العربية
+Indonesia
+الوصف التفصيلي
+English
+العربية
+Indonesia
+الوصول وملاحظات الفريق
+يشمل الخريطة
+شراء هذا الجدول يفتح الخريطة التفاعلية (مدى الحياة).
+جدول VIP
+مع «يشمل الخريطة» يمنح وصول VIP إلى الخريطة (Hidden Gems).
+ملاحظات داخلية
+لا تظهر للعملاء أبداً.
+صور المعرض
+لا توجد خيارات بعد.
+أماكن الخريطة المرتبطة
+تشانغو
+شاطئ دايموند
+معبد ليمبويانغ
+جبل باتور
+نوسا بنيدا
+شلال سيكومبول
+مدرّجات تيغالالانغ
+أوبود
+معبد أولواتو
+التسعير والعرض
+السعر (بالسنت)
+اكتب المبلغ بدون فاصلة عشرية: 12500 تعني 125.00.
+العملة
+رمز من 3 أحرف، مثل USD أو IDR أو SAR.
+الصورة الرئيسية
+— لا شيء —
+المناطق المشمولة
+جنوب بالي
+وسط بالي
+شرق بالي
+شمال بالي
+الجزر
+كوتا
+سمينياك
+تشانغو
+أولواتو
+نوسا دوا
+سانور
+أوبود
+حفظ الجدول
+خطة الأيام
+
+عدد الأيام: 10. إعادة الترتيب تعيد ترقيم الخطة كلها تلقائياً.
+
+اليوم 1
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 2
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 3
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 4
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 5
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 6
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 7
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 8
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 9 يوم حر
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+اليوم 10 يوم حر
+حفظ اليوم
+نقل لأعلى
+نقل لأسفل
+إزالة
+النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+فعّل هذا ليوم بلا نشاط مخطَّط، بدلاً من ترك اليوم فارغاً.
+عنوان اليوم
+English
+العربية
+Indonesia
+وصف اليوم
+English
+العربية
+Indonesia
+إضافة يوم — النشاط
+— لا يوجد —
+مشي شروق جبل باتور (mount-batur-sunrise-hike)
+رحلة شلال سيكومبول (sekumpul-waterfall-trek)
+جولة نوسا بنيدا (nusa-penida-day-tour)
+شاطئ بادانغ بادانغ (padang-padang-beach)
+شاطئ دايموند (diamond-beach)
+رقصة النار كيتشاك (uluwatu-kecak-fire-dance)
+سوق أوبود للفنون (ubud-art-market)
+كرايت كافيه تشانغو (crate-cafe-canggu)
+لوكافور أوبود (locavore-ubud)
+حديقة بالي سفاري (bali-safari-park)
+ووتربوم بالي (waterbom-bali)
+غطس البحيرة الزرقاء (blue-lagoon-snorkeling)
+طقوس سبا أدغال أوبود (ubud-jungle-spa-ritual)
+عشاء الغروب على المنحدر (cliffside-sunset-dinner)
+بوابة السماء ليمبويانغ (lempuyang-gates-of-heaven)
+يوم حر
+إضافة اليوم 11
+النشر
+
+النشر يُنشئ الإصدار 2 (الحالي 1). العملاء الذين اشتروا إصداراً سابقاً يحتفظون بالخطة التي دفعوا ثمنها. إعادته إلى المسودة لا تغيّر الإصدار.
+
+نشر الإصدار 2
+إعادة إلى المسودة
+ملف PDF
+
+ارفع ملف PDF جاهزاً لكل لغة. يحل محل الملف المولَّد تلقائياً لكل عميل اشترى هذا الجدول، بنفس العلامة المائية وقواعد العرض والتنزيل. احذفه للعودة إلى الملف المولَّد.
+
+English: مولَّد تلقائياً
+العربية: مولَّد تلقائياً
+Indonesia: مولَّد تلقائياً
+اللغة
+English
+العربية
+Indonesia
+ملف PDF (بحد أقصى 24 MB)
+رفع PDF
+الأرشفة
+
+يزيل خطة الرحلة من الموقع. العملاء الذين اشتروها سابقاً يحتفظون بخطتهم.
+
+أرشفة الجدول

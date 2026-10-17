@@ -1,0 +1,263 @@
+
+> bali-travels@0.1.0 build /home/runner/work/balitrips/balitrips
+> next build
+
+▲ Next.js 16.3.0 (Turbopack)
+✓ Running next.config.ts took 50ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 15.0s
+  Running TypeScript ...
+  Finished TypeScript in 23.7s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/242) ...
+  Generating static pages using 3 workers (60/242) 
+  Generating static pages using 3 workers (120/242) 
+  Generating static pages using 3 workers (181/242) 
+✓ Generating static pages using 3 workers (242/242) in 4.1s
+Turbopack build encountered 1 warning:
+./src/lib/storage/local-private.ts:80:41
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m78 |[0m   [36mif[0m (file === [36mnull[0m) [36mreturn[0m [36mnull[0m
+  [90m79 |[0m   [36mtry[0m {
+[33m[1m>[0m [90m80 |[0m     [36mconst[0m buffer = [36mnew[0m [33mUint8Array[0m([36mawait[0m readFile(file))
+  [90m   |[0m                                         [33m[1m^^^^^^^^^^^^^^[0m
+  [90m81 |[0m     [36mreturn[0m buffer.byteLength > [33mMAX_READ_BYTES[0m ? [36mnull[0m : buffer
+  [90m82 |[0m   } [36mcatch[0m {
+  [90m83 |[0m     [36mreturn[0m [36mnull[0m
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFile(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./src/lib/storage/local-private.ts
+    ./src/app/[locale]/account/invoices/[orderId]/receipt/route.ts
+
+  #2 [App Route]:
+    ./src/lib/storage/local-private.ts
+    ./src/lib/storage/local-private.ts
+    ./src/app/(admin)/studio/orders/[id]/receipt/route.ts
+
+  #3 [Server Component]:
+    ./src/lib/storage/local-private.ts
+    ./src/app/(admin)/studio/leads/request-actions.ts
+    ./src/app/(admin)/studio/leads/[id]/page.tsx
+
+
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├   /[locale]
+│ ├ ● /en
+│ ├ ● /ar
+│ └ ● /id
+├ ƒ /[locale]/[...rest]
+├   /[locale]/about
+│ ├ ● /en/about
+│ ├ ● /ar/about
+│ └ ● /id/about
+├ ƒ /[locale]/account
+├ ƒ /[locale]/account/custom/[docId]/download
+├ ƒ /[locale]/account/custom/[docId]/file
+├ ƒ /[locale]/account/custom/[docId]/view
+├ ƒ /[locale]/account/devices
+├ ƒ /[locale]/account/favorites
+├ ƒ /[locale]/account/invoices
+├ ƒ /[locale]/account/invoices/[orderId]/receipt
+├ ƒ /[locale]/account/notifications
+├ ƒ /[locale]/account/reviews
+├ ƒ /[locale]/account/schedules
+├ ƒ /[locale]/account/schedules/[itemId]/download
+├ ƒ /[locale]/account/schedules/[itemId]/file
+├ ƒ /[locale]/account/schedules/[itemId]/view
+├ ƒ /[locale]/account/subscriptions
+├ ƒ /[locale]/account/subscriptions/accept
+├ ƒ /[locale]/account/trip
+├ ƒ /[locale]/account/trip/print
+├ ƒ /[locale]/activities
+├   /[locale]/activities/[slug]
+│ ├ ● /en/activities/mount-batur-sunrise-hike
+│ ├ ● /en/activities/sekumpul-waterfall-trek
+│ ├ ● /en/activities/nusa-penida-day-tour
+│ └ ● [+42 more paths]
+├ ƒ /[locale]/blog
+├ ƒ /[locale]/blog/[slug]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/checkout/confirmation/[orderNumber]
+├ ƒ /[locale]/checkout/return
+├   /[locale]/contact
+│ ├ ● /en/contact
+│ ├ ● /ar/contact
+│ └ ● /id/contact
+├   /[locale]/cookies
+│ ├ ● /en/cookies
+│ ├ ● /ar/cookies
+│ └ ● /id/cookies
+├   /[locale]/credits
+│ ├ ● /en/credits
+│ ├ ● /ar/credits
+│ └ ● /id/credits
+├   /[locale]/custom
+│ ├ ● /en/custom
+│ ├ ● /ar/custom
+│ └ ● /id/custom
+├   /[locale]/driver
+│ ├ ● /en/driver
+│ ├ ● /ar/driver
+│ └ ● /id/driver
+├ ƒ /[locale]/events
+├ ƒ /[locale]/explore
+├ ƒ /[locale]/explore/[region]
+├   /[locale]/faq
+│ ├ ● /en/faq
+│ ├ ● /ar/faq
+│ └ ● /id/faq
+├ ƒ /[locale]/forgot-password
+├   /[locale]/help
+│ ├ ● /en/help
+│ ├ ● /ar/help
+│ └ ● /id/help
+├ ƒ /[locale]/itineraries
+├ ƒ /[locale]/itineraries/[slug]
+├ ƒ /[locale]/login
+├ ƒ /[locale]/map
+├   /[locale]/map-use
+│ ├ ● /en/map-use
+│ ├ ● /ar/map-use
+│ └ ● /id/map-use
+├ ƒ /[locale]/my-trip
+├ ƒ /[locale]/packages
+├   /[locale]/packages/[slug]
+│ ├ ● /en/packages/driver-itinerary
+│ ├ ● /en/packages/driver-activities
+│ ├ ● /en/packages/adventure-package
+│ └ ● [+15 more paths]
+├   /[locale]/payment-methods
+│ ├ ● /en/payment-methods
+│ ├ ● /ar/payment-methods
+│ └ ● /id/payment-methods
+├ ƒ /[locale]/places/[slug]
+├ ƒ /[locale]/plans
+├   /[locale]/platform-use
+│ ├ ● /en/platform-use
+│ ├ ● /ar/platform-use
+│ └ ● /id/platform-use
+├   /[locale]/privacy
+│ ├ ● /en/privacy
+│ ├ ● /ar/privacy
+│ └ ● /id/privacy
+├   /[locale]/refund
+│ ├ ● /en/refund
+│ ├ ● /ar/refund
+│ └ ● /id/refund
+├ ƒ /[locale]/register
+├   /[locale]/reset-password
+│ ├ ● /en/reset-password
+│ ├ ● /ar/reset-password
+│ └ ● /id/reset-password
+├   /[locale]/reviews
+│ ├ ● /en/reviews
+│ ├ ● /ar/reviews
+│ └ ● /id/reviews
+├ ƒ /[locale]/search
+├   /[locale]/services
+│ ├ ● /en/services
+│ ├ ● /ar/services
+│ └ ● /id/services
+├   /[locale]/terms
+│ ├ ● /en/terms
+│ ├ ● /ar/terms
+│ └ ● /id/terms
+├ ƒ /[locale]/trip/[token]
+├ ƒ /api/activity/page
+├ ƒ /api/admin-link
+├ ƒ /api/assistant
+├ ƒ /api/assistant/confirm
+├ ƒ /api/auth/[...all]
+├ ƒ /api/favorites
+├ ƒ /api/health
+├ ƒ /api/notifications/count
+├ ƒ /api/payments/sandbox/challenge
+├ ƒ /api/payments/webhook
+├ ƒ /api/places/search
+├ ƒ /api/places/search-log
+├ ƒ /api/places/suggest
+├ ƒ /api/search
+├ ƒ /api/studio-assistant
+├ ƒ /api/studio-assistant/confirm
+├ ƒ /media/[...path]
+├ ƒ /studio
+├ ƒ /studio/activities
+├ ƒ /studio/activities/[id]
+├ ƒ /studio/articles
+├ ƒ /studio/articles/[id]
+├ ƒ /studio/assistant
+├ ƒ /studio/assistant/conversations
+├ ƒ /studio/assistant/conversations/[id]
+├ ƒ /studio/assistant/settings
+├ ƒ /studio/audit
+├ ƒ /studio/capacity
+├ ƒ /studio/config
+├ ƒ /studio/customers
+├ ƒ /studio/customers/[id]
+├ ƒ /studio/customers/[id]/export
+├ ƒ /studio/customers/export
+├ ƒ /studio/entitlements
+├ ƒ /studio/files
+├ ƒ /studio/inbox
+├ ƒ /studio/itineraries
+├ ƒ /studio/itineraries/[id]
+├ ƒ /studio/landmarks
+├ ƒ /studio/landmarks/[id]
+├ ƒ /studio/leads
+├ ƒ /studio/leads/[id]
+├ ƒ /studio/map
+├ ƒ /studio/media
+├ ƒ /studio/notify
+├ ƒ /studio/orders
+├ ƒ /studio/orders/[id]
+├ ƒ /studio/orders/[id]/receipt
+├ ƒ /studio/packages
+├ ƒ /studio/packages/[id]
+├ ƒ /studio/payments
+├ ƒ /studio/payments/export
+├ ƒ /studio/places
+├ ƒ /studio/places/[id]
+├ ƒ /studio/plans
+├ ƒ /studio/plans/[id]
+├ ƒ /studio/protection
+├ ƒ /studio/protection/activity
+├ ƒ /studio/protection/activity/export
+├ ƒ /studio/protection/alerts
+├ ƒ /studio/protection/devices
+├ ƒ /studio/protection/sessions
+├ ƒ /studio/reviews
+├ ƒ /studio/reviews/[id]
+├ ƒ /studio/security
+├ ƒ /studio/taxonomy
+└ ƒ /studio/translations
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,15 @@
+▲ Next.js 16.3.0
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+✓ Ready in 0ms
+✓ Running next.config took 3ms
+[admin] two-factor challenge required for admin@test.balitrips.local
+[admin] two-factor challenge required for staff@test.balitrips.local
+[admin] denied roles.write for staff@test.balitrips.local (staff)
+[admin] denied roles.write for staff@test.balitrips.local (staff)
+[admin] denied config.write for staff@test.balitrips.local (staff)
+[admin] denied config.write for staff@test.balitrips.local (staff)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied admin.access for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied admin.access for customer@test.balitrips.local (customer)

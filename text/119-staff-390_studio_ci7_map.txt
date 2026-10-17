@@ -1,0 +1,22 @@
+/studio-ci7/map
+
+تخطَّ إلى المحتوى
+القائمة
+B
+بالي تريبس
+الخريطة
+
+كل الأماكن على الخريطة — بما فيها المسودات والمخفية والمدفوعة. اضغط على أي دبوس لتعديل المكان.
+
+قائمة الأماكن
+مجاني
+(4)
+مدفوع (يتطلب باقة)
+(5)
+مسودة
+(0)
+مخفي
+(0)
+يُعرض 9 من 9 مكاناً
+
+OpenFreeMap © OpenMapTiles © OpenStreetMap contributors · Terrain: SRTM and GMTED2010 data courtesy of the U.S. Geological Survey; ETOPO1 NOAA
