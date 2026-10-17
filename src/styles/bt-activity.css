@@ -40,12 +40,10 @@
   display: block;
 }
 .act-toolbar {
-  position: sticky;
-  top: calc(env(safe-area-inset-top, 0px) + var(--hdr-h));
+  /* client: the search bar stays in place and scrolls away with the page */
+  position: relative;
   z-index: 30;
-  background: rgba(255, 251, 248, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--ivory);
   border-bottom: 1px solid var(--line-soft);
   padding-block: 12px;
 }
