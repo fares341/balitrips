@@ -119,6 +119,35 @@ for (const path of [
   }
 }
 
+// Sticky probe: does the activities search bar follow the scroll?
+{
+  const page = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    ignoreHTTPSErrors: true,
+  })
+  try {
+    await page.goto(BASE + '/ar/activities', { waitUntil: 'networkidle', timeout: 90000 })
+    const before = await page.evaluate(
+      () => document.querySelector('.act-toolbar')?.getBoundingClientRect().top ?? null,
+    )
+    await page.mouse.wheel(0, 1500)
+    await page.waitForTimeout(1200)
+    const after = await page.evaluate(() => {
+      const el = document.querySelector('.act-toolbar')
+      return el
+        ? {
+            top: el.getBoundingClientRect().top,
+            position: getComputedStyle(el).position,
+            scrollY: window.scrollY,
+          }
+        : null
+    })
+    log.push(`STICKY /ar/activities before=${before} after=${JSON.stringify(after)}`)
+  } catch (e) {
+    log.push(`STICKY ERROR ${e.message}`)
+  }
+  await page.close()
+}
 await browser.close()
 writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n')
 console.log(log.join('\n'))
