@@ -219,8 +219,8 @@ export default async function CustomersPage({
                   </td>
                   <td className="num">{row.liveSessions}</td>
                   <td className="num">{row.orderCount}</td>
-                  <td className="a-mono">
-                    {row.locale}
+                  <td>
+                    {label(`translations.lang_${row.locale}`, row.locale)}
                     {row.country ? ` · ${row.country}` : ''}
                   </td>
                   <td>

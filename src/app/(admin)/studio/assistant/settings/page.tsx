@@ -6,6 +6,7 @@ import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { readSetting } from '../../../_lib/settings'
 import { requireCapability } from '../../../_lib/session'
+import { Advanced } from '../../../_ui/advanced'
 import { Checkbox, Field, LocalizedField, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
@@ -43,7 +44,7 @@ export default async function AssistantSettingsPage({
         }
       />
       <Flash searchParams={params} />
-      <p>
+      <p className="a-ai-status">
         <Pill tone={hasApiKey() ? 'good' : 'warn'}>
           {hasApiKey() ? t('assistant.key_set') : t('assistant.key_missing')}
         </Pill>
@@ -59,32 +60,6 @@ export default async function AssistantSettingsPage({
           label={t('assistant.studio_enabled')}
           defaultChecked={settings.studioEnabled}
         />
-        <Field
-          label={t('assistant.model')}
-          htmlFor="model"
-          hint={t('assistant.model_hint', { model: serverModel })}
-        >
-          <TextInput
-            id="model"
-            name="model"
-            dir="ltr"
-            defaultValue={settings.model}
-            placeholder={serverModel}
-          />
-        </Field>
-        <Field
-          label={t('assistant.fallback')}
-          htmlFor="fallbackModel"
-          hint={t('assistant.fallback_hint', { model: serverFallback })}
-        >
-          <TextInput
-            id="fallbackModel"
-            name="fallbackModel"
-            dir="ltr"
-            defaultValue={settings.fallbackModel}
-            placeholder={serverFallback}
-          />
-        </Field>
         <Field label={t('assistant.daily_ip')} htmlFor="dailyMessagesPerIp">
           <TextInput
             id="dailyMessagesPerIp"
@@ -119,6 +94,34 @@ export default async function AssistantSettingsPage({
           value={settings.welcome}
           rows={3}
         />
+        <Advanced show title={t('assistant.advanced')} hint={t('common.advanced_hint')}>
+          <Field
+            label={t('assistant.model')}
+            htmlFor="model"
+            hint={t('assistant.model_hint', { model: serverModel })}
+          >
+            <TextInput
+              id="model"
+              name="model"
+              dir="ltr"
+              defaultValue={settings.model}
+              placeholder={serverModel}
+            />
+          </Field>
+          <Field
+            label={t('assistant.fallback')}
+            htmlFor="fallbackModel"
+            hint={t('assistant.fallback_hint', { model: serverFallback })}
+          >
+            <TextInput
+              id="fallbackModel"
+              name="fallbackModel"
+              dir="ltr"
+              defaultValue={settings.fallbackModel}
+              placeholder={serverFallback}
+            />
+          </Field>
+        </Advanced>
         <div className="a-row">
           <button className="a-btn" type="submit">
             {t('assistant.save')}

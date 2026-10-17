@@ -21,6 +21,7 @@ import { TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { requireCapability } from '../../_lib/session'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
+import { labelOr } from '../protection/labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -220,7 +221,7 @@ export default async function FilesPage() {
                         <Pill tone="neutral">{t('files.older')}</Pill>
                       )}
                     </td>
-                    <td className="a-mono">{doc.locale}</td>
+                    <td>{labelOr(t, 'translations.lang_', doc.locale)}</td>
                     <td>{formatBytes(doc.bytes, intl)}</td>
                     <td>
                       <When value={doc.updatedAt} />

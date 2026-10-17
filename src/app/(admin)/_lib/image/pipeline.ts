@@ -197,6 +197,8 @@ export async function ingestImage(input: IngestInput): Promise<IngestResult> {
   if (bytes.byteLength > MAX_UPLOAD_BYTES) {
     throw new ImageRejected(
       `That file is ${formatBytes(bytes.byteLength)}. The limit is ${formatBytes(MAX_UPLOAD_BYTES)} — resize or re-export it first.`,
+      'too_large',
+      { size: formatBytes(bytes.byteLength), max: formatBytes(MAX_UPLOAD_BYTES) },
     )
   }
 
@@ -205,6 +207,8 @@ export async function ingestImage(input: IngestInput): Promise<IngestResult> {
   if (inspected.width < MIN_SOURCE_WIDTH) {
     throw new ImageRejected(
       `That image is only ${inspected.width}px wide. The smallest layout slot is ${MIN_SOURCE_WIDTH}px, and upscaling looks worse than a missing image.`,
+      'too_narrow',
+      { width: inspected.width, min: MIN_SOURCE_WIDTH },
     )
   }
 
@@ -214,6 +218,7 @@ export async function ingestImage(input: IngestInput): Promise<IngestResult> {
   if (megapixels > 80) {
     throw new ImageRejected(
       `That image is ${Math.round(megapixels)} megapixels. Anything over 80 is refused — decoding it would take the server down.`,
+      'too_many_pixels',
     )
   }
 

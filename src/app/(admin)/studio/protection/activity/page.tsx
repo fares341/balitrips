@@ -7,9 +7,11 @@ import { activityLog, devices, users } from '@/db/schema'
 import { ACTIVITY_ACTIONS } from '@/lib/security/activity'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { auditLines } from '../../../_lib/audit-labels'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { pageParam } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
+import { Changes } from '../../../_ui/changes'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table, When, type PillTone } from '../../../_ui/table'
 import { labelOr } from '../labels'
@@ -38,7 +40,7 @@ export default async function ActivityPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('security.read')
-  const { t } = await getAdminI18n()
+  const { t, locale, intl } = await getAdminI18n()
   const params = await searchParams
 
   const { q, action, user, from, to, where } = activityFilters(params)
@@ -170,9 +172,7 @@ export default async function ActivityPage({
                 </td>
                 <td>{row.browser ? `${row.browser} · ${row.os ?? ''}` : '—'}</td>
                 <td>
-                  <pre className="a-json">
-                    {row.details ? JSON.stringify(row.details, null, 1).slice(0, 600) : '—'}
-                  </pre>
+                  <Changes lines={auditLines(t, row.details, locale, intl)} />
                 </td>
               </tr>
             ))}

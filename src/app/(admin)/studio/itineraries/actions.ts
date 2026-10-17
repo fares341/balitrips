@@ -651,7 +651,7 @@ export async function uploadItineraryPdf(id: string, form: FormData): Promise<vo
     const notified = await notifyItineraryHolders(before, rawLocale, keys)
     outcome = {
       ok:
-        t('itineraries.ok_pdf_uploaded', { locale: rawLocale.toUpperCase() }) +
+        t('itineraries.ok_pdf_uploaded', { locale: t(`translations.lang_${rawLocale}`) }) +
         (notified > 0 ? ` ${t('itineraries.ok_pdf_notified', { count: notified })}` : ''),
     }
   } catch (error) {

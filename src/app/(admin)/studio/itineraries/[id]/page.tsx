@@ -11,6 +11,7 @@ import { locales, localeConfig } from '@/i18n/config'
 import { adminHref } from '../../../_lib/admin-path'
 import { activityOptions, mediaOptions, placeOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
+import { Advanced } from '../../../_ui/advanced'
 import {
   Checkbox,
   Field,
@@ -138,9 +139,15 @@ export default async function ItineraryEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label={t('itineraries.legacy_id')} htmlFor="legacyId">
-              <TextInput id="legacyId" name="legacyId" defaultValue={itinerary?.legacyId ?? ''} />
-            </Field>
+            <Advanced
+              show={session.role === 'admin'}
+              title={t('common.advanced')}
+              keep={[['legacyId', itinerary?.legacyId ?? '']]}
+            >
+              <Field label={t('itineraries.legacy_id')} htmlFor="legacyId">
+                <TextInput id="legacyId" name="legacyId" defaultValue={itinerary?.legacyId ?? ''} />
+              </Field>
+            </Advanced>
             <Field
               label={t('itineraries.f_spots')}
               htmlFor="spots"

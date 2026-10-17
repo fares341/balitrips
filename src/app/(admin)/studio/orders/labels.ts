@@ -72,3 +72,25 @@ export function paymentStatusLabel(t: Translate, status: string): string {
 export function paymentMethodName(t: Translate, method: string | null | undefined): string | null {
   return method ? label(t, PAYMENT_METHOD_KEYS, method) : null
 }
+
+const PROVIDER_KEYS: Record<string, string> = {
+  stripe: 'payments.provider_stripe',
+  manual: 'payments.provider_manual',
+  sandbox: 'payments.provider_sandbox',
+}
+
+/** Where a payment went through (stored as a short code such as `stripe`). */
+export function paymentProviderName(t: Translate, provider: string): string {
+  return label(t, PROVIDER_KEYS, provider)
+}
+
+const ACCESS_KIND_KEYS: Record<string, string> = {
+  basic: 'entitlements.kind_basic',
+  map_access: 'entitlements.kind_map_access',
+  vip: 'entitlements.kind_vip',
+}
+
+/** What a customer's access unlocks (stored as `basic`, `map_access` or `vip`). */
+export function accessKindLabel(t: Translate, kind: string): string {
+  return label(t, ACCESS_KIND_KEYS, kind)
+}

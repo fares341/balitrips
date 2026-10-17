@@ -25,7 +25,7 @@ export default async function LandmarksPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.read')
-  const { t } = await getAdminI18n()
+  const { t, locale } = await getAdminI18n()
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -53,6 +53,7 @@ export default async function LandmarksPage({
         regionKey: regions.key,
         regionLabel: regions.label,
         activitySlug: activities.slug,
+        activityName: activities.name,
       })
       .from(landmarks)
       .leftJoin(regions, eq(regions.id, landmarks.regionId))
@@ -126,7 +127,13 @@ export default async function LandmarksPage({
                     <span className="a-muted">—</span>
                   )}
                 </td>
-                <td className="a-mono">{row.activitySlug ?? <span className="a-muted">—</span>}</td>
+                <td>
+                  {row.activitySlug ? (
+                    pick(row.activityName, locale, row.activitySlug)
+                  ) : (
+                    <span className="a-muted">—</span>
+                  )}
+                </td>
                 <td>
                   <PublishPill status={row.status} />
                 </td>

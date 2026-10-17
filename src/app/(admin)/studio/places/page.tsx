@@ -149,7 +149,13 @@ export default async function PlacesPage({
                   {row.isFree ? (
                     <Pill tone="good">{t('places.pill_free')}</Pill>
                   ) : (
-                    <Pill tone="warn">{row.requiredEntitlement}</Pill>
+                    <Pill tone="warn">
+                      {t(
+                        row.requiredEntitlement === 'vip'
+                          ? 'places.required_vip'
+                          : 'places.required_map',
+                      )}
+                    </Pill>
                   )}
                 </td>
                 <td>

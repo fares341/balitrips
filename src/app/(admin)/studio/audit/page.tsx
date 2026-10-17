@@ -5,9 +5,11 @@ import { db } from '@/db'
 import { auditLog, users } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
+import { auditActionLabel, auditEntityLabel, auditLines } from '../../_lib/audit-labels'
 import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import { Changes } from '../../_ui/changes'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Table, When } from '../../_ui/table'
@@ -22,8 +24,9 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('audit.read')
-  const { t } = await getAdminI18n()
+  const session = await requireCapability('audit.read')
+  const { t, locale, intl } = await getAdminI18n()
+  const showTechnical = session.role === 'admin'
   const params = await searchParams
 
   const q = param(params, 'q')
@@ -105,7 +108,7 @@ export default async function AuditPage({
             <option value="">{t('audit.any')}</option>
             {entityTypes.map((row) => (
               <option key={row.entityType} value={row.entityType}>
-                {row.entityType}
+                {auditEntityLabel(t, row.entityType)}
               </option>
             ))}
           </select>
@@ -147,19 +150,25 @@ export default async function AuditPage({
               <tr key={row.id}>
                 <td>
                   <When value={row.createdAt} />
-                  <div className="a-mono a-muted">{row.ipAddress ?? ''}</div>
                 </td>
                 <td>{row.actorEmail ?? <span className="a-muted">{t('audit.system')}</span>}</td>
-                <td className="a-mono">{row.action}</td>
                 <td>
-                  {row.entityType}
-                  <div className="a-mono a-muted">{row.entityId ?? ''}</div>
+                  {auditActionLabel(t, row.action)}
+                  {showTechnical ? (
+                    <details className="a-hint">
+                      <summary>{t('audit.details')}</summary>
+                      <div className="a-mono" dir="ltr">
+                        {row.action} · {row.entityType} {row.entityId ?? ''} · {row.ipAddress ?? ''}
+                      </div>
+                    </details>
+                  ) : null}
+                </td>
+                <td>{auditEntityLabel(t, row.entityType)}</td>
+                <td>
+                  <Changes lines={auditLines(t, row.before, locale, intl)} />
                 </td>
                 <td>
-                  <pre className="a-json">{format(row.before)}</pre>
-                </td>
-                <td>
-                  <pre className="a-json">{format(row.after)}</pre>
+                  <Changes lines={auditLines(t, row.after, locale, intl)} />
                 </td>
               </tr>
             ))}
@@ -176,11 +185,4 @@ export default async function AuditPage({
       />
     </>
   )
-}
-
-/** Only the delta is stored, so this stays readable at a glance. */
-function format(value: unknown): string {
-  if (value === null || value === undefined) return '—'
-  const text = JSON.stringify(value, null, 1)
-  return text.length > 900 ? `${text.slice(0, 900)}…` : text
 }

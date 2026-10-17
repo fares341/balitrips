@@ -17,6 +17,7 @@ import {
   users,
 } from '@/db/schema'
 import { absoluteUrl } from '@/app/[locale]/_meta'
+import { formatMoney } from '@/lib/money'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
@@ -64,7 +65,7 @@ const detail = (id: string) => adminHref(`/orders/${id}`)
  */
 export async function refundOrderItem(orderId: string, form: FormData): Promise<void> {
   const session = await requireCapability('orders.refund')
-  const { t } = await getAdminI18n()
+  const { t, intl } = await getAdminI18n()
   let outcome: Outcome
 
   try {
@@ -97,7 +98,10 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
       const lineRemaining = line.lineTotalMinor - line.refundedMinor
       if (amountMinor > lineRemaining) {
         throw new Error(
-          t('orders.err_line_exceeds', { remaining: lineRemaining, requested: amountMinor }),
+          t('orders.err_line_exceeds', {
+            remaining: formatMoney(lineRemaining, order.presentmentCurrency, intl),
+            requested: formatMoney(amountMinor, order.presentmentCurrency, intl),
+          }),
         )
       }
 
@@ -305,8 +309,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
     }
 
     const refunded = t('orders.ok_refunded', {
-      amount: amountMinor,
-      currency: summary.currency,
+      amount: formatMoney(amountMinor, summary.currency, intl),
       status: orderStatusLabel(t, summary.nextStatus),
     })
     outcome = {

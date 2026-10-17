@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { hasApiKey, modelsFor } from '@/lib/assistant/config'
+import { hasApiKey } from '@/lib/assistant/config'
 import { dailyState } from '@/lib/assistant/store'
 import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
@@ -26,7 +26,6 @@ export default async function AssistantPage() {
   const [settings, today] = await Promise.all([readSetting('assistant'), dailyState(null)])
   const keySet = hasApiKey()
   const budgetUsed = today.globalCostMicros >= Math.round(settings.dailyBudgetUsd * 1_000_000)
-  const [model, fallback] = modelsFor(settings)
   const ready = keySet && settings.studioEnabled && settings.dailyBudgetUsd > 0 && !budgetUsed
   const onOff = (value: boolean) => t(value ? 'assistant.state_on' : 'assistant.state_off')
 
@@ -65,8 +64,7 @@ export default async function AssistantPage() {
         </p>
         <p className="a-muted">
           {t('assistant.public_state', { state: onOff(settings.publicEnabled) })} ·{' '}
-          {t('assistant.studio_state', { state: onOff(settings.studioEnabled) })} ·{' '}
-          <span dir="ltr">{t('assistant.models_line', { model, fallback })}</span>
+          {t('assistant.studio_state', { state: onOff(settings.studioEnabled) })}
         </p>
         {can(session.role, 'config.write') ? (
           <p className="a-muted">

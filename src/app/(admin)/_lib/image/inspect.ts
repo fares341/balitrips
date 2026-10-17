@@ -35,10 +35,25 @@ export interface InspectedImage {
   height: number
 }
 
+/**
+ * Why a file was refused, for the owner-facing message. The English `message`
+ * stays technical (logs, tests); the Studio shows a plain sentence per reason.
+ */
+export type ImageRejectedReason = 'unreadable' | 'too_large' | 'too_narrow' | 'too_many_pixels'
+
 export class ImageRejected extends Error {
-  constructor(message: string) {
+  readonly reason: ImageRejectedReason
+  readonly vars: Record<string, string | number>
+
+  constructor(
+    message: string,
+    reason: ImageRejectedReason = 'unreadable',
+    vars: Record<string, string | number> = {},
+  ) {
     super(message)
     this.name = 'ImageRejected'
+    this.reason = reason
+    this.vars = vars
   }
 }
 

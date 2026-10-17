@@ -8,6 +8,7 @@ import { getAdminI18n } from '../../../../_lib/i18n'
 import { requireCapability } from '../../../../_lib/session'
 import { PageHead } from '../../../../_ui/shell'
 import { Empty, Pill, When } from '../../../../_ui/table'
+import { labelOr } from '../../../protection/labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,12 +55,6 @@ export default async function AssistantConversationPage({
       <div className="a-card a-ai-convo">
         <p className="a-muted">
           <When value={conversation.createdAt} />
-          {conversation.lastModel ? (
-            <>
-              {' · '}
-              <span dir="ltr">{t('assistant.conv_model', { model: conversation.lastModel })}</span>
-            </>
-          ) : null}
         </p>
         {messages.map((message) => (
           <div
@@ -73,9 +68,7 @@ export default async function AssistantConversationPage({
               {message.content}
             </div>
             {message.tools && message.tools.length > 0 ? (
-              <p className="a-ai-tool a-muted" dir="ltr">
-                {t('assistant.conv_tools', { tools: message.tools.join(', ') })}
-              </p>
+              <p className="a-ai-tool a-muted">{t('assistant.conv_tools')}</p>
             ) : null}
           </div>
         ))}
@@ -86,7 +79,7 @@ export default async function AssistantConversationPage({
           {actions.map((action) => (
             <div key={action.id} className="a-ai-card" style={{ marginBlockEnd: 10 }}>
               <p className="a-ai-card-t">
-                {action.kind}{' '}
+                {labelOr(t, 'assistant.kind_', action.kind, t('assistant.card_title'))}{' '}
                 <Pill
                   tone={
                     action.status === 'done'
@@ -96,7 +89,7 @@ export default async function AssistantConversationPage({
                         : 'neutral'
                   }
                 >
-                  {action.status}
+                  {labelOr(t, 'assistant.astatus_', action.status, action.status)}
                 </Pill>
               </p>
               <dl>
@@ -104,8 +97,14 @@ export default async function AssistantConversationPage({
                   .filter(([, value]) => value !== null && value !== '' && value !== undefined)
                   .map(([key, value]) => (
                     <div key={key}>
-                      <dt>{key}</dt>
-                      <dd dir="auto">{Array.isArray(value) ? value.join(', ') : String(value)}</dd>
+                      <dt>{labelOr(t, 'assistant.f_', key, key)}</dt>
+                      <dd dir="auto">
+                        {typeof value === 'boolean'
+                          ? t(value ? 'assistant.yes' : 'assistant.no')
+                          : Array.isArray(value)
+                            ? value.join(', ')
+                            : String(value)}
+                      </dd>
                     </div>
                   ))}
               </dl>

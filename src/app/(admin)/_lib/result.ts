@@ -21,13 +21,46 @@ export function withOutcome(path: string, outcome: ActionOutcome): string {
 /**
  * Turn a thrown value into a message safe to show an operator.
  *
- * Admin users are staff, so the real message is more useful than a generic
- * one — but anything that is not an Error is not echoed back verbatim.
+ * Messages the Studio wrote itself (already translated) are shown as they
+ * are. Database and driver errors never are: the owner gets a plain sentence
+ * (duplicate value, still in use, invalid value, or "something went wrong"),
+ * and the technical text goes to the server log for the technical team.
  */
 export function errorMessage(error: unknown): string {
   if (isKeyedError(error)) return encodeMessage(error.key, error.vars)
-  if (error instanceof Error && error.message) return error.message
+  const code = databaseErrorCode(error)
+  if (code !== null) {
+    console.error('[admin] database error', code, error)
+    if (code === '23505') return encodeMessage('form.duplicate')
+    if (code === '23503') return encodeMessage('form.in_use')
+    if (code.startsWith('22') || code === '23502' || code === '23514') {
+      return encodeMessage('form.invalid_value')
+    }
+    return encodeMessage('form.unexpected')
+  }
+  if (error instanceof Error && error.message && !looksTechnical(error.message)) {
+    return error.message
+  }
+  if (error !== null && error !== undefined) console.error('[admin] action failed', error)
   return encodeMessage('form.unexpected')
+}
+
+/** The SQLSTATE of a Postgres error, also when wrapped (`cause`) by the ORM. */
+function databaseErrorCode(error: unknown): string | null {
+  let current: unknown = error
+  for (let depth = 0; depth < 4 && current && typeof current === 'object'; depth += 1) {
+    const code = (current as { code?: unknown }).code
+    if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return code
+    current = (current as { cause?: unknown }).cause
+  }
+  return null
+}
+
+/** Text that reads like a stack trace or a raw query rather than a sentence. */
+function looksTechnical(message: string): boolean {
+  return /Failed query|\binsert into\b|\bviolates\b|ECONN|ETIMEDOUT|TypeError|ReferenceError|undefined is not|Cannot read propert|\n\s+at /i.test(
+    message,
+  )
 }
 
 // ---------------------------------------------------------------------------

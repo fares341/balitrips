@@ -99,8 +99,7 @@ export default async function AlertsPage({
                   <td>
                     <Pill tone={TONE[alert.severity] ?? 'neutral'}>
                       {labelOr(t, 'protection.severity_', alert.severity)}
-                    </Pill>{' '}
-                    <span className="a-mono">{alert.rule}</span>
+                    </Pill>
                     <div className="a-hint">
                       {labelOr(t, 'protection.rule_', alert.rule, String(details.label ?? ''))}
                     </div>

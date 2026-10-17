@@ -112,7 +112,9 @@ export default async function ConfigPage({
 
       {invalid.length > 0 ? (
         <div className="a-flash err" role="status">
-          {rich(t('config.invalid'), { keys: <strong>{invalid.join(', ')}</strong> })}
+          {rich(t('config.invalid'), {
+            keys: <strong>{invalid.map((key) => settingName(t, key)).join(', ')}</strong>,
+          })}
         </div>
       ) : null}
 
@@ -129,11 +131,7 @@ export default async function ConfigPage({
       <div className="a-flash warn" role="status">
         {/* One flex item: bare text runs and <code> would each become their own column. */}
         <div>
-          <strong>{t('config.not_wired_title')}</strong>{' '}
-          {rich(t('config.not_wired_body'), {
-            fn: <code>readSetting()</code>,
-            file: <code>(admin)/_lib/settings.ts</code>,
-          })}
+          <strong>{t('config.not_wired_title')}</strong> {t('config.not_wired_body')}
         </div>
       </div>
 
@@ -197,7 +195,7 @@ export default async function ConfigPage({
 
       <div className="a-card">
         <h2>{t('config.fees_title')}</h2>
-        <p className="a-hint">{rich(t('config.fees_hint'), { example: <code>2.5</code> })}</p>
+        <p className="a-hint">{t('config.fees_hint')}</p>
         <SectionMeta t={t} name="fees" meta={meta} missing={missing} />
 
         <form className="a-form" action={saveFees} style={{ marginBlockStart: 12 }}>
@@ -339,7 +337,9 @@ export default async function ConfigPage({
               {untranslated.length > 0 ? (
                 <Pill tone="neutral">
                   {t('config.missing_locales', {
-                    locales: untranslated.map((locale) => localeConfig[locale].short).join(' '),
+                    locales: untranslated
+                      .map((locale) => t(`translations.lang_${locale}`))
+                      .join(', '),
                   })}
                 </Pill>
               ) : null}
@@ -432,4 +432,22 @@ function SectionMeta({
       })}
     </p>
   )
+}
+
+/** The section a stored setting belongs to, by the name the page shows. */
+function settingName(t: Translate, key: string): string {
+  if (key.startsWith('policy.')) {
+    const label = t(`config.${key.replace('.', '_')}`)
+    if (!label.startsWith('config.')) return label
+  }
+  const names: Record<string, string> = {
+    currencies: 'config.currencies_title',
+    fees: 'config.fees_title',
+    contact: 'config.contact_title',
+    map: 'map.settings',
+    security: 'protection.settings',
+    assistant: 'assistant.settings_title',
+  }
+  const name = names[key]
+  return name ? t(name) : key
 }

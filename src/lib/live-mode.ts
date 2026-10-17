@@ -15,27 +15,61 @@ export function isLiveMode(): boolean {
   return process.env.LIVE_MODE === 'true'
 }
 
+/** رموز مشاكل الإعداد في الوضع الحقيقي — Studio يعرضها بلغة صاحب العمل. */
+export type LiveModeIssue =
+  | 'sandbox_payments'
+  | 'admin_2fa_off'
+  | 'no_payments'
+  | 'no_email'
+  | 'no_storage'
+
+export interface LiveModeWarning {
+  code: LiveModeIssue
+  /** النص التقني للفريق التقني (والسجل عند الإقلاع). */
+  text: string
+}
+
 /** تحذيرات إعداد تُطبع عند الإقلاع (worker) وتُعرض في Studio. */
-export function liveModeWarnings(): string[] {
-  const warnings: string[] = []
-  if (!isLiveMode()) return warnings
+export function liveModeIssues(): LiveModeWarning[] {
+  const issues: LiveModeWarning[] = []
+  if (!isLiveMode()) return issues
   if (process.env.ALLOW_SANDBOX_PAYMENTS === 'true') {
-    warnings.push('ALLOW_SANDBOX_PAYMENTS=true is ignored in LIVE_MODE — remove it.')
+    issues.push({
+      code: 'sandbox_payments',
+      text: 'ALLOW_SANDBOX_PAYMENTS=true is ignored in LIVE_MODE — remove it.',
+    })
   }
   if (process.env.DISABLE_ADMIN_2FA === 'true') {
-    warnings.push('DISABLE_ADMIN_2FA=true is ignored in LIVE_MODE — remove it.')
+    issues.push({
+      code: 'admin_2fa_off',
+      text: 'DISABLE_ADMIN_2FA=true is ignored in LIVE_MODE — remove it.',
+    })
   }
   const provider = process.env.PAYMENT_PROVIDER ?? 'none'
   if (provider === 'sandbox' || provider === 'none') {
-    warnings.push(`PAYMENT_PROVIDER=${provider} cannot take real payments in LIVE_MODE.`)
+    issues.push({
+      code: 'no_payments',
+      text: `PAYMENT_PROVIDER=${provider} cannot take real payments in LIVE_MODE.`,
+    })
   }
   if (!process.env.RESEND_API_KEY) {
-    warnings.push('RESEND_API_KEY is empty — password reset and receipts will not be emailed.')
+    issues.push({
+      code: 'no_email',
+      text: 'RESEND_API_KEY is empty — password reset and receipts will not be emailed.',
+    })
   }
   if (!process.env.SPACES_KEY || !process.env.SPACES_SECRET) {
-    warnings.push('SPACES_KEY/SPACES_SECRET are empty — PDFs and uploads cannot be stored.')
+    issues.push({
+      code: 'no_storage',
+      text: 'SPACES_KEY/SPACES_SECRET are empty — PDFs and uploads cannot be stored.',
+    })
   }
-  return warnings
+  return issues
+}
+
+/** النصوص التقنية فقط (سجل الإقلاع). */
+export function liveModeWarnings(): string[] {
+  return liveModeIssues().map((issue) => issue.text)
 }
 
 /** يُسمح بالدفع الوهمي؟ أبداً في الوضع الحقيقي. */

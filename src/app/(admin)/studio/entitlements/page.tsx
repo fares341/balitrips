@@ -12,6 +12,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
+import { accessKindLabel } from '../orders/labels'
 import { grantEntitlement, revokeEntitlement } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -98,8 +99,8 @@ export default async function EntitlementsPage({
           <div className="a-field">
             <label htmlFor="kind">{t('entitlements.kind')}</label>
             <select className="a-select" id="kind" name="kind" defaultValue="map_access">
-              <option value="map_access">map_access</option>
-              <option value="vip">vip</option>
+              <option value="map_access">{t('entitlements.kind_map_access')}</option>
+              <option value="vip">{t('entitlements.kind_vip')}</option>
             </select>
           </div>
           <div className="a-field">
@@ -134,8 +135,8 @@ export default async function EntitlementsPage({
           <select className="a-select" id="kind-filter" name="kind" defaultValue={kind ?? ''}>
             <option value="">{t('entitlements.any')}</option>
             <option value="basic">{t('entitlements.kind_basic')}</option>
-            <option value="map_access">map_access</option>
-            <option value="vip">vip</option>
+            <option value="map_access">{t('entitlements.kind_map_access')}</option>
+            <option value="vip">{t('entitlements.kind_vip')}</option>
           </select>
         </div>
         <div className="a-field">
@@ -177,7 +178,7 @@ export default async function EntitlementsPage({
               return (
                 <tr key={row.id}>
                   <td>{row.email}</td>
-                  <td className="a-mono">{row.kind}</td>
+                  <td>{accessKindLabel(t, row.kind)}</td>
                   <td>
                     {row.orderId ? (
                       <Link href={adminHref(`/orders/${row.orderId}`)} className="a-mono">

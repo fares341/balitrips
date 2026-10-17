@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { isElevated } from '@/lib/auth/roles'
 import { getSession } from '@/lib/auth/session'
 
+import { adminHref } from './_lib/admin-path'
 import { getAdminI18n } from './_lib/i18n'
 
 /**
@@ -23,11 +24,23 @@ export default async function AdminNotFound() {
   const { t } = await getAdminI18n()
   const session = await getSession().catch(() => null)
   const wrongAccount = session !== null && !isElevated(session.user.role)
+  // A team member who opened a page their role does not include (or a
+  // mistyped address): say so in words. Still the same 404 response.
+  const teamMember = session !== null && isElevated(session.user.role)
 
   return (
     <main className="a-404">
-      <h1>404</h1>
-      <p className="a-muted">{t('shell.not_found_body')}</p>
+      <h1>{teamMember ? t('shell.no_permission_title') : t('shell.not_found_title')}</h1>
+      <p className="a-muted">
+        {teamMember ? t('shell.no_permission_body') : t('shell.not_found_body')}
+      </p>
+      {teamMember && (
+        <p style={{ marginBlockStart: 16 }}>
+          <Link href={adminHref('')} className="a-btn">
+            {t('shell.back_home')}
+          </Link>
+        </p>
+      )}
       {wrongAccount && (
         <>
           <p

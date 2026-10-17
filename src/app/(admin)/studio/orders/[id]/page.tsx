@@ -26,12 +26,15 @@ import {
   setLineFulfilment,
 } from '../actions'
 import {
+  accessKindLabel,
   bookingStatusLabel,
   fulfilmentLabel,
   orderStatusLabel,
   paymentMethodName,
+  paymentProviderName,
   paymentStatusLabel,
 } from '../labels'
+import { labelOr } from '../../protection/labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -172,7 +175,11 @@ export default async function OrderDetailPage({
               </tr>
               <tr>
                 <th>{t('common.language')}</th>
-                <td>{row.customerSnapshot?.locale ?? '—'}</td>
+                <td>
+                  {row.customerSnapshot?.locale
+                    ? labelOr(t, 'translations.lang_', row.customerSnapshot.locale)
+                    : '—'}
+                </td>
               </tr>
             </tbody>
           </Table>
@@ -484,7 +491,7 @@ export default async function OrderDetailPage({
                 {paymentRows.map((payment) => (
                   <tr key={payment.id}>
                     <td>
-                      {payment.provider}
+                      {paymentProviderName(t, payment.provider)}
                       {payment.method ? <div>{paymentMethodName(t, payment.method)}</div> : null}
                       <div className="a-mono a-muted">{payment.providerPaymentId ?? '—'}</div>
                     </td>
@@ -558,7 +565,7 @@ export default async function OrderDetailPage({
             <tbody>
               {grants.map((grant) => (
                 <tr key={grant.id}>
-                  <td className="a-mono">{grant.kind}</td>
+                  <td>{accessKindLabel(t, grant.kind)}</td>
                   <td>
                     <When value={grant.startsAt} />
                   </td>

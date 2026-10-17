@@ -16,7 +16,7 @@ const section: Section = {
     'dashboard.qa_itinerary': 'New itinerary',
     'dashboard.qa_notify': 'Send a notification',
     'dashboard.qa_customers': 'View customers',
-    'dashboard.config_title': 'Production settings need attention',
+    'dashboard.config_title': 'Some website services aren’t fully set up yet',
 
     'dashboard.attention_title': 'Needs your attention',
     'dashboard.all_clear': 'All caught up',
@@ -82,6 +82,17 @@ const section: Section = {
     'dashboard.by_status': 'Orders by status',
     'dashboard.col_orders': 'Orders',
     'dashboard.col_value': 'Value',
+    'dashboard.config_hint': 'Please send this list to your technical team.',
+    'dashboard.cfg_sandbox_payments':
+      'A test-payments switch is still turned on. It has no effect on the live website, but should be removed.',
+    'dashboard.cfg_admin_2fa_off':
+      'A switch to turn off 2-step sign-in is still set. It is ignored on the live website, but should be removed.',
+    'dashboard.cfg_no_payments':
+      'Online payments aren’t connected yet — customers can’t pay by card.',
+    'dashboard.cfg_no_email':
+      'E-mail sending isn’t connected — password resets and receipts can’t be e-mailed.',
+    'dashboard.cfg_no_storage':
+      'File storage isn’t connected — PDFs and photo uploads can’t be saved.',
   },
   ar: {
     'dashboard.greeting_morning': 'صباح الخير، {name}',
@@ -97,7 +108,7 @@ const section: Section = {
     'dashboard.qa_itinerary': 'خطة رحلة جديدة',
     'dashboard.qa_notify': 'إرسال إشعار',
     'dashboard.qa_customers': 'عرض العملاء',
-    'dashboard.config_title': 'إعدادات التشغيل الفعلي تحتاج إلى مراجعة',
+    'dashboard.config_title': 'بعض خدمات الموقع غير مكتملة الإعداد بعد',
 
     'dashboard.attention_title': 'بحاجة إلى متابعتك',
     'dashboard.all_clear': 'لا توجد مهام معلّقة',
@@ -163,6 +174,16 @@ const section: Section = {
     'dashboard.by_status': 'الطلبات حسب الحالة',
     'dashboard.col_orders': 'الطلبات',
     'dashboard.col_value': 'القيمة',
+    'dashboard.config_hint': 'أرسل هذه القائمة إلى فريقك التقني من فضلك.',
+    'dashboard.cfg_sandbox_payments':
+      'ما زال خيار المدفوعات التجريبية مفعّلاً. لا تأثير له على الموقع الفعلي، لكن يجب إزالته.',
+    'dashboard.cfg_admin_2fa_off':
+      'ما زال خيار إيقاف الدخول بخطوتين مضبوطاً. يتم تجاهله في الموقع الفعلي، لكن يجب إزالته.',
+    'dashboard.cfg_no_payments':
+      'الدفع الإلكتروني غير مربوط بعد — لا يستطيع العملاء الدفع بالبطاقة.',
+    'dashboard.cfg_no_email':
+      'إرسال البريد الإلكتروني غير مربوط — لا يمكن إرسال رسائل استعادة كلمة المرور والإيصالات بالبريد.',
+    'dashboard.cfg_no_storage': 'تخزين الملفات غير مربوط — لا يمكن حفظ ملفات PDF والصور المرفوعة.',
   },
 }
 

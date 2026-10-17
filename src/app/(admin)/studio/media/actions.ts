@@ -143,12 +143,15 @@ export async function uploadMedia(form: FormData): Promise<void> {
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    // ImageRejected messages say exactly what was wrong with the file; they
-    // are technical English, so the sentence around them is translated.
+    // ImageRejected carries a reason; the owner gets a plain sentence for it
+    // (the technical English message stays in the server log).
+    if (error instanceof ImageRejected) console.warn(`[media] upload refused: ${error.message}`)
     outcome = {
       err:
         error instanceof ImageRejected
-          ? t('media.err_rejected', { detail: error.message })
+          ? t('media.err_rejected', {
+              detail: t(`media.reject_${error.reason}`, error.vars),
+            })
           : errorMessage(error),
     }
   }

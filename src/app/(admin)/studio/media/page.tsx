@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { media } from '@/db/schema'
 import { mediaUrl } from '@/lib/content/queries'
-import { isStorageConfigured } from '@/lib/storage'
 import { localeConfig, locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -125,7 +124,6 @@ export default async function MediaPage({
   const placeholderCount = placeholderRow?.value ?? 0
   const svgCount = svgRow?.value ?? 0
   const optimising = encoderAvailable()
-  const driver = isStorageConfigured() ? 'Spaces' : t('media.driver_local')
   const returnQuery = buildQuery(params, {}).replace(/^\?/, '')
 
   return (
@@ -164,9 +162,7 @@ export default async function MediaPage({
       */}
       <form className="a-card a-form" action={uploadMedia}>
         <h2>{t('media.upload_heading')}</h2>
-        <p className="a-hint">
-          {t('media.upload_hint', { max: formatBytes(MAX_UPLOAD_BYTES), driver })}
-        </p>
+        <p className="a-hint">{t('media.upload_hint', { max: formatBytes(MAX_UPLOAD_BYTES) })}</p>
 
         <div className="a-row">
           <Field label={`${t('media.image_file')} *`} htmlFor="file">
@@ -300,7 +296,9 @@ export default async function MediaPage({
                       {t('media.pill_derivatives', { count: derivatives.length })}
                     </Pill>
                   )}
-                  {row.mimeType === 'image/svg+xml' ? <Pill tone="bad">SVG</Pill> : null}
+                  {row.mimeType === 'image/svg+xml' ? (
+                    <Pill tone="bad">{t('media.svg_pill')}</Pill>
+                  ) : null}
                   {used.length > 0 ? (
                     <Pill tone={blocking.length > 0 ? 'info' : 'neutral'}>
                       {t('media.pill_used', { count: used.length })}
@@ -320,8 +318,8 @@ export default async function MediaPage({
                   }}
                 >
                   <dt className="a-muted">{t('media.key')}</dt>
-                  <dd className="a-mono" style={{ margin: 0, wordBreak: 'break-all' }}>
-                    {row.objectKey}
+                  <dd style={{ margin: 0, wordBreak: 'break-all' }} dir="ltr">
+                    {row.objectKey.split('/').pop()}
                   </dd>
                   <dt className="a-muted">{t('media.size')}</dt>
                   <dd style={{ margin: 0 }}>

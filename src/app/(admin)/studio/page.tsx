@@ -16,7 +16,7 @@ import {
   users,
 } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
-import { liveModeWarnings } from '@/lib/live-mode'
+import { liveModeIssues } from '@/lib/live-mode'
 import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
@@ -25,6 +25,7 @@ import { adminHref } from '../_lib/admin-path'
 import { getAdminI18n } from '../_lib/i18n'
 import { LEAD_STATUS_KEYS, LEAD_TONES } from '../_lib/lead-statuses'
 import { requireCapability } from '../_lib/session'
+import { Advanced } from '../_ui/advanced'
 import { Flash } from '../_ui/flash'
 import { Icon, type IconName } from '../_ui/icons'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../_ui/table'
@@ -207,7 +208,7 @@ export default async function DashboardPage({
           .where(eq(devices.status, 'pending'))
       : [],
   ])
-  const configWarnings = liveModeWarnings()
+  const configWarnings = liveModeIssues()
 
   const byStatus = mayReadOrders
     ? await db
@@ -437,11 +438,17 @@ export default async function DashboardPage({
             <b>{t('dashboard.config_title')}</b>
             <ul>
               {configWarnings.map((warning) => (
-                <li key={warning} dir="ltr">
-                  {warning}
-                </li>
+                <li key={warning.code}>{t(`dashboard.cfg_${warning.code}`)}</li>
               ))}
             </ul>
+            <p>{t('dashboard.config_hint')}</p>
+            <Advanced show={session.role === 'admin'} title={t('common.advanced')}>
+              <ul dir="ltr" className="a-mono">
+                {configWarnings.map((warning) => (
+                  <li key={warning.code}>{warning.text}</li>
+                ))}
+              </ul>
+            </Advanced>
           </div>
         </div>
       ) : null}

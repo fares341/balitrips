@@ -13,7 +13,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
-import { paymentMethodName, paymentStatusLabel } from '../orders/labels'
+import { paymentMethodName, paymentProviderName, paymentStatusLabel } from '../orders/labels'
 import { refundDuplicatePayment } from './actions'
 import { PAYMENT_METHOD_FILTERS, PAYMENT_STATUSES, paymentFilters } from './filters'
 
@@ -114,9 +114,9 @@ export default async function PaymentsPage({
           <label htmlFor="provider">{t('payments.provider')}</label>
           <select className="a-select" id="provider" name="provider" defaultValue={provider ?? ''}>
             <option value="">{t('common.all')}</option>
-            <option value="stripe">stripe</option>
+            <option value="stripe">{t('payments.provider_stripe')}</option>
             <option value="manual">{t('payments.provider_manual')}</option>
-            <option value="sandbox">sandbox</option>
+            <option value="sandbox">{t('payments.provider_sandbox')}</option>
           </select>
         </div>
         <div className="a-field">
@@ -184,7 +184,7 @@ export default async function PaymentsPage({
                 </td>
                 <td>{row.email ?? <span className="a-muted">{t('payments.guest')}</span>}</td>
                 <td>
-                  {row.provider}
+                  {paymentProviderName(t, row.provider)}
                   {row.providerPaymentId ? (
                     <div className="a-muted a-mono">{row.providerPaymentId}</div>
                   ) : null}

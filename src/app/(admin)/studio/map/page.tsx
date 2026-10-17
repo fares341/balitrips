@@ -73,7 +73,10 @@ export default async function StudioMapPage({
       lat: row.lat,
       lon: row.lon,
       kind,
-      note: kind === 'locked' ? row.requiredEntitlement : null,
+      note:
+        kind === 'locked'
+          ? t(row.requiredEntitlement === 'vip' ? 'places.required_vip' : 'places.required_map')
+          : null,
       href: adminHref(`/places/${row.id}`),
     }
   })

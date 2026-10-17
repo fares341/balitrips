@@ -10,6 +10,7 @@ import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
+import { Advanced } from '../../../_ui/advanced'
 import { Field, LocalizedField, StatusField, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { OptionField } from '../../../_ui/select-field'
@@ -25,7 +26,7 @@ export default async function LandmarkEditorPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('content.write')
+  const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -75,9 +76,15 @@ export default async function LandmarkEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label={t('landmarks.legacy_id')} htmlFor="legacyId">
-              <TextInput id="legacyId" name="legacyId" defaultValue={landmark?.legacyId ?? ''} />
-            </Field>
+            <Advanced
+              show={session.role === 'admin'}
+              title={t('common.advanced')}
+              keep={[['legacyId', landmark?.legacyId ?? '']]}
+            >
+              <Field label={t('landmarks.legacy_id')} htmlFor="legacyId">
+                <TextInput id="legacyId" name="legacyId" defaultValue={landmark?.legacyId ?? ''} />
+              </Field>
+            </Advanced>
             <StatusField value={landmark?.status} />
             <Field label={t('landmarks.sort_order')} htmlFor="sortOrder">
               <TextInput

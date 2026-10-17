@@ -20,8 +20,10 @@ import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { parseUserAgent } from '@/lib/security/fingerprint'
 
 import { adminHref } from '../../../_lib/admin-path'
+import { auditActionLabel } from '../../../_lib/audit-labels'
 import { isUuid } from '../../../_lib/form'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
@@ -29,6 +31,8 @@ import { Field, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
+import { accessKindLabel } from '../../orders/labels'
+import { labelOr } from '../../protection/labels'
 import {
   changeRole,
   grantPlanToCustomer,
@@ -245,10 +249,6 @@ export default async function CustomerPage({
             fontSize: 13,
           }}
         >
-          <dt className="a-muted">{t('customers.id')}</dt>
-          <dd className="a-mono" style={{ margin: 0 }}>
-            {account.id}
-          </dd>
           <dt className="a-muted">{t('customers.email')}</dt>
           <dd style={{ margin: 0 }}>
             {phoneOnly ? (
@@ -281,7 +281,7 @@ export default async function CustomerPage({
           <dd style={{ margin: 0 }}>{account.phone ?? '—'}</dd>
           <dt className="a-muted">{t('customers.country_locale')}</dt>
           <dd style={{ margin: 0 }}>
-            {account.country ?? '—'} · {account.locale}
+            {account.country ?? '—'} · {labelOr(t, 'translations.lang_', account.locale)}
           </dd>
           <dt className="a-muted">{t('customers.two_factor')}</dt>
           <dd style={{ margin: 0 }}>
@@ -457,7 +457,7 @@ export default async function CustomerPage({
               <thead>
                 <tr>
                   <th>{t('customers.device')}</th>
-                  <th>IP</th>
+                  <th>{t('customers.last_ip')}</th>
                   <th>{t('customers.started')}</th>
                   <th>{t('customers.expires')}</th>
                   <th />
@@ -469,9 +469,7 @@ export default async function CustomerPage({
                   return (
                     <tr key={row.id}>
                       <td style={{ maxWidth: 420 }}>
-                        <span className="a-mono">
-                          {row.userAgent ?? t('customers.unknown_client')}
-                        </span>
+                        <span>{agentName(row.userAgent) ?? t('customers.unknown_client')}</span>
                         {row.id === session.sessionId ? (
                           <div>
                             <Pill tone="info">{t('customers.own_session')}</Pill>
@@ -707,7 +705,7 @@ export default async function CustomerPage({
             <tbody>
               {entitlementRows.map(({ entitlement: row, planName, planSlug }) => (
                 <tr key={row.id}>
-                  <td className="a-mono">{row.kind}</td>
+                  <td>{accessKindLabel(t, row.kind)}</td>
                   <td>
                     {row.planId ? (
                       <Link href={adminHref(`/plans/${row.planId}`)}>
@@ -781,18 +779,16 @@ export default async function CustomerPage({
               <tr>
                 <th>{t('customers.action')}</th>
                 <th>{t('customers.by')}</th>
-                <th>{t('customers.from')}</th>
                 <th>{t('customers.when')}</th>
               </tr>
             </thead>
             <tbody>
               {auditRows.map((row) => (
                 <tr key={row.id}>
-                  <td className="a-mono">{row.action}</td>
+                  <td>{auditActionLabel(t, row.action)}</td>
                   <td>
                     {row.actorEmail ?? <span className="a-muted">{t('customers.system')}</span>}
                   </td>
-                  <td className="a-mono">{row.ipAddress ?? '—'}</td>
                   <td>
                     <When value={row.createdAt} />
                   </td>
@@ -844,4 +840,12 @@ export default async function CustomerPage({
       ) : null}
     </>
   )
+}
+
+/** "Chrome · macOS" instead of the raw browser string; null when nothing is recognisable. */
+function agentName(userAgent: string | null): string | null {
+  if (!userAgent) return null
+  const { browser, os } = parseUserAgent(userAgent)
+  const parts = [browser, os].filter((part) => part !== 'Unknown')
+  return parts.length > 0 ? parts.join(' · ') : null
 }

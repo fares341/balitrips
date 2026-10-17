@@ -19,6 +19,7 @@ import { param } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { readSetting } from '../../../_lib/settings'
 import { CoordPicker } from '../../../_ui/coord-picker'
+import { Advanced } from '../../../_ui/advanced'
 import {
   Checkbox,
   Field,
@@ -44,7 +45,7 @@ export default async function PlaceEditorPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('content.write')
+  const session = await requireCapability('content.write')
   const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -167,9 +168,15 @@ export default async function PlaceEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label={t('places.legacy_id')} htmlFor="legacyId">
-              <TextInput id="legacyId" name="legacyId" defaultValue={place?.legacyId ?? ''} />
-            </Field>
+            <Advanced
+              show={session.role === 'admin'}
+              title={t('common.advanced')}
+              keep={[['legacyId', place?.legacyId ?? '']]}
+            >
+              <Field label={t('places.legacy_id')} htmlFor="legacyId">
+                <TextInput id="legacyId" name="legacyId" defaultValue={place?.legacyId ?? ''} />
+              </Field>
+            </Advanced>
             <StatusField value={place?.status} />
           </div>
         </div>
@@ -211,8 +218,8 @@ export default async function PlaceEditorPage({
                 name="requiredEntitlement"
                 defaultValue={place?.requiredEntitlement ?? 'map_access'}
               >
-                <option value="map_access">map_access</option>
-                <option value="vip">vip</option>
+                <option value="map_access">{t('places.required_map')}</option>
+                <option value="vip">{t('places.required_vip')}</option>
               </Select>
             </Field>
           </div>

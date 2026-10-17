@@ -179,7 +179,14 @@ export function StudioChat() {
     if (result.error === 'expired') return setCard({ state: 'expired' })
     if (result.error === 'forbidden' || message === 'forbidden')
       return setCard({ state: 'forbidden' })
-    setCard({ state: 'failed', message: message ?? String(result.error ?? 'error') })
+    // Codes from the server become plain sentences; Studio messages pass through.
+    const reason =
+      message === 'two_factor_required'
+        ? t('assistant.err_two_factor')
+        : message === undefined || message === 'error'
+          ? t('assistant.err_generic')
+          : message
+    setCard({ state: 'failed', message: reason })
   }
 
   function onSubmit(event: FormEvent) {
@@ -237,11 +244,7 @@ export function StudioChat() {
               ) : m.pending ? (
                 <div className="a-ai-bubble a-muted">{t('assistant.thinking')}</div>
               ) : null}
-              {m.tool ? (
-                <p className="a-ai-tool a-muted">
-                  {t('assistant.looking_up', { tool: m.tool.replace(/_/g, ' ') })}
-                </p>
-              ) : null}
+              {m.tool ? <p className="a-ai-tool a-muted">{t('assistant.looking_up')}</p> : null}
               {m.cards.map((card) => (
                 <div key={card.id} className={`a-ai-card is-${card.state}`}>
                   <p className="a-ai-card-t">{t('assistant.card_title')}</p>

@@ -9,6 +9,7 @@ import { pick } from '@/lib/content/localize'
 import { adminHref } from '../../../_lib/admin-path'
 import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
+import { Advanced } from '../../../_ui/advanced'
 import {
   Checkbox,
   Field,
@@ -35,7 +36,7 @@ export default async function PackageEditorPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('content.write')
+  const session = await requireCapability('content.write')
   const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -98,9 +99,15 @@ export default async function PackageEditorPage({
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
               />
             </Field>
-            <Field label={t('packages.legacy_id')} htmlFor="legacyId">
-              <TextInput id="legacyId" name="legacyId" defaultValue={pkg?.legacyId ?? ''} />
-            </Field>
+            <Advanced
+              show={session.role === 'admin'}
+              title={t('common.advanced')}
+              keep={[['legacyId', pkg?.legacyId ?? '']]}
+            >
+              <Field label={t('packages.legacy_id')} htmlFor="legacyId">
+                <TextInput id="legacyId" name="legacyId" defaultValue={pkg?.legacyId ?? ''} />
+              </Field>
+            </Advanced>
             <StatusField value={pkg?.status} />
           </div>
         </div>

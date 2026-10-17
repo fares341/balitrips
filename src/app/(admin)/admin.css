@@ -1215,6 +1215,43 @@ details > summary.a-btn::-webkit-details-marker {
   display: none;
 }
 
+/* --- Change history: changed fields, one per line ----------------------- */
+
+.a-changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  max-inline-size: 360px;
+  overflow-wrap: anywhere;
+}
+
+/* --- "Advanced (for your technical team)" ------------------------------- */
+
+.a-advanced {
+  border: 1px dashed var(--a-line-strong);
+  border-radius: var(--a-radius-sm);
+  padding-block: 10px;
+  padding-inline: 14px;
+}
+
+.a-advanced > summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--a-muted);
+}
+
+.a-advanced[open] > summary {
+  margin-block-end: 10px;
+}
+
+.a-advanced-body {
+  display: grid;
+  gap: 12px;
+}
+
 /* --- Banners (result of an action, warnings) ------------------------------ */
 
 .a-flash {
@@ -1962,6 +1999,10 @@ details > summary.a-btn::-webkit-details-marker {
 }
 .a-ai-status p {
   margin: 0;
+}
+/* Status lines are sentences, not tags: let them wrap on a phone. */
+.a-ai-status .a-pill {
+  white-space: normal;
 }
 .a-ai {
   display: flex;

@@ -110,8 +110,8 @@ export async function MediaPicker({
           <>
             <MediaThumb item={selected} size={64} />
             <div style={{ minWidth: 0 }}>
-              <div className="a-mono" dir="ltr" style={{ wordBreak: 'break-all' }}>
-                {selected.objectKey}
+              <div className="a-hint" dir="ltr" style={{ wordBreak: 'break-all' }}>
+                {selected.objectKey.split('/').pop()}
               </div>
               <PlaceholderNote credit={selected.credit} />
             </div>

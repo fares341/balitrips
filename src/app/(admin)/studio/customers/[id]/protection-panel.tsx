@@ -124,13 +124,17 @@ export async function ProtectionPanel({
               <tr key={row.id}>
                 <td>
                   {row.browser ?? '?'} · {row.os ?? '?'}
-                  {row.deviceType ? <span className="a-muted"> · {row.deviceType}</span> : null}
+                  {row.deviceType ? (
+                    <span className="a-muted">
+                      {' '}
+                      · {label(`protection.device_type_${row.deviceType}`, row.deviceType)}
+                    </span>
+                  ) : null}
                   {row.weak ? (
                     <div>
                       <Pill tone="warn">{t('customers.no_fingerprint')}</Pill>
                     </div>
                   ) : null}
-                  <div className="a-mono a-muted">{row.fingerprintHash.slice(0, 12)}…</div>
                 </td>
                 <td className="a-mono">{row.ip ?? '—'}</td>
                 <td>
@@ -153,7 +157,11 @@ export async function ProtectionPanel({
                   >
                     {label(`customers.device_status_${row.status}`, row.status)}
                   </Pill>
-                  {row.revokedReason ? <div className="a-hint">{row.revokedReason}</div> : null}
+                  {row.revokedReason ? (
+                    <div className="a-hint">
+                      {label(`protection.revoked_${row.revokedReason}`, row.revokedReason)}
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   {mayWrite && row.status === 'pending' ? (
