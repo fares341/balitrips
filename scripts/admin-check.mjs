@@ -22,6 +22,8 @@ const DOMAIN = process.env.TEST_ACCOUNT_DOMAIN ?? 'test.balitrips.local'
 const SERVER_LOG = process.env.SERVER_LOG ?? 'server.log'
 const OUT = 'admin-check'
 mkdirSync(`${OUT}/shots`, { recursive: true })
+mkdirSync(`${OUT}/full`, { recursive: true })
+mkdirSync(`${OUT}/text`, { recursive: true })
 
 const log = []
 const results = []
@@ -208,7 +210,7 @@ async function visit(
     .evaluate(() => ({
       title: document.title,
       h1: document.querySelector('h1')?.textContent?.trim().slice(0, 120) ?? '',
-      text: document.body?.innerText?.slice(0, 4000) ?? '',
+      text: document.body?.innerText ?? '',
       overflow: document.documentElement.scrollWidth - window.innerWidth,
     }))
     .catch(() => ({ title: '', h1: '', text: '', overflow: 0 }))
@@ -243,6 +245,13 @@ async function visit(
   shotNo += 1
   const shot = `shots/${String(shotNo).padStart(3, '0')}-${role}-${width}${(label || path).replace(/[^a-z0-9]+/gi, '_').slice(0, 60)}.png`
   await page.screenshot({ path: `${OUT}/${shot}`, fullPage: false }).catch(() => {})
+  // The whole page too (1440 only, to keep the branch small) and its visible
+  // text, so wording can be reviewed below the fold.
+  const base = shot.slice('shots/'.length, -'.png'.length)
+  if (width > 1000) {
+    await page.screenshot({ path: `${OUT}/full/${base}.png`, fullPage: true }).catch(() => {})
+  }
+  writeFileSync(`${OUT}/text/${base}.txt`, `${final}\n\n${info.text}\n`)
 
   const entry = {
     role,
