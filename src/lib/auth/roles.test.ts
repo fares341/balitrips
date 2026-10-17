@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   assertCan,
@@ -72,23 +72,16 @@ describe('admin', () => {
 })
 
 describe('two-factor', () => {
-  const saved = process.env.REQUIRE_ADMIN_2FA
-  afterEach(() => {
-    if (saved === undefined) delete process.env.REQUIRE_ADMIN_2FA
-    else process.env.REQUIRE_ADMIN_2FA = saved
-  })
-
-  it('is temporarily off unless REQUIRE_ADMIN_2FA=true (owner request)', () => {
-    delete process.env.REQUIRE_ADMIN_2FA
-    expect(requiresTwoFactor('admin')).toBe(false)
-    expect(requiresTwoFactor('staff')).toBe(false)
-  })
-
-  it('is mandatory for anyone who can reach the admin when required', () => {
-    process.env.REQUIRE_ADMIN_2FA = 'true'
+  it('is mandatory for anyone who can reach the admin', () => {
     expect(requiresTwoFactor('staff')).toBe(true)
     expect(requiresTwoFactor('admin')).toBe(true)
+  })
+
+  it('is not forced on customers', () => {
     expect(requiresTwoFactor('customer')).toBe(false)
+  })
+
+  it('tracks admin.access rather than being a separate list', () => {
     for (const role of ROLES) {
       expect(requiresTwoFactor(role)).toBe(can(role, 'admin.access'))
     }
