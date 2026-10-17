@@ -340,10 +340,11 @@
   -webkit-backdrop-filter: blur(6px);
 }
 @media (min-width: 1000px) {
-  /* four tall clips side by side, the active one lit; text and buttons on top */
+  /* tall clips side by side (one column per clip), the active one lit */
   .home-v3 .hv-slides {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 6px;
   }
   .home-v3 .hv-sl {

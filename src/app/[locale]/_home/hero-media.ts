@@ -1,7 +1,7 @@
 /**
  * Home hero media — the ONLY place the hero videos and their posters are named.
  *
- * ⚠ VIDEO RIGHTS: these four clips come from the design package v3.4, whose
+ * ⚠ VIDEO RIGHTS: these three clips come from the design package v3.4, whose
  * README says they were taken from Pinterest. They must be licensed, or
  * replaced with licensed footage (e.g. Pexels) or the client's own filming,
  * BEFORE LAUNCH. To swap them, drop the new files into public/brand/hero/ and
@@ -48,14 +48,6 @@ export const HERO_CLIPS: readonly HeroClip[] = [
     poster: '/brand/hero/hero-uluwatu.jpg',
     label: 'hv4_pl_uluwatu',
     short: 'hv4_pl_uluwatu_s',
-  },
-  {
-    id: 'ulundanu',
-    webm: '/brand/hero/hero-ulundanu.webm',
-    mp4: '/brand/hero/hero-ulundanu.mp4',
-    poster: '/brand/hero/hero-ulundanu.jpg',
-    label: 'hv4_pl_ulundanu',
-    short: 'hv4_pl_ulundanu_s',
   },
 ]
 
