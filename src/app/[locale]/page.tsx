@@ -10,9 +10,9 @@
  *   planning today  photo + icon cards, one per service page (svc-cards.tsx)
  *   in the mood     free map places by category (listMapPlaces, redacted for
  *                   an anonymous visitor) as photo cards → /places/…
- *   most requested  photo cards of the top activities (events excluded),
- *                   itineraries and packages, with type tabs; a swipe row on
- *                   phones/tablets, three per row on desktop
+ *   most requested  photo cards of the top activities only (client; events
+ *                   excluded); a swipe row on phones/tablets, three per row
+ *                   on desktop
  *   who we are      short strip: image marquee + three values → /about
  *   reviews         the top activities' own reviews in two endless rows
  *                   moving in opposite directions (hidden when none)
@@ -33,7 +33,7 @@ import { notFound } from 'next/navigation'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { LinkButton, SectionHead } from '@/components/bt'
-import { ActivityCard, ItineraryCard, PackageCard, PlaceCard } from '@/components/cards'
+import { ActivityCard, PlaceCard } from '@/components/cards'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
@@ -42,19 +42,11 @@ import { pick, pickOptional } from '@/lib/content/localize'
 import {
   listActivities,
   listArticles,
-  listItineraries,
   listMapPlaces,
   listMapTaxonomy,
-  listPackages,
   reviewsForActivity,
 } from '@/lib/content/queries'
-import type {
-  ActivitySummary,
-  ArticleSummary,
-  ItinerarySummary,
-  PackageSummary,
-  ReviewDto,
-} from '@/lib/content/types'
+import type { ActivitySummary, ArticleSummary, ReviewDto } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
 
 import { pageMetadata } from './_meta'
@@ -76,8 +68,6 @@ const CATALOGUE_LIMIT = 40
 /** Places per mood tab. */
 const MOOD_CARD_COUNT = 4
 const MOOD_TAB_LIMIT = 7
-/** "Most requested": the package's mix, in its order (2 itineraries, 4 activities, 3 packages). */
-const MR_PATTERN = ['iti', 'act', 'pkg', 'act', 'iti', 'act', 'pkg', 'act', 'pkg'] as const
 /** Cards shown per tab. */
 const MR_SHOWN = 6
 const REVIEW_SOURCE_COUNT = 8
@@ -123,44 +113,6 @@ function firstGrapheme(value: string): string {
   return first?.segment.toUpperCase() ?? '?'
 }
 
-type Requested =
-  | { kind: 'act'; activity: ActivitySummary }
-  | { kind: 'iti'; itinerary: ItinerarySummary }
-  | { kind: 'pkg'; pkg: PackageSummary }
-
-/** The package's mix of the three lists; a short list is topped up from the others. */
-function mostRequested(
-  activities: readonly ActivitySummary[],
-  itineraries: readonly ItinerarySummary[],
-  packages: readonly PackageSummary[],
-): Requested[] {
-  const queues = { act: [...activities], iti: [...itineraries], pkg: [...packages] }
-  const take = (kind: Requested['kind']): Requested | null => {
-    if (kind === 'act') {
-      const activity = queues.act.shift()
-      return activity ? { kind, activity } : null
-    }
-    if (kind === 'iti') {
-      const itinerary = queues.iti.shift()
-      return itinerary ? { kind, itinerary } : null
-    }
-    const pkg = queues.pkg.shift()
-    return pkg ? { kind, pkg } : null
-  }
-  const out: Requested[] = []
-  for (const kind of MR_PATTERN) {
-    const item = take(kind) ?? take('act') ?? take('pkg') ?? take('iti')
-    if (item) out.push(item)
-  }
-  return out
-}
-
-function requestedKey(item: Requested): string {
-  if (item.kind === 'act') return item.activity.id
-  if (item.kind === 'iti') return item.itinerary.id
-  return item.pkg.id
-}
-
 /** Repeat a short list until it has at least `min` entries. */
 function fill<T>(items: readonly T[], min: number): T[] {
   if (items.length === 0) return []
@@ -199,48 +151,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const t = await getTranslations()
 
-  const [catalogue, itineraries, packages, mapPlaces, taxonomy, articles] = await Promise.all([
+  const [catalogue, mapPlaces, taxonomy, articles] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
-    listItineraries(),
-    listPackages(),
     listMapPlaces(),
     listMapTaxonomy(),
     listArticles({ limit: BLOG_COUNT, locale }),
   ])
 
-  // --- most requested (activities without events, itineraries, packages) ----
-  const topActivities = catalogue.filter((activity) => !inCategory(activity, EVENTS_CATEGORY_KEY))
-  const requested = mostRequested(topActivities, itineraries, packages)
-  const mrCard = (item: Requested) => (
-    <div key={requestedKey(item)} className="mr-item">
-      {item.kind === 'act' ? (
-        <ActivityCard activity={item.activity} />
-      ) : item.kind === 'iti' ? (
-        <ItineraryCard itinerary={item.itinerary} />
-      ) : (
-        <PackageCard pkg={item.pkg} />
-      )}
-    </div>
-  )
-  const mrTabs: MoodTab[] = (
-    [
-      ['all', 'hv4_mr_t_all'],
-      ['act', 'hv4_mr_t_act'],
-      ['iti', 'hv4_mr_t_iti'],
-      ['pkg', 'hv4_mr_t_pkg'],
-    ] as const
-  )
-    .map(([key, label]) => ({
-      key,
-      label: t(label),
-      count: key === 'all' ? requested.length : requested.filter((r) => r.kind === key).length,
-    }))
-    .filter((tab) => tab.count > 0)
-  const mrPanels: Record<string, ReactNode> = {}
-  for (const tab of mrTabs) {
-    const items = requested.filter((r) => tab.key === 'all' || r.kind === tab.key)
-    mrPanels[tab.key] = <div className="mr-row">{items.slice(0, MR_SHOWN).map(mrCard)}</div>
-  }
+  // --- most requested: activities only (client) ------------------------------
+  const requestedActivities = catalogue
+    .filter((activity) => !inCategory(activity, EVENTS_CATEGORY_KEY))
+    .slice(0, MR_SHOWN)
 
   // --- reviews ----------------------------------------------------------------
   const reviewSources = catalogue.slice(0, REVIEW_SOURCE_COUNT)
@@ -432,8 +353,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </section>
       )}
 
-      {/* 4 — most requested: photo cards with type tabs */}
-      {requested.length > 0 && (
+      {/* 4 — most requested: activities only (client) */}
+      {requestedActivities.length > 0 && (
         <section className="sec-tight bg-ivory2 mr-sec" aria-labelledby="mr-h">
           <div className="wrap">
             <SectionHead
@@ -441,19 +362,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               eyebrow={t('hv4_mr_eyebrow')}
               title={t('hv4_mr_title')}
               action={
-                <LinkButton href="/services" variant="ghost">
-                  {t('hv4_mr_all')}
+                <LinkButton href="/activities" variant="ghost">
+                  {t('hv4_mr_all_act')}
                 </LinkButton>
               }
             />
-            <MoodTabs
-              id="mr"
-              tabs={mrTabs}
-              panels={mrPanels}
-              label={t('hv4_mr_tabs')}
-              className="mr-tabs"
-              panelClassName="mr-panel"
-            />
+            <div className="mr-panel">
+              <div className="mr-row">
+                {requestedActivities.map((activity) => (
+                  <div key={activity.id} className="mr-item">
+                    <ActivityCard activity={activity} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}
