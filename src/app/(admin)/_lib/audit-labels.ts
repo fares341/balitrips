@@ -61,6 +61,8 @@ export function auditValue(
   if (typeof value === 'number' || typeof value === 'bigint') return String(value)
   if (typeof value === 'string') {
     if (UUID.test(value)) return t('audit.linked_item')
+    const known = /^[a-z_]{2,40}$/.test(value) ? translated(t, `audit.value_${value}`) : null
+    if (known) return known
     if (ISO_DATE.test(value)) {
       const date = new Date(value)
       if (!Number.isNaN(date.getTime())) {
@@ -105,8 +107,13 @@ export function auditLines(
   if (typeof data !== 'object' || Array.isArray(data)) {
     return [{ field: '', value: auditValue(t, data, locale, intl) }]
   }
-  return Object.entries(data as Record<string, unknown>).map(([key, value]) => ({
-    field: translated(t, `audit.field_${key}`) ?? words(key),
-    value: auditValue(t, value, locale, intl),
-  }))
+  return (
+    Object.entries(data as Record<string, unknown>)
+      // Internal links (`sessionId`, `placeId`…) say nothing to a reader.
+      .filter(([key, value]) => !(/Id$/.test(key) && typeof value === 'string' && UUID.test(value)))
+      .map(([key, value]) => ({
+        field: translated(t, `audit.field_${key}`) ?? words(key),
+        value: auditValue(t, value, locale, intl),
+      }))
+  )
 }

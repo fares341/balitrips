@@ -14,7 +14,7 @@ const section: Section = {
     'assistant.status_budget':
       'Today’s spending limit has been reached. The assistants start again tomorrow, or you can raise the daily limit in Settings.',
     'assistant.public_state': 'Website assistant: {state}',
-    'assistant.studio_state': 'Studio assistant: {state}',
+    'assistant.studio_state': 'Dashboard assistant: {state}',
     'assistant.state_on': 'on',
     'assistant.state_off': 'off',
     'assistant.usage_today': 'Today: {messages} messages, {cost} spent of the {budget} daily limit',
@@ -91,7 +91,7 @@ const section: Section = {
     'assistant.key_missing':
       'Not connected yet — contact your technical team to activate the assistant.',
     'assistant.public_enabled': 'Website assistant on',
-    'assistant.studio_enabled': 'Studio assistant on',
+    'assistant.studio_enabled': 'Dashboard assistant on',
     'assistant.model': 'AI model',
     'assistant.model_hint':
       'Leave empty to use the recommended model ({model}). Change it only if your technical team asks you to.',
@@ -130,7 +130,7 @@ const section: Section = {
     'assistant.status_budget':
       'تم بلوغ حد الإنفاق لليوم. يعود المساعدان للعمل غداً، أو يمكنك رفع الحد اليومي من الإعدادات.',
     'assistant.public_state': 'مساعد الموقع: {state}',
-    'assistant.studio_state': 'مساعد الاستوديو: {state}',
+    'assistant.studio_state': 'مساعد لوحة التحكم: {state}',
     'assistant.state_on': 'يعمل',
     'assistant.state_off': 'متوقف',
     'assistant.usage_today': 'اليوم: {messages} رسالة، وتم إنفاق {cost} من الحد اليومي {budget}',
@@ -205,7 +205,7 @@ const section: Section = {
     'assistant.key_set': 'متصل',
     'assistant.key_missing': 'غير متصل بعد — تواصل مع فريقك التقني لتفعيل المساعد.',
     'assistant.public_enabled': 'تشغيل مساعد الموقع',
-    'assistant.studio_enabled': 'تشغيل مساعد الاستوديو',
+    'assistant.studio_enabled': 'تشغيل مساعد لوحة التحكم',
     'assistant.model': 'نموذج الذكاء الاصطناعي',
     'assistant.model_hint':
       'اتركه فارغاً لاستخدام النموذج الموصى به ({model}). لا تغيّره إلا إذا طلب منك فريقك التقني ذلك.',

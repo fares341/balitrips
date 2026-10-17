@@ -13,6 +13,7 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, PublishPill, Table } from '../../_ui/table'
+import { accessKindLabel } from '../orders/labels'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,10 +91,10 @@ export default async function PlansPage({
                   <div className="a-mono a-muted">{plan.slug}</div>
                 </td>
                 <td>{formatMoney(plan.priceMinor, plan.currency, intl)}</td>
-                <td className="a-mono">
+                <td>
                   {plan.entitlementKind === 'basic'
                     ? t('plans.kind_none_short')
-                    : plan.entitlementKind}
+                    : accessKindLabel(t, plan.entitlementKind)}
                 </td>
                 <td>
                   {plan.durationDays === null
