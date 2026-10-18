@@ -147,3 +147,40 @@ export function buildRegionBubbles(
     }
   })
 }
+
+/**
+ * The region a point belongs to, for a new place: the closest neighbourhood
+ * (a region with a parent) whose circle holds the point, else the closest
+ * broad region within its circle, else the closest broad region centre
+ * within 40 km. Regions with no centre (and no fallback) are skipped. Null
+ * when nothing is near (the admin picks one in the editor).
+ */
+export function regionAt(
+  regions: readonly MapRegion[],
+  point: { lat: number; lon: number },
+): MapRegion | null {
+  const measured = regions
+    .map((region) => {
+      const center = centerOf(region)
+      if (center === null) return null
+      const km = haversineKm(center, point)
+      const radius = region.radiusKm ?? (region.parentKey !== null ? 4 : 15)
+      return { region, km, inside: km <= radius }
+    })
+    .filter((entry): entry is { region: MapRegion; km: number; inside: boolean } => entry !== null)
+  const closest = (list: typeof measured) =>
+    list.reduce<(typeof measured)[number] | null>(
+      (best, entry) => (best === null || entry.km < best.km ? entry : best),
+      null,
+    )?.region ?? null
+  return (
+    closest(measured.filter((e) => e.inside && e.region.parentKey !== null)) ??
+    closest(measured.filter((e) => e.inside)) ??
+    closest(measured.filter((e) => e.region.parentKey === null && e.km <= 40))
+  )
+}
+
+/** Inside the free area's circle: a new place there is free by default, like its neighbours. */
+export function inFreeZone(zone: FreeZone | null, point: { lat: number; lon: number }): boolean {
+  return zone !== null && haversineKm(zone, point) <= zone.radiusKm
+}

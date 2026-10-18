@@ -36,8 +36,22 @@ function pair(a: string | undefined, b: string | undefined, source: ParsedCoords
   return valid(lat, lon) ? { lat, lon, source } : null
 }
 
+/**
+ * Arabic-Indic (٠–٩) and Persian (۰–۹) digits to ASCII, the Arabic decimal
+ * separator (٫) to ".", the Arabic comma (،) to "," and a typographic minus
+ * (−) to "-", so "-٨٫٥٠٦٩، ١١٥٫٢٦٢٥" reads like "-8.5069, 115.2625".
+ */
+export function normalizeDigits(input: string): string {
+  return input
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/\u066b/g, '.')
+    .replace(/[\u060c\u066c]/g, ',')
+    .replace(/\u2212/g, '-')
+}
+
 export function parseCoordinateText(input: string): ParsedCoords | null {
-  let text = input.trim()
+  let text = normalizeDigits(input).trim()
   if (text === '') return null
   try {
     text = decodeURIComponent(text)
