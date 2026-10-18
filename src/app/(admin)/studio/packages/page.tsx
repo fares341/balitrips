@@ -116,7 +116,6 @@ export default async function PackagesPage({
                   <Link href={adminHref(`/packages/${row.id}`)}>
                     {pick(row.name, locale, row.slug)}
                   </Link>
-                  <div className="a-mono a-muted">{row.slug}</div>
                 </td>
                 <td>
                   <PublishPill status={row.status} />

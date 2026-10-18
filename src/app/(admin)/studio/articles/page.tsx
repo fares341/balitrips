@@ -138,7 +138,6 @@ export default async function ArticlesPage({
                           : t('articles.gate_vip')}
                       </Pill>
                     ) : null}
-                    <div className="a-mono a-muted">{row.slug}</div>
                   </td>
                   <td>
                     {row.categoryKey ? (

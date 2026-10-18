@@ -117,7 +117,6 @@ export default async function LandmarksPage({
                   <Link href={adminHref(`/landmarks/${row.id}`)}>
                     {pick(row.name, 'en', row.slug)}
                   </Link>
-                  <div className="a-mono a-muted">{row.slug}</div>
                 </td>
                 <td>{pick(row.type, 'en') || <span className="a-muted">—</span>}</td>
                 <td>

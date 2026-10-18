@@ -160,7 +160,6 @@ export default async function ItinerariesPage({
                     <Link href={adminHref(`/itineraries/${row.id}`)}>
                       {pick(row.name, locale, row.slug)}
                     </Link>
-                    <div className="a-mono a-muted">{row.slug}</div>
                   </td>
                   <td>
                     <PublishPill status={row.status} />

@@ -209,10 +209,7 @@ export default async function FilesPage() {
                 )
                 return (
                   <tr key={doc.id}>
-                    <td>
-                      {pick(doc.name, 'en', doc.slug)}
-                      <div className="a-muted a-mono">{doc.slug}</div>
-                    </td>
+                    <td>{pick(doc.name, 'en', doc.slug)}</td>
                     <td>
                       v{doc.version}{' '}
                       {doc.version === doc.currentVersion ? (

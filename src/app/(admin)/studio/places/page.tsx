@@ -132,7 +132,6 @@ export default async function PlacesPage({
                   <Link href={adminHref(`/places/${row.id}`)}>
                     {pick(row.name, 'en', row.slug)}
                   </Link>
-                  <div className="a-mono a-muted">{row.slug}</div>
                 </td>
                 <td>{pick(row.category, 'en') || <span className="a-muted">—</span>}</td>
                 <td>

@@ -88,7 +88,6 @@ export default async function PlansPage({
                   ) : (
                     pick(plan.name, locale, plan.slug)
                   )}
-                  <div className="a-mono a-muted">{plan.slug}</div>
                 </td>
                 <td>{formatMoney(plan.priceMinor, plan.currency, intl)}</td>
                 <td>

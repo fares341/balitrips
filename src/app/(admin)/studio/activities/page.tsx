@@ -165,7 +165,6 @@ export default async function ActivitiesPage({
                   <Link href={adminHref(`/activities/${row.id}`)}>
                     {pick(row.name, locale, row.slug)}
                   </Link>
-                  <div className="a-mono a-muted">{row.slug}</div>
                 </td>
                 <td>
                   {row.regionKey ? (
