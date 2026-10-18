@@ -1349,6 +1349,14 @@ details > summary.a-btn::-webkit-details-marker {
   font-size: 15px;
 }
 
+.a-text-code {
+  font-weight: 400;
+}
+
+.a-text-code > summary {
+  cursor: pointer;
+}
+
 /* --- Calendar ------------------------------------------------------------- */
 
 .a-cal {

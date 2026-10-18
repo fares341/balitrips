@@ -25,8 +25,8 @@ export default async function TranslationsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('translations.write')
-  const { t, intl } = await getAdminI18n()
+  const session = await requireCapability('translations.write')
+  const { t, intl, locale } = await getAdminI18n()
   const num = new Intl.NumberFormat(intl)
   const label = (prefix: string, value: string) => {
     const key = `${prefix}${value.toLowerCase().replace(/\s+/g, '_')}`
@@ -45,6 +45,7 @@ export default async function TranslationsPage({
     const match = or(
       ilike(translations.key, like),
       sql`${translations.values} ->> 'en' ilike ${like}`,
+      sql`${translations.values} ->> 'ar' ilike ${like}`,
     )
     if (match) filters.push(match)
   }
@@ -151,7 +152,17 @@ export default async function TranslationsPage({
           {rows.map((row) => (
             <form className="a-day" key={row.id} action={saveTranslation.bind(null, row.id)}>
               <div className="a-day-head">
-                <div className="a-day-no a-mono">{row.key}</div>
+                <div className="a-day-no">
+                  <span dir="auto">{headingOf(row.values, locale) ?? row.key}</span>
+                  {session.role === 'admin' ? (
+                    <details className="a-hint a-text-code">
+                      <summary>{t('translations.key')}</summary>
+                      <span className="a-mono" dir="ltr">
+                        {row.key}
+                      </span>
+                    </details>
+                  ) : null}
+                </div>
                 <div className="a-actions">
                   {locales
                     .filter((locale) => (row.values?.[locale] ?? '') === '')
@@ -269,4 +280,11 @@ export default async function TranslationsPage({
       </div>
     </>
   )
+}
+
+/** The text itself, in the Studio language (English when missing), shortened for a heading. */
+function headingOf(values: Partial<Record<string, string>> | null, locale: string): string | null {
+  const text = (values?.[locale] ?? '').trim() || (values?.en ?? '').trim()
+  if (text === '') return null
+  return text.length > 90 ? `${text.slice(0, 90)}…` : text
 }
