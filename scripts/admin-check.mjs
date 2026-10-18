@@ -339,6 +339,146 @@ async function signIn(page, email, secret, start) {
   return steps
 }
 
+/* ---- Money round trips (admin) ------------------------------------------ */
+// Prices and fees are typed as people write them ("123,45", Arabic digits);
+// the server stores minor units / basis points. Save, reopen, and check the
+// form and the public site show the same amount. Original values are put back.
+function record(role, path, problems, shot = '') {
+  results.push({
+    role,
+    path,
+    width: 1440,
+    status: 0,
+    final: path,
+    ok: problems.length === 0,
+    problems,
+    shot,
+  })
+  say(`${problems.length === 0 ? 'OK  ' : 'FAIL'} ${role} ${path} ${problems.join(' | ')}`)
+  if (problems.length > 0) console.log(`::error::${path}: ${problems.join(' | ')}`)
+  flush()
+}
+
+async function submitAndSettle(page, form) {
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'networkidle', timeout: 60000 }).catch(() => {}),
+    form.locator('button[type="submit"]').first().click(),
+  ])
+}
+
+async function tierRoundTrip(page) {
+  const label = 'money: activity package price'
+  const problems = []
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(`${BASE}${ADMIN}/activities`, { waitUntil: 'networkidle', timeout: 60000 })
+  const links = await page
+    .$$eval(
+      'main a[href]',
+      (as, prefix) =>
+        [...new Set(as.map((a) => a.getAttribute('href') ?? ''))].filter(
+          (h) => h.startsWith(prefix + '/') && !h.endsWith('/new') && !h.includes('?'),
+        ),
+      `${ADMIN}/activities`,
+    )
+    .catch(() => [])
+  for (const href of links.slice(0, 15)) {
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
+    const tier = page.locator('form[data-tier="published"]').first()
+    if ((await tier.count()) === 0) continue
+    const slug = await page.locator('input[name="slug"]').first().inputValue()
+    const pub = await page.goto(`${BASE}/en/activities/${slug}`, {
+      waitUntil: 'networkidle',
+      timeout: 60000,
+    })
+    if (!pub || pub.status() !== 200) continue
+
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
+    const form = page.locator('form[data-tier="published"]').first()
+    const input = form.locator('input[name="priceMinor"]')
+    const original = await input.inputValue()
+    say(`[money] ${href} tier price was ${original} (public /en/activities/${slug})`)
+
+    // Arabic digits and a comma: 123,45 → 12345 minor units → "123.45".
+    await input.fill('١٢٣,٤٥')
+    await submitAndSettle(page, form)
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
+    const reopened = await page
+      .locator('form[data-tier="published"]')
+      .first()
+      .locator('input[name="priceMinor"]')
+      .inputValue()
+    if (reopened !== '123.45') problems.push(`reopened form shows "${reopened}", expected "123.45"`)
+    await page
+      .screenshot({ path: `${OUT}/shots/money-1-tier-form.png`, fullPage: false })
+      .catch(() => {})
+
+    await page.goto(`${BASE}/en/activities/${slug}`, { waitUntil: 'networkidle', timeout: 60000 })
+    const publicText = await page.evaluate(() => document.body.innerText)
+    if (!publicText.includes('123.45')) problems.push('public activity page does not show 123.45')
+    await page
+      .screenshot({ path: `${OUT}/shots/money-2-public-price.png`, fullPage: true })
+      .catch(() => {})
+
+    // Garbage is refused with a message, and nothing changes.
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
+    const again = page.locator('form[data-tier="published"]').first()
+    await again.locator('input[name="priceMinor"]').fill('12abc')
+    await submitAndSettle(page, again)
+    const flash = await page
+      .locator('.a-flash.err, [role="alert"]')
+      .allInnerTexts()
+      .catch(() => [])
+    if (!flash.some((text) => /125\.00|125٫00|12abc/.test(text))) {
+      problems.push(`no friendly error for "12abc" (got: ${flash.join(' / ').slice(0, 200)})`)
+    }
+    await page
+      .screenshot({ path: `${OUT}/shots/money-3-garbage-refused.png`, fullPage: false })
+      .catch(() => {})
+
+    // Put the original price back.
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
+    const restore = page.locator('form[data-tier="published"]').first()
+    await restore.locator('input[name="priceMinor"]').fill(original)
+    await submitAndSettle(page, restore)
+    record('admin', label, problems, 'shots/money-1-tier-form.png')
+    return
+  }
+  record('admin', label, ['no published activity with a published package found'])
+}
+
+async function feeRoundTrip(page) {
+  const label = 'money: settings fees'
+  const problems = []
+  const url = `${BASE}${ADMIN}/config`
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 })
+  const form = page.locator('form:has(#serviceFeeBps)')
+  const before = {
+    service: await page.locator('#serviceFeeBps').inputValue(),
+    booking: await page.locator('#bookingFeeMinor').inputValue(),
+  }
+  say(`[money] fees were service ${before.service}%, booking ${before.booking}`)
+  await page.locator('#serviceFeeBps').fill('٢٫٥')
+  await page.locator('#bookingFeeMinor').fill('5,5')
+  await submitAndSettle(page, form)
+  await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 })
+  const service = await page.locator('#serviceFeeBps').inputValue()
+  const booking = await page.locator('#bookingFeeMinor').inputValue()
+  if (service !== '2.5') problems.push(`service fee reopened as "${service}", expected "2.5"`)
+  if (booking !== '5.50') problems.push(`booking fee reopened as "${booking}", expected "5.50"`)
+  await page
+    .locator('#serviceFeeBps')
+    .scrollIntoViewIfNeeded()
+    .catch(() => {})
+  await page
+    .screenshot({ path: `${OUT}/shots/money-4-settings-fees.png`, fullPage: false })
+    .catch(() => {})
+  await page.locator('#serviceFeeBps').fill(before.service)
+  await page.locator('#bookingFeeMinor').fill(before.booking)
+  await submitAndSettle(page, page.locator('form:has(#serviceFeeBps)'))
+  record('admin', label, problems, 'shots/money-4-settings-fees.png')
+}
+
 const browser = await chromium.launch()
 
 /* 1. Logged out ------------------------------------------------------------ */
@@ -440,6 +580,14 @@ for (const role of ['admin', 'staff', 'customer']) {
       )
       .catch(() => null)
     if (newHref) await visit(page, role, newHref, 1440)
+  }
+  if (role === 'admin') {
+    await tierRoundTrip(page).catch((e) =>
+      record('admin', 'money: activity package price', [`threw: ${e.message.split('\n')[0]}`]),
+    )
+    await feeRoundTrip(page).catch((e) =>
+      record('admin', 'money: settings fees', [`threw: ${e.message.split('\n')[0]}`]),
+    )
   }
   await ctx.close()
 }
