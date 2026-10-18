@@ -532,12 +532,15 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
       type: 'symbol',
       source: 'omt',
       'source-layer': 'poi',
-      minzoom: 15,
-      filter: ['<=', ['coalesce', ['get', 'rank'], 99], 25],
+      // Half the place labels it used to show (client: calmer map, street
+      // names stay): later zoom, only the better-known points, more spacing.
+      minzoom: 16,
+      filter: ['<=', ['coalesce', ['get', 'rank'], 99], 12],
       layout: {
         'text-field': NAME,
         'text-font': FONT,
         'text-size': 11,
+        'text-padding': 10,
         'text-max-width': 9,
         'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
         'text-radial-offset': 0.4,
@@ -588,9 +591,6 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
             'town',
             'village',
             'suburb',
-            'hamlet',
-            'neighbourhood',
-            'quarter',
             'island',
             'islet',
           ],
@@ -600,6 +600,7 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
         'text-field': NAME,
         'text-font': FONT,
         'text-max-width': 8,
+        'text-padding': 12,
         'text-size': [
           'match',
           ['get', 'class'],
