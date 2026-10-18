@@ -6,6 +6,7 @@ import { driverCapacity, driverVehicles } from '@/db/schema'
 import { todayInBali } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { formatMoneyInput } from '@/lib/money-input'
 import { localeConfig, locales } from '@/i18n/config'
 
 import type { Translate } from '../../_i18n'
@@ -279,13 +280,14 @@ function VehicleForm({
           />
         </div>
         <div className="a-field">
-          <label htmlFor={`rate-${id}`}>{t('capacity.day_rate_minor')}</label>
+          <label htmlFor={`rate-${id}`}>{t('capacity.day_rate')}</label>
           <input
             className="a-input"
             id={`rate-${id}`}
             name="dayRateMinor"
-            inputMode="numeric"
-            defaultValue={String(vehicle?.dayRateMinor ?? 0)}
+            inputMode="decimal"
+            dir="ltr"
+            defaultValue={formatMoneyInput(vehicle?.dayRateMinor ?? 0, vehicle?.currency ?? 'USD')}
           />
         </div>
         <div className="a-field">

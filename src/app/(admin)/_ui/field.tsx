@@ -1,5 +1,6 @@
 import type { Localized } from '@/db/schema'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
+import { formatMoneyInput } from '@/lib/money-input'
 
 import { localeFieldName } from '../_lib/form'
 import { uiI18n } from './i18n-server'
@@ -215,10 +216,10 @@ export async function StatusField({ value }: { value?: string | null }) {
 /**
  * Money input.
  *
- * Minor units, entered as an integer, with the formatted value shown beside
- * it. Deliberately not a decimal input: the minor-unit exponent varies by
- * currency (JPY 0, USD 2, KWD 3), so "12.50" has no single meaning and a
- * float round-trip is exactly how a price drifts by a cent.
+ * Typed as people write prices ("125.00", "125,50", Arabic digits). The
+ * server action converts it to integer minor units with the currency's own
+ * decimals (`fmoney` in _lib/form.ts); the stored value is shown back the
+ * same way. Storage is unchanged: integer minor units plus a currency code.
  */
 export async function MoneyField({
   minorName = 'priceMinor',
@@ -236,18 +237,13 @@ export async function MoneyField({
   const { t } = await uiI18n()
   return (
     <>
-      <Field
-        label={t('ui.money_minor', { label: label ?? t('common.price') })}
-        htmlFor={minorName}
-        hint={t('ui.money_hint')}
-      >
+      <Field label={label ?? t('common.price')} htmlFor={minorName} hint={t('ui.money_hint')}>
         <TextInput
           id={minorName}
           name={minorName}
-          inputMode="numeric"
-          pattern="[0-9]*"
+          inputMode="decimal"
           dir="ltr"
-          defaultValue={String(minor ?? 0)}
+          defaultValue={formatMoneyInput(minor ?? 0, currency ?? 'USD')}
           required
         />
       </Field>

@@ -17,7 +17,8 @@ import {
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fminor,
+  fcurrencyOr,
+  fmoney,
   fmulti,
   freq,
   fstr,
@@ -51,7 +52,7 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
       days: fint(form, 'days', 1, t('packages.days')),
       maxGuests: fint(form, 'maxGuests', 1, t('packages.max_guests')),
       driverIncluded: fbool(form, 'driverIncluded'),
-      priceMinor: fminor(form, 'priceMinor', t('common.price')),
+      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
       currency: fcurrency(form, 'currency'),
       // The prototype advertised "from $X" and then charged a flat X no
       // matter how many guests were entered. This makes the intent explicit

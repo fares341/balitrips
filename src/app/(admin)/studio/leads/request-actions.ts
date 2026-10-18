@@ -17,7 +17,7 @@ import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { fbool, fcurrency, fintOrNull, fstr, fuuid } from '../../_lib/form'
+import { fbool, fcurrency, fcurrencyOr, fmoneyOrNull, fstr, fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -136,7 +136,12 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
     if (!can(actor.role, 'config.write') && !can(actor.role, 'orders.refund')) {
       throw new Error(t('leads.err_price_managers_only'))
     }
-    const minor = fintOrNull(form, 'quoteMinor', t('leads.price'))
+    const minor = fmoneyOrNull(
+      form,
+      'quoteMinor',
+      fcurrencyOr(form, 'quoteCurrency'),
+      t('leads.price'),
+    )
     if (minor !== null && minor <= 0) throw new Error(t('leads.err_price_positive'))
     const currency = minor === null ? null : fcurrency(form, 'quoteCurrency')
 

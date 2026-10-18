@@ -79,12 +79,9 @@ export default async function AssistantSettingsPage({
           <TextInput
             id="dailyBudgetUsd"
             name="dailyBudgetUsd"
-            type="number"
-            min={0}
-            max={1000}
-            step="0.01"
+            inputMode="decimal"
             dir="ltr"
-            defaultValue={settings.dailyBudgetUsd}
+            defaultValue={settings.dailyBudgetUsd.toFixed(2)}
           />
         </Field>
         <LocalizedField

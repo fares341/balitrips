@@ -20,7 +20,8 @@ import {
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fminor,
+  fcurrencyOr,
+  fmoney,
   fmulti,
   freq,
   fstr,
@@ -60,7 +61,7 @@ export async function saveActivity(id: string, form: FormData): Promise<void> {
       description: flocalizedOrNull(form, 'description'),
       duration: flocalizedOrNull(form, 'duration'),
       regionId: fuuidOrNull(form, 'regionId', t('activities.region')),
-      priceMinor: fminor(form, 'priceMinor', t('common.price')),
+      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
       currency: fcurrency(form, 'currency'),
       rating: ratingFromTenths(form, t),
       reviewCount: fint(form, 'reviewCount', 0, t('activities.f_review_count')),
@@ -303,7 +304,7 @@ async function addonIdsOf(activityId: string): Promise<string[]> {
 }
 
 async function tierValuesFrom(form: FormData, t: Translate, activityId: string) {
-  const priceMinor = fminor(form, 'priceMinor', t('common.price'))
+  const priceMinor = fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price'))
   if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
   const maxGuests = fintOrNull(form, 'maxGuests', t('activities.max_guests'))
@@ -532,7 +533,7 @@ async function addonValuesFrom(
   activityId: string,
   selfId: string | null,
 ) {
-  const priceMinor = fminor(form, 'priceMinor', t('common.price'))
+  const priceMinor = fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price'))
   if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
   const pricing = fenum(

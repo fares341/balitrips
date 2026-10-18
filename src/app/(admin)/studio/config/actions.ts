@@ -17,12 +17,16 @@ import { SATELLITE_PROVIDERS } from '@/app/[locale]/map/map-style'
 import {
   fbool,
   fcurrency,
+  fcurrencyOr,
   fdate,
+  fdecimal,
   fenum,
   ffloat,
   fint,
   flines,
   flocalized,
+  fmoney,
+  fpercent,
   freq,
   fstr,
   localeFieldName,
@@ -176,14 +180,22 @@ export async function saveCurrencies(form: FormData): Promise<void> {
   )
 }
 
-/** Fees. Basis points and integer minor units — never a percentage float. */
+/**
+ * Fees. Typed as people write them ("2.5" %, "5.00"); stored as basis points
+ * and integer minor units — never a percentage float.
+ */
 export async function saveFees(form: FormData): Promise<void> {
   await save(
     'fees',
     (t) => ({
-      serviceFeeBps: fint(form, 'serviceFeeBps', 0, t('config.label_service_fee')),
-      bookingFeeMinor: fint(form, 'bookingFeeMinor', 0, t('config.label_booking_fee')),
-      paymentSurchargeBps: fint(form, 'paymentSurchargeBps', 0, t('config.label_surcharge')),
+      serviceFeeBps: fpercent(form, 'serviceFeeBps', 0, t('config.label_service_fee')),
+      bookingFeeMinor: fmoney(
+        form,
+        'bookingFeeMinor',
+        fcurrencyOr(form, 'feeCurrency'),
+        t('config.label_booking_fee'),
+      ),
+      paymentSurchargeBps: fpercent(form, 'paymentSurchargeBps', 0, t('config.label_surcharge')),
       feeCurrency: fcurrency(form, 'feeCurrency'),
     }),
     'config.ok_fees',
@@ -285,7 +297,7 @@ export async function saveAssistantSettings(form: FormData): Promise<void> {
       model: fstr(form, 'model') ?? '',
       fallbackModel: fstr(form, 'fallbackModel') ?? '',
       dailyMessagesPerIp: fint(form, 'dailyMessagesPerIp', 40, t('assistant.daily_ip')),
-      dailyBudgetUsd: ffloat(form, 'dailyBudgetUsd', t('assistant.daily_budget')),
+      dailyBudgetUsd: fdecimal(form, 'dailyBudgetUsd', t('assistant.daily_budget')),
       welcome: flocalized(form, 'welcome'),
     }),
     'assistant.ok_saved',

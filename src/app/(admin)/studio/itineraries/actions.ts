@@ -28,7 +28,8 @@ import {
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fminor,
+  fcurrencyOr,
+  fmoney,
   fmulti,
   freq,
   fstr,
@@ -66,7 +67,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       spots: fintOrNull(form, 'spots', t('itineraries.f_spots')),
       tripType: flocalizedOrNull(form, 'tripType'),
       audience: flocalizedList(form, 'audience'),
-      priceMinor: fminor(form, 'priceMinor', t('common.price')),
+      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
       currency: fcurrency(form, 'currency'),
       heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
       // الوثيقة 4.2

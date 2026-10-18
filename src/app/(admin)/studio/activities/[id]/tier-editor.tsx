@@ -87,6 +87,7 @@ export async function TierEditor({
           <form
             key={tier.id}
             className="a-day"
+            data-tier={tier.status}
             action={saveActivityTier.bind(null, activityId, tier.id)}
           >
             <div className="a-day-head">

@@ -13,7 +13,8 @@ import {
   fint,
   flocalizedOrNull,
   flocalizedRequired,
-  fminor,
+  fcurrencyOr,
+  fmoney,
   freq,
 } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
@@ -47,7 +48,12 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       description: flocalizedOrNull(form, 'description'),
       minPassengers: fint(form, 'minPassengers', 1, t('capacity.min_passengers')),
       maxPassengers: fint(form, 'maxPassengers', 4, t('capacity.max_passengers')),
-      dayRateMinor: fminor(form, 'dayRateMinor', t('capacity.day_rate')),
+      dayRateMinor: fmoney(
+        form,
+        'dayRateMinor',
+        fcurrencyOr(form, 'currency'),
+        t('capacity.day_rate'),
+      ),
       currency: fcurrency(form, 'currency'),
       fleetSize: fint(form, 'fleetSize', 0, t('capacity.fleet_size')),
       sortOrder: fint(form, 'sortOrder', 0, t('common.order')),

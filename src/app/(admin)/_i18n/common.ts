@@ -186,8 +186,7 @@ const section: Section = {
     'ui.list_hint':
       'One item per line. Keep the same order in every language — a line left empty in English is removed.',
     'ui.status_hint': 'Only published items are visible and sellable on the site.',
-    'ui.money_minor': '{label} (in cents)',
-    'ui.money_hint': 'Enter the amount without a decimal point: 12500 means 125.00.',
+    'ui.money_hint': 'Type the amount as usual, e.g. 125.00 or 125,50.',
     'ui.currency_hint': '3-letter code, e.g. USD, IDR, SAR.',
     'ui.select_none': '— None —',
     'ui.checklist_empty': 'Nothing to choose from yet.',
@@ -234,6 +233,8 @@ const section: Section = {
       'This is already used by another item (for example the same web address or name). Please choose a different one.',
     'form.in_use': 'This item is still linked to other items, so the change wasn’t made.',
     'form.invalid_value': 'One of the values isn’t valid. Please check the form and try again.',
+    'form.not_amount': '{label} must be an amount like 125.00 (you entered “{value}”).',
+    'form.too_large': '{label} is too large. Please check the amount.',
   },
   ar: {
     'common.save': 'حفظ',
@@ -411,8 +412,7 @@ const section: Section = {
     'ui.list_hint':
       'عنصر واحد في كل سطر. حافظ على الترتيب نفسه في كل لغة — السطر الفارغ بالإنجليزية يُحذف.',
     'ui.status_hint': 'العناصر المنشورة فقط تظهر في الموقع ويمكن بيعها.',
-    'ui.money_minor': '{label} (بالسنت)',
-    'ui.money_hint': 'اكتب المبلغ بدون فاصلة عشرية: 12500 تعني 125.00.',
+    'ui.money_hint': 'اكتب المبلغ كالمعتاد، مثل 125.00 أو 125,50.',
     'ui.currency_hint': 'رمز من 3 أحرف، مثل USD أو IDR أو SAR.',
     'ui.select_none': '— لا شيء —',
     'ui.checklist_empty': 'لا توجد خيارات بعد.',
@@ -458,6 +458,8 @@ const section: Section = {
       'هذا مستخدم بالفعل في عنصر آخر (مثل رابط الصفحة نفسه أو الاسم نفسه). اختر قيمة مختلفة.',
     'form.in_use': 'هذا العنصر ما زال مرتبطاً بعناصر أخرى، لذلك لم يتم التغيير.',
     'form.invalid_value': 'إحدى القيم غير صالحة. راجع النموذج وحاول مرة أخرى.',
+    'form.not_amount': 'يجب أن يكون «{label}» مبلغاً مثل 125.00 (القيمة المدخلة: «{value}»).',
+    'form.too_large': 'قيمة «{label}» كبيرة جداً. راجع المبلغ.',
   },
 }
 

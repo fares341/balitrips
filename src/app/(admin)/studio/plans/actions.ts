@@ -20,7 +20,8 @@ import {
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fminor,
+  fcurrencyOr,
+  fmoney,
   freq,
   fstr,
 } from '../../_lib/form'
@@ -66,7 +67,7 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       description: flocalizedOrNull(form, 'description'),
       features: flocalizedList(form, 'features'),
       icon: fstr(form, 'icon')?.slice(0, 32) ?? null,
-      priceMinor: fminor(form, 'priceMinor', t('common.price')),
+      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
       currency: fcurrency(form, 'currency'),
       entitlementKind: fenum(form, 'entitlementKind', ENTITLEMENT_KINDS, 'map_access'),
       durationDays,

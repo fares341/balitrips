@@ -39,7 +39,7 @@ import { revokeOrderEntitlements } from '@/lib/orders/webhook'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { fminor, fstr, fuuid } from '../../_lib/form'
+import { fmoney, fstr, fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -70,10 +70,12 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
 
   try {
     const orderItemId = fuuid(form, 'orderItemId', t('orders.field_order_line'))
-    const amountMinor = fminor(form, 'amountMinor', t('orders.field_refund_amount'))
     const reason = fstr(form, 'reason')
-
-    if (amountMinor <= 0) throw new Error(t('orders.err_amount_positive'))
+    // The amount is typed as money ("25.00"); its decimals depend on the
+    // order's currency, so it is read once the order is loaded. A first read
+    // with the most common currency rejects garbage before any locking.
+    fmoney(form, 'amountMinor', 'USD', t('orders.field_refund_amount'))
+    let amountMinor = 0
 
     const summary = await db.transaction(async (tx) => {
       const [order] = await tx
@@ -84,6 +86,13 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         .limit(1)
 
       if (!order) throw new Error(t('orders.err_order_gone'))
+      amountMinor = fmoney(
+        form,
+        'amountMinor',
+        order.presentmentCurrency,
+        t('orders.field_refund_amount'),
+      )
+      if (amountMinor <= 0) throw new Error(t('orders.err_amount_positive'))
 
       const status = order.status as OrderStatus
       if (!isRefundable(status)) {

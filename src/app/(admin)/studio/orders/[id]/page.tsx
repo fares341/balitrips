@@ -7,6 +7,7 @@ import { entitlements, orderItems, orders, payments, refunds, users } from '@/db
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { formatMoneyInput } from '@/lib/money-input'
 import { isBookingStatus, nextBookingStatuses } from '@/lib/orders/booking-status'
 import { isRefundable, type OrderStatus } from '@/lib/orders/state'
 
@@ -429,7 +430,6 @@ export default async function OrderDetailPage({
                           <span className="a-hint">
                             {t('orders.refundable', {
                               amount: formatMoney(remaining, row.presentmentCurrency, intl),
-                              minor: remaining,
                             })}
                           </span>
                         </div>
@@ -440,8 +440,9 @@ export default async function OrderDetailPage({
                               className="a-input"
                               id={`amount-${line.id}`}
                               name="amountMinor"
-                              inputMode="numeric"
-                              defaultValue={String(remaining)}
+                              inputMode="decimal"
+                              dir="ltr"
+                              defaultValue={formatMoneyInput(remaining, row.presentmentCurrency)}
                               required
                             />
                           </div>

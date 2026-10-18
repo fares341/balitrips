@@ -1,13 +1,20 @@
 import type { Localized } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
+import {
+  parseMoneyInput,
+  parsePercentInput,
+  parseScaled,
+  type AmountResult,
+} from '@/lib/money-input'
 
 /**
  * FormData readers.
  *
  * Plain HTML forms post strings; everything below turns them into the exact
  * types the schema wants and rejects the ones it cannot. Money is the place
- * this matters most: prices are read as integer minor units and a non-integer
- * is an error, never a silently rounded float.
+ * this matters most: prices are typed as people write them ("125.00", "125,5",
+ * Arabic digits) and converted with exact string arithmetic to integer minor
+ * units in the currency's own decimals (`fmoney`) — never through a float.
  */
 
 export class FormError extends Error {
@@ -69,11 +76,74 @@ export function fint(form: FormData, name: string, fallback: number, label = nam
   return Number.parseInt(value, 10)
 }
 
-/** Integer minor units. Never a float — there are no fractional cents. */
-export function fminor(form: FormData, name: string, label = name): number {
-  const value = fint(form, name, 0, label)
-  if (value < 0) throw invalid(`${label} cannot be negative`, 'form.negative', { label })
-  return value
+function amountError(result: AmountResult, label: string, value: string): FormError | null {
+  if (result.ok) return null
+  if (result.error === 'negative') {
+    return invalid(`${label} cannot be negative`, 'form.negative', { label })
+  }
+  if (result.error === 'too_large') {
+    return invalid(`${label} is too large`, 'form.too_large', { label })
+  }
+  return invalid(`${label} must be an amount like 125.00, got "${value}"`, 'form.not_amount', {
+    label,
+    value,
+  })
+}
+
+/**
+ * A price typed as people write it ("125.00", "125,5", Arabic digits) in
+ * `currency` → integer minor units, using that currency's decimals. A blank
+ * input is `fallback`.
+ */
+export function fmoney(
+  form: FormData,
+  name: string,
+  currency: string,
+  label = name,
+  fallback = 0,
+): number {
+  const value = raw(form, name)
+  if (value === '') return fallback
+  const result = parseMoneyInput(value, currency)
+  const error = amountError(result, label, value)
+  if (error || !result.ok) throw error ?? invalid(label, 'form.unexpected', {})
+  return result.value
+}
+
+/** Like `fmoney`, but a blank input is null. */
+export function fmoneyOrNull(
+  form: FormData,
+  name: string,
+  currency: string,
+  label = name,
+): number | null {
+  return raw(form, name) === '' ? null : fmoney(form, name, currency, label)
+}
+
+/** The currency typed next to an amount, for reading the amount; USD when not a code. */
+export function fcurrencyOr(form: FormData, name: string, fallback = 'USD'): string {
+  const value = raw(form, name).toUpperCase()
+  return /^[A-Z]{3}$/.test(value) ? value : fallback
+}
+
+/** A percentage typed as "2.5" → basis points (250). Blank is `fallback`. */
+export function fpercent(form: FormData, name: string, fallback: number, label = name): number {
+  const value = raw(form, name)
+  if (value === '') return fallback
+  const result = parsePercentInput(value)
+  const error = amountError(result, label, value)
+  if (error || !result.ok) throw error ?? invalid(label, 'form.unexpected', {})
+  return result.value
+}
+
+/** A plain decimal number typed by a person ("5.50", "5,5", Arabic digits), to 2 decimals. */
+export function fdecimal(form: FormData, name: string, label = name): number {
+  const value = raw(form, name)
+  if (value === '') throw invalid(`${label} is required`, 'form.required', { label })
+  const result = parseScaled(value, 2)
+  const error = amountError(result, label, value)
+  if (error || !result.ok) throw error ?? invalid(label, 'form.unexpected', {})
+  return result.value / 100
 }
 
 export function fintOrNull(form: FormData, name: string, label = name): number | null {

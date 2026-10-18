@@ -4,6 +4,7 @@ import { Fragment, type ReactNode } from 'react'
 import { db } from '@/db'
 import { siteSettings, users } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
+import { formatMoneyInput, formatPercentInput } from '@/lib/money-input'
 import { localeConfig, locales } from '@/i18n/config'
 
 import type { Translate } from '../../_i18n'
@@ -208,8 +209,9 @@ export default async function ConfigPage({
               <TextInput
                 id="serviceFeeBps"
                 name="serviceFeeBps"
-                inputMode="numeric"
-                defaultValue={String(fees.serviceFeeBps)}
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={formatPercentInput(fees.serviceFeeBps)}
               />
             </Field>
             <Field
@@ -222,8 +224,9 @@ export default async function ConfigPage({
               <TextInput
                 id="bookingFeeMinor"
                 name="bookingFeeMinor"
-                inputMode="numeric"
-                defaultValue={String(fees.bookingFeeMinor)}
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={formatMoneyInput(fees.bookingFeeMinor, fees.feeCurrency)}
               />
             </Field>
             <Field
@@ -234,8 +237,9 @@ export default async function ConfigPage({
               <TextInput
                 id="paymentSurchargeBps"
                 name="paymentSurchargeBps"
-                inputMode="numeric"
-                defaultValue={String(fees.paymentSurchargeBps)}
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={formatPercentInput(fees.paymentSurchargeBps)}
               />
             </Field>
             <Field
