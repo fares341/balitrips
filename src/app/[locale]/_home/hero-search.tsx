@@ -121,7 +121,11 @@ export function HeroSearch({
       const list = form?.querySelector('.hv-sg')
       if (!form || !list) return
       const viewport = window.visualViewport?.height ?? window.innerHeight
-      const overflow = list.getBoundingClientRect().bottom + 16 - viewport
+      // The phone tab bar covers the bottom of the screen (hidden while the
+      // keyboard is up, so this only counts when it is actually showing).
+      const tabbar = document.querySelector('.tabbar')?.getBoundingClientRect()
+      const covered = tabbar !== undefined && tabbar.top < viewport ? viewport - tabbar.top : 0
+      const overflow = list.getBoundingClientRect().bottom + 16 + covered - viewport
       const room = form.getBoundingClientRect().top - 12
       const by = Math.min(overflow, room)
       if (by > 0) {
