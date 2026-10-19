@@ -147,10 +147,10 @@ export function matchRank(key: string, needle: string): number {
     for (const candidate of candidates) {
       if (candidate.length < 2) continue
       // Short queries: the first letter carries the intent ("اوبد" yes,
-      // "سوبد" no), or the second does when a leading letter was skipped
+      // "سوبد" no); from four letters a skipped leading letter is forgiven
       // ("شانغو" → تشانغو).
-      if (compact.length < 5 && candidate.charAt(0) !== first && candidate.charAt(1) !== first) {
-        continue
+      if (compact.length < 5 && candidate.charAt(0) !== first) {
+        if (compact.length < 4 || candidate.charAt(1) !== first) continue
       }
       if (prefixDistance(compact, candidate, limit) <= limit) return 4
     }
@@ -180,12 +180,26 @@ export function suggestFrom(
     hits.push({ entry, rank: best })
   }
 
-  return hits
-    .sort(
-      (a, b) =>
-        a.rank - b.rank ||
-        KIND_ORDER[a.entry.kind] - KIND_ORDER[b.entry.kind] ||
-        a.entry.label.length - b.entry.label.length,
+  // "Where to?": an area that matches as typed (not only by a typo) leads,
+  // so «شا» puts تشانغو above «شاطئ …» activities.
+  const tier = (hit: SuggestHit) => (hit.entry.kind === 'region' && hit.rank <= 3 ? 0 : 1)
+  const sorted = hits.sort(
+    (a, b) =>
+      tier(a) - tier(b) ||
+      a.rank - b.rank ||
+      KIND_ORDER[a.entry.kind] - KIND_ORDER[b.entry.kind] ||
+      a.entry.label.length - b.entry.label.length,
+  )
+
+  // A place or type named exactly like a listed area adds nothing.
+  const areaNames = new Set(
+    sorted
+      .filter((hit) => hit.entry.kind === 'region')
+      .map((hit) => normalizeSearch(hit.entry.label)),
+  )
+  return sorted
+    .filter(
+      (hit) => hit.entry.kind === 'region' || !areaNames.has(normalizeSearch(hit.entry.label)),
     )
     .slice(0, max)
 }

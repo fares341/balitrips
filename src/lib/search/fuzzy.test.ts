@@ -69,6 +69,21 @@ describe('suggestFrom', () => {
     expect(ids('ubud')).toEqual(['ubud', 'spa'])
   })
 
+  it('an area matched as typed leads, even inside a word', () => {
+    const index = [...INDEX, entry('diamond', 'activity', ['شاطئ دايموند', 'Diamond Beach'])]
+    expect(suggestFrom(index, 'شا').map((hit) => hit.entry.id)[0]).toBe('canggu')
+  })
+
+  it('drops a place named exactly like a listed area', () => {
+    const index = [...INDEX, entry('p-ubud', 'place', ['أوبود', 'Ubud'])]
+    expect(suggestFrom(index, 'او').map((hit) => hit.entry.id)).not.toContain('p-ubud')
+  })
+
+  it('three letters need the right first letter', () => {
+    const index = [...INDEX, entry('culture', 'category', ['الثقافة', 'Culture', 'Budaya'])]
+    expect(suggestFrom(index, 'ubd').map((hit) => hit.entry.id)).toEqual(['ubud', 'spa'])
+  })
+
   it('nothing for nonsense or an empty box', () => {
     expect(ids('')).toEqual([])
     expect(ids('   ')).toEqual([])

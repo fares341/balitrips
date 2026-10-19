@@ -111,6 +111,27 @@ export function HeroSearch({
     return () => document.removeEventListener('pointerdown', onDown)
   }, [open])
 
+  // When the list opens near the bottom of the screen (the box sits low in
+  // the hero; on phones the keyboard takes the lower half), scroll just
+  // enough to show it — never past the box itself.
+  useEffect(() => {
+    if (!showList) return
+    const frame = requestAnimationFrame(() => {
+      const form = rootRef.current
+      const list = form?.querySelector('.hv-sg')
+      if (!form || !list) return
+      const viewport = window.visualViewport?.height ?? window.innerHeight
+      const overflow = list.getBoundingClientRect().bottom + 16 - viewport
+      const room = form.getBoundingClientRect().top - 12
+      const by = Math.min(overflow, room)
+      if (by > 0) {
+        const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        window.scrollBy({ top: by, behavior: smooth ? 'smooth' : 'auto' })
+      }
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [showList]) // once per opening, not on every key press
+
   // Keep the highlighted row in view inside a short list on phones.
   useEffect(() => {
     if (active < 0) return

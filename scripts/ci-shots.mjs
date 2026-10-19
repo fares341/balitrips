@@ -431,8 +431,10 @@ for (const [w, h] of [
       log.push(
         `suggest ${lang} ${w} "${typed}": ${rows.map((r) => r.replace(/\s+/g, ' ')).join(' | ')}`,
       )
+      const before = page.url()
       await box.press('ArrowDown')
       await box.press('Enter')
+      await page.waitForURL((url) => url.href !== before, { timeout: 30000 }).catch(() => {})
       await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {})
       log.push(`suggest ${lang} ${w} "${typed}" → ${page.url()}`)
     } catch (e) {

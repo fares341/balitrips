@@ -163,6 +163,11 @@
   color: var(--ink);
   min-height: 42px;
 }
+.home-v3 .hv-search input:focus-visible {
+  /* the whole pill shows focus (:focus-within below), not the bare field */
+  outline: 0;
+  box-shadow: none;
+}
 .home-v3 .hv-search input::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;
@@ -174,6 +179,11 @@
 }
 .home-v3 .hv-search .btn {
   border-radius: 99px;
+}
+
+/* while the list is open the hero copy sits above the clip tabs */
+.home-v3 .hv-copy:has(.hv-search.is-open) {
+  z-index: 6;
 }
 
 /* suggestions: a card under the box, same ivory, opens with a short drop */
@@ -212,7 +222,7 @@
   list-style: none;
   margin: 0;
   padding: 6px;
-  max-height: min(56svh, 380px);
+  max-height: min(48svh, 380px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
