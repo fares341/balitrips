@@ -405,6 +405,41 @@ for (const [w, h] of [
   await page.close()
 }
 
+// Hero search suggestions: type, look, then arrow-key and open the first one.
+for (const [w, h] of [
+  [390, 844],
+  [1440, 900],
+]) {
+  if (ONLY.length && !ONLY.includes('home') && !ONLY.includes('suggest')) break
+  for (const [lang, typed] of [
+    ['ar', 'شا'],
+    ['ar', 'او'],
+    ['ar', 'تشانقو'],
+    ['en', 'ubd'],
+  ]) {
+    const page = await browser.newPage({ viewport: { width: w, height: h } })
+    try {
+      await page.goto(`${BASE}/${lang}`, { waitUntil: 'networkidle', timeout: 60000 })
+      await page.waitForTimeout(2200) // the box fades in
+      const box = page.locator('.hv-search input[role="combobox"]')
+      await box.click()
+      await box.pressSequentially(typed, { delay: 90 })
+      await page.waitForTimeout(500)
+      const rows = await page.locator('.hv-sg-row').allInnerTexts()
+      const tag = `${lang}-${w}-${encodeURIComponent(typed).replace(/%/g, '')}`.slice(0, 60)
+      await page.screenshot({ path: `${OUT}/p/suggest-${tag}.png` })
+      log.push(`suggest ${lang} ${w} "${typed}": ${rows.map((r) => r.replace(/\s+/g, ' ')).join(' | ')}`)
+      await box.press('ArrowDown')
+      await box.press('Enter')
+      await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {})
+      log.push(`suggest ${lang} ${w} "${typed}" → ${page.url()}`)
+    } catch (e) {
+      log.push(`suggest ${lang} ${w} "${typed}": ${e.message}`)
+    }
+    await page.close()
+  }
+}
+
 // Phone flow on the real map: region bubble → pin → card → details → list.
 for (const lang of ['ar', 'en']) {
   const ctx = await browser.newContext({
