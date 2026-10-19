@@ -15,6 +15,8 @@
   overflow: hidden;
   isolation: isolate;
   background: #10291a;
+  /* above the next section, so the open suggestion list can overlap it */
+  z-index: 3;
   color: #fff;
 }
 .home-v3 .hv-grid {
@@ -128,20 +130,26 @@
   animation: hv-fade-up 0.8s var(--ease) 1.3s forwards;
 }
 .home-v3 .hv-search {
+  /* the box + its suggestion list (hero-search.tsx) */
+  position: relative;
+  z-index: 5;
+  width: min(100%, 440px);
+  opacity: 0;
+  animation: hv-fade-up 0.8s var(--ease) 1.45s forwards;
+}
+.home-v3 .hv-search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: min(100%, 440px);
   padding: 6px;
   padding-inline-start: 16px;
   border-radius: 99px;
   background: rgba(255, 251, 248, 0.97);
   color: var(--forest);
   box-shadow: 0 24px 40px -20px rgba(0, 0, 0, 0.55);
-  opacity: 0;
-  animation: hv-fade-up 0.8s var(--ease) 1.45s forwards;
+  transition: border-radius 0.18s var(--ease);
 }
-.home-v3 .hv-search svg {
+.home-v3 .hv-search-bar svg {
   flex-shrink: 0;
 }
 .home-v3 .hv-search input {
@@ -151,17 +159,123 @@
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px; /* 16px: iOS does not zoom the page on focus */
   color: var(--ink);
   min-height: 42px;
 }
-.home-v3 .hv-search:focus-within {
+.home-v3 .hv-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.home-v3 .hv-search:focus-within .hv-search-bar {
   box-shadow:
     0 0 0 3px var(--orange),
     0 24px 40px -20px rgba(0, 0, 0, 0.55);
 }
 .home-v3 .hv-search .btn {
   border-radius: 99px;
+}
+
+/* suggestions: a card under the box, same ivory, opens with a short drop */
+.home-v3 .hv-sg {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 8px);
+  border-radius: 20px;
+  background: var(--ivory);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 1px rgba(38, 85, 46, 0.12),
+    0 28px 48px -18px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px) scale(0.985);
+  transform-origin: top center;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.16s var(--ease),
+    transform 0.2s var(--ease),
+    visibility 0s linear 0.2s;
+}
+.home-v3 .hv-sg[data-open='true'] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 0.18s var(--ease),
+    transform 0.22s var(--ease),
+    visibility 0s;
+}
+.home-v3 .hv-sg-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: min(56svh, 380px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.home-v3 .hv-sg-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 7px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-v3 .hv-sg-row[aria-selected='true'] {
+  background: var(--ivory-2);
+}
+.home-v3 .hv-sg-ic {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ivory-2);
+  color: var(--forest);
+}
+.home-v3 .hv-sg-row[aria-selected='true'] .hv-sg-ic {
+  background: var(--forest);
+  color: var(--ivory);
+}
+.home-v3 .hv-sg-tx {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+.home-v3 .hv-sg-tx b {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--forest);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-v3 .hv-sg-tx mark {
+  background: var(--orange-soft);
+  color: inherit;
+  border-radius: 4px;
+}
+.home-v3 .hv-sg-tx small {
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-v3 .hv-sg-all {
+  margin-top: 4px;
+  border-top: 1px solid rgba(38, 85, 46, 0.1);
+  border-radius: 0 0 14px 14px;
+}
+.home-v3 .hv-sg-all .hv-sg-tx b {
+  font-weight: 500;
 }
 .home-v3 .hv-link {
   display: inline-flex;
@@ -202,6 +316,16 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* The suggestion list may run past the hero's bottom edge: clip sideways
+   only (the clips have their own clip in .hv-frame). Browsers without
+   overflow: clip keep the hidden above, and the list scrolls inside. */
+@supports (overflow: clip) {
+  .home-v3 .hv {
+    overflow-x: clip;
+    overflow-y: visible;
   }
 }
 
@@ -1082,6 +1206,11 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   .home-v3 .hv-bali::after {
     width: 64px;
     animation: none;
+  }
+  .home-v3 .hv-sg,
+  .home-v3 .hv-sg[data-open='true'] {
+    transform: none;
+    transition: none;
   }
   .home-v3 .hv-sl.on video,
   .home-v3 .hv-tab.on .bar i {

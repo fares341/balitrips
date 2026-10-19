@@ -48,10 +48,12 @@ import {
 } from '@/lib/content/queries'
 import type { ActivitySummary, ArticleSummary, ReviewDto } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
+import { suggestKeys, type SuggestEntry } from '@/lib/search/fuzzy'
 
 import { pageMetadata } from './_meta'
 import { AboutSlider } from './_home/about-slider'
 import { HERO_CLIPS } from './_home/hero-media'
+import { HeroSearch } from './_home/hero-search'
 import { HeroVideo } from './_home/hero-video'
 import { CUSTOM_TRIP_PHOTO } from './_home/media'
 import { MoodTabs, type MoodTab } from './_home/mood-tabs'
@@ -65,6 +67,8 @@ type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 // ---------------------------------------------------------------------------
 
 const CATALOGUE_LIMIT = 40
+/** Activities the hero search can suggest (names only travel with the page). */
+const SUGGEST_ACTIVITY_LIMIT = 120
 /** Places per mood tab. */
 const MOOD_CARD_COUNT = 4
 const MOOD_TAB_LIMIT = 7
@@ -151,11 +155,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const t = await getTranslations()
 
-  const [catalogue, mapPlaces, taxonomy, articles] = await Promise.all([
+  const [catalogue, mapPlaces, taxonomy, articles, allActivities] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
     listMapPlaces(),
     listMapTaxonomy(),
     listArticles({ limit: BLOG_COUNT, locale }),
+    listActivities({ sort: 'top', limit: SUGGEST_ACTIVITY_LIMIT, locale }),
   ])
 
   // --- most requested: activities only (client) ------------------------------
@@ -220,6 +225,54 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const searchAction = getPathname({ href: '/search', locale })
 
+  // --- hero search suggestions ------------------------------------------------
+  // Matched in the browser (hero-search.tsx): every locale's name is a key,
+  // so "ubud" and «أوبود» both find it. Only what any visitor may already
+  // see: region and type names, published activities, free places.
+  const names = (text: Partial<Record<string, string | null>> | null | undefined) =>
+    Object.values(text ?? {})
+  const regionLabel = new Map(
+    taxonomy.regions.map((region) => [region.key, pick(region.label, locale, region.key)]),
+  )
+  const placeCategoryKeys = new Set(mapPlaces.map((place) => place.categoryKey))
+  const suggestions: SuggestEntry[] = [
+    ...taxonomy.regions.map((region) => ({
+      id: `r:${region.key}`,
+      kind: 'region' as const,
+      label: pick(region.label, locale, region.key),
+      sub: region.parentKey !== null ? (regionLabel.get(region.parentKey) ?? null) : null,
+      href: getPathname({ href: { pathname: '/map', query: { region: region.key } }, locale }),
+      keys: suggestKeys([...names(region.label), region.key]),
+    })),
+    ...taxonomy.categories
+      .filter((category) => placeCategoryKeys.has(category.key))
+      .map((category) => ({
+        id: `c:${category.key}`,
+        kind: 'category' as const,
+        label: pick(category.label, locale, category.key),
+        sub: null,
+        href: getPathname({ href: { pathname: '/map', query: { cat: category.key } }, locale }),
+        keys: suggestKeys([...names(category.label), category.key]),
+      })),
+    ...allActivities.map((activity) => ({
+      id: `a:${activity.id}`,
+      kind: 'activity' as const,
+      label: pick(activity.name, locale, activity.slug),
+      sub:
+        activity.region !== null ? pick(activity.region.label, locale, activity.region.key) : null,
+      href: getPathname({ href: activity.href, locale }),
+      keys: suggestKeys([...names(activity.name), activity.slug]),
+    })),
+    ...openPlaces.map((place) => ({
+      id: `p:${place.id}`,
+      kind: 'place' as const,
+      label: pick(place.name, locale, place.slug),
+      sub: pickOptional(place.regionLabel, locale),
+      href: getPathname({ href: `/places/${encodeURIComponent(place.slug)}`, locale }),
+      keys: suggestKeys([...names(place.name), place.slug]),
+    })),
+  ]
+
   // Hero sentence, word by word (each word rises in after "Bali").
   const words: { text: string; em: boolean }[] = [
     ...t('hv4_sub_a')
@@ -269,23 +322,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </span>
         </h1>
         <p className="hv-lede">{t('hv4_lede')}</p>
-        <form className="hv-search" action={searchAction} method="get" role="search">
-          <Icon name="search" size={20} />
-          <label htmlFor="hq" className="sr-only">
-            {t('hv3_search_label')}
-          </label>
-          <input
-            id="hq"
-            name="q"
-            type="search"
-            placeholder={t('hv4_search_ph')}
-            autoComplete="off"
-            enterKeyHint="search"
-          />
-          <button className="btn btn-primary" type="submit">
-            {t('hv4_search_btn')}
-          </button>
-        </form>
+        <HeroSearch
+          action={searchAction}
+          entries={suggestions}
+          labels={{
+            label: t('hv3_search_label'),
+            placeholder: t('hv4_search_ph'),
+            submit: t('hv4_search_btn'),
+            searchFor: t('hv5_sg_all', { q: '{q}' }),
+            count: t('hv5_sg_count', { n: '{n}' }),
+            kinds: {
+              region: t('hv5_sg_region'),
+              category: t('hv5_sg_category'),
+              activity: t('hv5_sg_activity'),
+              place: t('hv5_sg_place'),
+            },
+          }}
+        />
         <Link className="hv-link" href="/services">
           {t('hv3_cta_plan')} <Icon name="arrow" size={16} stroke={2.2} className="flip" />
         </Link>

@@ -3,7 +3,8 @@
  *
  * Image 4:3 with the first category as a glass chip and the heart; a meta row
  * (area, duration) with the real rating at the end (hidden when there is
- * none); the title; then "From $X / person" and the actions.
+ * none); the title; one short line cut from the description (`cardLine`);
+ * then "From $X / person" and the actions.
  *
  * The whole card opens the activity (stretched title link). `action` replaces
  * the default "+ Trip" button — pages pass their add-to-trip control there.
@@ -32,6 +33,7 @@ import {
 import { Tag } from '@/components/bt/chip'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
+import { cardLine } from '@/lib/content/card-line'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { ActivitySummary } from '@/lib/content/types'
 
@@ -50,7 +52,9 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
   const name = pick(activity.name, locale, activity.slug)
   const area = pickOptional(activity.area, locale)
   const duration = pickOptional(activity.duration, locale)
-  const blurb = pickOptional(activity.blurb, locale)
+  // The card shows a short line; the activity page keeps the full description.
+  const fullBlurb = pickOptional(activity.blurb, locale)
+  const blurb = fullBlurb !== null ? cardLine(fullBlurb) : null
   const category = activity.categories[0]
   const badge = category ? pick(category.label, locale, category.key) : null
 
