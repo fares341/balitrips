@@ -428,7 +428,9 @@ for (const [w, h] of [
       const rows = await page.locator('.hv-sg-row').allInnerTexts()
       const tag = `${lang}-${w}-${encodeURIComponent(typed).replace(/%/g, '')}`.slice(0, 60)
       await page.screenshot({ path: `${OUT}/p/suggest-${tag}.png` })
-      log.push(`suggest ${lang} ${w} "${typed}": ${rows.map((r) => r.replace(/\s+/g, ' ')).join(' | ')}`)
+      log.push(
+        `suggest ${lang} ${w} "${typed}": ${rows.map((r) => r.replace(/\s+/g, ' ')).join(' | ')}`,
+      )
       await box.press('ArrowDown')
       await box.press('Enter')
       await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {})
