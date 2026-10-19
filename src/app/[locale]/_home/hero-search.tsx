@@ -261,7 +261,9 @@ export function HeroSearch({
                 className="hv-sg-row"
                 // Keep focus in the box so the list does not close before the tap lands.
                 onPointerDown={(event) => event.preventDefault()}
-                onPointerEnter={() => setActive(index)}
+                // Move, not enter: scrolling the list under a still pointer must
+                // not steal the keyboard's place.
+                onPointerMove={() => setActive(index)}
                 onClick={() => choose(index)}
               >
                 <span className="hv-sg-ic" aria-hidden="true">
@@ -286,7 +288,7 @@ export function HeroSearch({
               aria-selected={active === allIndex}
               className="hv-sg-row hv-sg-all"
               onPointerDown={(event) => event.preventDefault()}
-              onPointerEnter={() => setActive(allIndex)}
+              onPointerMove={() => setActive(allIndex)}
               onClick={() => choose(allIndex)}
             >
               <span className="hv-sg-ic" aria-hidden="true">
