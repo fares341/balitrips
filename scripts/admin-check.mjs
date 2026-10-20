@@ -120,19 +120,19 @@ const PHASE5_PAGES = [
   ['?period=today', 'admin.access'],
   ['?period=7d&compare=1', 'admin.access'],
   ['?period=custom&from=2026-01-01&to=2026-12-31&type=activity', 'admin.access'],
-  ['/reports/financial', 'finance.read'],
-  ['/reports/bookings', 'orders.read'],
-  ['/reports/itineraries', 'orders.read'],
-  ['/reports/vip', 'orders.read'],
-  ['/reports/activities?period=month', 'orders.read'],
-  ['/reports/customers', 'customers.read'],
-  ['/reports/marketing', 'orders.read'],
-  ['/reports/suppliers', 'orders.read'],
-  ['/reports/operations', 'orders.read'],
-  ['/reports/records?metric=orders_paid&period=30d', 'orders.read'],
-  ['/reports/records?metric=bookings&group=pending', 'orders.read'],
-  ['/reports/records?metric=low_availability', 'orders.read'],
-  ['/reports/exports', 'orders.read'],
+  ['/reports/financial', 'reports.read+finance.read'],
+  ['/reports/bookings', 'reports.read'],
+  ['/reports/itineraries', 'reports.read'],
+  ['/reports/vip', 'reports.read'],
+  ['/reports/activities?period=month', 'reports.read'],
+  ['/reports/customers', 'reports.read+customers.read'],
+  ['/reports/marketing', 'reports.read'],
+  ['/reports/suppliers', 'reports.read'],
+  ['/reports/operations', 'reports.read'],
+  ['/reports/records?metric=orders_paid&period=30d', 'reports.read'],
+  ['/reports/records?metric=bookings&group=pending', 'reports.read'],
+  ['/reports/records?metric=low_availability', 'reports.read'],
+  ['/reports/exports', 'reports.read'],
   ['/reports/schedules', 'config.write'],
 ]
 say(`nav pages: ${NAV.map((n) => n.path || '/').join(' ')}`)
@@ -157,7 +157,9 @@ say(
     .map(([r, caps]) => `${r}(${caps.size})`)
     .join(' ')}`,
 )
-const allowed = (role, cap) => role === 'admin' || (ROLE_CAPS[role]?.has(cap) ?? false)
+// `a+b` = needs both.
+const allowed = (role, cap) =>
+  role === 'admin' || cap.split('+').every((c) => ROLE_CAPS[role]?.has(c) ?? false)
 
 function serverLogSize() {
   try {

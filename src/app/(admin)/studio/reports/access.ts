@@ -13,7 +13,8 @@ export function reportAccess(role: Role) {
   return {
     finance: can(role, 'finance.read'),
     customers: can(role, 'customers.read'),
-    orders: can(role, 'orders.read'),
+    // Phase 6: booking-level reports follow `reports.read` (was `orders.read`).
+    orders: can(role, 'reports.read'),
   }
 }
 

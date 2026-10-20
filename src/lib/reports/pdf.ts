@@ -40,7 +40,7 @@ export async function renderReportExport(exportId: string): Promise<void> {
   const access = {
     finance: can(role, 'finance.read'),
     customers: can(role, 'customers.read'),
-    orders: can(role, 'orders.read'),
+    orders: can(role, 'reports.read'),
   }
   if (!access.orders || !mayOpen(row.report, access)) return fail('no access')
 
