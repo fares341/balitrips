@@ -32,6 +32,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { formatPrice } from '@/components/bt/card'
+import { attachOrderAttribution } from '@/lib/analytics/attribution'
 import { db } from '@/db'
 import { orders, payments, users } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
@@ -283,6 +284,9 @@ export async function startCheckoutAction(
     if (error instanceof Error && error.name === 'PaymentProviderError') return { error: 'payment' }
     return { error: 'unknown' }
   }
+
+  // Phase 5: campaign (UTM), visitor id and tracking choices on the order.
+  await attachOrderAttribution(result.orderId)
 
   followProvider(result.payment.nextAction, locale, result.orderNumber)
 }

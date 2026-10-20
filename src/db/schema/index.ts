@@ -11,3 +11,5 @@ export * from './sharing'
 export * from './assistant'
 export * from './finance'
 export * from './crm'
+
+export * from './analytics'

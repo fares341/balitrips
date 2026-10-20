@@ -172,6 +172,7 @@ const SWEEP = [
   ['faq', '/faq'],
   ['privacy', '/privacy'],
   ['refund', '/refund'],
+  ['cookies', '/cookies'],
   ['events', '/events'],
   ['plans', '/plans'],
   ['reviews', '/reviews'],
@@ -181,6 +182,7 @@ const SWEEP = [
 const TABLET = new Set(['home', 'activity', 'activity-batur', 'my-trip', 'checkout', 'map-day'])
 const EN_KEY = new Set([
   'home',
+  'cookies',
   'services',
   'activities',
   'activity',

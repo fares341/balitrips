@@ -8,6 +8,7 @@
 import type { Metadata } from 'next'
 import { setRequestLocale } from 'next-intl/server'
 
+import { CookieSettingsButton } from '@/components/analytics/consent-banner'
 import { locales } from '@/i18n/config'
 
 import { PolicyPage, policyMetadata } from '../_policies/policy-page'
@@ -30,5 +31,13 @@ export default async function CookiesPage({ params }: { params: PageParams }) {
   const { locale } = await params
   setRequestLocale(locale)
 
-  return <PolicyPage id={POLICY} locale={toLocale(locale)} />
+  return (
+    <>
+      <PolicyPage id={POLICY} locale={toLocale(locale)} />
+      {/* Phase 5: change the cookie choice at any time. */}
+      <div className="wrap" style={{ paddingBlock: '0 48px' }}>
+        <CookieSettingsButton className="btn btn-primary" />
+      </div>
+    </>
+  )
 }

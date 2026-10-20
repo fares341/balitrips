@@ -114,6 +114,27 @@ function navPaths() {
   return items.map((m) => ({ path: m[1], capability: m[2] }))
 }
 const NAV = navPaths()
+
+/** Pages outside the sidebar (phase 5). The financial report needs the money capability. */
+const PHASE5_PAGES = [
+  ['?period=today', 'admin.access'],
+  ['?period=7d&compare=1', 'admin.access'],
+  ['?period=custom&from=2026-01-01&to=2026-12-31&type=activity', 'admin.access'],
+  ['/reports/financial', 'suppliers.write'],
+  ['/reports/bookings', 'orders.read'],
+  ['/reports/itineraries', 'orders.read'],
+  ['/reports/vip', 'orders.read'],
+  ['/reports/activities?period=month', 'orders.read'],
+  ['/reports/customers', 'customers.read'],
+  ['/reports/marketing', 'orders.read'],
+  ['/reports/suppliers', 'orders.read'],
+  ['/reports/operations', 'orders.read'],
+  ['/reports/records?metric=orders_paid&period=30d', 'orders.read'],
+  ['/reports/records?metric=bookings&group=pending', 'orders.read'],
+  ['/reports/records?metric=low_availability', 'orders.read'],
+  ['/reports/exports', 'orders.read'],
+  ['/reports/schedules', 'config.write'],
+]
 say(`nav pages: ${NAV.map((n) => n.path || '/').join(' ')}`)
 
 const ROLE_CAPS = {
@@ -601,6 +622,13 @@ for (const role of ['admin', 'staff', 'customer']) {
       )
       .catch(() => null)
     if (newHref) await visit(page, role, newHref, 1440)
+  }
+  // Phase 5: dashboard periods, every report, drill-downs, exports, schedules.
+  for (const [path, capability] of PHASE5_PAGES) {
+    const may = allowed(role, capability)
+    for (const w of [1440, 390]) {
+      await visit(page, role, `${ADMIN}${path}`, w, { expectNotFound: !may })
+    }
   }
   if (role === 'admin') {
     await tierRoundTrip(page).catch((e) =>

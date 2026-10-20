@@ -50,6 +50,8 @@ import type { CartItemKind, QuoteRequestItem } from '@/lib/pricing/quote'
 import { toLocale } from '../../../_seo-hreflang'
 import { retryPaymentAction } from '../../actions'
 import { OrderStatusWatcher } from './order-status-watcher'
+import { PurchaseTracker } from '@/components/analytics/purchase-tracker'
+import { serverEventId } from '@/lib/analytics/event-id'
 
 import '@/styles/bt-trip.css'
 
@@ -240,6 +242,14 @@ export default async function OrderPage({
     <main className="trip-page">
       <div className="wrap">
         <div className="cf">
+          {state === 'success' ? (
+            <PurchaseTracker
+              eventId={serverEventId('purchase', order.id)}
+              orderNumber={order.orderNumber}
+              valueMinor={order.totalMinor}
+              currency={currency}
+            />
+          ) : null}
           <section className={`hero-st ${state}`} aria-live="polite">
             {state === 'success' && (
               <div className="confetti" aria-hidden="true">

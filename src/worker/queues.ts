@@ -45,6 +45,9 @@ export const QUEUES = {
   notifySweep: 'notify.sweep',
   /** Phase 4: task reminders and support escalation. */
   crmSweep: 'crm.sweep',
+
+  /** Phase 5: server analytics events, ad-platform forwarding, retention, scheduled reports. */
+  analytics: 'analytics.sweep',
 } as const
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES]
@@ -99,6 +102,9 @@ export const pdfJobSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('voucher'), orderId: z.uuid() }),
   /** Phase 4: the invoice of a paid order (rendered once, then kept). */
   z.object({ kind: z.literal('invoice'), orderId: z.uuid() }),
+
+  /** Phase 5: a report exported as PDF (row in `report_exports`). */
+  z.object({ kind: z.literal('report'), exportId: z.uuid() }),
 ])
 
 export type PdfJob = z.infer<typeof pdfJobSchema>
@@ -146,6 +152,24 @@ export const crmSweepJobSchema = z.object({
 })
 export type CrmSweepJob = z.infer<typeof crmSweepJobSchema>
 
+/**
+ * Phase 5 analytics upkeep (all idempotent):
+ *  - sync     every 10 minutes: server events from the database, purchases to
+ *             the ad platforms' server APIs, abandoned checkout reminders;
+ *  - prune    daily: delete event rows older than the retention setting;
+ *  - reports  hourly: send the scheduled report emails that are due.
+ */
+export const analyticsJobSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('sync'),
+    /** Look back this many days (default 3; the first run goes back a year). */
+    days: z.number().int().min(1).max(800).optional(),
+  }),
+  z.object({ kind: z.literal('prune') }),
+  z.object({ kind: z.literal('reports') }),
+])
+export type AnalyticsJob = z.infer<typeof analyticsJobSchema>
+
 /* --------------------------------------------------------------------------
    Queue settings
    -------------------------------------------------------------------------- */
@@ -188,6 +212,15 @@ export const QUEUE_SETTINGS: Record<QueueName, QueueSettings> = {
     retryBackoff: false,
     expireInSeconds: 10 * 60,
     deleteAfterSeconds: 7 * DAY,
+  },
+
+  /** Idempotent; the next run picks up anything a failed one missed. */
+  [QUEUES.analytics]: {
+    retryLimit: 1,
+    retryDelay: 120,
+    retryBackoff: false,
+    expireInSeconds: 10 * 60,
+    deleteAfterSeconds: 3 * DAY,
   },
 
   [QUEUES.securityPrune]: {
@@ -447,6 +480,14 @@ export async function enqueueVoucherPdf(orderId: string): Promise<string | null>
 
 export async function enqueueInvoicePdf(orderId: string): Promise<string | null> {
   return enqueuePdf({ kind: 'invoice', orderId })
+}
+
+export async function enqueueReportPdf(exportId: string): Promise<string | null> {
+  return enqueuePdf({ kind: 'report', exportId })
+}
+
+export async function enqueueAnalytics(job: AnalyticsJob): Promise<string | null> {
+  return enqueue(QUEUES.analytics, job)
 }
 
 export async function enqueueReconcile(job: ReconcileJob = {}): Promise<string | null> {

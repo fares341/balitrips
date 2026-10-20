@@ -16,6 +16,7 @@
  * No 'use client'.
  */
 
+import { CookieSettingsButton } from '@/components/analytics/consent-banner'
 import { getTranslations } from 'next-intl/server'
 
 import { Icon, Logo, type IconName } from '@/components/ui'
@@ -90,6 +91,9 @@ export async function Footer() {
                   <Link href={route.href}>{t(route.key)}</Link>
                 </li>
               ))}
+              <li>
+                <CookieSettingsButton />
+              </li>
             </ul>
           </nav>
 

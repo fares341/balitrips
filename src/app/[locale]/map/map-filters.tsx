@@ -23,6 +23,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocale } from 'next-intl'
 
+import { track } from '@/lib/analytics/client'
+
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
@@ -199,6 +201,20 @@ export function useMapFilters(
     }, SEARCH_LOG_IDLE_MS)
     return () => window.clearTimeout(timer)
   }, [trimmed, region, category, filterTag, gemsOnly, nearMe, resultCount])
+
+  // Phase 5 analytics: which filters people use (never where they are).
+  const filtersSeen = useRef(false)
+  useEffect(() => {
+    if (!filtersSeen.current) {
+      // The first values come from the URL; the page view already counted them.
+      filtersSeen.current = true
+      return
+    }
+    if (category !== null) track('select_item', { props: { filter: 'category', category } })
+    if (region !== null) track('select_item', { props: { filter: 'region', region } })
+    if (filterTag !== null) track('select_item', { props: { filter: 'tag', category: filterTag } })
+    if (gemsOnly) track('select_item', { props: { filter: 'hidden_gems' } })
+  }, [category, region, filterTag, gemsOnly])
 
   /**
    * `fromQuery`: "Cafes near me" — ترتيب بالأقرب بلا حد مسافة. الزر: نصف قطر.

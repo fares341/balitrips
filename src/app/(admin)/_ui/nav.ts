@@ -33,6 +33,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '', labelKey: 'nav.dashboard', capability: 'admin.access', exact: true },
       { path: '/inbox', labelKey: 'nav.inbox', capability: 'admin.access' },
+      { path: '/reports', labelKey: 'nav.reports', capability: 'orders.read' },
+      { path: '/map-analytics', labelKey: 'nav.map_analytics', capability: 'orders.read' },
       { path: '/assistant', labelKey: 'nav.assistant', capability: 'admin.access' },
       { path: '/notify', labelKey: 'nav.notify', capability: 'roles.write' },
     ],
@@ -100,6 +102,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '/translations', labelKey: 'nav.translations', capability: 'translations.write' },
       { path: '/config', labelKey: 'nav.config', capability: 'config.write' },
+      { path: '/marketing', labelKey: 'nav.marketing', capability: 'config.write' },
       { path: '/audit', labelKey: 'nav.audit', capability: 'audit.read' },
       // Always reachable: it is where an operator goes to fix the very thing
       // that is blocking them, so it is gated on entry, not on a capability.

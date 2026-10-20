@@ -212,6 +212,22 @@ export const orders = pgTable(
 
     placedAt: timestamp('placed_at', { withTimezone: true }),
 
+    // --- Phase 5 (migration 0021): where the order came from ---
+    /** Last-touch campaign (UTM) when the order was placed. Null = direct / unknown. */
+    utmSource: varchar('utm_source', { length: 100 }),
+    utmMedium: varchar('utm_medium', { length: 100 }),
+    utmCampaign: varchar('utm_campaign', { length: 100 }),
+    /** First-touch campaign of the same visitor. */
+    utmFirst: jsonb('utm_first').$type<{
+      source: string | null
+      medium: string | null
+      campaign: string | null
+    }>(),
+    /** First-party visitor id (only when the visitor allowed analytics). */
+    analyticsAnonId: varchar('analytics_anon_id', { length: 64 }),
+    /** Tracking choices at checkout: '' (none) | 'a' (analytics) | 'm' | 'am'. */
+    trackingConsent: varchar('tracking_consent', { length: 4 }),
+
     /**
      * Guest checkout: sha256 of the placing browser's `bt_guest` cookie, so
      * that browser — and nobody else — can open the order page. Null for an

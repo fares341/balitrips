@@ -6,6 +6,8 @@ import { hasLocale } from 'next-intl'
 
 import { Footer, Header, Tabbar } from '@/components/layout'
 import { PageViewBeacon } from '@/components/layout/page-view-beacon'
+import { ConsentBanner } from '@/components/analytics/consent-banner'
+import { Tracking } from '@/components/analytics/tracking'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
@@ -88,6 +90,11 @@ export default async function LocaleLayout({
             <WhatsAppFab />
             <AssistantLauncher />
             <PageViewBeacon />
+            {/* Phase 5: cookie choice, then first-party analytics and (only
+                with consent) the marketing tags. Both render nothing on the
+                server, so pages stay static. */}
+            <ConsentBanner />
+            <Tracking />
             {/* Mobile bottom tab bar. Must stay a direct child of <body>
                 (providers render no DOM): bt.css reserves its height with
                 `body:has(> .tabbar)`. */}

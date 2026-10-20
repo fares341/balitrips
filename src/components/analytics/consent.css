@@ -1,0 +1,149 @@
+/* Cookie consent banner (phase 5). Logical properties only, so Arabic is a
+   true mirror. Sits above the mobile tab bar and below dialogs. */
+
+.bt-consent {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(var(--tabbar-h, 64px) + 12px + env(safe-area-inset-bottom, 0px));
+  z-index: calc(var(--z-header, 60) + 1);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .bt-consent {
+    bottom: 16px;
+  }
+}
+
+.bt-consent-inner {
+  pointer-events: auto;
+  width: min(760px, 100%);
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  background: var(--white, #fff);
+  color: var(--ink, #1c2a1f);
+  border: 1px solid var(--line, rgba(38, 85, 46, 0.16));
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(19, 48, 26, 0.18);
+  padding: 18px 20px;
+  font-family: var(--f, inherit);
+}
+
+.bt-consent-title {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--forest-deep, #1b3f22);
+}
+
+.bt-consent-body {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text, #2f4234);
+}
+
+.bt-consent-link {
+  color: var(--forest, #26552e);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.bt-consent-groups {
+  border: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.bt-consent-group {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft, rgba(38, 85, 46, 0.09));
+  border-radius: 12px;
+  background: var(--ivory, #fffbf8);
+  cursor: pointer;
+}
+
+.bt-consent-group input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--forest, #26552e);
+}
+
+.bt-consent-group > span {
+  display: grid;
+  gap: 2px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted, #5f6e62);
+}
+
+.bt-consent-group b {
+  font-size: 14.5px;
+  color: var(--ink, #1c2a1f);
+}
+
+.bt-consent-group small {
+  font-weight: 500;
+  color: var(--muted, #5f6e62);
+}
+
+.bt-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
+.bt-consent-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--forest, #26552e);
+  background: transparent;
+  color: var(--forest, #26552e);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bt-consent-btn.primary {
+  background: var(--forest, #26552e);
+  color: var(--white, #fff);
+}
+
+.bt-consent-btn:focus-visible,
+.bt-consent-manage:focus-visible,
+.bt-consent-link:focus-visible {
+  outline: 3px solid var(--orange, #ff9000);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .bt-consent-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+.bt-consent-manage {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

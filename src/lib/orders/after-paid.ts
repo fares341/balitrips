@@ -8,9 +8,12 @@
  *  2. plans (and included VIP / VIP itineraries) are granted;
  *  3. activity lines hold their places and go to their supplier (phase 2);
  *  4. the coupon use is counted and the invoice number issued (phase 4).
+ *  5. the server analytics events (purchase, payment, VIP, booking request —
+ *     phase 5), with ids derived from the rows so a replay writes nothing.
  */
 
 import type { db } from '@/db'
+import { emitPaidOrderEvents } from '@/lib/analytics/server-events'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { applyPaidFinance } from '@/lib/finance/paid'
 import { expandPaidPackages } from '@/lib/packages/expand'
@@ -23,4 +26,5 @@ export async function applyPaidOrder(tx: Tx, orderId: string, now = new Date()):
   await grantOrderPlans(tx, orderId, now)
   await applyPaidBookings(tx, orderId, now)
   await applyPaidFinance(tx, orderId, now)
+  await emitPaidOrderEvents(tx, orderId, now)
 }

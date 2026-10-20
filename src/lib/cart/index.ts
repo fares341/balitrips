@@ -47,6 +47,7 @@ import { db } from '@/db'
 import { cartItems, carts, type OrderAdjustmentLine } from '@/db/schema'
 import type { CouponRejection } from '@/lib/finance/coupons'
 import { adjustQuote } from '@/lib/finance/pricing'
+import { itemKindForCart, trackFromServer } from '@/lib/analytics/server-track'
 import type { Localized } from '@/db/schema/_shared'
 import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/routes'
 import { vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
@@ -583,6 +584,17 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   }
 
   const itemCount = await writeCartCount(cart.id)
+  // Phase 5: first-party "added to trip" (only with analytics consent).
+  await trackFromServer([
+    {
+      name: 'add_to_cart',
+      itemKind: itemKindForCart(input.kind),
+      // A package (tier) id is not an activity id; reports group by activity.
+      itemId: input.kind === 'activity_tier' ? null : refId,
+      valueMinor: price.priceMinor,
+      currency: price.currency,
+    },
+  ])
   return { cartId: cart.id, itemId, driverItemId, itemCount }
 }
 
@@ -859,6 +871,23 @@ export async function addActivityBooking(
   }
 
   const itemCount = await writeCartCount(cart.id)
+  // Phase 5: first-party "added to trip" and each add-on picked (analytics consent only).
+  await trackFromServer([
+    {
+      name: 'add_to_cart',
+      itemKind: 'activity',
+      itemId: raw.activityId,
+      valueMinor: quote.totalMinor,
+      currency: quote.currency,
+      props: { qty: people },
+    },
+    ...addons.map((addon) => ({
+      name: 'addon_selected' as const,
+      itemKind: 'addon' as const,
+      itemId: addon.id,
+      props: { qty: addon.qty },
+    })),
+  ])
   return { ok: true, itemId, itemCount, totalMinor: quote.totalMinor, currency: quote.currency }
 }
 

@@ -21,6 +21,10 @@ import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 
+import { buildOverview } from '@/lib/reports/builders/overview'
+import { currencyOptions, supplierOptions } from '@/lib/reports/data'
+import { parseReportFilters } from '@/lib/reports/filters'
+
 import { adminHref } from '../_lib/admin-path'
 import { getAdminI18n } from '../_lib/i18n'
 import { LEAD_STATUS_KEYS, LEAD_TONES } from '../_lib/lead-statuses'
@@ -28,7 +32,10 @@ import { requireCapability } from '../_lib/session'
 import { Advanced } from '../_ui/advanced'
 import { Flash } from '../_ui/flash'
 import { Icon, type IconName } from '../_ui/icons'
+import { FilterBar } from '../_ui/reports/filter-bar'
+import { ReportBody } from '../_ui/reports/report-view'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../_ui/table'
+import { buildContext } from './reports/access'
 
 export const dynamic = 'force-dynamic'
 
@@ -210,6 +217,16 @@ export default async function DashboardPage({
   ])
   const configWarnings = liveModeIssues()
 
+  // Phase 5: the period dashboard (filters, comparison, drill-down, charts).
+  const reportCtx = mayReadOrders ? await buildContext(session.role) : null
+  const filters = parseReportFilters(params, now)
+  const [overview, supplierList, currencyList] =
+    reportCtx === null
+      ? [null, [], []]
+      : await Promise.all([buildOverview(filters, reportCtx), supplierOptions(), currencyOptions()])
+  const lowSpots = overview?.kpis.find((kpi) => kpi.id === 'low_availability')?.value ?? null
+  const lowSpotCount = lowSpots && lowSpots.kind === 'count' ? (lowSpots.value ?? 0) : 0
+
   const byStatus = mayReadOrders
     ? await db
         .select({
@@ -346,6 +363,18 @@ export default async function DashboardPage({
       hint: t('dashboard.att_orders_hint'),
       href: adminHref('/orders?status=paid'),
       cta: t('dashboard.confirm'),
+      tone: 'warn',
+    })
+  }
+  if (mayReadOrders && lowSpotCount > 0) {
+    attention.push({
+      key: 'low_availability',
+      icon: 'alert',
+      count: lowSpotCount,
+      label: t('rp.att_low_availability'),
+      hint: t('rp.att_low_availability_hint'),
+      href: adminHref('/reports/records?metric=low_availability'),
+      cta: t('dashboard.review'),
       tone: 'warn',
     })
   }
@@ -494,7 +523,28 @@ export default async function DashboardPage({
         </section>
       ) : null}
 
-      {mayReadOrders || mayReadLeads || mayReadCustomers || mayReadSecurity ? (
+      {overview !== null && reportCtx !== null ? (
+        <section aria-labelledby="dash-numbers" style={{ marginBlockStart: 18 }}>
+          <h2 id="dash-numbers" className="a-section-title">
+            {t('rp.dashboard_numbers')}
+          </h2>
+          <FilterBar
+            action={adminHref('')}
+            filters={filters}
+            t={t}
+            intl={intl}
+            suppliers={supplierList}
+            currencies={currencyList}
+          >
+            <a className="a-btn ghost" href={adminHref('/reports')}>
+              {t('rp.all_reports')}
+            </a>
+          </FilterBar>
+          <ReportBody result={overview} t={t} intl={intl} rtl={reportCtx.rtl} />
+        </section>
+      ) : null}
+
+      {!mayReadOrders && (mayReadLeads || mayReadCustomers || mayReadSecurity) ? (
         <section className="a-kpis" aria-label={t('dashboard.today_title')}>
           {mayReadOrders ? (
             <div className="a-kpi">

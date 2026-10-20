@@ -9,6 +9,7 @@ import financeCrm from './finance-crm'
 import people from './people'
 import phase3 from './phase3'
 import protection from './protection'
+import reports from './reports'
 import suppliers from './suppliers'
 import system from './system'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
@@ -29,6 +30,7 @@ const SECTIONS = [
   suppliers,
   phase3,
   financeCrm,
+  reports,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

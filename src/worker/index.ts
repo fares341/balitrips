@@ -60,7 +60,9 @@ import type { EnqueueOptions, WorkerContext } from './handlers/context'
 import { handleEmailJob } from './handlers/email'
 import { handlePdfJob } from './handlers/pdf'
 import { handleReconcileJob } from './handlers/reconcile'
+import { handleAnalyticsJob } from './handlers/analytics'
 import {
+  analyticsJobSchema,
   capacityJobSchema,
   securityPruneJobSchema,
   notifySweepJobSchema,
@@ -74,6 +76,7 @@ import {
   QUEUE_NAMES,
   QUEUES,
   reconcileJobSchema,
+  type AnalyticsJob,
   type PdfJob,
   type QueueName,
 } from './queues'
@@ -102,6 +105,13 @@ const WORK_OPTIONS: Record<QueueName, PerJobOptions> = {
     pollingIntervalSeconds: 5,
   },
   [QUEUES.notifySweep]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 1,
+    pollingIntervalSeconds: 30,
+  },
+
+  [QUEUES.analytics]: {
     perJobResults: true,
     batchSize: 1,
     localConcurrency: 1,
@@ -397,6 +407,16 @@ const SCHEDULES: readonly ScheduleSpec[] = [
     data: {},
     options: { tz: 'Etc/UTC' },
   },
+  // Phase 5: one schedule (pg-boss keeps one schedule per queue). Every 10
+  // minutes: server analytics events, ad-platform forwarding, checkout
+  // reminders; the :03 run also sends due report emails, and the 03:03 UTC
+  // run applies the retention setting (see handlers/analytics.ts).
+  {
+    queue: QUEUES.analytics,
+    cron: '3,13,23,33,43,53 * * * *',
+    data: { kind: 'sync' } satisfies AnalyticsJob,
+    options: { tz: 'Etc/UTC' },
+  },
   {
     queue: QUEUES.reconcile,
     cron: '*/5 * * * *',
@@ -587,6 +607,7 @@ async function main(): Promise<void> {
   await register(boss, QUEUES.whatsapp, whatsappJobSchema, (job) => handleWhatsappJob(job))
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))
   await register(boss, QUEUES.crmSweep, crmSweepJobSchema, (job) => handleCrmSweep(job))
+  await register(boss, QUEUES.analytics, analyticsJobSchema, (job) => handleAnalyticsJob(job))
   await register(boss, QUEUES.securityPrune, securityPruneJobSchema, (job) =>
     handleSecurityPruneJob(job),
   )

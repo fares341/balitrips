@@ -25,6 +25,8 @@ import {
   itinerariesMissingDocuments,
 } from '@/lib/pdf'
 
+import { renderReportExport } from '@/lib/reports/pdf'
+
 import type { PdfJob } from '../queues'
 import type { WorkerContext } from './context'
 
@@ -66,6 +68,8 @@ export async function handlePdfJob(job: PdfJob, context: WorkerContext): Promise
       return renderVoucher(job.orderId)
     case 'invoice':
       return renderInvoice(job.orderId)
+    case 'report':
+      return renderReportExport(job.exportId)
   }
 }
 

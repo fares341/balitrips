@@ -47,6 +47,7 @@ import { pick, pickOptional } from '@/lib/content/localize'
 import { haversineKm } from '@/lib/geo'
 import type { MapTaxonomy } from '@/lib/search/query'
 import { FEATURES } from '@/lib/features'
+import { reportMapError, track } from '@/lib/analytics/client'
 
 import { ART_FULL_URL, ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from './art-warp'
 import { categoryIcon, circleRing, declutter, inBounds, type ViewBounds } from './geo'
@@ -226,6 +227,13 @@ export function MapApp(props: MapAppProps) {
     (slug: string, fly: boolean) => {
       setSelectedSlug(slug)
       setLockedPick(null)
+      // Phase 5 analytics: which place, never where the visitor is.
+      track('map_place_click', {
+        itemKind: 'place',
+        itemRef: slug,
+        props: { source: fly ? 'list' : 'pin' },
+      })
+      track('map_place_view', { itemKind: 'place', itemRef: slug })
       if (isMobile()) setMobileView('map')
       const pin = pins.find((entry) => entry.place.slug === slug)
       if (fly && pin) flyToPlace(pin.place)
@@ -412,6 +420,7 @@ export function MapApp(props: MapAppProps) {
       })
       .catch(() => {
         if (!cancelled) view.engineFailed()
+        reportMapError('engine_load')
       })
     return () => {
       cancelled = true
