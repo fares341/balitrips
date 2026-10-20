@@ -242,9 +242,11 @@ export async function isInWater(
       const bytes = await getBytes(TILEJSON, fetchImpl, controller.signal)
       const json = JSON.parse(new TextDecoder().decode(bytes)) as { tiles?: unknown }
       const first = Array.isArray(json.tiles) ? json.tiles[0] : null
-      if (typeof first !== 'string') return null
+      if (typeof first !== 'string') throw new Error('no tile URL in the TileJSON')
       const parsed = new URL(first.replace(/\{[xyz]\}/g, '0'))
-      if (parsed.protocol !== 'https:' || parsed.hostname !== TILE_HOST) return null
+      if (parsed.protocol !== 'https:' || parsed.hostname !== TILE_HOST) {
+        throw new Error(`unexpected tile host ${parsed.hostname}`)
+      }
       template = { url: first, at: Date.now() }
     }
     const { z, x, y, fx, fy } = tileAt(lat, lon)
@@ -256,7 +258,11 @@ export async function isInWater(
     // Normally decoded by fetch (Content-Encoding); a raw gzip body is unpacked here.
     if (tile[0] === 0x1f && tile[1] === 0x8b) tile = new Uint8Array(gunzipSync(tile))
     return pointInWaterTile(tile, fx, fy)
-  } catch {
+  } catch (error) {
+    console.warn(
+      '[water] check failed:',
+      error instanceof Error ? error.message.slice(0, 200) : 'unknown',
+    )
     return null
   } finally {
     clearTimeout(timer)

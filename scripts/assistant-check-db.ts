@@ -5,12 +5,14 @@
  *                                                visitor must never see
  *   tsx scripts/assistant-check-db.ts audit    → assistant.execute audit rows
  *   tsx scripts/assistant-check-db.ts actions  → proposed actions by kind and status
+ *   tsx scripts/assistant-check-db.ts water    → the water check on a land and a sea point
  */
 
 import { desc, eq, or } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { assistantActions, auditLog, mapPlaces } from '@/db/schema'
+import { isInWater } from '@/lib/geo/water'
 
 async function main() {
   const what = process.argv[2]
@@ -50,8 +52,13 @@ async function main() {
       .orderBy(desc(assistantActions.createdAt))
       .limit(20)
     console.log(JSON.stringify(rows))
+  } else if (what === 'water') {
+    // The server-side water check against the real map data: Ubud (land), Badung Strait (sea).
+    const land = await isInWater(-8.5069, 115.2625)
+    const sea = await isInWater(-8.75, 115.4)
+    console.log(JSON.stringify({ land, sea }))
   } else {
-    console.error('usage: locked | audit | actions')
+    console.error('usage: locked | audit | actions | water')
     process.exitCode = 2
   }
   process.exit()

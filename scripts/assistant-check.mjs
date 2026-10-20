@@ -690,6 +690,13 @@ for (const width of [390, 1440]) {
       say(`water data: unreachable — ${e.message}`)
     }
 
+    const water = db('water')
+    record(
+      'Water check reads the real map data: Ubud is land, the Badung Strait is sea',
+      water?.land === false && water?.sea === true,
+      JSON.stringify(water),
+    )
+
     // A spot in the sea (typed as degrees-minutes-seconds) shows a warning on the card.
     await askStudio(`Add a map place here: 8°45'00.0"S 115°24'00.0"E`)
     const seaCard = page.locator('.a-ai-card').last()
