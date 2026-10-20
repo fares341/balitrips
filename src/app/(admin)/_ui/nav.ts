@@ -33,8 +33,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '', labelKey: 'nav.dashboard', capability: 'admin.access', exact: true },
       { path: '/inbox', labelKey: 'nav.inbox', capability: 'admin.access' },
-      { path: '/reports', labelKey: 'nav.reports', capability: 'orders.read' },
-      { path: '/map-analytics', labelKey: 'nav.map_analytics', capability: 'orders.read' },
+      { path: '/reports', labelKey: 'nav.reports', capability: 'reports.read' },
+      { path: '/map-analytics', labelKey: 'nav.map_analytics', capability: 'reports.read' },
       { path: '/assistant', labelKey: 'nav.assistant', capability: 'admin.access' },
       { path: '/notify', labelKey: 'nav.notify', capability: 'roles.write' },
     ],

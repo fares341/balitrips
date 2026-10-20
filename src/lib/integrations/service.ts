@@ -82,7 +82,7 @@ export interface LoadedIntegration {
 
 /**
  * A connection with its secrets opened, for an adapter or the webhook
- * endpoint. Throws when INTEGRATIONS_KEY cannot open what is stored.
+ * endpoint. Throws when the server key cannot open what is stored.
  */
 export async function loadAdapterContext(integrationId: string): Promise<LoadedIntegration | null> {
   const [row] = await db

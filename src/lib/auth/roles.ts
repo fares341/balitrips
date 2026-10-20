@@ -117,8 +117,9 @@ const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
   // Staff run the day-to-day: edit and publish content, read and fulfil
   // orders, manage capacity and leads. They cannot move money, change
   // roles, or edit pricing configuration. Phase 6 split `bookings.confirm`
-  // out of `orders.fulfil` and `prices.write` out of `content.write`; staff
-  // hold both, so what a staff account can do is exactly what it could before.
+  // out of `orders.fulfil`, `prices.write` out of `content.write` and
+  // `reports.read` out of `orders.read` (Phase 5 reports); staff hold all
+  // three, so what a staff account can do is exactly what it could before.
   staff: [
     'admin.access',
     'content.read',
@@ -137,6 +138,7 @@ const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'crm.write',
     'bookings.confirm',
     'prices.write',
+    'reports.read',
   ],
 
   // Runs bookings, suppliers' day-to-day and the team's queue; no money moves,

@@ -248,9 +248,9 @@ export async function setIntegrationStatus(id: string, form: FormData): Promise<
 }
 
 /**
- * Save (or replace) one key. The value is sealed with INTEGRATIONS_KEY and
+ * Save (or replace) one key. The value is sealed with the integration key and
  * merged with the other stored keys; only its last four characters are kept
- * readable. Without a valid INTEGRATIONS_KEY nothing is saved.
+ * readable. Without an encryption key on the server nothing is saved.
  */
 export async function saveCredential(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('integrations.write')

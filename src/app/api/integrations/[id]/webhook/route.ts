@@ -87,7 +87,7 @@ export async function POST(
   try {
     loaded = await loadAdapterContext(id)
   } catch (error) {
-    // Usually INTEGRATIONS_KEY missing or changed: the secret cannot be opened.
+    // Usually the encryption key missing or changed: the secret cannot be opened.
     await recordError(error, { source: 'route', path: '/api/integrations/[id]/webhook' })
     return reply(503, { error: 'unavailable' })
   }

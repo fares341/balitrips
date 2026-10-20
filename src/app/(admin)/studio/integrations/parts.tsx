@@ -3,7 +3,7 @@ import { Advanced } from '../../_ui/advanced'
 import { Pill } from '../../_ui/table'
 
 /** Explains, in plain words, why keys cannot be saved yet — and what to do. */
-export function KeyNotice({ status, t }: { status: 'ok' | 'missing' | 'invalid'; t: Translate }) {
+export function KeyNotice({ status, t }: { status: 'ok' | 'missing'; t: Translate }) {
   if (status === 'ok') return null
   return (
     <div className="a-flash warn" role="status">
@@ -11,9 +11,6 @@ export function KeyNotice({ status, t }: { status: 'ok' | 'missing' | 'invalid';
         <strong>{t('int.key_title')}</strong>
         <p>{t(`int.key_${status}`)}</p>
         <Advanced show title={t('common.advanced')}>
-          <p className="a-hint" dir="ltr">
-            INTEGRATIONS_KEY=$(openssl rand -hex 32)
-          </p>
           <p className="a-hint">{t('int.key_technical')}</p>
         </Advanced>
       </div>

@@ -1,89 +1,55 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import { inspect } from 'node:util'
 
+import {
+  decryptSecret,
+  encryptSecret,
+  integrationEncryptionKey,
+} from '@/lib/analytics/secret-crypto'
+
 /**
- * Supplier credentials at rest: AES-256-GCM under INTEGRATIONS_KEY.
+ * Supplier credentials at rest — the SAME scheme and key as the Phase 5
+ * ad-platform tokens (src/lib/analytics/secret-crypto.ts): AES-256-GCM, key
+ * from `INTEGRATION_SECRET_KEY`, or derived from `BETTER_AUTH_SECRET` when that
+ * is not set. One key, one encryption module.
  *
- * A separate key from BETTER_AUTH_SECRET on purpose: rotating the sign-in
- * secret must not destroy every supplier connection, and a leaked database
- * dump plus the auth secret must still not yield a supplier's API keys.
- *
- * INTEGRATIONS_KEY is 32 random bytes written as 64 hex characters or as
- * base64 (`openssl rand -hex 32`). Without it — or with a malformed one —
- * nothing is encrypted and Studio refuses to save a secret: storing it in
- * clear "for now" is exactly how keys end up in a backup forever.
- *
- * The sealed form is `v1.<iv>.<tag>.<ciphertext>` (base64url), the same shape
- * as the two-factor secrets in src/lib/auth/totp.ts.
+ * Supplier keys are a JSON object of named values, sealed as one string and
+ * kept on the connection row (`supplier_integrations.credentials_sealed`);
+ * the webhook signing secret likewise. Without any key on the server nothing
+ * is stored and Studio says so — storing in clear "for now" is how keys end
+ * up in a backup forever.
  */
 
+type Env = Record<string, string | undefined>
+
 export class IntegrationKeyMissingError extends Error {
-  constructor(readonly reason: 'missing' | 'invalid') {
+  constructor() {
     super(
-      reason === 'missing'
-        ? 'INTEGRATIONS_KEY is not set; supplier secrets cannot be stored.'
-        : 'INTEGRATIONS_KEY is not 32 bytes (64 hex characters or base64).',
+      'No encryption key is configured on the server (INTEGRATION_SECRET_KEY or BETTER_AUTH_SECRET).',
     )
     this.name = 'IntegrationKeyMissingError'
   }
 }
 
-/** The key, or why there is none. Never logs or returns the value itself. */
-export function integrationsKeyStatus(
-  env: Record<string, string | undefined> = process.env,
-): 'ok' | 'missing' | 'invalid' {
-  try {
-    readKey(env)
-    return 'ok'
-  } catch (error) {
-    if (error instanceof IntegrationKeyMissingError) return error.reason
-    return 'invalid'
-  }
+/** Is there a key to encrypt with? Never returns or logs the key itself. */
+export function integrationsKeyStatus(env: Env = process.env): 'ok' | 'missing' {
+  return integrationEncryptionKey(env) === null ? 'missing' : 'ok'
 }
 
-function readKey(env: Record<string, string | undefined> = process.env): Buffer {
-  const raw = env.INTEGRATIONS_KEY?.trim()
-  if (!raw) throw new IntegrationKeyMissingError('missing')
-  let key: Buffer | null = null
-  if (/^[0-9a-f]{64}$/i.test(raw)) key = Buffer.from(raw, 'hex')
-  else if (/^[A-Za-z0-9+/_-]{43,44}={0,2}$/.test(raw)) {
-    const decoded = Buffer.from(raw.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
-    if (decoded.length === 32) key = decoded
-  }
-  if (key === null || key.length !== 32) throw new IntegrationKeyMissingError('invalid')
+function readKey(env: Env): Buffer {
+  const key = integrationEncryptionKey(env)
+  if (key === null) throw new IntegrationKeyMissingError()
   return key
 }
 
-export function sealJson(
-  value: Record<string, string>,
-  env: Record<string, string | undefined> = process.env,
-): string {
-  const key = readKey(env)
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', key, iv)
-  const data = Buffer.concat([cipher.update(JSON.stringify(value), 'utf8'), cipher.final()])
-  return [
-    'v1',
-    iv.toString('base64url'),
-    cipher.getAuthTag().toString('base64url'),
-    data.toString('base64url'),
-  ].join('.')
+export function sealJson(value: Record<string, string>, env: Env = process.env): string {
+  return encryptSecret(JSON.stringify(value), readKey(env))
 }
 
-export function openJson(
-  sealed: string,
-  env: Record<string, string | undefined> = process.env,
-): Record<string, string> {
-  const [version, iv, tag, data] = sealed.split('.')
-  if (version !== 'v1' || !iv || !tag || !data) {
-    throw new Error('Stored integration secret is not in a format this build understands.')
+export function openJson(sealed: string, env: Env = process.env): Record<string, string> {
+  const text = decryptSecret(sealed, readKey(env))
+  if (text === null) {
+    throw new Error('A stored integration secret cannot be opened (the server key changed?).')
   }
-  const decipher = createDecipheriv('aes-256-gcm', readKey(env), Buffer.from(iv, 'base64url'))
-  decipher.setAuthTag(Buffer.from(tag, 'base64url'))
-  const text = Buffer.concat([
-    decipher.update(Buffer.from(data, 'base64url')),
-    decipher.final(),
-  ]).toString('utf8')
   const parsed: unknown = JSON.parse(text)
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     throw new Error('Stored integration secret is not an object.')
@@ -95,17 +61,11 @@ export function openJson(
   return out
 }
 
-export function sealString(
-  value: string,
-  env: Record<string, string | undefined> = process.env,
-): string {
+export function sealString(value: string, env: Env = process.env): string {
   return sealJson({ value }, env)
 }
 
-export function openString(
-  sealed: string,
-  env: Record<string, string | undefined> = process.env,
-): string {
+export function openString(sealed: string, env: Env = process.env): string {
   return openJson(sealed, env).value ?? ''
 }
 

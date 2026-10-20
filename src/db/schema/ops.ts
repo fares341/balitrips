@@ -4,7 +4,7 @@
  *
  *  - `supplier_integrations` — one connection to one supplier. Secrets are
  *    AES-256-GCM ciphertext (src/lib/integrations/crypto.ts, key from
- *    INTEGRATIONS_KEY) and are never selected by a page: Studio reads only the
+ *    INTEGRATION_SECRET_KEY / BETTER_AUTH_SECRET, same as integration_secrets) and are never selected by a page: Studio reads only the
  *    hints (last 4 characters).
  *  - `external_product_mappings` — the supplier's id ↔ our row.
  *  - `integration_imports` — an uploaded CSV, previewed before it is applied.

@@ -12,7 +12,7 @@ import { buildContext, reportAccess } from '../../access'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const session = await requireCapability('orders.read')
+  const session = await requireCapability('reports.read')
   const url = new URL(request.url)
   const query = Object.fromEntries(url.searchParams)
   const metric = query.metric

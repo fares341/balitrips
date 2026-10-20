@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
  * (and refuse on their own page too).
  */
 export default async function ReportsPage() {
-  const session = await requireCapability('orders.read')
+  const session = await requireCapability('reports.read')
   const { t } = await buildContext(session.role)
   const access = reportAccess(session.role)
   const visible = REPORT_IDS.filter((id) => mayOpen(id, access))

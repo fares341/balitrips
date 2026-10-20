@@ -44,7 +44,7 @@ export async function sendDueReports(now = new Date()): Promise<number> {
 
     for (const recipient of recipients) {
       const role = isRole(recipient.role) ? recipient.role : 'customer'
-      if (!can(role, 'admin.access') || !can(role, 'orders.read')) continue
+      if (!can(role, 'admin.access') || !can(role, 'reports.read')) continue
       const access = {
         finance: can(role, 'finance.read'),
         customers: can(role, 'customers.read'),

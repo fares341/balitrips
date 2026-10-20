@@ -22,7 +22,7 @@ export default async function ReportPage({
   params: Promise<{ report: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await requireCapability('orders.read')
+  const session = await requireCapability('reports.read')
   const { report } = await params
   if (!isReportId(report) || !mayOpen(report, reportAccess(session.role))) notFound()
   const query = await searchParams

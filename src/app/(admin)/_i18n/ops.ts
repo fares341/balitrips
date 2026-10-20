@@ -191,11 +191,9 @@ const section: Section = {
     'int.key_remove': 'Remove',
     'int.key_title': 'Keys cannot be saved yet',
     'int.key_missing':
-      'The server has no encryption key for supplier keys, so none can be stored. Ask your technical team to set it; everything else on this page works.',
-    'int.key_invalid':
-      'The server’s encryption key for supplier keys is not in the right form, so none can be stored. Ask your technical team to correct it.',
+      'The server has no encryption key, so no supplier key can be stored. Ask your technical team to set it; everything else on this page works.',
     'int.key_technical':
-      'Set INTEGRATIONS_KEY (32 random bytes as 64 hex characters, or base64) in the app and worker environment, then restart. Changing it later makes stored keys unreadable: they must be entered again.',
+      'Keys are encrypted with INTEGRATION_SECRET_KEY (or, if that is not set, a key derived from BETTER_AUTH_SECRET) — the same key as the marketing tokens. Set it in the app and worker environment. Changing it later makes stored keys unreadable: they must be entered again.',
     'int.webhook_title': 'Updates sent by the supplier (webhook)',
     'int.webhook_hint':
       'Give the supplier this address and the signing secret. Every message is checked, recorded once, and handled in the background.',
@@ -323,7 +321,6 @@ const section: Section = {
     'int.err_type': 'Please choose a connection type.',
     'int.err_supplier': 'Please choose a supplier.',
     'int.err_key_missing': 'Keys cannot be saved: the server’s encryption key is not set.',
-    'int.err_key_invalid': 'Keys cannot be saved: the server’s encryption key is not valid.',
     'int.err_field': 'Key names use small letters, numbers and _ (for example api_key).',
     'int.err_value': 'Please enter the key’s value.',
     'int.err_needs_developer':
@@ -616,10 +613,8 @@ const section: Section = {
     'int.key_title': 'لا يمكن حفظ المفاتيح بعد',
     'int.key_missing':
       'لا يوجد على الخادم مفتاح تشفير لمفاتيح الموردين، لذلك لا يُحفظ أي مفتاح. اطلب من الفريق التقني ضبطه؛ باقي الصفحة يعمل.',
-    'int.key_invalid':
-      'مفتاح التشفير على الخادم ليس بالصيغة الصحيحة، لذلك لا يُحفظ أي مفتاح. اطلب من الفريق التقني تصحيحه.',
     'int.key_technical':
-      'Set INTEGRATIONS_KEY (32 random bytes as 64 hex characters, or base64) in the app and worker environment, then restart. Changing it later makes stored keys unreadable: they must be entered again.',
+      'Keys are encrypted with INTEGRATION_SECRET_KEY (or, if that is not set, a key derived from BETTER_AUTH_SECRET) — the same key as the marketing tokens. Set it in the app and worker environment. Changing it later makes stored keys unreadable: they must be entered again.',
     'int.webhook_title': 'تحديثات يرسلها المورد (Webhook)',
     'int.webhook_hint':
       'أعطِ المورد هذا العنوان وسر التوقيع. كل رسالة تُفحص وتُسجَّل مرة واحدة وتُعالج في الخلفية.',
@@ -743,7 +738,6 @@ const section: Section = {
     'int.err_type': 'اختر نوع الاتصال.',
     'int.err_supplier': 'اختر مورداً.',
     'int.err_key_missing': 'لا يمكن حفظ المفاتيح: مفتاح التشفير على الخادم غير مضبوط.',
-    'int.err_key_invalid': 'لا يمكن حفظ المفاتيح: مفتاح التشفير على الخادم غير صالح.',
     'int.err_field': 'اسم المفتاح بأحرف إنجليزية صغيرة وأرقام و _ (مثل api_key).',
     'int.err_value': 'أدخل قيمة المفتاح.',
     'int.err_needs_developer': 'لا يمكن تشغيل هذا النوع حتى يُبنى لهذا المورد.',

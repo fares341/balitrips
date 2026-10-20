@@ -21,7 +21,7 @@ export default async function ExportsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await requireCapability('orders.read')
+  const session = await requireCapability('reports.read')
   const query = await searchParams
   const { t } = await buildContext(session.role)
   const admin = can(session.role, 'roles.write')

@@ -1,3 +1,4 @@
+import { integrationErrorCounts } from '@/lib/integrations/service'
 import { pick } from '@/lib/content/localize'
 import { sourceLabel } from '@/lib/analytics/utm'
 
@@ -278,6 +279,11 @@ export async function buildOverview(
       { note: t('rp.note_now') },
     ),
   )
+  const syncErrors = await integrationErrorCounts().catch(() => ({
+    connections: 0,
+    failing: 0,
+    errorsLast24h: 0,
+  }))
   kpis.push(
     countKpi(
       'open_tickets',
@@ -297,12 +303,27 @@ export async function buildOverview(
       recordsHref('low_availability', filters),
       { lowerIsBetter: true, note: t('rp.note_now') },
     ),
-    {
-      id: 'supplier_sync_errors',
-      label: t('rp.kpi_supplier_sync'),
-      definition: t('rp.def_supplier_sync'),
-      value: { kind: 'unavailable', reason: t('rp.not_connected') },
-    },
+    // Phase 6: failures logged by supplier connections in the last 24 hours.
+    // With no connection at all it stays "not connected yet", never a fake 0.
+    syncErrors.connections === 0
+      ? {
+          id: 'supplier_sync_errors',
+          label: t('rp.kpi_supplier_sync'),
+          definition: t('rp.def_supplier_sync'),
+          value: { kind: 'unavailable', reason: t('rp.not_connected') },
+        }
+      : countKpi(
+          'supplier_sync_errors',
+          t('rp.kpi_supplier_sync'),
+          t('rp.def_supplier_sync'),
+          syncErrors.errorsLast24h,
+          null,
+          undefined,
+          {
+            lowerIsBetter: true,
+            note: t('rp.note_sync_errors', { failing: syncErrors.failing }),
+          },
+        ),
     countKpi(
       'view_to_booking',
       t('rp.kpi_view_to_booking'),

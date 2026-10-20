@@ -58,7 +58,7 @@ from yet; the future portal must enrol them before showing anything.
 | `discounts.write` | ✓ |  |  |  |  |  | ✓ |  | Discount codes |
 | `finance.read` | ✓ |  |  |  |  |  |  | ✓ | Profit, payment checks |
 | `suppliers.write` | ✓ |  |  |  |  |  |  | ✓ | Supplier costs, payables |
-| `reports.read` (new) | ✓ |  | ✓ |  |  |  | ✓ | ✓ | Reports (Phase 5) |
+| `reports.read` (new) | ✓ | ✓ | ✓ |  |  |  | ✓ | ✓ | Reports, map analytics, the dashboard's period figures, scheduled report e-mails (Phase 5; was `orders.read`) |
 | `vip.manage` (new) | ✓ |  | ✓ |  |  |  |  |  | VIP settings (was `config.write`) |
 | `audit.read` | ✓ | ✓ | ✓ |  |  |  |  | ✓ | Audit log |
 | `security.read` | ✓ | ✓ | ✓ |  |  |  |  |  | Protection pages |
@@ -69,8 +69,9 @@ from yet; the future portal must enrol them before showing anything.
 | `integrations.write` (new) | ✓ |  |  |  |  |  |  |  | Studio → Integrations |
 | `system.read` (new) | ✓ |  |  |  |  |  |  |  | Studio → System health, `/api/health/deep` |
 
-**Staff note.** `bookings.confirm` was split out of `orders.fulfil` and
-`prices.write` out of `content.write`. Staff hold both new capabilities, so a
+**Staff note.** `bookings.confirm` was split out of `orders.fulfil`,
+`prices.write` out of `content.write` and `reports.read` out of `orders.read`.
+Staff hold all three, so a
 staff account can do exactly what it could before; the split exists so that a
 content editor cannot change prices and a support agent cannot confirm
 bookings. Without `prices.write`, the package editor still saves names, texts

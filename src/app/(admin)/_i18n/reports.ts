@@ -167,7 +167,8 @@ const section: Section = {
       'Departures in the next 14 days with 2 places or fewer left (and not closed), from the capacity calendar.',
     'rp.kpi_supplier_sync': 'Supplier sync errors',
     'rp.def_supplier_sync':
-      'Errors when exchanging bookings with suppliers’ systems. Not connected yet: this appears once supplier connections are added.',
+      'Failures logged by supplier connections (Studio → Integrations) in the last 24 hours, whatever the period chosen. “Not connected yet” until a connection exists.',
+    'rp.note_sync_errors': 'Last 24 h · connections with problems: {failing}',
     'rp.kpi_view_to_booking': 'View → purchase',
     'rp.def_view_to_booking':
       'Of the visitors who opened an activity, itinerary or package page in the period, the share who also bought in the period. Counts only visitors who accepted statistics cookies.',
@@ -712,7 +713,8 @@ const section: Section = {
       'مواعيد خلال 14 يوماً القادمة بقي فيها مكانان أو أقل (وغير مغلقة)، من تقويم السعة.',
     'rp.kpi_supplier_sync': 'أخطاء ربط المورّدين',
     'rp.def_supplier_sync':
-      'أخطاء تبادل الحجوزات مع أنظمة المورّدين. غير مربوط بعد: سيظهر عند إضافة ربط المورّدين.',
+      'مرات الفشل المسجّلة في اتصالات الموردين (Studio ← التكاملات) خلال آخر 24 ساعة، أياً كانت الفترة المختارة. «غير مربوط بعد» حتى يُضاف اتصال.',
+    'rp.note_sync_errors': 'آخر 24 ساعة · اتصالات فيها مشاكل: {failing}',
     'rp.kpi_view_to_booking': 'مشاهدة ← شراء',
     'rp.def_view_to_booking':
       'من الزوار الذين فتحوا صفحة نشاط أو جدول أو باقة في الفترة، نسبة من اشترى أيضاً في الفترة. يُحسب فقط للزوار الذين قبلوا ملفات الإحصاءات.',

@@ -17,10 +17,12 @@ signed agreement (test credentials for sandbox first).
 
 ## Security model
 
-- **Keys at rest:** AES-256-GCM with `INTEGRATIONS_KEY` (32 bytes, 64 hex chars;
-  `openssl rand -hex 32`). Without a valid key Studio refuses to store any
-  secret and says why. The same value must be set for the app and the worker.
-  Rotating it makes stored keys unreadable (re-enter them).
+- **Keys at rest:** AES-256-GCM through the same module and key as the Phase 5
+  marketing tokens (`src/lib/analytics/secret-crypto.ts`): `INTEGRATION_SECRET_KEY`,
+  or a key derived from `BETTER_AUTH_SECRET` when it is not set. Sealed values
+  live on the connection row (`credentials_sealed`, `webhook_secret_sealed`).
+  With no key at all Studio refuses to store a secret and says why. Changing the
+  key makes stored keys unreadable (re-enter them).
 - **Never to the browser:** pages select only non-secret columns
   (`integrationPublicColumns`); the UI shows "Saved ✓" and the last 4
   characters. Decrypted keys live in a `SecretBag`, which serialises as

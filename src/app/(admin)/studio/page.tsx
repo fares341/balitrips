@@ -218,7 +218,8 @@ export default async function DashboardPage({
   const configWarnings = liveModeIssues()
 
   // Phase 5: the period dashboard (filters, comparison, drill-down, charts).
-  const reportCtx = mayReadOrders ? await buildContext(session.role) : null
+  // Phase 6: the period dashboard is a report (`reports.read`).
+  const reportCtx = can(session.role, 'reports.read') ? await buildContext(session.role) : null
   const filters = parseReportFilters(params, now)
   const [overview, supplierList, currencyList] =
     reportCtx === null

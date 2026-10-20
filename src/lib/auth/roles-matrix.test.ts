@@ -40,6 +40,7 @@ const MATRIX: Record<Exclude<Role, 'admin'>, readonly Capability[]> = {
     'crm.write',
     'bookings.confirm',
     'prices.write',
+    'reports.read',
   ],
   operations_manager: [
     'admin.access',

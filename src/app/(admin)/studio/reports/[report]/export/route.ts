@@ -27,7 +27,7 @@ import { exportLabels } from '../../labels'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request, { params }: { params: Promise<{ report: string }> }) {
-  const session = await requireCapability('orders.read')
+  const session = await requireCapability('reports.read')
   const { report } = await params
   if (!isReportId(report) || !mayOpen(report, reportAccess(session.role))) {
     return new NextResponse(null, { status: 404 })

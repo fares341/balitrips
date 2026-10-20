@@ -78,7 +78,7 @@ containers and survives deploys. Fails open on a database error (logged).
 
 | Variable | Needed for |
 | --- | --- |
-| `INTEGRATIONS_KEY` | storing supplier keys / webhook secrets (app **and** worker) |
+| `INTEGRATION_SECRET_KEY` | optional (Phase 5): encryption key for marketing tokens AND supplier keys; falls back to a key derived from `BETTER_AUTH_SECRET` |
 | `HEALTH_CHECK_TOKEN` | optional: uptime monitor access to `/api/health/deep` |
 | `ERROR_SPIKE_THRESHOLD` | optional: error-spike alert threshold (default 50) |
 | `STAFF_ALERT_EMAILS` | optional (existing): who receives alerts instead of all admins |

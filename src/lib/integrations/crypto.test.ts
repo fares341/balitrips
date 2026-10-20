@@ -11,32 +11,35 @@ import {
   sealString,
   SecretBag,
 } from './crypto'
+import { decryptSecret, integrationEncryptionKey } from '@/lib/analytics/secret-crypto'
 
-const KEY_HEX = 'a'.repeat(64)
-const ENV = { INTEGRATIONS_KEY: KEY_HEX }
-const OTHER = { INTEGRATIONS_KEY: 'b'.repeat(64) }
+const ENV = { INTEGRATION_SECRET_KEY: 'phase6-test-key' }
+const OTHER = { INTEGRATION_SECRET_KEY: 'another-key' }
 
-describe('INTEGRATIONS_KEY', () => {
-  it('accepts 64 hex characters or base64 of 32 bytes, and nothing else', () => {
+describe('encryption key (shared with the Phase 5 marketing tokens)', () => {
+  it('uses INTEGRATION_SECRET_KEY, else BETTER_AUTH_SECRET, else nothing', () => {
     expect(integrationsKeyStatus(ENV)).toBe('ok')
-    expect(
-      integrationsKeyStatus({ INTEGRATIONS_KEY: Buffer.alloc(32, 7).toString('base64') }),
-    ).toBe('ok')
+    expect(integrationsKeyStatus({ BETTER_AUTH_SECRET: 'auth-secret' })).toBe('ok')
     expect(integrationsKeyStatus({})).toBe('missing')
-    expect(integrationsKeyStatus({ INTEGRATIONS_KEY: '  ' })).toBe('missing')
-    expect(integrationsKeyStatus({ INTEGRATIONS_KEY: 'short' })).toBe('invalid')
-    expect(integrationsKeyStatus({ INTEGRATIONS_KEY: 'a'.repeat(63) })).toBe('invalid')
+    expect(integrationsKeyStatus({ INTEGRATION_SECRET_KEY: '  ' })).toBe('missing')
   })
 
   it('refuses to seal anything without a key', () => {
-    expect(() => sealJson({ api_key: 'x' }, {})).toThrow(/INTEGRATIONS_KEY/)
+    expect(() => sealJson({ api_key: 'x' }, {})).toThrow(/encryption key/)
+  })
+
+  it('is the same scheme as the marketing tokens (one module)', () => {
+    const sealed = sealString('tok', ENV)
+    const key = integrationEncryptionKey(ENV)
+    expect(key).not.toBeNull()
+    expect(decryptSecret(sealed, key as Buffer)).toBe(JSON.stringify({ value: 'tok' }))
   })
 })
 
 describe('credential encryption', () => {
   it('round-trips an object of keys', () => {
     const sealed = sealJson({ api_key: 'sk_live_1234567890', account: 'ACME' }, ENV)
-    expect(sealed.startsWith('v1.')).toBe(true)
+    expect(sealed.startsWith('v1:')).toBe(true)
     expect(sealed).not.toContain('sk_live')
     expect(openJson(sealed, ENV)).toEqual({ api_key: 'sk_live_1234567890', account: 'ACME' })
     expect(openString(sealString('whsec_abc', ENV), ENV)).toBe('whsec_abc')
@@ -49,12 +52,12 @@ describe('credential encryption', () => {
   it('cannot be opened with another key, or after tampering', () => {
     const sealed = sealJson({ api_key: 'secret-value' }, ENV)
     expect(() => openJson(sealed, OTHER)).toThrow()
-    const parts = sealed.split('.')
+    const parts = sealed.split(':')
     const data = Buffer.from(parts[3] ?? '', 'base64url')
     data[0] = (data[0] ?? 0) ^ 1
-    const tampered = [parts[0], parts[1], parts[2], data.toString('base64url')].join('.')
+    const tampered = [parts[0], parts[1], parts[2], data.toString('base64url')].join(':')
     expect(() => openJson(tampered, ENV)).toThrow()
-    expect(() => openJson('v0.x.y.z', ENV)).toThrow()
+    expect(() => openJson('v0:x:y:z', ENV)).toThrow()
   })
 
   it('keeps only the last four characters readable', () => {
