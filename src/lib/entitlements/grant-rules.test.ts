@@ -28,22 +28,30 @@ describe('plan lines granted on payment', () => {
   })
 })
 
+interface Row {
+  id: string
+  lineTotalMinor: number
+  refundedMinor: number
+  fulfilmentStatus: string
+  parentItemId: string | null
+}
+
 describe('is a line still paid for (refunds)', () => {
-  const pkg = {
+  const pkg: Row = {
     id: 'pkg',
     lineTotalMinor: 69000,
     refundedMinor: 0,
     fulfilmentStatus: 'confirmed',
     parentItemId: null,
   }
-  const vipChild = {
+  const vipChild: Row = {
     id: 'vip',
     lineTotalMinor: 0,
     refundedMinor: 0,
     fulfilmentStatus: 'pending',
     parentItemId: 'pkg',
   }
-  const addon = {
+  const addon: Row = {
     id: 'addon',
     lineTotalMinor: 3900,
     refundedMinor: 0,

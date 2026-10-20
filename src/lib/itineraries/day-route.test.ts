@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PlaceTeaser } from '@/lib/content/extra-queries'
+import type { PlaceTeaser, VisiblePlaceTeaser } from '@/lib/content/extra-queries'
 
 import {
   buildDayRoute,
@@ -12,7 +12,7 @@ import {
 
 const name = (en: string) => ({ en, ar: en, id: en })
 
-function visible(id: string, lat: number, lon: number): PlaceTeaser {
+function visible(id: string, lat: number, lon: number): VisiblePlaceTeaser {
   return {
     locked: false,
     id,
