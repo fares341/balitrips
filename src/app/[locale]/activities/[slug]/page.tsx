@@ -203,6 +203,8 @@ export default async function ActivityDetailPage({ params }: PageProps) {
         timeSlots: inc.timeSlots.filter((slot) => /^\d{2}:\d{2}$/.test(slot)),
         timing: inc.timing,
       })),
+      childPriceMinor: tier.pricing === 'per_person' ? tier.childPriceMinor : null,
+      seasons: tier.seasons,
     })),
     addons: activity.addons.map((addon) => ({
       id: addon.id,
@@ -225,6 +227,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
       dayRateMinor: v.dayRateMinor,
       currency: v.currency,
     })),
+    childAges: activity.childAges,
     info: {
       instantConfirmation: activity.instantConfirmation,
       freeCancellationHours: activity.freeCancellationHours,

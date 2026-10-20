@@ -235,7 +235,12 @@ export const staffDeps: StaffDeps = {
           .where(
             and(
               inArray(orders.status, ['paid', 'confirmed', 'partially_refunded']),
-              inArray(orderItems.bookingStatus, ['created', 'sent_to_provider']),
+              inArray(orderItems.bookingStatus, [
+                'created',
+                'pending_supplier',
+                'pending_availability',
+                'sent_to_provider',
+              ]),
             ),
           ),
       ])

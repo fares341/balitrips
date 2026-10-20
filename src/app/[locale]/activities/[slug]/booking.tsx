@@ -34,6 +34,7 @@ import { FEATURES } from '@/lib/features'
 import {
   addonState,
   driverDays,
+  hasChildPricing,
   priceBooking,
   resolveAddons,
   type AddonPricing,
@@ -41,9 +42,15 @@ import {
   type PackagePricing,
   type PackageRule,
 } from '@/lib/booking/price'
+import type { SeasonalPrice } from '@/lib/booking/seasonal'
+import {
+  checkAvailability,
+  isDayUnavailable,
+  type AvailabilityRules,
+} from '@/lib/availability/rules'
 
-import { bookActivityAction, loadTripBookingAction } from './actions'
-import type { BookingField } from './booking-contract'
+import { bookActivityAction, loadBookingFactsAction, loadTripBookingAction } from './actions'
+import type { BookingFacts, BookingField } from './booking-contract'
 
 // ---------------------------------------------------------------------------
 // Data handed over by the server (already localized)
@@ -78,6 +85,10 @@ export type BookingPackage = {
   notes: string[]
   /** Other activities this package includes (same date). */
   includedActivities: BookingIncluded[]
+  /** Price per child (per-person packages); null = children pay the adult price. */
+  childPriceMinor: number | null
+  /** Seasonal prices; the travel date picks one. */
+  seasons: SeasonalPrice[]
 }
 
 export type BookingAddon = {
@@ -125,6 +136,8 @@ export type BookingData = {
   vehicles: BookingVehicle[]
   /** Activity-level facts the package panel and the four boxes show. */
   info: BookingInfo
+  /** Child age band (e.g. 4–11); younger = infant, free. Null = no child pricing. */
+  childAges: { min: number; max: number } | null
 }
 
 export type BookingInfo = {
@@ -149,6 +162,9 @@ type State = {
   endDate: string | null
   time: string | null
   people: number
+  /** Of `people`: children and infants (child-priced packages only). */
+  children: number
+  infants: number
   /** Selected add-ons → quantity (1 unless per_qty). */
   addons: Record<string, number>
   /** Included activity (own slot) → time picked. */
@@ -172,6 +188,13 @@ type Ctx = {
   /** Smallest party for the chosen package. */
   min: number
   driverAvailable: boolean
+  /** Adults / children / infants steppers are shown (child price on the chosen package). */
+  childMode: boolean
+  setParty: (adults: number, children: number, infants: number) => void
+  /** Closed dates and places (phase 2); null = unlimited / not loaded. */
+  rules: AvailabilityRules | null
+  /** How the booking will be confirmed; null = no supplier terms set up. */
+  promise: ConfirmPromise | null
   setPackage: (id: string, el?: HTMLElement | null) => void
   setDate: (value: string) => void
   setRange: (value: CalendarRange) => void
@@ -188,6 +211,38 @@ type Ctx = {
   /** Editing a My Trip line (`?edit=<itemId>`): saving replaces it. */
   editing: boolean
   money: (minor: number) => string
+}
+
+/** "Instant" or "the supplier confirms within N hours". */
+type ConfirmPromise = { instant: true } | { instant: false; hours: number }
+
+/**
+ * The confirmation the customer is promised, from the supplier offers' terms
+ * (same rules as the server's `confirmationPromise`, using its ranking).
+ */
+function promiseFor(
+  facts: BookingFacts | null,
+  pkg: string | null,
+  date: string | null,
+  time: string | null,
+): ConfirmPromise | null {
+  if (!facts || facts.offers.length === 0) return null
+  const fit = facts.offers
+    .filter((offer) => offer.tierId === null || offer.tierId === pkg)
+    .filter((offer) => !time || offer.timeSlots.length === 0 || offer.timeSlots.includes(time))
+    .filter(
+      (offer) =>
+        !date ||
+        offer.leadTimeHours === null ||
+        offer.leadTimeHours <= 0 ||
+        isWithinLeadTime(date, time ?? '00:00', offer.leadTimeHours),
+    )
+    .sort((a, b) => a.rank - b.rank)
+  const chosen = fit[0]
+  if (!chosen) {
+    return { instant: false, hours: Math.max(1, ...facts.offers.map((o) => o.confirmWithinHours)) }
+  }
+  return chosen.instant ? { instant: true } : { instant: false, hours: chosen.confirmWithinHours }
 }
 
 const BookingContext = createContext<Ctx | null>(null)
@@ -231,7 +286,17 @@ function toRule(pkg: BookingPackage | null, data: BookingData): PackageRule {
     pricing: pkg.pricing,
     groupMax: pkg.groupMax,
     includesAddons: pkg.includesAddons,
+    childPriceMinor: pkg.childPriceMinor,
+    seasons: pkg.seasons,
   }
+}
+
+/** Adults / children / infants are asked for: a child price on the package (on that date). */
+function childModeFor(state: Pick<State, 'pkg' | 'date'>, data: BookingData): boolean {
+  if (data.childAges === null) return false
+  const pkgInfo = data.packages.find((p) => p.id === state.pkg) ?? null
+  if (!pkgInfo) return false
+  return hasChildPricing(toRule(pkgInfo, data), state.date)
 }
 
 function addonRules(data: BookingData): AddonRule[] {
@@ -291,6 +356,9 @@ function priceOf(state: State, data: BookingData) {
     addons: addonRules(data),
     picks: Object.entries(state.addons).map(([id, qty]) => ({ id, qty })),
     people: Math.max(1, state.people),
+    travelDate: state.date,
+    children: state.children,
+    infants: state.infants,
     included: (pkgInfo?.includedActivities ?? []).map((a) => ({
       activityId: a.id,
       time: a.timing === 'own_slot' ? (state.included[a.id] ?? null) : null,
@@ -315,6 +383,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     endDate: null,
     time: data.timeSlots.length === 1 ? (data.timeSlots[0] ?? null) : null,
     people: clampPeople(2, firstPkg, data),
+    children: 0,
+    infants: 0,
     addons: {},
     included: {},
     driver: false,
@@ -325,6 +395,20 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [today] = useState(() => todayInBali())
+  const [facts, setFacts] = useState<BookingFacts | null>(null)
+
+  // Places and confirmation terms are read live, never from the cached page.
+  useEffect(() => {
+    let alive = true
+    loadBookingFactsAction(data.activityId)
+      .then((loaded) => {
+        if (alive) setFacts(loaded)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [data.activityId])
 
   // "Edit" on My Trip opens this page with `?edit=<itemId>`: load that line
   // (the server checks it is the caller's own) back into the box.
@@ -341,6 +425,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
           endDate: data.multiDay ? booking.endDate : null,
           time: booking.time,
           people: booking.people,
+          children: booking.children,
+          infants: booking.infants,
           addons: Object.fromEntries(booking.addons.map((a) => [a.id, a.qty])),
           included: Object.fromEntries(
             booking.included.flatMap((a): [string, string][] =>
@@ -368,6 +454,9 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   )
   // No driver step or suggestion while the service is off (lib/features.ts).
   const driverAvailable = FEATURES.driver && vehicle !== undefined
+  const childMode = childModeFor(state, data)
+  const rules: AvailabilityRules | null = facts?.availability ?? null
+  const promise = promiseFor(facts, state.pkg, state.date, state.time)
 
   const money = (minor: number) => formatPrice(minor, data.currency, locale)
 
@@ -377,6 +466,16 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     const nextPkg = data.packages.find((p) => p.id === next.pkg) ?? null
     const people = clampPeople(next.people, nextPkg, data)
     if (people !== next.people) next = { ...next, people }
+    // Children and infants only on a child-priced package, and always ≥ 1 adult.
+    if (!childModeFor(next, data)) {
+      if (next.children !== 0 || next.infants !== 0) next = { ...next, children: 0, infants: 0 }
+    } else {
+      const children = Math.min(next.children, next.people - 1)
+      const infants = Math.min(next.infants, next.people - 1 - children)
+      if (children !== next.children || infants !== next.infants) {
+        next = { ...next, children, infants }
+      }
+    }
     // Handoff motion: the total "bumps" only when it actually changes.
     if (priceOf(next, data).totalMinor !== price.totalMinor) setBump((n) => n + 1)
     setState(next)
@@ -392,6 +491,19 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
       next.included = t('act_err_included')
     }
     if (!(state.people > 0)) next.people = t('act_err_people')
+    if (rules && state.date && !next.date && !next.time) {
+      const verdict = checkAvailability(rules, state.date, state.time, state.people)
+      if (!verdict.ok) {
+        const message =
+          verdict.reason === 'closed'
+            ? t('act_err_closed')
+            : verdict.remaining > 0
+              ? t('act_err_places_left', { n: verdict.remaining })
+              : t('act_err_sold_out')
+        if (data.timeSlots.length > 0 && verdict.reason === 'full') next.time = message
+        else next.date = message
+      }
+    }
     return next
   }
 
@@ -423,6 +535,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     unknown_item: 'act_err_package',
     driver_full: 'act_err_driver_full',
     closed: 'bk_closed_t',
+    date_closed: 'act_err_closed',
+    sold_out: 'act_err_sold_out',
   }
 
   async function save(mode: 'trip' | 'book', withDriver: boolean) {
@@ -435,6 +549,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
         endDate: data.multiDay ? state.endDate : null,
         time: state.time,
         people: state.people,
+        children: state.children,
+        infants: state.infants,
         addons: Object.entries(state.addons).map(([id, qty]) => ({ id, qty })),
         included: ownSlotIncluded(pkgInfo).map((a) => ({
           activityId: a.id,
@@ -497,6 +613,18 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     cap,
     min,
     driverAvailable,
+    childMode,
+    rules,
+    promise,
+    setParty: (adults, children, infants) =>
+      update(
+        {
+          people: Math.max(1, adults) + Math.max(0, children) + Math.max(0, infants),
+          children: Math.max(0, children),
+          infants: Math.max(0, infants),
+        },
+        'people',
+      ),
     money,
     modalOpen,
     closeModal: () => setModalOpen(false),
@@ -565,7 +693,23 @@ function perLabel(t: ReturnType<typeof useTranslations>, pkg: BookingPackage) {
  */
 export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const t = useTranslations()
-  const { state, pkgInfo, cap, min, setPeople } = useBooking()
+  const { state, pkgInfo, cap, min, setPeople, childMode, setParty } = useBooking()
+  if (childMode) {
+    // Adults here; children and infants have their own steppers in the box.
+    const kids = state.children + state.infants
+    return (
+      <Stepper
+        size={size}
+        value={state.people - kids}
+        onChange={(value) => setParty(value, state.children, state.infants)}
+        min={Math.max(1, min - kids)}
+        max={Math.max(1, cap - kids)}
+        label={t('act_s_adults')}
+        decreaseLabel={t('c_qty_dec')}
+        increaseLabel={t('c_qty_inc')}
+      />
+    )
+  }
   const couples = pkgInfo?.pricing === 'per_couple'
   const label = couples ? t('act_qty_couples') : t('act_qty_people')
   return (
@@ -579,6 +723,62 @@ export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
       decreaseLabel={t('c_qty_dec')}
       increaseLabel={t('c_qty_inc')}
     />
+  )
+}
+
+/** Children and infants steppers (child-priced packages). */
+function ChildSteppers() {
+  const t = useTranslations()
+  const { state, cap, data, pkgInfo, setParty, money } = useBooking()
+  const ages = data.childAges
+  if (!ages) return null
+  const adults = state.people - state.children - state.infants
+  const room = Math.max(0, cap - state.people)
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <div className="row between" style={{ flexWrap: 'nowrap' }}>
+        <small>
+          <b>{t('act_s_children', { min: ages.min, max: ages.max })}</b>
+          {pkgInfo?.childPriceMinor !== null && pkgInfo?.childPriceMinor !== undefined ? (
+            <>
+              <br />
+              <span className="muted" dir="ltr">
+                {money(pkgInfo.childPriceMinor)}
+              </span>
+            </>
+          ) : null}
+        </small>
+        <Stepper
+          size="sm"
+          value={state.children}
+          onChange={(value) => setParty(adults, value, state.infants)}
+          min={0}
+          max={state.children + room}
+          label={t('act_s_children', { min: ages.min, max: ages.max })}
+          decreaseLabel={t('c_qty_dec')}
+          increaseLabel={t('c_qty_inc')}
+        />
+      </div>
+      {ages.min > 0 ? (
+        <div className="row between" style={{ flexWrap: 'nowrap' }}>
+          <small>
+            <b>{t('act_s_infants', { min: ages.min })}</b>
+            <br />
+            <span className="muted">{t('act_infants_free')}</span>
+          </small>
+          <Stepper
+            size="sm"
+            value={state.infants}
+            onChange={(value) => setParty(adults, state.children, value)}
+            min={0}
+            max={state.infants + room}
+            label={t('act_s_infants', { min: ages.min })}
+            decreaseLabel={t('c_qty_dec')}
+            increaseLabel={t('c_qty_inc')}
+          />
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -815,10 +1015,17 @@ function IncludedList({ items }: { items: BookingIncluded[] }) {
  */
 export function TierDetail({ schedule }: { schedule: string | null }) {
   const t = useTranslations()
-  const { data, pkgInfo, price, money, cap, min } = useBooking()
+  const { data, pkgInfo, price, money, cap, min, promise } = useBooking()
   const info = data.info
   const facts: { icon: IconName; text: string; ltr?: boolean; ok?: boolean }[] = []
-  if (info.instantConfirmation)
+  // Supplier terms, when set up, decide the promise; otherwise the page flag.
+  if (promise !== null) {
+    facts.push(
+      promise.instant
+        ? { icon: 'bolt', text: t('act_detail_instant'), ok: true }
+        : { icon: 'clock', text: t('act_confirm_hours', { n: promise.hours }) },
+    )
+  } else if (info.instantConfirmation)
     facts.push({ icon: 'bolt', text: t('act_detail_instant'), ok: true })
   if (info.freeCancellationHours !== null) {
     facts.push({
@@ -1030,12 +1237,17 @@ export function BookingBox() {
     : null
   const fromMinor = from?.priceMinor ?? data.basePriceMinor
 
+  const rules = b.rules
   const slotOpen = (slot: string) =>
     !state.date || isWithinLeadTime(state.date, slot, data.leadTimeHours)
+  /** Places for this departure on the chosen date (phase 2). */
+  const slotPlaces = (slot: string) =>
+    rules && state.date ? checkAvailability(rules, state.date, slot, state.people) : null
   const dayUnavailable = (day: string) =>
-    data.timeSlots.length > 0
+    (data.timeSlots.length > 0
       ? data.timeSlots.every((slot) => !isWithinLeadTime(day, slot, data.leadTimeHours))
-      : !isWithinLeadTime(day, '00:00', data.leadTimeHours)
+      : !isWithinLeadTime(day, '00:00', data.leadTimeHours)) ||
+    (rules !== null && isDayUnavailable(rules, day, data.timeSlots))
 
   const vehicle = data.vehicles.find(
     (v) => v.vehicleClass === price.vehicleClass && v.currency === data.currency,
@@ -1056,6 +1268,9 @@ export function BookingBox() {
         : pkgInfo?.pricing === 'per_couple'
           ? t('act_line_couples', { name, n: line.quantity })
           : t('act_line_people', { name, n: line.quantity })
+    }
+    if (line.kind === 'child') {
+      return t('act_line_children', { name: pkgInfo?.name ?? t('act_base_line'), n: line.quantity })
     }
     if (line.kind === 'included') {
       const name = (line.refId ? includedById.get(line.refId)?.name : undefined) ?? ''
@@ -1171,6 +1386,8 @@ export function BookingBox() {
             <div className="slots" role="group" aria-labelledby={`${uid}-time`}>
               {data.timeSlots.map((slot) => {
                 const open = slotOpen(slot)
+                const places = slotPlaces(slot)
+                const shut = places !== null && !places.ok && places.remaining <= 0
                 return (
                   <button
                     key={slot}
@@ -1178,11 +1395,17 @@ export function BookingBox() {
                     className="slot"
                     dir="ltr"
                     aria-pressed={state.time === slot}
-                    disabled={!open}
+                    disabled={!open || shut}
                     onClick={() => b.setTime(slot)}
                   >
                     {slot}
-                    {!open ? <small>{t('act_slot_closed')}</small> : null}
+                    {!open ? (
+                      <small>{t('act_slot_closed')}</small>
+                    ) : shut ? (
+                      <small>{t('act_slot_full')}</small>
+                    ) : places !== null && places.remaining !== null && places.remaining <= 5 ? (
+                      <small>{t('act_places_left', { n: places.remaining })}</small>
+                    ) : null}
                   </button>
                 )
               })}
@@ -1233,8 +1456,17 @@ export function BookingBox() {
             <span className="n">{step()}</span>
             {pkgInfo?.pricing === 'per_couple' ? t('act_qty_couples') : t('act_s_people')}
           </span>
+          {b.childMode ? (
+            <div className="row between" style={{ flexWrap: 'nowrap' }}>
+              <small>
+                <b>{t('act_s_adults')}</b>
+              </small>
+              <PartyStepper size="sm" />
+            </div>
+          ) : null}
+          {b.childMode ? <ChildSteppers /> : null}
           <div className="row between" style={{ flexWrap: 'nowrap' }}>
-            <PartyStepper />
+            {b.childMode ? null : <PartyStepper />}
             <small className="muted">
               {pkgInfo?.pricing === 'per_group'
                 ? t('act_ppl_note_group', { n: pkgInfo.groupMax ?? b.cap })
@@ -1386,6 +1618,17 @@ export function BookingBox() {
               {money(price.totalMinor)}
             </b>
           </div>
+          {price.seasonLabel ? (
+            <small className="muted">{t('act_season_price', { label: price.seasonLabel })}</small>
+          ) : null}
+          {b.promise !== null ? (
+            <small className={b.promise.instant ? 'bk-confirm ok' : 'bk-confirm'}>
+              <Icon name={b.promise.instant ? 'bolt' : 'clock'} size={15} />{' '}
+              {b.promise.instant
+                ? t('act_confirm_instant')
+                : t('act_confirm_hours', { n: b.promise.hours })}
+            </small>
+          ) : null}
           <small className="muted">{t('act_sum_note')}</small>
         </div>
 

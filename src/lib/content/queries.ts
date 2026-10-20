@@ -87,6 +87,7 @@ import type { MapTaxonomy } from '@/lib/search/query'
 import { buildSrcSet, derivativeKey, fallbackRung, isUnoptimised } from '@/lib/media/ladder'
 import { loadActivityAddons } from '@/lib/booking/addons'
 import { loadTierIncluded } from '@/lib/booking/included'
+import { loadSeasons } from '@/lib/booking/extras'
 import { tierPricing } from '@/lib/booking/price'
 import {
   activityStatus,
@@ -681,6 +682,7 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
 
   // Activities the packages include: only ones that can be booked are sold.
   const includedByTier = await loadTierIncluded(tierRows.map((tier) => tier.id))
+  const seasonsByTier = await loadSeasons(tierRows.map((tier) => tier.id))
   const includedIds = [...new Set([...includedByTier.values()].flat().map((e) => e.activityId))]
   const includedRows =
     includedIds.length === 0
@@ -753,6 +755,10 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
         ? a.freeCancellationHours
         : null,
     minGuests: Math.max(1, a.minGuests),
+    childAges:
+      a.childAgeMin !== null && a.childAgeMax !== null && a.childAgeMax >= a.childAgeMin
+        ? { min: a.childAgeMin, max: a.childAgeMax }
+        : null,
     mobileHero: toMedia(mobileHero),
     video: parseVideoUrl(a.videoUrl),
     tags: tagRows,
@@ -815,6 +821,8 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       highlights: toLocalizedList(tier.highlights),
       details: toLocalizedList(tier.details),
       notes: toLocalizedList(tier.notes),
+      childPriceMinor: tier.childPriceMinor,
+      seasons: seasonsByTier.get(tier.id) ?? [],
     })),
     // The hero leads the gallery when it is not already one of the images.
     gallery:

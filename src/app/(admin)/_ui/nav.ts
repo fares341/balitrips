@@ -52,6 +52,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/plans', labelKey: 'nav.plans', capability: 'content.read' },
       { path: '/entitlements', labelKey: 'nav.entitlements', capability: 'customers.read' },
       { path: '/capacity', labelKey: 'nav.capacity', capability: 'capacity.write' },
+      { path: '/suppliers', labelKey: 'nav.suppliers', capability: 'orders.read' },
+      { path: '/payables', labelKey: 'nav.payables', capability: 'suppliers.write' },
     ],
   },
   {

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  BOOKING_STATUSES,
   bookingStatusAfterPaid,
+  bookingStatusAfterPayment,
   canMoveBooking,
+  holdsCapacity,
   canRetryPayment,
   itemTag,
   paymentState,
@@ -98,5 +101,110 @@ describe('itemTag', () => {
     expect(itemTag('success', 'activity', 'cancel_requested').tone).toBe('warn')
     expect(itemTag('success', 'activity', 'refunded').key).toBe('trip_st_refunded')
     expect(itemTag('cancelled', 'activity', 'created').key).toBe('trip_st_cancelled')
+  })
+})
+
+describe('phase 2 statuses', () => {
+  it('keeps every existing status', () => {
+    for (const status of [
+      'created',
+      'sent_to_provider',
+      'confirmed',
+      'completed',
+      'cancel_requested',
+      'cancelled',
+      'refunded',
+    ]) {
+      expect(BOOKING_STATUSES).toContain(status)
+    }
+  })
+  it('waits for the supplier, then confirms, runs and completes', () => {
+    expect(canMoveBooking('created', 'pending_supplier')).toBe(true)
+    expect(canMoveBooking('pending_supplier', 'confirmed')).toBe(true)
+    expect(canMoveBooking('confirmed', 'in_progress')).toBe(true)
+    expect(canMoveBooking('in_progress', 'completed')).toBe(true)
+  })
+  it('a paid booking without places can be sorted out or given back', () => {
+    expect(canMoveBooking('created', 'pending_availability')).toBe(true)
+    expect(canMoveBooking('pending_availability', 'pending_supplier')).toBe(true)
+    expect(canMoveBooking('pending_availability', 'confirmed')).toBe(true)
+    expect(canMoveBooking('pending_availability', 'cancelled')).toBe(true)
+  })
+  it('a failed booking goes to another supplier or is refunded, never straight to confirmed', () => {
+    expect(canMoveBooking('failed', 'pending_supplier')).toBe(true)
+    expect(canMoveBooking('failed', 'refunded')).toBe(true)
+    expect(canMoveBooking('failed', 'confirmed')).toBe(false)
+    expect(canMoveBooking('in_progress', 'cancelled')).toBe(false)
+    expect(canMoveBooking('pending_supplier', 'created')).toBe(false)
+  })
+  it('holds places until the booking ends for good', () => {
+    expect(holdsCapacity('pending_supplier')).toBe(true)
+    expect(holdsCapacity('confirmed')).toBe(true)
+    expect(holdsCapacity('cancelled')).toBe(false)
+    expect(holdsCapacity('failed')).toBe(false)
+  })
+})
+
+describe('bookingStatusAfterPayment', () => {
+  const activity = { kind: 'activity_tier', current: 'created' as const }
+  it('confirms only an instant supplier offer with places held (or no limit)', () => {
+    expect(bookingStatusAfterPayment({ ...activity, instant: true, capacity: 'reserved' })).toBe(
+      'confirmed',
+    )
+    expect(bookingStatusAfterPayment({ ...activity, instant: true, capacity: 'unlimited' })).toBe(
+      'confirmed',
+    )
+  })
+  it('never confirms a booking that needs the supplier: it waits, paid', () => {
+    expect(bookingStatusAfterPayment({ ...activity, instant: false, capacity: 'reserved' })).toBe(
+      'pending_supplier',
+    )
+    expect(bookingStatusAfterPayment({ ...activity, instant: false, capacity: 'unlimited' })).toBe(
+      'pending_supplier',
+    )
+  })
+  it('no places left (or the date closed) → pending availability, even with an instant offer', () => {
+    expect(bookingStatusAfterPayment({ ...activity, instant: true, capacity: 'full' })).toBe(
+      'pending_availability',
+    )
+    expect(bookingStatusAfterPayment({ ...activity, instant: false, capacity: 'closed' })).toBe(
+      'pending_availability',
+    )
+  })
+  it('digital products still complete; other provider lines wait', () => {
+    expect(
+      bookingStatusAfterPayment({
+        kind: 'plan',
+        current: 'created',
+        instant: false,
+        capacity: 'unlimited',
+      }),
+    ).toBe('completed')
+    expect(
+      bookingStatusAfterPayment({
+        kind: 'driver',
+        current: 'created',
+        instant: false,
+        capacity: 'unlimited',
+      }),
+    ).toBe('pending_supplier')
+  })
+  it('leaves a line staff already moved alone (re-run safe)', () => {
+    expect(
+      bookingStatusAfterPayment({
+        ...activity,
+        current: 'cancelled',
+        instant: true,
+        capacity: 'reserved',
+      }),
+    ).toBeNull()
+  })
+  it('new statuses have a customer tag', () => {
+    expect(itemTag('success', 'activity', 'pending_supplier').key).toBe('trip_st_awaiting')
+    expect(itemTag('success', 'activity', 'pending_availability').key).toBe(
+      'trip_st_pending_availability',
+    )
+    expect(itemTag('success', 'activity', 'in_progress').key).toBe('trip_st_in_progress')
+    expect(itemTag('success', 'activity', 'failed').tone).toBe('err')
   })
 })

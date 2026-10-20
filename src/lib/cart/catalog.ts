@@ -45,6 +45,7 @@ import {
 } from '@/lib/orders/custom-request'
 import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import { loadTierIncluded } from '@/lib/booking/included'
+import { applyExtras, loadBookingExtras } from '@/lib/booking/extras'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
 import { FEATURES } from '@/lib/features'
@@ -132,6 +133,7 @@ export async function loadCartCatalog(
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
           minGuests: activityTiers.minGuests,
+          childPriceMinor: activityTiers.childPriceMinor,
           groupMax: activityTiers.groupMax,
           includesAddons: activityTiers.includesAddons,
           available: activityTiers.available,
@@ -407,6 +409,7 @@ export async function loadCartCatalog(
             minGuests: row.minGuests,
             includesAddons: row.includesAddons ?? [],
             available: row.available,
+            childPriceMinor: row.childPriceMinor,
             includedActivities: includedByTier.get(row.id) ?? [],
           },
         ]),
@@ -444,6 +447,14 @@ export async function loadCartCatalog(
       ]),
     ),
   }
+
+  applyExtras(
+    snapshot,
+    await loadBookingExtras(
+      activityRows.map((row) => row.id),
+      tierRows.map((row) => row.id),
+    ),
+  )
 
   return { snapshot, display, partNames }
 }

@@ -127,6 +127,13 @@
       "when": 1792710000000,
       "tag": "0017_activity_phase1",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0018_suppliers",
+      "breakpoints": true
     }
   ]
 }

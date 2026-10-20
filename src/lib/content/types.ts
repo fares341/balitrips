@@ -20,6 +20,7 @@
  */
 
 import type { AddonPricing, PackagePricing } from '@/lib/booking/price'
+import type { SeasonalPrice } from '@/lib/booking/seasonal'
 import type { IconName } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import type { VehicleClass } from '@/lib/booking-rules'
@@ -186,6 +187,10 @@ export interface ActivityTierDto {
   highlights: LocalizedText[]
   details: LocalizedText[]
   notes: LocalizedText[]
+  /** Price per child (phase 2, per-person packages). Null = adult price. */
+  childPriceMinor: number | null
+  /** Seasonal prices (phase 2); the travel date picks one. */
+  seasons: SeasonalPrice[]
 }
 
 /** An activity a package includes (same date; own slot or the package's time). */
@@ -222,6 +227,8 @@ export interface ActivityDetail extends ActivitySummary {
   instantConfirmation: boolean
   freeCancellationHours: number | null
   minGuests: number
+  /** Child age band (phase 2); younger = infant, free. Null = no child pricing. */
+  childAges: { min: number; max: number } | null
   /** Portrait hero for phones, when one is set. */
   mobileHero: MediaDto | null
   video: ParsedVideo | null

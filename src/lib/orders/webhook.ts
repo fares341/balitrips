@@ -1,20 +1,12 @@
 import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/db'
-import {
-  auditLog,
-  entitlements,
-  orderItems,
-  orders,
-  payments,
-  planMembers,
-  webhookEvents,
-} from '@/db/schema'
+import { entitlements, orders, payments, planMembers, webhookEvents } from '@/db/schema'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { releaseCustomRequestsPayment } from '@/lib/orders/custom-request'
+import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 import type { WebhookEvent } from '@/lib/payments'
 
-import { bookingStatusAfterPaid, isBookingStatus } from './booking-status'
 import { canTransition, statusForWebhook, type OrderStatus } from './state'
 
 /**
@@ -199,7 +191,9 @@ export async function processWebhookEvent(
       // يكون فيها الطلب مدفوعاً والخريطة مقفلة.
       if (target === 'paid') {
         await grantOrderPlans(tx, order.id)
-        await completeDigitalItems(tx, order.id)
+        // Digital products complete; activity places are held and each
+        // booking is given to its supplier (phase 2) — same transaction.
+        await applyPaidBookings(tx, order.id)
       }
 
       // No `cancelled` branch any more: a failure event never cancels (see
@@ -221,38 +215,6 @@ async function markProcessed(tx: Tx, provider: string, providerEventId: string):
     .where(
       and(eq(webhookEvents.provider, provider), eq(webhookEvents.providerEventId, providerEventId)),
     )
-}
-
-/**
- * Digital products — the itinerary file, map access, a paid custom itinerary
- * — are delivered by the payment itself, so their booking status becomes
- * `completed` in the transaction that records the money. Provider bookings
- * are untouched: "confirmed" waits for the provider (handoff rule).
- * Each change is written to the audit log, the order's timeline.
- */
-async function completeDigitalItems(tx: Tx, orderId: string): Promise<void> {
-  const items = await tx
-    .select({ id: orderItems.id, kind: orderItems.kind, status: orderItems.bookingStatus })
-    .from(orderItems)
-    .where(eq(orderItems.orderId, orderId))
-  const now = new Date()
-  for (const item of items) {
-    if (!isBookingStatus(item.status)) continue
-    const next = bookingStatusAfterPaid(item.kind, item.status)
-    if (next === null) continue
-    await tx
-      .update(orderItems)
-      .set({ bookingStatus: next, bookingStatusAt: now })
-      .where(eq(orderItems.id, item.id))
-    await tx.insert(auditLog).values({
-      actorId: null,
-      action: 'order_item.booking_status',
-      entityType: 'order_item',
-      entityId: item.id,
-      before: { bookingStatus: item.status, orderId },
-      after: { bookingStatus: next, orderId, reason: 'paid' },
-    })
-  }
 }
 
 /**

@@ -198,6 +198,23 @@ export const activities = pgTable(
     /** A YouTube or Vimeo link, played with a privacy-friendly embed after a click. */
     videoUrl: text('video_url'),
 
+    // --- Phase 2 (migration 0018): capacity and child ages ---
+
+    /**
+     * Places per departure (per day when the activity has no time slots). Null
+     * = unlimited, exactly as before 0018. Per-date overrides and closed dates
+     * live in `activity_availability`; rules in `@/lib/availability/rules`.
+     */
+    capacityPerSlot: integer('capacity_per_slot'),
+    /** Weekdays the activity never runs (0 = Sunday … 6 = Saturday). Null/empty = none. */
+    closedWeekdays: jsonb('closed_weekdays').$type<number[]>(),
+    /**
+     * Child age band for packages with a child price (e.g. 4–11). Younger than
+     * `childAgeMin` = infant, free. Null = no child pricing on this activity.
+     */
+    childAgeMin: integer('child_age_min'),
+    childAgeMax: integer('child_age_max'),
+
     sortOrder: integer('sort_order').notNull().default(0),
     /**
      * draft | published | hidden | unavailable (`@/lib/content/activity-status`):
@@ -302,6 +319,11 @@ export const activityTiers = pgTable(
     maxGuests: integer('max_guests'),
     /** Smallest party for this tier. Null = the activity's own minimum. */
     minGuests: integer('min_guests'),
+    /**
+     * Price per child (migration 0018), `per_person` packages only. Null = no
+     * child price: children pay the adult price. Seasons may override it.
+     */
+    childPriceMinor: moneyMinor('child_price_minor'),
 
     /** Package card: what this package includes / leaves out (localized lists). */
     includes: jsonb('includes').$type<Localized[]>(),

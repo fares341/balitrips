@@ -251,6 +251,23 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
                 </span>
               )}
             </div>
+            {line.children + line.infants > 0 && (
+              <small className="muted">
+                {t('trip_party_split', {
+                  adults: (line.guests ?? line.quantity) - line.children - line.infants,
+                  children: line.children,
+                  infants: line.infants,
+                })}
+              </small>
+            )}
+            {line.confirmation !== null && (
+              <small className={line.confirmation.instant ? 'ck-confirm ok' : 'ck-confirm'}>
+                <Icon name={line.confirmation.instant ? 'bolt' : 'clock'} size={14} />{' '}
+                {line.confirmation.instant
+                  ? t('act_confirm_instant')
+                  : t('act_confirm_hours', { n: line.confirmation.hours })}
+              </small>
+            )}
             {line.breakdown !== null && line.breakdown.length > 0 && (
               <PriceBreakdown
                 parts={line.breakdown}

@@ -23,6 +23,8 @@ import { toMailLocale } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
+import { releaseLineCapacity } from '@/lib/availability/activity'
+import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
 import {
@@ -248,6 +250,9 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
             )
         }
       }
+
+      // A fully refunded activity line gives its places back (phase 2).
+      if (lineRefunded >= line.lineTotalMinor) await releaseLineCapacity(tx, line.id)
 
       // A fully refunded driver line must give its fleet days back, or the
       // vehicle stays off the market until someone notices by hand.
@@ -501,6 +506,8 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
         rawPayload: { reference, by: session.userId },
       })
       await grantOrderPlans(tx, orderId)
+      // Same as a card payment: places held, suppliers assigned (phase 2).
+      await applyPaidBookings(tx, orderId)
       await writeAudit(
         {
           actor: session,
@@ -757,8 +764,17 @@ export async function setBookingStatus(orderId: string, form: FormData): Promise
 
       await tx
         .update(orderItems)
-        .set({ bookingStatus: next, bookingStatusAt: new Date(), fulfilmentStatus: fulfilment })
+        .set({
+          bookingStatus: next,
+          bookingStatusAt: new Date(),
+          fulfilmentStatus: fulfilment,
+          ...(next === 'confirmed' ? { supplierConfirmedAt: new Date() } : {}),
+        })
         .where(eq(orderItems.id, orderItemId))
+      // Ended for good: its places go back on sale (phase 2).
+      if (next === 'cancelled' || next === 'failed' || next === 'refunded') {
+        await releaseLineCapacity(tx, orderItemId)
+      }
 
       await writeAudit(
         {

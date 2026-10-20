@@ -1,4 +1,5 @@
 import type { Localized } from '@/db/schema'
+import { formatMoneyInput } from '@/lib/money-input'
 
 import {
   Checkbox,
@@ -37,6 +38,8 @@ export interface TierRow {
   details: Localized[] | null
   notes: Localized[] | null
   status: string
+  /** Phase 2: price per child (per-person packages). Null = adult price. */
+  childPriceMinor: number | null
 }
 
 /**
@@ -131,6 +134,23 @@ export async function TierEditor({
             />
 
             <MoneyField minor={tier.priceMinor} currency={tier.currency} />
+            <Field
+              label={t('av.child_price')}
+              htmlFor={`childPrice_${tier.id}`}
+              hint={t('av.child_price_hint')}
+            >
+              <TextInput
+                id={`childPrice_${tier.id}`}
+                name="childPrice"
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={
+                  tier.childPriceMinor === null
+                    ? ''
+                    : formatMoneyInput(tier.childPriceMinor, tier.currency)
+                }
+              />
+            </Field>
 
             <div className="a-row">
               <Field

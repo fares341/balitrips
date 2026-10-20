@@ -751,3 +751,96 @@ describe('phase 1: minimum party, per couple and included activities', () => {
     ])
   })
 })
+
+describe('phase 2: places, closed dates, children, seasons', () => {
+  function withRules(): CatalogSnapshot {
+    const snapshot = catalog()
+    const batur = snapshot.activities.get('batur')
+    if (batur) {
+      batur.availability = {
+        capacityPerSlot: 6,
+        closedWeekdays: [1],
+        hasSlots: true,
+        rows: [
+          { day: '2026-08-12', slot: '09:00', capacity: null, booked: 5, isClosed: false },
+          { day: '2026-08-13', slot: '', capacity: null, booked: 0, isClosed: true },
+        ],
+      }
+    }
+    return snapshot
+  }
+
+  it('an activity with nothing configured prices exactly as before', () => {
+    expect(buildQuote([item({ quantity: 15 })], catalog(), NOW).ok).toBe(true)
+  })
+
+  it('refuses a departure without enough places', () => {
+    const q = buildQuote([item({ quantity: 2 })], withRules(), NOW)
+    expect(q.issues[0]).toMatchObject({ code: 'sold_out', detail: '1' })
+    expect(buildQuote([item({ quantity: 1 })], withRules(), NOW).ok).toBe(true)
+    // The 14:00 departure the same day has all six places.
+    expect(buildQuote([item({ quantity: 6, travelTime: '14:00' })], withRules(), NOW).ok).toBe(true)
+  })
+
+  it('refuses a closed date and a closed weekday', () => {
+    expect(buildQuote([item({ travelDate: '2026-08-13' })], withRules(), NOW).issues[0]?.code).toBe(
+      'date_closed',
+    )
+    // 2026-08-17 is a Monday.
+    expect(buildQuote([item({ travelDate: '2026-08-17' })], withRules(), NOW).issues[0]?.code).toBe(
+      'date_closed',
+    )
+  })
+
+  it('prices children on a child-priced package and refuses a party with no adult', () => {
+    const snapshot = catalog()
+    snapshot.activityTiers.set('batur-kids', {
+      activityId: 'batur',
+      priceMinor: 9900,
+      currency: 'USD',
+      pricingMode: 'per_person',
+      maxGuests: null,
+      childPriceMinor: 4900,
+    })
+    const line = (children: number, infants: number) =>
+      item({
+        kind: 'activity_tier',
+        refId: 'batur-kids',
+        guests: 4,
+        quantity: 4,
+        options: { addons: [], children, infants },
+      })
+    const q = buildQuote([line(1, 1)], snapshot, NOW)
+    expect(q.ok).toBe(true)
+    expect(q.totalMinor).toBe(9900 * 2 + 4900)
+    expect(buildQuote([line(3, 1)], snapshot, NOW).issues[0]?.code).toBe('invalid_quantity')
+  })
+
+  it('uses the season price on the travel date', () => {
+    const snapshot = catalog()
+    snapshot.activityTiers.set('batur-season', {
+      activityId: 'batur',
+      priceMinor: 9900,
+      currency: 'USD',
+      pricingMode: 'per_person',
+      maxGuests: null,
+      seasons: [
+        {
+          fromDate: '2026-08-10',
+          toDate: '2026-08-20',
+          priceMinor: 12900,
+          childPriceMinor: null,
+          weekdays: [],
+          label: 'Festival',
+        },
+      ],
+    })
+    const q = buildQuote(
+      [item({ kind: 'activity_tier', refId: 'batur-season', guests: 2, quantity: 2 })],
+      snapshot,
+      NOW,
+    )
+    expect(q.lines[0]?.unitPriceMinor).toBe(12900)
+    expect(q.totalMinor).toBe(25800)
+  })
+})

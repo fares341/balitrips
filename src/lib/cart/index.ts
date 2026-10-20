@@ -58,6 +58,8 @@ import {
   type QuoteIssue,
   type QuoteRequestItem,
 } from '@/lib/pricing/quote'
+import { confirmationPromise, type ConfirmationPromise } from '@/lib/suppliers/assign'
+import { loadOffers } from '@/lib/suppliers/offers'
 
 import { displayKey, loadCartCatalog, snapshotUnitPrice } from './catalog'
 import { getSessionUser } from './session'
@@ -641,6 +643,9 @@ export interface ActivityBookingInput {
   /** HH:mm; required when the activity has time slots. */
   time: string | null
   people: number
+  /** How many of `people` are children / infants (phase 2). Absent = all adults. */
+  children?: number
+  infants?: number
   addons: { id: string; qty: number }[]
   /** Times for the package's included activities that have their own slot. */
   included?: { activityId: string; time: string | null }[]
@@ -694,7 +699,14 @@ export async function addActivityBooking(
   const people = clampQuantity(raw.people, CART_MAX_QUANTITY)
   const addons = canonicalAddons(raw.addons.slice(0, 40))
   const included = canonicalIncluded(raw.included?.slice(0, 20))
-  const options = included.length > 0 ? { addons, included } : { addons }
+  const children = Math.max(0, Math.trunc(raw.children ?? 0))
+  const infants = Math.max(0, Math.trunc(raw.infants ?? 0))
+  const options = {
+    addons,
+    ...(included.length > 0 ? { included } : {}),
+    ...(children > 0 ? { children } : {}),
+    ...(infants > 0 ? { infants } : {}),
+  }
   const kind: CartItemKind = raw.packageId === null ? 'activity' : 'activity_tier'
   const refId = raw.packageId ?? raw.activityId
 
@@ -788,7 +800,13 @@ export async function addActivityBooking(
   if (existing) {
     await db
       .update(cartItems)
-      .set({ quantity: people, guests: people, unitPriceMinor: bookingLine?.unitPriceMinor ?? 0 })
+      .set({
+        quantity: people,
+        guests: people,
+        unitPriceMinor: bookingLine?.unitPriceMinor ?? 0,
+        // The party split may have changed (adults / children / infants).
+        options,
+      })
       .where(eq(cartItems.id, existing.id))
     itemId = existing.id
   } else {
@@ -851,6 +869,8 @@ export interface BookingForEdit {
   endDate: string | null
   time: string | null
   people: number
+  children: number
+  infants: number
   addons: { id: string; qty: number }[]
   included: { activityId: string; time: string | null }[]
   driver: boolean
@@ -905,6 +925,8 @@ export async function getBookingForEdit(itemId: string): Promise<BookingForEdit 
     endDate: row.endDate,
     time: row.travelTime === null ? null : row.travelTime.slice(0, 5),
     people: row.guests ?? row.quantity,
+    children: row.options?.children ?? 0,
+    infants: row.options?.infants ?? 0,
     addons: row.options?.addons ?? [],
     included: row.options?.included ?? [],
     driver: rows.some((r) => r.kind === 'driver' && r.parentItemId === row.id),
@@ -1103,10 +1125,19 @@ export interface CartLineView {
    * server (handoff `lines[]`). Null for every other kind.
    */
   breakdown: CartBreakdownLine[] | null
+  /**
+   * Phase 2, activity lines with supplier offers: confirmed at once, or "the
+   * supplier confirms within N hours" — told before paying. Null = no
+   * supplier set up (nothing new is promised).
+   */
+  confirmation: ConfirmationPromise | null
+  /** Children / infants among `guests` (phase 2). */
+  children: number
+  infants: number
 }
 
 export interface CartBreakdownLine {
-  kind: 'package' | 'addon' | 'driver' | 'included'
+  kind: 'package' | 'child' | 'addon' | 'driver' | 'included'
   refId: string | null
   /** Included activity with its own slot: the time picked. */
   time: string | null
@@ -1179,6 +1210,20 @@ export async function getCartWithTotals(): Promise<CartView | null> {
   const quote = buildQuote(requestItems, snapshot)
 
   const lineById = new Map(quote.lines.map((line) => [line.itemId, line]))
+
+  // Which activity each activity line books, for the confirmation promise.
+  const activityOfRow = (row: (typeof rows)[number]): string | null =>
+    row.refId === null
+      ? null
+      : row.kind === 'activity'
+        ? row.refId
+        : row.kind === 'activity_tier'
+          ? (snapshot.activityTiers.get(row.refId)?.activityId ?? null)
+          : null
+  const offersByActivity = await loadOffers(
+    rows.map(activityOfRow).filter((value): value is string => value !== null),
+  )
+  const now = new Date()
   const issueById = new Map<string, QuoteIssue>()
   for (const issue of quote.issues) {
     if (issue.itemId !== '*' && !issueById.has(issue.itemId)) issueById.set(issue.itemId, issue)
@@ -1231,6 +1276,21 @@ export async function getCartWithTotals(): Promise<CartView | null> {
           totalMinor: part.totalMinor,
           included: part.included === true,
         })) ?? null,
+      confirmation: (() => {
+        const activityId = activityOfRow(row)
+        if (activityId === null) return null
+        return confirmationPromise(
+          offersByActivity.get(activityId) ?? [],
+          {
+            tierId: kind === 'activity_tier' ? row.refId : null,
+            travelDate: row.travelDate,
+            travelTime: row.travelTime,
+          },
+          now,
+        )
+      })(),
+      children: row.options?.children ?? 0,
+      infants: row.options?.infants ?? 0,
     }
   })
 

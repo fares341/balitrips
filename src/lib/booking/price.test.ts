@@ -5,6 +5,8 @@ import {
   addonState,
   driverDays,
   packageCostMinor,
+  hasChildPricing,
+  isValidParty,
   priceBooking,
   resolveAddons,
   tierPricing,
@@ -346,5 +348,110 @@ describe('included activities', () => {
       ['included', 'swing', 0, null],
       ['included', 'temple', 0, '14:00'],
     ])
+  })
+})
+
+describe('child prices (phase 2)', () => {
+  const kids: PackageRule = { ...basic, id: 'kids', priceMinor: 10000, childPriceMinor: 6000 }
+
+  it('charges adults the package price, children the child price, infants nothing', () => {
+    const price = priceBooking({
+      pkg: kids,
+      addons: [],
+      picks: [],
+      people: 5,
+      children: 2,
+      infants: 1,
+    })
+    expect(price.lines.map((l) => [l.kind, l.quantity, l.totalMinor])).toEqual([
+      ['package', 2, 20000],
+      ['child', 2, 12000],
+    ])
+    expect(price.totalMinor).toBe(32000)
+  })
+
+  it('without a child price everyone pays the adult price (as before)', () => {
+    const price = priceBooking({ pkg: basic, addons: [], picks: [], people: 3, children: 2 })
+    expect(price.totalMinor).toBe(4500 * 3)
+    expect(price.lines.some((l) => l.kind === 'child')).toBe(false)
+  })
+
+  it('group and couple packages ignore the split', () => {
+    const group: PackageRule = { ...kids, pricing: 'per_group', groupMax: 4 }
+    expect(
+      priceBooking({ pkg: group, addons: [], picks: [], people: 4, children: 2 }).totalMinor,
+    ).toBe(10000)
+    expect(hasChildPricing(group)).toBe(false)
+    const couple: PackageRule = { ...kids, pricing: 'per_couple' }
+    expect(
+      priceBooking({ pkg: couple, addons: [], picks: [], people: 2, children: 1 }).totalMinor,
+    ).toBe(10000)
+  })
+
+  it('always keeps one adult and never charges beyond the party', () => {
+    const price = priceBooking({ pkg: kids, addons: [], picks: [], people: 2, children: 5 })
+    expect(price.lines.map((l) => [l.kind, l.quantity])).toEqual([
+      ['package', 1],
+      ['child', 1],
+    ])
+    expect(isValidParty(2, 1, 0)).toBe(true)
+    expect(isValidParty(2, 1, 1)).toBe(false)
+    expect(isValidParty(3, -1, 0)).toBe(false)
+  })
+
+  it('per-person add-ons count children too', () => {
+    const price = priceBooking({
+      pkg: kids,
+      addons: [banana],
+      picks: [{ id: 'banana', qty: 1 }],
+      people: 3,
+      children: 1,
+    })
+    expect(price.addonsMinor).toBe(1500 * 3)
+  })
+})
+
+describe('seasonal prices in priceBooking (phase 2)', () => {
+  const seasonal: PackageRule = {
+    ...basic,
+    childPriceMinor: 2000,
+    seasons: [
+      {
+        fromDate: '2026-07-01',
+        toDate: '2026-08-31',
+        priceMinor: 6000,
+        childPriceMinor: 3000,
+        weekdays: [],
+        label: 'Summer',
+      },
+    ],
+  }
+
+  it('uses the price in force on the travel date', () => {
+    const summer = priceBooking({
+      pkg: seasonal,
+      addons: [],
+      picks: [],
+      people: 3,
+      children: 1,
+      travelDate: '2026-08-12',
+    })
+    expect(summer.totalMinor).toBe(6000 * 2 + 3000)
+    expect(summer.unitPriceMinor).toBe(6000)
+    expect(summer.seasonLabel).toBe('Summer')
+    const autumn = priceBooking({
+      pkg: seasonal,
+      addons: [],
+      picks: [],
+      people: 3,
+      children: 1,
+      travelDate: '2026-10-12',
+    })
+    expect(autumn.totalMinor).toBe(4500 * 2 + 2000)
+    expect(autumn.seasonLabel).toBeNull()
+  })
+
+  it('without a travel date the base price applies', () => {
+    expect(priceBooking({ pkg: seasonal, addons: [], picks: [], people: 1 }).totalMinor).toBe(4500)
   })
 })

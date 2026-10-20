@@ -5,6 +5,10 @@
  *   payment:  pending → processing → paid | failed | awaiting_transfer → paid
  *   item:     created → sent_to_provider → confirmed → completed
  *             · cancel_requested → cancelled → refunded
+ *   phase 2:  created → pending_supplier | pending_availability on payment,
+ *             → confirmed (instant supplier offer with places held), and
+ *             confirmed → in_progress → completed; failed when the supplier
+ *             cannot run it (→ another supplier, cancelled or refunded).
  *
  * Two rules from the handoff are enforced by the shape of this module rather
  * than by convention:
@@ -24,9 +28,17 @@
 
 export const BOOKING_STATUSES = [
   'created',
+  /** Paid, but the date/departure had no places left when we tried to hold them. */
+  'pending_availability',
+  /** Paid; waiting for the supplier to confirm. */
+  'pending_supplier',
   'sent_to_provider',
   'confirmed',
+  /** The activity is happening (day of travel). */
+  'in_progress',
   'completed',
+  /** The supplier could not run it. */
+  'failed',
   'cancel_requested',
   'cancelled',
   'refunded',
@@ -54,12 +66,41 @@ export function isDigitalKind(kind: string): boolean {
  * phone before anything was "sent" is the common case, not the edge one.
  */
 const TRANSITIONS: Record<BookingStatus, readonly BookingStatus[]> = {
-  created: ['sent_to_provider', 'confirmed', 'completed', 'cancel_requested', 'cancelled'],
-  sent_to_provider: ['confirmed', 'cancel_requested', 'cancelled'],
-  confirmed: ['completed', 'cancel_requested', 'cancelled'],
+  created: [
+    'pending_availability',
+    'pending_supplier',
+    'sent_to_provider',
+    'confirmed',
+    'completed',
+    'failed',
+    'cancel_requested',
+    'cancelled',
+  ],
+  // Places found again (or capacity raised): back to the supplier, or confirmed.
+  pending_availability: [
+    'pending_supplier',
+    'sent_to_provider',
+    'confirmed',
+    'failed',
+    'cancel_requested',
+    'cancelled',
+  ],
+  pending_supplier: [
+    'sent_to_provider',
+    'confirmed',
+    'pending_availability',
+    'failed',
+    'cancel_requested',
+    'cancelled',
+  ],
+  sent_to_provider: ['confirmed', 'pending_supplier', 'failed', 'cancel_requested', 'cancelled'],
+  confirmed: ['in_progress', 'completed', 'failed', 'cancel_requested', 'cancelled'],
+  in_progress: ['completed', 'failed'],
   completed: ['refunded'],
+  // Another supplier may take it over; otherwise the customer gets their money back.
+  failed: ['pending_supplier', 'cancelled', 'refunded'],
   // A withdrawn or refused request goes back to where the booking stood.
-  cancel_requested: ['sent_to_provider', 'confirmed', 'cancelled'],
+  cancel_requested: ['pending_supplier', 'sent_to_provider', 'confirmed', 'cancelled'],
   cancelled: ['refunded'],
   refunded: [],
 }
@@ -82,6 +123,53 @@ export function bookingStatusAfterPaid(kind: string, current: BookingStatus): Bo
   if (!isDigitalKind(kind)) return null
   if (current !== 'created') return null
   return 'completed'
+}
+
+/** Kinds a supplier runs and activity capacity applies to. */
+const ACTIVITY_KINDS: ReadonlySet<string> = new Set(['activity', 'activity_tier'])
+
+export function isActivityKind(kind: string): boolean {
+  return ACTIVITY_KINDS.has(kind)
+}
+
+/**
+ * What holding places did on payment: `reserved` (places taken), `unlimited`
+ * (no capacity configured, nothing to hold — the pre-phase-2 behaviour),
+ * `full` / `closed` (could not hold: someone else took the last place, or
+ * the date was closed after the customer paid).
+ */
+export type CapacityOutcome = 'reserved' | 'unlimited' | 'full' | 'closed'
+
+export interface PaidItemFacts {
+  kind: string
+  current: BookingStatus
+  /** The assigned supplier offer confirms instantly. False when none is assigned. */
+  instant: boolean
+  capacity: CapacityOutcome
+}
+
+/**
+ * Phase 2: the status a booked item takes when its order is paid (or null to
+ * leave it alone).
+ *
+ *  - digital products complete, as before (`bookingStatusAfterPaid`);
+ *  - an activity whose places could not be held → `pending_availability`;
+ *  - an activity with an instant supplier offer and its places held (or no
+ *    capacity limit) → `confirmed` — the supplier confirmed in advance;
+ *  - everything else waits for the supplier → `pending_supplier`. Payment
+ *    alone never confirms a booking that needs the supplier's answer.
+ */
+export function bookingStatusAfterPayment(facts: PaidItemFacts): BookingStatus | null {
+  if (isDigitalKind(facts.kind)) return bookingStatusAfterPaid(facts.kind, facts.current)
+  if (facts.current !== 'created') return null
+  if (!isActivityKind(facts.kind)) return 'pending_supplier'
+  if (facts.capacity === 'full' || facts.capacity === 'closed') return 'pending_availability'
+  return facts.instant ? 'confirmed' : 'pending_supplier'
+}
+
+/** Statuses that still hold places (anything not ended for good). */
+export function holdsCapacity(status: BookingStatus): boolean {
+  return status !== 'cancelled' && status !== 'refunded' && status !== 'failed'
 }
 
 // ---------------------------------------------------------------------------
@@ -201,8 +289,15 @@ export function itemTag(payment: PaymentState, kind: string, status: BookingStat
 
   switch (status) {
     case 'created':
+    case 'pending_supplier':
     case 'sent_to_provider':
       return { tone: 'warn', key: 'trip_st_awaiting' }
+    case 'pending_availability':
+      return { tone: 'warn', key: 'trip_st_pending_availability' }
+    case 'failed':
+      return { tone: 'err', key: 'trip_st_failed' }
+    case 'in_progress':
+      return { tone: 'info', key: 'trip_st_in_progress' }
     case 'confirmed':
       return { tone: 'ok', key: 'trip_st_confirmed' }
     case 'completed':

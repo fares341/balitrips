@@ -21,6 +21,10 @@ const FULFILMENT_KEYS: Record<string, string> = {
 
 const BOOKING_STATUS_KEYS: Record<string, string> = {
   created: 'orders.bs_created',
+  pending_availability: 'orders.bs_pending_availability',
+  pending_supplier: 'orders.bs_pending_supplier',
+  in_progress: 'orders.bs_in_progress',
+  failed: 'orders.bs_failed',
   sent_to_provider: 'orders.bs_sent_to_provider',
   confirmed: 'orders.bs_confirmed',
   completed: 'orders.bs_completed',

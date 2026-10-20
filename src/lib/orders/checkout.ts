@@ -23,6 +23,7 @@ import type { Localized } from '@/db/schema/_shared'
 import type { OrderItemOptions } from '@/db/schema'
 import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import { loadTierIncluded } from '@/lib/booking/included'
+import { applyExtras, loadBookingExtras } from '@/lib/booking/extras'
 import { includedOrderItems } from '@/lib/orders/included-items'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
@@ -125,6 +126,7 @@ async function loadCatalog(
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
           minGuests: activityTiers.minGuests,
+          childPriceMinor: activityTiers.childPriceMinor,
           groupMax: activityTiers.groupMax,
           includesAddons: activityTiers.includesAddons,
           available: activityTiers.available,
@@ -205,9 +207,14 @@ async function loadCatalog(
   // عروض الجداول المخصصة: للمالك وحده، مسعّرة وغير مدفوعة — وإلا unknown_item.
   const customRows = await loadPayableCustomQuotes(idsOf('custom'), userId)
 
+  const extras = await loadBookingExtras(
+    activityRows.map((r) => r.id),
+    tierRows.map((r) => r.id),
+  )
+
   // Unpublished rows are omitted entirely, so buildQuote reports them as
   // unknown_item rather than quietly selling something withdrawn from sale.
-  return {
+  const snapshot: CatalogSnapshot = {
     plans: planPriceMap(planRows),
     customRequests: customQuotePriceMap(customRows),
     activities: new Map(
@@ -242,6 +249,7 @@ async function loadCatalog(
             minGuests: r.minGuests,
             includesAddons: r.includesAddons ?? [],
             available: r.available,
+            childPriceMinor: r.childPriceMinor,
             includedActivities: includedByTier.get(r.id) ?? [],
           },
         ]),
@@ -276,6 +284,8 @@ async function loadCatalog(
       ]),
     ),
   }
+  applyExtras(snapshot, extras)
+  return snapshot
 }
 
 export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
@@ -609,10 +619,15 @@ function orderItemOptions(
     ...(item?.options?.included && item.options.included.length > 0
       ? { included: item.options.included }
       : {}),
+    ...(item?.options?.children ? { children: item.options.children } : {}),
+    ...(item?.options?.infants ? { infants: item.options.infants } : {}),
     lines: line.breakdown
       .filter((part) => part.kind !== 'driver')
       .map((part) => ({
-        kind: part.kind === 'package' || part.kind === 'included' ? part.kind : 'addon',
+        kind:
+          part.kind === 'package' || part.kind === 'included' || part.kind === 'child'
+            ? part.kind
+            : 'addon',
         refId: part.refId,
         name: part.refId === null ? null : (names.get(`part:${part.refId}`) ?? null),
         unitMinor: part.unitMinor,

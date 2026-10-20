@@ -17,10 +17,17 @@ import {
 import { currency, localized, moneyMinor, priceMinor, timestamps, type Localized } from './_shared'
 import { plans } from './product'
 import { users } from './auth'
+import { activitySupplierOffers, supplierSettlements, suppliers } from './suppliers'
 
 /** Add-on selection stored on a cart line. */
 export interface BookingOptions {
   addons?: { id: string; qty: number }[]
+  /**
+   * Phase 2: how many of `guests` are children / infants (ages from the
+   * activity). Absent = every guest is an adult, as before.
+   */
+  children?: number
+  infants?: number
   /**
    * Times picked for the package's included activities that have their own
    * slot (`tier_included_activities.timing = 'own_slot'`). Null time = none.
@@ -30,8 +37,11 @@ export interface BookingOptions {
 
 /** One priced line of a booking, frozen on the order item. */
 export interface OrderItemPriceLine {
-  /** `included`: another activity that comes with the package, at zero. */
-  kind: 'package' | 'addon' | 'included'
+  /**
+   * `included`: another activity that comes with the package, at zero.
+   * `child`: the children of a per-person package at the child price.
+   */
+  kind: 'package' | 'child' | 'addon' | 'included'
   /** Included activity with its own slot: the time picked. */
   time?: string | null
   refId: string | null
@@ -223,7 +233,8 @@ export const orderItems = pgTable(
     /** pending | confirmed | delivered | cancelled | refunded */
     fulfilmentStatus: varchar('fulfilment_status', { length: 24 }).notNull().default('pending'),
     /**
-     * Provider-facing life of the booked item (v3 handoff, migration 0014):
+     * Provider-facing life of the booked item (v3 handoff, migration 0014;
+     * pending_availability / pending_supplier / in_progress / failed since 0018):
      * created → sent_to_provider → confirmed → completed, and
      * cancel_requested → cancelled → refunded. "confirmed" is set only when
      * the provider confirms — never by payment; digital products complete on
@@ -234,6 +245,30 @@ export const orderItems = pgTable(
     refundedMinor: moneyMinor('refunded_minor').notNull().default(0),
 
     parentItemId: uuid('parent_item_id'),
+
+    // --- Phase 2 (migration 0018): who runs it, what it costs us ---
+
+    /** Supplier running this line. Assigned on payment (auto rule) or by staff. */
+    supplierId: uuid('supplier_id').references(() => suppliers.id, { onDelete: 'set null' }),
+    supplierOfferId: uuid('supplier_offer_id').references(() => activitySupplierOffers.id, {
+      onDelete: 'set null',
+    }),
+    /** What we pay the supplier for this line, frozen at assignment. */
+    costMinor: moneyMinor('cost_minor'),
+    costCurrency: varchar('cost_currency', { length: 3 }),
+    /** The supplier's own confirmation number. */
+    supplierRef: varchar('supplier_ref', { length: 128 }),
+    supplierConfirmedAt: timestamp('supplier_confirmed_at', { withTimezone: true }),
+    /**
+     * Places this line holds in `activity_availability` (0 = none). Set when
+     * reserved on payment, back to 0 when released, so release is idempotent.
+     */
+    capacityHeld: integer('capacity_held').notNull().default(0),
+    /** The supplier payment run this line was paid in. Null = not settled yet. */
+    settlementId: uuid('settlement_id').references(() => supplierSettlements.id, {
+      onDelete: 'set null',
+    }),
+
     /**
      * Frozen booking breakdown: the add-ons bought and the priced lines
      * (package × units, each add-on, included ones at zero) exactly as
@@ -243,7 +278,10 @@ export const orderItems = pgTable(
     options: jsonb('options').$type<OrderItemOptions>(),
     ...timestamps,
   },
-  (t) => [index('order_items_order_idx').on(t.orderId)],
+  (t) => [
+    index('order_items_order_idx').on(t.orderId),
+    index('order_items_supplier_idx').on(t.supplierId),
+  ],
 )
 
 // ---------------------------------------------------------------------------

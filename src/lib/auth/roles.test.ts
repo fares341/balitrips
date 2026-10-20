@@ -58,6 +58,9 @@ describe('staff', () => {
     expect(can('staff', 'entitlements.grant')).toBe(false)
     expect(can('staff', 'roles.write')).toBe(false)
     expect(can('staff', 'config.write')).toBe(false)
+    // Supplier costs and payments are the owner's.
+    expect(can('staff', 'suppliers.write')).toBe(false)
+    expect(can('admin', 'suppliers.write')).toBe(true)
     expect(can('staff', 'customers.export')).toBe(false)
   })
 })

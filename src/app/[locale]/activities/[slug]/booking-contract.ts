@@ -11,6 +11,9 @@ export interface BookActivityRequest {
   endDate: string | null
   time: string | null
   people: number
+  /** How many of `people` are children / infants (child-priced packages only). */
+  children: number
+  infants: number
   addons: { id: string; qty: number }[]
   /** Times picked for included activities with their own slot. */
   included: { activityId: string; time: string | null }[]
@@ -32,9 +35,41 @@ export interface EditableBooking {
   endDate: string | null
   time: string | null
   people: number
+  children: number
+  infants: number
   addons: { id: string; qty: number }[]
   included: { activityId: string; time: string | null }[]
   driver: boolean
+}
+
+/**
+ * Live facts for the booking box (phase 2), fetched when the page opens so a
+ * cached page never shows stale places: closed dates and places left, and the
+ * supplier offers' confirmation terms — never their costs.
+ */
+export interface BookingFacts {
+  availability: {
+    capacityPerSlot: number | null
+    closedWeekdays: number[]
+    hasSlots: boolean
+    rows: {
+      day: string
+      slot: string
+      capacity: number | null
+      booked: number
+      isClosed: boolean
+    }[]
+  } | null
+  offers: {
+    /** Null = every package. */
+    tierId: string | null
+    timeSlots: string[]
+    instant: boolean
+    confirmWithinHours: number
+    leadTimeHours: number | null
+    /** Server-side order (priority, package, cost…): lower = chosen first. */
+    rank: number
+  }[]
 }
 
 /** Which booking-box step an issue belongs to, so the page can mark it. */

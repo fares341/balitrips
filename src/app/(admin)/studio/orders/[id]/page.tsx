@@ -1,9 +1,20 @@
-import { asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, payments, refunds, users } from '@/db/schema'
+import {
+  activityTiers,
+  entitlements,
+  orderItems,
+  orders,
+  payments,
+  refunds,
+  suppliers,
+  users,
+} from '@/db/schema'
+import { isActivityKind } from '@/lib/orders/booking-status'
+import { loadOffers } from '@/lib/suppliers/offers'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
@@ -36,6 +47,7 @@ import {
   paymentStatusLabel,
 } from '../labels'
 import { labelOr } from '../../protection/labels'
+import { assignLineSupplier, confirmLineWithSupplier } from '../supplier-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +62,10 @@ const FULFILMENT_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'in
 /** Booking ladder (provider status) tones. "Confirmed" is the provider's word only. */
 const BOOKING_TONES: Record<string, 'neutral' | 'good' | 'warn' | 'bad' | 'info'> = {
   created: 'neutral',
+  pending_availability: 'bad',
+  pending_supplier: 'warn',
+  in_progress: 'info',
+  failed: 'bad',
   sent_to_provider: 'warn',
   confirmed: 'good',
   completed: 'good',
@@ -107,6 +123,52 @@ export default async function OrderDetailPage({
       .orderBy(desc(refunds.createdAt)),
     db.select().from(entitlements).where(eq(entitlements.grantedByOrderId, id)),
   ])
+
+  // Phase 2: who runs each activity line, and the offers that could.
+  const tierIds = lines
+    .filter((line) => line.kind === 'activity_tier' && line.refId !== null)
+    .map((line) => line.refId as string)
+  const tierParents = new Map(
+    (tierIds.length
+      ? await db
+          .select({ id: activityTiers.id, activityId: activityTiers.activityId })
+          .from(activityTiers)
+          .where(inArray(activityTiers.id, tierIds))
+      : []
+    ).map((tier) => [tier.id, tier.activityId]),
+  )
+  const activityOf = (line: (typeof lines)[number]): string | null =>
+    line.refId === null
+      ? null
+      : line.kind === 'activity'
+        ? line.refId
+        : line.kind === 'activity_tier'
+          ? (tierParents.get(line.refId) ?? null)
+          : null
+  const supplierLines = lines.filter((line) => isActivityKind(line.kind))
+  const [offersByActivity, supplierRows] = await Promise.all([
+    loadOffers(supplierLines.map(activityOf).filter((value): value is string => value !== null)),
+    supplierLines.length > 0
+      ? db
+          .select({ id: suppliers.id, name: suppliers.name, status: suppliers.status })
+          .from(suppliers)
+          .where(isNull(suppliers.deletedAt))
+          .orderBy(asc(suppliers.name))
+      : Promise.resolve([]),
+  ])
+  const supplierName = new Map(supplierRows.map((supplier) => [supplier.id, supplier.name]))
+  // Names of suppliers removed since (still shown on the lines they ran).
+  const missing = supplierLines
+    .map((line) => line.supplierId)
+    .filter((value): value is string => value !== null && !supplierName.has(value))
+  if (missing.length > 0) {
+    const gone = await db
+      .select({ id: suppliers.id, name: suppliers.name })
+      .from(suppliers)
+      .where(and(inArray(suppliers.id, missing)))
+    for (const supplier of gone) supplierName.set(supplier.id, supplier.name)
+  }
+  const mayCost = can(session.role, 'suppliers.write')
 
   const row = order.order
   const status = row.status as OrderStatus
@@ -391,6 +453,199 @@ export default async function OrderDetailPage({
           </tbody>
         </Table>
       </div>
+
+      {supplierLines.length > 0 ? (
+        <div className="a-card" id="suppliers">
+          <h2>{t('sup.order_title')}</h2>
+          <p className="a-hint">{t('sup.order_hint')}</p>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--space-3)',
+              marginBlockStart: 'var(--space-3)',
+            }}
+          >
+            {supplierLines.map((line) => {
+              const activityId = activityOf(line)
+              const offers = activityId ? (offersByActivity.get(activityId) ?? []) : []
+              const current =
+                line.supplierOfferId !== null
+                  ? `offer:${line.supplierOfferId}`
+                  : line.supplierId !== null
+                    ? `supplier:${line.supplierId}`
+                    : ''
+              const sameCurrency =
+                line.costMinor !== null && line.costCurrency === row.presentmentCurrency
+              const margin = sameCurrency ? line.lineTotalMinor - (line.costMinor ?? 0) : null
+              const paid =
+                status === 'paid' || status === 'confirmed' || status === 'partially_refunded'
+              return (
+                <div className="a-day" key={line.id}>
+                  <div className="a-day-head">
+                    <div className="a-day-no">
+                      {pick(line.nameSnapshot, locale, line.kind)}
+                      <span className="a-muted a-mono" style={{ marginInlineStart: 8 }}>
+                        {line.travelDate ?? '—'}
+                        {line.travelTime ? ` ${line.travelTime.slice(0, 5)}` : ''}
+                      </span>
+                    </div>
+                    <Pill tone={BOOKING_TONES[line.bookingStatus] ?? 'neutral'}>
+                      {bookingStatusLabel(t, line.bookingStatus)}
+                    </Pill>
+                  </div>
+                  <div className="a-row" style={{ alignItems: 'flex-start' }}>
+                    <div className="a-field">
+                      <span className="a-muted">{t('sup.assigned')}</span>
+                      <b>
+                        {line.supplierId ? (
+                          <Link href={adminHref(`/suppliers/${line.supplierId}`)}>
+                            {supplierName.get(line.supplierId) ?? '—'}
+                          </Link>
+                        ) : (
+                          t('sup.none_assigned')
+                        )}
+                      </b>
+                      {line.supplierRef ? (
+                        <span className="a-hint">
+                          {t('sup.supplier_ref')}:{' '}
+                          <span className="a-mono">{line.supplierRef}</span>
+                        </span>
+                      ) : null}
+                      {line.capacityHeld > 0 ? (
+                        <span className="a-hint">
+                          {t('sup.places_held', { count: line.capacityHeld })}
+                        </span>
+                      ) : null}
+                    </div>
+                    {mayCost ? (
+                      <div className="a-field">
+                        <span className="a-muted">{t('sup.cost_margin')}</span>
+                        <b dir="ltr">
+                          {line.costMinor !== null && line.costCurrency
+                            ? formatMoney(line.costMinor, line.costCurrency, intl)
+                            : '—'}
+                        </b>
+                        <span className="a-hint">
+                          {margin !== null
+                            ? t('sup.margin_value', {
+                                amount: formatMoney(margin, row.presentmentCurrency, intl),
+                              })
+                            : line.costMinor !== null
+                              ? t('sup.margin_other_currency')
+                              : t('sup.margin_unknown')}
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {mayFulfil && line.settlementId === null ? (
+                    <form
+                      className="a-row"
+                      action={assignLineSupplier.bind(null, row.id)}
+                      style={{ alignItems: 'flex-end' }}
+                    >
+                      <input type="hidden" name="orderItemId" value={line.id} />
+                      <div className="a-field">
+                        <label htmlFor={`assign-${line.id}`}>{t('sup.assign_label')}</label>
+                        <select
+                          className="a-select"
+                          id={`assign-${line.id}`}
+                          name="assign"
+                          defaultValue={current}
+                        >
+                          <option value="">{t('sup.none_assigned')}</option>
+                          {offers.length > 0 ? (
+                            <optgroup label={t('sup.assign_offers')}>
+                              {offers.map((offer) => (
+                                <option key={offer.id} value={`offer:${offer.id}`}>
+                                  {`${offer.supplierName}${mayCost ? ` — ${formatMoney(offer.costMinor, offer.currency, intl)}` : ''}${offer.confirmationMode === 'instant' ? ` · ${t('sup.mode_instant')}` : ''}${offer.active && offer.supplierActive ? '' : ` · ${t('sup.offer_off')}`}`}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                          <optgroup label={t('sup.assign_any')}>
+                            {supplierRows.map((supplier) => (
+                              <option key={supplier.id} value={`supplier:${supplier.id}`}>
+                                {supplier.name}
+                                {supplier.status === 'active' ? '' : ` · ${t('sup.status_paused')}`}
+                              </option>
+                            ))}
+                          </optgroup>
+                        </select>
+                      </div>
+                      {mayCost ? (
+                        <>
+                          <div className="a-field">
+                            <label htmlFor={`cost-${line.id}`}>{t('sup.cost_override')}</label>
+                            <input
+                              className="a-input"
+                              id={`cost-${line.id}`}
+                              name="cost"
+                              inputMode="decimal"
+                              dir="ltr"
+                              placeholder={t('sup.cost_override_placeholder')}
+                            />
+                          </div>
+                          <div className="a-field">
+                            <label htmlFor={`costcur-${line.id}`}>{t('common.currency')}</label>
+                            <input
+                              className="a-input"
+                              id={`costcur-${line.id}`}
+                              name="costCurrency"
+                              maxLength={3}
+                              dir="ltr"
+                              defaultValue={line.costCurrency ?? row.presentmentCurrency}
+                              style={{ textTransform: 'uppercase', maxWidth: 90 }}
+                            />
+                          </div>
+                        </>
+                      ) : null}
+                      <div className="a-actions">
+                        <button className="a-btn ghost small" type="submit">
+                          {t('sup.assign_save')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                  {mayFulfil &&
+                  paid &&
+                  line.bookingStatus !== 'confirmed' &&
+                  isBookingStatus(line.bookingStatus) &&
+                  nextBookingStatuses(line.bookingStatus).includes('confirmed') ? (
+                    <form
+                      className="a-row"
+                      action={confirmLineWithSupplier.bind(null, row.id)}
+                      style={{ alignItems: 'flex-end' }}
+                    >
+                      <input type="hidden" name="orderItemId" value={line.id} />
+                      <div className="a-field">
+                        <label htmlFor={`ref-${line.id}`}>{t('sup.confirm_ref')}</label>
+                        <input
+                          className="a-input"
+                          id={`ref-${line.id}`}
+                          name="supplierRef"
+                          dir="ltr"
+                          required
+                          defaultValue={line.supplierRef ?? ''}
+                        />
+                      </div>
+                      <label className="a-muted" style={{ display: 'flex', gap: 6 }}>
+                        <input type="checkbox" name="notify" defaultChecked />
+                        {t('orders.booking_notify')}
+                      </label>
+                      <div className="a-actions">
+                        <button className="a-btn accent small" type="submit">
+                          {t('sup.confirm_btn')}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {mayRefund ? (
         <div className="a-card">

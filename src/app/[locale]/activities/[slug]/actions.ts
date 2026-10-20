@@ -21,9 +21,14 @@ import {
   type ActivityBookingIssue,
 } from '@/lib/cart'
 
+import { loadAvailability } from '@/lib/booking/extras'
+import { compareOffers } from '@/lib/suppliers/assign'
+import { loadOffers } from '@/lib/suppliers/offers'
+
 import type {
   BookActivityRequest,
   BookActivityResponse,
+  BookingFacts,
   BookingField,
   EditableBooking,
 } from './booking-contract'
@@ -45,6 +50,8 @@ const FIELD_OF: Partial<Record<ActivityBookingIssue, BookingField>> = {
   guests_below_min: 'people',
   included_missing_time: 'included',
   included_invalid_time: 'included',
+  date_closed: 'date',
+  sold_out: 'date',
   invalid_quantity: 'people',
   invalid_addon: 'addons',
   driver_full: 'driver',
@@ -65,6 +72,10 @@ function parse(input: unknown): BookActivityRequest | null {
   if (endDate !== null && !PLAIN_DATE.test(endDate)) return null
   if (time !== null && !PLAIN_TIME.test(time)) return null
   const people = typeof v.people === 'number' && Number.isInteger(v.people) ? v.people : 0
+  const count = (x: unknown) =>
+    typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 100 ? x : 0
+  const children = count(v.children)
+  const infants = count(v.infants)
   const addons: { id: string; qty: number }[] = []
   if (Array.isArray(v.addons)) {
     for (const a of v.addons.slice(0, 40)) {
@@ -93,6 +104,8 @@ function parse(input: unknown): BookActivityRequest | null {
     endDate,
     time,
     people,
+    children,
+    infants,
     addons,
     included,
     // No driver while the service is switched off (lib/features.ts).
@@ -139,6 +152,47 @@ export async function bookActivityAction(input: unknown): Promise<BookActivityRe
   } catch (error) {
     console.error('[bookActivityAction]', error)
     return { ok: false, field: 'form', code: 'error' }
+  }
+}
+
+/**
+ * Closed dates, places left and confirmation terms for the booking box
+ * (phase 2). Public and read-only; supplier costs and names never leave the
+ * server.
+ */
+export async function loadBookingFactsAction(activityId: unknown): Promise<BookingFacts> {
+  const empty: BookingFacts = { availability: null, offers: [] }
+  if (typeof activityId !== 'string' || !UUID.test(activityId)) return empty
+  try {
+    const [availability, offers] = await Promise.all([
+      loadAvailability([activityId], undefined, true),
+      loadOffers([activityId]),
+    ])
+    const rules = availability.get(activityId) ?? null
+    const live = (offers.get(activityId) ?? [])
+      .filter((offer) => offer.active && offer.supplierActive)
+      .sort(compareOffers)
+    return {
+      availability: rules
+        ? {
+            capacityPerSlot: rules.capacityPerSlot,
+            closedWeekdays: [...rules.closedWeekdays],
+            hasSlots: rules.hasSlots,
+            rows: rules.rows.map((row) => ({ ...row })),
+          }
+        : null,
+      offers: live.map((offer, rank) => ({
+        tierId: offer.tierId,
+        timeSlots: [...offer.timeSlots],
+        instant: offer.confirmationMode === 'instant',
+        confirmWithinHours: offer.confirmWithinHours,
+        leadTimeHours: offer.leadTimeHours,
+        rank,
+      })),
+    }
+  } catch (error) {
+    console.error('[loadBookingFactsAction]', error)
+    return empty
   }
 }
 

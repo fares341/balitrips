@@ -264,15 +264,13 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
       if (galleryIds !== null) {
         await tx.delete(activityImages).where(eq(activityImages.activityId, row.id))
         if (galleryIds.length > 0) {
-          await tx
-            .insert(activityImages)
-            .values(
-              galleryIds.map((mediaId, index) => ({
-                activityId: row.id,
-                mediaId,
-                sortOrder: index,
-              })),
-            )
+          await tx.insert(activityImages).values(
+            galleryIds.map((mediaId, index) => ({
+              activityId: row.id,
+              mediaId,
+              sortOrder: index,
+            })),
+          )
         }
       }
 
@@ -537,10 +535,17 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
     throw new Error(t('activities.err_group_max'))
   }
 
+  // Phase 2: children only cost less on a per-person package.
+  const childPriceMinor =
+    pricingMode === 'per_person'
+      ? fmoneyOrNull(form, 'childPrice', fcurrencyOr(form, 'currency'), t('av.child_price'))
+      : null
+
   return {
     name: flocalizedRequired(form, 'name', t('activities.tier_name')),
     tagline: flocalizedOrNull(form, 'tagline'),
     priceMinor,
+    childPriceMinor,
     currency: fcurrency(form, 'currency'),
     pricingMode,
     groupMax: pricingMode === 'per_group' ? groupMax : null,

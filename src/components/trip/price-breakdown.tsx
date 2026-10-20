@@ -15,7 +15,7 @@ import { pick } from '@/lib/content/localize'
 import { formatPrice } from '@/components/bt/card'
 
 export type BreakdownPart = {
-  kind: 'package' | 'addon' | 'driver' | 'included'
+  kind: 'package' | 'child' | 'addon' | 'driver' | 'included'
   name: Localized | null
   /** Included activity with its own slot. */
   time?: string | null
@@ -49,7 +49,12 @@ export async function PriceBreakdown({
       }}
     >
       {shown.map((part, index) => {
-        const name = pick(part.name, locale, part.kind === 'package' ? t('act_base_line') : '')
+        const base = pick(
+          part.name,
+          locale,
+          part.kind === 'package' || part.kind === 'child' ? t('act_base_line') : '',
+        )
+        const name = part.kind === 'child' ? t('bd_children', { name: base }) : base
         return (
           <li key={index} style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
             <span>

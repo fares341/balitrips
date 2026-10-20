@@ -8,12 +8,15 @@ import {
   type VehicleClass,
 } from '@/lib/booking-rules'
 import {
+  isValidParty,
   priceBooking,
   tierPricing,
   type AddonRule,
   type PackageRule,
   type PriceLine,
 } from '@/lib/booking/price'
+import type { SeasonalPrice } from '@/lib/booking/seasonal'
+import { checkAvailability, type AvailabilityRules } from '@/lib/availability/rules'
 
 /**
  * Server-authoritative pricing.
@@ -72,6 +75,9 @@ export interface QuoteRequestItem {
   options?: {
     addons?: { id: string; qty: number }[]
     included?: { activityId: string; time: string | null }[]
+    /** How many of `guests` are children / infants (phase 2). */
+    children?: number
+    infants?: number
   } | null
 }
 
@@ -89,6 +95,11 @@ export interface CatalogSnapshot {
       multiDay?: boolean
       /** Smallest party (`activities.min_guests`). Absent = 1. */
       minGuests?: number
+      /**
+       * Closed dates and places per departure (phase 2). Absent = unlimited
+       * and always open, as before. A read: payment holds the places.
+       */
+      availability?: AvailabilityRules
     }
   >
   /**
@@ -123,6 +134,10 @@ export interface CatalogSnapshot {
       includedActivities?: { activityId: string; timing: IncludedTiming }[]
       /** False = shown but not bookable. Absent = bookable. */
       available?: boolean
+      /** Price per child, per_person only (phase 2). Null/absent = adult price. */
+      childPriceMinor?: number | null
+      /** Seasonal prices; the travel date picks one (phase 2). */
+      seasons?: SeasonalPrice[]
     }
   >
   /**
@@ -187,6 +202,10 @@ export type QuoteIssueCode =
   | 'invalid_addon'
   /** The chosen package is switched off. */
   | 'package_unavailable'
+  /** The activity does not run on that date (closed day or weekday). */
+  | 'date_closed'
+  /** Not enough places left on that date / departure. */
+  | 'sold_out'
   /**
    * A cart line whose kind this engine does not price.
    *
@@ -556,6 +575,8 @@ function priceActivityTier(
       pricing: tierPricing(tier.pricingMode),
       groupMax: tier.groupMax ?? null,
       includesAddons: tier.includesAddons ?? [],
+      childPriceMinor: tier.childPriceMinor ?? null,
+      seasons: tier.seasons ?? [],
     },
     cap,
     min,
@@ -631,6 +652,30 @@ function priceActivityBooking(
     issues.push({ itemId: item.id, code: 'guests_below_min', detail: String(min) })
     return
   }
+  const children = item.options?.children ?? 0
+  const infants = item.options?.infants ?? 0
+  if (!isValidParty(people, children, infants)) {
+    issues.push({ itemId: item.id, code: 'invalid_quantity', detail: 'party' })
+    return
+  }
+  // Places and closed dates (phase 2). Counted on the departure: the first
+  // day of a multi-day activity, at its time.
+  if (activity.availability) {
+    const verdict = checkAvailability(
+      activity.availability,
+      item.travelDate,
+      item.travelTime,
+      people,
+    )
+    if (!verdict.ok) {
+      issues.push({
+        itemId: item.id,
+        code: verdict.reason === 'closed' ? 'date_closed' : 'sold_out',
+        detail: String(verdict.remaining),
+      })
+      return
+    }
+  }
 
   // Included activities: same date; own-slot ones need a valid time of theirs.
   const travelDate = item.travelDate
@@ -662,6 +707,25 @@ function priceActivityBooking(
     }
     included.push({ activityId: spec.activityId, time })
   }
+  // An included activity needs its own place on the day too.
+  for (const entry of included) {
+    const facts = catalog.activities.get(entry.activityId)
+    if (!facts?.availability) continue
+    const verdict = checkAvailability(
+      facts.availability,
+      travelDate,
+      entry.time ?? item.travelTime,
+      people,
+    )
+    if (!verdict.ok) {
+      issues.push({
+        itemId: item.id,
+        code: verdict.reason === 'closed' ? 'date_closed' : 'sold_out',
+        detail: entry.activityId,
+      })
+      return
+    }
+  }
 
   const picks = item.options?.addons ?? []
   const price = priceBooking({
@@ -670,6 +734,9 @@ function priceActivityBooking(
     picks,
     people,
     included,
+    travelDate,
+    children,
+    infants,
   })
   // Refuse rather than silently drop: the traveller saw these add-ons in the
   // summary, and charging less than shown is as wrong as charging more.
@@ -688,7 +755,8 @@ function priceActivityBooking(
     itemId: item.id,
     kind: item.kind,
     refId: item.refId,
-    unitPriceMinor: pkg.priceMinor,
+    // The season's price on the travel date, when one applies.
+    unitPriceMinor: price.unitPriceMinor,
     quantity: packageLine?.quantity ?? 1,
     lineTotalMinor: price.totalMinor,
     currency: pkg.currency,

@@ -92,6 +92,23 @@ export async function tripLineMeta(line: CartLineView, locale: Locale): Promise<
   } else if (line.guests !== null) {
     parts.push(`${t('c_guests')}: ${format.number(line.guests)}`)
   }
+  if (line.children + line.infants > 0) {
+    parts.push(
+      t('trip_party_split', {
+        adults: (line.guests ?? line.quantity) - line.children - line.infants,
+        children: line.children,
+        infants: line.infants,
+      }),
+    )
+  }
+  // Phase 2: how the booking gets confirmed, said before paying.
+  if (line.confirmation !== null) {
+    parts.push(
+      line.confirmation.instant
+        ? t('act_confirm_instant')
+        : t('act_confirm_hours', { n: line.confirmation.hours }),
+    )
+  }
 
   return parts.join(' · ')
 }

@@ -45,6 +45,12 @@ export const CAPABILITIES = [
   'security.read',
   /** حظر/رفع حظر المستخدمين والأجهزة والـ IP، وإزالة الأجهزة. للمدير فقط. */
   'security.write',
+  /**
+   * Phase 2: add and edit suppliers and their offers (costs), see costs and
+   * margins, and pay suppliers. Admin only; staff read suppliers with
+   * `orders.read` and assign them to bookings with `orders.fulfil`.
+   */
+  'suppliers.write',
 ] as const
 
 export type Capability = (typeof CAPABILITIES)[number]

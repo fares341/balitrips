@@ -21,6 +21,16 @@
  * Activities a package includes (`tier_included_activities`) are listed at
  * zero (`kind: 'included'`), one line each, so the order shows them.
  *
+ * Phase 2:
+ *   - seasons: the package (and child) price is the one in force on the
+ *     travel date (`./seasonal`), when the caller passes `travelDate`;
+ *   - children: a `per_person` package with a child price charges
+ *       adults × price + children × childPrice, infants free
+ *     (`kind: 'child'` line). `per_group` / `per_couple` packages price the
+ *     whole party by units and ignore the split — a family boat for four is
+ *     one price whoever is on it. Without a child price everyone is an adult.
+ *     Add-ons priced per person count every guest, children included.
+ *
  * Used by three callers so they cannot disagree:
  *   - `buildQuote` (cart + checkout) — the copy that decides what is charged;
  *   - add-to-cart validation (`addActivityBooking`), which refuses a booking
@@ -31,6 +41,8 @@
  */
 
 import { daysBetweenInclusive, vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
+
+import { priceOn, type SeasonalPrice } from './seasonal'
 
 export type PackagePricing = 'per_person' | 'per_group' | 'per_couple'
 export type AddonPricing = 'per_person' | 'per_booking' | 'per_qty'
@@ -66,6 +78,10 @@ export interface PackageRule {
   groupMax: number | null
   /** Add-on ids that come with this package. */
   includesAddons: readonly string[]
+  /** Price per child (`per_person` only). Null/absent = children pay the adult price. */
+  childPriceMinor?: number | null
+  /** Seasonal prices of this package. Applied when the booking passes `travelDate`. */
+  seasons?: readonly SeasonalPrice[]
 }
 
 export interface AddonRule {
@@ -117,7 +133,8 @@ export type AddonRejection =
   | 'requires'
 
 export interface PriceLine {
-  kind: 'package' | 'addon' | 'driver' | 'included'
+  /** `child`: the children of a per-person package, at the child price. */
+  kind: 'package' | 'child' | 'addon' | 'driver' | 'included'
   /**
    * Package / add-on id; the included activity's id; null for a base-price
    * activity and for the driver.
@@ -337,10 +354,19 @@ export interface BookingPriceInput {
   included?: readonly { activityId: string; time: string | null }[]
   /** Omit or null when no driver is wanted. */
   driver?: { vehicles: readonly VehicleRate[]; days: number } | null
+  /** Travel date (`YYYY-MM-DD`): picks the seasonal price. Absent = the base price. */
+  travelDate?: string | null
+  /** How many of `people` are children / infants. Absent = all adults. */
+  children?: number
+  infants?: number
 }
 
 export interface BookingPrice {
   lines: PriceLine[]
+  /** Package price per unit actually used (the season's on the travel date). */
+  unitPriceMinor: number
+  /** The season label in force, or null. */
+  seasonLabel: string | null
   packageMinor: number
   addonsMinor: number
   driverMinor: number
@@ -353,21 +379,80 @@ export interface BookingPrice {
   driverUnavailable: boolean
 }
 
+function count(value: number | undefined): number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 0
+}
+
+/**
+ * A valid party split: whole numbers, at least one adult. Callers that accept
+ * a split from a client (`buildQuote`) refuse an invalid one; `priceBooking`
+ * itself clamps rather than throws.
+ */
+export function isValidParty(people: number, children = 0, infants = 0): boolean {
+  if (!Number.isInteger(people) || people < 1) return false
+  if (!Number.isInteger(children) || children < 0) return false
+  if (!Number.isInteger(infants) || infants < 0) return false
+  return children + infants < people
+}
+
+/** Does this package charge children separately (on `day`)? */
+export function hasChildPricing(pkg: PackageRule, day?: string | null): boolean {
+  if (pkg.pricing !== 'per_person') return false
+  return (
+    priceOn(
+      { priceMinor: pkg.priceMinor, childPriceMinor: pkg.childPriceMinor ?? null },
+      pkg.seasons,
+      day,
+    ).childPriceMinor !== null
+  )
+}
+
 export function priceBooking(input: BookingPriceInput): BookingPrice {
   const { pkg, people } = input
   assertPeople(people)
 
-  const units = packageUnits(pkg, people)
-  const packageMinor = pkg.priceMinor * units
-  const lines: PriceLine[] = [
-    {
+  const effective = priceOn(
+    { priceMinor: pkg.priceMinor, childPriceMinor: pkg.childPriceMinor ?? null },
+    pkg.seasons,
+    input.travelDate,
+  )
+  const lines: PriceLine[] = []
+  let packageMinor: number
+  const splitChildren = pkg.pricing === 'per_person' && effective.childPriceMinor !== null
+  if (splitChildren) {
+    // At least one adult; anything beyond the party is ignored, never charged.
+    const children = Math.min(count(input.children), people - 1)
+    const infants = Math.min(count(input.infants), people - 1 - children)
+    const adults = people - children - infants
+    const childPrice = effective.childPriceMinor ?? 0
+    packageMinor = effective.priceMinor * adults + childPrice * children
+    lines.push({
       kind: 'package',
       refId: pkg.id,
-      unitMinor: pkg.priceMinor,
+      unitMinor: effective.priceMinor,
+      quantity: adults,
+      totalMinor: effective.priceMinor * adults,
+    })
+    if (children > 0) {
+      lines.push({
+        kind: 'child',
+        refId: pkg.id,
+        unitMinor: childPrice,
+        quantity: children,
+        totalMinor: childPrice * children,
+      })
+    }
+  } else {
+    const units = packageUnits(pkg, people)
+    packageMinor = effective.priceMinor * units
+    lines.push({
+      kind: 'package',
+      refId: pkg.id,
+      unitMinor: effective.priceMinor,
       quantity: units,
       totalMinor: packageMinor,
-    },
-  ]
+    })
+  }
 
   for (const included of input.included ?? []) {
     lines.push({
@@ -437,6 +522,8 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
 
   return {
     lines,
+    unitPriceMinor: effective.priceMinor,
+    seasonLabel: effective.season?.label ?? null,
     packageMinor,
     addonsMinor,
     driverMinor,

@@ -48,6 +48,8 @@ import { GalleryEditor, LocalizedRepeater, SortableList } from '../../../_ui/sor
 import { Pill } from '../../../_ui/table'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { AddonEditor } from './addon-editor'
+import { AvailabilityTab } from './availability-tab'
+import { ChildAgesCard, SeasonEditor } from './season-editor'
 import { IncludedEditor } from './included-editor'
 import { LibraryLinks } from './library-links'
 import { TierEditor } from './tier-editor'
@@ -66,6 +68,7 @@ const TABS = [
   'included',
   'addons',
   'booking',
+  'availability',
   'faq',
 ] as const
 type Tab = (typeof TABS)[number]
@@ -427,6 +430,9 @@ export default async function ActivityEditorPage({
       ) : null}
 
       {activity && tab === 'packages' ? <PackagesTab activity={activity} /> : null}
+      {activity && tab === 'availability' ? (
+        <AvailabilityTab activity={activity} monthParam={param(query, 'month')} />
+      ) : null}
       {activity && tab === 'included' ? <IncludedTab activity={activity} /> : null}
       {activity && tab === 'addons' ? <AddonsTab activity={activity} intl={intl} /> : null}
 
@@ -757,6 +763,7 @@ async function PackagesTab({ activity }: { activity: ActivityRow }) {
   ])
   return (
     <>
+      <ChildAgesCard activity={activity} />
       {tiers.length > 1 ? (
         <div className="a-card">
           <h2>{t('ae.tiers_order')}</h2>
@@ -805,9 +812,20 @@ async function PackagesTab({ activity }: { activity: ActivityRow }) {
           details: tier.details,
           notes: tier.notes,
           status: tier.status,
+          childPriceMinor: tier.childPriceMinor,
         }))}
         currency={activity.currency}
         addons={addons.options}
+      />
+      <SeasonEditor
+        activityId={activity.id}
+        tiers={tiers.map((tier) => ({
+          id: tier.id,
+          name: pick(tier.name, locale, tier.key),
+          currency: tier.currency,
+          priceMinor: tier.priceMinor,
+          childPriceMinor: tier.childPriceMinor,
+        }))}
       />
     </>
   )

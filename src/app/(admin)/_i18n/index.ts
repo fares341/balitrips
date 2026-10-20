@@ -7,6 +7,7 @@ import content from './content'
 import dashboard from './dashboard'
 import people from './people'
 import protection from './protection'
+import suppliers from './suppliers'
 import system from './system'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
 
@@ -23,6 +24,7 @@ const SECTIONS = [
   system,
   assistant,
   activityEditor,
+  suppliers,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
