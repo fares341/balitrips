@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeDigits, parseCoordinateText, parseDms } from './parse-coords'
+import { findDms, normalizeDigits, parseCoordinateText, parseDms } from './parse-coords'
 
 describe('parseCoordinateText', () => {
   it('reads a plain decimal pair in the usual spellings', () => {
@@ -88,5 +88,14 @@ describe('degrees, minutes, seconds', () => {
     expect(parseDms(`near 8° 115°`)).toBeNull()
     expect(parseDms(`-8°30'S 115°E`)).toBeNull() // minus and S together
     expect(parseDms(`8°30'24"S 115°15'45"E 7°`)).toBeNull()
+  })
+
+  it('finds a pair inside a sentence', () => {
+    expect(findDms(`add a map place here: 8°45'00.0"s 115°24'00.0"e please`)).toEqual({
+      lat: -8.75,
+      lon: 115.4,
+      source: 'pair',
+    })
+    expect(findDms('Ubud at 8 degrees south')).toBeNull()
   })
 })

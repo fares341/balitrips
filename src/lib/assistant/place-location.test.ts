@@ -43,6 +43,9 @@ describe('resolveLocation', () => {
       lat: -8.506889,
     })
     expect(await resolveLocation('-٨٫٥٠٦٩، ١١٥٫٢٦٢٥', d)).toMatchObject({ lat: -8.5069 })
+    expect(
+      await resolveLocation(`Add a map place here: 8°45'00.0"S 115°24'00.0"E`, d),
+    ).toMatchObject({ kind: 'point', lat: -8.75, lon: 115.4 })
     expect(d.calls).toEqual([])
   })
 

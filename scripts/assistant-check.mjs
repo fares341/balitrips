@@ -666,6 +666,30 @@ for (const width of [390, 1440]) {
       )
     }
 
+    // Diagnostics: can this runner reach the map data the water check reads?
+    try {
+      const tj = await fetch('https://tiles.openfreemap.org/planet', { redirect: 'manual' })
+      const body = await tj.text()
+      say(
+        `water data: tilejson ${tj.status} ${tj.headers.get('location') ?? ''} ${body.slice(0, 300)}`,
+      )
+      const tiles = JSON.parse(body).tiles?.[0]
+      if (tiles) {
+        const tile = await fetch(
+          tiles.replace('{z}', '14').replace('{x}', '13445').replace('{y}', '8591'),
+          {
+            redirect: 'manual',
+          },
+        )
+        const bytes = new Uint8Array(await tile.arrayBuffer())
+        say(
+          `water data: tile ${tile.status} ${tile.headers.get('content-type')} ${tile.headers.get('content-encoding')} ${bytes.length} bytes, first ${[...bytes.slice(0, 4)]}`,
+        )
+      }
+    } catch (e) {
+      say(`water data: unreachable — ${e.message}`)
+    }
+
     // A spot in the sea (typed as degrees-minutes-seconds) shows a warning on the card.
     await askStudio(`Add a map place here: 8°45'00.0"S 115°24'00.0"E`)
     const seaCard = page.locator('.a-ai-card').last()

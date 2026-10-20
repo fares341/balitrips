@@ -128,12 +128,26 @@ const axisOf = (hemi: string | null) =>
  * minutes, or decimal degrees with a letter. With letters the order does not
  * matter; without, it is latitude first. Exactly two parts, nothing else.
  */
-export function parseDms(input: string): ParsedCoords | null {
-  const text = input
+const normalizeDms = (input: string) =>
+  input
     .replace(/[′’‘´`]/g, "'")
     .replace(/[″“”]|''/g, '"')
     .replace(/[º˚]/g, '°')
     .trim()
+
+const DMS_ONE =
+  `(?:[NSEW]\\s*)?-?\\d{1,3}(?:\\.\\d+)?\\s*°\\s*(?:\\d{1,2}(?:\\.\\d+)?\\s*'\\s*)?` +
+  `(?:\\d{1,2}(?:\\.\\d+)?\\s*"\\s*)?(?:[NSEW](?![A-Za-z]))?`
+const DMS_IN_TEXT = new RegExp(`(?<![A-Za-z])${DMS_ONE}[\\s,;]*${DMS_ONE}`, 'i')
+
+/** A degrees-minutes-seconds pair inside a sentence ("add a place here: 8°30'24.8"S 115°15'45"E please"). */
+export function findDms(input: string): ParsedCoords | null {
+  const match = normalizeDms(input).match(DMS_IN_TEXT)
+  return match ? parseDms(match[0]) : null
+}
+
+export function parseDms(input: string): ParsedCoords | null {
+  const text = normalizeDms(input)
   if (!text.includes('°')) return null
   const matches = [...text.matchAll(DMS_PART)]
   const [first, second] = matches

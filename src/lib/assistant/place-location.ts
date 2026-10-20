@@ -20,7 +20,7 @@
  */
 
 import { haversineKm, isInBali } from '@/lib/geo'
-import { normalizeDigits, parseCoordinateText } from '@/lib/geo/parse-coords'
+import { findDms, normalizeDigits, parseCoordinateText } from '@/lib/geo/parse-coords'
 
 import {
   expandMapsLink,
@@ -132,7 +132,7 @@ export async function resolveLocation(input: string, deps: LocationDeps): Promis
 
   const typed = parseCoordinateText(text)
   if (typed) return { kind: 'point', ...typed, label: null }
-  const inSentence = embeddedPair(text)
+  const inSentence = embeddedPair(text) ?? findDms(text)
   if (inSentence) return { kind: 'point', ...inSentence, source: 'pair', label: null }
 
   if (text.length < 3) return { kind: 'none', reason: 'not_found' }
