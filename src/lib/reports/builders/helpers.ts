@@ -64,7 +64,9 @@ export function chartCurrency(
   fallback: string,
   ...amounts: readonly (readonly Money[] | null)[]
 ): string {
-  return filters.currency ?? mainCurrency(...amounts.filter((a): a is Money[] => a !== null)) ?? fallback
+  return (
+    filters.currency ?? mainCurrency(...amounts.filter((a): a is Money[] => a !== null)) ?? fallback
+  )
 }
 
 /** Studio path of the records behind a number. */

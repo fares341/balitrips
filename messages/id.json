@@ -1792,6 +1792,8 @@
   "nf_title": "Halaman tidak ditemukan",
   "notif_admin_message_b": "{body}",
   "notif_admin_message_t": "{title}",
+  "notif_checkout_reminder_b": "Halo {name}, perjalanan Bali Anda masih menunggu di keranjang. Selesaikan pemesanan kapan pun Anda siap — tempat bisa cepat penuh.",
+  "notif_checkout_reminder_t": "Perjalanan Anda menunggu",
   "notif_custom_completed_b": "Halo {name}, rencana Bali kustom Anda sudah selesai. Buka dari akun Anda.",
   "notif_custom_completed_t": "Trip kustom Anda siap",
   "notif_custom_pdf_ready_b": "Halo {name}, jadwal pribadi Anda siap. Buka dari “Jadwal Saya”.",

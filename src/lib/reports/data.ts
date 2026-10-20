@@ -11,6 +11,7 @@ import {
   payments,
   refunds,
   suppliers,
+  supportTickets,
   users,
 } from '@/db/schema'
 
@@ -118,6 +119,23 @@ export async function bookingsValue(range: Range, f: F): Promise<Money[]> {
     .where(and(everPaid, inRange(placedAt, range), currencyCond(f), line))
     .groupBy(orders.presentmentCurrency)
   return sumByCurrency(rows)
+}
+
+/** Discount codes taken off paid orders placed in the range (phase 4). */
+export async function discountTotals(
+  range: Range,
+  f: F,
+): Promise<{ money: Money[]; orders: number }> {
+  const rows = await db
+    .select({
+      currency: orders.presentmentCurrency,
+      minor: sql<number>`coalesce(sum(${orders.discountMinor}), 0)::float8`,
+      orders: sql<number>`count(*) filter (where ${orders.discountMinor} > 0)::int`,
+    })
+    .from(orders)
+    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), orderHasLine(f)))
+    .groupBy(orders.presentmentCurrency)
+  return { money: sumByCurrency(rows), orders: rows.reduce((sum, r) => sum + r.orders, 0) }
 }
 
 /** Orders placed in the range: all of them, and the paid ones. */
@@ -339,6 +357,26 @@ export async function openCustomRequests(): Promise<number> {
     .from(customTripRequests)
     .where(notInArray(customTripRequests.status, ['completed', 'cancelled']))
   return row?.n ?? 0
+}
+
+/** Hours an open ticket may wait for its first answer (same as the escalation rule). */
+export const TICKET_LATE_HOURS = 4
+
+/**
+ * Support tickets right now: open = waiting on us or on the customer (not
+ * resolved, not closed); late = waiting on us with no first answer after
+ * TICKET_LATE_HOURS.
+ */
+export async function openTickets(now = new Date()): Promise<{ open: number; late: number }> {
+  const lateBefore = new Date(now.getTime() - TICKET_LATE_HOURS * 3_600_000)
+  const [row] = await db
+    .select({
+      open: sql<number>`count(*)::int`,
+      late: sql<number>`count(*) filter (where ${supportTickets.status} = 'open' and ${supportTickets.firstResponseAt} is null and ${supportTickets.createdAt} < ${lateBefore.toISOString()}::timestamptz)::int`,
+    })
+    .from(supportTickets)
+    .where(inArray(supportTickets.status, ['open', 'pending_customer']))
+  return { open: row?.open ?? 0, late: row?.late ?? 0 }
 }
 
 export const LOW_AVAILABILITY_LEFT = 2

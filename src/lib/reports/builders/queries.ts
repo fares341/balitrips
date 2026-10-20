@@ -34,7 +34,9 @@ function currencyCond(f: F) {
 }
 
 /** When the order was paid: its first payment that went through. */
-const paidAt = sql<string | null>`(select min(pp.created_at) from payments pp where pp.order_id = ${orders.id} and pp.status in ('succeeded', 'refunded'))`
+const paidAt = sql<
+  string | null
+>`(select min(pp.created_at) from payments pp where pp.order_id = ${orders.id} and pp.status in ('succeeded', 'refunded'))`
 
 /** Bookable lines of paid orders placed in the range, with supplier timing. */
 export async function bookingLines(range: Range, f: F) {
@@ -456,7 +458,11 @@ export async function failedPayments(range: Range, limit = 25) {
     .from(payments)
     .innerJoin(orders, eq(orders.id, payments.orderId))
     .where(
-      and(eq(payments.status, 'failed'), gte(payments.createdAt, range.start), lt(payments.createdAt, range.end)),
+      and(
+        eq(payments.status, 'failed'),
+        gte(payments.createdAt, range.start),
+        lt(payments.createdAt, range.end),
+      ),
     )
     .orderBy(sql`${payments.createdAt} desc`)
     .limit(limit)
@@ -482,7 +488,12 @@ export async function unprocessedBookings(now: Date, limit = 50) {
       and(
         everPaid,
         inArray(orderItems.kind, [...BOOKABLE]),
-        inArray(orderItems.bookingStatus, ['created', 'pending_supplier', 'pending_availability', 'sent_to_provider']),
+        inArray(orderItems.bookingStatus, [
+          'created',
+          'pending_supplier',
+          'pending_availability',
+          'sent_to_provider',
+        ]),
         sql`${placedAt} < ${iso(before)}::timestamptz`,
         inArray(orders.status, ['paid', 'confirmed', 'partially_refunded']),
       ),

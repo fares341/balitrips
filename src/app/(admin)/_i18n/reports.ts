@@ -161,7 +161,7 @@ const section: Section = {
     'rp.def_open_requests': 'Custom trip requests right now that are not completed or cancelled.',
     'rp.kpi_open_tickets': 'Open support tickets',
     'rp.def_open_tickets':
-      'Support tickets right now that are not closed; "late" = past their reply time.',
+      'Support tickets right now that are not resolved or closed. "Late" = waiting for our first answer for more than {hours} hours.',
     'rp.kpi_low_availability': 'Low availability',
     'rp.def_low_availability':
       'Departures in the next 14 days with 2 places or fewer left (and not closed), from the capacity calendar.',
@@ -239,6 +239,9 @@ const section: Section = {
     'rp.def_aov':
       'Bookings value of paid orders placed in the period ÷ number of those orders, per currency.',
     'rp.table_by_currency': 'By currency',
+    'rp.kpi_discounts': 'Discounts given',
+    'rp.def_discounts':
+      'Discount codes taken off paid orders placed in the period (already deducted from the bookings value).',
 
     'rp.kpi_bookings': 'Bookings',
     'rp.def_bookings':
@@ -702,7 +705,8 @@ const section: Section = {
     'rp.kpi_open_requests': 'طلبات مخصصة مفتوحة',
     'rp.def_open_requests': 'طلبات الرحلات المخصصة الآن التي لم تكتمل ولم تُلغَ.',
     'rp.kpi_open_tickets': 'تذاكر دعم مفتوحة',
-    'rp.def_open_tickets': 'تذاكر الدعم الآن غير المغلقة؛ "متأخرة" = تجاوزت وقت الرد.',
+    'rp.def_open_tickets':
+      'تذاكر الدعم الآن التي لم تُحل ولم تُغلق. "متأخرة" = تنتظر ردنا الأول منذ أكثر من {hours} ساعات.',
     'rp.kpi_low_availability': 'أماكن شبه ممتلئة',
     'rp.def_low_availability':
       'مواعيد خلال 14 يوماً القادمة بقي فيها مكانان أو أقل (وغير مغلقة)، من تقويم السعة.',
@@ -778,6 +782,9 @@ const section: Section = {
     'rp.kpi_aov': 'متوسط الطلب',
     'rp.def_aov': 'قيمة الطلبات المدفوعة التي أُنشئت في الفترة ÷ عددها، لكل عملة.',
     'rp.table_by_currency': 'حسب العملة',
+    'rp.kpi_discounts': 'الخصومات',
+    'rp.def_discounts':
+      'أكواد الخصم المخصومة من الطلبات المدفوعة التي أُنشئت في الفترة (مخصومة أصلاً من قيمة الحجوزات).',
 
     'rp.kpi_bookings': 'الحجوزات',
     'rp.def_bookings':

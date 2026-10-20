@@ -1792,6 +1792,8 @@
   "nf_title": "Page not found",
   "notif_admin_message_b": "{body}",
   "notif_admin_message_t": "{title}",
+  "notif_checkout_reminder_b": "Hi {name}, your Bali trip is still waiting in your cart. Finish booking whenever you are ready — places can fill up.",
+  "notif_checkout_reminder_t": "Your trip is waiting",
   "notif_custom_completed_b": "Hi {name}, your custom Bali plan is complete. Open it from your account.",
   "notif_custom_completed_t": "Your custom trip is ready",
   "notif_custom_pdf_ready_b": "Hi {name}, your personal itinerary is ready. Open it from “My Schedules”.",

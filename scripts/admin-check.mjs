@@ -120,7 +120,7 @@ const PHASE5_PAGES = [
   ['?period=today', 'admin.access'],
   ['?period=7d&compare=1', 'admin.access'],
   ['?period=custom&from=2026-01-01&to=2026-12-31&type=activity', 'admin.access'],
-  ['/reports/financial', 'suppliers.write'],
+  ['/reports/financial', 'finance.read'],
   ['/reports/bookings', 'orders.read'],
   ['/reports/itineraries', 'orders.read'],
   ['/reports/vip', 'orders.read'],

@@ -1792,6 +1792,8 @@
   "nf_title": "الصفحة غير موجودة",
   "notif_admin_message_b": "{body}",
   "notif_admin_message_t": "{title}",
+  "notif_checkout_reminder_b": "مرحباً {name}، رحلتك إلى بالي ما زالت في سلتك. أكمل الحجز متى كنت جاهزاً — قد تمتلئ الأماكن.",
+  "notif_checkout_reminder_t": "رحلتك بانتظارك",
   "notif_custom_completed_b": "مرحباً {name}، اكتمل جدول رحلتك المخصص إلى بالي. افتحه من حسابك.",
   "notif_custom_completed_t": "جدول رحلتك المخصص جاهز",
   "notif_custom_pdf_ready_b": "مرحباً {name}، جدولك الخاص جاهز. افتحه من «الجداول الخاصة بي».",

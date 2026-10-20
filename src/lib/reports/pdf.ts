@@ -38,7 +38,7 @@ export async function renderReportExport(exportId: string): Promise<void> {
       ? requester.role
       : 'customer'
   const access = {
-    finance: can(role, 'suppliers.write'),
+    finance: can(role, 'finance.read'),
     customers: can(role, 'customers.read'),
     orders: can(role, 'orders.read'),
   }

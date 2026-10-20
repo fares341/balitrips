@@ -11,6 +11,7 @@ import {
   payments,
   plans,
   refunds,
+  supportTickets,
 } from '@/db/schema'
 
 import { serverEventId } from './event-id'
@@ -446,6 +447,31 @@ export async function syncServerEvents(since: Date, limit = 5000): Promise<SyncR
       createdAt: row.createdAt,
     })),
   ])
+
+  // --- Support tickets (phase 4)
+  const tickets = await db
+    .select({
+      id: supportTickets.id,
+      userId: supportTickets.userId,
+      orderId: supportTickets.orderId,
+      category: supportTickets.category,
+      source: supportTickets.source,
+      createdAt: supportTickets.createdAt,
+    })
+    .from(supportTickets)
+    .where(gte(supportTickets.createdAt, since))
+    .limit(limit)
+  await write(
+    tickets.map((row) => ({
+      eventId: serverEventId('support_ticket_created', row.id),
+      name: 'support_ticket_created' as const,
+      source: 'server' as const,
+      userId: row.userId,
+      orderId: row.orderId,
+      props: { category: row.category, source: row.source },
+      createdAt: row.createdAt,
+    })),
+  )
 
   return { written, scanned }
 }

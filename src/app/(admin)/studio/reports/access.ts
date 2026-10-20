@@ -11,7 +11,7 @@ import type { BuildContext } from '@/lib/reports/builders/helpers'
  */
 export function reportAccess(role: Role) {
   return {
-    finance: can(role, 'suppliers.write'),
+    finance: can(role, 'finance.read'),
     customers: can(role, 'customers.read'),
     orders: can(role, 'orders.read'),
   }

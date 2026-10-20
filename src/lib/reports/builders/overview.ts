@@ -10,6 +10,8 @@ import {
   customerSplit,
   lowAvailability,
   openCustomRequests,
+  openTickets,
+  TICKET_LATE_HOURS,
   orderCounts,
   ordersBySource,
   paymentOutcomes,
@@ -21,7 +23,14 @@ import {
   type SalesGroup,
 } from '../data'
 import type { ReportFilters } from '../filters'
-import { bookingGroup, margin, rate, sumByCurrency, type BookingGroup, type Money } from '../metrics'
+import {
+  bookingGroup,
+  margin,
+  rate,
+  sumByCurrency,
+  type BookingGroup,
+  type Money,
+} from '../metrics'
 import { alignSeries, bucketKeys } from '../period'
 import type { BarChartBlock, Block, Kpi, ReportResult } from '../types'
 import {
@@ -71,7 +80,6 @@ function groupCounts(map: Map<string, number> | null): Record<BookingGroup, numb
 export async function buildOverview(
   filters: ReportFilters,
   ctx: BuildContext,
-  options: { openTickets?: { open: number; late: number } | null } = {},
 ): Promise<ReportResult> {
   const { t, intl } = ctx
   const p = filters.period
@@ -88,6 +96,7 @@ export async function buildOverview(
     [conversion, conversionPrev],
     [lines, linesPrev],
     openRequests,
+    tickets,
     lowSpots,
     currencies,
   ] = await Promise.all([
@@ -102,8 +111,11 @@ export async function buildOverview(
       ? both(filters, (r) => customerSplit(r, filters))
       : Promise.resolve([null, null] as const),
     both(filters, (r) => viewToPurchase(r)),
-    ctx.finance ? both(filters, (r) => costLines(r, filters)) : Promise.resolve([null, null] as const),
+    ctx.finance
+      ? both(filters, (r) => costLines(r, filters))
+      : Promise.resolve([null, null] as const),
     openCustomRequests(),
+    openTickets(ctx.now),
     lowAvailability(ctx.now),
     currencyOptions(),
   ])
@@ -221,7 +233,11 @@ export async function buildOverview(
     }
   }
   kpis.push(
-    salesKpi('itinerary_sales', ['itinerary'], recordsHref('lines', filters, { group: 'itinerary' })),
+    salesKpi(
+      'itinerary_sales',
+      ['itinerary'],
+      recordsHref('lines', filters, { group: 'itinerary' }),
+    ),
     salesKpi(
       'activity_sales',
       ['activity', 'package'],
@@ -263,22 +279,15 @@ export async function buildOverview(
     ),
   )
   kpis.push(
-    options.openTickets
-      ? countKpi(
-          'open_tickets',
-          t('rp.kpi_open_tickets'),
-          t('rp.def_open_tickets'),
-          options.openTickets.open,
-          null,
-          '/support',
-          { note: t('rp.note_late_tickets', { n: options.openTickets.late }) },
-        )
-      : {
-          id: 'open_tickets',
-          label: t('rp.kpi_open_tickets'),
-          definition: t('rp.def_open_tickets'),
-          value: { kind: 'unavailable', reason: t('rp.not_connected') },
-        },
+    countKpi(
+      'open_tickets',
+      t('rp.kpi_open_tickets'),
+      t('rp.def_open_tickets', { hours: TICKET_LATE_HOURS }),
+      tickets.open,
+      null,
+      '/support',
+      { note: t('rp.note_late_tickets', { n: tickets.late }) },
+    ),
     countKpi(
       'low_availability',
       t('rp.kpi_low_availability'),

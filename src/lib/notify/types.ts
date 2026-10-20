@@ -45,6 +45,11 @@ export const USER_NOTIFICATION_TYPES = {
    */
   order_updated: { email: true, whatsapp: true },
   /**
+   * Phase 5: a signed-in customer started checkout and did not pay. Only with
+   * marketing consent, once per cart (src/lib/analytics/abandoned.ts).
+   */
+  checkout_reminder: { email: true, whatsapp: true },
+  /**
    * الوثيقة 14.1: كل دخول ناجح من جهاز معروف — داخل الموقع فقط. الجهاز الجديد
    * يأخذ `new_device_login` (بريد + واتساب) بدلاً منه.
    */
@@ -111,6 +116,7 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   custom_completed: ['name'],
   custom_status: ['status'],
   order_updated: ['orderNumber', 'status'],
+  checkout_reminder: ['name'],
   custom_quote: ['name', 'amount'],
   pdf_ready_whatsapp: ['name', 'link'],
   password_reset_whatsapp: ['link'],
