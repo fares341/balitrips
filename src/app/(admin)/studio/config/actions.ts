@@ -74,8 +74,10 @@ async function save<K extends SettingKey>(
   successKey: string,
   /** Where the form lives (the banner shows there). */
   back: string = LIST,
+  /** Phase 6: VIP settings are `vip.manage`; every other setting stays `config.write`. */
+  capability: 'config.write' | 'vip.manage' = 'config.write',
 ): Promise<void> {
-  const session = await requireCapability('config.write')
+  const session = await requireCapability(capability)
   const { t } = await getAdminI18n()
   let outcome: Outcome
 
@@ -327,8 +329,8 @@ export async function saveAssistantSettings(form: FormData): Promise<void> {
 
 /**
  * VIP map access (phase 3, Studio → Plans → VIP settings): where VIP is
- * offered, and the refund note shown with every offer. Admin only, like
- * every setting.
+ * offered, and the refund note shown with every offer. `vip.manage` (admin
+ * and the operations manager) since Phase 6.
  */
 export async function saveVipSettings(form: FormData): Promise<void> {
   revalidatePath('/[locale]/plans', 'page')
@@ -342,5 +344,6 @@ export async function saveVipSettings(form: FormData): Promise<void> {
     }),
     'p3.ok_vip_saved',
     adminHref('/plans/vip'),
+    'vip.manage',
   )
 }

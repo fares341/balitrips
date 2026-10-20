@@ -3,6 +3,7 @@
 import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { isStudioRole } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { customTripRequests, users } from '@/db/schema'
 
@@ -27,7 +28,7 @@ export async function assignLead(id: string, form: FormData): Promise<void> {
         .from(users)
         .where(eq(users.id, assignedToUserId))
         .limit(1)
-      if (!staff || staff.role === 'customer') throw new Error(t('crm.err_assignee'))
+      if (!staff || !isStudioRole(staff.role)) throw new Error(t('crm.err_assignee'))
     }
     const [before] = await db
       .select({ assignedToUserId: customTripRequests.assignedToUserId })

@@ -353,7 +353,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
  * arrives before the customer returns to the site.
  */
 export async function confirmOrder(orderId: string): Promise<void> {
-  const session = await requireCapability('orders.fulfil')
+  const session = await requireCapability('bookings.confirm')
   const { t } = await getAdminI18n()
   let outcome: Outcome
 

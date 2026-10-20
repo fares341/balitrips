@@ -48,6 +48,12 @@ export const QUEUES = {
 
   /** Phase 5: server analytics events, ad-platform forwarding, retention, scheduled reports. */
   analytics: 'analytics.sweep',
+  /** Phase 6: pull from a supplier connection ("Sync now"). */
+  integrationSync: 'integration.sync',
+  /** Phase 6: act on a verified, de-duplicated supplier webhook. */
+  integrationWebhook: 'integration.webhook',
+  /** Phase 6: every 15 minutes — alerts (backup, dead letters, errors, payments), housekeeping. */
+  systemMonitor: 'system.monitor',
 } as const
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES]
@@ -170,6 +176,22 @@ export const analyticsJobSchema = z.discriminatedUnion('kind', [
 ])
 export type AnalyticsJob = z.infer<typeof analyticsJobSchema>
 
+export const integrationSyncJobSchema = z.object({
+  integrationId: z.uuid(),
+  trigger: z.enum(['manual', 'schedule']),
+})
+export type IntegrationSyncJob = z.infer<typeof integrationSyncJobSchema>
+
+/** Only ids travel: the payload stays in `webhook_events` (redacted once handled). */
+export const integrationWebhookJobSchema = z.object({
+  integrationId: z.uuid(),
+  webhookEventId: z.uuid(),
+})
+export type IntegrationWebhookJob = z.infer<typeof integrationWebhookJobSchema>
+
+export const systemMonitorJobSchema = z.object({})
+export type SystemMonitorJob = z.infer<typeof systemMonitorJobSchema>
+
 /* --------------------------------------------------------------------------
    Queue settings
    -------------------------------------------------------------------------- */
@@ -235,6 +257,37 @@ export const QUEUE_SETTINGS: Record<QueueName, QueueSettings> = {
   [QUEUES.crmSweep]: {
     retryLimit: 1,
     retryDelay: 120,
+    retryBackoff: false,
+    expireInSeconds: 5 * 60,
+    deleteAfterSeconds: 3 * DAY,
+  },
+
+  /**
+   * Supplier calls: exponential backoff (60s, 2m, 4m… capped at an hour). The
+   * per-connection retry settings travel on each job (`enqueueIntegration*`),
+   * these are the defaults. A job that exhausts them is dead-lettered and the
+   * monitor tells the admins.
+   */
+  [QUEUES.integrationSync]: {
+    retryLimit: 5,
+    retryDelay: 60,
+    retryBackoff: true,
+    retryDelayMax: HOUR,
+    expireInSeconds: 10 * 60,
+    deleteAfterSeconds: 14 * DAY,
+  },
+  [QUEUES.integrationWebhook]: {
+    retryLimit: 5,
+    retryDelay: 30,
+    retryBackoff: true,
+    retryDelayMax: HOUR,
+    expireInSeconds: 5 * 60,
+    deleteAfterSeconds: 14 * DAY,
+  },
+  /** Idempotent and re-run every 15 minutes; one retry is plenty. */
+  [QUEUES.systemMonitor]: {
+    retryLimit: 1,
+    retryDelay: 60,
     retryBackoff: false,
     expireInSeconds: 5 * 60,
     deleteAfterSeconds: 3 * DAY,
@@ -496,4 +549,43 @@ export async function enqueueReconcile(job: ReconcileJob = {}): Promise<string |
 
 export async function enqueueCapacityRelease(job: CapacityJob = {}): Promise<string | null> {
   return enqueue(QUEUES.capacity, job)
+}
+
+/** Per-connection retry policy, from Studio → Integrations. */
+export interface IntegrationRetry {
+  retryLimit: number
+  retryDelaySeconds: number
+}
+
+function retryOptions(retry: IntegrationRetry | undefined) {
+  if (!retry) return {}
+  return {
+    retryLimit: Math.max(0, Math.min(20, retry.retryLimit)),
+    retryDelay: Math.max(5, Math.min(3600, retry.retryDelaySeconds)),
+    retryBackoff: true,
+    retryDelayMax: HOUR,
+  }
+}
+
+/**
+ * "Sync now". One waiting sync per connection: pressing the button twice
+ * while the first is still queued does not queue a second (`singletonKey`
+ * with `singletonSeconds`).
+ */
+export async function enqueueIntegrationSync(
+  job: IntegrationSyncJob,
+  retry?: IntegrationRetry,
+): Promise<string | null> {
+  return enqueue(QUEUES.integrationSync, job, {
+    ...retryOptions(retry),
+    singletonKey: job.integrationId,
+    singletonSeconds: 60,
+  })
+}
+
+export async function enqueueIntegrationWebhook(
+  job: IntegrationWebhookJob,
+  retry?: IntegrationRetry,
+): Promise<string | null> {
+  return enqueue(QUEUES.integrationWebhook, job, retryOptions(retry))
 }

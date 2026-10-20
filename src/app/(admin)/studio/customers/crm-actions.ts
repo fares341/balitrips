@@ -3,6 +3,7 @@
 import { and, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { isStudioRole } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { customerNotes, customerTags, users } from '@/db/schema'
 import { isCrmStage, normalizeTag } from '@/lib/crm/stage'
@@ -119,7 +120,7 @@ export async function setCustomerCare(userId: string, form: FormData): Promise<v
         .from(users)
         .where(eq(users.id, assignedToUserId))
         .limit(1)
-      if (!staff || staff.role === 'customer') throw new Error(t('crm.err_assignee'))
+      if (!staff || !isStudioRole(staff.role)) throw new Error(t('crm.err_assignee'))
     }
     const [before] = await db
       .select({ assignedToUserId: users.assignedToUserId, crmStage: users.crmStage })

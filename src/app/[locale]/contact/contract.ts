@@ -10,7 +10,13 @@
 
 export type ContactField = 'name' | 'email' | 'subject' | 'message'
 
-export type ContactErrorCode = 'required' | 'email' | 'too_long' | 'rejected' | 'failed'
+export type ContactErrorCode =
+  | 'required'
+  | 'email'
+  | 'too_long'
+  | 'rejected'
+  | 'failed'
+  | 'rate_limited'
 
 /**
  * What the action returns.
@@ -69,4 +75,5 @@ export const CONTACT_ERROR_KEY: Record<ContactErrorCode, string> = {
   too_long: 'co_err_long',
   rejected: 'co_err_rejected',
   failed: 'co_err_failed',
+  rate_limited: 'co_err_rate_limited',
 }

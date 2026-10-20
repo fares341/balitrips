@@ -10,6 +10,8 @@
  * ما يُنشأ (كلمة مرور واحدة للجميع، تُطبع في النهاية):
  *   admin@…           مدير — 2FA مفعّل مسبقاً (يُطبع السر ورابط otpauth ورموز الاسترداد)
  *   staff@…           موظف — 2FA مفعّل مسبقاً
+ *   operations_manager@… booking_agent@… support_agent@… content_editor@…
+ *   marketing_manager@… accountant@… supplier_portal@…   أدوار المرحلة 6 — 2FA مفعّل مسبقاً
  *   customer@…        مستخدم مسجّل بلا باقة
  *   map@…             باقة خريطة 30 يوماً، جهازان
  *   vip@…             باقة VIP 30 يوماً، 3 أجهزة
@@ -41,6 +43,7 @@ import {
   verifications,
 } from '@/db/schema'
 import { placeholderEmailFor } from '@/lib/auth/phone'
+import type { Role } from '@/lib/auth/roles'
 import {
   generateRecoveryCodes,
   generateSecret,
@@ -50,7 +53,6 @@ import {
   TWO_FACTOR_PREFIXES,
 } from '@/lib/auth/totp'
 
-type Role = 'admin' | 'staff' | 'customer'
 type Kind = 'map_access' | 'vip' | 'basic'
 
 interface Spec {
@@ -121,6 +123,18 @@ const PASSWORD =
 const SPECS: Spec[] = [
   { local: 'admin', name: 'Test Admin', role: 'admin', phone: '+628100000001', twoFactor: true },
   { local: 'staff', name: 'Test Staff', role: 'staff', phone: '+628100000002', twoFactor: true },
+  // Phase 6 team roles: one account each, 2-step sign-in pre-enrolled.
+  ...(
+    [
+      ['operations_manager', 'Test Operations', '+628100000021'],
+      ['booking_agent', 'Test Bookings', '+628100000022'],
+      ['support_agent', 'Test Support', '+628100000023'],
+      ['content_editor', 'Test Content', '+628100000024'],
+      ['marketing_manager', 'Test Marketing', '+628100000025'],
+      ['accountant', 'Test Accountant', '+628100000026'],
+      ['supplier_portal', 'Test Supplier Portal', '+628100000027'],
+    ] as const
+  ).map(([role, name, phone]) => ({ local: role, name, role, phone, twoFactor: true })),
   { local: 'customer', name: 'Test Customer', role: 'customer', phone: '+628100000003' },
   { local: 'map', name: 'Test Map Holder', role: 'customer', phone: '+628100000004', plan: 'map' },
   { local: 'vip', name: 'Test VIP', role: 'customer', phone: '+628100000005', plan: 'vip' },
@@ -441,6 +455,13 @@ async function main(): Promise<void> {
   const rows: [string, string, string][] = [
     ['Admin (2FA)', `admin@${DOMAIN}`, 'Studio: /<ADMIN_BASE_PATH> — full access'],
     ['Staff (2FA)', `staff@${DOMAIN}`, 'Studio without refunds, plans, roles, bans, exports'],
+    ['Operations (2FA)', `operations_manager@${DOMAIN}`, 'Bookings, availability, prices, VIP'],
+    ['Bookings (2FA)', `booking_agent@${DOMAIN}`, 'Prepare and confirm bookings'],
+    ['Support (2FA)', `support_agent@${DOMAIN}`, 'Tickets, notes, tasks; reads orders'],
+    ['Content (2FA)', `content_editor@${DOMAIN}`, 'Content and translations, no prices'],
+    ['Marketing (2FA)', `marketing_manager@${DOMAIN}`, 'Content, discount codes, reports'],
+    ['Accountant (2FA)', `accountant@${DOMAIN}`, 'Payments, profit, supplier payables'],
+    ['Supplier portal', `supplier_portal@${DOMAIN}`, 'No Studio access (future portal)'],
     ['Customer', `customer@${DOMAIN}`, 'Registered, no plan'],
     ['Map plan', `map@${DOMAIN}`, 'Paid map 30 days · 2 devices'],
     ['VIP plan', `vip@${DOMAIN}`, 'VIP + Hidden Gems 30 days · 3 devices'],
@@ -453,7 +474,7 @@ async function main(): Promise<void> {
   for (const [role, login, note] of rows) {
     console.log(`  ${role.padEnd(15)} ${login.padEnd(38)} ${note}`)
   }
-  console.log(`\nTwo-factor for admin / staff — add to Google Authenticator / 1Password:`)
+  console.log(`\nTwo-factor for team accounts — add to Google Authenticator / 1Password:`)
   for (const entry of twoFactor) {
     console.log(`\n  ${entry.email}`)
     console.log(`    secret:   ${entry.secret}`)

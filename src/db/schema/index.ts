@@ -13,3 +13,4 @@ export * from './finance'
 export * from './crm'
 
 export * from './analytics'
+export * from './ops'

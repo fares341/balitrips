@@ -16,6 +16,7 @@ import {
   addonsLibrary,
   tierIncludedActivities,
 } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { activityStatus, isPublicStatus } from '@/lib/content/activity-status'
 import { parseVideoUrl } from '@/lib/content/video'
 
@@ -588,6 +589,8 @@ export async function addActivityTier(activityId: string, form: FormData): Promi
   let outcome: { ok: string } | { err: string }
 
   try {
+    // Phase 6: a new package is a new price.
+    if (!can(session.role, 'prices.write')) throw new Error(t('team.err_prices'))
     const values = await tierValuesFrom(form, t, activityId)
     const key = assertSlug(freq(form, 'key', t('activities.tier_key')))
 
@@ -662,6 +665,18 @@ export async function saveActivityTier(
         .where(tierOf(activityId, tierId))
         .limit(1)
       if (!before) throw new Error(t('activities.err_tier_gone'))
+      // Phase 6: without `prices.write` (a content editor) everything but the
+      // price may change.
+      if (
+        !can(session.role, 'prices.write') &&
+        (values.priceMinor !== before.priceMinor ||
+          values.childPriceMinor !== before.childPriceMinor ||
+          values.currency !== before.currency ||
+          values.pricingMode !== before.pricingMode ||
+          values.groupMax !== before.groupMax)
+      ) {
+        throw new Error(t('team.err_prices'))
+      }
 
       const [row] = await tx
         .update(activityTiers)
@@ -711,6 +726,7 @@ export async function removeActivityTier(activityId: string, tierId: string): Pr
   let outcome: { ok: string } | { err: string }
 
   try {
+    if (!can(session.role, 'prices.write')) throw new Error(t('team.err_prices'))
     await db.transaction(async (tx) => {
       const [before] = await tx
         .select()

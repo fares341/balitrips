@@ -39,13 +39,14 @@ export const users = pgTable(
     locale: varchar('locale', { length: 5 }).notNull().default('en'),
 
     /**
-     * 'customer' | 'staff' | 'admin'.
+     * One of `ROLES` in src/lib/auth/roles.ts ('customer' | 'staff' | 'admin' |
+     * the Phase 6 team roles). Widened to 32 characters in migration 0022.
      *
      * Checked server-side on EVERY admin request — in middleware and again
      * inside each route handler and server action. Middleware alone is not
      * an authorization boundary: one missed matcher pattern opens a route.
      */
-    role: varchar('role', { length: 16 }).notNull().default('customer'),
+    role: varchar('role', { length: 32 }).notNull().default('customer'),
 
     /** TOTP is mandatory for staff and admin, enforced at login. */
     twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),

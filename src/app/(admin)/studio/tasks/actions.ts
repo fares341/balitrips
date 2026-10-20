@@ -3,6 +3,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { isStudioRole } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { crmTasks, customTripRequests, orders, users } from '@/db/schema'
 
@@ -78,7 +79,7 @@ export async function createTask(form: FormData): Promise<void> {
       .from(users)
       .where(eq(users.id, assigneeId))
       .limit(1)
-    if (!assignee || assignee.role === 'customer') throw new Error(t('crm.err_assignee'))
+    if (!assignee || !isStudioRole(assignee.role)) throw new Error(t('crm.err_assignee'))
 
     const [row] = await db
       .insert(crmTasks)

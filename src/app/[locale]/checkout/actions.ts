@@ -50,6 +50,7 @@ import { CheckoutError, checkout } from '@/lib/orders/checkout'
 import { validateContact } from '@/lib/orders/contact'
 import { canViewOrder, ensureGuestTokenHash, readGuestTokenHash } from '@/lib/orders/guest'
 import { RetryError, retryOrderPayment } from '@/lib/orders/retry'
+import { consumeRateLimits } from '@/lib/rate-limit'
 import { findActiveBan } from '@/lib/security/bans'
 import { clientIp } from '@/lib/security/ip'
 import { activeUserOrNull } from '@/lib/security/require'
@@ -345,6 +346,19 @@ export async function applyCouponAction(formData: FormData): Promise<never> {
   const locale = localeOf(formData.get('locale'))
   const intent = text(formData, 'intent')
   const code = text(formData, 'code').trim()
+  // Phase 6: guessing codes is limited per IP and per account (shared counter).
+  if (intent !== 'remove' && code !== '') {
+    const user = await getSessionUser()
+    const limit = await consumeRateLimits('coupon', [
+      clientIp(await headers()),
+      user ? `user:${user.id}` : null,
+    ])
+    if (!limit.allowed) {
+      redirect(
+        getPathname({ href: { pathname: CHECKOUT_HREF, query: { coupon: 'limited' } }, locale }),
+      )
+    }
+  }
   await setCartCouponCode(intent === 'remove' || code === '' ? null : code)
   redirect(getPathname({ href: CHECKOUT_HREF, locale }))
 }

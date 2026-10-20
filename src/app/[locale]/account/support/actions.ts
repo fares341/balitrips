@@ -12,6 +12,7 @@ import { db } from '@/db'
 import { orders, supportTickets } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { consumeRateLimit } from '@/lib/rate-limit'
 import { activeUserOrNull } from '@/lib/security/require'
 import {
   createTicket,
@@ -53,6 +54,10 @@ export async function createTicketAction(form: FormData): Promise<never> {
   const locale = localeOf(form.get('locale'))
   const user = await activeUserOrNull('account:support')
   if (user === null) go(locale, '/account')
+
+  // Phase 6: a handful of new tickets per hour per account (shared counter).
+  const limit = await consumeRateLimit('ticket', `user:${user.id}`)
+  if (!limit.allowed) go(locale, '/account/support', { error: 'rate_limited' })
 
   // An order may be linked only if it is this customer's own.
   let orderId: string | null = null

@@ -47,6 +47,7 @@ import { nextCookies } from 'better-auth/next-js'
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api'
 import { and, eq, isNull } from 'drizzle-orm'
 
+import { betterAuthRateLimitStorage } from '@/lib/rate-limit'
 import { db } from '@/db'
 import { accounts, sessions, users, verifications } from '@/db/schema'
 import { notifyUser } from '@/lib/notify'
@@ -971,11 +972,11 @@ export const auth = betterAuth({
    * and reset-mail flooding — and both are cheap for the attacker and
    * expensive for us.
    *
-   * Storage is in-process. `storage: "database"` needs a `rateLimit` table
-   * this schema does not have, and there is no Redis in the stack; the
-   * deployment is a single Next container, so one process is one bucket. If
-   * the app is ever scaled horizontally this MUST move to shared storage —
-   * N replicas would otherwise multiply every limit below by N.
+   * Storage is Postgres (Phase 6): the `rate_limits` table through
+   * `betterAuthRateLimitStorage` (src/lib/rate-limit), whose `consume` is
+   * one atomic upsert. The blue/green deploy runs two app containers at once,
+   * and an in-process store would have given each its own bucket — doubling
+   * every limit below and resetting them all on every deploy.
    *
    * Paths are relative to `basePath`.
    */
@@ -985,7 +986,7 @@ export const auth = betterAuth({
     enabled: true,
     window: MINUTE,
     max: 60,
-    storage: 'memory',
+    customStorage: betterAuthRateLimitStorage,
     customRules: {
       // Credential stuffing.
       '/sign-in/email': { window: 5 * MINUTE, max: 5 },

@@ -41,6 +41,7 @@ import { cartItems, orders } from '@/db/schema'
 import { clearCartForUser } from '@/lib/cart'
 import { recordPaymentMethod } from '@/lib/orders/payment-method'
 import { processWebhookEvent } from '@/lib/orders/webhook'
+import { recordError } from '@/lib/monitoring/errors'
 import { getPaymentProvider } from '@/lib/payments'
 import { notifyOrderPaid, notifyPaymentFailed } from '@/lib/notify/orders'
 
@@ -110,6 +111,12 @@ export async function POST(request: Request): Promise<Response> {
       eventId: event.providerEventId,
       type: event.type,
       error,
+    })
+    // Phase 6: counted for the payment alert (src/worker/handlers/monitor.ts).
+    await recordError(error, {
+      source: 'route',
+      path: '/api/payments/webhook',
+      details: { area: 'payment_webhook', provider: provider.name, type: event.type },
     })
     // Retry, please. See rule 3 above.
     return NextResponse.json({ error: 'processing_failed' }, { status: 500 })

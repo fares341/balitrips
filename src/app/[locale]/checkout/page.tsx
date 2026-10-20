@@ -84,8 +84,16 @@ async function loadDriverRates() {
     .from(driverVehicles)
 }
 
-export default async function CheckoutPage({ params }: { params: PageParams }) {
+export default async function CheckoutPage({
+  params,
+  searchParams,
+}: {
+  params: PageParams
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { locale: raw } = await params
+  // Phase 6: too many discount codes tried in a short time (see applyCouponAction).
+  const couponLimited = (await searchParams).coupon === 'limited'
   const locale = toLocale(raw)
   setRequestLocale(locale)
 
@@ -422,6 +430,11 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
         {cart.couponCode !== null && cart.couponError !== null && (
           <small role="alert" className="err">
             {t(`co_coupon_err_${cart.couponError}`)}
+          </small>
+        )}
+        {couponLimited && (
+          <small role="alert" className="err">
+            {t('co_coupon_rate_limited')}
           </small>
         )}
       </form>

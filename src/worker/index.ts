@@ -55,6 +55,8 @@ import { isPrivateStorageAvailable } from '@/lib/storage'
 import { handleCapacityJob } from './handlers/capacity'
 import { handleNotifySweep, handleWhatsappJob } from './handlers/notify'
 import { handleCrmSweep } from './handlers/crm'
+import { handleIntegrationSync, handleIntegrationWebhook } from './handlers/integration'
+import { handleSystemMonitor } from './handlers/monitor'
 import { handleSecurityPruneJob } from './handlers/security'
 import type { EnqueueOptions, WorkerContext } from './handlers/context'
 import { handleEmailJob } from './handlers/email'
@@ -67,6 +69,9 @@ import {
   securityPruneJobSchema,
   notifySweepJobSchema,
   crmSweepJobSchema,
+  integrationSyncJobSchema,
+  integrationWebhookJobSchema,
+  systemMonitorJobSchema,
   whatsappJobSchema,
   createBoss,
   deadLetterQueue,
@@ -81,6 +86,7 @@ import {
   type QueueName,
 } from './queues'
 import { liveModeWarnings } from '@/lib/live-mode'
+import { recordError } from '@/lib/monitoring/errors'
 
 /** Shows up in `pg_stat_activity`, which is how you tell the roles apart. */
 const APPLICATION_NAME = 'bali-worker'
@@ -126,6 +132,27 @@ const WORK_OPTIONS: Record<QueueName, PerJobOptions> = {
   },
 
   [QUEUES.crmSweep]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 1,
+    pollingIntervalSeconds: 30,
+  },
+
+  // Phase 6. One supplier call at a time per worker: suppliers rate-limit,
+  // and a sync is never urgent to the second.
+  [QUEUES.integrationSync]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 1,
+    pollingIntervalSeconds: 10,
+  },
+  [QUEUES.integrationWebhook]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 2,
+    pollingIntervalSeconds: 5,
+  },
+  [QUEUES.systemMonitor]: {
     perJobResults: true,
     batchSize: 1,
     localConcurrency: 1,
@@ -298,6 +325,8 @@ async function settle<T>(
       ms: Date.now() - startedAt,
       error: describeError(error),
     })
+    // Phase 6: into the error log too (scrubbed, grouped by fingerprint).
+    await recordError(error, { source: 'worker', details: { queue } })
     return { id: job.id, status: 'failed', output: describeError(error) }
   } finally {
     inFlight.delete(key)
@@ -344,6 +373,13 @@ async function registerDeadLetters(boss: PgBoss): Promise<void> {
       { includeMetadata: true, batchSize: 10, localConcurrency: 1, pollingIntervalSeconds: 30 },
       async (jobs: JobWithMetadata<unknown>[]) => {
         for (const job of jobs) {
+          await recordError(
+            {
+              name: 'DeadLetter',
+              message: `job on ${job.sourceName ?? source} gave up after its retries`,
+            },
+            { source: 'worker', details: { queue: dlq } },
+          )
           console.error('[worker] DEAD LETTER — this job will not run again without a human', {
             deadLetterQueue: dlq,
             sourceQueue: job.sourceName ?? source,
@@ -397,6 +433,13 @@ const SCHEDULES: readonly ScheduleSpec[] = [
     // Phase 4: due-task reminders and urgent-ticket escalation.
     queue: QUEUES.crmSweep,
     cron: '*/15 * * * *',
+    data: {},
+    options: { tz: 'Etc/UTC' },
+  },
+  {
+    // Phase 6: alerts and housekeeping. Offset from the CRM sweep.
+    queue: QUEUES.systemMonitor,
+    cron: '7-59/15 * * * *',
     data: {},
     options: { tz: 'Etc/UTC' },
   },
@@ -608,6 +651,15 @@ async function main(): Promise<void> {
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))
   await register(boss, QUEUES.crmSweep, crmSweepJobSchema, (job) => handleCrmSweep(job))
   await register(boss, QUEUES.analytics, analyticsJobSchema, (job) => handleAnalyticsJob(job))
+  await register(boss, QUEUES.integrationSync, integrationSyncJobSchema, (job) =>
+    handleIntegrationSync(job),
+  )
+  await register(boss, QUEUES.integrationWebhook, integrationWebhookJobSchema, (job) =>
+    handleIntegrationWebhook(job),
+  )
+  await register(boss, QUEUES.systemMonitor, systemMonitorJobSchema, (job) =>
+    handleSystemMonitor(job),
+  )
   await register(boss, QUEUES.securityPrune, securityPruneJobSchema, (job) =>
     handleSecurityPruneJob(job),
   )

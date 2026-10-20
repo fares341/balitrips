@@ -91,9 +91,9 @@ describe('two-factor', () => {
     expect(requiresTwoFactor('customer')).toBe(false)
   })
 
-  it('tracks admin.access rather than being a separate list', () => {
+  it('is mandatory for every role except customer', () => {
     for (const role of ROLES) {
-      expect(requiresTwoFactor(role)).toBe(can(role, 'admin.access'))
+      expect(requiresTwoFactor(role)).toBe(role !== 'customer')
     }
   })
 })

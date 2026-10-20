@@ -93,6 +93,16 @@ export const STAFF_NOTIFICATION_TYPES = {
   staff_ticket_reply: { email: false, whatsapp: false },
   /** An urgent ticket has waited too long for a first answer. */
   staff_ticket_escalated: { email: true, whatsapp: true },
+  /**
+   * Phase 6 system alerts (src/lib/monitoring/alerts.ts, throttled per kind):
+   * a stale backup, jobs that gave up, an error spike, payment notices not
+   * processed, a supplier connection failing again and again.
+   */
+  staff_alert_backup: { email: true, whatsapp: false },
+  staff_alert_jobs: { email: true, whatsapp: false },
+  staff_alert_errors: { email: true, whatsapp: false },
+  staff_alert_payment: { email: true, whatsapp: false },
+  staff_alert_integration: { email: true, whatsapp: false },
 } as const
 
 export type UserNotificationType = keyof typeof USER_NOTIFICATION_TYPES

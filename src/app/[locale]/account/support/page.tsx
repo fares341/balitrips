@@ -129,7 +129,7 @@ export default async function SupportPage({
         {error !== null && (
           <p role="alert" className="err" style={{ display: 'block' }}>
             {t(
-              `acct_support_err_${error === 'attachment' || error === 'invalid' ? error : 'failed'}`,
+              `acct_support_err_${error === 'attachment' || error === 'invalid' || error === 'rate_limited' ? error : 'failed'}`,
             )}
           </p>
         )}

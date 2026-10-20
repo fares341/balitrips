@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 
+import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { fontVariables } from '@/styles/fonts'
 
 import { messagesFor } from './_i18n'
@@ -52,6 +53,7 @@ export default async function AdminRootLayout({ children }: { children: React.Re
         <AdminI18nProvider locale={locale} messages={messages}>
           {children}
         </AdminI18nProvider>
+        <ErrorBeacon />
       </body>
     </html>
   )

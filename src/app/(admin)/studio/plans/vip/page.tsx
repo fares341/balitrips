@@ -31,7 +31,7 @@ export default async function VipSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('config.write')
+  await requireCapability('vip.manage')
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 

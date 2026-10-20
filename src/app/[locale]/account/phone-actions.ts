@@ -30,6 +30,7 @@ import { createHash, randomInt } from 'node:crypto'
 
 import { and, desc, eq, ne, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { getLocale } from 'next-intl/server'
 
 import { db } from '@/db'
@@ -37,6 +38,8 @@ import { sessions, users, verifications } from '@/db/schema'
 import { isPlaceholderEmail, normalizePhone, placeholderEmailFor } from '@/lib/auth/phone'
 import { sendWhatsappTemplate, toWhatsappNumber, type WhatsappResult } from '@/lib/notify/whatsapp'
 import { logActivity } from '@/lib/security/activity'
+import { consumeRateLimit, type RateScope } from '@/lib/rate-limit'
+import { clientIp } from '@/lib/security/ip'
 import { activeUserOrNull } from '@/lib/security/require'
 
 import type { PhoneActionState } from './phone-contract'
@@ -182,10 +185,21 @@ async function sendCode(
   })
 }
 
+/**
+ * Phase 6: per-IP limit on top of the per-account caps below — one address
+ * cycling through many accounts cannot send (or guess) codes without end.
+ */
+async function ipLimited(scope: RateScope): Promise<PhoneActionState | null> {
+  const limit = await consumeRateLimit(scope, clientIp(await headers()) ?? 'unknown')
+  return limit.allowed ? null : { status: 'error', messageKey: 'acct_phone_too_many' }
+}
+
 /** رمز لرقم الحساب الحالي (المحفوظ في الملف الشخصي). */
 export async function sendPhoneCodeAction(): Promise<PhoneActionState> {
   const user = await activeUserOrNull('account:phone')
   if (user === null) return { status: 'error', messageKey: 'map_need_signin' }
+  const limited = await ipLimited('otpSend')
+  if (limited !== null) return limited
 
   const [row] = await db
     .select({ phone: users.phoneNormalized, verifiedAt: users.phoneVerifiedAt })
@@ -213,6 +227,8 @@ export async function claimPhoneCodeAction(
 ): Promise<PhoneActionState> {
   const user = await activeUserOrNull('account:phone')
   if (user === null) return { status: 'error', messageKey: 'map_need_signin' }
+  const limited = await ipLimited('otpSend')
+  if (limited !== null) return limited
 
   const phone = normalizePhone(String(form.get('phone') ?? ''))
   if (phone === null) return { status: 'error', messageKey: 'auth_err_phone_intl' }
@@ -254,6 +270,8 @@ export async function verifyPhoneCodeAction(
 ): Promise<PhoneActionState> {
   const user = await activeUserOrNull('account:phone')
   if (user === null) return { status: 'error', messageKey: 'map_need_signin' }
+  const limited = await ipLimited('otpVerify')
+  if (limited !== null) return limited
 
   const code = String(form.get('code') ?? '').replace(/\D/g, '')
   if (code.length !== 6) return { status: 'sent', messageKey: 'acct_phone_bad_code' }

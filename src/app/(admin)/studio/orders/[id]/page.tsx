@@ -181,6 +181,7 @@ export default async function OrderDetailPage({
   const capOf = (line: (typeof lines)[number]) => caps.get(line.id) ?? line.lineTotalMinor
   const mayRefund = can(session.role, 'orders.refund')
   const mayFulfil = can(session.role, 'orders.fulfil')
+  const mayConfirm = can(session.role, 'bookings.confirm')
 
   return (
     <>
@@ -329,7 +330,7 @@ export default async function OrderDetailPage({
         </div>
       ) : null}
 
-      {mayFulfil && (status === 'paid' || status === 'pending') ? (
+      {mayConfirm && (status === 'paid' || status === 'pending') ? (
         <form className="a-card" action={confirmOrder.bind(null, row.id)}>
           <h2>{t('orders.fulfilment_heading')}</h2>
           <p className="a-hint">{t('orders.fulfilment_hint')}</p>
@@ -623,7 +624,7 @@ export default async function OrderDetailPage({
                       </div>
                     </form>
                   ) : null}
-                  {mayFulfil &&
+                  {mayConfirm &&
                   paid &&
                   line.bookingStatus !== 'confirmed' &&
                   isBookingStatus(line.bookingStatus) &&

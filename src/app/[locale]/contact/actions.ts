@@ -33,10 +33,14 @@
  * names and limits live in ./contract.ts.
  */
 
+import { headers } from 'next/headers'
+
 import { db } from '@/db'
 import { getUser } from '@/lib/auth/session'
 import { notifyStaff } from '@/lib/notify'
 import { createTicket } from '@/lib/support/service'
+import { consumeRateLimit } from '@/lib/rate-limit'
+import { clientIp } from '@/lib/security/ip'
 import { contactMessages } from '@/db/schema'
 
 import {
@@ -116,6 +120,13 @@ export async function sendContactMessage(
 
   if (Object.keys(fieldErrors).length > 0) {
     return { status: 'error', formError: null, fieldErrors }
+  }
+
+  // Phase 6: at most a few messages per hour from one address, counted in
+  // Postgres so every app instance shares the limit.
+  const limit = await consumeRateLimit('contact', clientIp(await headers()) ?? 'unknown')
+  if (!limit.allowed) {
+    return { status: 'error', formError: 'rate_limited', fieldErrors: {} }
   }
 
   try {

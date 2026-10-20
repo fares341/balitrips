@@ -3,6 +3,7 @@
 import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { isStudioRole } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { supportSavedReplies, supportTickets, users } from '@/db/schema'
 import {
@@ -77,7 +78,7 @@ export async function updateTicket(id: string, form: FormData): Promise<void> {
         .from(users)
         .where(eq(users.id, assigneeId))
         .limit(1)
-      if (!staff || staff.role === 'customer') throw new Error(t('crm.err_assignee'))
+      if (!staff || !isStudioRole(staff.role)) throw new Error(t('crm.err_assignee'))
     }
     const [before] = await db
       .select({

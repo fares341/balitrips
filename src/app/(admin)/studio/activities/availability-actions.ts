@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { activities, activityAvailability, activityTiers, tierSeasonalPrices } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { daysInRange } from '@/lib/booking-rules'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -255,6 +256,7 @@ export async function addSeasonalPrice(
   const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
+    if (!can(session.role, 'prices.write')) throw new Error(t('team.err_prices'))
     const [tier] = await db
       .select({ id: activityTiers.id, currency: activityTiers.currency })
       .from(activityTiers)
@@ -315,6 +317,7 @@ export async function removeSeasonalPrice(activityId: string, seasonId: string):
   const { t } = await getAdminI18n()
   let outcome: Outcome
   try {
+    if (!can(session.role, 'prices.write')) throw new Error(t('team.err_prices'))
     const [row] = await db
       .select({ season: tierSeasonalPrices })
       .from(tierSeasonalPrices)

@@ -1,4 +1,5 @@
 import { FormError } from './form'
+import { reportError } from '@/lib/monitoring/errors'
 
 /**
  * Action outcome plumbing.
@@ -31,6 +32,8 @@ export function errorMessage(error: unknown): string {
   const code = databaseErrorCode(error)
   if (code !== null) {
     console.error('[admin] database error', code, error)
+    // Phase 6: also into the error log (Studio → System health), scrubbed.
+    reportError(error, { source: 'action', details: { sqlstate: code } })
     if (code === '23505') return encodeMessage('form.duplicate')
     if (code === '23503') return encodeMessage('form.in_use')
     if (code.startsWith('22') || code === '23502' || code === '23514') {
@@ -41,7 +44,10 @@ export function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message && !looksTechnical(error.message)) {
     return error.message
   }
-  if (error !== null && error !== undefined) console.error('[admin] action failed', error)
+  if (error !== null && error !== undefined) {
+    console.error('[admin] action failed', error)
+    reportError(error, { source: 'action' })
+  }
   return encodeMessage('form.unexpected')
 }
 

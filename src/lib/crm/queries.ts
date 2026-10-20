@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
+import { STUDIO_ROLES } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { entitlements, orders, users } from '@/db/schema'
 
@@ -59,12 +60,12 @@ export async function loadStages(
   )
 }
 
-/** Staff and admins, for "assigned to" pickers. */
+/** Everyone who can open the Studio, for "assigned to" pickers. */
 export async function loadStaff(): Promise<{ id: string; label: string }[]> {
   const rows = await db
     .select({ id: users.id, name: users.name, email: users.email })
     .from(users)
-    .where(and(inArray(users.role, ['staff', 'admin']), isNull(users.deletedAt)))
+    .where(and(inArray(users.role, [...STUDIO_ROLES]), isNull(users.deletedAt)))
     .orderBy(asc(users.name), asc(users.email))
   return rows.map((row) => ({ id: row.id, label: row.name?.trim() || row.email }))
 }

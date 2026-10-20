@@ -137,25 +137,26 @@ const PHASE5_PAGES = [
 ]
 say(`nav pages: ${NAV.map((n) => n.path || '/').join(' ')}`)
 
-const ROLE_CAPS = {
-  staff: new Set([
-    'admin.access',
-    'content.read',
-    'content.write',
-    'content.publish',
-    'media.upload',
-    'translations.write',
-    'orders.read',
-    'orders.fulfil',
-    'payments.read',
-    'capacity.write',
-    'customers.read',
-    'leads.read',
-    'audit.read',
-    'security.read',
-    'crm.write',
-  ]),
+// Phase 6: read the capability table from src/lib/auth/roles.ts itself, so
+// this check can never drift from what the server enforces.
+function roleCaps() {
+  const src = readFileSync('src/lib/auth/roles.ts', 'utf8')
+  const block = src.slice(
+    src.indexOf('const ROLE_CAPABILITIES'),
+    src.indexOf('admin: [...CAPABILITIES]'),
+  )
+  const map = {}
+  for (const m of block.matchAll(/^ {2}(\w+): \[([\s\S]*?)\],?$/gm)) {
+    map[m[1]] = new Set([...m[2].matchAll(/'([a-z.]+)'/g)].map((c) => c[1]))
+  }
+  return map
 }
+const ROLE_CAPS = roleCaps()
+say(
+  `roles: ${Object.entries(ROLE_CAPS)
+    .map(([r, caps]) => `${r}(${caps.size})`)
+    .join(' ')}`,
+)
 const allowed = (role, cap) => role === 'admin' || (ROLE_CAPS[role]?.has(cap) ?? false)
 
 function serverLogSize() {
@@ -517,13 +518,42 @@ const browser = await chromium.launch()
   }
   // The internal mount is not a public URL.
   await visit(page, 'anonymous', '/studio', 1440, { expectNotFound: true })
+  // Phase 6: deep health is not public; liveness stays open.
+  const deep = await page.request.get(`${BASE}/api/health/deep`).catch(() => null)
+  record(
+    'anonymous',
+    '/api/health/deep',
+    deep?.status() === 404 ? [] : [`status ${deep?.status()}`],
+  )
+  const live = await page.request.get(`${BASE}/api/health`).catch(() => null)
+  record('anonymous', '/api/health', live?.status() === 200 ? [] : [`status ${live?.status()}`])
   await ctx.close()
 }
 
 /* 2. Each role ------------------------------------------------------------- */
-for (const role of ['admin', 'staff', 'customer']) {
+// admin and staff get the full tour (both widths, detail pages, money round
+// trips). The Phase 6 roles open every nav page at 1440 and must see exactly
+// the pages their capabilities allow (404 for the rest). supplier_portal and
+// customer have no Studio at all.
+const FULL_TOUR = new Set(['admin', 'staff'])
+const NO_STUDIO = new Set(['customer', 'supplier_portal'])
+const ROLE_ORDER = [
+  'admin',
+  'staff',
+  ...Object.keys(ROLE_CAPS).filter((r) => !['staff', 'customer', 'supplier_portal'].includes(r)),
+  'supplier_portal',
+  'customer',
+]
+let roleNo = 0
+for (const role of ROLE_ORDER) {
   const email = `${role}@${DOMAIN}`
-  const ctx = await browser.newContext()
+  roleNo += 1
+  // Each role signs in from its own (forwarded) address: the sign-in limit is
+  // per IP and now shared in Postgres, and ten sign-ins from one address in a
+  // few minutes is exactly what it is there to stop.
+  const ctx = await browser.newContext({
+    extraHTTPHeaders: { 'x-forwarded-for': `10.66.0.${roleNo}` },
+  })
   const page = await ctx.newPage()
   const pageErrors = []
   page.on('pageerror', (e) => pageErrors.push(e.message))
@@ -533,14 +563,14 @@ for (const role of ['admin', 'staff', 'customer']) {
       page,
       email,
       secrets.get(email),
-      role === 'customer' ? '/en/account?signin=1' : ADMIN,
+      NO_STUDIO.has(role) ? '/en/account?signin=1' : ADMIN,
     )
   } catch (e) {
     steps = [`sign-in threw: ${e.message.split('\n')[0]}`]
   }
   say(`[${role}] sign-in: ${steps.join(' ; ')} ${pageErrors.join(' ; ')}`)
   const landed = page.url().replace(BASE, '')
-  if (role === 'customer') {
+  if (NO_STUDIO.has(role)) {
     const okCustomer = !landed.startsWith(ADMIN)
     results.push({
       role,
@@ -573,9 +603,10 @@ for (const role of ['admin', 'staff', 'customer']) {
   for (const { path, capability } of NAV) {
     const full = `${ADMIN}${path}`
     const may = allowed(role, capability)
-    for (const w of [1440, 390]) {
+    for (const w of FULL_TOUR.has(role) ? [1440, 390] : [1440]) {
       await visit(page, role, full, w, { expectNotFound: !may })
     }
+    if (!FULL_TOUR.has(role)) continue
     if (!may || path === '' || path.startsWith('/protection') || path === '/security') continue
     // One detail page per section, when the list has any rows.
     await page.setViewportSize({ width: 1440, height: 900 })
@@ -631,6 +662,14 @@ for (const role of ['admin', 'staff', 'customer']) {
     }
   }
   if (role === 'admin') {
+    // Phase 6: deep health answers a signed-in admin with JSON (200, or 503
+    // when something it checks is down — CI has no PDF renderer or backup).
+    const deep = await page.request.get(`${BASE}/api/health/deep`).catch(() => null)
+    const deepBody = deep ? await deep.json().catch(() => null) : null
+    record('admin', '/api/health/deep', [
+      ...(deep && [200, 503].includes(deep.status()) ? [] : [`status ${deep?.status()}`]),
+      ...(Array.isArray(deepBody?.checks) ? [] : ['no checks in the answer']),
+    ])
     await tierRoundTrip(page).catch((e) =>
       record('admin', 'money: activity package price', [`threw: ${e.message.split('\n')[0]}`]),
     )

@@ -284,4 +284,23 @@ if [[ -n ${BACKUP_HEARTBEAT_URL:-} ]]; then
     log 'heartbeat sent' || log 'WARNING: heartbeat ping failed'
 fi
 
+# --- 10. Heartbeat for Studio → System health -------------------------------
+# Phase 6: the same success, recorded where the app can read it
+# (`system_heartbeats`, name 'backup'). The worker alerts the admins when it
+# is older than 26 hours. Best effort: an old schema without the table, or a
+# hiccup here, never fails a backup that has already been verified.
+if compose exec -T postgres psql -X -q -v ON_ERROR_STOP=1 \
+  -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+  -v key="${KEY}" -v bytes="${upload_bytes}" >/dev/null 2>&1 <<'SQL'
+insert into system_heartbeats (name, last_ok_at, details, updated_at)
+values ('backup', now(), jsonb_build_object('key', :'key', 'bytes', (:'bytes')::bigint), now())
+on conflict (name) do update
+  set last_ok_at = excluded.last_ok_at, details = excluded.details, updated_at = now();
+SQL
+then
+  log 'heartbeat recorded in the database'
+else
+  log 'WARNING: could not record the backup heartbeat in the database'
+fi
+
 log "=== backup ${STAMP} complete: ${KEY} (${upload_bytes} bytes)"

@@ -7,7 +7,7 @@ import { db } from '@/db'
 import { logActivity } from '@/lib/security/activity'
 import { entitlements, plans, sessions, users } from '@/db/schema'
 import { isPlaceholderEmail, normalizePhone, placeholderEmailFor } from '@/lib/auth/phone'
-import { can, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
+import { can, canAssignRole, isElevated, isRole, ROLES, type Role } from '@/lib/auth/roles'
 import { isEntitlementKind } from '@/lib/entitlements'
 import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
 import { planExpiry } from '@/lib/entitlements/plans'
@@ -76,10 +76,15 @@ export async function changeRole(userId: string, form: FormData): Promise<void> 
     if (userId === session.userId) {
       throw new Error(t('customers.err_own_role'))
     }
+    // Phase 6: no escalation — nobody hands out more than they hold.
+    if (!canAssignRole(session.role, nextRole)) throw new Error(t('team.err_escalation'))
 
     const revoked = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
       if (!before) throw new Error(t('customers.err_no_account'))
+      if (isRole(before.role) && !canAssignRole(session.role, before.role)) {
+        throw new Error(t('team.err_escalation'))
+      }
       if (before.role === nextRole) {
         throw new Error(t('customers.err_already_role', { role: t(`customers.role_${nextRole}`) }))
       }

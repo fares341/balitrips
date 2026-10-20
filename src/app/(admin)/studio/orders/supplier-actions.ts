@@ -13,6 +13,7 @@
 import { and, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
+import { recordManualConfirmation } from '@/lib/integrations/service'
 import { db } from '@/db'
 import { activitySupplierOffers, activityTiers, orderItems, orders, suppliers } from '@/db/schema'
 import { activityOfLine } from '@/lib/availability/activity'
@@ -138,7 +139,7 @@ export async function assignLineSupplier(orderId: string, form: FormData): Promi
 }
 
 export async function confirmLineWithSupplier(orderId: string, form: FormData): Promise<void> {
-  const session = await requireCapability('orders.fulfil')
+  const session = await requireCapability('bookings.confirm')
   const { t } = await getAdminI18n()
   let outcome: Outcome
 
@@ -148,12 +149,13 @@ export async function confirmLineWithSupplier(orderId: string, form: FormData): 
     if (reference === '') throw new Error(t('sup.err_ref_required'))
     const notify = form.get('notify') === 'on'
 
-    const moved = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const [line] = await tx
         .select({
           bookingStatus: orderItems.bookingStatus,
           fulfilmentStatus: orderItems.fulfilmentStatus,
           orderStatus: orders.status,
+          supplierId: orderItems.supplierId,
         })
         .from(orderItems)
         .innerJoin(orders, eq(orders.id, orderItems.orderId))
@@ -194,9 +196,18 @@ export async function confirmLineWithSupplier(orderId: string, form: FormData): 
         },
         tx,
       )
-      return from !== 'confirmed'
+      return { moved: from !== 'confirmed', supplierId: line.supplierId }
     })
 
+    // Phase 6: the supplier's manual/CSV connection records the confirmation.
+    if (result.supplierId) {
+      await recordManualConfirmation({
+        supplierId: result.supplierId,
+        orderItemId,
+        hasReference: true,
+      })
+    }
+    const moved = result.moved
     if (notify && moved) {
       await notifyOrderUpdated(orderId, 'confirmed', { by: session.userId, item: orderItemId })
     }

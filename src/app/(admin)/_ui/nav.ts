@@ -55,7 +55,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/orders', labelKey: 'nav.orders', capability: 'orders.read' },
       { path: '/payments', labelKey: 'nav.payments', capability: 'payments.read' },
       { path: '/plans', labelKey: 'nav.plans', capability: 'content.read' },
-      { path: '/plans/vip', labelKey: 'nav.vip', capability: 'config.write' },
+      { path: '/plans/vip', labelKey: 'nav.vip', capability: 'vip.manage' },
       { path: '/entitlements', labelKey: 'nav.entitlements', capability: 'customers.read' },
       { path: '/capacity', labelKey: 'nav.capacity', capability: 'capacity.write' },
       { path: '/suppliers', labelKey: 'nav.suppliers', capability: 'orders.read' },
@@ -77,7 +77,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/articles', labelKey: 'nav.articles', capability: 'content.read' },
       { path: '/landmarks', labelKey: 'nav.landmarks', capability: 'content.read' },
       { path: '/reviews', labelKey: 'nav.reviews', capability: 'content.read' },
-      { path: '/taxonomy', labelKey: 'nav.taxonomy', capability: 'content.read' },
+      { path: '/taxonomy', labelKey: 'nav.taxonomy', capability: 'content.write' },
       { path: '/media', labelKey: 'nav.media', capability: 'media.upload' },
       { path: '/files', labelKey: 'nav.files', capability: 'content.read' },
     ],
@@ -104,6 +104,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/config', labelKey: 'nav.config', capability: 'config.write' },
       { path: '/marketing', labelKey: 'nav.marketing', capability: 'config.write' },
       { path: '/audit', labelKey: 'nav.audit', capability: 'audit.read' },
+      { path: '/team', labelKey: 'nav.team', capability: 'users.manage' },
+      { path: '/integrations', labelKey: 'nav.integrations', capability: 'integrations.write' },
+      { path: '/system', labelKey: 'nav.system', capability: 'system.read' },
       // Always reachable: it is where an operator goes to fix the very thing
       // that is blocking them, so it is gated on entry, not on a capability.
       { path: '/security', labelKey: 'nav.security', capability: 'admin.access' },
