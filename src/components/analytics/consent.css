@@ -20,11 +20,11 @@
     justify-content: flex-start;
   }
 
-  .bt-consent-inner {
+  .bt-consent .bt-consent-inner {
     width: 440px;
   }
 
-  .bt-consent-actions {
+  .bt-consent .bt-consent-actions {
     justify-content: flex-start;
   }
 }
