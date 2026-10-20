@@ -47,9 +47,10 @@ import { holdsVip, vipPlanOffer } from '@/lib/itineraries/queries'
 import { needsAccount, tripIncludesVip } from '@/lib/packages/account'
 import { splitPhone } from '@/lib/orders/contact'
 import { FEATURES } from '@/lib/features'
+import { adjustmentLabel, adjustmentSign } from '@/lib/finance/labels'
 
 import { toLocale } from '../_seo-hreflang'
-import { beginSignInAction } from './actions'
+import { applyCouponAction, beginSignInAction } from './actions'
 import { CheckoutFlow, type DriverOffer } from './checkout-flow'
 import { VipUpsellButton } from './vip-upsell'
 import { ACCOUNT_ONLY_KINDS } from './constants'
@@ -232,7 +233,13 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
       ? await vipPlanOffer(vipSettings.upsellPlanId === '' ? null : vipSettings.upsellPlanId)
       : null
   const vipOffer = vipUpsell !== null && vipUpsell.currency === cart.currency ? vipUpsell : null
-  const discountMinor = Math.max(0, cart.subtotalMinor - cart.totalMinor)
+  const words = {
+    discount: (code: string) => t('adj_discount', { code }),
+    serviceFee: t('adj_service_fee'),
+    bookingFee: t('adj_booking_fee'),
+    surcharge: t('adj_surcharge'),
+    tax: t('adj_tax'),
+  }
 
   const signIn = (
     <form action={beginSignInAction} className="ck-signin">
@@ -355,20 +362,26 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
           {money(cart.subtotalMinor, cart.currency)}
         </span>
       </div>
-      {discountMinor > 0 && (
-        <div className="sum-row trip-discount">
-          <span>{t('trip_discount')}</span>
+      {cart.adjustments.map((line, index) => (
+        <div
+          key={`${line.kind}-${index}`}
+          className={line.kind === 'discount' ? 'sum-row trip-discount' : 'sum-row'}
+        >
+          <span>{adjustmentLabel(line, locale, words)}</span>
           <span className="price" dir="ltr">
-            −{money(discountMinor, cart.currency)}
+            {adjustmentSign(line)}
+            {money(line.amountMinor, cart.currency)}
+          </span>
+        </div>
+      ))}
+      {cart.adjustments.every((line) => line.kind === 'discount') && (
+        <div className="sum-row">
+          <span>{t('co_fees')}</span>
+          <span className="price" dir="ltr">
+            {money(0, cart.currency)}
           </span>
         </div>
       )}
-      <div className="sum-row">
-        <span>{t('co_fees')}</span>
-        <span className="price" dir="ltr">
-          {money(0, cart.currency)}
-        </span>
-      </div>
       <div className="sum-total">
         <span>{t('co_final_total')}</span>
         <b className="price" dir="ltr">
@@ -376,6 +389,42 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
         </b>
       </div>
       <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
+      <form action={applyCouponAction} className="ck-coupon stack" style={{ gap: 8 }}>
+        <input type="hidden" name="locale" value={locale} />
+        <label htmlFor="ck-coupon-code" className="muted" style={{ fontSize: 13 }}>
+          {t('co_coupon_l')}
+        </label>
+        <div className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+          <input
+            id="ck-coupon-code"
+            name="code"
+            className="input"
+            dir="ltr"
+            autoComplete="off"
+            maxLength={40}
+            defaultValue={cart.couponCode ?? ''}
+            style={{ flex: 1, minWidth: 0 }}
+          />
+          <button type="submit" name="intent" value="apply" className="btn btn-ghost">
+            {t('co_coupon_apply')}
+          </button>
+          {cart.couponCode !== null && (
+            <button type="submit" name="intent" value="remove" className="btn btn-ghost">
+              {t('co_coupon_remove')}
+            </button>
+          )}
+        </div>
+        {cart.couponCode !== null && cart.couponError === null && (
+          <small role="status" style={{ color: 'var(--palm, #2f6b3a)' }}>
+            {t('co_coupon_ok', { code: cart.couponCode })}
+          </small>
+        )}
+        {cart.couponCode !== null && cart.couponError !== null && (
+          <small role="alert" className="err">
+            {t(`co_coupon_err_${cart.couponError}`)}
+          </small>
+        )}
+      </form>
     </aside>
   )
 

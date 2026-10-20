@@ -45,6 +45,7 @@ import {
 } from '../actions'
 import { revokeEntitlement } from '../../entitlements/actions'
 import { accessLine, loadAccountSummaries } from '../summary'
+import { CrmPanel } from './crm-panel'
 import { ProtectionPanel } from './protection-panel'
 
 export const dynamic = 'force-dynamic'
@@ -444,6 +445,8 @@ export default async function CustomerPage({
           )}
         </div>
       </div>
+
+      {can(session.role, 'crm.write') ? <CrmPanel userId={account.id} viewer={session} /> : null}
 
       <ProtectionPanel userId={account.id} viewerRole={session.role} isSelf={isSelf} />
 

@@ -74,6 +74,27 @@ export const users = pgTable(
     bannedUntil: timestamp('banned_until', { withTimezone: true }),
     banReason: text('ban_reason'),
 
+    // --- Phase 4 (migration 0020): CRM ---
+
+    /**
+     * موافقة صريحة على الرسائل التسويقية. غير محددة افتراضياً — في التسجيل وفي
+     * الدفع — ولا يرسل أحد عرضاً لمن لم يوافق. `marketingConsentAt` وقت آخر
+     * تغيير، و`marketingConsentSource` من أين جاء (register | checkout | account
+     * | staff_withdrawal).
+     */
+    marketingConsent: boolean('marketing_consent').notNull().default(false),
+    marketingConsentAt: timestamp('marketing_consent_at', { withTimezone: true }),
+    marketingConsentSource: varchar('marketing_consent_source', { length: 24 }),
+    /** الموظف المسؤول عن هذا العميل (بلا مفتاح أجنبي: مرجع ذاتي للجدول نفسه). */
+    assignedToUserId: uuid('assigned_to_user_id'),
+    /**
+     * مرحلة يدوية تتجاوز المحسوبة: lead | new | active | repeat | vip | inactive.
+     * NULL = تُحسب من الطلبات (`src/lib/crm/stage.ts`).
+     */
+    crmStage: varchar('crm_stage', { length: 16 }),
+    /** دُمج هذا الحساب في حساب آخر (لا يُحذف — الطلبات انتقلت إلى ذاك). */
+    mergedIntoUserId: uuid('merged_into_user_id'),
+
     ...timestamps,
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },

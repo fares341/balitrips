@@ -2,6 +2,7 @@ import { and, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
+import { can } from '@/lib/auth/roles'
 import { contactMessages, customTripRequests } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -27,7 +28,7 @@ export default async function LeadsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('leads.read')
+  const session = await requireCapability('leads.read')
   const params = await searchParams
   const { t, intl } = await getAdminI18n()
   /** Stored status → label; an unknown value shows as stored. */
@@ -105,6 +106,11 @@ export default async function LeadsPage({
             >
               {t('leads.tab_contact', { count: contactTotal?.value ?? 0 })}
             </Link>
+            {can(session.role, 'customers.export') ? (
+              <a className="a-btn ghost" href={adminHref('/leads/export')}>
+                {t('crm.export_leads')}
+              </a>
+            ) : null}
           </>
         }
       />

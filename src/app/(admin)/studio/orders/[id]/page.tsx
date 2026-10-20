@@ -17,7 +17,8 @@ import { isActivityKind } from '@/lib/orders/booking-status'
 import { loadOffers } from '@/lib/suppliers/offers'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { allocateMinor, formatMoney } from '@/lib/money'
+import { refundCapsById } from '@/lib/finance/adjustments'
 import { formatMoneyInput } from '@/lib/money-input'
 import { isBookingStatus, nextBookingStatuses } from '@/lib/orders/booking-status'
 import { isRefundable, type OrderStatus } from '@/lib/orders/state'
@@ -48,6 +49,8 @@ import {
 } from '../labels'
 import { labelOr } from '../../protection/labels'
 import { assignLineSupplier, confirmLineWithSupplier } from '../supplier-actions'
+
+import { OrderMoneyCard } from './money-card'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +176,9 @@ export default async function OrderDetailPage({
   const row = order.order
   const status = row.status as OrderStatus
   const refundedTotal = lines.reduce((total, line) => total + line.refundedMinor, 0)
+  // Phase 4: what each line can give back — its share of what was charged.
+  const caps = refundCapsById(lines, row.subtotalMinor, row.totalMinor, allocateMinor)
+  const capOf = (line: (typeof lines)[number]) => caps.get(line.id) ?? line.lineTotalMinor
   const mayRefund = can(session.role, 'orders.refund')
   const mayFulfil = can(session.role, 'orders.fulfil')
 
@@ -214,6 +220,16 @@ export default async function OrderDetailPage({
           </b>
         </div>
       </div>
+
+      <OrderMoneyCard
+        orderId={row.id}
+        currency={row.presentmentCurrency}
+        subtotalMinor={row.subtotalMinor}
+        totalMinor={row.totalMinor}
+        adjustments={row.adjustments ?? []}
+        invoiceNumber={row.invoiceNumber}
+        invoicedAt={row.invoicedAt}
+      />
 
       <div className="a-cols">
         <div className="a-card">
@@ -668,9 +684,9 @@ export default async function OrderDetailPage({
                 }}
               >
                 {lines
-                  .filter((line) => line.refundedMinor < line.lineTotalMinor)
+                  .filter((line) => line.refundedMinor < capOf(line))
                   .map((line) => {
-                    const remaining = line.lineTotalMinor - line.refundedMinor
+                    const remaining = capOf(line) - line.refundedMinor
                     return (
                       <form
                         className="a-day"
@@ -719,7 +735,7 @@ export default async function OrderDetailPage({
                       </form>
                     )
                   })}
-                {lines.every((line) => line.refundedMinor >= line.lineTotalMinor) ? (
+                {lines.every((line) => line.refundedMinor >= capOf(line)) ? (
                   <Empty>{t('orders.all_refunded')}</Empty>
                 ) : null}
               </div>

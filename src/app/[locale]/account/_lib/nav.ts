@@ -36,6 +36,7 @@ export const ACCOUNT_TABS: readonly AccountTab[] = [
   { href: '/account/invoices', key: 'acct_nav_inv', icon: 'pdf' },
   { href: '/account/reviews', key: 'acct_nav_reviews', icon: 'star' },
   { href: '/account/notifications', key: 'acct_nav_notifs', icon: 'mail' },
+  { href: '/account/support', key: 'acct_nav_support', icon: 'chat' },
   { href: '/account/devices', key: 'acct_nav_devices', icon: 'shield' },
 ]
 

@@ -6,11 +6,13 @@
  *  1. packages become their child bookings (phase 3) — first, so the steps
  *     below see them;
  *  2. plans (and included VIP / VIP itineraries) are granted;
- *  3. activity lines hold their places and go to their supplier (phase 2).
+ *  3. activity lines hold their places and go to their supplier (phase 2);
+ *  4. the coupon use is counted and the invoice number issued (phase 4).
  */
 
 import type { db } from '@/db'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { applyPaidFinance } from '@/lib/finance/paid'
 import { expandPaidPackages } from '@/lib/packages/expand'
 import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 
@@ -20,4 +22,5 @@ export async function applyPaidOrder(tx: Tx, orderId: string, now = new Date()):
   await expandPaidPackages(tx, orderId)
   await grantOrderPlans(tx, orderId, now)
   await applyPaidBookings(tx, orderId, now)
+  await applyPaidFinance(tx, orderId, now)
 }

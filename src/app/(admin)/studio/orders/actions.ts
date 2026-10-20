@@ -17,13 +17,14 @@ import {
   users,
 } from '@/db/schema'
 import { absoluteUrl } from '@/app/[locale]/_meta'
-import { formatMoney } from '@/lib/money'
+import { allocateMinor, formatMoney } from '@/lib/money'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import { releaseLineCapacity } from '@/lib/availability/activity'
+import { refundCapsById } from '@/lib/finance/adjustments'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
 import {
@@ -106,7 +107,13 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
       const line = lines.find((row) => row.id === orderItemId)
       if (!line) throw new Error(t('orders.err_line_not_in_order'))
 
-      const lineRemaining = line.lineTotalMinor - line.refundedMinor
+      // Phase 4: with a discount, fees or tax, a line can give back its share
+      // of what was actually charged — refunding every line in full returns
+      // exactly the order total. Without them the share IS the line total.
+      const lineCap =
+        refundCapsById(lines, order.subtotalMinor, order.totalMinor, allocateMinor).get(line.id) ??
+        line.lineTotalMinor
+      const lineRemaining = lineCap - line.refundedMinor
       if (amountMinor > lineRemaining) {
         throw new Error(
           t('orders.err_line_exceeds', {
@@ -180,10 +187,9 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         .update(orderItems)
         .set({
           refundedMinor: lineRefunded,
-          fulfilmentStatus:
-            lineRefunded >= line.lineTotalMinor ? 'refunded' : line.fulfilmentStatus,
+          fulfilmentStatus: lineRefunded >= lineCap ? 'refunded' : line.fulfilmentStatus,
           // A fully refunded line is refunded on the booking ladder too.
-          ...(lineRefunded >= line.lineTotalMinor
+          ...(lineRefunded >= lineCap
             ? { bookingStatus: 'refunded', bookingStatusAt: new Date() }
             : {}),
         })
@@ -199,7 +205,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
        * which sold access does the same — otherwise the customer keeps a
        * paid feature they no longer paid for.
        */
-      const fullyRefunded = lineRefunded >= line.lineTotalMinor
+      const fullyRefunded = lineRefunded >= lineCap
       // Phase 3: a fully refunded package takes its child bookings and the
       // access it came with (itinerary, VIP) with it.
       const children =
@@ -258,7 +264,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
 
       // A fully refunded driver line must give its fleet days back, or the
       // vehicle stays off the market until someone notices by hand.
-      if (line.kind === 'driver' && lineRefunded >= line.lineTotalMinor) {
+      if (line.kind === 'driver' && lineRefunded >= lineCap) {
         if (line.vehicleClass && line.travelDate) {
           await releaseDriverCapacity(
             tx,

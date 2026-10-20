@@ -1,18 +1,20 @@
-import { and, count, desc, eq, gte, ilike, lte, or, sql, type SQL } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
 import { orders, users } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
-import { pageParam, param } from '../../_lib/result'
+import { buildQuery, pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Table, When } from '../../_ui/table'
+import { orderFilters } from './filters'
 import { orderStatusLabel } from './labels'
 
 export const dynamic = 'force-dynamic'
@@ -25,39 +27,13 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('orders.read')
+  const session = await requireCapability('orders.read')
   const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
-  const q = param(params, 'q')
-  const status = param(params, 'status')
-  const from = param(params, 'from')
-  const to = param(params, 'to')
+  const { q, status, from, to, where } = orderFilters(params)
   const page = pageParam(params)
-
-  const filters: SQL[] = []
-
-  if (q) {
-    const like = `%${q}%`
-    const match = or(
-      ilike(orders.orderNumber, like),
-      ilike(users.email, like),
-      sql`${orders.customerSnapshot} ->> 'email' ilike ${like}`,
-      sql`${orders.customerSnapshot} ->> 'name' ilike ${like}`,
-    )
-    if (match) filters.push(match)
-  }
-  if (status && (ORDER_STATUSES as readonly string[]).includes(status)) {
-    filters.push(eq(orders.status, status))
-  }
-  if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) {
-    filters.push(gte(orders.createdAt, new Date(`${from}T00:00:00Z`)))
-  }
-  if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    filters.push(lte(orders.createdAt, new Date(`${to}T23:59:59Z`)))
-  }
-
-  const where = filters.length > 0 ? and(...filters) : undefined
+  const mayExport = can(session.role, 'customers.export')
 
   const [rows, [totalRow]] = await Promise.all([
     db
@@ -127,6 +103,14 @@ export default async function OrdersPage({
           <Link className="a-btn ghost" href={LIST}>
             {t('orders.reset')}
           </Link>
+          {mayExport ? (
+            <a
+              className="a-btn ghost"
+              href={`${adminHref('/orders/export')}${buildQuery(params, {})}`}
+            >
+              {t('crm.export_orders')}
+            </a>
+          ) : null}
         </div>
       </form>
 

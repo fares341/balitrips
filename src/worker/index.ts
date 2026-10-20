@@ -54,6 +54,7 @@ import { isPrivateStorageAvailable } from '@/lib/storage'
 
 import { handleCapacityJob } from './handlers/capacity'
 import { handleNotifySweep, handleWhatsappJob } from './handlers/notify'
+import { handleCrmSweep } from './handlers/crm'
 import { handleSecurityPruneJob } from './handlers/security'
 import type { EnqueueOptions, WorkerContext } from './handlers/context'
 import { handleEmailJob } from './handlers/email'
@@ -63,6 +64,7 @@ import {
   capacityJobSchema,
   securityPruneJobSchema,
   notifySweepJobSchema,
+  crmSweepJobSchema,
   whatsappJobSchema,
   createBoss,
   deadLetterQueue,
@@ -107,6 +109,13 @@ const WORK_OPTIONS: Record<QueueName, PerJobOptions> = {
   },
 
   [QUEUES.securityPrune]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 1,
+    pollingIntervalSeconds: 30,
+  },
+
+  [QUEUES.crmSweep]: {
     perJobResults: true,
     batchSize: 1,
     localConcurrency: 1,
@@ -375,6 +384,13 @@ const SCHEDULES: readonly ScheduleSpec[] = [
     options: { tz: 'Etc/UTC' },
   },
   {
+    // Phase 4: due-task reminders and urgent-ticket escalation.
+    queue: QUEUES.crmSweep,
+    cron: '*/15 * * * *',
+    data: {},
+    options: { tz: 'Etc/UTC' },
+  },
+  {
     // يومياً 03:17 UTC — خارج ذروة بالي (UTC+8).
     queue: QUEUES.securityPrune,
     cron: '17 3 * * *',
@@ -570,6 +586,7 @@ async function main(): Promise<void> {
   await register(boss, QUEUES.capacity, capacityJobSchema, (job) => handleCapacityJob(job))
   await register(boss, QUEUES.whatsapp, whatsappJobSchema, (job) => handleWhatsappJob(job))
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))
+  await register(boss, QUEUES.crmSweep, crmSweepJobSchema, (job) => handleCrmSweep(job))
   await register(boss, QUEUES.securityPrune, securityPruneJobSchema, (job) =>
     handleSecurityPruneJob(job),
   )

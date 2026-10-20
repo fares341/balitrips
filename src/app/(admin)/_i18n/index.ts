@@ -5,6 +5,7 @@ import commerce from './commerce'
 import common from './common'
 import content from './content'
 import dashboard from './dashboard'
+import financeCrm from './finance-crm'
 import people from './people'
 import phase3 from './phase3'
 import protection from './protection'
@@ -27,6 +28,7 @@ const SECTIONS = [
   activityEditor,
   suppliers,
   phase3,
+  financeCrm,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

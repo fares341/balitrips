@@ -9,6 +9,9 @@ import { requireCapability } from '../../../_lib/session'
 import { customerFilters } from '../filters'
 
 /**
+ * Phase 4: the file carries each person's marketing consent, and the list's
+ * "Agreed to offers" filter (`consent=yes`) applies here too.
+ *
  * تصدير قائمة المستخدمين CSV (الوثيقة 21.1/21.2) بنفس فلاتر الصفحة.
  * بيانات شخصية: للمدير فقط (`customers.export`)، وكل تصدير يُسجَّل في الـ audit log.
  * لا كلمات مرور ولا رموز — أعمدة الملف مذكورة صراحةً أدناه.
@@ -32,6 +35,8 @@ export async function GET(request: Request) {
       emailVerifiedAt: users.emailVerifiedAt,
       createdAt: users.createdAt,
       orderCount: db.$count(orders, eq(orders.userId, users.id)),
+      marketingConsent: users.marketingConsent,
+      marketingConsentAt: users.marketingConsentAt,
     })
     .from(users)
     .where(where)
@@ -60,6 +65,10 @@ export async function GET(request: Request) {
       'email_verified_at',
       'created_at',
       'orders',
+      // Phase 4: whether this person agreed to offers. For a mailing list,
+      // export with "Agreed to offers" ticked so only those rows are in it.
+      'marketing_consent',
+      'marketing_consent_at',
     ],
     rows.map((row) => [
       row.email,
@@ -72,6 +81,8 @@ export async function GET(request: Request) {
       row.emailVerifiedAt,
       row.createdAt,
       row.orderCount,
+      row.marketingConsent ? 'yes' : 'no',
+      row.marketingConsentAt,
     ]),
   )
 }

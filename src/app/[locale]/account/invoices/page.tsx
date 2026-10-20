@@ -64,7 +64,9 @@ export default async function AccountInvoicesPage({
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
   const user = await requireActiveUser('account:invoices')
-  const receiptPending = (await searchParams).receipt === 'pending'
+  const query = await searchParams
+  const receiptPending = query.receipt === 'pending'
+  const invoicePending = query.invoice === 'pending'
 
   const items = await listInvoices(user.id)
 
@@ -84,6 +86,11 @@ export default async function AccountInvoicesPage({
       {receiptPending && (
         <p role="status" className="muted" style={{ marginBlockEnd: 16 }}>
           {t('acct_inv_receipt_pending')}
+        </p>
+      )}
+      {invoicePending && (
+        <p role="status" className="muted" style={{ marginBlockEnd: 16 }}>
+          {t('acct_inv_invoice_pending')}
         </p>
       )}
 
@@ -170,6 +177,18 @@ export default async function AccountInvoicesPage({
                         >
                           <Icon name="pdf" size={14} />
                           {t('acct_inv_receipt')}
+                        </a>
+                      )}
+                      {item.invoiceNumber !== null && (
+                        // Phase 4: the numbered invoice (seller, tax and fee lines).
+                        <a
+                          href={`/${locale}/account/invoices/${item.id}/invoice`}
+                          className="btn btn-ghost"
+                          style={{ minHeight: 36, fontSize: 12.5, padding: '6px 12px' }}
+                          title={item.invoiceNumber}
+                        >
+                          <Icon name="pdf" size={14} />
+                          {t('acct_inv_invoice')}
                         </a>
                       )}
                     </td>

@@ -141,6 +141,13 @@
       "when": 1792890000000,
       "tag": "0019_itineraries_phase3",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793000000000,
+      "tag": "0020_finance_crm_support",
+      "breakpoints": true
     }
   ]
 }

@@ -43,6 +43,8 @@ export const QUEUES = {
   securityPrune: 'security.prune',
   whatsapp: 'whatsapp.send',
   notifySweep: 'notify.sweep',
+  /** Phase 4: task reminders and support escalation. */
+  crmSweep: 'crm.sweep',
 } as const
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES]
@@ -95,6 +97,8 @@ export const pdfJobSchema = z.discriminatedUnion('kind', [
   /** Scheduled: find published itineraries missing a document and fix them. */
   z.object({ kind: z.literal('itinerary_sweep') }),
   z.object({ kind: z.literal('voucher'), orderId: z.uuid() }),
+  /** Phase 4: the invoice of a paid order (rendered once, then kept). */
+  z.object({ kind: z.literal('invoice'), orderId: z.uuid() }),
 ])
 
 export type PdfJob = z.infer<typeof pdfJobSchema>
@@ -134,6 +138,13 @@ export const notifySweepJobSchema = z.object({
   withinDays: z.number().int().min(1).max(30).optional(),
 })
 export type NotifySweepJob = z.infer<typeof notifySweepJobSchema>
+
+/** Every 15 minutes: remind assignees of due tasks, escalate unanswered urgent tickets. */
+export const crmSweepJobSchema = z.object({
+  /** Overrides SUPPORT_ESCALATE_HOURS for a manual run. */
+  escalateAfterHours: z.number().int().min(1).max(168).optional(),
+})
+export type CrmSweepJob = z.infer<typeof crmSweepJobSchema>
 
 /* --------------------------------------------------------------------------
    Queue settings
@@ -185,6 +196,15 @@ export const QUEUE_SETTINGS: Record<QueueName, QueueSettings> = {
     retryBackoff: false,
     expireInSeconds: 10 * 60,
     deleteAfterSeconds: 7 * DAY,
+  },
+
+  /** Idempotent (each task is reminded once, each ticket escalated once); the next run retries. */
+  [QUEUES.crmSweep]: {
+    retryLimit: 1,
+    retryDelay: 120,
+    retryBackoff: false,
+    expireInSeconds: 5 * 60,
+    deleteAfterSeconds: 3 * DAY,
   },
 
   /**
@@ -423,6 +443,10 @@ export async function enqueueItineraryPdf(
 
 export async function enqueueVoucherPdf(orderId: string): Promise<string | null> {
   return enqueuePdf({ kind: 'voucher', orderId })
+}
+
+export async function enqueueInvoicePdf(orderId: string): Promise<string | null> {
+  return enqueuePdf({ kind: 'invoice', orderId })
 }
 
 export async function enqueueReconcile(job: ReconcileJob = {}): Promise<string | null> {

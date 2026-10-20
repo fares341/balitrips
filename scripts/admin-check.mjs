@@ -132,6 +132,7 @@ const ROLE_CAPS = {
     'leads.read',
     'audit.read',
     'security.read',
+    'crm.write',
   ]),
 }
 const allowed = (role, cap) => role === 'admin' || (ROLE_CAPS[role]?.has(cap) ?? false)

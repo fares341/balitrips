@@ -62,6 +62,13 @@ describe('staff', () => {
     expect(can('staff', 'suppliers.write')).toBe(false)
     expect(can('admin', 'suppliers.write')).toBe(true)
     expect(can('staff', 'customers.export')).toBe(false)
+    // Phase 4: the money picture, discount codes and merges are the owner's;
+    // customer care is everyone's.
+    expect(can('staff', 'finance.read')).toBe(false)
+    expect(can('staff', 'discounts.write')).toBe(false)
+    expect(can('staff', 'customers.merge')).toBe(false)
+    expect(can('staff', 'crm.write')).toBe(true)
+    expect(can('admin', 'finance.read')).toBe(true)
   })
 })
 

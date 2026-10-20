@@ -197,8 +197,28 @@ export async function saveFees(form: FormData): Promise<void> {
       ),
       paymentSurchargeBps: fpercent(form, 'paymentSurchargeBps', 0, t('config.label_surcharge')),
       feeCurrency: fcurrency(form, 'feeCurrency'),
+      // Phase 4: charged only when switched on; tax likewise.
+      enabled: fbool(form, 'feesEnabled'),
+      taxEnabled: fbool(form, 'taxEnabled'),
+      taxRateBps: fpercent(form, 'taxRateBps', 0, t('fin.tax_rate')),
+      taxLabel: flocalized(form, 'taxLabel'),
     }),
     'config.ok_fees',
+  )
+}
+
+/** Phase 4: the seller block printed on invoices. Every field may stay empty. */
+export async function saveSeller(form: FormData): Promise<void> {
+  await save(
+    'seller',
+    () => ({
+      businessName: (fstr(form, 'sellerName') ?? '').slice(0, 160),
+      address: (fstr(form, 'sellerAddress') ?? '').slice(0, 600),
+      taxId: (fstr(form, 'sellerTaxId') ?? '').slice(0, 80),
+      email: (fstr(form, 'sellerEmail') ?? '').slice(0, 256),
+      phone: (fstr(form, 'sellerPhone') ?? '').slice(0, 48),
+    }),
+    'fin.ok_seller',
   )
 }
 

@@ -14,7 +14,7 @@ import { requireActiveUser } from '@/lib/security/require'
 
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
-import { markAllNotificationsRead, setWhatsappOptIn } from './actions'
+import { markAllNotificationsRead, setMarketingConsent, setWhatsappOptIn } from './actions'
 
 type PageParams = Promise<{ locale: string }>
 
@@ -32,7 +32,11 @@ export default async function NotificationsPage({ params }: { params: PageParams
   const user = await requireActiveUser('account:notifications')
 
   const [prefs] = await db
-    .select({ whatsappOptIn: users.whatsappOptIn, phone: users.phone })
+    .select({
+      whatsappOptIn: users.whatsappOptIn,
+      phone: users.phone,
+      marketingConsent: users.marketingConsent,
+    })
     .from(users)
     .where(eq(users.id, user.id))
     .limit(1)
@@ -73,6 +77,23 @@ export default async function NotificationsPage({ params }: { params: PageParams
         <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 10px' }}>
           {t('acct_wa_hint')}
           {prefs?.phone ? ` (${prefs.phone})` : ''}
+        </p>
+        <Button type="submit" variant="ghost" size="sm">
+          {t('acct_save')}
+        </Button>
+      </form>
+
+      <form action={setMarketingConsent} className="card" style={{ padding: 14, marginBottom: 16 }}>
+        <label className="row" style={{ gap: 10, alignItems: 'center', fontWeight: 700 }}>
+          <input
+            type="checkbox"
+            name="marketingConsent"
+            defaultChecked={prefs?.marketingConsent ?? false}
+          />
+          <Icon name="mail" size={18} /> {t('acct_marketing_optin')}
+        </label>
+        <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 10px' }}>
+          {t('acct_marketing_hint')}
         </p>
         <Button type="submit" variant="ghost" size="sm">
           {t('acct_save')}

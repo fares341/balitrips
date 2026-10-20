@@ -33,13 +33,14 @@ import { redirect } from 'next/navigation'
 
 import { formatPrice } from '@/components/bt/card'
 import { db } from '@/db'
-import { orders, payments } from '@/db/schema'
+import { orders, payments, users } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import {
   getCartWithTotals,
   getSessionUser,
   mergeAnonymousCartOnSignIn,
+  setCartCouponCode,
   setPendingCheckout,
 } from '@/lib/cart'
 import { bookingsOpen } from '@/lib/bookings-open'
@@ -201,6 +202,20 @@ export async function startCheckoutAction(
   const guestTokenHash = user ? null : await ensureGuestTokenHash()
   const { name, email, phone, notes } = contact.value
 
+  // Phase 4: "send me offers" is opt-in. A tick records consent on the
+  // account; no tick never withdraws one given elsewhere.
+  const marketingConsent = formData.get('marketingConsent') === 'on'
+  if (user && marketingConsent) {
+    await db
+      .update(users)
+      .set({
+        marketingConsent: true,
+        marketingConsentAt: new Date(),
+        marketingConsentSource: 'checkout',
+      })
+      .where(eq(users.id, user.id))
+  }
+
   let result
   try {
     result = await checkout({
@@ -215,6 +230,7 @@ export async function startCheckoutAction(
         ...(user?.country ? { country: user.country } : {}),
         locale,
         ...(notes === null ? {} : { notes }),
+        ...(marketingConsent ? { marketingConsent: true } : {}),
       },
       termsVersion: TERMS_VERSION,
       returnUrl: returnUrlFor(locale, idempotencyKey),
@@ -314,4 +330,17 @@ export async function retryPaymentAction(formData: FormData): Promise<never> {
     back('error')
   }
   followProvider(next, locale, orderNumber)
+}
+
+/**
+ * Phase 4: put a discount code on the trip (or take it off). Only the code is
+ * stored; the page re-prices the trip and says whether it applies. The price
+ * the traveller then sees is the one checkout compares against.
+ */
+export async function applyCouponAction(formData: FormData): Promise<never> {
+  const locale = localeOf(formData.get('locale'))
+  const intent = text(formData, 'intent')
+  const code = text(formData, 'code').trim()
+  await setCartCouponCode(intent === 'remove' || code === '' ? null : code)
+  redirect(getPathname({ href: CHECKOUT_HREF, locale }))
 }

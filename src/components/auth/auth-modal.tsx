@@ -184,6 +184,7 @@ export function AuthModal({
   const [rememberMe, setRememberMe] = useState(true)
   /** موافقة واتساب (الوثيقة 19.3/20.1) — اختيارية وغير محددة افتراضياً. */
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
+  const [marketingConsent, setMarketingConsent] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [pending, setPending] = useState<Pending>(null)
@@ -343,6 +344,7 @@ export function AuthModal({
       country: country === '' ? undefined : country,
       locale: preferredLocale,
       whatsappOptIn,
+      marketingConsent,
     })
 
     if (error) {
@@ -691,6 +693,25 @@ export function AuthModal({
           style={{ width: 16, height: 16, marginTop: 2, accentColor: 'var(--orange)' }}
         />
         {t('auth_whatsapp_optin')}
+      </label>
+
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          fontSize: 13.5,
+          cursor: 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={marketingConsent}
+          onChange={(event) => setMarketingConsent(event.target.checked)}
+          disabled={busy}
+          style={{ width: 16, height: 16, marginTop: 2, accentColor: 'var(--orange)' }}
+        />
+        {t('auth_marketing_optin')}
       </label>
 
       <Button type="submit" variant="orange" block disabled={busy}>

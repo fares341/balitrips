@@ -42,6 +42,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { path: '/customers', labelKey: 'nav.customers', capability: 'customers.read' },
       { path: '/leads', labelKey: 'nav.leads', capability: 'leads.read' },
+      { path: '/tasks', labelKey: 'nav.tasks', capability: 'crm.write' },
+      { path: '/support', labelKey: 'nav.support', capability: 'crm.write' },
+      { path: '/duplicates', labelKey: 'nav.duplicates', capability: 'customers.read' },
     ],
   },
   {
@@ -55,6 +58,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/capacity', labelKey: 'nav.capacity', capability: 'capacity.write' },
       { path: '/suppliers', labelKey: 'nav.suppliers', capability: 'orders.read' },
       { path: '/payables', labelKey: 'nav.payables', capability: 'suppliers.write' },
+      { path: '/discounts', labelKey: 'nav.discounts', capability: 'discounts.write' },
+      { path: '/profit', labelKey: 'nav.profit', capability: 'finance.read' },
+      { path: '/reconciliation', labelKey: 'nav.reconciliation', capability: 'finance.read' },
     ],
   },
   {

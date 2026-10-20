@@ -441,6 +441,13 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 </span>
               )}
             </div>
+            {/* Phase 4: offers by e-mail/WhatsApp — never ticked for the traveller. */}
+            <div className="field">
+              <label className="check" htmlFor={id('marketing')}>
+                <input id={id('marketing')} type="checkbox" name="marketingConsent" />
+                <span>{t('co_marketing')}</span>
+              </label>
+            </div>
             <div className="ck-nav">
               <button type="button" className="btn btn-ghost" onClick={() => goTo(1)}>
                 {t('co_back')}

@@ -65,6 +65,12 @@ export const USER_NOTIFICATION_TYPES = {
    */
   password_reset_whatsapp: { email: false, whatsapp: true },
   phone_otp: { email: false, whatsapp: true },
+  /** Phase 4: the team answered a support ticket. */
+  ticket_reply: { email: true, whatsapp: true },
+  /** Phase 4: a support ticket was resolved — with the invitation to rate it. */
+  ticket_resolved: { email: true, whatsapp: false },
+  /** Phase 4: to a member of staff — a follow-up task is due today. */
+  task_due: { email: true, whatsapp: false },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -77,6 +83,11 @@ export const STAFF_NOTIFICATION_TYPES = {
   staff_paid_new_device: { email: false, whatsapp: false },
   /** جهاز جديد ينتظر موافقة الإدارة (الوثيقة 14.2). */
   staff_device_approval: { email: true, whatsapp: false },
+  /** Phase 4: support. */
+  staff_ticket_new: { email: true, whatsapp: false },
+  staff_ticket_reply: { email: false, whatsapp: false },
+  /** An urgent ticket has waited too long for a first answer. */
+  staff_ticket_escalated: { email: true, whatsapp: true },
 } as const
 
 export type UserNotificationType = keyof typeof USER_NOTIFICATION_TYPES
@@ -107,6 +118,8 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   admin_message: ['body'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],
+  ticket_reply: ['number'],
+  staff_ticket_escalated: ['number', 'hours'],
 }
 
 export function isNotificationType(value: string): value is NotificationType {

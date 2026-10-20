@@ -51,6 +51,14 @@ export const CAPABILITIES = [
    * `orders.read` and assign them to bookings with `orders.fulfil`.
    */
   'suppliers.write',
+  /** Phase 4: profit, payment checks — the money picture. Admin only. */
+  'finance.read',
+  /** Phase 4: create and change discount codes. Admin only (financial edits). */
+  'discounts.write',
+  /** Phase 4: customer notes, tags, stage, assignment, tasks and support tickets. */
+  'crm.write',
+  /** Phase 4: merge two customer accounts. Admin only. */
+  'customers.merge',
 ] as const
 
 export type Capability = (typeof CAPABILITIES)[number]
@@ -76,6 +84,7 @@ const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'leads.read',
     'audit.read',
     'security.read',
+    'crm.write',
   ],
 
   admin: [...CAPABILITIES],

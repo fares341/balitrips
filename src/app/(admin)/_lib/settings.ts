@@ -98,6 +98,29 @@ export const feesSchema = z.object({
   /** Card/processing surcharge passed on to the buyer, in basis points. */
   paymentSurchargeBps: z.number().int().min(0).max(10_000),
   feeCurrency: currencyCode,
+  /**
+   * Phase 4: the fees above are only CHARGED when this is on. Off by default
+   * (and for every row saved before it existed), so typing a number into a
+   * fee field can never change a price until the owner also switches it on.
+   */
+  enabled: z.boolean().default(false),
+  /** Tax added on top of the price (and fees), in basis points. Off by default. */
+  taxEnabled: z.boolean().default(false),
+  taxRateBps: z.number().int().min(0).max(10_000).default(0),
+  /** What the tax line is called on checkout, receipt and invoice ("VAT", "PB1"…). */
+  taxLabel: localizedText.default({ en: '', ar: '', id: '' }),
+})
+
+/**
+ * Phase 4: who sells — printed on every invoice. Empty until the owner fills
+ * it in (Studio → Configuration); an empty field is simply left off the PDF.
+ */
+export const sellerSchema = z.object({
+  businessName: z.string().trim().max(160).default(''),
+  address: z.string().trim().max(600).default(''),
+  taxId: z.string().trim().max(80).default(''),
+  email: z.string().trim().max(256).default(''),
+  phone: z.string().trim().max(48).default(''),
 })
 
 export const contactSchema = z.object({
@@ -192,6 +215,7 @@ export const assistantSchema = z.object({
 })
 
 export type AssistantSetting = z.infer<typeof assistantSchema>
+export type SellerSetting = z.infer<typeof sellerSchema>
 
 /**
  * VIP map access (phase 3, Studio → Plans → VIP settings).
@@ -236,6 +260,7 @@ export type SettingKey =
   | 'map'
   | 'assistant'
   | 'vip'
+  | 'seller'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -246,6 +271,7 @@ export interface SettingsShape {
   map: StoredMapSettings
   assistant: AssistantSetting
   vip: VipSetting
+  seller: SellerSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -291,6 +317,10 @@ export const SETTING_DEFAULTS: SettingsShape = {
     bookingFeeMinor: 0,
     paymentSurchargeBps: 0,
     feeCurrency: 'USD',
+    enabled: false,
+    taxEnabled: false,
+    taxRateBps: 0,
+    taxLabel: { en: '', ar: '', id: '' },
   },
   contact: {
     whatsappNumber: '966481565446',
@@ -321,6 +351,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     upsellPlanId: '',
     refundNote: { en: '', ar: '', id: '' },
   },
+  seller: { businessName: '', address: '', taxId: '', email: '', phone: '' },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -335,6 +366,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   map: mapSchema,
   assistant: assistantSchema,
   vip: vipSchema,
+  seller: sellerSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

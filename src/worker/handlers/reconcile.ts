@@ -32,7 +32,7 @@ import { recordPaymentMethod } from '@/lib/orders/payment-method'
 import type { ReconcileJob } from '../queues'
 import type { WorkerContext } from './context'
 import { ordersWithConfirmationEmail } from './email'
-import { ordersWithVouchers } from './pdf'
+import { ordersWithInvoices, ordersWithVouchers } from './pdf'
 
 /** Orders older than this are nobody's emergency; a human should look. */
 const WINDOW_DAYS = 30
@@ -306,10 +306,16 @@ async function queueFollowUps(
   const ids = settled.map((order) => order.id)
   // Two queries for the whole batch rather than two per order: a sweep looks
   // at up to a hundred orders and almost always finds nothing to do.
-  const [confirmed, vouchered] = await Promise.all([
+  const [confirmed, vouchered, invoiced, numbered] = await Promise.all([
     ordersWithConfirmationEmail(ids),
     ordersWithVouchers(ids),
+    ordersWithInvoices(ids),
+    db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(inArray(orders.id, ids), sql`${orders.invoiceNumber} is not null`)),
   ])
+  const hasNumber = new Set(numbered.map((row) => row.id))
 
   let emails = 0
   let vouchers = 0
@@ -321,6 +327,14 @@ async function queueFollowUps(
         { throttleKey: `order_confirmation:${order.id}`, throttleSeconds: 15 * 60 },
       )
       if (id !== null) emails += 1
+    }
+
+    // Phase 4: the invoice of a paid order, rendered once.
+    if (hasNumber.has(order.id) && !invoiced.has(order.id)) {
+      await context.enqueuePdf(
+        { kind: 'invoice', orderId: order.id },
+        { throttleKey: `invoice:${order.id}`, throttleSeconds: 30 * 60 },
+      )
     }
 
     if (!vouchered.has(order.id)) {

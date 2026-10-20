@@ -10,6 +10,7 @@ import {
   activityTiers,
   addonsLibrary,
   cartItems,
+  carts,
   customTripRequests,
   driverVehicles,
   itineraries,
@@ -30,6 +31,7 @@ import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
+import { adjustQuote } from '@/lib/finance/pricing'
 import { getPaymentProvider } from '@/lib/payments'
 import { cancelUnpaidOrder } from '@/lib/orders/expire'
 import {
@@ -85,6 +87,7 @@ export interface CheckoutInput {
     country?: string
     locale: string
     notes?: string
+    marketingConsent?: boolean
   }
   /** Timestamped proof the cancellation ladder was accepted. */
   termsVersion: string
@@ -322,11 +325,32 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   }))
 
   const catalog = await loadCatalog(requestItems, input.userId)
-  const quote = buildQuote(requestItems, catalog)
+  const baseQuote = buildQuote(requestItems, catalog)
 
-  if (!quote.ok) {
-    throw new CheckoutError('Cart contains items that cannot be booked', 'invalid_cart', quote)
+  if (!baseQuote.ok) {
+    throw new CheckoutError('Cart contains items that cannot be booked', 'invalid_cart', baseQuote)
   }
+
+  /**
+   * Phase 4: discount code, fees and tax — the same `adjustQuote` the cart
+   * page used to show the total. A code that no longer applies (expired, used
+   * up meanwhile) simply drops out, and the total comparison below then
+   * refuses to charge the changed amount.
+   */
+  const [cartRow] = await db
+    .select({ couponCode: carts.couponCode })
+    .from(carts)
+    .where(eq(carts.id, input.cartId))
+    .limit(1)
+  const adjusted = await adjustQuote(baseQuote, {
+    couponCode: cartRow?.couponCode ?? null,
+    userId: input.userId,
+    email: input.customer.email,
+    parents: new Map(
+      [...catalog.activityTiers].map(([id, tier]) => [id, tier.activityId] as const),
+    ),
+  })
+  const quote: Quote = { ...baseQuote, totalMinor: adjusted.totals.totalMinor }
 
   /**
    * The price the customer agreed to must equal what the server computed.
@@ -378,6 +402,12 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         presentmentCurrency: quote.currency,
         subtotalMinor: quote.subtotalMinor,
         totalMinor: quote.totalMinor,
+        couponId: adjusted.coupon?.id ?? null,
+        couponCode: adjusted.coupon?.code ?? null,
+        discountMinor: adjusted.totals.discountMinor,
+        feesMinor: adjusted.totals.feesMinor,
+        taxMinor: adjusted.totals.taxMinor,
+        adjustments: adjusted.totals.lines.length > 0 ? adjusted.totals.lines : null,
         customerSnapshot: input.customer,
         termsAcceptedAt: new Date(),
         termsVersion: input.termsVersion,

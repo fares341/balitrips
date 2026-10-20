@@ -677,6 +677,8 @@ export interface InvoiceView {
    * yet recorded.
    */
   paymentMethod: string | null
+  /** Phase 4: BT-INV-YYYY-NNNNN once paid, else null. */
+  invoiceNumber: string | null
 }
 
 export async function listInvoices(userId: string): Promise<InvoiceView[]> {
@@ -742,5 +744,6 @@ export async function listInvoices(userId: string): Promise<InvoiceView[]> {
     itemCount: counts.get(row.id) ?? 0,
     summary: firstName.get(row.id) ?? null,
     paymentMethod: methodByOrder.get(row.id) ?? null,
+    invoiceNumber: row.invoiceNumber,
   }))
 }

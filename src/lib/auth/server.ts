@@ -427,6 +427,20 @@ export const auth = betterAuth({
         returned: false,
         defaultValue: false,
       },
+      /**
+       * Phase 4: "send me offers" from the sign-up box (unticked by default).
+       * The time and source are stamped in the hook below, never taken from
+       * the body; later changes go through the account's notifications page.
+       */
+      marketingConsent: {
+        type: 'boolean',
+        required: false,
+        input: true,
+        returned: false,
+        defaultValue: false,
+      },
+      marketingConsentAt: { type: 'date', required: false, input: false, returned: false },
+      marketingConsentSource: { type: 'string', required: false, input: false, returned: false },
     },
   },
 
@@ -680,6 +694,10 @@ export const auth = betterAuth({
                 typeof rawCountry === 'string' && /^[A-Za-z]{2}$/.test(rawCountry)
                   ? rawCountry.toUpperCase()
                   : null,
+              // Phase 4: only an explicit tick is consent.
+              marketingConsent: raw.marketingConsent === true,
+              marketingConsentAt: raw.marketingConsent === true ? new Date() : null,
+              marketingConsentSource: raw.marketingConsent === true ? 'register' : null,
             },
           }
         },
@@ -779,6 +797,10 @@ export const auth = betterAuth({
               }
             }
           }
+          // Consent changes only on the account's notifications page, with a timestamp.
+          delete data.marketingConsent
+          delete data.marketingConsentAt
+          delete data.marketingConsentSource
           if ('country' in raw) {
             data.country =
               typeof raw.country === 'string' && /^[A-Za-z]{2}$/.test(raw.country)

@@ -20,6 +20,7 @@ import { db } from '@/db'
 import { auditLog, orders } from '@/db/schema'
 import {
   generateItineraryDocuments,
+  generateOrderInvoice,
   generateOrderVoucher,
   itinerariesMissingDocuments,
 } from '@/lib/pdf'
@@ -37,6 +38,9 @@ import type { WorkerContext } from './context'
  * for exactly this and gives support a straight answer to "was it issued?".
  */
 export const VOUCHER_AUDIT_ACTION = 'pdf.voucher'
+
+/** Phase 4: same idea for invoices — rendered once, then kept. */
+export const INVOICE_AUDIT_ACTION = 'pdf.invoice'
 
 /** How many itineraries one sweep will fan out. */
 const SWEEP_LIMIT = 25
@@ -60,7 +64,55 @@ export async function handlePdfJob(job: PdfJob, context: WorkerContext): Promise
       return sweepItineraries(context)
     case 'voucher':
       return renderVoucher(job.orderId)
+    case 'invoice':
+      return renderInvoice(job.orderId)
   }
+}
+
+async function renderInvoice(orderId: string): Promise<void> {
+  // Kept, not regenerated: an invoice issued is an invoice issued.
+  if ((await ordersWithInvoices([orderId])).has(orderId)) return
+  const [order] = await db
+    .select({ invoiceNumber: orders.invoiceNumber })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1)
+  if (!order) throw new Error(`No such order: ${orderId}`)
+  if (order.invoiceNumber === null) {
+    console.info('[pdf] skipping invoice for an order without a number', { orderId })
+    return
+  }
+  const invoice = await generateOrderInvoice(orderId)
+  await db.insert(auditLog).values({
+    actorId: null,
+    action: INVOICE_AUDIT_ACTION,
+    entityType: 'order',
+    entityId: orderId,
+    before: null,
+    after: {
+      invoiceNumber: invoice.invoiceNumber,
+      objectKey: invoice.objectKey,
+      locale: invoice.locale,
+      bytes: invoice.bytes,
+    },
+  })
+  console.info('[pdf] invoice rendered', { orderId, invoiceNumber: invoice.invoiceNumber })
+}
+
+/** Which of these orders already have a rendered invoice. */
+export async function ordersWithInvoices(orderIds: readonly string[]): Promise<Set<string>> {
+  if (orderIds.length === 0) return new Set()
+  const rows = await db
+    .select({ entityId: auditLog.entityId })
+    .from(auditLog)
+    .where(
+      and(
+        eq(auditLog.action, INVOICE_AUDIT_ACTION),
+        eq(auditLog.entityType, 'order'),
+        inArray(auditLog.entityId, [...orderIds]),
+      ),
+    )
+  return new Set(rows.flatMap((row) => (row.entityId === null ? [] : [row.entityId])))
 }
 
 async function renderItinerary(itineraryId: string, force: boolean): Promise<void> {

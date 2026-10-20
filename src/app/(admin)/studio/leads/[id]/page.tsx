@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { db } from '@/db'
 import { customTripDocuments, customTripRequests, orders, users } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
+import { loadStaff } from '@/lib/crm/queries'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -17,6 +18,8 @@ import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { setTripRequestStatus } from '../actions'
+import { NewTaskForm, TaskList, tasksFor } from '../../tasks/task-ui'
+import { assignLead } from '../assign-actions'
 import { budgetLabel } from '../budget'
 import {
   linkRequestToUser,
@@ -61,6 +64,11 @@ export default async function LeadDetailPage({
     .limit(1)
   if (!row) notFound()
   const { request } = row
+
+  const mayCrm = can(session.role, 'crm.write')
+  const [staff, leadTasks] = mayCrm
+    ? await Promise.all([loadStaff(), tasksFor({ leadId: id })])
+    : [[], []]
 
   const docs = await db
     .select({ doc: customTripDocuments, by: users.email })
@@ -173,7 +181,7 @@ export default async function LeadDetailPage({
         )}
       </div>
 
-      <div className="a-card">
+      <div className="a-card" id="quote">
         <h2>
           {t('leads.price')}{' '}
           {request.paidOrderId !== null ? (
@@ -326,6 +334,55 @@ export default async function LeadDetailPage({
           </Table>
         )}
       </div>
+
+      {mayCrm ? (
+        <div className="a-card">
+          <h2>{t('crm.follow_up')}</h2>
+          <form className="a-row" action={assignLead.bind(null, id)}>
+            <div className="a-field">
+              <label htmlFor="lead-assignee">{t('crm.assigned')}</label>
+              <select
+                className="a-select"
+                id="lead-assignee"
+                name="assignedToUserId"
+                defaultValue={request.assignedToUserId ?? ''}
+              >
+                <option value="">{t('crm.nobody')}</option>
+                {staff.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="a-actions">
+              <button className="a-btn" type="submit">
+                {t('crm.save_care')}
+              </button>
+              {request.paidOrderId === null ? (
+                <a className="a-btn ghost" href="#quote">
+                  {t('crm.convert_to_quote')}
+                </a>
+              ) : null}
+            </div>
+          </form>
+          <p className="a-hint">{t('crm.convert_hint')}</p>
+          {request.userId !== null ? (
+            <p>
+              <Link href={adminHref(`/customers/${request.userId}`)}>{t('crm.open_customer')}</Link>
+            </p>
+          ) : null}
+          <h3>{t('tasks.title')}</h3>
+          <TaskList tasks={leadTasks} back={`/leads/${id}`} />
+          <NewTaskForm
+            back={`/leads/${id}`}
+            staff={staff}
+            defaultAssignee={session.userId}
+            leadId={id}
+            {...(request.userId !== null ? { customerId: request.userId } : {})}
+          />
+        </div>
+      ) : null}
 
       <form className="a-card" action={saveRequestNotes.bind(null, id)}>
         <h2>{t('leads.internal_notes')}</h2>

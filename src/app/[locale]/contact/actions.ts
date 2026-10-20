@@ -34,7 +34,9 @@
  */
 
 import { db } from '@/db'
+import { getUser } from '@/lib/auth/session'
 import { notifyStaff } from '@/lib/notify'
+import { createTicket } from '@/lib/support/service'
 import { contactMessages } from '@/db/schema'
 
 import {
@@ -131,10 +133,32 @@ export async function sendContactMessage(
     return { status: 'error', formError: 'failed', fieldErrors: {} }
   }
 
+  // Phase 4: every enquiry is also a support ticket, so it is answered and
+  // tracked in Studio → Support. Linked to the account only when the sender is
+  // signed in (an e-mail typed into a form proves nothing). Best effort: the
+  // message is already stored above.
+  try {
+    const user = await getUser()
+    await createTicket({
+      userId: user?.id ?? null,
+      email,
+      name,
+      orderId: null,
+      subject: subject === '' ? message.slice(0, 80) : subject,
+      category: 'other',
+      priority: 'normal',
+      body: message,
+      source: 'contact',
+      notifyTeam: false,
+    })
+  } catch (error) {
+    console.error('[contact] could not open a support ticket', error)
+  }
+
   await notifyStaff(
     'staff_contact_message',
     { name: name.slice(0, 80), subject: (subject === '' ? message : subject).slice(0, 80) },
-    '/leads?tab=contact',
+    '/support',
   )
 
   return { status: 'sent' }

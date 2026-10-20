@@ -26,6 +26,7 @@ import type { Locale } from '@/i18n/config'
 import { formatInstant, formatPlainDate, toMailLocale, translator } from '@/lib/email/catalogue'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { adjustmentLabel, adjustmentSign, type AdjustmentWords } from '@/lib/finance/labels'
 import {
   presignedGet,
   readPrivateObject,
@@ -36,6 +37,17 @@ import {
 import { renderPdf } from './gotenberg'
 import { voucherPdfHtml, type VoucherPdfLine } from './templates'
 import { BRAND } from './itinerary'
+
+/** The receipt / invoice words for discount, fee and tax lines, in the document's language. */
+export function adjustmentWords(t: ReturnType<typeof translator>): AdjustmentWords {
+  return {
+    discount: (code) => t('adj_discount', { code }),
+    serviceFee: t('adj_service_fee'),
+    bookingFee: t('adj_booking_fee'),
+    surcharge: t('adj_surcharge'),
+    tax: t('adj_tax'),
+  }
+}
 
 export function voucherObjectKey(orderId: string, locale: Locale): string {
   return `vouchers/${orderId}/${locale}.pdf`
@@ -76,6 +88,7 @@ export async function generateOrderVoucher(orderId: string): Promise<GeneratedVo
       status: orders.status,
       currency: orders.presentmentCurrency,
       totalMinor: orders.totalMinor,
+      adjustments: orders.adjustments,
       placedAt: orders.placedAt,
       createdAt: orders.createdAt,
       customer: orders.customerSnapshot,
@@ -146,6 +159,10 @@ export async function generateOrderVoucher(orderId: string): Promise<GeneratedVo
     orderNumber: order.orderNumber,
     travellerName: order.customer?.name?.trim() || order.customer?.email || order.orderNumber,
     lines: rows,
+    adjustments: (order.adjustments ?? []).map((line) => ({
+      label: adjustmentLabel(line, locale, adjustmentWords(t)),
+      amount: `${adjustmentSign(line)}${formatMoney(line.amountMinor, order.currency, locale)}`,
+    })),
     totalLabel: t('c_total'),
     totalAmount: formatMoney(order.totalMinor, order.currency, locale),
     labels: {

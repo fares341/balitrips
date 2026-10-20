@@ -252,6 +252,8 @@ export interface VoucherPdfInput {
   orderNumber: string
   travellerName: string
   lines: readonly VoucherPdfLine[]
+  /** Phase 4: discount, fees, tax between the lines and the total. */
+  adjustments?: readonly { label: string; amount: string }[]
   totalLabel: string
   totalAmount: string
   labels: {
@@ -302,6 +304,7 @@ export function voucherPdfHtml(input: VoucherPdfInput): string {
       </thead>
       <tbody>
 ${rows}
+${adjustmentRows(input.adjustments ?? [])}
         <tr class="total">
           <td colspan="2">${escapeHtml(input.totalLabel)}</td>
           <td class="numeric">${escapeHtml(input.totalAmount)}</td>
@@ -311,4 +314,105 @@ ${rows}
     <p class="fine">${escapeHtml(labels.confidential)}</p>`
 
   return documentShell(input.locale, `${labels.title} ${input.orderNumber}`, body)
+}
+
+function adjustmentRows(rows: readonly { label: string; amount: string }[]): string {
+  return rows
+    .map(
+      (row) => `        <tr>
+          <td colspan="2">${escapeHtml(row.label)}</td>
+          <td class="numeric">${escapeHtml(row.amount)}</td>
+        </tr>`,
+    )
+    .join('\n')
+}
+
+/* --------------------------------------------------------------------------
+   Invoice (phase 4)
+   -------------------------------------------------------------------------- */
+
+export interface InvoicePdfInput {
+  locale: Locale
+  invoiceNumber: string
+  orderNumber: string
+  issuedValue: string
+  /** Seller lines (name, address, tax id, contact); empty ones already dropped. */
+  seller: readonly string[]
+  /** Buyer lines (name, e-mail, phone, country). */
+  buyer: readonly string[]
+  lines: readonly VoucherPdfLine[]
+  subtotal: { label: string; amount: string }
+  adjustments: readonly { label: string; amount: string }[]
+  total: { label: string; amount: string }
+  labels: {
+    brand: string
+    title: string
+    invoiceNumber: string
+    orderNumber: string
+    issued: string
+    seller: string
+    buyer: string
+    columnItem: string
+    columnQuantity: string
+    columnAmount: string
+    paidNote: string
+  }
+}
+
+export function invoicePdfHtml(input: InvoicePdfInput): string {
+  const { labels } = input
+  const block = (title: string, lines: readonly string[]) =>
+    lines.length === 0
+      ? ''
+      : `<div style="flex:1;min-width:0">
+        <h2>${escapeHtml(title)}</h2>
+        ${lines.map((line) => `<div>${escapeHtml(line)}</div>`).join('\n        ')}
+      </div>`
+  const rows = input.lines
+    .map(
+      (line) => `      <tr>
+        <td>${escapeHtml(line.name)}${
+          line.detail === null ? '' : `<br><span class="day-area">${escapeHtml(line.detail)}</span>`
+        }</td>
+        <td class="numeric">${escapeHtml(line.quantity)}</td>
+        <td class="numeric">${escapeHtml(line.amount)}</td>
+      </tr>`,
+    )
+    .join('\n')
+
+  const body = `    <p class="wordmark">${escapeHtml(labels.brand)}</p>
+    <h1>${escapeHtml(labels.title)}</h1>
+    <div class="meta">
+      <span>${escapeHtml(labels.invoiceNumber)}: ${escapeHtml(input.invoiceNumber)}</span>
+      <span>${escapeHtml(labels.orderNumber)}: ${escapeHtml(input.orderNumber)}</span>
+      <span>${escapeHtml(labels.issued)}: ${escapeHtml(input.issuedValue)}</span>
+    </div>
+    <div style="display:flex;gap:10mm;margin:0 0 6mm">
+      ${block(labels.seller, input.seller)}
+      ${block(labels.buyer, input.buyer)}
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>${escapeHtml(labels.columnItem)}</th>
+          <th class="numeric">${escapeHtml(labels.columnQuantity)}</th>
+          <th class="numeric">${escapeHtml(labels.columnAmount)}</th>
+        </tr>
+      </thead>
+      <tbody>
+${rows}
+        <tr>
+          <td colspan="2">${escapeHtml(input.subtotal.label)}</td>
+          <td class="numeric">${escapeHtml(input.subtotal.amount)}</td>
+        </tr>
+${adjustmentRows(input.adjustments)}
+        <tr class="total">
+          <td colspan="2">${escapeHtml(input.total.label)}</td>
+          <td class="numeric">${escapeHtml(input.total.amount)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="fine">${escapeHtml(labels.paidNote)}</p>`
+
+  return documentShell(input.locale, `${labels.title} ${input.invoiceNumber}`, body)
 }

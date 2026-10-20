@@ -1,10 +1,11 @@
-import { and, count, desc, eq, gt } from 'drizzle-orm'
+import { and, count, desc, eq, gt, inArray } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
 import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can } from '@/lib/auth/roles'
-import { orders, sessions, users } from '@/db/schema'
+import { customerTags, orders, sessions, users } from '@/db/schema'
+import { loadStaff, loadStages, SMART_LISTS } from '@/lib/crm/queries'
 import { ROLES } from '@/lib/auth/roles'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -53,11 +54,13 @@ export default async function CustomersPage({
   /** Enum value → label; an unknown value shows as stored. */
   const label = (key: string, raw: string) => (t(key) === key ? raw : t(key))
 
-  const { q, role, state, where } = customerFilters(params)
+  const { q, role, state, tag, list, consent, assigned, where } = customerFilters(params)
   const page = pageParam(params)
   const mayExport = can(session.role, 'customers.export')
   const exportQuery = new URLSearchParams(
-    Object.entries({ q, role, state }).flatMap(([key, value]) => (value ? [[key, value]] : [])),
+    Object.entries({ q, role, state, tag, list, consent, assigned }).flatMap(([key, value]) =>
+      value ? [[key, value]] : [],
+    ),
   ).toString()
   const now = new Date()
 
@@ -68,6 +71,8 @@ export default async function CustomersPage({
         email: users.email,
         phone: users.phone,
         name: users.name,
+        crmStage: users.crmStage,
+        marketingConsent: users.marketingConsent,
         role: users.role,
         status: users.status,
         locale: users.locale,
@@ -89,10 +94,27 @@ export default async function CustomersPage({
       .offset((page - 1) * PAGE_SIZE),
     db.select({ value: count() }).from(users).where(where),
   ])
-  const summaries = await loadAccountSummaries(
-    rows.map((row) => row.id),
-    locale,
-  )
+  const [summaries, stages, tagRows, staff] = await Promise.all([
+    loadAccountSummaries(
+      rows.map((row) => row.id),
+      locale,
+    ),
+    loadStages(rows),
+    rows.length === 0
+      ? Promise.resolve([])
+      : db
+          .select({ userId: customerTags.userId, tag: customerTags.tag })
+          .from(customerTags)
+          .where(
+            inArray(
+              customerTags.userId,
+              rows.map((row) => row.id),
+            ),
+          ),
+    loadStaff(),
+  ])
+  const tagsOf = new Map<string, string[]>()
+  for (const row of tagRows) tagsOf.set(row.userId, [...(tagsOf.get(row.userId) ?? []), row.tag])
 
   return (
     <>
@@ -128,6 +150,38 @@ export default async function CustomersPage({
             <option value="deleted">{t('customers.state_deleted')}</option>
           </select>
         </div>
+        <div className="a-field">
+          <label htmlFor="tag">{t('crm.tag')}</label>
+          <input className="a-input" id="tag" name="tag" defaultValue={tag ?? ''} />
+        </div>
+        <div className="a-field">
+          <label htmlFor="list">{t('crm.smart_list')}</label>
+          <select className="a-select" id="list" name="list" defaultValue={list ?? ''}>
+            <option value="">{t('customers.any')}</option>
+            {SMART_LISTS.map((value) => (
+              <option key={value} value={value}>
+                {t(`crm.list_${value}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="a-field">
+          <label htmlFor="assigned">{t('crm.assigned')}</label>
+          <select className="a-select" id="assigned" name="assigned" defaultValue={assigned ?? ''}>
+            <option value="">{t('customers.any')}</option>
+            {staff.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="a-field">
+          <label className="a-check">
+            <input type="checkbox" name="consent" value="yes" defaultChecked={consent === 'yes'} />
+            {t('crm.consent_only')}
+          </label>
+        </div>
         <div className="a-actions">
           <button className="a-btn" type="submit">
             {t('customers.filter')}
@@ -152,6 +206,7 @@ export default async function CustomersPage({
             <tr>
               <th>{t('customers.col_account')}</th>
               <th>{t('customers.col_status')}</th>
+              <th>{t('crm.stage')}</th>
               <th>{t('customers.current_plan')}</th>
               <th>{t('customers.last_login')}</th>
               <th>{t('customers.role')}</th>
@@ -188,6 +243,19 @@ export default async function CustomersPage({
                         {label(`customers.status_${row.status}`, row.status)}
                       </Pill>
                     )}
+                  </td>
+                  <td>
+                    <Pill tone="info">{t(`crm.stage_${stages.get(row.id) ?? 'lead'}`)}</Pill>
+                    {(tagsOf.get(row.id) ?? []).length > 0 ? (
+                      <div className="a-muted" style={{ fontSize: 12 }}>
+                        {(tagsOf.get(row.id) ?? []).map((value) => `#${value}`).join(' ')}
+                      </div>
+                    ) : null}
+                    {row.marketingConsent ? (
+                      <div className="a-muted" style={{ fontSize: 12 }}>
+                        {t('crm.consent_yes_short')}
+                      </div>
+                    ) : null}
                   </td>
                   <td>
                     {summary && summary.access.length > 0 ? (

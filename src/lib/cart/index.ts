@@ -44,7 +44,9 @@ import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 
 import { db } from '@/db'
-import { cartItems, carts } from '@/db/schema'
+import { cartItems, carts, type OrderAdjustmentLine } from '@/db/schema'
+import type { CouponRejection } from '@/lib/finance/coupons'
+import { adjustQuote } from '@/lib/finance/pricing'
 import type { Localized } from '@/db/schema/_shared'
 import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/routes'
 import { vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
@@ -1176,7 +1178,18 @@ export interface CartView {
   itemCount: number
   groups: CartGroupView[]
   subtotalMinor: number
+  /**
+   * What will be charged: the subtotal less any discount code, plus fees and
+   * tax when the owner has switched them on (phase 4). Equal to the subtotal
+   * otherwise.
+   */
   totalMinor: number
+  /** The lines between subtotal and total (discount, fees, tax), as charged. */
+  adjustments: OrderAdjustmentLine[]
+  /** The code the traveller entered, applied or not. */
+  couponCode: string | null
+  /** Why the entered code does not apply right now. Null when it applies or none. */
+  couponError: CouponRejection | null
   currency: string
   /** False when anything in the cart cannot be booked. Never charge on false. */
   ok: boolean
@@ -1341,14 +1354,52 @@ export async function getCartWithTotals(): Promise<CartView | null> {
     })
   }
 
+  // Discount code, fees and tax — the same call checkout makes (phase 4).
+  const [couponRow] = await db
+    .select({ couponCode: carts.couponCode })
+    .from(carts)
+    .where(eq(carts.id, cart.id))
+    .limit(1)
+  const couponCode = couponRow?.couponCode ?? null
+  const viewer = cart.userId === null ? null : await getSessionUser()
+  const adjusted = await adjustQuote(quote, {
+    couponCode,
+    userId: cart.userId,
+    email: viewer?.email ?? null,
+    parents: tierParents(snapshot),
+  })
+
   return {
     cartId: cart.id,
     itemCount: rows.length,
     groups,
     subtotalMinor: quote.subtotalMinor,
-    totalMinor: quote.totalMinor,
+    totalMinor: adjusted.totals.totalMinor,
+    adjustments: adjusted.totals.lines,
+    couponCode,
+    couponError: adjusted.couponError,
     currency: cartCurrency,
     ok: rows.length > 0 && quote.ok,
     issues: quote.issues,
   }
+}
+
+/** Package (activity tier) id → its activity id, so a code for an activity covers its packages. */
+export function tierParents(snapshot: {
+  activityTiers: ReadonlyMap<string, { activityId: string }>
+}): Map<string, string> {
+  return new Map([...snapshot.activityTiers].map(([id, tier]) => [id, tier.activityId]))
+}
+
+/**
+ * Put a discount code on the visitor's cart (or take it off with null). Only
+ * the code is stored; whether it applies and how much it takes off is
+ * recomputed every time the cart is priced.
+ */
+export async function setCartCouponCode(code: string | null): Promise<boolean> {
+  const cart = await findCart()
+  if (!cart) return false
+  const clean = code === null ? null : code.trim().slice(0, 40) || null
+  await db.update(carts).set({ couponCode: clean }).where(eq(carts.id, cart.id))
+  return true
 }

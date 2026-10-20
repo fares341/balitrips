@@ -31,3 +31,29 @@ export async function setWhatsappOptIn(form: FormData): Promise<void> {
   await db.update(users).set({ whatsappOptIn: optIn }).where(eq(users.id, user.id))
   revalidatePath('/[locale]/account/notifications', 'page')
 }
+
+/**
+ * Phase 4: offers and news by e-mail / WhatsApp. Explicit, off by default,
+ * withdrawable at any time; the time and where it was given are kept.
+ */
+export async function setMarketingConsent(form: FormData): Promise<void> {
+  const user = await getUser()
+  if (user === null) return
+  const consent = form.get('marketingConsent') === 'on'
+  const [current] = await db
+    .select({ marketingConsent: users.marketingConsent })
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1)
+  if (current && current.marketingConsent !== consent) {
+    await db
+      .update(users)
+      .set({
+        marketingConsent: consent,
+        marketingConsentAt: new Date(),
+        marketingConsentSource: 'account',
+      })
+      .where(eq(users.id, user.id))
+  }
+  revalidatePath('/[locale]/account/notifications', 'page')
+}

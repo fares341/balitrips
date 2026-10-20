@@ -19,11 +19,11 @@ import {
   type PolicyId,
   type PolicySetting,
 } from '../../_lib/settings'
-import { Field, TextArea, TextInput } from '../../_ui/field'
+import { Checkbox, Field, LocalizedField, TextArea, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Pill, When } from '../../_ui/table'
-import { saveContact, saveCurrencies, saveFees, savePolicy } from './actions'
+import { saveContact, saveCurrencies, saveFees, savePolicy, saveSeller } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,6 +105,7 @@ export default async function ConfigPage({
   const fees = values.fees
   const currencies = values.currencies
   const contact = values.contact
+  const seller = values.seller
 
   return (
     <>
@@ -257,9 +258,92 @@ export default async function ConfigPage({
               />
             </Field>
           </div>
+          <Checkbox
+            name="feesEnabled"
+            label={t('fin.fees_enabled')}
+            hint={t('fin.fees_enabled_hint')}
+            defaultChecked={fees.enabled}
+          />
+          <h3 style={{ marginBlock: '12px 0' }}>{t('fin.tax_title')}</h3>
+          <p className="a-hint">{t('fin.tax_hint')}</p>
+          <div className="a-row">
+            <Field label={t('fin.tax_rate')} htmlFor="taxRateBps" hint={t('fin.tax_rate_hint')}>
+              <TextInput
+                id="taxRateBps"
+                name="taxRateBps"
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={formatPercentInput(fees.taxRateBps)}
+              />
+            </Field>
+          </div>
+          <LocalizedField
+            name="taxLabel"
+            label={t('fin.tax_label')}
+            hint={t('fin.tax_label_hint')}
+            value={fees.taxLabel}
+          />
+          <Checkbox
+            name="taxEnabled"
+            label={t('fin.tax_enabled')}
+            hint={t('fin.tax_enabled_hint')}
+            defaultChecked={fees.taxEnabled}
+          />
           <div className="a-actions">
             <button className="a-btn" type="submit">
               {t('config.save_fees')}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="a-card">
+        <h2>{t('fin.seller_title')}</h2>
+        <p className="a-hint">{t('fin.seller_hint')}</p>
+        <SectionMeta t={t} name="seller" meta={meta} missing={missing} />
+        <form className="a-form" action={saveSeller} style={{ marginBlockStart: 12 }}>
+          <div className="a-row">
+            <Field label={t('fin.seller_name')} htmlFor="sellerName">
+              <TextInput id="sellerName" name="sellerName" defaultValue={seller.businessName} />
+            </Field>
+            <Field label={t('fin.seller_tax_id')} htmlFor="sellerTaxId">
+              <TextInput
+                id="sellerTaxId"
+                name="sellerTaxId"
+                dir="ltr"
+                defaultValue={seller.taxId}
+              />
+            </Field>
+          </div>
+          <Field label={t('fin.seller_address')} htmlFor="sellerAddress">
+            <TextArea
+              id="sellerAddress"
+              name="sellerAddress"
+              rows={3}
+              defaultValue={seller.address}
+            />
+          </Field>
+          <div className="a-row">
+            <Field label={t('fin.seller_email')} htmlFor="sellerEmail">
+              <TextInput
+                id="sellerEmail"
+                name="sellerEmail"
+                dir="ltr"
+                defaultValue={seller.email}
+              />
+            </Field>
+            <Field label={t('fin.seller_phone')} htmlFor="sellerPhone">
+              <TextInput
+                id="sellerPhone"
+                name="sellerPhone"
+                dir="ltr"
+                defaultValue={seller.phone}
+              />
+            </Field>
+          </div>
+          <div className="a-actions">
+            <button className="a-btn" type="submit">
+              {t('fin.save_seller')}
             </button>
           </div>
         </form>

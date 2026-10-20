@@ -30,6 +30,7 @@ import { TRIP_KIND_ICON } from '@/components/trip'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
+import { adjustmentLabel, adjustmentSign } from '@/lib/finance/labels'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { scheduleConflicts, tripDays } from '@/lib/booking/trip'
 import { getCartWithTotals, type CartLineView } from '@/lib/cart'
@@ -158,7 +159,6 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
   const conflicts = scheduleConflicts(lines)
   const days = tripDays(lines)
   const payable = lines.filter((line) => line.lineTotalMinor !== null && line.lineTotalMinor > 0)
-  const discountMinor = Math.max(0, cart.subtotalMinor - cart.totalMinor)
   const blocked = !cart.ok || conflicts.length > 0 || payable.length === 0 || !open
 
   return (
@@ -282,14 +282,26 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
                   </span>
                 </div>
               ))}
-              {discountMinor > 0 && (
-                <div className="sum-row trip-discount">
-                  <span>{t('trip_discount')}</span>
+              {cart.adjustments.map((line, index) => (
+                <div
+                  key={`${line.kind}-${index}`}
+                  className={line.kind === 'discount' ? 'sum-row trip-discount' : 'sum-row'}
+                >
+                  <span>
+                    {adjustmentLabel(line, locale, {
+                      discount: (code) => t('adj_discount', { code }),
+                      serviceFee: t('adj_service_fee'),
+                      bookingFee: t('adj_booking_fee'),
+                      surcharge: t('adj_surcharge'),
+                      tax: t('adj_tax'),
+                    })}
+                  </span>
                   <span className="price" dir="ltr">
-                    −{money(discountMinor, cart.currency)}
+                    {adjustmentSign(line)}
+                    {money(line.amountMinor, cart.currency)}
                   </span>
                 </div>
-              )}
+              ))}
               <div className="sum-total">
                 <span>{t('c_total')}</span>
                 <b className="price" dir="ltr">

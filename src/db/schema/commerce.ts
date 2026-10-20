@@ -35,6 +35,18 @@ export interface BookingOptions {
   included?: { activityId: string; time: string | null }[]
 }
 
+/** One line between subtotal and total, frozen on the order (phase 4). */
+export interface OrderAdjustmentLine {
+  kind: 'discount' | 'service_fee' | 'booking_fee' | 'surcharge' | 'tax'
+  /** Positive for charges, positive for a discount too (it is subtracted). */
+  amountMinor: number
+  /** Percentage lines: the rate in basis points. */
+  bps?: number
+  /** Discount: the code. Tax: the label in each language. */
+  code?: string
+  label?: Partial<Localized> | null
+}
+
 /** One priced line of a booking, frozen on the order item. */
 export interface OrderItemPriceLine {
   /**
@@ -85,6 +97,11 @@ export const carts = pgTable(
     /** Cookie value for signed-out carts, merged into the user cart on login. */
     anonymousToken: varchar('anonymous_token', { length: 64 }),
     currency: currency(),
+    /**
+     * Phase 4: the discount code the traveller applied. Only the code — the
+     * discount is recomputed by the server on every read and at checkout.
+     */
+    couponCode: varchar('coupon_code', { length: 40 }),
     ...timestamps,
   },
   (t) => [index('carts_user_idx').on(t.userId), uniqueIndex('carts_anon_idx').on(t.anonymousToken)],
@@ -181,6 +198,8 @@ export const orders = pgTable(
       locale: string
       /** Lead traveller's note for the provider (checkout step 1). */
       notes?: string
+      /** Phase 4: ticked "send me offers" at checkout (unticked by default). */
+      marketingConsent?: boolean
     }>(),
 
     /**
@@ -201,6 +220,30 @@ export const orders = pgTable(
     guestTokenHash: varchar('guest_token_hash', { length: 64 }),
     /** The cart the order was placed from; the webhook empties a guest's cart by it. */
     sourceCartId: uuid('source_cart_id'),
+
+    // --- Phase 4 (migration 0020): discounts, fees, taxes, invoices ---
+
+    /**
+     * The coupon used, frozen with its code. No foreign key in the ORM (the
+     * coupons table lives in ./finance, which imports this file); the database
+     * keeps one, ON DELETE SET NULL. `coupon_code` survives either way.
+     */
+    couponId: uuid('coupon_id'),
+    couponCode: varchar('coupon_code', { length: 40 }),
+    /** Discount taken off `subtotal_minor`. 0 = none. */
+    discountMinor: moneyMinor('discount_minor').notNull().default(0),
+    /** Service + booking fee + payment surcharge charged. 0 = none (the default). */
+    feesMinor: moneyMinor('fees_minor').notNull().default(0),
+    /** Tax charged. 0 = none (the default). */
+    taxMinor: moneyMinor('tax_minor').notNull().default(0),
+    /**
+     * The lines between subtotal and total exactly as charged (discount, each
+     * fee, tax) with their labels and rates, for the receipt and invoice.
+     */
+    adjustments: jsonb('adjustments').$type<OrderAdjustmentLine[]>(),
+    /** BT-INV-YYYY-NNNNN, gap-free per year, issued when the order is paid. */
+    invoiceNumber: varchar('invoice_number', { length: 32 }).unique(),
+    invoicedAt: timestamp('invoiced_at', { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -525,6 +568,10 @@ export const customTripRequests = pgTable('custom_trip_requests', {
   quotedAt: timestamp('quoted_at', { withTimezone: true }),
   /** الطلب المدفوع الذي سدّد العرض. NULL = لم يُدفع. */
   paidOrderId: uuid('paid_order_id').references(() => orders.id, { onDelete: 'set null' }),
+  /** Phase 4: الموظف المسؤول عن هذا الطلب. */
+  assignedToUserId: uuid('assigned_to_user_id').references(() => users.id, {
+    onDelete: 'set null',
+  }),
   ...timestamps,
 })
 
