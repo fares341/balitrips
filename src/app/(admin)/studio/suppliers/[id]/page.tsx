@@ -127,7 +127,17 @@ export default async function SupplierPage({
       <Flash searchParams={query} />
 
       <form className="a-form" action={saveSupplier.bind(null, isNew ? 'new' : id)}>
-        <fieldset disabled={!mayWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <fieldset
+          disabled={!mayWrite}
+          style={{
+            border: 0,
+            padding: 0,
+            margin: 0,
+            minWidth: 0,
+            display: 'grid',
+            gap: 'var(--space-4)',
+          }}
+        >
           <div className="a-card">
             <h2>{t('sup.section_details')}</h2>
             <div className="a-row">

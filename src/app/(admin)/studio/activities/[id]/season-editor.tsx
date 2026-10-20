@@ -105,7 +105,7 @@ export async function SeasonEditor({
             <div className="a-day" key={tier.id} id={`seasons-${tier.id}`}>
               <div className="a-day-head">
                 <div className="a-day-no">{tier.name}</div>
-                <span className="a-muted" dir="ltr">
+                <span className="a-muted">
                   {t('av.base_price', { price: formatMoney(tier.priceMinor, tier.currency, intl) })}
                 </span>
               </div>
