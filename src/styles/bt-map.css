@@ -1789,9 +1789,14 @@
   overflow: hidden;
   background: #0a2d40;
 }
-.mp-day-canvas {
+.mp-day-canvas,
+.mp-day-canvas.maplibregl-map {
+  /* maplibre-gl.css would make it position: relative (0 px high) */
   position: absolute;
   inset: 0;
+}
+.mp-day-canvas canvas {
+  outline: none;
 }
 .mp-day-map.is-failed .mp-day-canvas {
   display: none;

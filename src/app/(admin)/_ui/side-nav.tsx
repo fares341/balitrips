@@ -27,6 +27,12 @@ export interface SideNavGroup {
 
 export function SideNav({ groups, ariaLabel }: { groups: SideNavGroup[]; ariaLabel?: string }) {
   const pathname = usePathname()
+  const matches = (href: string, exact: boolean) =>
+    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+  // A nested entry (e.g. Plans → VIP settings) wins over its parent section.
+  const hrefs = groups.flatMap((group) => group.items)
+  const deeper = (href: string) =>
+    hrefs.some((other) => other.href.startsWith(`${href}/`) && matches(other.href, other.exact))
 
   return (
     <nav className="a-nav" aria-label={ariaLabel}>
@@ -34,9 +40,7 @@ export function SideNav({ groups, ariaLabel }: { groups: SideNavGroup[]; ariaLab
         <div className="a-nav-section" key={group.title}>
           <div className="a-nav-group">{group.title}</div>
           {group.items.map((item) => {
-            const active = item.exact
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`)
+            const active = matches(item.href, item.exact) && !deeper(item.href)
             return (
               <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}>
                 {item.icon ? <Icon name={item.icon} size={18} /> : null}

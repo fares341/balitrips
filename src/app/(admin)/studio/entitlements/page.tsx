@@ -216,12 +216,9 @@ export default async function EntitlementsPage({
                     {mayGrant && !row.revokedAt && row.expiresAt !== null ? (
                       <form className="a-inline-form" action={extendEntitlement}>
                         <input type="hidden" name="entitlementId" value={row.id} />
-                        <label className="a-sr" htmlFor={`extend-${row.id}`}>
-                          {t('p3.extend_days')}
-                        </label>
                         <input
                           className="a-input"
-                          id={`extend-${row.id}`}
+                          aria-label={t('p3.extend_days')}
                           name="days"
                           type="number"
                           min={1}

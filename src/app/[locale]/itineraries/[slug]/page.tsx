@@ -232,10 +232,16 @@ export default async function ItineraryDetailPage({
           note: vipNote,
         }
   const customHref = `/custom?from=${encodeURIComponent(itinerary.slug)}&days=${itinerary.days}&name=${encodeURIComponent(name.slice(0, 100))}`
-  const buy = (className: string, style?: React.CSSProperties) =>
+  // The optional VIP box sits with the main (sidebar) button only, so the
+  // page never shows the same choice three times.
+  const buy = (className: string, style?: React.CSSProperties, withVip = false) =>
     sellsPlan ? (
       <div style={style}>
-        <ItineraryBuyBox itineraryId={itinerary.id} vip={vipBox} className={className}>
+        <ItineraryBuyBox
+          itineraryId={itinerary.id}
+          vip={withVip ? vipBox : null}
+          className={className}
+        >
           {t('ih_buy')}
         </ItineraryBuyBox>
       </div>
@@ -716,7 +722,7 @@ export default async function ItineraryDetailPage({
             navigated afterwards; with a server-owned cart the add IS the
             navigation, so a second button would be the same link twice.
           */}
-          {buy('btn btn-primary btn-block', { marginTop: 16 })}
+          {buy('btn btn-primary btn-block', { marginTop: 16 }, true)}
           {modes.includes('custom') && (
             <Link href={customHref} className="btn btn-ghost btn-block" style={{ marginTop: 10 }}>
               {t('p3_custom_cta')}
