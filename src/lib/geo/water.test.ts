@@ -52,9 +52,20 @@ function tile(layers: { name: string; polygons: [number, number][][][] }[]) {
     const body: number[] = [...bytes(1, [...new TextEncoder().encode(layer.name)])]
     for (const rings of layer.polygons) {
       const geometry = polygonGeometry(rings).flatMap(varint)
-      const feature = [...key(3, 0), ...varint(3), ...bytes(4, geometry)]
+      // id, tags (packed) and type before the geometry, as real tiles have them
+      const feature = [
+        ...key(1, 0),
+        ...varint(123456789),
+        ...bytes(2, [0, 0]),
+        ...key(3, 0),
+        ...varint(3),
+        ...bytes(4, geometry),
+      ]
       body.push(...bytes(2, feature))
     }
+    // keys and values, skipped by the reader
+    body.push(...bytes(3, [...new TextEncoder().encode('class')]))
+    body.push(...bytes(4, bytes(1, [...new TextEncoder().encode('ocean')])))
     body.push(...key(5, 0), ...varint(4096))
     out.push(...bytes(3, body))
   }

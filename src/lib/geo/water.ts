@@ -76,8 +76,11 @@ class Reader {
   skip(wire: number): void {
     if (wire === 0) this.varint()
     else if (wire === 1) this.pos += 8
-    else if (wire === 2) this.pos += this.varint()
-    else if (wire === 5) this.pos += 4
+    else if (wire === 2) {
+      // Read the length first: `this.pos += this.varint()` would lose the length's own bytes.
+      const length = this.varint()
+      this.pos += length
+    } else if (wire === 5) this.pos += 4
     else throw new Error(`unsupported wire type ${wire}`)
     if (this.pos > this.end) throw new Error('truncated field')
   }
