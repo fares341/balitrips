@@ -435,6 +435,14 @@
 .ai-chip:hover {
   border-color: var(--forest);
 }
+/* Desktop panel: the row has a hidden scrollbar, so a mouse user could not
+   reach a clipped suggestion — wrap them instead (phones keep the swipe row). */
+@media (min-width: 641px) {
+  .ai-chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
 .ai-foot {
   border-top: 1px solid var(--line-soft);
   background: var(--white);

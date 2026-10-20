@@ -252,10 +252,33 @@ const pageErrors = []
   record('en 1440: floating button visible', await page.locator('.ai-fab').isVisible(), '', fab)
   await openPanel(page)
   const open = await shot(page, 'en-1440-panel-open')
+  // Three suggestions, plus the driver one only while FEATURES.driver is on.
+  const driverOn = /driver:\s*true/.test(readFileSync('src/lib/features.ts', 'utf8'))
+  const chipsWanted = driverOn ? 4 : 3
+  const panelOpen = await page.evaluate(() => {
+    const panel = document.querySelector('.ai-panel')?.getBoundingClientRect()
+    const chips = [...document.querySelectorAll('.ai-chip')]
+    const clipped = chips
+      .filter((c) => {
+        const r = c.getBoundingClientRect()
+        return !panel || r.left < panel.left - 1 || r.right > panel.right + 1
+      })
+      .map((c) => c.textContent)
+    return {
+      welcome: (document.querySelector('.ai-msg.ai-bot .ai-bubble')?.textContent ?? '').trim()
+        .length,
+      chips: chips.map((c) => c.textContent),
+      clipped,
+      driverChip: chips.some((c) => /driver/i.test(c.textContent ?? '')),
+    }
+  })
   record(
     'en 1440: panel opens with welcome and suggestions',
-    (await page.locator('.ai-chip').count()) === 4,
-    '',
+    panelOpen.welcome > 0 &&
+      panelOpen.chips.length === chipsWanted &&
+      panelOpen.clipped.length === 0 &&
+      panelOpen.driverChip === driverOn,
+    JSON.stringify({ ...panelOpen, chipsWanted }),
     open,
   )
   const flushDesk = await panelFlush(page)
