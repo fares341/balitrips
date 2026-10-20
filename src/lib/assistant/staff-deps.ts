@@ -28,6 +28,7 @@ import { db } from '@/db'
 import {
   activities,
   articles,
+  categories,
   contactMessages,
   customTripRequests,
   entitlements,
@@ -41,9 +42,14 @@ import {
   users,
 } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
+import { listMapTaxonomy } from '@/lib/content/queries'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
+import { boundingBox } from '@/lib/geo'
+import { isInWater } from '@/lib/geo/water'
 import { formatMoney } from '@/lib/money'
 
+import { expandMapsLink } from './maps-link'
+import { DUPLICATE_M, photonSearch, resolveLocation } from './place-location'
 import type { ContentType, Range, StaffDeps, StaffOrderRow } from './staff-tools'
 import { createAction } from './store'
 
@@ -689,6 +695,58 @@ export const staffDeps: StaffDeps = {
       .select({ id: regions.id })
       .from(regions)
       .where(eq(regions.key, key))
+      .limit(1)
+    return row?.id ?? null
+  },
+
+  locate: (text) =>
+    resolveLocation(text, {
+      expand: (url) => expandMapsLink(url),
+      search: (query) => photonSearch(query),
+    }),
+
+  inWater: (point) => isInWater(point.lat, point.lon),
+
+  async placesNear(point, locale) {
+    // A box a little wider than the duplicate distance; the exact distance is measured after.
+    const box = boundingBox(point, (DUPLICATE_M * 2) / 1000)
+    const rows = await db
+      .select({
+        id: mapPlaces.id,
+        slug: mapPlaces.slug,
+        name: mapPlaces.name,
+        lat: mapPlaces.lat,
+        lon: mapPlaces.lon,
+      })
+      .from(mapPlaces)
+      .where(
+        and(
+          isNull(mapPlaces.deletedAt),
+          gte(mapPlaces.lat, box.minLat),
+          lte(mapPlaces.lat, box.maxLat),
+          gte(mapPlaces.lon, box.minLon),
+          lte(mapPlaces.lon, box.maxLon),
+        ),
+      )
+      .limit(20)
+    return rows.map((row) => ({
+      id: row.id,
+      name: pick(row.name, locale, row.slug),
+      lat: row.lat,
+      lon: row.lon,
+    }))
+  },
+
+  async placeTaxonomy() {
+    const taxonomy = await listMapTaxonomy()
+    return { regions: taxonomy.regions, categories: taxonomy.categories }
+  },
+
+  async categoryId(key) {
+    const [row] = await db
+      .select({ id: categories.id })
+      .from(categories)
+      .where(eq(categories.key, key))
       .limit(1)
     return row?.id ?? null
   },

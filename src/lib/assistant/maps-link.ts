@@ -94,7 +94,8 @@ export async function expandMapsLink(
   } catch {
     return { ok: false, reason: 'not_allowed' }
   }
-  if (url.protocol !== 'https:' || !isShortMapsLink(url)) return { ok: false, reason: 'not_allowed' }
+  if (url.protocol !== 'https:' || !isShortMapsLink(url))
+    return { ok: false, reason: 'not_allowed' }
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)

@@ -108,6 +108,8 @@ export function StudioChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [locating, setLocating] = useState(false)
+  const [locationNote, setLocationNote] = useState<string | null>(null)
   const conversation = useRef<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -189,6 +191,44 @@ export function StudioChat() {
     setCard({ state: 'failed', message: reason })
   }
 
+  /**
+   * "My current location": asked from the browser only on this click, and
+   * sent as an ordinary message the staff member can see in the chat.
+   */
+  function sendMyLocation() {
+    if (busy || locating) return
+    setLocationNote(null)
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLocationNote(t('assistant.my_location_failed'))
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false)
+        const { latitude, longitude, accuracy } = position.coords
+        void send(
+          t('assistant.my_location_msg', {
+            lat: latitude.toFixed(6),
+            lon: longitude.toFixed(6),
+            meters: Math.max(1, Math.round(accuracy)),
+          }),
+        )
+      },
+      (error) => {
+        setLocating(false)
+        setLocationNote(
+          t(
+            error.code === error.PERMISSION_DENIED
+              ? 'assistant.my_location_denied'
+              : 'assistant.my_location_failed',
+          ),
+        )
+      },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
+    )
+  }
+
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     void send(input)
@@ -206,18 +246,23 @@ export function StudioChat() {
     const text = t(k)
     return text === k ? key : text
   }
-  const show = (value: unknown) =>
-    typeof value === 'boolean'
-      ? t(value ? 'assistant.yes' : 'assistant.no')
-      : Array.isArray(value)
-        ? value.join(', ')
-        : String(value)
+  const show = (key: string, value: unknown) =>
+    key === 'status' &&
+    typeof value === 'string' &&
+    t(`assistant.v_${value}`) !== `assistant.v_${value}`
+      ? t(`assistant.v_${value}`)
+      : typeof value === 'boolean'
+        ? t(value ? 'assistant.yes' : 'assistant.no')
+        : Array.isArray(value)
+          ? value.join(', ')
+          : String(value)
 
   const chips = [
     'assistant.chip_orders',
     'assistant.chip_bookings',
     'assistant.chip_leads',
     'assistant.chip_stats',
+    'assistant.chip_place',
   ]
 
   return (
@@ -250,14 +295,32 @@ export function StudioChat() {
                   <p className="a-ai-card-t">{t('assistant.card_title')}</p>
                   <dl>
                     {Object.entries(card.summary)
-                      .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                      .filter(
+                        ([key, value]) =>
+                          key !== 'warnings' &&
+                          value !== null &&
+                          value !== undefined &&
+                          value !== '',
+                      )
                       .map(([key, value]) => (
                         <div key={key}>
                           <dt>{label(key)}</dt>
-                          <dd dir="auto">{show(value)}</dd>
+                          <dd dir="auto">{show(key, value)}</dd>
                         </div>
                       ))}
                   </dl>
+                  {Array.isArray(card.summary.warnings) && card.summary.warnings.length > 0 ? (
+                    <div className="a-ai-warn" role="note">
+                      <p>
+                        <Icon name="alert" size={16} /> {t('assistant.f_warnings')}
+                      </p>
+                      <ul>
+                        {card.summary.warnings.map((code) => (
+                          <li key={String(code)}>{t(`assistant.w_${String(code)}`)}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                   {card.state === 'pending' || card.state === 'running' ? (
                     <div className="a-row">
                       <button
@@ -345,11 +408,28 @@ export function StudioChat() {
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="a-btn" disabled={busy || input.trim() === ''}>
-          <Icon name="send" size={18} />
-          <span>{t('assistant.send')}</span>
-        </button>
+        <div className="a-ai-form-actions">
+          <button
+            type="button"
+            className="a-btn ghost"
+            title={t('assistant.my_location_title')}
+            disabled={busy || locating}
+            onClick={sendMyLocation}
+          >
+            <Icon name="pin" size={18} />
+            <span>{locating ? t('assistant.my_location_busy') : t('assistant.my_location')}</span>
+          </button>
+          <button type="submit" className="a-btn" disabled={busy || input.trim() === ''}>
+            <Icon name="send" size={18} />
+            <span>{t('assistant.send')}</span>
+          </button>
+        </div>
       </form>
+      {locationNote ? (
+        <p className="a-ai-err" role="alert">
+          {locationNote}
+        </p>
+      ) : null}
     </section>
   )
 }

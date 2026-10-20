@@ -108,7 +108,11 @@ async function invoke(kind: string, args: Record<string, unknown>, existingNotes
           throw new Error('unknown content type')
       }
     }
-    case 'place_draft':
+    case 'place_draft': {
+      const category =
+        typeof args.categoryLabel === 'object' && args.categoryLabel !== null
+          ? (args.categoryLabel as Record<string, unknown>)
+          : {}
       return savePlace(
         'new',
         form({
@@ -116,10 +120,16 @@ async function invoke(kind: string, args: Record<string, unknown>, existingNotes
           name_en: str(args.nameEn),
           name_ar: str(args.nameAr),
           name_id: str(args.nameId),
+          category_en: str(category.en),
+          category_ar: str(category.ar),
           description_en: str(args.descriptionEn),
+          description_ar: str(args.descriptionAr),
           lat: String(args.lat),
           lon: String(args.lon),
           regionId: typeof args.regionId === 'string' ? args.regionId : '',
+          categoryId: typeof args.categoryId === 'string' ? args.categoryId : '',
+          // Inside the free area a new place is free, like its neighbours.
+          isFree: args.isFree === true ? 'on' : null,
           requiredEntitlement: 'map_access',
           canFavorite: 'on',
           canAddToTrip: 'on',
@@ -128,6 +138,7 @@ async function invoke(kind: string, args: Record<string, unknown>, existingNotes
           status: 'draft',
         }),
       )
+    }
     case 'lead_status':
       return setTripRequestStatus(str(args.requestId), form({ status: str(args.status) }))
     case 'lead_note': {

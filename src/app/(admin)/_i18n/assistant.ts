@@ -21,7 +21,7 @@ const section: Section = {
     'assistant.link_conversations': 'Website conversations',
     'assistant.link_settings': 'Settings',
     'assistant.welcome':
-      'Hello! I can look up orders, bookings, customers, custom requests, payments and content, and prepare changes for you to confirm.',
+      'Hello! I can look up orders, bookings, customers, custom requests, payments and content, and prepare changes for you to confirm. To add a place to the map, send me its Google Maps link, its coordinates, its name, or your current location.',
     'assistant.placeholder':
       'Ask, e.g. “today’s orders” or “which bookings are waiting for a provider?”',
     'assistant.input_label': 'Message to the assistant',
@@ -65,6 +65,29 @@ const section: Section = {
     'assistant.f_request': 'Request',
     'assistant.f_addNote': 'Note to add',
     'assistant.f_message': 'Message from',
+    'assistant.f_placeAr': 'Arabic name',
+    'assistant.f_category': 'Category',
+    'assistant.f_description': 'Short description',
+    'assistant.f_free': 'Free for all visitors',
+    'assistant.f_nearbyPlaces': 'Places already within 50 m',
+    'assistant.f_warnings': 'Please check',
+    'assistant.v_draft': 'Draft — not shown on the website until you publish it',
+    'assistant.w_outside_bali': 'This spot is outside Bali.',
+    'assistant.w_in_water': 'The pin is in the sea or a lake.',
+    'assistant.w_water_unchecked':
+      'We couldn’t check whether the pin is in the water. Please look at it on the map after saving.',
+    'assistant.w_near_existing': 'Another place is less than 50 m away — it may be the same place.',
+    'assistant.chip_place': 'Add a place to the map',
+    'assistant.my_location': 'Send my current location',
+    'assistant.my_location_title':
+      'Sends your current location to the assistant, only when you press this button.',
+    'assistant.my_location_busy': 'Finding your location…',
+    'assistant.my_location_msg':
+      'Add a map place at my current location: {lat}, {lon} (accurate to about {meters} m)',
+    'assistant.my_location_denied':
+      'Location access isn’t allowed in this browser. You can allow it in the browser settings, or send a Google Maps link instead.',
+    'assistant.my_location_failed':
+      'Your location couldn’t be found. Please try again, or send a Google Maps link or the coordinates.',
     'assistant.yes': 'Yes',
     'assistant.no': 'No',
     'assistant.conv_title': 'Website conversations',
@@ -137,7 +160,7 @@ const section: Section = {
     'assistant.link_conversations': 'محادثات الموقع',
     'assistant.link_settings': 'الإعدادات',
     'assistant.welcome':
-      'مرحباً! أستطيع البحث في الطلبات والحجوزات والعملاء والطلبات الخاصة والمدفوعات والمحتوى، وتجهيز التغييرات لتؤكدها أنت.',
+      'مرحباً! أستطيع البحث في الطلبات والحجوزات والعملاء والطلبات الخاصة والمدفوعات والمحتوى، وتجهيز التغييرات لتؤكدها أنت. لإضافة مكان إلى الخريطة أرسل لي رابطه على خرائط Google أو إحداثياته أو اسمه أو موقعك الحالي.',
     'assistant.placeholder': 'اسأل، مثلاً: «طلبات اليوم» أو «ما الحجوزات التي تنتظر المزوّد؟»',
     'assistant.input_label': 'رسالة إلى المساعد',
     'assistant.send': 'إرسال',
@@ -180,6 +203,28 @@ const section: Section = {
     'assistant.f_request': 'الطلب',
     'assistant.f_addNote': 'الملاحظة المضافة',
     'assistant.f_message': 'رسالة من',
+    'assistant.f_placeAr': 'الاسم بالعربية',
+    'assistant.f_category': 'التصنيف',
+    'assistant.f_description': 'وصف قصير',
+    'assistant.f_free': 'مجاني لكل الزوار',
+    'assistant.f_nearbyPlaces': 'أماكن موجودة على بُعد أقل من 50 م',
+    'assistant.f_warnings': 'يُرجى التحقق',
+    'assistant.v_draft': 'مسودة — لا تظهر على الموقع حتى تنشرها',
+    'assistant.w_outside_bali': 'هذا الموقع خارج بالي.',
+    'assistant.w_in_water': 'الدبوس في البحر أو في بحيرة.',
+    'assistant.w_water_unchecked':
+      'تعذّر التحقق مما إذا كان الدبوس في الماء. يُرجى مراجعته على الخريطة بعد الحفظ.',
+    'assistant.w_near_existing': 'يوجد مكان آخر على بُعد أقل من 50 متراً — قد يكون المكان نفسه.',
+    'assistant.chip_place': 'إضافة مكان إلى الخريطة',
+    'assistant.my_location': 'إرسال موقعي الحالي',
+    'assistant.my_location_title': 'يرسل موقعك الحالي إلى المساعد، فقط عند الضغط على هذا الزر.',
+    'assistant.my_location_busy': 'جارٍ تحديد موقعك…',
+    'assistant.my_location_msg':
+      'أضف مكاناً على الخريطة في موقعي الحالي: {lat}, {lon} (بدقة {meters} م تقريباً)',
+    'assistant.my_location_denied':
+      'الوصول إلى الموقع غير مسموح في هذا المتصفح. يمكنك السماح به من إعدادات المتصفح، أو إرسال رابط خرائط Google بدلاً من ذلك.',
+    'assistant.my_location_failed':
+      'تعذّر تحديد موقعك. حاول مرة أخرى، أو أرسل رابط خرائط Google أو الإحداثيات.',
     'assistant.yes': 'نعم',
     'assistant.no': 'لا',
     'assistant.conv_title': 'محادثات الموقع',

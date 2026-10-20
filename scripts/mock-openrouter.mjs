@@ -59,6 +59,39 @@ function script({ user, results, studio }) {
   const last = results[step - 1] ?? null
 
   if (studio) {
+    // Add a map place from a location: find_location → propose_place_draft.
+    if (
+      user.includes('map place') ||
+      user.includes('current location') ||
+      user.includes('موقعي الحالي') ||
+      user.includes('مكاناً على الخريطة')
+    ) {
+      if (step === 0) return call('find_location', { text: user })
+      if (step === 1) {
+        if (!last?.found) {
+          const names = (last?.choices ?? []).map((c) => c.name).join(', ')
+          return say(
+            names ? `Which one do you mean: ${names}?` : String(last?.ask ?? 'Where is it?'),
+          )
+        }
+        return call('propose_place_draft', {
+          nameEn: 'CI Check Cafe',
+          nameAr: 'مقهى الفحص',
+          lat: last.lat,
+          lon: last.lon,
+          ...(last.categories?.[0] ? { categoryKey: last.categories[0].key } : {}),
+          descriptionEn: 'A test place added by the assistant check.',
+          descriptionAr: 'مكان تجريبي أضافه فحص المساعد.',
+        })
+      }
+      if (!last?.proposed) return say(`I could not prepare it: ${JSON.stringify(last)}`)
+      const warnings = last.shown?.warnings ?? []
+      return say(
+        `I prepared **${last.shown?.place}** as a draft at ${last.shown?.coordinates}.` +
+          (warnings.length ? ` Please check: ${warnings.join(', ')}.` : '') +
+          ' Press **Confirm** to add it.',
+      )
+    }
     if (user.includes('unpublish')) {
       if (step === 0)
         return call('list_content', { type: 'activity', status: 'published', limit: 1 })

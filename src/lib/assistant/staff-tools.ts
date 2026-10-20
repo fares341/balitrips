@@ -20,12 +20,16 @@
 
 import { z } from 'zod'
 
+import { buildFreeZone, freeRegionKey, inFreeZone, regionAt } from '@/app/[locale]/map/regions'
 import { can, isElevated, type Capability, type Role } from '@/lib/auth/roles'
 import { BOOKING_STATUSES } from '@/lib/orders/booking-status'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 import { formatMoney } from '@/lib/money'
 
+import type { MapRegion } from '@/lib/search/query'
+
 import type { AssistantTool, ToolResult } from './engine'
+import { checkSpot, type ExistingPlace, type LocationResult } from './place-location'
 
 export const TRIP_STATUSES = [
   'new',
@@ -153,6 +157,17 @@ export interface StaffDeps {
   ): Promise<{ name: string; status: string; notes: string | null } | null>
   slugTaken(slug: string): Promise<boolean>
   regionId(key: string): Promise<string | null>
+  /** A link, coordinates or a name → a spot (./place-location.ts). */
+  locate(text: string): Promise<LocationResult>
+  /** True in the sea or a lake, null when it could not be checked. */
+  inWater(point: { lat: number; lon: number }): Promise<boolean | null>
+  /** Non-archived places around a point (the caller measures the exact distance). */
+  placesNear(point: { lat: number; lon: number }, locale: 'en' | 'ar'): Promise<ExistingPlace[]>
+  placeTaxonomy(): Promise<{
+    regions: MapRegion[]
+    categories: { key: string; label: Record<string, string> }[]
+  }>
+  categoryId(key: string): Promise<string | null>
   createAction(input: {
     conversationId: string
     kind: string
@@ -697,59 +712,254 @@ const proposePublish = staffTool({
   },
 })
 
-const proposePlaceDraft = staffTool({
-  name: 'propose_place_draft',
+/* --------------------------------------------------------------------------
+   Adding a map place from a location
+   -------------------------------------------------------------------------- */
+
+/** What to tell the staff member when a location could not be read (for the model). */
+const LOCATION_ASK: Record<Extract<LocationResult, { kind: 'none' }>['reason'], string> = {
+  empty: 'Ask where the place is: a Google Maps link, the coordinates, or its name.',
+  short_link_failed:
+    'This short Google Maps link could not be opened from here. Politely ask the staff member to open it in Google Maps and send the full link from the address bar, or the coordinates.',
+  link_without_place:
+    'The link does not point at one place. Ask for the link of the place itself (Share → Copy link) or its coordinates.',
+  not_a_maps_link:
+    'Only Google Maps links can be read. Ask for a Google Maps link, the coordinates, or the place name.',
+  not_found:
+    'Nothing in Bali matches that name. Ask for a Google Maps link, the coordinates, or a more precise name.',
+  search_failed:
+    'The place search is not answering right now. Ask for a Google Maps link or the coordinates instead.',
+}
+
+const SOURCE_NOTE: Record<string, string> = {
+  pin: 'the place pin in the Google Maps link',
+  centre: 'the map centre in the Google Maps link (approximate: ask them to check the pin)',
+  query: 'the coordinates in the Google Maps link',
+  pair: 'the coordinates the staff member sent',
+  search: 'the place search (OpenStreetMap) — ask them to check it is the right place',
+}
+
+const round6 = (n: number) => Math.round(n * 1e6) / 1e6
+const labelIn = (label: Record<string, string> | null | undefined, locale: string, key: string) =>
+  label?.[locale] || label?.en || key
+
+/** Lowercase-with-dashes from an English name ("Café Moka, Ubud" → "cafe-moka-ubud"). */
+export function placeSlug(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 90)
+    .replace(/-+$/, '')
+}
+
+/** Everything the card and the model need to know about a spot: the editor's checks, area, free zone. */
+async function spotFacts(ctx: StaffCtx, point: { lat: number; lon: number }) {
+  const [existing, inWater, taxonomy] = await Promise.all([
+    ctx.deps.placesNear(point, ctx.locale),
+    ctx.deps.inWater(point),
+    ctx.deps.placeTaxonomy(),
+  ])
+  const check = checkSpot(point, { inWater, existing })
+  const region = regionAt(taxonomy.regions, point)
+  const zone = buildFreeZone(taxonomy.regions, freeRegionKey())
+  return {
+    check,
+    region,
+    regionName: region ? labelIn(region.label, ctx.locale, region.key) : null,
+    free: inFreeZone(zone, point),
+    regions: taxonomy.regions,
+    categories: taxonomy.categories,
+  }
+}
+
+const findLocation = staffTool({
+  name: 'find_location',
   description:
-    'Propose creating a new map place as a DRAFT (not visible on the site until someone publishes it in Studio). Locked (map plan) by default.',
+    'First step for adding a map place. Reads where it is from what the staff member sent: a Google Maps link (full, or short maps.app.goo.gl / goo.gl/maps), coordinates (decimal, @lat,lng, degrees-minutes-seconds), a "my current location" message, or a place name/address (searched in Bali only). Returns the coordinates, the area, warnings (outside Bali, in water, another place within 50 m) and the place categories to choose from — or several matches to choose from, or what to ask for.',
   capability: 'content.write',
   parameters: obj(
     {
-      slug: { type: 'string', description: 'lowercase-with-dashes' },
+      text: {
+        type: 'string',
+        description:
+          'The link or coordinates exactly as the staff member sent them, or just the place name/address to search for.',
+      },
+    },
+    ['text'],
+  ),
+  schema: z.object({ text: z.string().trim().min(1).max(1000) }),
+  run: async ({ text }, ctx) => {
+    const found = await ctx.deps.locate(text)
+    if (found.kind === 'none') {
+      return { data: { found: false, reason: found.reason, ask: LOCATION_ASK[found.reason] } }
+    }
+    if (found.kind === 'choices') {
+      return {
+        data: {
+          found: false,
+          choices: found.choices.map((hit) => ({
+            name: hit.name,
+            detail: hit.detail,
+            lat: round6(hit.lat),
+            lon: round6(hit.lon),
+          })),
+          ask: 'Several places in Bali match. Show these names and ask which one is meant (or ask for its Google Maps link). Then call find_location again with the chosen coordinates.',
+        },
+      }
+    }
+    const point = { lat: round6(found.lat), lon: round6(found.lon) }
+    const facts = await spotFacts(ctx, point)
+    return {
+      data: {
+        found: true,
+        lat: point.lat,
+        lon: point.lon,
+        from: SOURCE_NOTE[found.source] ?? found.source,
+        label: found.label,
+        area: facts.regionName,
+        regionKey: facts.region?.key ?? null,
+        freeForEveryone: facts.free,
+        warnings: facts.check.warnings,
+        nearbyPlaces: facts.check.nearby.map((p) => ({
+          name: p.name,
+          meters: p.meters,
+          studio: ctx.href(`/places/${p.id}`),
+        })),
+        categories: facts.categories
+          .slice(0, 40)
+          .map((c) => ({ key: c.key, name: c.label.en ?? c.key })),
+        next: 'Call propose_place_draft with these exact coordinates. Name: what the staff member called it, else the label above, else ask (give English, and Arabic too). Category: the best fitting key above. Description: one or two short sentences from what you know — never invent prices, hours or facts. Mention any warnings in plain words.',
+      },
+    }
+  },
+})
+
+const proposePlaceDraft = staffTool({
+  name: 'propose_place_draft',
+  description:
+    'Propose creating a new map place as a DRAFT (not visible on the site until someone publishes it in Studio). Use the coordinates from find_location. The card shows the staff member the place and any warnings; nothing is saved until they press Confirm.',
+  capability: 'content.write',
+  parameters: obj(
+    {
       nameEn: { type: 'string' },
       nameAr: { type: 'string' },
       nameId: { type: 'string' },
       lat: { type: 'number' },
       lon: { type: 'number' },
-      regionKey: { type: 'string' },
-      descriptionEn: { type: 'string' },
+      categoryKey: { type: 'string', description: 'a category key from find_location' },
+      descriptionEn: { type: 'string', description: 'one or two short sentences' },
+      descriptionAr: { type: 'string', description: 'one or two short sentences' },
+      regionKey: { type: 'string', description: 'only to override the area find_location gave' },
+      slug: { type: 'string', description: 'optional; made from the English name if left out' },
     },
-    ['slug', 'nameEn', 'lat', 'lon'],
+    ['nameEn', 'lat', 'lon'],
   ),
   schema: z.object({
-    slug: z
-      .string()
-      .trim()
-      .min(3)
-      .max(100)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     nameEn: z.string().trim().min(1).max(120),
     nameAr: z.string().trim().max(120).optional(),
     nameId: z.string().trim().max(120).optional(),
-    // Bali and the nearby islands only.
+    // Bali and the nearby islands; "outside Bali" proper is a warning on the card.
     lat: z.number().min(-9.2).max(-7.7),
     lon: z.number().min(114.3).max(116.8),
+    categoryKey: z
+      .string()
+      .trim()
+      .max(64)
+      .regex(/^[a-z0-9_-]+$/)
+      .optional(),
+    descriptionEn: z.string().trim().max(500).optional(),
+    descriptionAr: z.string().trim().max(500).optional(),
     regionKey: z
       .string()
       .trim()
       .max(64)
       .regex(/^[a-z0-9_-]+$/)
       .optional(),
-    descriptionEn: z.string().trim().max(1000).optional(),
+    slug: z
+      .string()
+      .trim()
+      .min(3)
+      .max(100)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .optional(),
   }),
   run: async (args, ctx) => {
-    if (await ctx.deps.slugTaken(args.slug)) return { data: { error: 'slug_taken' } }
-    const regionId = args.regionKey ? await ctx.deps.regionId(args.regionKey) : null
+    const point = { lat: round6(args.lat), lon: round6(args.lon) }
+
+    let slug = args.slug ?? null
+    if (slug !== null) {
+      if (await ctx.deps.slugTaken(slug)) return { data: { error: 'slug_taken' } }
+    } else {
+      const base = placeSlug(args.nameEn) || 'place'
+      for (const candidate of [base, ...[2, 3, 4, 5, 6, 7, 8, 9].map((n) => `${base}-${n}`)]) {
+        if (candidate.length >= 3 && !(await ctx.deps.slugTaken(candidate))) {
+          slug = candidate
+          break
+        }
+      }
+      if (slug === null) return { data: { error: 'slug_taken', hint: 'pass a slug' } }
+    }
+
+    const facts = await spotFacts(ctx, point)
+
+    const category = args.categoryKey
+      ? (facts.categories.find((c) => c.key === args.categoryKey) ?? null)
+      : null
+    if (args.categoryKey && category === null) {
+      return {
+        data: { error: 'unknown_category', categories: facts.categories.map((c) => c.key) },
+      }
+    }
+    const categoryId = category ? await ctx.deps.categoryId(category.key) : null
+
+    const regionKey = args.regionKey ?? facts.region?.key ?? null
+    const regionId = regionKey ? await ctx.deps.regionId(regionKey) : null
     if (args.regionKey && regionId === null) return { data: { error: 'unknown_region' } }
+    const regionLabel = facts.regions.find((r) => r.key === regionKey)?.label
+    const regionName = regionKey ? labelIn(regionLabel, ctx.locale, regionKey) : null
+
+    const description =
+      ctx.locale === 'ar'
+        ? (args.descriptionAr ?? args.descriptionEn)
+        : (args.descriptionEn ?? args.descriptionAr)
+
     return propose(
       ctx,
       'place_draft',
-      { ...args, regionId },
+      {
+        slug,
+        nameEn: args.nameEn,
+        nameAr: args.nameAr,
+        nameId: args.nameId,
+        lat: point.lat,
+        lon: point.lon,
+        regionId,
+        categoryId,
+        categoryLabel: category
+          ? { en: category.label.en ?? '', ar: category.label.ar ?? '' }
+          : null,
+        descriptionEn: args.descriptionEn,
+        descriptionAr: args.descriptionAr,
+        isFree: facts.free,
+      },
       {
         place: args.nameEn,
-        slug: args.slug,
-        coordinates: `${args.lat.toFixed(5)}, ${args.lon.toFixed(5)}`,
-        region: args.regionKey ?? null,
+        placeAr: args.nameAr ?? null,
+        category: category ? labelIn(category.label, ctx.locale, category.key) : null,
+        coordinates: `${point.lat.toFixed(6)}, ${point.lon.toFixed(6)}`,
+        region: regionName,
+        description: description ?? null,
+        free: facts.free,
+        slug,
         status: 'draft',
+        warnings: facts.check.warnings.length > 0 ? facts.check.warnings : null,
+        nearbyPlaces:
+          facts.check.nearby.length > 0
+            ? facts.check.nearby.map((p) => `${p.name} (${p.meters} m)`).join(', ')
+            : null,
       },
     )
   },
@@ -827,6 +1037,7 @@ export const STAFF_TOOLS = [
   settingsTool,
   proposeBookingStatus,
   proposePublish,
+  findLocation,
   proposePlaceDraft,
   proposeLeadStatus,
   proposeLeadNote,

@@ -101,9 +101,11 @@ export default async function AssistantConversationPage({
                       <dd dir="auto">
                         {typeof value === 'boolean'
                           ? t(value ? 'assistant.yes' : 'assistant.no')
-                          : Array.isArray(value)
-                            ? value.join(', ')
-                            : String(value)}
+                          : key === 'warnings' && Array.isArray(value)
+                            ? value.map((code) => t(`assistant.w_${String(code)}`)).join(' ')
+                            : Array.isArray(value)
+                              ? value.join(', ')
+                              : String(value)}
                       </dd>
                     </div>
                   ))}

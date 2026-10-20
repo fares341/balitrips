@@ -12,12 +12,23 @@
  *      OpenStreetMap data), the geocoder the place editor uses, limited to
  *      Bali. One result is the spot; several are offered as a choice.
  *
+ * Then the same checks as the place editor (`checkSpot`): outside Bali, in
+ * the sea or a lake, another place within 50 m. They are warnings for the
+ * admin to read on the proposal card, never blockers.
+ *
  * Network access is injected (`deps`) so the tests never leave the machine.
  */
 
+import { haversineKm, isInBali } from '@/lib/geo'
 import { normalizeDigits, parseCoordinateText } from '@/lib/geo/parse-coords'
 
-import { expandMapsLink, findUrl, isGoogleMapsHost, isShortMapsLink, placeNameFromUrl } from './maps-link'
+import {
+  expandMapsLink,
+  findUrl,
+  isGoogleMapsHost,
+  isShortMapsLink,
+  placeNameFromUrl,
+} from './maps-link'
 
 export interface SearchHit {
   name: string
@@ -100,6 +111,20 @@ export async function resolveLocation(input: string, deps: LocationDeps): Promis
         return { kind: 'none', reason: 'link_without_place' }
       }
     }
+    // Google's cookie-consent page carries the real address in `continue`.
+    const next = landed.hostname.startsWith('consent.') ? landed.searchParams.get('continue') : null
+    if (next) {
+      try {
+        const inner = new URL(next)
+        if (isGoogleMapsHost(inner.hostname)) {
+          const coords = parseCoordinateText(inner.href)
+          if (coords) return { kind: 'point', ...coords, label: null }
+          landed = inner
+        }
+      } catch {
+        // not a URL: fall through with the consent page
+      }
+    }
     const name = placeNameFromUrl(landed) ?? landed.searchParams.get('q')?.trim() ?? null
     if (name) return byName(name.slice(0, 120), deps)
     return { kind: 'none', reason: 'link_without_place' }
@@ -112,6 +137,48 @@ export async function resolveLocation(input: string, deps: LocationDeps): Promis
 
   if (text.length < 3) return { kind: 'none', reason: 'not_found' }
   return byName(text.slice(0, 120), deps)
+}
+
+/* --------------------------------------------------------------------------
+   Checks — the place editor's, as warnings
+   -------------------------------------------------------------------------- */
+
+/** Two places closer than this are probably the same place (as in the editor). */
+export const DUPLICATE_M = 50
+
+export type PlaceWarning = 'outside_bali' | 'in_water' | 'water_unchecked' | 'near_existing'
+
+export interface ExistingPlace {
+  id: string
+  name: string
+  lat: number
+  lon: number
+}
+
+export interface SpotCheck {
+  warnings: PlaceWarning[]
+  /** Existing places within DUPLICATE_M, closest first. */
+  nearby: (ExistingPlace & { meters: number })[]
+}
+
+/**
+ * `inWater`: true / false from the map data, null when it could not be read
+ * (then the card asks the admin to look at the map themselves).
+ */
+export function checkSpot(
+  point: { lat: number; lon: number },
+  input: { inWater: boolean | null; existing: readonly ExistingPlace[] },
+): SpotCheck {
+  const warnings: PlaceWarning[] = []
+  if (!isInBali(point)) warnings.push('outside_bali')
+  if (input.inWater === true) warnings.push('in_water')
+  if (input.inWater === null) warnings.push('water_unchecked')
+  const nearby = input.existing
+    .map((place) => ({ ...place, meters: Math.round(haversineKm(point, place) * 1000) }))
+    .filter((place) => place.meters < DUPLICATE_M)
+    .sort((a, b) => a.meters - b.meters)
+  if (nearby.length > 0) warnings.push('near_existing')
+  return { warnings, nearby }
 }
 
 /* --------------------------------------------------------------------------

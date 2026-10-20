@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCoordinateText } from './parse-coords'
+import { normalizeDigits, parseCoordinateText, parseDms } from './parse-coords'
 
 describe('parseCoordinateText', () => {
   it('reads a plain decimal pair in the usual spellings', () => {
@@ -42,5 +42,51 @@ describe('parseCoordinateText', () => {
     expect(parseCoordinateText('95, 200')).toBeNull()
     expect(parseCoordinateText('0, 0')).toBeNull()
     expect(parseCoordinateText('')).toBeNull()
+  })
+
+  it('reads Arabic-Indic and Persian digits and the Arabic comma', () => {
+    expect(normalizeDigits('-٨٫٥٠٦٩، ١١٥٫٢٦٢٥')).toBe('-8.5069, 115.2625')
+    expect(parseCoordinateText('-٨٫٥٠٦٩، ١١٥٫٢٦٢٥')).toEqual({
+      lat: -8.5069,
+      lon: 115.2625,
+      source: 'pair',
+    })
+    expect(parseCoordinateText('−۸.۵, ۱۱۵.۲')).toMatchObject({ lat: -8.5, lon: 115.2 })
+  })
+})
+
+describe('degrees, minutes, seconds', () => {
+  const ubud = { lat: -8.506889, lon: 115.2625, source: 'pair' }
+
+  it('reads the form Google Maps shows for a dropped pin', () => {
+    expect(parseCoordinateText(`8°30'24.8"S 115°15'45.0"E`)).toEqual(ubud)
+  })
+
+  it('accepts the usual spellings', () => {
+    for (const text of [
+      `8°30′24.8″S 115°15′45.0″E`,
+      `8°30'24.8''S, 115°15'45''E`,
+      `S 8° 30' 24.8" E 115° 15' 45"`,
+      `115°15'45"E 8°30'24.8"S`,
+      `-8° 30' 24.8", 115° 15' 45"`,
+      `(8º30'24.8"S; 115º15'45"E)`,
+    ]) {
+      expect(parseCoordinateText(text)).toEqual(ubud)
+    }
+    expect(parseCoordinateText(`8°30.4133'S 115°15.75'E`)).toMatchObject({ lon: 115.2625 })
+    expect(parseCoordinateText(`8.5069° S, 115.2625° E`)).toEqual({
+      lat: -8.5069,
+      lon: 115.2625,
+      source: 'pair',
+    })
+  })
+
+  it('refuses what is not two clean parts', () => {
+    expect(parseDms(`8°30'24.8"N 8°30'24.8"S`)).toBeNull() // two latitudes
+    expect(parseDms(`8°75'S 115°E`)).toBeNull() // 75 minutes
+    expect(parseDms(`8°S`)).toBeNull()
+    expect(parseDms(`near 8° 115°`)).toBeNull()
+    expect(parseDms(`-8°30'S 115°E`)).toBeNull() // minus and S together
+    expect(parseDms(`8°30'24"S 115°15'45"E 7°`)).toBeNull()
   })
 })

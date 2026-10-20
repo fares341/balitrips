@@ -8,6 +8,7 @@ import {
   STAFF_TOOLS,
   maskEmail,
   maskPhone,
+  placeSlug,
   toolsFor,
   type StaffCtx,
   type StaffDeps,
@@ -168,6 +169,223 @@ describe('Studio write tools only propose', () => {
       ctx('admin', d),
     )
     expect(result.data).toMatchObject({ error: 'invalid_arguments' })
+  })
+})
+
+describe('Adding a map place from a location', () => {
+  const TAXONOMY = {
+    regions: [
+      {
+        key: 'central',
+        label: { en: 'Central Bali', ar: 'وسط بالي' },
+        parentKey: null,
+        centerLat: -8.45,
+        centerLon: 115.24,
+        radiusKm: 20,
+      },
+      {
+        key: 'ubud',
+        label: { en: 'Ubud', ar: 'أوبود' },
+        parentKey: 'central',
+        centerLat: -8.5069,
+        centerLon: 115.2625,
+        radiusKm: 4,
+      },
+    ],
+    categories: [
+      { key: 'cafes', label: { en: 'Cafés', ar: 'مقاهٍ' } },
+      { key: 'temples', label: { en: 'Temples', ar: 'معابد' } },
+    ],
+  }
+  const REGION_ID = '66666666-6666-4666-8666-666666666666'
+  const CATEGORY_ID = '77777777-7777-4777-8777-777777777777'
+
+  function placeDeps(over: Partial<StaffDeps> = {}, stored: unknown[] = []) {
+    return deps({
+      locate: async () => ({
+        kind: 'point',
+        lat: -8.5069,
+        lon: 115.2625,
+        source: 'pin',
+        label: null,
+      }),
+      inWater: async () => false,
+      placesNear: async () => [],
+      placeTaxonomy: async () => TAXONOMY,
+      slugTaken: async () => false,
+      regionId: async (key) => (key === 'ubud' ? REGION_ID : null),
+      categoryId: async (key) => (key === 'cafes' ? CATEGORY_ID : null),
+      createAction: async (input) => {
+        stored.push(input)
+        return '88888888-8888-4888-8888-888888888888'
+      },
+      ...over,
+    })
+  }
+
+  it('find_location gives the spot, the area, no warnings and the categories', async () => {
+    const d = placeDeps()
+    const result = await run(
+      'find_location',
+      { text: 'https://maps.app.goo.gl/AbC123' },
+      ctx('staff', d),
+    )
+    expect(result.data).toMatchObject({
+      found: true,
+      lat: -8.5069,
+      lon: 115.2625,
+      area: 'Ubud',
+      regionKey: 'ubud',
+      freeForEveryone: true,
+      warnings: [],
+      categories: [{ key: 'cafes' }, { key: 'temples' }],
+    })
+    expect(result.action).toBeUndefined()
+    expect(d.calls).not.toContain('createAction')
+  })
+
+  it('find_location reports the editor’s warnings: water, a place within 50 m', async () => {
+    const d = placeDeps({
+      inWater: async () => true,
+      placesNear: async () => [{ id: REGION_ID, name: 'Old café', lat: -8.5071, lon: 115.2625 }],
+    })
+    const result = await run('find_location', { text: '-8.5069, 115.2625' }, ctx('staff', d))
+    expect(result.data).toMatchObject({
+      found: true,
+      warnings: ['in_water', 'near_existing'],
+      nearbyPlaces: [{ name: 'Old café', studio: `/studio-x/places/${REGION_ID}` }],
+    })
+  })
+
+  it('find_location asks politely for the full link when a short link cannot be opened', async () => {
+    const d = placeDeps({ locate: async () => ({ kind: 'none', reason: 'short_link_failed' }) })
+    const result = await run(
+      'find_location',
+      { text: 'https://maps.app.goo.gl/AbC123' },
+      ctx('staff', d),
+    )
+    expect(result.data).toMatchObject({ found: false, reason: 'short_link_failed' })
+    expect(JSON.stringify(result.data)).toMatch(/full link|coordinates/)
+    expect(d.calls).toEqual(['locate'])
+  })
+
+  it('find_location offers choices when a name matches several places', async () => {
+    const d = placeDeps({
+      locate: async () => ({
+        kind: 'choices',
+        choices: [
+          { name: 'Warung A', detail: 'Ubud', lat: -8.5, lon: 115.26 },
+          { name: 'Warung B', detail: 'Canggu', lat: -8.65, lon: 115.13 },
+        ],
+      }),
+    })
+    const result = await run('find_location', { text: 'Warung' }, ctx('staff', d))
+    expect(result.data).toMatchObject({ found: false, choices: [{ name: 'Warung A' }, {}] })
+  })
+
+  it('propose_place_draft only proposes: a draft with name, category, area and description', async () => {
+    const stored: { kind: string; args: Record<string, unknown> }[] = []
+    const d = placeDeps({}, stored)
+    const result = await run(
+      'propose_place_draft',
+      {
+        nameEn: 'Café Moka',
+        nameAr: 'مقهى موكا',
+        lat: -8.5069,
+        lon: 115.2625,
+        categoryKey: 'cafes',
+        descriptionEn: 'A small coffee shop.',
+        descriptionAr: 'مقهى صغير.',
+      },
+      ctx('staff', d),
+    )
+    expect(result.action).toMatchObject({
+      kind: 'place_draft',
+      summary: {
+        place: 'Café Moka',
+        placeAr: 'مقهى موكا',
+        category: 'Cafés',
+        region: 'Ubud',
+        description: 'A small coffee shop.',
+        slug: 'cafe-moka',
+        status: 'draft',
+        warnings: null,
+      },
+    })
+    expect(stored[0]?.args).toMatchObject({
+      slug: 'cafe-moka',
+      regionId: REGION_ID,
+      categoryId: CATEGORY_ID,
+      categoryLabel: { en: 'Cafés', ar: 'مقاهٍ' },
+      isFree: true,
+    })
+    // Nothing is written: the only "write" is the stored proposal.
+    expect(d.calls.filter((c) => c === 'createAction')).toHaveLength(1)
+  })
+
+  it('propose_place_draft shows the checks as warnings on the card, in the staff member’s language', async () => {
+    const d = placeDeps({
+      inWater: async () => null,
+      placesNear: async () => [{ id: 'x', name: 'مقهى قديم', lat: -8.5069, lon: 115.2627 }],
+    })
+    const arCtx = { ...ctx('staff', d), locale: 'ar' as const }
+    const result = await run(
+      'propose_place_draft',
+      { nameEn: 'Cafe', lat: -8.5069, lon: 115.2625, categoryKey: 'cafes' },
+      arCtx,
+    )
+    expect(result.action?.summary).toMatchObject({
+      category: 'مقاهٍ',
+      region: 'أوبود',
+      warnings: ['water_unchecked', 'near_existing'],
+    })
+    expect(String(result.action?.summary.nearbyPlaces)).toMatch(/مقهى قديم \(\d+ m\)/)
+  })
+
+  it('a spot just outside Bali (e.g. Lombok) is a warning, far away is refused', async () => {
+    const d = placeDeps({ regionId: async () => null })
+    const lombok = await run(
+      'propose_place_draft',
+      { nameEn: 'Senggigi Beach', lat: -8.49, lon: 116.04 },
+      ctx('admin', d),
+    )
+    expect(lombok.action?.summary).toMatchObject({ warnings: ['outside_bali'] })
+    const paris = await run(
+      'propose_place_draft',
+      { nameEn: 'Eiffel Tower', lat: 48.85, lon: 2.29 },
+      ctx('admin', d),
+    )
+    expect(paris.data).toMatchObject({ error: 'invalid_arguments' })
+  })
+
+  it('a taken slug gets a number; an unknown category is refused', async () => {
+    const taken = new Set(['cafe-moka', 'cafe-moka-2'])
+    const d = placeDeps({ slugTaken: async (slug) => taken.has(slug) })
+    const result = await run(
+      'propose_place_draft',
+      { nameEn: 'Cafe Moka', lat: -8.5069, lon: 115.2625 },
+      ctx('staff', d),
+    )
+    expect(result.action?.summary).toMatchObject({ slug: 'cafe-moka-3' })
+    const bad = await run(
+      'propose_place_draft',
+      { nameEn: 'Cafe Moka', lat: -8.5069, lon: 115.2625, categoryKey: 'spaceports' },
+      ctx('staff', d),
+    )
+    expect(bad.data).toMatchObject({ error: 'unknown_category' })
+    expect(bad.action).toBeUndefined()
+  })
+
+  it('needs content.write: a customer gets forbidden and nothing is looked up', async () => {
+    const d = placeDeps()
+    const result = await run('find_location', { text: '-8.5, 115.2' }, ctx('customer', d))
+    expect(result.data).toEqual({ error: 'forbidden', needs: 'content.write' })
+    expect(d.calls).toEqual([])
+  })
+
+  it('makes slugs from names', () => {
+    expect(placeSlug('Café Moka, Ubud!')).toBe('cafe-moka-ubud')
+    expect(placeSlug('مقهى')).toBe('')
   })
 })
 

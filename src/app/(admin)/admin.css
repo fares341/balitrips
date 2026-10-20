@@ -2148,6 +2148,30 @@ details > summary.a-btn::-webkit-details-marker {
   gap: 8px;
   align-items: flex-end;
 }
+.a-ai-form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.a-ai-warn {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--a-radius);
+  background: var(--a-warn-bg);
+  color: var(--a-warn);
+  font-size: 14px;
+}
+.a-ai-warn p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.a-ai-warn ul {
+  margin: 0;
+  padding-inline-start: 20px;
+}
 .a-ai-form .a-textarea {
   flex: 1;
   min-inline-size: 0;
@@ -2158,6 +2182,9 @@ details > summary.a-btn::-webkit-details-marker {
   .a-ai-form {
     flex-direction: column;
     align-items: stretch;
+  }
+  .a-ai-form-actions > .a-btn {
+    flex: 1 1 auto;
   }
   .a-ai-msg {
     max-inline-size: 100%;

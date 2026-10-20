@@ -596,6 +596,99 @@ for (const width of [390, 1440]) {
         JSON.stringify(audit.slice(0, 4)).slice(0, 500),
       )
     }
+    // Add a map place from "my current location" (browser geolocation, sent only on the click).
+    const placeRows = () =>
+      (db('audit') ?? []).filter((r) => r.action === 'map_place.create').length
+    const placesBefore = placeRows()
+    await ctx.grantPermissions(['geolocation'], { origin: BASE })
+    await ctx.setGeolocation({ latitude: -8.5069, longitude: 115.2625, accuracy: 12 })
+    const botsBefore = await page.locator('.a-ai-msg.is-bot').count()
+    await page.locator('.a-ai-form-actions button[type="button"]').click()
+    await page
+      .waitForFunction(
+        (n) => document.querySelectorAll('.a-ai-msg.is-bot').length > n,
+        botsBefore,
+        {
+          timeout: 20000,
+        },
+      )
+      .catch(() => {})
+    await page
+      .waitForFunction(
+        () => document.querySelector('.a-ai-log')?.getAttribute('aria-busy') === 'false',
+        null,
+        { timeout: 90000 },
+      )
+      .catch(() => {})
+    await page.waitForTimeout(300)
+    const sentText = (await page.locator('.a-ai-msg.is-user').last().innerText()).trim()
+    const placeCard = page.locator('.a-ai-card').last()
+    const placeCardText = (await placeCard.innerText().catch(() => '')).trim()
+    record(
+      'Studio: "my current location" button sends the browser position',
+      /-8\.506900, 115\.262500/.test(sentText),
+      sentText.slice(0, 200),
+    )
+    record(
+      'Studio: a location becomes a place proposal card (draft, coordinates, area)',
+      /CI Check Cafe/.test(placeCardText) && /-8\.506900, 115\.262500/.test(placeCardText),
+      placeCardText.slice(0, 400),
+      await shot(page, 'studio-1440-place-card'),
+    )
+    record(
+      'Studio: no place saved before Confirm',
+      placeRows() === placesBefore,
+      `map_place.create rows: ${placeRows()} (before ${placesBefore})`,
+    )
+    if (/CI Check Cafe/.test(placeCardText)) {
+      await placeCard.locator('.a-btn.accent').click()
+      await page
+        .locator('.a-ai-card .a-ai-ok, .a-ai-card .a-ai-err')
+        .last()
+        .waitFor({ timeout: 30000 })
+        .catch(() => {})
+      const created = (db('audit') ?? []).filter((r) => r.action === 'map_place.create')
+      const newest = created[0]?.after ?? {}
+      record(
+        'Studio: Confirm saves the place as a DRAFT through the place editor action',
+        created.length === placesBefore + 1 &&
+          newest.status === 'draft' &&
+          Math.abs(Number(newest.lat) + 8.5069) < 1e-6,
+        JSON.stringify({
+          status: newest.status,
+          lat: newest.lat,
+          lon: newest.lon,
+          name: newest.name,
+          category: newest.category,
+          isFree: newest.isFree,
+        }).slice(0, 400),
+        await shot(page, 'studio-1440-place-confirmed'),
+      )
+    }
+
+    // A spot in the sea (typed as degrees-minutes-seconds) shows a warning on the card.
+    await askStudio(`Add a map place here: 8°45'00.0"S 115°24'00.0"E`)
+    const seaCard = page.locator('.a-ai-card').last()
+    const seaText = (await seaCard.innerText().catch(() => '')).trim()
+    record(
+      'Studio: a pin in the water shows a warning on the proposal card',
+      (await seaCard.locator('.a-ai-warn').count()) > 0 && /-8\.750000, 115\.400000/.test(seaText),
+      seaText.slice(0, 400),
+      await shot(page, 'studio-1440-place-warning'),
+    )
+    if ((await seaCard.locator('.a-btn.ghost').count()) > 0) {
+      await seaCard.locator('.a-btn.ghost').click()
+    }
+
+    // A link that is not Google Maps: a polite question, no card.
+    const cardsBefore = await page.locator('.a-ai-card').count()
+    const notMaps = await askStudio('Add a map place from https://example.com/somewhere')
+    record(
+      'Studio: a non-Google link gets a polite question, not a proposal',
+      /Google Maps/.test(notMaps) && (await page.locator('.a-ai-card').count()) === cardsBefore,
+      notMaps.slice(0, 300),
+    )
+
     await page.setViewportSize({ width: 390, height: 844 })
     await page.waitForTimeout(500)
     record(
