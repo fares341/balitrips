@@ -61,12 +61,22 @@ const PUBLISH_KEYS: Record<string, string> = {
   draft: 'common.draft',
   published: 'common.published',
   archived: 'common.archived',
+  hidden: 'ae.status_pill_hidden',
+  unavailable: 'ae.status_pill_unavailable',
 }
 
 export async function PublishPill({ status }: { status: string }) {
   const { t } = await uiI18n()
   const key = PUBLISH_KEYS[status]
-  return <Pill tone={status === 'published' ? 'good' : 'neutral'}>{key ? t(key) : status}</Pill>
+  const tone =
+    status === 'published'
+      ? 'good'
+      : status === 'unavailable'
+        ? 'warn'
+        : status === 'hidden'
+          ? 'info'
+          : 'neutral'
+  return <Pill tone={tone}>{key ? t(key) : status}</Pill>
 }
 
 /**

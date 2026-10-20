@@ -68,11 +68,11 @@ const section: Section = {
     'activities.archive_hint':
       'Removes the activity from the website so it can no longer be booked. Past orders and reviews stay as they are.',
     'activities.archive': 'Archive activity',
-    'activities.tiers_title': 'Service tiers',
+    'activities.tiers_title': 'Packages',
     'activities.tiers_empty':
       'No options yet. Without options, the activity is sold at its single price. Options are optional.',
     'activities.tiers_count':
-      'Options: {count}. On the activity page they are shown from the cheapest to the most expensive.',
+      'Packages: {count}. On the activity page they are shown in the order set above.',
     'activities.tier_popular_pill': 'most popular',
     'activities.tier_save': 'Save tier',
     'activities.tier_name': 'Tier name',
@@ -80,7 +80,7 @@ const section: Section = {
     'activities.tier_tagline_hint': 'One line under the title on the card.',
     'activities.pricing_mode': 'Pricing mode',
     'activities.pricing_mode_hint':
-      '“Per person” multiplies the price by the number of people. “Per group” charges one price for each group — e.g. a family package for 4 costs 2 groups for 6 people.',
+      '“Per person” multiplies the price by the number of people. “Per group” charges one price for each group — e.g. a family package for 4 costs 2 groups for 6 people. “Per couple” charges the price for every 2 people.',
     'activities.tier_max_guests_hint':
       'Leave empty to use the activity’s own limit. It can be lower than the activity’s limit, not higher.',
     'activities.tier_max_guests_new_hint': 'Leave empty to use the activity’s limit.',
@@ -447,10 +447,11 @@ const section: Section = {
     'activities.archive_hint':
       'يزيل النشاط من الموقع فلا يمكن حجزه بعد ذلك. تبقى الطلبات والتقييمات السابقة كما هي.',
     'activities.archive': 'أرشفة النشاط',
-    'activities.tiers_title': 'مستويات الخدمة',
+    'activities.tiers_title': 'الباقات',
     'activities.tiers_empty':
       'لا توجد مستويات بعد. بدونها يُباع النشاط بسعره الواحد. المستويات اختيارية.',
-    'activities.tiers_count': 'عدد المستويات: {count}. تظهر في صفحة النشاط من الأرخص إلى الأغلى.',
+    'activities.tiers_count':
+      'عدد الباقات: {count}. تظهر في صفحة النشاط بالترتيب المحدد في الأعلى.',
     'activities.tier_popular_pill': 'الأكثر طلباً',
     'activities.tier_save': 'حفظ المستوى',
     'activities.tier_name': 'اسم المستوى',
@@ -458,7 +459,7 @@ const section: Section = {
     'activities.tier_tagline_hint': 'سطر واحد تحت العنوان في البطاقة.',
     'activities.pricing_mode': 'طريقة التسعير',
     'activities.pricing_mode_hint':
-      '«للشخص» يُضرب السعر في عدد الأشخاص. «للمجموعة» سعر واحد لكل مجموعة — مثلاً باقة عائلية لأربعة تُحسب مجموعتين لستة أشخاص.',
+      '«للشخص» يُضرب السعر في عدد الأشخاص. «للمجموعة» سعر واحد لكل مجموعة — مثلاً باقة عائلية لأربعة تُحسب مجموعتين لستة أشخاص. «للزوجين» السعر لكل شخصين.',
     'activities.tier_max_guests_hint':
       'اتركه فارغاً لاستخدام حد النشاط نفسه. يمكن أن يكون أقل من حد النشاط لا أكثر.',
     'activities.tier_max_guests_new_hint': 'اتركه فارغاً لاستخدام حد النشاط.',

@@ -250,3 +250,101 @@ describe('priceBooking — total = package + Σ add-ons + driver', () => {
     expect(p.totalMinor).toBe(9000)
   })
 })
+
+describe('per_couple packages ("للزوجين")', () => {
+  const couples: PackageRule = {
+    id: 'couples',
+    priceMinor: 15000,
+    currency: 'USD',
+    pricing: 'per_couple',
+    groupMax: null,
+    includesAddons: [],
+  }
+
+  it('is read from the stored pricing mode', () => {
+    expect(tierPricing('per_couple')).toBe('per_couple')
+  })
+
+  it('charges one unit per two people', () => {
+    expect(packageCostMinor(couples, 2)).toBe(15000)
+    expect(packageCostMinor(couples, 4)).toBe(30000)
+    // An odd party still pays for the couple it starts.
+    expect(packageCostMinor(couples, 3)).toBe(30000)
+  })
+
+  it('shows couples as the package quantity', () => {
+    const price = priceBooking({ pkg: couples, addons: [], picks: [], people: 4 })
+    expect(price.lines[0]).toMatchObject({ kind: 'package', quantity: 2, totalMinor: 30000 })
+    expect(price.totalMinor).toBe(30000)
+  })
+
+  it('per-person add-ons still count people, not couples', () => {
+    const price = priceBooking({
+      pkg: couples,
+      addons: [banana],
+      picks: [{ id: 'banana', qty: 1 }],
+      people: 4,
+    })
+    expect(price.addonsMinor).toBe(1500 * 4)
+  })
+})
+
+describe('required library add-ons', () => {
+  const insurance = addon({
+    id: 'insurance',
+    priceMinor: 500,
+    pricing: 'per_person',
+    required: true,
+  })
+
+  it('are added and charged even when not picked', () => {
+    const price = priceBooking({ pkg: basic, addons: [insurance, photo], picks: [], people: 2 })
+    expect(price.resolution.accepted).toEqual([{ id: 'insurance', qty: 1 }])
+    expect(price.addonsMinor).toBe(1000)
+    expect(addonState(insurance, basic, new Set())).toEqual({ kind: 'required' })
+  })
+
+  it('are not doubled when also picked', () => {
+    const r = resolveAddons([insurance], basic, [{ id: 'insurance', qty: 1 }])
+    expect(r.accepted).toEqual([{ id: 'insurance', qty: 1 }])
+    expect(r.rejected).toEqual([])
+  })
+
+  it('respect only_packages and the package that includes them', () => {
+    const only = addon({ id: 'only', onlyPackages: ['plus'], required: true })
+    expect(resolveAddons([only], basic, []).accepted).toEqual([])
+    expect(resolveAddons([only], { ...plus, includesAddons: [] }, []).accepted).toEqual([
+      { id: 'only', qty: 1 },
+    ])
+    const included = addon({ id: 'banana', pricing: 'per_person', required: true })
+    expect(resolveAddons([included], plus, []).accepted).toEqual([])
+  })
+
+  it('skip a switched-off one rather than failing the booking', () => {
+    const off = addon({ id: 'off', required: true, available: false })
+    const r = resolveAddons([off], basic, [])
+    expect(r.accepted).toEqual([])
+    expect(r.rejected).toEqual([])
+  })
+})
+
+describe('included activities', () => {
+  it('are listed at zero after the package, one line each', () => {
+    const price = priceBooking({
+      pkg: basic,
+      addons: [],
+      picks: [],
+      people: 3,
+      included: [
+        { activityId: 'swing', time: null },
+        { activityId: 'temple', time: '14:00' },
+      ],
+    })
+    expect(price.totalMinor).toBe(4500 * 3)
+    expect(price.lines.map((l) => [l.kind, l.refId, l.totalMinor, l.time ?? null])).toEqual([
+      ['package', 'basic', 13500, null],
+      ['included', 'swing', 0, null],
+      ['included', 'temple', 0, '14:00'],
+    ])
+  })
+})

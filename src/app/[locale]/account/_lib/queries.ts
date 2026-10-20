@@ -24,6 +24,8 @@
 
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 
+import { PAGE_STATUSES } from '@/lib/content/activity-status'
+
 import { db } from '@/db'
 import {
   activities,
@@ -152,7 +154,8 @@ export async function listFavorites(userId: string): Promise<FavoriteView[]> {
           .where(
             and(
               inArray(activities.id, activityIds),
-              eq(activities.status, PUBLISHED),
+              // Saved activities stay visible while their page opens (hidden = by link).
+              inArray(activities.status, [...PAGE_STATUSES]),
               isNull(activities.deletedAt),
             ),
           ),

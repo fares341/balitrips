@@ -21,11 +21,19 @@ import { users } from './auth'
 /** Add-on selection stored on a cart line. */
 export interface BookingOptions {
   addons?: { id: string; qty: number }[]
+  /**
+   * Times picked for the package's included activities that have their own
+   * slot (`tier_included_activities.timing = 'own_slot'`). Null time = none.
+   */
+  included?: { activityId: string; time: string | null }[]
 }
 
 /** One priced line of a booking, frozen on the order item. */
 export interface OrderItemPriceLine {
-  kind: 'package' | 'addon'
+  /** `included`: another activity that comes with the package, at zero. */
+  kind: 'package' | 'addon' | 'included'
+  /** Included activity with its own slot: the time picked. */
+  time?: string | null
   refId: string | null
   name: Localized | null
   unitMinor: number
@@ -37,6 +45,12 @@ export interface OrderItemPriceLine {
 
 export interface OrderItemOptions extends BookingOptions {
   lines?: OrderItemPriceLine[]
+  /**
+   * Set on the order item of an activity that came with a package: the
+   * package (`activity_tiers.id`) it was included in. Its price is 0 and its
+   * `parentItemId` is the package's order item.
+   */
+  includedInTier?: string
 }
 
 // ---------------------------------------------------------------------------

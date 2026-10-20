@@ -15,8 +15,10 @@ import { pick } from '@/lib/content/localize'
 import { formatPrice } from '@/components/bt/card'
 
 export type BreakdownPart = {
-  kind: 'package' | 'addon' | 'driver'
+  kind: 'package' | 'addon' | 'driver' | 'included'
   name: Localized | null
+  /** Included activity with its own slot. */
+  time?: string | null
   quantity: number
   totalMinor: number
   included?: boolean
@@ -56,6 +58,12 @@ export async function PriceBreakdown({
                 <>
                   {' '}
                   <span dir="ltr">× {part.quantity}</span>
+                </>
+              ) : null}
+              {part.kind === 'included' && part.time ? (
+                <>
+                  {' · '}
+                  <span dir="ltr">{part.time.slice(0, 5)}</span>
                 </>
               ) : null}
             </span>

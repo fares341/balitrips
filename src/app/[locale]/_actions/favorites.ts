@@ -12,12 +12,13 @@
  * a cached page and shows a toast either way.
  */
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 import { db } from '@/db'
 import { activities, favorites, itineraries, packages } from '@/db/schema'
 import { getUser } from '@/lib/auth/session'
+import { PAGE_STATUSES } from '@/lib/content/activity-status'
 
 import { toggleFavoritePlace } from './places'
 
@@ -37,7 +38,7 @@ async function isPublished(kind: Exclude<FavoriteKind, 'place'>, id: string): Pr
     const [row] = await db
       .select({ id: activities.id })
       .from(activities)
-      .where(and(eq(activities.id, id), eq(activities.status, 'published')))
+      .where(and(eq(activities.id, id), inArray(activities.status, [...PAGE_STATUSES])))
       .limit(1)
     return row !== undefined
   }

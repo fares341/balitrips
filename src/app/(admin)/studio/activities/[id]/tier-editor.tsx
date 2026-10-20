@@ -26,6 +26,7 @@ export interface TierRow {
   pricingMode: string
   groupMax: number | null
   maxGuests: number | null
+  minGuests: number | null
   includes: Localized[] | null
   excludes: Localized[] | null
   includesAddons: string[] | null
@@ -65,7 +66,11 @@ export async function TierEditor({
   const { t } = await getAdminI18n()
   // Rows saved before migration 0013 may still say per_guest / flat.
   const mode = (value: string) =>
-    value === 'per_group' || value === 'flat' ? 'per_group' : 'per_person'
+    value === 'per_couple'
+      ? 'per_couple'
+      : value === 'per_group' || value === 'flat'
+        ? 'per_group'
+        : 'per_person'
   return (
     <div className="a-card">
       <h2>{t('activities.tiers_title')}</h2>
@@ -140,7 +145,23 @@ export async function TierEditor({
                 >
                   <option value="per_person">{t('activities.per_person')}</option>
                   <option value="per_group">{t('activities.per_group')}</option>
+                  <option value="per_couple">{t('ae.per_couple')}</option>
                 </Select>
+              </Field>
+
+              <Field
+                label={t('ae.tier_min_guests')}
+                htmlFor={`minGuests_${tier.id}`}
+                hint={t('ae.tier_min_guests_hint')}
+              >
+                <TextInput
+                  id={`minGuests_${tier.id}`}
+                  name="minGuests"
+                  type="number"
+                  min={1}
+                  dir="ltr"
+                  defaultValue={tier.minGuests ?? ''}
+                />
               </Field>
 
               <Field
@@ -263,7 +284,15 @@ export async function TierEditor({
               <Select id="new_tier_mode" name="pricingMode" defaultValue="per_person">
                 <option value="per_person">{t('activities.per_person')}</option>
                 <option value="per_group">{t('activities.per_group')}</option>
+                <option value="per_couple">{t('ae.per_couple')}</option>
               </Select>
+            </Field>
+            <Field
+              label={t('ae.tier_min_guests')}
+              htmlFor="new_tier_min"
+              hint={t('ae.tier_min_guests_hint')}
+            >
+              <TextInput id="new_tier_min" name="minGuests" type="number" min={1} dir="ltr" />
             </Field>
             <Field
               label={t('activities.group_max')}

@@ -343,3 +343,44 @@ export function ffaq(
 
   return out
 }
+
+/**
+ * A list of localized lines posted by `<LocalizedRepeater>` as JSON in
+ * `<name>__json`. A line is kept when any language has text; empty languages
+ * stay empty (the site falls back to another language for them). Capped so a
+ * crafted post cannot store an unbounded list.
+ */
+export function flocalizedRows(form: FormData, name: string, max = 60): Localized[] {
+  const value = form.get(`${name}__json`)
+  if (typeof value !== 'string' || value.trim() === '') return []
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    throw invalid(`${name} could not be read`, 'form.invalid_value', {})
+  }
+  if (!Array.isArray(parsed)) return []
+  const out: Localized[] = []
+  for (const entry of parsed.slice(0, max)) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const row = {} as Localized
+    let any = false
+    for (const locale of locales) {
+      const text = (entry as Record<string, unknown>)[locale]
+      row[locale] = typeof text === 'string' ? text.trim().slice(0, 500) : ''
+      if (row[locale] !== '') any = true
+    }
+    if (any) out.push(row)
+  }
+  return out
+}
+
+/** A decimal number or null (coordinates). */
+export function ffloatOrNull(form: FormData, name: string, label = name): number | null {
+  const value = raw(form, name).replace(',', '.')
+  if (value === '') return null
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed))
+    throw invalid(`${label} must be a number, got "${value}"`, 'form.not_number', { label, value })
+  return parsed
+}

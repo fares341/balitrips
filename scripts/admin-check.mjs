@@ -381,11 +381,15 @@ async function tierRoundTrip(page) {
       `${ADMIN}/activities`,
     )
     .catch(() => [])
-  for (const href of links.slice(0, 15)) {
+  for (const base of links.slice(0, 15)) {
+    // The packages live on the editor's "Packages" tab; the slug on its first tab.
+    const href = `${base}?tab=packages`
     await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
     const tier = page.locator('form[data-tier="published"]').first()
     if ((await tier.count()) === 0) continue
+    await page.goto(BASE + base, { waitUntil: 'networkidle', timeout: 60000 })
     const slug = await page.locator('input[name="slug"]').first().inputValue()
+    await page.goto(BASE + href, { waitUntil: 'networkidle', timeout: 60000 })
     const pub = await page.goto(`${BASE}/en/activities/${slug}`, {
       waitUntil: 'networkidle',
       timeout: 60000,
@@ -567,6 +571,21 @@ for (const role of ['admin', 'staff', 'customer']) {
     const detail = hrefs.find((h) => !/\/(export|receipt)(\/|$)/.test(h))
     if (detail) {
       for (const w of [1440, 390]) await visit(page, role, detail, w)
+      // The activity editor is split into sections (tabs): open each one.
+      if (path === '/activities') {
+        for (const tab of [
+          'content',
+          'media',
+          'packages',
+          'included',
+          'addons',
+          'booking',
+          'faq',
+        ]) {
+          await visit(page, role, `${detail}?tab=${tab}`, 1440)
+        }
+        await visit(page, role, `${detail}?tab=packages`, 390)
+      }
     } else {
       say(`[${role}] ${full}: no detail link found`)
     }

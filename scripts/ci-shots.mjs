@@ -143,6 +143,9 @@ const SWEEP = [
   ['help', '/help'],
   ['activities', '/activities'],
   ['activity', { from: '/activities', match: '/activities/' }],
+  // Activities with the phase-1 content (packages, boxes, meeting point…).
+  ['activity-batur', '/activities/mount-batur-sunrise-hike'],
+  ['activity-spa', '/activities/ubud-jungle-spa-ritual'],
   ['itineraries', '/itineraries'],
   ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
   ['packages', '/packages'],
@@ -170,12 +173,14 @@ const SWEEP = [
   ['driver', '/driver'],
   ['404', '/no-such-page-xyz'],
 ]
-const TABLET = new Set(['home', 'activity', 'my-trip', 'checkout'])
+const TABLET = new Set(['home', 'activity', 'activity-batur', 'my-trip', 'checkout'])
 const EN_KEY = new Set([
   'home',
   'services',
   'activities',
   'activity',
+  'activity-batur',
+  'activity-spa',
   'my-trip',
   'checkout',
   'packages',

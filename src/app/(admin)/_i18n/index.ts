@@ -1,3 +1,4 @@
+import activityEditor from './activity-editor'
 import assistant from './assistant'
 import catalog from './catalog'
 import commerce from './commerce'
@@ -21,6 +22,7 @@ const SECTIONS = [
   protection,
   system,
   assistant,
+  activityEditor,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

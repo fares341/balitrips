@@ -4,6 +4,11 @@ name: Preview screenshots
 
 on:
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'Only these sweep pages (comma separated, e.g. activity-batur,activity-spa). Empty = all.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -48,7 +53,7 @@ jobs:
       # Real photos of the seeded places (Wikimedia Commons, see the manifest),
       # so the shots show what production shows. Not fatal if Commons is slow.
       - name: Import place photos
-        run: pnpm exec tsx scripts/import-photos.ts --only=map_places
+        run: pnpm exec tsx scripts/import-photos.ts --only=map_places,activities
         continue-on-error: true
         timeout-minutes: 8
       - run: pnpm build
@@ -60,6 +65,8 @@ jobs:
           for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
       - name: Screenshots
         run: node scripts/ci-shots.mjs
+        env:
+          SHOTS_ONLY: ${{ inputs.only }}
       - name: Push screenshots to the ci-shots branch
         if: always()
         run: |

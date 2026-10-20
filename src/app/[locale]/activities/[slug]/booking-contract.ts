@@ -12,6 +12,8 @@ export interface BookActivityRequest {
   time: string | null
   people: number
   addons: { id: string; qty: number }[]
+  /** Times picked for included activities with their own slot. */
+  included: { activityId: string; time: string | null }[]
   driver: boolean
   /**
    * "Edit" from My Trip: the trip line this booking replaces. Removed (with
@@ -31,11 +33,20 @@ export interface EditableBooking {
   time: string | null
   people: number
   addons: { id: string; qty: number }[]
+  included: { activityId: string; time: string | null }[]
   driver: boolean
 }
 
 /** Which booking-box step an issue belongs to, so the page can mark it. */
-export type BookingField = 'package' | 'date' | 'time' | 'people' | 'addons' | 'driver' | 'form'
+export type BookingField =
+  | 'package'
+  | 'date'
+  | 'time'
+  | 'included'
+  | 'people'
+  | 'addons'
+  | 'driver'
+  | 'form'
 
 export type BookActivityResponse =
   | { ok: true; itemCount: number; totalMinor: number; currency: string }

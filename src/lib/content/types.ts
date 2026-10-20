@@ -24,6 +24,8 @@ import type { IconName } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import type { VehicleClass } from '@/lib/booking-rules'
 import type { LocalizedText } from './localize'
+import type { ActivityStatus } from './activity-status'
+import type { ParsedVideo } from './video'
 
 export type { LocalizedText }
 
@@ -139,6 +141,12 @@ export interface ActivitySummary {
   hero: MediaDto | null
   /** Card line under the title (the description, clamped by CSS). */
   blurb?: LocalizedText | null
+  /** Written for cards in the Studio; wins over a line cut from `blurb`. */
+  shortDescription?: LocalizedText | null
+  /** Owner flag: draws the "Most popular" badge on the card. */
+  mostPopular?: boolean
+  /** Listed, but booking is switched off for now. */
+  unavailable?: boolean
 }
 
 /**
@@ -160,7 +168,11 @@ export interface ActivityTierDto {
   groupMax: number | null
   /** Null means "whatever the activity allows". */
   maxGuests: number | null
+  /** Null means "whatever the activity allows". */
+  minGuests: number | null
   isPopular: boolean
+  /** Other activities that come with this package, in order. */
+  includedActivities: IncludedActivityDto[]
   /** Package card lists. */
   includes: LocalizedText[]
   excludes: LocalizedText[]
@@ -176,8 +188,44 @@ export interface ActivityTierDto {
   notes: LocalizedText[]
 }
 
+/** An activity a package includes (same date; own slot or the package's time). */
+export interface IncludedActivityDto {
+  id: string
+  slug: string
+  href: string
+  name: LocalizedText
+  duration: LocalizedText | null
+  timeSlots: string[]
+  timing: 'same_slot' | 'own_slot'
+}
+
 export interface ActivityDetail extends ActivitySummary {
+  status: ActivityStatus
+  /** False for an `unavailable` activity: the page shows a contact message instead. */
+  bookable: boolean
+  /** Full description: a safe markdown subset (`@/lib/content/markdown`). */
   description: LocalizedText | null
+  headline: LocalizedText | null
+  highlights: LocalizedText[]
+  suitableFor: LocalizedText[]
+  importantNotes: LocalizedText[]
+  whatToBring: LocalizedText[]
+  ageConditions: LocalizedText[]
+  meeting: {
+    address: LocalizedText | null
+    lat: number | null
+    lng: number | null
+    /** A Google Maps link: the owner's, or built from the position / address. */
+    mapUrl: string | null
+    timeNote: LocalizedText | null
+  }
+  instantConfirmation: boolean
+  freeCancellationHours: number | null
+  minGuests: number
+  /** Portrait hero for phones, when one is set. */
+  mobileHero: MediaDto | null
+  video: ParsedVideo | null
+  tags: { id: string; key: string; label: LocalizedText }[]
   /** Per-activity, not the one shared list the prototype hard-coded. */
   included: LocalizedText[]
   excluded: LocalizedText[]
@@ -188,7 +236,7 @@ export interface ActivityDetail extends ActivitySummary {
   leadTimeHours: number
   maxGuests: number
   gallery: MediaDto[]
-  /** Published service levels, cheapest first. Empty when none are defined. */
+  /** Published service levels in the owner's order. Empty when none are defined. */
   tiers: ActivityTierDto[]
   /** Booked as a date range; a driver is then hired for every day of it. */
   multiDay: boolean
@@ -209,6 +257,11 @@ export interface ActivityAddonDto {
   onlyPackages: string[]
   requiresAddonId: string | null
   available: boolean
+  /** Always part of the booking (library link marked required). */
+  required: boolean
+  /** Library add-ons: picture and unit label for the add-on card. */
+  image: MediaDto | null
+  unitLabel: LocalizedText | null
 }
 
 // ---------------------------------------------------------------------------

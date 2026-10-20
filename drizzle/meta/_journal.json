@@ -120,6 +120,13 @@
       "when": 1792620000000,
       "tag": "0016_assistant",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792710000000,
+      "tag": "0017_activity_phase1",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,9 @@
  * Activity booking price — the v3 handoff formula, in one pure module.
  *
  *   total        = packageCost + Σ addonCost + driverCost
- *   packageCost  = per_group ? ceil(people / group_max) × price : people × price
+ *   packageCost  = per_group  ? ceil(people / group_max) × price
+ *                : per_couple ? ceil(people / 2) × price     // "للزوجين"
+ *                :              people × price
  *   addonCost    = per_person ? price × people
  *                : per_qty    ? price × min(qty, max_qty)
  *                :              price                      // per_booking
@@ -12,7 +14,12 @@
  *   - in the package's `includes_addons` → included: shown, locked, not charged;
  *   - `only_packages` set and without the chosen package → rejected;
  *   - `requires_addon_id` not selected (or included) → rejected, and anything
- *     that depended on a rejected add-on is dropped with it.
+ *     that depended on a rejected add-on is dropped with it;
+ *   - `required` (a library add-on linked as required) → always added and
+ *     charged when the package allows it, picked or not.
+ *
+ * Activities a package includes (`tier_included_activities`) are listed at
+ * zero (`kind: 'included'`), one line each, so the order shows them.
  *
  * Used by three callers so they cannot disagree:
  *   - `buildQuote` (cart + checkout) — the copy that decides what is charged;
@@ -25,10 +32,10 @@
 
 import { daysBetweenInclusive, vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
 
-export type PackagePricing = 'per_person' | 'per_group'
+export type PackagePricing = 'per_person' | 'per_group' | 'per_couple'
 export type AddonPricing = 'per_person' | 'per_booking' | 'per_qty'
 
-export const PACKAGE_PRICINGS: readonly PackagePricing[] = ['per_person', 'per_group']
+export const PACKAGE_PRICINGS: readonly PackagePricing[] = ['per_person', 'per_group', 'per_couple']
 export const ADDON_PRICINGS: readonly AddonPricing[] = ['per_person', 'per_booking', 'per_qty']
 
 /**
@@ -37,8 +44,12 @@ export const ADDON_PRICINGS: readonly AddonPricing[] = ['per_person', 'per_booki
  * party, which is a `per_group` package whose group is the party.
  */
 export function tierPricing(mode: string | null | undefined): PackagePricing {
+  if (mode === 'per_couple') return 'per_couple'
   return mode === 'per_group' || mode === 'flat' ? 'per_group' : 'per_person'
 }
+
+/** People one unit of a `per_couple` package covers. */
+export const COUPLE_SIZE = 2
 
 export function addonPricing(mode: string | null | undefined): AddonPricing {
   return mode === 'per_person' || mode === 'per_qty' ? mode : 'per_booking'
@@ -68,6 +79,8 @@ export interface AddonRule {
   onlyPackages: readonly string[]
   requiresAddonId: string | null
   available: boolean
+  /** Always added and charged (library link marked required). Absent = optional. */
+  required?: boolean
 }
 
 export interface VehicleRate {
@@ -91,6 +104,8 @@ export type AddonState =
   | { kind: 'not_for_package' }
   /** Needs another add-on selected first. */
   | { kind: 'requires'; requiresAddonId: string }
+  /** Always part of the booking and charged: checked, locked. */
+  | { kind: 'required' }
 
 export type AddonRejection =
   | 'unknown'
@@ -102,9 +117,14 @@ export type AddonRejection =
   | 'requires'
 
 export interface PriceLine {
-  kind: 'package' | 'addon' | 'driver'
-  /** Package / add-on id; null for a base-price activity and for the driver. */
+  kind: 'package' | 'addon' | 'driver' | 'included'
+  /**
+   * Package / add-on id; the included activity's id; null for a base-price
+   * activity and for the driver.
+   */
   refId: string | null
+  /** Included activity with its own slot: the time picked. */
+  time?: string | null
   unitMinor: number
   quantity: number
   totalMinor: number
@@ -127,13 +147,14 @@ function assertPeople(people: number): void {
 // Package
 // ---------------------------------------------------------------------------
 
-/** Units charged: people for per_person, groups for per_group. */
+/** Units charged: people for per_person, groups for per_group, couples for per_couple. */
 export function packageUnits(
   pkg: Pick<PackageRule, 'pricing' | 'groupMax'>,
   people: number,
 ): number {
   assertPeople(people)
   if (pkg.pricing === 'per_person') return people
+  if (pkg.pricing === 'per_couple') return Math.ceil(people / COUPLE_SIZE)
   const groupMax = positiveInt(pkg.groupMax)
   return groupMax === null ? 1 : Math.ceil(people / groupMax)
 }
@@ -193,6 +214,7 @@ export function addonState(
   ) {
     return { kind: 'requires', requiresAddonId: addon.requiresAddonId }
   }
+  if (addon.required === true) return { kind: 'required' }
   return { kind: 'selectable' }
 }
 
@@ -243,12 +265,22 @@ export function resolveAddons(
     candidates.push({ addon, qty: pick.qty })
   }
 
+  // Required add-ons join the booking whether or not they were picked; the
+  // fixed point below still drops one the package does not allow.
+  for (const addon of catalog) {
+    if (addon.required !== true || seen.has(addon.id)) continue
+    if (pkg.includesAddons.includes(addon.id) || addon.currency !== pkg.currency) continue
+    const state = addonState(addon, pkg, new Set())
+    if (state.kind !== 'required') continue
+    candidates.push({ addon, qty: 1 })
+  }
+
   for (;;) {
     const selected = new Set(candidates.map((c) => c.addon.id))
     const next: typeof candidates = []
     for (const candidate of candidates) {
       const state = addonState(candidate.addon, pkg, selected)
-      if (state.kind === 'selectable') next.push(candidate)
+      if (state.kind === 'selectable' || state.kind === 'required') next.push(candidate)
       else
         rejected.push({
           id: candidate.addon.id,
@@ -298,6 +330,11 @@ export interface BookingPriceInput {
   addons: readonly AddonRule[]
   picks: readonly AddonPick[]
   people: number
+  /**
+   * Activities that come with the package, in display order. Listed at zero;
+   * `time` is the slot picked for one with its own time (else null).
+   */
+  included?: readonly { activityId: string; time: string | null }[]
   /** Omit or null when no driver is wanted. */
   driver?: { vehicles: readonly VehicleRate[]; days: number } | null
 }
@@ -331,6 +368,18 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
       totalMinor: packageMinor,
     },
   ]
+
+  for (const included of input.included ?? []) {
+    lines.push({
+      kind: 'included',
+      refId: included.activityId,
+      unitMinor: 0,
+      quantity: people,
+      totalMinor: 0,
+      included: true,
+      time: included.time,
+    })
+  }
 
   const resolution = resolveAddons(input.addons, pkg, input.picks)
   const byId = new Map(input.addons.map((addon) => [addon.id, addon]))

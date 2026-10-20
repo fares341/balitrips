@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core'
 
 import { users } from './auth'
-import { mapPlaces } from './content'
+import { activities, mapPlaces } from './content'
 import {
   currency,
   localized,
@@ -106,6 +106,23 @@ export const placeTags = pgTable(
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (t) => [primaryKey({ columns: [t.placeId, t.tagId] }), index('place_tags_tag_idx').on(t.tagId)],
+)
+
+/** وسوم الأنشطة (نفس جدول الوسوم المستخدم للأماكن). */
+export const activityTags = pgTable(
+  'activity_tags',
+  {
+    activityId: uuid('activity_id')
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.activityId, t.tagId] }),
+    index('activity_tags_tag_idx').on(t.tagId),
+  ],
 )
 
 /* --------------------------------------------------------------------------

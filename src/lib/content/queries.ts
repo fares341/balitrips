@@ -31,6 +31,7 @@ import {
   activities,
   activityCategories,
   activityImages,
+  activityTags,
   activityTiers,
   articleCategories,
   articles,
@@ -85,7 +86,15 @@ import { placeAccess, type FullMapPlace } from '@/lib/entitlements/redaction'
 import type { MapTaxonomy } from '@/lib/search/query'
 import { buildSrcSet, derivativeKey, fallbackRung, isUnoptimised } from '@/lib/media/ladder'
 import { loadActivityAddons } from '@/lib/booking/addons'
+import { loadTierIncluded } from '@/lib/booking/included'
 import { tierPricing } from '@/lib/booking/price'
+import {
+  activityStatus,
+  activityVisibility,
+  LISTED_STATUSES,
+  PAGE_STATUSES,
+} from './activity-status'
+import { parseVideoUrl } from './video'
 
 // ---------------------------------------------------------------------------
 // Shared predicates
@@ -93,7 +102,19 @@ import { tierPricing } from '@/lib/booking/price'
 
 const PUBLISHED = 'published'
 
-const LIVE_ACTIVITY = and(eq(activities.status, PUBLISHED), isNull(activities.deletedAt))
+/**
+ * Activities in lists, search, "similar" and day plans: published, plus the
+ * ones marked unavailable (shown, not bookable). Hidden ones open by link only
+ * (`PAGE_ACTIVITY`). See `./activity-status`.
+ */
+const LIVE_ACTIVITY = and(
+  inArray(activities.status, [...LISTED_STATUSES]),
+  isNull(activities.deletedAt),
+)
+const PAGE_ACTIVITY = and(
+  inArray(activities.status, [...PAGE_STATUSES]),
+  isNull(activities.deletedAt),
+)
 const LIVE_ITINERARY = and(eq(itineraries.status, PUBLISHED), isNull(itineraries.deletedAt))
 const LIVE_PACKAGE = and(eq(packages.status, PUBLISHED), isNull(packages.deletedAt))
 const LIVE_LANDMARK = and(eq(landmarks.status, PUBLISHED), isNull(landmarks.deletedAt))
@@ -232,6 +253,12 @@ function toActivitySummary(
   hero: MediaRow | null,
   cats: CategoryRef[],
 ): ActivitySummary {
+  // The owner's main category leads (card chip, breadcrumbs); the rest follow.
+  const primary = row.primaryCategoryId
+  const ordered =
+    primary === null
+      ? cats
+      : [...cats.filter((c) => c.id === primary), ...cats.filter((c) => c.id !== primary)]
   return {
     id: row.id,
     slug: row.slug,
@@ -240,13 +267,16 @@ function toActivitySummary(
     area: row.area,
     duration: row.duration,
     region: toRegionRef(region),
-    categories: cats,
+    categories: ordered,
     priceMinor: row.priceMinor,
     currency: row.currency,
     rating: row.rating,
     reviewCount: row.reviewCount,
     hero: toMedia(hero),
     blurb: row.description,
+    shortDescription: row.shortDescription,
+    mostPopular: row.isMostPopular,
+    unavailable: activityStatus(row.status) === 'unavailable',
   }
 }
 
@@ -548,7 +578,9 @@ export async function listActivities(
           asc(nameOrder),
         ]
       default:
+        // The owner's order, with "featured" activities first.
         return [
+          desc(activities.isFeatured),
           asc(activities.sortOrder),
           sql`${activities.rating} desc nulls last`,
           asc(nameOrder),
@@ -601,13 +633,13 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
     .from(activities)
     .leftJoin(regions, eq(regions.id, activities.regionId))
     .leftJoin(media, eq(media.id, activities.heroImageId))
-    .where(and(LIVE_ACTIVITY, eq(activities.slug, slug)))
+    .where(and(PAGE_ACTIVITY, eq(activities.slug, slug)))
     .limit(1)
 
   const row = rows[0]
   if (!row) return null
 
-  const [cats, gallery, tierRows, addonRows] = await Promise.all([
+  const [cats, gallery, tierRows, addonRows, tagRows, mobileHero] = await Promise.all([
     categoriesByActivity([row.activity.id]),
     db
       .select({ image: media })
@@ -616,11 +648,8 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       .where(and(eq(activityImages.activityId, row.activity.id), isNull(media.deletedAt)))
       .orderBy(asc(activityImages.sortOrder)),
     /**
-     * Published tiers only, cheapest first.
-     *
-     * Ordered by price rather than sortOrder so the ladder always reads as a
-     * ladder: a hand-set order that disagrees with the prices shows the
-     * visitor $240, $120, $200 and makes the page look broken.
+     * Published tiers only, in the owner's order (dragged in the Studio);
+     * the price breaks a tie, so rows never ordered keep reading as a ladder.
      */
     db
       .select()
@@ -632,9 +661,62 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
           isNull(activityTiers.deletedAt),
         ),
       )
-      .orderBy(asc(activityTiers.priceMinor), asc(activityTiers.sortOrder)),
+      .orderBy(asc(activityTiers.sortOrder), asc(activityTiers.priceMinor)),
     loadActivityAddons([row.activity.id]),
+    db
+      .select({ id: tags.id, key: tags.key, label: tags.label })
+      .from(activityTags)
+      .innerJoin(tags, and(eq(tags.id, activityTags.tagId), eq(tags.status, 'active')))
+      .where(eq(activityTags.activityId, row.activity.id))
+      .orderBy(asc(tags.sortOrder), asc(tags.key)),
+    row.activity.mobileHeroImageId === null
+      ? Promise.resolve(null)
+      : db
+          .select()
+          .from(media)
+          .where(eq(media.id, row.activity.mobileHeroImageId))
+          .limit(1)
+          .then((found) => found[0] ?? null),
   ])
+
+  // Activities the packages include: only ones that can be booked are sold.
+  const includedByTier = await loadTierIncluded(tierRows.map((tier) => tier.id))
+  const includedIds = [...new Set([...includedByTier.values()].flat().map((e) => e.activityId))]
+  const includedRows =
+    includedIds.length === 0
+      ? []
+      : await db
+          .select({
+            id: activities.id,
+            slug: activities.slug,
+            name: activities.name,
+            duration: activities.duration,
+            timeSlots: activities.timeSlots,
+            status: activities.status,
+          })
+          .from(activities)
+          .where(and(inArray(activities.id, includedIds), isNull(activities.deletedAt)))
+  const includedById = new Map(
+    includedRows
+      .filter((included) => activityVisibility(included.status).bookable)
+      .map((included) => [included.id, included]),
+  )
+  const addonImageIds = [
+    ...new Set(
+      (addonRows.get(row.activity.id) ?? [])
+        .map((addon) => addon.imageId)
+        .filter((id): id is string => id !== null),
+    ),
+  ]
+  const addonImages =
+    addonImageIds.length === 0
+      ? new Map<string, MediaDto>()
+      : new Map(
+          (await db.select().from(media).where(inArray(media.id, addonImageIds)))
+            .map((image) => toMedia(image))
+            .filter((image): image is MediaDto => image !== null)
+            .map((image) => [image.id, image]),
+        )
 
   const summary = toActivitySummary(
     row.activity,
@@ -645,9 +727,35 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
 
   const galleryDtos = gallery.map((g) => toMedia(g.image)).filter((m): m is MediaDto => m !== null)
 
+  const a = row.activity
+  const visibility = activityVisibility(a.status)
   return {
     ...summary,
-    description: row.activity.description,
+    status: activityStatus(a.status),
+    bookable: visibility.bookable,
+    description: a.description,
+    headline: a.headline,
+    highlights: toLocalizedList(a.highlights),
+    suitableFor: toLocalizedList(a.suitableFor),
+    importantNotes: toLocalizedList(a.importantNotes),
+    whatToBring: toLocalizedList(a.whatToBring),
+    ageConditions: toLocalizedList(a.ageConditions),
+    meeting: {
+      address: a.meetingPoint,
+      lat: a.meetingLat,
+      lng: a.meetingLng,
+      mapUrl: googleMapsUrl(a.meetingMapUrl, a.meetingLat, a.meetingLng, a.meetingPoint),
+      timeNote: a.meetingTimeNote,
+    },
+    instantConfirmation: a.instantConfirmation,
+    freeCancellationHours:
+      a.freeCancellationHours !== null && a.freeCancellationHours > 0
+        ? a.freeCancellationHours
+        : null,
+    minGuests: Math.max(1, a.minGuests),
+    mobileHero: toMedia(mobileHero),
+    video: parseVideoUrl(a.videoUrl),
+    tags: tagRows,
     included: toLocalizedList(row.activity.included),
     excluded: toLocalizedList(row.activity.excluded),
     faq: toFaq(row.activity.faq),
@@ -668,6 +776,9 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       onlyPackages: [...addon.onlyPackages],
       requiresAddonId: addon.requiresAddonId,
       available: addon.available,
+      required: addon.required === true,
+      image: addon.imageId === null ? null : (addonImages.get(addon.imageId) ?? null),
+      unitLabel: addon.unitLabel,
     })),
     tiers: tierRows.map((tier) => ({
       id: tier.id,
@@ -679,7 +790,23 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       pricing: tierPricing(tier.pricingMode),
       groupMax: tier.groupMax,
       maxGuests: tier.maxGuests,
+      minGuests: tier.minGuests,
       isPopular: tier.isPopular,
+      includedActivities: (includedByTier.get(tier.id) ?? []).flatMap((entry) => {
+        const included = includedById.get(entry.activityId)
+        if (!included) return []
+        return [
+          {
+            id: included.id,
+            slug: included.slug,
+            href: entityHref('activity', included.slug),
+            name: included.name,
+            duration: included.duration,
+            timeSlots: Array.isArray(included.timeSlots) ? included.timeSlots : [],
+            timing: entry.timing,
+          },
+        ]
+      }),
       includes: toLocalizedList(tier.includes),
       excludes: toLocalizedList(tier.excludes),
       includesAddons: Array.isArray(tier.includesAddons) ? tier.includesAddons : [],
@@ -695,6 +822,94 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
         ? [summary.hero, ...galleryDtos]
         : galleryDtos,
   }
+}
+
+/**
+ * A Google Maps link for the meeting point: the owner's own link when it is a
+ * Google Maps URL, else one built from the position, else from the address.
+ */
+function googleMapsUrl(
+  link: string | null,
+  lat: number | null,
+  lng: number | null,
+  address: LocalizedText | null,
+): string | null {
+  if (link) {
+    try {
+      const url = new URL(link)
+      const host = url.hostname.toLowerCase()
+      if (
+        url.protocol === 'https:' &&
+        (host === 'maps.app.goo.gl' || host === 'goo.gl' || /(^|\.)google\.[a-z.]+$/.test(host))
+      ) {
+        return url.toString()
+      }
+    } catch {
+      // not a URL: fall through
+    }
+  }
+  if (lat !== null && lng !== null && Number.isFinite(lat) && Number.isFinite(lng)) {
+    return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+  }
+  const text = address ? (address.en || address.id || address.ar || '').trim() : ''
+  return text === ''
+    ? null
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`
+}
+
+/** Every activity whose page opens (listed or link-only), for prerendering. */
+export async function listActivityPageSlugs(): Promise<string[]> {
+  const rows = await db
+    .select({ slug: activities.slug })
+    .from(activities)
+    .where(PAGE_ACTIVITY)
+    .orderBy(asc(activities.sortOrder), asc(activities.slug))
+  return rows.map((row) => row.slug)
+}
+
+/**
+ * The home page's "don't miss" activities: the ones the owner ticked "show on
+ * home" (published only), in their order; topped up with the best-rated
+ * published activities when fewer are ticked than the section shows.
+ */
+export async function listHomeActivities(options: {
+  limit: number
+  locale?: Locale
+  exclude?: (activity: ActivitySummary) => boolean
+}): Promise<ActivitySummary[]> {
+  const locale = options.locale ?? defaultLocale
+  const limit = clampLimit(options.limit, 6)
+  const nameOrder = localizedText(activities.name, locale, activities.slug)
+  const rows = await db
+    .select({ activity: activities, region: regions, hero: media })
+    .from(activities)
+    .leftJoin(regions, eq(regions.id, activities.regionId))
+    .leftJoin(media, eq(media.id, activities.heroImageId))
+    .where(
+      and(
+        eq(activities.status, PUBLISHED),
+        isNull(activities.deletedAt),
+        eq(activities.showOnHome, true),
+      ),
+    )
+    .orderBy(asc(activities.sortOrder), asc(nameOrder))
+    .limit(limit * 2)
+  const cats = await categoriesByActivity(rows.map((r) => r.activity.id))
+  const picked = rows
+    .map((r) => toActivitySummary(r.activity, r.region, r.hero, cats.get(r.activity.id) ?? []))
+    .filter((activity) => !(options.exclude?.(activity) ?? false))
+    .slice(0, limit)
+  if (picked.length >= limit) return picked
+
+  const top = await listActivities({ sort: 'top', limit: limit * 3, locale })
+  const seen = new Set(picked.map((activity) => activity.id))
+  for (const activity of top) {
+    if (picked.length >= limit) break
+    if (seen.has(activity.id) || activity.unavailable === true) continue
+    if (options.exclude?.(activity) ?? false) continue
+    picked.push(activity)
+  }
+  return picked
 }
 
 /**

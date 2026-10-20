@@ -642,8 +642,20 @@ export interface ActivityBookingInput {
   time: string | null
   people: number
   addons: { id: string; qty: number }[]
+  /** Times for the package's included activities that have their own slot. */
+  included?: { activityId: string; time: string | null }[]
   /** Hire a driver for the booking: vehicle from `vehicleFor(people)`, same dates. */
   driver: boolean
+}
+
+/** Included-activity times in a stable order, empty ones dropped. */
+function canonicalIncluded(
+  included: readonly { activityId: string; time: string | null }[] | undefined,
+): { activityId: string; time: string | null }[] {
+  return [...(included ?? [])]
+    .filter((entry) => entry.time !== null && entry.time !== '')
+    .map((entry) => ({ activityId: entry.activityId, time: entry.time }))
+    .sort((a, b) => (a.activityId < b.activityId ? -1 : a.activityId > b.activityId ? 1 : 0))
 }
 
 export type ActivityBookingIssue = QuoteIssue['code'] | 'driver_full'
@@ -681,6 +693,8 @@ export async function addActivityBooking(
 
   const people = clampQuantity(raw.people, CART_MAX_QUANTITY)
   const addons = canonicalAddons(raw.addons.slice(0, 40))
+  const included = canonicalIncluded(raw.included?.slice(0, 20))
+  const options = included.length > 0 ? { addons, included } : { addons }
   const kind: CartItemKind = raw.packageId === null ? 'activity' : 'activity_tier'
   const refId = raw.packageId ?? raw.activityId
 
@@ -695,7 +709,7 @@ export async function addActivityBooking(
       guests: people,
       endDate,
       parentItemId: null,
-      options: { addons },
+      options,
     }
     if (!raw.driver) return [main]
     return [
@@ -756,6 +770,7 @@ export async function addActivityBooking(
   const cart = await getOrCreateCart()
   const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
   const key = JSON.stringify(addons)
+  const includedKey = JSON.stringify(included)
   const existing = rows.find(
     (row) =>
       row.kind === kind &&
@@ -765,7 +780,8 @@ export async function addActivityBooking(
       (row.travelTime ?? '').slice(0, 5) === (normalise(raw.time) ?? '') &&
       row.endDate === endDate &&
       row.options !== null &&
-      JSON.stringify(canonicalAddons(row.options.addons ?? [])) === key,
+      JSON.stringify(canonicalAddons(row.options.addons ?? [])) === key &&
+      JSON.stringify(canonicalIncluded(row.options.included)) === includedKey,
   )
 
   let itemId: string
@@ -790,7 +806,7 @@ export async function addActivityBooking(
         endDate,
         unitPriceMinor: bookingLine?.unitPriceMinor ?? 0,
         parentItemId: null,
-        options: { addons },
+        options,
       })
       .returning({ id: cartItems.id })
     if (!row) throw new Error('Failed to add the booking to the cart')
@@ -836,6 +852,7 @@ export interface BookingForEdit {
   time: string | null
   people: number
   addons: { id: string; qty: number }[]
+  included: { activityId: string; time: string | null }[]
   driver: boolean
 }
 
@@ -889,6 +906,7 @@ export async function getBookingForEdit(itemId: string): Promise<BookingForEdit 
     time: row.travelTime === null ? null : row.travelTime.slice(0, 5),
     people: row.guests ?? row.quantity,
     addons: row.options?.addons ?? [],
+    included: row.options?.included ?? [],
     driver: rows.some((r) => r.kind === 'driver' && r.parentItemId === row.id),
   }
 }
@@ -1088,8 +1106,10 @@ export interface CartLineView {
 }
 
 export interface CartBreakdownLine {
-  kind: 'package' | 'addon' | 'driver'
+  kind: 'package' | 'addon' | 'driver' | 'included'
   refId: string | null
+  /** Included activity with its own slot: the time picked. */
+  time: string | null
   /** Package or add-on name; null for an activity sold at its base price. */
   name: Localized | null
   unitMinor: number
@@ -1205,6 +1225,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
           kind: part.kind,
           refId: part.refId,
           name: part.refId === null ? null : (partNames.get(part.refId) ?? null),
+          time: part.time ?? null,
           unitMinor: part.unitMinor,
           quantity: part.quantity,
           totalMinor: part.totalMinor,

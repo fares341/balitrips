@@ -19,6 +19,7 @@ import {
 import {
   currency,
   localized,
+  moneyMinor,
   priceMinor,
   publishing,
   softDelete,
@@ -148,7 +149,60 @@ export const activities = pgTable(
     eventStartsAt: timestamp('event_starts_at', { withTimezone: true }),
     eventEndsAt: timestamp('event_ends_at', { withTimezone: true }),
 
+    // --- Phase 1 (migration 0017): content the Studio edits per activity ---
+
+    /**
+     * The main category, shown first on cards and used for "similar". The
+     * many-to-many `activity_categories` keeps the extra ones; the primary is
+     * always one of them as well. Null = the first of those (old behaviour).
+     */
+    primaryCategoryId: uuid('primary_category_id').references(() => categories.id, {
+      onDelete: 'set null',
+    }),
+    /** Highlighted by the owner (shown first in Studio lists). */
+    isFeatured: boolean('is_featured').notNull().default(false),
+    /** Draws the "Most popular" badge on the activity's cards. */
+    isMostPopular: boolean('is_most_popular').notNull().default(false),
+    /** Picked for the home page section (in `sort_order`), before the top-rated fallback. */
+    showOnHome: boolean('show_on_home').notNull().default(false),
+
+    /** Marketing headline under the title. */
+    headline: localized('headline'),
+    /** Card text. Empty = a short line cut from the description. */
+    shortDescription: localized('short_description'),
+    /** Bullet highlights (ordered). The description itself is a safe markdown subset. */
+    highlights: jsonb('highlights').$type<Localized[]>(),
+    suitableFor: jsonb('suitable_for').$type<Localized[]>(),
+    importantNotes: jsonb('important_notes').$type<Localized[]>(),
+    whatToBring: jsonb('what_to_bring').$type<Localized[]>(),
+    ageConditions: jsonb('age_conditions').$type<Localized[]>(),
+
+    /** Meeting point: address text, optional exact position and a Google Maps link. */
+    meetingPoint: localized('meeting_point'),
+    meetingLat: doublePrecision('meeting_lat'),
+    meetingLng: doublePrecision('meeting_lng'),
+    meetingMapUrl: text('meeting_map_url'),
+    meetingTimeNote: localized('meeting_time_note'),
+
+    /** "Instant confirmation" shown on the page. Staff still confirm each booking. */
+    instantConfirmation: boolean('instant_confirmation').notNull().default(false),
+    /** "Free cancellation up to N hours" when set. The policy text stays separate. */
+    freeCancellationHours: integer('free_cancellation_hours'),
+    /** Smallest party that can book. */
+    minGuests: integer('min_guests').notNull().default(1),
+
+    /** Optional portrait hero used on phones (<picture>). */
+    mobileHeroImageId: uuid('mobile_hero_image_id').references(() => media.id, {
+      onDelete: 'set null',
+    }),
+    /** A YouTube or Vimeo link, played with a privacy-friendly embed after a click. */
+    videoUrl: text('video_url'),
+
     sortOrder: integer('sort_order').notNull().default(0),
+    /**
+     * draft | published | hidden | unavailable (`@/lib/content/activity-status`):
+     * hidden = reachable by its link only; unavailable = page shown, booking off.
+     */
     ...publishing,
     ...timestamps,
     ...softDelete,
@@ -236,6 +290,7 @@ export const activityTiers = pgTable(
      *  - `per_person`: price × people.
      *  - `per_group`:  price × ceil(people / group_max) — a family package
      *    covering up to four people costs one unit for 1–4 and two for 5–8.
+     *  - `per_couple`: price × couples (two people per unit, "للزوجين").
      * Rows written before migration 0013 said `per_guest` / `flat`; the
      * migration rewrote them and `tierPricing()` still reads the old spelling.
      */
@@ -245,6 +300,8 @@ export const activityTiers = pgTable(
 
     /** Caps party size for this tier, e.g. a couples tier at 2. Null = the activity's own cap. */
     maxGuests: integer('max_guests'),
+    /** Smallest party for this tier. Null = the activity's own minimum. */
+    minGuests: integer('min_guests'),
 
     /** Package card: what this package includes / leaves out (localized lists). */
     includes: jsonb('includes').$type<Localized[]>(),
@@ -329,6 +386,89 @@ export const activityAddons = pgTable(
     ...softDelete,
   },
   (t) => [index('activity_addons_activity_idx').on(t.activityId, t.sortOrder)],
+)
+
+/**
+ * Other activities a package (tier) includes at no extra charge — e.g. a
+ * "Full day" package that also covers the swing and the rice terraces.
+ *
+ * Booked on the same date as the package. `same_slot` = at the package's own
+ * time; `own_slot` = the traveller picks one of that activity's time slots.
+ * At checkout each becomes its own order item (price 0, parent = the package
+ * line) so staff confirm it separately.
+ */
+export const tierIncludedActivities = pgTable(
+  'tier_included_activities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tierId: uuid('tier_id')
+      .notNull()
+      .references(() => activityTiers.id, { onDelete: 'cascade' }),
+    activityId: uuid('activity_id')
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    /** same_slot | own_slot */
+    timing: varchar('timing', { length: 16 }).notNull().default('same_slot'),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('tier_included_unique').on(t.tierId, t.activityId),
+    index('tier_included_tier_idx').on(t.tierId, t.sortOrder),
+  ],
+)
+
+/**
+ * The shared add-on library ("الخدمات الإضافية"): one row per extra, linked to
+ * as many activities as sell it (`activity_addon_links`). The older
+ * per-activity `activity_addons` keep working beside it; pricing reads both
+ * (`@/lib/booking/addons`). A library add-on keeps its own id in carts and
+ * orders, so the two sources can never collide.
+ */
+export const addonsLibrary = pgTable(
+  'addons_library',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: localized('name').notNull(),
+    description: localized('description'),
+    imageId: uuid('image_id').references(() => media.id, { onDelete: 'set null' }),
+    /** What one unit is, e.g. "per photo session". Shown under the price. */
+    unitLabel: localized('unit_label'),
+    priceMinor: priceMinor(),
+    currency: currency(),
+    /** per_person | per_booking | per_qty */
+    pricing: varchar('pricing', { length: 16 }).notNull().default('per_booking'),
+    maxQty: integer('max_qty'),
+    available: boolean('available').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [index('addons_library_sort_idx').on(t.sortOrder)],
+)
+
+export const activityAddonLinks = pgTable(
+  'activity_addon_links',
+  {
+    activityId: uuid('activity_id')
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    addonId: uuid('addon_id')
+      .notNull()
+      .references(() => addonsLibrary.id, { onDelete: 'cascade' }),
+    /** Price for this activity only. Null = the library price. */
+    priceMinor: moneyMinor('price_minor'),
+    /** `activity_tiers.id`s this add-on may be bought with. Empty/null = all. */
+    onlyPackages: jsonb('only_packages').$type<string[]>(),
+    /** Always added to the booking and charged (cannot be unticked). */
+    required: boolean('required').notNull().default(false),
+    sortOrder: integer('sort_order').notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.activityId, t.addonId] }),
+    index('activity_addon_links_addon_idx').on(t.addonId),
+  ],
 )
 
 // ---------------------------------------------------------------------------

@@ -863,3 +863,637 @@
 #book {
   scroll-margin-top: calc(var(--hdr-h) + 16px);
 }
+
+/* ==========================================================================
+   Phase 1 — activity page to the client design (act2). Mobile first, RTL by
+   logical properties, existing tokens only. Calm: thin lines, ivory panels,
+   orange kept for the one main action and the "most popular" badge.
+   ========================================================================== */
+.act2 .act-lede {
+  margin: 4px 0 0;
+  color: var(--text);
+}
+
+/* Quick facts under the title */
+.qfacts {
+  list-style: none;
+  margin: 8px 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 820px) {
+  .qfacts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.qfacts li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  min-width: 0;
+}
+.qfacts li > svg {
+  color: var(--forest);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.qfacts li > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.qfacts small {
+  font-size: 12.5px;
+}
+.qfacts b {
+  color: var(--forest);
+  font-size: 14.5px;
+  overflow-wrap: anywhere;
+}
+
+/* Gallery: main photo + thumbnails (+ video) */
+.mgal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mgal-main {
+  position: relative;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--ivory-3);
+  aspect-ratio: 4 / 3;
+}
+@media (min-width: 820px) {
+  .mgal-main {
+    aspect-ratio: 16 / 7;
+  }
+}
+.mgal-main > button,
+.mgal-main > iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.mgal-photo {
+  cursor: zoom-in;
+}
+.mgal-main picture,
+.mgal-main img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.mgal-main img {
+  object-fit: cover;
+}
+.mgal-main .all {
+  position: absolute;
+  inset-inline-end: 12px;
+  inset-block-end: 12px;
+}
+.mgal-play {
+  cursor: pointer;
+}
+.mgal-play-btn {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: max-content;
+  height: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 99px;
+  background: rgba(19, 48, 26, 0.78);
+  color: #fff;
+  font-weight: 700;
+}
+.mgal-thumbs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-block-end: 2px;
+}
+.mgal-thumbs button {
+  position: relative;
+  flex: 0 0 84px;
+  height: 62px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 2px solid transparent;
+  background: var(--ivory-3);
+  opacity: 0.82;
+}
+.mgal-thumbs button[aria-pressed='true'] {
+  border-color: var(--forest);
+  opacity: 1;
+}
+.mgal-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mgal-vthumb > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(19, 48, 26, 0.55);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.mgal-note {
+  font-size: 12px;
+}
+.act-off {
+  margin-block-start: 14px;
+}
+
+/* Package cards */
+.act2 .blk > .row.between h2 {
+  font-size: 24px;
+}
+.tcards {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  padding-top: 12px;
+}
+.tcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 18px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  transition:
+    border-color var(--d-base),
+    box-shadow var(--d-base);
+}
+.tcard.on {
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px var(--palm-soft);
+}
+.tcard.off {
+  opacity: 0.6;
+}
+.tcard .badge-top {
+  position: absolute;
+  top: -11px;
+  inset-inline-start: 16px;
+  background: var(--orange);
+  color: var(--forest-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+.tname {
+  font-size: 18px;
+  margin: 0;
+  color: var(--forest);
+}
+.tprice {
+  margin: 0;
+}
+.tprice .price {
+  font: 800 22px var(--f-en);
+  color: var(--ink);
+}
+.tprice small {
+  color: var(--muted);
+}
+.ttag {
+  margin: 0;
+  font-size: 14px;
+}
+.tchecks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+.tchecks li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.tchecks li svg {
+  color: var(--ok);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.tchecks li.no {
+  color: var(--muted);
+}
+.tchecks li.no svg {
+  color: var(--err);
+}
+.tmore {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 32px;
+  font-weight: 700;
+}
+.tall {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+.tlist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tlist > b {
+  color: var(--forest);
+  font-size: 14px;
+}
+.tfoot {
+  margin-top: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+.tfoot .btn {
+  flex: 1 1 auto;
+}
+.tcard .why {
+  font-size: 12.5px;
+  color: var(--warn);
+}
+.tincl {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.tincl li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.tincl li > svg {
+  color: var(--forest);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.tincl li > span {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The chosen package in detail */
+.tdetail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--ivory);
+}
+.tdetail-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.tdetail-head p {
+  margin: 0;
+}
+.tfacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+.tfacts li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  font-size: 14px;
+  min-width: 0;
+}
+.tfacts li svg {
+  color: var(--forest);
+  flex-shrink: 0;
+}
+.tfacts li.ok {
+  background: var(--ok-bg);
+  border-color: transparent;
+  color: #175c2c;
+  font-weight: 700;
+}
+.tfacts li.ok svg {
+  color: var(--ok);
+}
+.tdetail-foot {
+  gap: 12px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 12px;
+}
+.tdetail-foot .price {
+  font: 800 18px var(--f-en);
+  color: var(--ink);
+}
+
+/* Four boxes */
+.iboxes {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.ibox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.ibox-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--forest);
+}
+.ibox-ok .ibox-h svg {
+  color: var(--ok);
+}
+.ibox-no .ibox-h svg {
+  color: var(--err);
+}
+.ibox-info .ibox-h svg {
+  color: var(--info);
+}
+.ibox-warn .ibox-h svg {
+  color: var(--warn);
+}
+.ibox ul,
+.ilist {
+  margin: 0;
+  padding-inline-start: 20px;
+  display: grid;
+  gap: 6px;
+  font-size: 14.5px;
+}
+.ibox-no li {
+  color: var(--muted);
+}
+
+/* Add-on cards */
+.astrip {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+.acard {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--r-md);
+  border: 1.5px solid var(--line-soft);
+  background: var(--white);
+}
+.acard.on {
+  border-color: var(--forest);
+}
+.acard > img,
+.acard-ph {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--palm-soft);
+}
+.acard-ph {
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+}
+.acard-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.acard-txt b {
+  color: var(--forest);
+}
+.acard-txt small {
+  font-size: 12.5px;
+}
+.acard-txt .why {
+  color: var(--forest-soft);
+  font-weight: 700;
+}
+.acard-price .price {
+  font: 800 15px var(--f-en);
+  color: var(--ink);
+}
+.acard-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--forest);
+  background: var(--white);
+  color: var(--forest);
+  display: grid;
+  place-items: center;
+}
+.acard-btn.on {
+  background: var(--forest);
+  color: #fff;
+}
+.acard-btn:disabled {
+  opacity: 0.55;
+}
+
+/* Description (safe markdown) and highlights */
+.md {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 16.5px;
+  color: var(--text);
+}
+.md p,
+.md ul,
+.md ol {
+  margin: 0;
+}
+.md ul,
+.md ol {
+  padding-inline-start: 22px;
+  display: grid;
+  gap: 4px;
+}
+.md h3,
+.md h4 {
+  margin: 6px 0 0;
+  color: var(--forest);
+}
+.md h3 {
+  font-size: 19px;
+}
+.md h4 {
+  font-size: 16.5px;
+}
+.md a {
+  color: var(--forest);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.hlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.hlist li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--palm-soft);
+  color: var(--forest-ink);
+  font-size: 14.5px;
+}
+.hlist li svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+/* Info tabs */
+.itabs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+}
+.itabs-panel {
+  outline-offset: 4px;
+}
+.itabs-panel p {
+  margin: 0;
+}
+.ok-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ok);
+  font-weight: 700;
+}
+.pre {
+  white-space: pre-line;
+}
+
+/* Meeting point */
+.meet {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+}
+.meet p {
+  margin: 0;
+}
+.meet-ill {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--palm-soft);
+  color: var(--forest);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.meet-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* Similar activities + map card */
+.rel-top {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .rel-top {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+.map-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+.map-card p {
+  margin: 0;
+}
+.map-card .minimap {
+  height: 180px;
+}
+
+/* Unavailable: contact panel in place of the booking form */
+.bk-off .bk-body {
+  align-items: stretch;
+  text-align: center;
+}
+.bk-off p {
+  margin: 0;
+}
+.bk-off-ill {
+  align-self: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--warn-bg);
+  color: var(--warn);
+}

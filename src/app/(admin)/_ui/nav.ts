@@ -61,6 +61,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/map', labelKey: 'nav.map', capability: 'content.read' },
       { path: '/itineraries', labelKey: 'nav.itineraries', capability: 'content.read' },
       { path: '/activities', labelKey: 'nav.activities', capability: 'content.read' },
+      { path: '/addons', labelKey: 'nav.addons', capability: 'content.read' },
       { path: '/packages', labelKey: 'nav.packages', capability: 'content.read' },
       { path: '/articles', labelKey: 'nav.articles', capability: 'content.read' },
       { path: '/landmarks', labelKey: 'nav.landmarks', capability: 'content.read' },

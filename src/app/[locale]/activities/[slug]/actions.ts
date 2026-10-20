@@ -42,6 +42,9 @@ const FIELD_OF: Partial<Record<ActivityBookingIssue, BookingField>> = {
   invalid_time_slot: 'time',
   lead_time_passed: 'time',
   guests_exceed_max: 'people',
+  guests_below_min: 'people',
+  included_missing_time: 'included',
+  included_invalid_time: 'included',
   invalid_quantity: 'people',
   invalid_addon: 'addons',
   driver_full: 'driver',
@@ -72,6 +75,17 @@ function parse(input: unknown): BookActivityRequest | null {
       addons.push({ id, qty: typeof qty === 'number' && Number.isInteger(qty) ? qty : 0 })
     }
   }
+  const included: { activityId: string; time: string | null }[] = []
+  if (Array.isArray(v.included)) {
+    for (const entry of v.included.slice(0, 20)) {
+      if (typeof entry !== 'object' || entry === null) return null
+      const activity = (entry as Record<string, unknown>).activityId
+      const at = str((entry as Record<string, unknown>).time)
+      if (typeof activity !== 'string' || !UUID.test(activity)) return null
+      if (at !== null && !PLAIN_TIME.test(at)) return null
+      included.push({ activityId: activity, time: at })
+    }
+  }
   return {
     activityId,
     packageId,
@@ -80,6 +94,7 @@ function parse(input: unknown): BookActivityRequest | null {
     time,
     people,
     addons,
+    included,
     // No driver while the service is switched off (lib/features.ts).
     driver: FEATURES.driver && v.driver === true,
     replaceItemId:

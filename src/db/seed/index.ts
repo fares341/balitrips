@@ -63,6 +63,7 @@ import enMessages from '../../../messages/en.json'
 import idMessages from '../../../messages/id.json'
 import contentJson from './content.json'
 import { SEED_CURRENCY, assignSlugs, deterministicId, must, overwrite, toMinor } from './helpers'
+import { seedRichContent } from './rich'
 import type { ContentData } from './types'
 
 const content = contentJson as unknown as ContentData
@@ -417,6 +418,17 @@ async function seed(): Promise<Map<string, number>> {
     )
     await tx.insert(activityCategories).values(activityCategoryRows)
     counts.set('activity_categories', activityCategoryRows.length)
+
+    // Phase 1 content for a few activities, from the facts above (fill-only).
+    counts.set(
+      'activity_rich_content',
+      await seedRichContent(
+        tx,
+        activityId,
+        new Map(content.ACTIVITIES.map((a) => [a.id, a.price])),
+        SEED_CURRENCY,
+      ),
+    )
 
     // -----------------------------------------------------------------------
     // Itineraries

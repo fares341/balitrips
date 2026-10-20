@@ -2,11 +2,12 @@
 
 /**
  * Small interactive pieces of the activity page (prototype activity.html):
- * the photo grid with its lightbox, the sticky section tabs that follow the
- * scroll, and the Share / Save buttons beside the title.
+ * the photo gallery (main photo, thumbnails, click-to-load video) with its
+ * lightbox, the sticky section tabs that follow the scroll, the information
+ * tabs, and the Share / Save buttons beside the title.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { toggleFavorite } from '@/app/[locale]/_actions/favorites'
@@ -18,13 +19,90 @@ import { Icon } from '@/components/ui/icon'
 // Gallery + lightbox
 // ---------------------------------------------------------------------------
 
-export type GalleryImage = { id: string; url: string; alt: string }
+export type GalleryImage = {
+  id: string
+  url: string
+  alt: string
+  srcSetAvif?: string | null
+  srcSetWebp?: string | null
+}
 
-export function Gallery({ images }: { images: GalleryImage[] }) {
+export type GalleryVideo = { provider: 'youtube' | 'vimeo'; embedUrl: string }
+
+const SIZES = '(max-width: 1023px) 100vw, 62vw'
+
+/** One photo as a <picture>; the first may carry a portrait version for phones. */
+function Picture({
+  image,
+  mobile,
+  eager,
+  alt,
+}: {
+  image: GalleryImage
+  mobile?: GalleryImage | null
+  eager: boolean
+  alt: string
+}) {
+  return (
+    <picture>
+      {mobile ? (
+        <>
+          {mobile.srcSetAvif ? (
+            <source
+              media="(max-width: 640px)"
+              type="image/avif"
+              srcSet={mobile.srcSetAvif}
+              sizes="100vw"
+            />
+          ) : null}
+          {mobile.srcSetWebp ? (
+            <source
+              media="(max-width: 640px)"
+              type="image/webp"
+              srcSet={mobile.srcSetWebp}
+              sizes="100vw"
+            />
+          ) : null}
+          <source media="(max-width: 640px)" srcSet={mobile.url} />
+        </>
+      ) : null}
+      {image.srcSetAvif ? (
+        <source type="image/avif" srcSet={image.srcSetAvif} sizes={SIZES} />
+      ) : null}
+      {image.srcSetWebp ? (
+        <source type="image/webp" srcSet={image.srcSetWebp} sizes={SIZES} />
+      ) : null}
+      {/* eslint-disable-next-line @next/next/no-img-element -- CMS media, already sized derivatives */}
+      <img
+        src={image.url}
+        alt={alt}
+        loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
+        decoding="async"
+      />
+    </picture>
+  )
+}
+
+/**
+ * Main photo + thumbnails (+ the video as the last thumbnail). The video is
+ * our own photo with a play button until pressed; only then is the player
+ * (youtube-nocookie / Vimeo with do-not-track) loaded.
+ */
+export function Gallery({
+  images,
+  mobileHero = null,
+  video = null,
+}: {
+  images: GalleryImage[]
+  mobileHero?: GalleryImage | null
+  video?: GalleryVideo | null
+}) {
   const t = useTranslations()
   const [open, setOpen] = useState<number | null>(null)
+  const [active, setActive] = useState<number | 'video'>(0)
+  const [playing, setPlaying] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const shown = images.slice(0, 5)
 
   useEffect(() => {
     if (open === null) return
@@ -41,38 +119,106 @@ export function Gallery({ images }: { images: GalleryImage[] }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [open, images.length])
 
-  if (shown.length === 0) {
+  if (images.length === 0 && !video) {
     return <div className="gal gal-empty" aria-hidden="true" />
   }
 
   const current = open === null ? null : images[open]
+  const index = active === 'video' ? null : Math.min(active, Math.max(0, images.length - 1))
+  const shown = index === null ? null : images[index]
+  const poster = images[0] ?? null
+  const showVideo = active === 'video' || (images.length === 0 && video !== null)
+  const providerName = video?.provider === 'vimeo' ? 'Vimeo' : 'YouTube'
 
   return (
     <>
-      <div className={`gal gal-${Math.min(shown.length, 5)}`}>
-        {shown.map((image, index) => (
-          <button
-            key={image.id}
-            type="button"
-            onClick={() => setOpen(index)}
-            aria-label={`${t('act_gal_view')} ${index + 1}`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- CMS media, already sized derivatives */}
-            <img
-              src={image.url}
-              alt={index === 0 ? image.alt : ''}
-              loading={index === 0 ? 'eager' : 'lazy'}
-              fetchPriority={index === 0 ? 'high' : undefined}
-              decoding="async"
-            />
-            {index === 0 ? (
-              <span className="all btn btn-light btn-sm">
-                <Icon name="grid" size={16} /> {t('act_gal_all')}{' '}
-                <span dir="ltr">{`(${images.length})`}</span>
-              </span>
+      <div className="mgal">
+        <div className="mgal-main">
+          {showVideo && video ? (
+            playing ? (
+              <iframe
+                src={video.embedUrl}
+                title={t('act_video_label')}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
+              />
+            ) : (
+              <button
+                type="button"
+                className="mgal-play"
+                onClick={() => setPlaying(true)}
+                aria-describedby="mgal-video-note"
+              >
+                {poster ? <Picture image={poster} eager alt="" /> : null}
+                <span className="mgal-play-btn">
+                  <Icon name="play" size={30} />
+                  <span>{t('act_video_play')}</span>
+                </span>
+              </button>
+            )
+          ) : shown && index !== null ? (
+            <button
+              type="button"
+              className="mgal-photo"
+              onClick={() => setOpen(index)}
+              aria-label={`${t('act_gal_view')} ${index + 1}`}
+            >
+              <Picture
+                image={shown}
+                mobile={index === 0 ? mobileHero : null}
+                eager={index === 0}
+                alt={shown.alt}
+              />
+              {images.length > 1 ? (
+                <span className="all btn btn-light btn-sm">
+                  <Icon name="grid" size={16} /> {t('act_gal_all')}{' '}
+                  <span dir="ltr">{`(${images.length})`}</span>
+                </span>
+              ) : null}
+            </button>
+          ) : null}
+        </div>
+        {images.length > 1 || video ? (
+          <div className="mgal-thumbs" role="group" aria-label={t('act_gal_thumbs')}>
+            {images.slice(0, 8).map((image, i) => (
+              <button
+                key={image.id}
+                type="button"
+                aria-pressed={active === i}
+                aria-label={`${t('act_gal_view')} ${i + 1}`}
+                onClick={() => {
+                  setActive(i)
+                  setPlaying(false)
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- CMS thumbnail */}
+                <img src={image.url} alt="" loading="lazy" decoding="async" />
+              </button>
+            ))}
+            {video ? (
+              <button
+                type="button"
+                className="mgal-vthumb"
+                aria-pressed={active === 'video'}
+                onClick={() => setActive('video')}
+              >
+                {poster ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- CMS thumbnail
+                  <img src={poster.url} alt="" loading="lazy" decoding="async" />
+                ) : null}
+                <span>
+                  <Icon name="play" size={18} /> {t('act_video_label')}
+                </span>
+              </button>
             ) : null}
-          </button>
-        ))}
+          </div>
+        ) : null}
+        {video ? (
+          <small id="mgal-video-note" className="muted mgal-note">
+            {t('act_video_note', { provider: providerName })}
+          </small>
+        ) : null}
       </div>
 
       {current ? (
@@ -235,5 +381,70 @@ export function SaveButton({ activityId }: { activityId: string }) {
     >
       <Icon name="heart" size={16} /> {pressed ? t('act_saved') : t('act_save')}
     </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Information tabs (معلومات مهمة / سياسة الإلغاء والتعديل / الأسئلة الشائعة)
+// ---------------------------------------------------------------------------
+
+export function InfoTabs({
+  label,
+  tabs,
+}: {
+  label: string
+  tabs: { id: string; title: string; content: ReactNode }[]
+}) {
+  const [current, setCurrent] = useState(tabs[0]?.id ?? '')
+  const refs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const selected = tabs.find((tab) => tab.id === current) ?? tabs[0]
+  if (!selected) return null
+
+  const move = (delta: number) => {
+    const index = tabs.findIndex((tab) => tab.id === selected.id)
+    const next = tabs[(index + delta + tabs.length) % tabs.length]
+    if (!next) return
+    setCurrent(next.id)
+    refs.current[next.id]?.focus()
+  }
+
+  return (
+    <div className="itabs">
+      <div className="tabs itabs-list" role="tablist" aria-label={label}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            ref={(el) => {
+              refs.current[tab.id] = el
+            }}
+            type="button"
+            role="tab"
+            id={`itab-${tab.id}`}
+            aria-selected={tab.id === selected.id}
+            aria-controls={`ipanel-${tab.id}`}
+            tabIndex={tab.id === selected.id ? 0 : -1}
+            onClick={() => setCurrent(tab.id)}
+            onKeyDown={(event) => {
+              const rtl = document.documentElement.dir === 'rtl'
+              if (event.key === 'ArrowRight') move(rtl ? -1 : 1)
+              else if (event.key === 'ArrowLeft') move(rtl ? 1 : -1)
+              else return
+              event.preventDefault()
+            }}
+          >
+            {tab.title}
+          </button>
+        ))}
+      </div>
+      <div
+        className="itabs-panel"
+        role="tabpanel"
+        id={`ipanel-${selected.id}`}
+        aria-labelledby={`itab-${selected.id}`}
+        tabIndex={0}
+      >
+        {selected.content}
+      </div>
+    </div>
   )
 }

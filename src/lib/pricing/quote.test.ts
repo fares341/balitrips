@@ -658,3 +658,96 @@ describe('activity packages and add-ons (v3 handoff formula)', () => {
     expect(q.totalMinor).toBe(29700 + 4500)
   })
 })
+
+describe('phase 1: minimum party, per couple and included activities', () => {
+  function withExtras(): CatalogSnapshot {
+    const c = catalog()
+    c.activities.set('batur', {
+      priceMinor: 5500,
+      currency: 'USD',
+      maxGuests: 20,
+      leadTimeHours: 24,
+      timeSlots: ['09:00', '11:30', '14:00', '16:30'],
+      minGuests: 2,
+    })
+    c.activities.set('swing', {
+      priceMinor: 3000,
+      currency: 'USD',
+      maxGuests: 20,
+      leadTimeHours: 24,
+      timeSlots: [],
+    })
+    c.activities.set('temple', {
+      priceMinor: 2500,
+      currency: 'USD',
+      maxGuests: 20,
+      leadTimeHours: 24,
+      timeSlots: ['08:00', '15:00'],
+    })
+    c.activityTiers.set('batur-couple', {
+      activityId: 'batur',
+      priceMinor: 15000,
+      currency: 'USD',
+      pricingMode: 'per_couple',
+      maxGuests: null,
+      minGuests: 2,
+    })
+    c.activityTiers.set('batur-full', {
+      activityId: 'batur',
+      priceMinor: 12000,
+      currency: 'USD',
+      pricingMode: 'per_person',
+      maxGuests: null,
+      minGuests: null,
+      includedActivities: [
+        { activityId: 'swing', timing: 'same_slot' },
+        { activityId: 'temple', timing: 'own_slot' },
+        { activityId: 'withdrawn', timing: 'same_slot' },
+      ],
+    })
+    return c
+  }
+
+  it('refuses fewer people than the activity minimum', () => {
+    const q = buildQuote([item({ quantity: 1, guests: 1 })], withExtras(), NOW)
+    expect(q.issues[0]).toMatchObject({ code: 'guests_below_min', detail: '2' })
+    expect(buildQuote([item({ quantity: 2, guests: 2 })], withExtras(), NOW).ok).toBe(true)
+  })
+
+  it('prices a per-couple package per two people', () => {
+    const q = buildQuote(
+      [item({ kind: 'activity_tier', refId: 'batur-couple', quantity: 4, guests: 4 })],
+      withExtras(),
+      NOW,
+    )
+    expect(q.ok).toBe(true)
+    expect(q.lines[0]).toMatchObject({ unitPriceMinor: 15000, quantity: 2, lineTotalMinor: 30000 })
+  })
+
+  it('lists included activities at zero and needs a time for an own-slot one', () => {
+    const base = item({ kind: 'activity_tier', refId: 'batur-full', quantity: 2, guests: 2 })
+    const missing = buildQuote([base], withExtras(), NOW)
+    expect(missing.issues[0]).toMatchObject({ code: 'included_missing_time', detail: 'temple' })
+
+    const wrong = buildQuote(
+      [{ ...base, options: { included: [{ activityId: 'temple', time: '10:00' }] } }],
+      withExtras(),
+      NOW,
+    )
+    expect(wrong.issues[0]?.code).toBe('included_invalid_time')
+
+    const ok = buildQuote(
+      [{ ...base, options: { included: [{ activityId: 'temple', time: '15:00:00' }] } }],
+      withExtras(),
+      NOW,
+    )
+    expect(ok.ok).toBe(true)
+    expect(ok.totalMinor).toBe(24000)
+    const parts = ok.lines[0]?.breakdown ?? []
+    expect(parts.map((p) => [p.kind, p.refId, p.totalMinor, p.time ?? null])).toEqual([
+      ['package', 'batur-full', 24000, null],
+      ['included', 'swing', 0, null],
+      ['included', 'temple', 0, '15:00'],
+    ])
+  })
+})

@@ -6,19 +6,26 @@ import { activities, regions } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
+import { ACTIVITY_STATUSES } from '@/lib/content/activity-status'
 
 import { adminHref } from '../../_lib/admin-path'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pager, PublishPill, Table, When } from '../../_ui/table'
+import { SortableList } from '../../_ui/sortable'
+import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
 import { getAdminI18n } from '../../_lib/i18n'
-import { setActivityStatus } from './actions'
+import { reorderActivities, setActivityStatus } from './actions'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
+
+/** Reordering is an edit: shown to roles that may write content. */
+function mayWriteOrder(role: Parameters<typeof can>[0]): boolean {
+  return can(role, 'content.write')
+}
 const LIST = adminHref('/activities')
 
 export default async function ActivitiesPage({
@@ -48,14 +55,16 @@ export default async function ActivitiesPage({
     )
     if (match) filters.push(match)
   }
-  if (status === 'draft' || status === 'published') {
+  if (status !== null && (ACTIVITY_STATUSES as readonly string[]).includes(status)) {
     filters.push(eq(activities.status, status))
   }
   if (regionId) filters.push(eq(activities.regionId, regionId))
 
   const where = and(...filters)
 
-  const [rows, [totalRow], regionRows] = await Promise.all([
+  // The order card lists every activity (no filters): dragging reorders the site.
+  const unfiltered = !q && !status && !regionId
+  const [rows, [totalRow], regionRows, orderRows] = await Promise.all([
     db
       .select({
         id: activities.id,
@@ -81,6 +90,22 @@ export default async function ActivitiesPage({
       .select({ id: regions.id, key: regions.key, label: regions.label })
       .from(regions)
       .orderBy(asc(regions.sortOrder)),
+    unfiltered && mayWriteOrder(session.role)
+      ? db
+          .select({
+            id: activities.id,
+            slug: activities.slug,
+            name: activities.name,
+            status: activities.status,
+            isFeatured: activities.isFeatured,
+            isMostPopular: activities.isMostPopular,
+            showOnHome: activities.showOnHome,
+          })
+          .from(activities)
+          .where(isNull(activities.deletedAt))
+          .orderBy(asc(activities.sortOrder), desc(activities.updatedAt))
+          .limit(200)
+      : Promise.resolve([]),
   ])
 
   const total = totalRow?.value ?? 0
@@ -119,6 +144,8 @@ export default async function ActivitiesPage({
             <option value="">{t('common.all')}</option>
             <option value="draft">{t('common.draft')}</option>
             <option value="published">{t('common.published')}</option>
+            <option value="hidden">{t('ae.status_pill_hidden')}</option>
+            <option value="unavailable">{t('ae.status_pill_unavailable')}</option>
           </select>
         </div>
         <div className="a-field">
@@ -141,6 +168,31 @@ export default async function ActivitiesPage({
           </Link>
         </div>
       </form>
+
+      {orderRows.length > 1 ? (
+        <details className="a-card a-order-card">
+          <summary>
+            <h2>{t('ae.order_title')}</h2>
+          </summary>
+          <SortableList
+            hint={t('ae.order_hint')}
+            onSave={reorderActivities}
+            rows={orderRows.map((row) => ({
+              id: row.id,
+              label: pick(row.name, locale, row.slug),
+              content: (
+                <span className="a-sort-line">
+                  <b>{pick(row.name, locale, row.slug)}</b>
+                  <PublishPill status={row.status} />
+                  {row.isFeatured ? <Pill tone="info">{t('ae.flag_featured_pill')}</Pill> : null}
+                  {row.showOnHome ? <Pill tone="good">{t('ae.flag_home_pill')}</Pill> : null}
+                  {row.isMostPopular ? <Pill tone="warn">{t('ae.flag_popular_pill')}</Pill> : null}
+                </span>
+              ),
+            }))}
+          />
+        </details>
+      ) : null}
 
       {rows.length === 0 ? (
         <Empty>{t('activities.empty')}</Empty>

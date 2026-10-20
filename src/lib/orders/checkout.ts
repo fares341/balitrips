@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -6,6 +8,7 @@ import {
   activities,
   activityAddons,
   activityTiers,
+  addonsLibrary,
   cartItems,
   customTripRequests,
   driverVehicles,
@@ -19,6 +22,9 @@ import {
 import type { Localized } from '@/db/schema/_shared'
 import type { OrderItemOptions } from '@/db/schema'
 import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
+import { loadTierIncluded } from '@/lib/booking/included'
+import { includedOrderItems } from '@/lib/orders/included-items'
+import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
@@ -118,6 +124,7 @@ async function loadCatalog(
           currency: activityTiers.currency,
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
+          minGuests: activityTiers.minGuests,
           groupMax: activityTiers.groupMax,
           includesAddons: activityTiers.includesAddons,
           available: activityTiers.available,
@@ -126,8 +133,17 @@ async function loadCatalog(
         .from(activityTiers)
         .where(and(inArray(activityTiers.id, tierIds), isNull(activityTiers.deletedAt)))
     : []
+  const includedByTier = await loadTierIncluded(tierRows.map((row) => row.id))
 
-  const activityIds = [...new Set([...idsOf('activity'), ...tierRows.map((row) => row.activityId)])]
+  // Included activities are priced against their own slots and lead time, so
+  // their facts join the snapshot too.
+  const activityIds = [
+    ...new Set([
+      ...idsOf('activity'),
+      ...tierRows.map((row) => row.activityId),
+      ...[...includedByTier.values()].flat().map((entry) => entry.activityId),
+    ]),
+  ]
   const itineraryIds = idsOf('itinerary')
   const packageIds = idsOf('package')
 
@@ -142,6 +158,7 @@ async function loadCatalog(
             leadTimeHours: activities.leadTimeHours,
             timeSlots: activities.timeSlots,
             multiDay: activities.multiDay,
+            minGuests: activities.minGuests,
             status: activities.status,
           })
           .from(activities)
@@ -184,6 +201,7 @@ async function loadCatalog(
 
   const planRows = await loadPlansById(idsOf('plan'))
   const addonRows = await loadActivityAddons(activityRows.map((r) => r.id))
+  const bookable = new Set<string>(BOOKABLE_STATUSES)
   // عروض الجداول المخصصة: للمالك وحده، مسعّرة وغير مدفوعة — وإلا unknown_item.
   const customRows = await loadPayableCustomQuotes(idsOf('custom'), userId)
 
@@ -194,7 +212,8 @@ async function loadCatalog(
     customRequests: customQuotePriceMap(customRows),
     activities: new Map(
       activityRows
-        .filter((r) => r.status === 'published')
+        // Published and hidden (link-only) activities sell; unavailable ones do not.
+        .filter((r) => bookable.has(r.status))
         .map((r) => [
           r.id,
           {
@@ -204,6 +223,7 @@ async function loadCatalog(
             leadTimeHours: r.leadTimeHours,
             timeSlots: r.timeSlots ?? [],
             multiDay: r.multiDay,
+            minGuests: r.minGuests,
           },
         ]),
     ),
@@ -219,8 +239,10 @@ async function loadCatalog(
             pricingMode: r.pricingMode,
             groupMax: r.groupMax,
             maxGuests: r.maxGuests,
+            minGuests: r.minGuests,
             includesAddons: r.includesAddons ?? [],
             available: r.available,
+            includedActivities: includedByTier.get(r.id) ?? [],
           },
         ]),
     ),
@@ -354,10 +376,14 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
     const nameByRef = await loadNameSnapshots(tx, quote)
 
-    await tx.insert(orderItems).values(
-      quote.lines.map((line) => {
+    // Ids chosen here so an included activity can point at its package line.
+    const orderItemIds = new Map(quote.lines.map((line) => [line.itemId, randomUUID()]))
+
+    await tx.insert(orderItems).values([
+      ...quote.lines.map((line) => {
         const item = requestItems.find((i) => i.id === line.itemId)
         return {
+          id: orderItemIds.get(line.itemId),
           orderId: order.id,
           kind: line.kind,
           refId: line.refId,
@@ -381,7 +407,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
           options: orderItemOptions(line, item, nameByRef),
         }
       }),
-    )
+      ...includedOrderItems(quote, requestItems, orderItemIds, order.id, nameByRef),
+    ])
 
     /**
      * المفتاح يُحجز داخل معاملة الطلب نفسها: ضغطتان متزامنتان بنفس المفتاح
@@ -501,15 +528,34 @@ async function loadNameSnapshots(tx: Tx, quote: Quote): Promise<Map<string, Loca
       out.set(`part:${row.id}`, row.name)
     }
   }
-  const addonIds = quote.lines.flatMap((l) =>
-    (l.breakdown ?? []).filter((b) => b.kind === 'addon' && b.refId).map((b) => b.refId as string),
-  )
+  const partIds = (kind: string) => [
+    ...new Set(
+      quote.lines.flatMap((l) =>
+        (l.breakdown ?? []).filter((b) => b.kind === kind && b.refId).map((b) => b.refId as string),
+      ),
+    ),
+  ]
+  const addonIds = partIds('addon')
   if (addonIds.length > 0) {
-    const addonRows = await tx
-      .select({ id: activityAddons.id, name: activityAddons.name })
-      .from(activityAddons)
-      .where(inArray(activityAddons.id, [...new Set(addonIds)]))
-    for (const row of addonRows) out.set(`part:${row.id}`, row.name)
+    const [own, library] = await Promise.all([
+      tx
+        .select({ id: activityAddons.id, name: activityAddons.name })
+        .from(activityAddons)
+        .where(inArray(activityAddons.id, addonIds)),
+      tx
+        .select({ id: addonsLibrary.id, name: addonsLibrary.name })
+        .from(addonsLibrary)
+        .where(inArray(addonsLibrary.id, addonIds)),
+    ])
+    for (const row of [...own, ...library]) out.set(`part:${row.id}`, row.name)
+  }
+  const includedIds = partIds('included')
+  if (includedIds.length > 0) {
+    const rows = await tx
+      .select({ id: activities.id, name: activities.name })
+      .from(activities)
+      .where(inArray(activities.id, includedIds))
+    for (const row of rows) out.set(`part:${row.id}`, row.name)
   }
   const planIds = byKind('plan')
   if (planIds.length > 0) {
@@ -560,16 +606,20 @@ function orderItemOptions(
   if (!line.breakdown) return null
   return {
     addons: item?.options?.addons ?? [],
+    ...(item?.options?.included && item.options.included.length > 0
+      ? { included: item.options.included }
+      : {}),
     lines: line.breakdown
       .filter((part) => part.kind !== 'driver')
       .map((part) => ({
-        kind: part.kind === 'package' ? 'package' : 'addon',
+        kind: part.kind === 'package' || part.kind === 'included' ? part.kind : 'addon',
         refId: part.refId,
         name: part.refId === null ? null : (names.get(`part:${part.refId}`) ?? null),
         unitMinor: part.unitMinor,
         quantity: part.quantity,
         totalMinor: part.totalMinor,
         ...(part.included ? { included: true } : {}),
+        ...(part.kind === 'included' ? { time: part.time ?? null } : {}),
       })),
   }
 }

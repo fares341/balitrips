@@ -41,6 +41,7 @@ import { EVENTS_CATEGORY_KEY } from '@/lib/content/extra-queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import {
   listActivities,
+  listHomeActivities,
   listArticles,
   listMapPlaces,
   listMapTaxonomy,
@@ -155,18 +156,23 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const t = await getTranslations()
 
-  const [catalogue, mapPlaces, taxonomy, articles, allActivities] = await Promise.all([
+  const [catalogue, mapPlaces, taxonomy, articles, allActivities, homePicks] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
     listMapPlaces(),
     listMapTaxonomy(),
     listArticles({ limit: BLOG_COUNT, locale }),
     listActivities({ sort: 'top', limit: SUGGEST_ACTIVITY_LIMIT, locale }),
+    // "Don't miss": the owner's picks (Studio "show on home", in their order),
+    // topped up with the best-rated activities. Events stay off this row.
+    listHomeActivities({
+      limit: MR_SHOWN,
+      locale,
+      exclude: (activity) => inCategory(activity, EVENTS_CATEGORY_KEY),
+    }),
   ])
 
   // --- most requested: activities only (client) ------------------------------
-  const requestedActivities = catalogue
-    .filter((activity) => !inCategory(activity, EVENTS_CATEGORY_KEY))
-    .slice(0, MR_SHOWN)
+  const requestedActivities = homePicks
 
   // --- reviews ----------------------------------------------------------------
   const reviewSources = catalogue.slice(0, REVIEW_SOURCE_COUNT)

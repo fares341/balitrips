@@ -44,6 +44,8 @@ import {
   loadPayableCustomQuotes,
 } from '@/lib/orders/custom-request'
 import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
+import { loadTierIncluded } from '@/lib/booking/included'
+import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
 import { FEATURES } from '@/lib/features'
 
@@ -129,6 +131,7 @@ export async function loadCartCatalog(
           currency: activityTiers.currency,
           pricingMode: activityTiers.pricingMode,
           maxGuests: activityTiers.maxGuests,
+          minGuests: activityTiers.minGuests,
           groupMax: activityTiers.groupMax,
           includesAddons: activityTiers.includesAddons,
           available: activityTiers.available,
@@ -137,8 +140,15 @@ export async function loadCartCatalog(
         .from(activityTiers)
         .where(and(inArray(activityTiers.id, tierIds), isNull(activityTiers.deletedAt)))
     : []
+  const includedByTier = await loadTierIncluded(tierRows.map((row) => row.id))
 
-  const activityIds = [...new Set([...idsOf('activity'), ...tierRows.map((row) => row.activityId)])]
+  const activityIds = [
+    ...new Set([
+      ...idsOf('activity'),
+      ...tierRows.map((row) => row.activityId),
+      ...[...includedByTier.values()].flat().map((entry) => entry.activityId),
+    ]),
+  ]
   const itineraryIds = idsOf('itinerary')
   const packageIds = idsOf('package')
   const placeIds = idsOf('place')
@@ -158,6 +168,7 @@ export async function loadCartCatalog(
             leadTimeHours: activities.leadTimeHours,
             timeSlots: activities.timeSlots,
             multiDay: activities.multiDay,
+            minGuests: activities.minGuests,
             status: activities.status,
             heroImageId: activities.heroImageId,
           })
@@ -323,6 +334,9 @@ export async function loadCartCatalog(
 
   const addonRows = await loadActivityAddons(activityRows.map((row) => row.id))
   for (const list of addonRows.values()) for (const row of list) partNames.set(row.id, row.name)
+  // Included activities appear in a package's breakdown under their own name.
+  for (const row of activityRows) if (!partNames.has(row.id)) partNames.set(row.id, row.name)
+  const bookable = new Set<string>(BOOKABLE_STATUSES)
 
   const planRows = await planRowsPromise
   for (const row of planRows) {
@@ -363,7 +377,8 @@ export async function loadCartCatalog(
     customRequests: customQuotePriceMap(customRows),
     activities: new Map(
       activityRows
-        .filter((row) => row.status === PUBLISHED)
+        // Published and hidden (link-only) activities sell; unavailable ones do not.
+        .filter((row) => bookable.has(row.status))
         .map((row) => [
           row.id,
           {
@@ -373,6 +388,7 @@ export async function loadCartCatalog(
             leadTimeHours: row.leadTimeHours,
             timeSlots: row.timeSlots ?? [],
             multiDay: row.multiDay,
+            minGuests: row.minGuests,
           },
         ]),
     ),
@@ -388,8 +404,10 @@ export async function loadCartCatalog(
             pricingMode: row.pricingMode,
             groupMax: row.groupMax,
             maxGuests: row.maxGuests,
+            minGuests: row.minGuests,
             includesAddons: row.includesAddons ?? [],
             available: row.available,
+            includedActivities: includedByTier.get(row.id) ?? [],
           },
         ]),
     ),

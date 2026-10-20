@@ -47,6 +47,13 @@ export type CartItemKind =
   /** جدول مخصص مدفوع (الوثيقة 13.1): `refId` = `custom_trip_requests.id`. */
   | 'custom'
 
+/** When an included activity takes place: at the package's time, or its own slot. */
+export type IncludedTiming = 'same_slot' | 'own_slot'
+
+export function includedTiming(value: string | null | undefined): IncludedTiming {
+  return value === 'own_slot' ? 'own_slot' : 'same_slot'
+}
+
 export interface QuoteRequestItem {
   id: string
   kind: CartItemKind
@@ -57,8 +64,15 @@ export interface QuoteRequestItem {
   guests: number | null
   endDate: string | null
   parentItemId: string | null
-  /** Add-ons picked for an activity line (`cart_items.options`). Ids and quantities only. */
-  options?: { addons?: { id: string; qty: number }[] } | null
+  /**
+   * Booking choices of an activity line (`cart_items.options`): add-on ids and
+   * quantities, and the times picked for included activities with their own
+   * slot. Never a price.
+   */
+  options?: {
+    addons?: { id: string; qty: number }[]
+    included?: { activityId: string; time: string | null }[]
+  } | null
 }
 
 /** The catalog facts pricing needs, already loaded from the database. */
@@ -73,6 +87,8 @@ export interface CatalogSnapshot {
       timeSlots: string[]
       /** Booked as a date range (`activities.multi_day`). Absent = single day. */
       multiDay?: boolean
+      /** Smallest party (`activities.min_guests`). Absent = 1. */
+      minGuests?: number
     }
   >
   /**
@@ -96,8 +112,15 @@ export interface CatalogSnapshot {
       groupMax?: number | null
       /** Null means "whatever the activity allows". */
       maxGuests: number | null
+      /** Smallest party for this package. Null/absent = the activity's minimum. */
+      minGuests?: number | null
       /** Add-on ids that come with this package. */
       includesAddons?: string[]
+      /**
+       * Other activities the package includes at no charge, in order. One that
+       * is missing from `activities` (withdrawn) is simply not part of the sale.
+       */
+      includedActivities?: { activityId: string; timing: IncludedTiming }[]
       /** False = shown but not bookable. Absent = bookable. */
       available?: boolean
     }
@@ -152,6 +175,12 @@ export type QuoteIssueCode =
   | 'lead_time_passed'
   | 'invalid_time_slot'
   | 'guests_exceed_max'
+  /** Fewer people than the activity or package accepts. */
+  | 'guests_below_min'
+  /** An included activity with its own time slot has no time picked. */
+  | 'included_missing_time'
+  /** The time picked for an included activity is not one of its slots, or has closed. */
+  | 'included_invalid_time'
   | 'invalid_quantity'
   | 'currency_mismatch'
   /** An add-on that is unknown, unavailable, not for this package or missing its prerequisite. */
@@ -310,6 +339,8 @@ function priceActivity(
       includesAddons: [],
     },
     activity.maxGuests,
+    activity.minGuests ?? 1,
+    [],
     catalog,
     now,
     lines,
@@ -513,6 +544,7 @@ function priceActivityTier(
   // The tier may cap the party tighter than the activity -- a couples tier at
   // two on a tour that seats twenty -- but never looser.
   const cap = Math.min(tier.maxGuests ?? activity.maxGuests, activity.maxGuests)
+  const min = tier.minGuests ?? activity.minGuests ?? 1
   priceActivityBooking(
     item,
     tier.activityId,
@@ -526,6 +558,8 @@ function priceActivityTier(
       includesAddons: tier.includesAddons ?? [],
     },
     cap,
+    min,
+    tier.includedActivities ?? [],
     catalog,
     now,
     lines,
@@ -548,6 +582,8 @@ function priceActivityBooking(
   activity: ActivityFacts,
   pkg: PackageRule,
   cap: number,
+  min: number,
+  includedSpec: readonly { activityId: string; timing: IncludedTiming }[],
   catalog: CatalogSnapshot,
   now: Date,
   lines: QuoteLine[],
@@ -591,6 +627,41 @@ function priceActivityBooking(
     issues.push({ itemId: item.id, code: 'guests_exceed_max', detail: String(cap) })
     return
   }
+  if (people < min) {
+    issues.push({ itemId: item.id, code: 'guests_below_min', detail: String(min) })
+    return
+  }
+
+  // Included activities: same date; own-slot ones need a valid time of theirs.
+  const travelDate = item.travelDate
+  const timesPicked = item.options?.included ?? []
+  const included: { activityId: string; time: string | null }[] = []
+  for (const spec of includedSpec) {
+    const facts = catalog.activities.get(spec.activityId)
+    if (!facts) continue
+    if (spec.timing !== 'own_slot' || facts.timeSlots.length === 0) {
+      included.push({ activityId: spec.activityId, time: null })
+      continue
+    }
+    const picked = timesPicked.find((entry) => entry.activityId === spec.activityId)?.time ?? null
+    if (!picked) {
+      issues.push({ itemId: item.id, code: 'included_missing_time', detail: spec.activityId })
+      return
+    }
+    const time = toHourMinute(picked)
+    if (
+      !facts.timeSlots.map(toHourMinute).includes(time) ||
+      !isWithinLeadTime(travelDate, time, facts.leadTimeHours, now)
+    ) {
+      issues.push({
+        itemId: item.id,
+        code: 'included_invalid_time',
+        detail: `${spec.activityId}:${picked}`,
+      })
+      return
+    }
+    included.push({ activityId: spec.activityId, time })
+  }
 
   const picks = item.options?.addons ?? []
   const price = priceBooking({
@@ -598,6 +669,7 @@ function priceActivityBooking(
     addons: catalog.activityAddons?.get(activityId) ?? [],
     picks,
     people,
+    included,
   })
   // Refuse rather than silently drop: the traveller saw these add-ons in the
   // summary, and charging less than shown is as wrong as charging more.

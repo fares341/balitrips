@@ -35,6 +35,7 @@ import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { cardLine } from '@/lib/content/card-line'
 import { pick, pickOptional } from '@/lib/content/localize'
+import { markdownToPlain } from '@/lib/content/markdown'
 import type { ActivitySummary } from '@/lib/content/types'
 
 export type ActivityCardProps = {
@@ -52,11 +53,26 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
   const name = pick(activity.name, locale, activity.slug)
   const area = pickOptional(activity.area, locale)
   const duration = pickOptional(activity.duration, locale)
-  // The card shows a short line; the activity page keeps the full description.
+  // The card shows the short description written for it, else a short line
+  // cut from the full description (which may carry markdown).
+  const written = pickOptional(activity.shortDescription, locale)
   const fullBlurb = pickOptional(activity.blurb, locale)
-  const blurb = fullBlurb !== null ? cardLine(fullBlurb) : null
+  const plain = fullBlurb !== null ? markdownToPlain(fullBlurb) : ''
+  const blurb = written ?? (plain !== '' ? cardLine(plain) : null)
   const category = activity.categories[0]
   const badge = category ? pick(category.label, locale, category.key) : null
+  const badges =
+    badge !== null || activity.mostPopular === true || activity.unavailable === true ? (
+      <>
+        {activity.mostPopular === true && (
+          <Tag variant="sun" icon="star">
+            {t('act_badge_popular')}
+          </Tag>
+        )}
+        {badge !== null && <Tag variant="glass">{badge}</Tag>}
+        {activity.unavailable === true && <Tag variant="warn">{t('act_unavailable_tag')}</Tag>}
+      </>
+    ) : null
 
   const meta: CardMetaItem[] = []
   if (area !== null) meta.push({ icon: 'pin', label: area })
@@ -70,7 +86,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
         srcSetAvif={activity.hero?.srcSetAvif}
         srcSetWebp={activity.hero?.srcSetWebp}
         priority={priority}
-        badges={badge !== null ? <Tag variant="glass">{badge}</Tag> : null}
+        badges={badges}
         fav={<FavButton kind="activity" refId={activity.id} />}
       />
       <CardBody>
