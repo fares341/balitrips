@@ -246,7 +246,7 @@ export async function AvailabilityTab({
                 return !verdict.ok && verdict.reason === 'full'
               })
             const capacity = effectiveCapacity(rules, day, slots[0] ?? null)
-            const note = dayRows.find((row) => row.slot === '')?.note ?? null
+            const note = rows.find((row) => row.day === day && row.slot === '')?.note ?? null
             const closedSlots = dayRows.filter((row) => row.slot !== '' && row.isClosed)
             const past = day < today
             return (

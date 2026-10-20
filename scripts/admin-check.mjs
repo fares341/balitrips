@@ -580,6 +580,7 @@ for (const role of ['admin', 'staff', 'customer']) {
           'included',
           'addons',
           'booking',
+          'availability',
           'faq',
         ]) {
           await visit(page, role, `${detail}?tab=${tab}`, 1440)
