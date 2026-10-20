@@ -71,6 +71,9 @@ function errorOf(output: unknown): string | null {
 
 /** Recent failed jobs (after all retries) and dead letters. */
 export async function problemJobs(limit = 50): Promise<{ failed: JobRow[]; dead: JobRow[] }> {
+  // Starting the producer installs pg-boss's schema on a database where no
+  // worker has run yet, so the query below always has a table to read.
+  await getBoss()
   const dlqs = QUEUE_NAMES.map(deadLetterQueue)
   const rows = await db.execute<{
     id: string

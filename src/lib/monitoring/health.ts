@@ -84,6 +84,12 @@ export async function runHealthChecks(): Promise<Check[]> {
       return { state: 'ok', detail: 'select 1' }
     }),
     timed('queue', async () => {
+      // to_regclass: a database where no worker has started yet has no
+      // pg-boss schema — that is "not installed yet", not an error.
+      const installed = await db.execute<{ t: string | null }>(
+        sql`select to_regclass('pgboss.version')::text as t`,
+      )
+      if (!installed[0]?.t) return { state: 'warn', detail: 'pg-boss schema not installed yet' }
       const rows = await db.execute<{ version: number }>(
         sql`select version from pgboss.version limit 1`,
       )
