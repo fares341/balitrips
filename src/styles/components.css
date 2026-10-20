@@ -4411,3 +4411,264 @@ a.bt-contact-card:hover {
     order: 5;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Phase 3: itinerary day places, sale modes, VIP add-on
+   --------------------------------------------------------------------------- */
+.it-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-inline-start: 4px;
+}
+
+.it-stops-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-inline-start: 2px dashed rgba(38, 85, 46, 0.22);
+  margin-inline-start: 13px;
+}
+
+.it-stop {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  margin-inline-start: -14px;
+}
+
+.it-stop-no {
+  inline-size: 26px;
+  block-size: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--white);
+  font-weight: 800;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 3px var(--ivory);
+}
+
+.it-stop.is-locked .it-stop-no {
+  background: var(--muted);
+}
+
+.it-stop-b {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14.5px;
+  padding-top: 2px;
+}
+
+.it-stop-b a {
+  color: var(--forest);
+}
+
+.it-stop.is-locked b {
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.it-stop-note {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.it-stops-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.it-stops-upgrade {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--orange-deep);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.it-buybox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.it-vipaddon {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--orange-soft);
+  cursor: pointer;
+  text-align: start;
+}
+
+.it-vipaddon input {
+  inline-size: 20px;
+  block-size: 20px;
+  margin-top: 2px;
+  accent-color: var(--forest);
+  flex-shrink: 0;
+}
+
+.it-vipaddon span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.it-acts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.it-acts-start {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  max-width: 260px;
+}
+
+.it-acts-hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+.it-acts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.it-acts-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}
+
+.it-acts-day {
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--forest-soft);
+  min-width: 4.5em;
+}
+
+.it-acts-name {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.it-pkg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.it-pkg > :nth-child(2),
+.it-pkg > .card {
+  align-self: stretch;
+}
+
+.it-pkg-rule {
+  font-size: 13px;
+}
+
+.it-custom {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-bottom: 24px;
+}
+
+.it-mine {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.it-mine-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.it-mine-card > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 40px;
+  list-style: none;
+}
+
+.it-mine-card[open] > summary {
+  margin-bottom: 10px;
+}
+
+.it-mine-vip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--orange-soft);
+  margin-bottom: 10px;
+}
+
+.it-mine-vip > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.it-mine-days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.it-mine-day {
+  display: block;
+  color: var(--forest-soft);
+  font-size: 14px;
+  margin-bottom: 6px;
+}

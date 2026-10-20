@@ -13,7 +13,7 @@ import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { accessKindLabel } from '../orders/labels'
-import { grantEntitlement, revokeEntitlement } from './actions'
+import { extendEntitlement, grantEntitlement, revokeEntitlement } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -213,6 +213,27 @@ export default async function EntitlementsPage({
                     )}
                   </td>
                   <td>
+                    {mayGrant && !row.revokedAt && row.expiresAt !== null ? (
+                      <form className="a-inline-form" action={extendEntitlement}>
+                        <input type="hidden" name="entitlementId" value={row.id} />
+                        <label className="a-sr" htmlFor={`extend-${row.id}`}>
+                          {t('p3.extend_days')}
+                        </label>
+                        <input
+                          className="a-input"
+                          id={`extend-${row.id}`}
+                          name="days"
+                          type="number"
+                          min={1}
+                          max={3650}
+                          defaultValue={7}
+                          style={{ inlineSize: '5.5em' }}
+                        />
+                        <button className="a-btn ghost small" type="submit">
+                          {t('p3.extend')}
+                        </button>
+                      </form>
+                    ) : null}
                     {mayGrant && !row.revokedAt ? (
                       <form className="a-inline-form" action={revokeEntitlement}>
                         <input type="hidden" name="entitlementId" value={row.id} />

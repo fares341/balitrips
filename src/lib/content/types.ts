@@ -309,6 +309,8 @@ export interface ItineraryDayDto {
   title: LocalizedText | null
   description: LocalizedText | null
   activity: ActivitySummary | null
+  /** Sale mode B: the day's activity can be booked from the itinerary page. */
+  bookable: boolean
 }
 
 export interface ItineraryDetail extends ItinerarySummary {
@@ -318,6 +320,14 @@ export interface ItineraryDetail extends ItinerarySummary {
   gallery: MediaDto[]
   includesMap: boolean
   isVip: boolean
+  /** Phase 3: the sale modes switched on in Studio (`@/lib/itineraries/sale`). */
+  saleDigital: boolean
+  saleWithActivities: boolean
+  saleWithPackages: boolean
+  saleCustomRequest: boolean
+  /** `free_only` | `vip_included` | `vip_addon` | `vip_later`. */
+  mapAccess: string
+  vipPlanId: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -349,6 +359,14 @@ export interface PackageDetail extends PackageSummary {
   included: LocalizedText[]
   excluded: LocalizedText[]
   activities: ActivitySummary[]
+  /** Phase 3: day of the trip per activity id (0 = first day); absent = not fixed. */
+  activityDays: Record<string, number>
+  /** An itinerary that comes with the package (live ones only). */
+  itinerary: ItinerarySummary | null
+  /** VIP map access comes with the package. */
+  includesVip: boolean
+  /** Draft or published — the staff preview shows drafts. */
+  status: string
 }
 
 // ---------------------------------------------------------------------------

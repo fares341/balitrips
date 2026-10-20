@@ -148,6 +148,11 @@ const SWEEP = [
   ['activity-spa', '/activities/ubud-jungle-spa-ritual'],
   ['itineraries', '/itineraries'],
   ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
+  // Phase 3: one itinerary day on the map (numbered pins, line, locked count).
+  ['map-day', { from: '/itineraries', match: '/itineraries/', mapDay: 1 }],
+  ['map-day2', { from: '/itineraries', match: '/itineraries/', mapDay: 2 }],
+  // Phase 3, sale mode D: the custom request prefilled from an itinerary.
+  ['custom-from', '/custom?from=5-day-itinerary&days=5&name=5-Day%20Itinerary'],
   ['packages', '/packages'],
   ['package', { from: '/packages', match: '/packages/' }],
   ['place', { from: '/', match: '/places/' }],
@@ -173,7 +178,7 @@ const SWEEP = [
   ['driver', '/driver'],
   ['404', '/no-such-page-xyz'],
 ]
-const TABLET = new Set(['home', 'activity', 'activity-batur', 'my-trip', 'checkout'])
+const TABLET = new Set(['home', 'activity', 'activity-batur', 'my-trip', 'checkout', 'map-day'])
 const EN_KEY = new Set([
   'home',
   'services',
@@ -184,6 +189,8 @@ const EN_KEY = new Set([
   'my-trip',
   'checkout',
   'packages',
+  'itinerary',
+  'map-day',
 ])
 const ONLY = (process.env.SHOTS_ONLY ?? '').split(',').filter(Boolean)
 mkdirSync(`${OUT}/p`, { recursive: true })
@@ -191,6 +198,11 @@ const overflow = []
 const resolved = {}
 async function resolvePath(lang, target) {
   if (typeof target === 'string') return `/${lang}${target === '/' ? '' : target}`
+  if (target.mapDay) {
+    const itinerary = await resolvePath(lang, { from: target.from, match: target.match })
+    const slug = itinerary?.split('/').pop()
+    return slug ? `/${lang}/map?itinerary=${slug}&day=${target.mapDay}` : null
+  }
   const key = `${lang}:${target.from}:${target.match}`
   if (resolved[key] !== undefined) return resolved[key]
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })

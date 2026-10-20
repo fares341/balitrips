@@ -193,6 +193,28 @@ export const assistantSchema = z.object({
 
 export type AssistantSetting = z.infer<typeof assistantSchema>
 
+/**
+ * VIP map access (phase 3, Studio → Plans → VIP settings).
+ *
+ * VIP is only ever granted by a paid line or by staff; these switches decide
+ * where it is OFFERED. `upsellPlanId` empty = the cheapest published VIP plan.
+ */
+export const vipSchema = z.object({
+  /** VIP plans can be bought on their own from /plans. */
+  sellStandalone: z.boolean().default(true),
+  /** Offer "add VIP" at checkout when the trip has an itinerary or activities. */
+  checkoutUpsell: z.boolean().default(true),
+  upsellPlanId: z
+    .string()
+    .trim()
+    .regex(/^$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .default(''),
+  /** Shown next to every VIP offer: what happens on a refund. */
+  refundNote: localizedText,
+})
+
+export type VipSetting = z.infer<typeof vipSchema>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -213,6 +235,7 @@ export type SettingKey =
   | 'security'
   | 'map'
   | 'assistant'
+  | 'vip'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -222,6 +245,7 @@ export interface SettingsShape {
   security: SecuritySetting
   map: StoredMapSettings
   assistant: AssistantSetting
+  vip: VipSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -291,6 +315,12 @@ export const SETTING_DEFAULTS: SettingsShape = {
     dailyBudgetUsd: 5,
     welcome: { en: '', ar: '', id: '' },
   },
+  vip: {
+    sellStandalone: true,
+    checkoutUpsell: true,
+    upsellPlanId: '',
+    refundNote: { en: '', ar: '', id: '' },
+  },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -304,6 +334,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   security: securitySchema,
   map: mapSchema,
   assistant: assistantSchema,
+  vip: vipSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

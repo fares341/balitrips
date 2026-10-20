@@ -111,7 +111,7 @@ export function useDragSort<T extends { id: string }>(
   return { rowRef, handleProps, move, dragging }
 }
 
-function Grip() {
+export function Grip() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
       <circle cx="5" cy="3" r="1.4" />
@@ -124,7 +124,7 @@ function Grip() {
   )
 }
 
-function Arrow({ up }: { up: boolean }) {
+export function Arrow({ up }: { up: boolean }) {
   return (
     <svg
       width="14"

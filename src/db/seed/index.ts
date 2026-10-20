@@ -41,7 +41,9 @@ import {
   categories,
   driverVehicles,
   itineraries,
+  itineraryDayPlaces,
   itineraryDays,
+  itineraryPackageLinks,
   itineraryRegions,
   landmarks,
   mapPlaces,
@@ -450,6 +452,13 @@ async function seed(): Promise<Map<string, number>> {
       audience: it.audience,
       priceMinor: toMinor(it.price),
       currency: SEED_CURRENCY,
+      // Phase 3, written on first insert only (not in the overwrite list):
+      // the starter plans show every sale mode, and VIP as an optional extra.
+      saleDigital: true,
+      saleWithActivities: true,
+      saleWithPackages: true,
+      saleCustomRequest: true,
+      mapAccess: 'vip_addon',
       status: 'published',
       publishedAt: SEEDED_AT,
     }))
@@ -501,6 +510,8 @@ async function seed(): Promise<Map<string, number>> {
           activityId: linked,
           isFreeDay: linked === null,
           title: linked === null ? FREE_DAY_TITLE : null,
+          // Sale mode B: the starter plans let every activity day be booked.
+          bookable: linked !== null,
         }
       })
     })
@@ -724,6 +735,41 @@ async function seed(): Promise<Map<string, number>> {
     }
     counts.set('tags', insertedTags.length)
     counts.set('place_tags', placeTagRows.length)
+
+    /*
+     * Phase 3: starter places on the first two days of each seeded plan, in
+     * visiting order — a mix of free and members-only places, so the itinerary
+     * page and the map's day view show both a pin and a lock. The days were
+     * rewritten above, so their old places went with them (cascade).
+     */
+    const DAY_PLACES: Record<number, string[]> = {
+      1: ['ubud', 'tega', 'uluwatu', 'canggu'],
+      2: ['batur', 'lempuyang'],
+    }
+    const seededDays = await tx
+      .select({ id: itineraryDays.id, dayNumber: itineraryDays.dayNumber })
+      .from(itineraryDays)
+      .where(inArray(itineraryDays.itineraryId, itineraryUuids))
+    const dayPlaceRows = seededDays.flatMap((day) =>
+      (DAY_PLACES[day.dayNumber] ?? []).flatMap((legacy, index) => {
+        const id = placeId.get(legacy)
+        return id === undefined ? [] : [{ dayId: day.id, placeId: id, sortOrder: index }]
+      }),
+    )
+    if (dayPlaceRows.length > 0) {
+      await tx.insert(itineraryDayPlaces).values(dayPlaceRows).onConflictDoNothing()
+    }
+    counts.set('itinerary_day_places', dayPlaceRows.length)
+
+    // The first starter plan is also sold inside the first starter package.
+    const firstItinerary = itineraryUuids[0]
+    const firstPackage = packageUuids[0]
+    if (firstItinerary !== undefined && firstPackage !== undefined) {
+      await tx
+        .insert(itineraryPackageLinks)
+        .values({ itineraryId: firstItinerary, packageId: firstPackage, isDefault: true })
+        .onConflictDoNothing()
+    }
     counts.set('map_places (free)', mapPlaceRows.filter((m) => m.isFree).length)
 
     // -----------------------------------------------------------------------

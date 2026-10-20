@@ -61,6 +61,15 @@ export interface OrderItemOptions extends BookingOptions {
    * `parentItemId` is the package's order item.
    */
   includedInTier?: string
+  /**
+   * Phase 3, a child line created when a package is paid: the package
+   * (`packages.id`) it came with. Price 0, `parentItemId` = the package line.
+   */
+  includedInPackage?: string
+  /** Phase 3: the line was in the cart but another line already paid for it. */
+  coveredByCartLine?: true
+  /** Phase 3, package lines: an earlier itinerary purchase deducted. */
+  credit?: { itineraryId: string; amountMinor: number }
 }
 
 // ---------------------------------------------------------------------------

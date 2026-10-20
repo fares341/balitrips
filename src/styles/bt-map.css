@@ -1736,3 +1736,191 @@
     background: rgba(19, 48, 26, 0.88);
   }
 }
+
+/* ---------- Phase 3: one itinerary day (`/map?itinerary=&day=`) ---------- */
+.mp-day {
+  background: var(--ivory);
+  min-height: calc(100svh - var(--hdr-h));
+  display: flex;
+  flex-direction: column;
+}
+.mp-day-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--forest-deep);
+  color: #fff;
+}
+.mp-day-back {
+  flex-shrink: 0;
+}
+.mp-day-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.mp-day-title small {
+  color: var(--palm);
+  font-weight: 700;
+  font-size: 13px;
+}
+.mp-day-title h1 {
+  color: #fff;
+  font-size: clamp(18px, 2.4vw, 24px);
+  line-height: 1.2;
+  margin: 0;
+}
+.mp-day-body {
+  flex: 1;
+  display: grid;
+  grid-template-rows: minmax(340px, 58svh) auto;
+}
+@media (min-width: 1024px) {
+  .mp-day-body {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-rows: none;
+    min-height: max(560px, calc(100vh - var(--hdr-h) - 72px));
+  }
+}
+.mp-day-map {
+  position: relative;
+  overflow: hidden;
+  background: #0a2d40;
+}
+.mp-day-canvas {
+  position: absolute;
+  inset: 0;
+}
+.mp-day-map.is-failed .mp-day-canvas {
+  display: none;
+}
+.mp-day-pins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mp-day-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: var(--forest-ink);
+  font-weight: 800;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+.mp-day-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #0a2d40;
+}
+.mp-day-artbox {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2576 / 1438;
+}
+.mp-day-artbox img,
+.mp-day-artbox svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.mp-day-pin.is-art {
+  transform: none;
+}
+.mp-day-loading,
+.mp-day-empty {
+  position: absolute;
+  inset: auto 16px 16px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 251, 248, 0.95);
+  color: var(--forest);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+}
+.mp-day-attrib {
+  position: absolute;
+  inset-inline-end: 6px;
+  bottom: 4px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 1px 6px;
+  border-radius: 6px;
+}
+.mp-day-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--ivory);
+}
+.mp-day-list ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mp-day-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--white);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.mp-day-list li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14.5px;
+}
+.mp-day-list li.is-locked b {
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mp-day-list li.is-locked .it-stop-no {
+  background: var(--muted);
+}
+.mp-day-upgrade {
+  border: 1px dashed var(--orange-deep);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  background: var(--orange-soft);
+}
+.mp-day-upgrade p {
+  margin: 0;
+  font-weight: 700;
+  color: var(--forest-ink);
+}
+.mp-day-closed {
+  margin: 24px 16px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  max-width: 560px;
+}

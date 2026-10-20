@@ -568,7 +568,7 @@ for (const role of ['admin', 'staff', 'customer']) {
         full,
       )
       .catch(() => [])
-    const detail = hrefs.find((h) => !/\/(export|receipt)(\/|$)/.test(h))
+    const detail = hrefs.find((h) => !/\/(export|receipt|vip)(\/|$)/.test(h))
     if (detail) {
       for (const w of [1440, 390]) await visit(page, role, detail, w)
       // The activity editor is split into sections (tabs): open each one.

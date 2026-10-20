@@ -1,9 +1,20 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
-import { itineraries, itineraryDays, itineraryRegions } from '@/db/schema'
+import {
+  itineraries,
+  itineraryDayPlaces,
+  itineraryDays,
+  itineraryPackageLinks,
+  itineraryRegions,
+  mapPlaces,
+  packages,
+  plans,
+} from '@/db/schema'
+import { placeAccess } from '@/lib/entitlements/redaction'
+import { MAP_ACCESS, PACKAGE_PRICE_RULES, mapAccessOf } from '@/lib/itineraries/sale'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { locales, localeConfig } from '@/i18n/config'
@@ -25,8 +36,13 @@ import { Flash } from '../../../_ui/flash'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { Pill } from '../../../_ui/table'
+import { SortableList } from '../../../_ui/sortable'
 import {
+  addItineraryPackageLink,
   deleteItinerary,
+  removeItineraryPackageLink,
+  reorderItineraryPackageLinks,
+  saveItineraryPackageLink,
   publishItinerary,
   removeItineraryPdf,
   saveItinerary,
@@ -35,6 +51,7 @@ import {
 } from '../actions'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { DayPlan } from './day-plan'
+import type { DayStopDraft, PlaceChoice } from './day-places-editor'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +94,7 @@ export default async function ItineraryEditorPage({
             isFreeDay: itineraryDays.isFreeDay,
             title: itineraryDays.title,
             description: itineraryDays.description,
+            bookable: itineraryDays.bookable,
           })
           .from(itineraryDays)
           .where(eq(itineraryDays.itineraryId, itinerary.id))
@@ -90,6 +108,93 @@ export default async function ItineraryEditorPage({
       : Promise.resolve([]),
     placeOptions(),
   ])
+
+  // Phase 3: plans that can be offered as VIP, packages to sell it inside,
+  // the places of each day, and every place for the day-plan search.
+  const [vipPlans, packageRows, links, placeRows, stopRows] = await Promise.all([
+    db
+      .select({ id: plans.id, slug: plans.slug, name: plans.name, status: plans.status })
+      .from(plans)
+      .where(and(eq(plans.entitlementKind, 'vip'), isNull(plans.deletedAt)))
+      .orderBy(asc(plans.priceMinor)),
+    db
+      .select({
+        id: packages.id,
+        slug: packages.slug,
+        name: packages.name,
+        status: packages.status,
+      })
+      .from(packages)
+      .where(isNull(packages.deletedAt))
+      .orderBy(asc(packages.slug)),
+    itinerary
+      ? db
+          .select({
+            packageId: itineraryPackageLinks.packageId,
+            priceRule: itineraryPackageLinks.priceRule,
+            isDefault: itineraryPackageLinks.isDefault,
+          })
+          .from(itineraryPackageLinks)
+          .where(eq(itineraryPackageLinks.itineraryId, itinerary.id))
+          .orderBy(asc(itineraryPackageLinks.sortOrder))
+      : Promise.resolve([]),
+    db
+      .select({
+        id: mapPlaces.id,
+        slug: mapPlaces.slug,
+        name: mapPlaces.name,
+        isFree: mapPlaces.isFree,
+        requiredEntitlement: mapPlaces.requiredEntitlement,
+        isHiddenGem: mapPlaces.isHiddenGem,
+        status: mapPlaces.status,
+      })
+      .from(mapPlaces)
+      .where(isNull(mapPlaces.deletedAt))
+      .orderBy(asc(mapPlaces.slug)),
+    days.length > 0
+      ? db
+          .select({
+            id: itineraryDayPlaces.id,
+            dayId: itineraryDayPlaces.dayId,
+            placeId: itineraryDayPlaces.placeId,
+            note: itineraryDayPlaces.note,
+            visitTime: itineraryDayPlaces.visitTime,
+          })
+          .from(itineraryDayPlaces)
+          .where(
+            inArray(
+              itineraryDayPlaces.dayId,
+              days.map((day) => day.id),
+            ),
+          )
+          .orderBy(asc(itineraryDayPlaces.sortOrder))
+      : Promise.resolve([]),
+  ])
+  const placeChoices: PlaceChoice[] = placeRows.map((row) => {
+    const access = placeAccess(row)
+    const name = pick(row.name, uiLocale, row.slug)
+    return {
+      value: row.id,
+      label: row.status === 'published' ? name : `${name} (${t('common.draft')})`,
+      access: access.isFree ? 'free' : access.requiredEntitlement,
+    }
+  })
+  const stopsByDay = new Map<string, DayStopDraft[]>()
+  for (const row of stopRows) {
+    const list = stopsByDay.get(row.dayId) ?? []
+    list.push({
+      id: row.id,
+      placeId: row.placeId,
+      note: { ar: row.note?.ar ?? '', en: row.note?.en ?? '', id: row.note?.id ?? '' },
+      visitTime: row.visitTime ?? '',
+    })
+    stopsByDay.set(row.dayId, list)
+  }
+  const packageName = new Map(
+    packageRows.map((row) => [row.id, pick(row.name, uiLocale, row.slug)] as const),
+  )
+  const linkedIds = new Set(links.map((link) => link.packageId))
+  const mapAccess = itinerary ? mapAccessOf(itinerary) : 'free_only'
 
   const title = itinerary ? pick(itinerary.name, uiLocale, itinerary.slug) : t('itineraries.new')
   const mayPublish = can(session.role, 'content.publish')
@@ -202,21 +307,75 @@ export default async function ItineraryEditorPage({
         </div>
 
         <div className="a-card">
-          <h2>{t('itineraries.section_access')}</h2>
+          <h2>{t('p3.section_sale')}</h2>
+          <p className="a-hint">{t('p3.sale_hint')}</p>
           <div className="a-row">
             <Checkbox
-              name="includesMap"
-              label={t('itineraries.f_includes_map')}
-              defaultChecked={itinerary?.includesMap ?? false}
-              hint={t('itineraries.f_includes_map_hint')}
+              name="saleDigital"
+              label={t('p3.sale_digital')}
+              defaultChecked={itinerary?.saleDigital ?? true}
+              hint={t('p3.sale_digital_hint')}
             />
             <Checkbox
-              name="isVip"
-              label={t('itineraries.f_vip')}
-              defaultChecked={itinerary?.isVip ?? false}
-              hint={t('itineraries.f_vip_hint')}
+              name="saleWithActivities"
+              label={t('p3.sale_activities')}
+              defaultChecked={itinerary?.saleWithActivities ?? false}
+              hint={t('p3.sale_activities_hint')}
+            />
+            <Checkbox
+              name="saleWithPackages"
+              label={t('p3.sale_packages')}
+              defaultChecked={itinerary?.saleWithPackages ?? false}
+              hint={t('p3.sale_packages_hint')}
+            />
+            <Checkbox
+              name="saleCustomRequest"
+              label={t('p3.sale_custom')}
+              defaultChecked={itinerary?.saleCustomRequest ?? false}
+              hint={t('p3.sale_custom_hint')}
             />
           </div>
+        </div>
+
+        <div className="a-card">
+          <h2>{t('itineraries.section_access')}</h2>
+          <fieldset className="a-fieldset">
+            <legend>{t('p3.map_access')}</legend>
+            <span className="a-hint">{t('p3.map_access_hint')}</span>
+            {MAP_ACCESS.map((value) => (
+              <label key={value} className="a-check">
+                <input
+                  type="radio"
+                  name="mapAccess"
+                  value={value}
+                  defaultChecked={mapAccess === value}
+                />
+                <span>
+                  <b>{t(`p3.map_${value}`)}</b>
+                  <span className="a-hint" style={{ display: 'block' }}>
+                    {t(`p3.map_${value}_hint`)}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <Field label={t('p3.vip_plan')} htmlFor="vipPlanId" hint={t('p3.vip_plan_hint')}>
+            <select
+              className="a-select"
+              id="vipPlanId"
+              name="vipPlanId"
+              defaultValue={itinerary?.vipPlanId ?? ''}
+            >
+              <option value="">{t('p3.vip_plan_auto')}</option>
+              {vipPlans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {pick(plan.name, uiLocale, plan.slug)}
+                  {plan.status === 'published' ? '' : ` (${t('common.draft')})`}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {vipPlans.length === 0 ? <p className="a-hint">{t('p3.no_vip_plans')}</p> : null}
           <Field
             label={t('itineraries.f_internal_notes')}
             htmlFor="internalNotes"
@@ -271,7 +430,127 @@ export default async function ItineraryEditorPage({
 
       {itinerary ? (
         <>
-          <DayPlan itineraryId={itinerary.id} days={days} activities={activities} />
+          <DayPlan
+            itineraryId={itinerary.id}
+            days={days}
+            activities={activities}
+            stopsByDay={stopsByDay}
+            placeChoices={placeChoices}
+          />
+
+          <div className="a-card">
+            <h2>{t('p3.section_packages')}</h2>
+            <p className="a-hint">{t('p3.packages_hint')}</p>
+            {!itinerary.saleWithPackages ? <p className="a-hint">{t('p3.packages_off')}</p> : null}
+            {links.length === 0 ? (
+              <p className="a-hint">{t('p3.packages_empty')}</p>
+            ) : (
+              <SortableList
+                hint={links.length > 1 ? t('ae.order_hint') : undefined}
+                onSave={reorderItineraryPackageLinks.bind(null, itinerary.id)}
+                rows={links.map((link) => ({
+                  id: link.packageId,
+                  label: packageName.get(link.packageId) ?? link.packageId,
+                  content: (
+                    <form
+                      className="a-inc-row"
+                      action={saveItineraryPackageLink.bind(null, itinerary.id, link.packageId)}
+                    >
+                      <b>{packageName.get(link.packageId) ?? link.packageId}</b>
+                      <Field label={t('p3.price_rule')} htmlFor={`rule_${link.packageId}`}>
+                        <select
+                          className="a-select"
+                          id={`rule_${link.packageId}`}
+                          name="priceRule"
+                          defaultValue={link.priceRule}
+                        >
+                          {PACKAGE_PRICE_RULES.map((rule) => (
+                            <option key={rule} value={rule}>
+                              {t(`p3.rule_${rule}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <label className="a-check">
+                        <input type="checkbox" name="isDefault" defaultChecked={link.isDefault} />
+                        {t('p3.link_default')}
+                      </label>
+                      <span className="a-actions">
+                        <button className="a-btn ghost small" type="submit">
+                          {t('p3.link_save')}
+                        </button>
+                        <button
+                          className="a-btn danger small"
+                          type="submit"
+                          formAction={removeItineraryPackageLink.bind(
+                            null,
+                            itinerary.id,
+                            link.packageId,
+                          )}
+                        >
+                          {t('common.remove')}
+                        </button>
+                      </span>
+                    </form>
+                  ),
+                }))}
+              />
+            )}
+            {packageRows.some((row) => !linkedIds.has(row.id)) ? (
+              <form
+                className="a-inc-row a-inc-new"
+                action={addItineraryPackageLink.bind(null, itinerary.id)}
+              >
+                <Field label={t('p3.link_package')} htmlFor="link-package">
+                  <select
+                    className="a-select"
+                    id="link-package"
+                    name="packageId"
+                    defaultValue=""
+                    required
+                  >
+                    <option value="" disabled>
+                      {t('p3.link_choose')}
+                    </option>
+                    {packageRows
+                      .filter((row) => !linkedIds.has(row.id))
+                      .map((row) => (
+                        <option key={row.id} value={row.id}>
+                          {pick(row.name, uiLocale, row.slug)}
+                          {row.status === 'published' ? '' : ` (${t('common.draft')})`}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+                <Field label={t('p3.price_rule')} htmlFor="link-rule">
+                  <select
+                    className="a-select"
+                    id="link-rule"
+                    name="priceRule"
+                    defaultValue="included"
+                  >
+                    {PACKAGE_PRICE_RULES.map((rule) => (
+                      <option key={rule} value={rule}>
+                        {t(`p3.rule_${rule}`)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <span className="a-actions">
+                  <button className="a-btn small" type="submit">
+                    {t('p3.link_add')}
+                  </button>
+                </span>
+              </form>
+            ) : null}
+            <ul className="a-hint">
+              {PACKAGE_PRICE_RULES.map((rule) => (
+                <li key={rule}>
+                  <b>{t(`p3.rule_${rule}`)}</b>: {t(`p3.rule_${rule}_hint`)}
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <div className="a-card">
             <h2>{t('itineraries.section_publishing')}</h2>

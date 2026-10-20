@@ -24,7 +24,6 @@ import { notifyUser } from '@/lib/notify'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 import { releaseDriverCapacity } from '@/lib/availability/capacity'
 import { releaseLineCapacity } from '@/lib/availability/activity'
-import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { getPaymentProvider } from '@/lib/payments'
 import {
@@ -34,7 +33,8 @@ import {
   statusAfterRefund,
   type OrderStatus,
 } from '@/lib/orders/state'
-import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { applyPaidOrder } from '@/lib/orders/after-paid'
+import { isLineLive } from '@/lib/entitlements/grant-rules'
 import { isOrderUpdateStatus, notifyOrderPaid, notifyOrderUpdated } from '@/lib/notify/orders'
 import { canMoveBooking, isBookingStatus, type BookingStatus } from '@/lib/orders/booking-status'
 import { revokeOrderEntitlements } from '@/lib/orders/webhook'
@@ -199,60 +199,62 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
        * which sold access does the same — otherwise the customer keeps a
        * paid feature they no longer paid for.
        */
-      const soldAccess = line.kind === 'place' || line.kind === 'itinerary' || line.kind === 'plan'
+      const fullyRefunded = lineRefunded >= line.lineTotalMinor
+      // Phase 3: a fully refunded package takes its child bookings and the
+      // access it came with (itinerary, VIP) with it.
+      const children =
+        line.kind === 'package' && fullyRefunded
+          ? lines.filter(
+              (row) =>
+                row.parentItemId === line.id &&
+                row.fulfilmentStatus !== 'refunded' &&
+                row.fulfilmentStatus !== 'cancelled',
+            )
+          : []
+      if (children.length > 0) {
+        await tx
+          .update(orderItems)
+          .set({
+            fulfilmentStatus: 'refunded',
+            bookingStatus: 'refunded',
+            bookingStatusAt: new Date(),
+          })
+          .where(
+            inArray(
+              orderItems.id,
+              children.map((row) => row.id),
+            ),
+          )
+        for (const child of children) await releaseLineCapacity(tx, child.id)
+      }
+      const childIds = new Set(children.map((row) => row.id))
+      const linesAfter = lines.map((row) =>
+        row.id === line.id
+          ? { ...row, refundedMinor: lineRefunded }
+          : childIds.has(row.id)
+            ? { ...row, fulfilmentStatus: 'refunded' }
+            : row,
+      )
+      const accessLines = fullyRefunded
+        ? [line, ...children].filter(
+            (row) => row.kind === 'place' || row.kind === 'itinerary' || row.kind === 'plan',
+          )
+        : []
       if (shouldRevokeEntitlements(nextStatus)) {
         await revokeOrderEntitlements(tx, orderId, `order ${nextStatus} by ${session.email}`)
-      } else if (soldAccess && lineRefunded >= line.lineTotalMinor) {
+      } else {
         // استرداد سطر واحد يسحب ما منحه هذا السطر فقط: باقة → صفوفها (ونسخ
         // أفراد عائلتها، نفس plan_id)؛ جدول/مكان → الوصول للخريطة بلا باقة.
         // كان يسحب كل صلاحيات الطلب، ومنها خريطة جدولٍ آخر مدفوع.
         // جدول/مكان: صف الخريطة (بلا باقة) واحد لكل نوع (map_access/vip) في الطلب
         // كله. لا يُسحب ما دام سطر آخر غير مسترد في الطلب يمنح النوع نفسه.
-        const kindsToRevoke =
-          line.kind === 'plan' ? null : await mapKindsLostWith(tx, line.id, lines)
-        if (line.kind === 'plan' || (kindsToRevoke !== null && kindsToRevoke.length > 0)) {
-          await tx
-            .update(entitlements)
-            .set({ revokedAt: new Date(), revokedReason: `line refunded by ${session.email}` })
-            .where(
-              and(
-                eq(entitlements.grantedByOrderId, orderId),
-                isNull(entitlements.revokedAt),
-                line.kind === 'plan' && line.refId
-                  ? eq(entitlements.planId, line.refId)
-                  : and(
-                      isNull(entitlements.planId),
-                      inArray(entitlements.kind, kindsToRevoke ?? []),
-                    ),
-              ),
-            )
-        }
-        if (line.kind === 'plan' && line.refId) {
-          await tx
-            .update(planMembers)
-            .set({ status: 'removed', tokenHash: null })
-            .where(
-              and(
-                ne(planMembers.status, 'removed'),
-                inArray(
-                  planMembers.ownerEntitlementId,
-                  tx
-                    .select({ id: entitlements.id })
-                    .from(entitlements)
-                    .where(
-                      and(
-                        eq(entitlements.grantedByOrderId, orderId),
-                        eq(entitlements.planId, line.refId),
-                      ),
-                    ),
-                ),
-              ),
-            )
+        for (const target of accessLines) {
+          await revokeLineAccess(tx, orderId, target, linesAfter, session.email)
         }
       }
 
       // A fully refunded activity line gives its places back (phase 2).
-      if (lineRefunded >= line.lineTotalMinor) await releaseLineCapacity(tx, line.id)
+      if (fullyRefunded) await releaseLineCapacity(tx, line.id)
 
       // A fully refunded driver line must give its fleet days back, or the
       // vehicle stays off the market until someone notices by hand.
@@ -505,9 +507,9 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
         idempotencyKey: `manual:${orderId}:${randomUUID()}`,
         rawPayload: { reference, by: session.userId },
       })
-      await grantOrderPlans(tx, orderId)
-      // Same as a card payment: places held, suppliers assigned (phase 2).
-      await applyPaidBookings(tx, orderId)
+      // Same as a card payment: package bookings created (phase 3), plans
+      // granted, places held, suppliers assigned (phase 2).
+      await applyPaidOrder(tx, orderId)
       await writeAudit(
         {
           actor: session,
@@ -575,6 +577,71 @@ export async function issueReceipt(orderId: string): Promise<void> {
 type RefundTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
+ * Take back what one fully refunded line granted: its plan's rows (unless
+ * another live line of the order grants the same plan), or the plan-less map
+ * row of its kind (unless another live line grants that kind).
+ */
+async function revokeLineAccess(
+  tx: RefundTx,
+  orderId: string,
+  line: typeof orderItems.$inferSelect,
+  lines: readonly (typeof orderItems.$inferSelect)[],
+  actorEmail: string,
+): Promise<void> {
+  const reason = `line refunded by ${actorEmail}`
+  if (line.kind === 'plan') {
+    if (!line.refId) return
+    const planId = line.refId
+    const stillGranted = lines.some(
+      (row) =>
+        row.id !== line.id && row.kind === 'plan' && row.refId === planId && isLineLive(row, lines),
+    )
+    if (stillGranted) return
+    await tx
+      .update(entitlements)
+      .set({ revokedAt: new Date(), revokedReason: reason })
+      .where(
+        and(
+          eq(entitlements.grantedByOrderId, orderId),
+          isNull(entitlements.revokedAt),
+          eq(entitlements.planId, planId),
+        ),
+      )
+    await tx
+      .update(planMembers)
+      .set({ status: 'removed', tokenHash: null })
+      .where(
+        and(
+          ne(planMembers.status, 'removed'),
+          inArray(
+            planMembers.ownerEntitlementId,
+            tx
+              .select({ id: entitlements.id })
+              .from(entitlements)
+              .where(
+                and(eq(entitlements.grantedByOrderId, orderId), eq(entitlements.planId, planId)),
+              ),
+          ),
+        ),
+      )
+    return
+  }
+  const kindsToRevoke = await mapKindsLostWith(tx, line.id, lines)
+  if (kindsToRevoke.length === 0) return
+  await tx
+    .update(entitlements)
+    .set({ revokedAt: new Date(), revokedReason: reason })
+    .where(
+      and(
+        eq(entitlements.grantedByOrderId, orderId),
+        isNull(entitlements.revokedAt),
+        isNull(entitlements.planId),
+        inArray(entitlements.kind, kindsToRevoke),
+      ),
+    )
+}
+
+/**
  * أنواع الوصول للخريطة (بلا باقة) التي يفقدها الطلب باسترداد السطر `lineId`:
  * نوع السطر (VIP إن كان جدول VIP، وإلا map_access)، ما لم يبقَ سطر جدول آخر
  * غير مسترد كلياً "يشمل الخريطة" بالنوع نفسه. سطر "place" قديم يمنح map_access.
@@ -609,7 +676,7 @@ async function mapKindsLostWith(
   const lost = target ? kindOf(target) : null
   if (lost === null) return []
   const stillCovered = lines.some(
-    (row) => row.id !== lineId && row.refundedMinor < row.lineTotalMinor && kindOf(row) === lost,
+    (row) => row.id !== lineId && isLineLive(row, lines) && kindOf(row) === lost,
   )
   return stillCovered ? [] : [lost]
 }

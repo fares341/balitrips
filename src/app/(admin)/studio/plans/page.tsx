@@ -54,9 +54,14 @@ export default async function PlansPage({
         description={t('plans.description')}
         actions={
           canEdit ? (
-            <Link className="a-btn" href={adminHref('/plans/new')}>
-              {t('plans.new')}
-            </Link>
+            <>
+              <Link className="a-btn ghost" href={adminHref('/plans/vip')}>
+                {t('p3.vip_settings')}
+              </Link>
+              <Link className="a-btn" href={adminHref('/plans/new')}>
+                {t('plans.new')}
+              </Link>
+            </>
           ) : undefined
         }
       />

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { entitlements, users } from '@/db/schema'
+import { extendedExpiry } from '@/lib/entitlements/extend'
 import { revokeFamilyMembersOf } from '@/lib/entitlements/family'
 import { notifyPlanActivated } from '@/lib/notify/plans'
 
@@ -160,6 +161,75 @@ export async function revokeEntitlement(form: FormData): Promise<void> {
     })
 
     outcome = { ok: t('entitlements.ok_revoked') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+
+  redirect(withOutcome(back, outcome))
+}
+
+/**
+ * Extend by N days (phase 3). A dated grant moves its end N days later —
+ * counted from today when it already ended, so an expired VIP comes back for
+ * exactly N days. A lifetime grant has nothing to extend. The family copies
+ * of a shared plan follow the owner's new end.
+ */
+export async function extendEntitlement(form: FormData): Promise<void> {
+  const session = await requireCapability('entitlements.grant')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  const customerId = fstr(form, 'customerId')
+  const back = customerId && UUID.test(customerId) ? adminHref(`/customers/${customerId}`) : LIST
+
+  try {
+    const id = fuuid(form, 'entitlementId', t('entitlements.field_entitlement'))
+    const days = Number(fstr(form, 'days') ?? '')
+    if (!Number.isInteger(days) || days < 1 || days > 3650) {
+      throw new Error(t('p3.err_extend_days'))
+    }
+
+    await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(entitlements).where(eq(entitlements.id, id)).limit(1)
+      if (!before) throw new Error(t('entitlements.err_gone'))
+      if (before.revokedAt) throw new Error(t('entitlements.err_already_revoked'))
+      if (before.expiresAt === null) throw new Error(t('p3.err_extend_lifetime'))
+
+      const expiresAt = extendedExpiry(before.expiresAt, days, new Date())
+      const [after] = await tx
+        .update(entitlements)
+        .set({ expiresAt })
+        .where(eq(entitlements.id, id))
+        .returning()
+      if (before.planId !== null && before.sharedByUserId === null) {
+        // Family copies of this same term end with it.
+        await tx
+          .update(entitlements)
+          .set({ expiresAt })
+          .where(
+            and(
+              eq(entitlements.sharedByUserId, before.userId),
+              eq(entitlements.planId, before.planId),
+              eq(entitlements.expiresAt, before.expiresAt),
+              isNull(entitlements.revokedAt),
+            ),
+          )
+      }
+
+      await writeAudit(
+        {
+          actor: session,
+          action: 'entitlement.extend',
+          entityType: 'entitlement',
+          entityId: id,
+          before,
+          after: after ? { ...after, days } : null,
+        },
+        tx,
+      )
+    })
+
+    outcome = { ok: t('p3.ok_extended', { days }) }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }

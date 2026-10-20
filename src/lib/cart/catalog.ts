@@ -49,6 +49,7 @@ import { applyExtras, loadBookingExtras } from '@/lib/booking/extras'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import type { CatalogSnapshot, QuoteRequestItem } from '@/lib/pricing/quote'
 import { FEATURES } from '@/lib/features'
+import { applyCoverageFacts } from '@/lib/pricing/coverage-facts'
 
 const PUBLISHED = 'published'
 
@@ -455,6 +456,8 @@ export async function loadCartCatalog(
       tierRows.map((row) => row.id),
     ),
   )
+  // Phase 3: what already pays for what (package ⊃ itinerary, VIP), and credits.
+  await applyCoverageFacts(snapshot, items, userId)
 
   return { snapshot, display, partNames }
 }

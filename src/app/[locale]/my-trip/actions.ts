@@ -16,7 +16,9 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { readSetting } from '@/app/(admin)/_lib/settings'
 import { bookingsOpen } from '@/lib/bookings-open'
+import { loadPlansById } from '@/lib/entitlements/plans'
 import { FEATURES } from '@/lib/features'
 import {
   addDriverToBooking,
@@ -89,7 +91,39 @@ export async function addToCartAction(input: AddItemInput): Promise<CartActionRe
     return { ok: false, itemCount: 0 }
   }
 
+  // Phase 3: a VIP plan on its own only while Studio sells it standalone; as
+  // an extra it goes through `addVipAction`.
+  if (input.kind === 'plan' && typeof input.refId === 'string') {
+    const [plan] = await loadPlansById([input.refId])
+    if (plan?.entitlementKind === 'vip' && !(await readSetting('vip')).sellStandalone) {
+      return { ok: false, itemCount: 0 }
+    }
+  }
+
   const result = await addItem(input)
+  revalidateCartRoutes()
+  return { ok: true, itemCount: result.itemCount }
+}
+
+/**
+ * Add a VIP plan as an extra (phase 3): the "add VIP" box of an itinerary
+ * sold with `vip_addon`, or the checkout offer. The plan must be a published
+ * VIP plan; it becomes its own cart line, priced on the server and granted
+ * only when the order is paid. The checkout offer obeys its Studio switch.
+ */
+export async function addVipAction(
+  planId: string,
+  source: 'addon' | 'upsell',
+): Promise<CartActionResult> {
+  if (!bookingsOpen()) return { ok: false, itemCount: 0, reason: 'bookings_closed' }
+  if (typeof planId !== 'string' || !UUID.test(planId)) return { ok: false, itemCount: 0 }
+  if (source !== 'addon' && source !== 'upsell') return { ok: false, itemCount: 0 }
+  const [plan] = await loadPlansById([planId])
+  if (plan === undefined || plan.entitlementKind !== 'vip') return { ok: false, itemCount: 0 }
+  if (source === 'upsell' && !(await readSetting('vip')).checkoutUpsell) {
+    return { ok: false, itemCount: 0 }
+  }
+  const result = await addItem({ kind: 'plan', refId: plan.id })
   revalidateCartRoutes()
   return { ok: true, itemCount: result.itemCount }
 }

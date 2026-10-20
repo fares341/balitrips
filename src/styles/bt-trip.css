@@ -677,3 +677,23 @@
   color: var(--muted);
   font-family: var(--f-en);
 }
+
+/* Phase 3: "add VIP" at checkout */
+.ck-vip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed var(--orange-deep);
+  background: var(--orange-soft);
+}
+.ck-vip > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 220px;
+}

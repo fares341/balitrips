@@ -25,6 +25,7 @@ import { addonRules, loadActivityAddons } from '@/lib/booking/addons'
 import { loadTierIncluded } from '@/lib/booking/included'
 import { applyExtras, loadBookingExtras } from '@/lib/booking/extras'
 import { includedOrderItems } from '@/lib/orders/included-items'
+import { applyCoverageFacts } from '@/lib/pricing/coverage-facts'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
@@ -285,6 +286,8 @@ async function loadCatalog(
     ),
   }
   applyExtras(snapshot, extras)
+  // Phase 3: never charge twice for what a package or VIP itinerary already covers.
+  await applyCoverageFacts(snapshot, items, userId)
   return snapshot
 }
 
@@ -413,7 +416,11 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
           guests: item?.guests ?? null,
           vehicleClass: line.vehicleClass ?? null,
           endDate: item?.endDate ?? null,
-          parentItemId: item?.parentItemId ?? null,
+          // A line another line already pays for (phase 3) is ordered under it.
+          parentItemId:
+            line.coveredBy !== undefined
+              ? (orderItemIds.get(line.coveredBy) ?? null)
+              : (item?.parentItemId ?? null),
           options: orderItemOptions(line, item, nameByRef),
         }
       }),
@@ -613,6 +620,8 @@ function orderItemOptions(
   item: QuoteRequestItem | undefined,
   names: Map<string, Localized>,
 ): OrderItemOptions | null {
+  if (line.credit !== undefined) return { credit: line.credit }
+  if (line.coveredBy !== undefined) return { coveredByCartLine: true }
   if (!line.breakdown) return null
   return {
     addons: item?.options?.addons ?? [],

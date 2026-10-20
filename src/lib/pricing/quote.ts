@@ -146,9 +146,26 @@ export interface CatalogSnapshot {
    * carts without activities need not carry it.
    */
   activityAddons?: Map<string, AddonRule[]>
-  itineraries: Map<string, { priceMinor: number; currency: string; version: number }>
+  itineraries: Map<
+    string,
+    {
+      priceMinor: number
+      currency: string
+      version: number
+      /** Buying it opens VIP (`map_access = vip_included` with `is_vip`). Phase 3. */
+      grantsVip?: boolean
+    }
+  >
   /** الباقات المنشورة (`plans`). سعرها من هنا دائماً، لا من العميل. */
-  plans: Map<string, { priceMinor: number; currency: string }>
+  plans: Map<
+    string,
+    {
+      priceMinor: number
+      currency: string
+      /** `basic` | `map_access` | `vip` (phase 3: a VIP plan already covered is not charged). */
+      kind?: string
+    }
+  >
   /**
    * عروض أسعار الجداول المخصصة القابلة للدفع: فقط ما يملكه المشتري، ومسعَّر،
    * وغير مدفوع. الغائب هنا → `unknown_item`. السعر من صف الطلب، لا من العميل.
@@ -157,8 +174,28 @@ export interface CatalogSnapshot {
   customRequests?: Map<string, { priceMinor: number; currency: string }>
   packages: Map<
     string,
-    { priceMinor: number; currency: string; maxGuests: number; pricingMode: 'flat' | 'per_guest' }
+    {
+      priceMinor: number
+      currency: string
+      maxGuests: number
+      pricingMode: 'flat' | 'per_guest'
+      /**
+       * Phase 3. Itineraries this package already pays for (its own
+       * `itinerary_id`, and links priced `included` / `deducted_on_upgrade`):
+       * the same itinerary in the cart is not charged twice.
+       */
+      coversItineraries?: string[]
+      /** Itineraries whose earlier purchase is deducted (`deducted_on_upgrade`). */
+      creditItineraries?: string[]
+      /** VIP comes with the package: a VIP plan in the cart is not charged twice. */
+      includesVip?: boolean
+    }
   >
+  /**
+   * Phase 3: itineraries the buyer already paid for (settled, not refunded),
+   * with what they paid, for `deducted_on_upgrade`. Absent = none.
+   */
+  ownedItineraries?: Map<string, { paidMinor: number; currency: string }>
   vehicles: Map<VehicleClass, { dayRateMinor: number; currency: string; maxPassengers: number }>
 }
 
@@ -179,6 +216,17 @@ export interface QuoteLine {
    * package part only.
    */
   breakdown?: PriceLine[]
+  /**
+   * Phase 3: another line of the same cart already pays for this one (an
+   * itinerary inside a package, a VIP plan that comes with a package or a VIP
+   * itinerary). It costs 0 and is ordered under that line.
+   */
+  coveredBy?: string
+  /**
+   * Phase 3, package lines: the earlier purchase of an itinerary deducted
+   * (`deducted_on_upgrade`). `lineTotalMinor` is already net of it.
+   */
+  credit?: { itineraryId: string; amountMinor: number }
 }
 
 export type QuoteIssueCode =
@@ -308,6 +356,8 @@ export function buildQuote(
     }
   }
 
+  applyCoverage(lines, catalog)
+
   const currencies = new Set(lines.map((l) => l.currency))
   if (currencies.size > 1) {
     issues.push({
@@ -328,6 +378,77 @@ export function buildQuote(
     currency: lines[0]?.currency ?? inferCurrency(catalog),
     issues,
     ok: issues.length === 0,
+  }
+}
+
+/**
+ * Never charge for the same thing twice (phase 3), in place:
+ *
+ *  1. an itinerary that a package line in the cart already includes → 0,
+ *     `coveredBy` that package;
+ *  2. a VIP plan when a package line includes VIP, or an itinerary line opens
+ *     VIP → 0, `coveredBy` it; the same plan twice → the second is 0;
+ *  3. a package that deducts an itinerary the buyer already owns (and that is
+ *     not also in this cart — then rule 1 already did it) → minus what was
+ *     paid for it, never below 0, in the same currency only.
+ *
+ * Pure and order-independent: the covering line is found by scanning every
+ * line, so "package then itinerary" and "itinerary then package" agree.
+ */
+export function applyCoverage(lines: QuoteLine[], catalog: CatalogSnapshot): void {
+  const cover = (line: QuoteLine, by: QuoteLine) => {
+    line.coveredBy = by.itemId
+    line.unitPriceMinor = 0
+    line.lineTotalMinor = 0
+    line.quantity = 1
+  }
+  const packageLines = lines.filter((line) => line.kind === 'package' && line.refId !== null)
+  const packageOf = (line: QuoteLine) => catalog.packages.get(line.refId ?? '')
+
+  for (const line of lines) {
+    if (line.kind !== 'itinerary' || line.refId === null) continue
+    const by = packageLines.find((pkg) =>
+      (packageOf(pkg)?.coversItineraries ?? []).includes(line.refId as string),
+    )
+    if (by) cover(line, by)
+  }
+
+  const seenPlans = new Map<string, QuoteLine>()
+  for (const line of lines) {
+    if (line.kind !== 'plan' || line.refId === null) continue
+    const earlier = seenPlans.get(line.refId)
+    if (earlier) {
+      cover(line, earlier)
+      continue
+    }
+    seenPlans.set(line.refId, line)
+    if (catalog.plans.get(line.refId)?.kind !== 'vip') continue
+    const byPackage = packageLines.find((pkg) => packageOf(pkg)?.includesVip === true)
+    const byItinerary = lines.find(
+      (other) =>
+        other.kind === 'itinerary' &&
+        other.refId !== null &&
+        catalog.itineraries.get(other.refId)?.grantsVip === true,
+    )
+    const by = byPackage ?? byItinerary
+    if (by) cover(line, by)
+  }
+
+  const inCart = new Set(
+    lines.filter((line) => line.kind === 'itinerary' && line.refId).map((line) => line.refId),
+  )
+  for (const line of packageLines) {
+    const pkg = packageOf(line)
+    for (const itineraryId of pkg?.creditItineraries ?? []) {
+      if (inCart.has(itineraryId)) continue
+      const owned = catalog.ownedItineraries?.get(itineraryId)
+      if (!owned || owned.currency !== line.currency || owned.paidMinor <= 0) continue
+      const amountMinor = Math.min(owned.paidMinor, line.lineTotalMinor)
+      if (amountMinor <= 0) continue
+      line.lineTotalMinor -= amountMinor
+      line.credit = { itineraryId, amountMinor }
+      break
+    }
   }
 }
 

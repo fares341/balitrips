@@ -49,14 +49,21 @@ import { can } from '@/lib/auth/roles'
 import { getUser } from '@/lib/auth/session'
 import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
-import { getItineraryBySlug, listItineraries } from '@/lib/content/queries'
+import { getItineraryBySlug, listItineraries, packagesForItinerary } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
-import { ItineraryCard } from '@/components/cards'
+import { ItineraryCard, PackageCard } from '@/components/cards'
+import { DayStops } from '@/components/trip/day-stops'
+import { readSetting } from '@/app/(admin)/_lib/settings'
+import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
+import { holdsVip, loadDayStops, vipPlanOffer } from '@/lib/itineraries/queries'
+import { mapAccessOf, sellsPlanDirectly, visibleSaleModes } from '@/lib/itineraries/sale'
+import { checkSecureAccess } from '@/lib/security/guard'
 import { alternates } from '../_meta'
-import { BuyItineraryButton } from './buy-button'
 import { formatPrice } from '../../_ui/price'
+import { ItineraryBuyBox } from './buy-box'
 import { LinkedPlaces } from './linked-places'
+import { TripActivities, type BookableDay } from './trip-activities'
 
 const INDEX_HREF = ENTITY_PATHS.itinerary
 
@@ -181,6 +188,68 @@ export default async function ItineraryDetailPage({
       }))
 
   /**
+   * Phase 3: the places of each open day, redacted for this viewer (a locked
+   * place is a numbered lock), and how the plan is sold.
+   */
+  const access = await checkSecureAccess('itinerary:places')
+  const held = access.ok ? await loadEntitlements(access.user.id) : emptyEntitlements()
+  const stopsByDay = await loadDayStops(
+    openDays.map((day) => day.id),
+    held,
+  )
+  const mapAccess = mapAccessOf(itinerary)
+  const bookableDays: BookableDay[] = orderedDays.flatMap((day) =>
+    day.bookable && day.activity !== null
+      ? [
+          {
+            dayNumber: day.dayNumber,
+            activityName: pick(day.activity.name, locale, day.activity.slug),
+            activityHref: day.activity.href,
+          },
+        ]
+      : [],
+  )
+  const packageOffers = itinerary.saleWithPackages ? await packagesForItinerary(itinerary.id) : []
+  const modes = visibleSaleModes(itinerary, {
+    bookableActivities: bookableDays.length,
+    livePackages: packageOffers.length,
+  })
+  const sellsPlan = sellsPlanDirectly(modes)
+  const vipSettings = await readSetting('vip')
+  const vipNote = pickOptional(vipSettings.refundNote, locale)
+  const offer =
+    mapAccess === 'vip_addon' && !(await holdsVip(viewer?.id ?? null))
+      ? await vipPlanOffer(itinerary.vipPlanId)
+      : null
+  const vipBox =
+    offer === null
+      ? null
+      : {
+          planId: offer.planId,
+          label: t('p3_vip_addon_t', {
+            price: formatPrice(offer.priceMinor, offer.currency, locale),
+          }),
+          note: vipNote,
+        }
+  const customHref = `/custom?from=${encodeURIComponent(itinerary.slug)}&days=${itinerary.days}&name=${encodeURIComponent(name.slice(0, 100))}`
+  const buy = (className: string, style?: React.CSSProperties) =>
+    sellsPlan ? (
+      <div style={style}>
+        <ItineraryBuyBox itineraryId={itinerary.id} vip={vipBox} className={className}>
+          {t('ih_buy')}
+        </ItineraryBuyBox>
+      </div>
+    ) : modes.includes('packages') ? (
+      <a href="#it-packages" className={className} style={style}>
+        {t('p3_see_packages')}
+      </a>
+    ) : (
+      <Link href={customHref} className={className} style={style}>
+        {t('p3_custom_cta')}
+      </Link>
+    )
+
+  /**
    * Recommended stops.
    *
    * Derived from the day plan rather than from a second list, so the chips can
@@ -212,6 +281,8 @@ export default async function ItineraryDetailPage({
       : []),
     { icon: 'pdf', text: t('it_fact_pdf') },
     ...(itinerary.includesMap ? [{ icon: 'route' as const, text: t('id_includes_map') }] : []),
+    ...(mapAccess === 'vip_addon' ? [{ icon: 'map' as const, text: t('p3_fact_vip_addon') }] : []),
+    ...(mapAccess === 'vip_later' ? [{ icon: 'map' as const, text: t('p3_fact_vip_later') }] : []),
     ...(itinerary.isVip ? [{ icon: 'star' as const, text: t('it_fact_vip') }] : []),
     ...(regionNames.length > 0
       ? [{ icon: 'globe' as const, text: new Intl.ListFormat(locale).format(regionNames) }]
@@ -296,9 +367,7 @@ export default async function ItineraryDetailPage({
                 <strong className="bt-money">{price}</strong>
                 <span>{t('sub_once')}</span>
               </span>
-              <BuyItineraryButton itineraryId={itinerary.id} className="btn btn-primary">
-                {t('ih_buy')}
-              </BuyItineraryButton>
+              {buy('btn btn-primary')}
             </div>
           </div>
         </div>
@@ -454,6 +523,11 @@ export default async function ItineraryDetailPage({
                           </div>
                         )
                       )}
+                      <DayStops
+                        stops={stopsByDay.get(day.id) ?? []}
+                        locale={locale}
+                        mapHref={`/map?itinerary=${encodeURIComponent(itinerary.slug)}&day=${day.dayNumber}`}
+                      />
                     </li>
                   )
                 })}
@@ -487,11 +561,57 @@ export default async function ItineraryDetailPage({
                   <span className="muted" style={{ fontSize: 13.5 }}>
                     {t('id_locked_b', { count: lockedDays.length })}
                   </span>
-                  <BuyItineraryButton itineraryId={itinerary.id} className="btn btn-primary">
-                    {t('ih_buy')}
-                  </BuyItineraryButton>
+                  {buy('btn btn-primary')}
                 </div>
               )}
+            </div>
+          )}
+
+          {modes.includes('activities') && (
+            <div className="bt-detail-block" id="it-activities">
+              <h2 className="bt-detail-h">{t('p3_acts_t')}</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                {t('p3_acts_b')}
+              </p>
+              <TripActivities days={bookableDays} />
+            </div>
+          )}
+
+          {modes.includes('packages') && (
+            <div className="bt-detail-block" id="it-packages">
+              <h2 className="bt-detail-h">{t('p3_pkgs_t')}</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                {t('p3_pkgs_b')}
+              </p>
+              <div className="grid pk-grid it-pkgs">
+                {packageOffers.map((entry) => (
+                  <div key={entry.pkg.id} className="it-pkg">
+                    {entry.isDefault && (
+                      <span className="tag tag-orange">{t('p3_pkg_default')}</span>
+                    )}
+                    <PackageCard pkg={entry.pkg} />
+                    <small className="muted it-pkg-rule">
+                      {t(
+                        entry.priceRule === 'extra'
+                          ? 'p3_rule_extra'
+                          : entry.priceRule === 'deducted_on_upgrade'
+                            ? 'p3_rule_deducted'
+                            : 'p3_rule_included',
+                      )}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {modes.includes('custom') && (
+            <div className="bt-summary it-custom" role="note">
+              <strong>{t('p3_custom_t')}</strong>
+              <span className="muted">{t('p3_custom_b')}</span>
+              <Link href={customHref} className="btn btn-ghost btn-sm">
+                {t('p3_custom_cta')}
+              </Link>
             </div>
           )}
 
@@ -596,13 +716,12 @@ export default async function ItineraryDetailPage({
             navigated afterwards; with a server-owned cart the add IS the
             navigation, so a second button would be the same link twice.
           */}
-          <BuyItineraryButton
-            itineraryId={itinerary.id}
-            className="btn btn-primary btn-block"
-            style={{ marginTop: 16 }}
-          >
-            {t('ih_buy')}
-          </BuyItineraryButton>
+          {buy('btn btn-primary btn-block', { marginTop: 16 })}
+          {modes.includes('custom') && (
+            <Link href={customHref} className="btn btn-ghost btn-block" style={{ marginTop: 10 }}>
+              {t('p3_custom_cta')}
+            </Link>
+          )}
         </aside>
       </div>
 

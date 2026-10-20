@@ -26,6 +26,7 @@ import {
   timestamps,
   type Localized,
 } from './_shared'
+import { plans } from './product'
 
 // ---------------------------------------------------------------------------
 // Taxonomy
@@ -533,6 +534,27 @@ export const itineraries = pgTable('itineraries', {
    */
   uploadedPdfKeys: jsonb('uploaded_pdf_keys').$type<Partial<Record<string, string>>>(),
 
+  // --- Phase 3 (migration 0019): how it is sold, and what it opens on the map ---
+
+  /** A: the plan on its own (PDF + pages). On by default — what it always was. */
+  saleDigital: boolean('sale_digital').notNull().default(true),
+  /** B: the plan plus the day activities ticked "bookable", added with dates. */
+  saleWithActivities: boolean('sale_with_activities').notNull().default(false),
+  /** C: inside one of the linked packages (`itinerary_package_links`). */
+  saleWithPackages: boolean('sale_with_packages').notNull().default(false),
+  /** D: "build me something like this" — the custom trip request, prefilled. */
+  saleCustomRequest: boolean('sale_custom_request').notNull().default(false),
+  /**
+   * `free_only` | `vip_included` | `vip_addon` | `vip_later` — see
+   * `@/lib/itineraries/sale`. `vip_included` keeps the old behaviour exactly:
+   * `includesMap` / `isVip` still decide the access granted on payment.
+   */
+  mapAccess: varchar('map_access', { length: 16 }).notNull().default('free_only'),
+  /** The VIP plan offered as an extra at purchase (`vip_addon`) or later (`vip_later`). */
+  vipPlanId: uuid('vip_plan_id').references((): AnyPgColumn => plans.id, {
+    onDelete: 'set null',
+  }),
+
   /**
    * Bumped on every publish that changes the plan. An order pins the
    * version it bought, so a customer who purchased the 7-day plan in March
@@ -566,8 +588,41 @@ export const itineraryDays = pgTable(
     isFreeDay: boolean('is_free_day').notNull().default(false),
     title: localized('title'),
     description: localized('description'),
+    /** Sale mode B: this day's activity can be booked from the itinerary page. */
+    bookable: boolean('bookable').notNull().default(false),
   },
   (t) => [uniqueIndex('itinerary_day_unique').on(t.itineraryId, t.dayNumber)],
+)
+
+/**
+ * Map places on one day of an itinerary, in visiting order (phase 3).
+ *
+ * The day's places are paid content like the rest of the plan, and each place
+ * keeps its own map gate: a locked place is shown to a viewer without access
+ * as a lock — never its name, coordinates or the note written about it.
+ */
+export const itineraryDayPlaces = pgTable(
+  'itinerary_day_places',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    dayId: uuid('day_id')
+      .notNull()
+      .references(() => itineraryDays.id, { onDelete: 'cascade' }),
+    placeId: uuid('place_id')
+      .notNull()
+      .references((): AnyPgColumn => mapPlaces.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    /** Short tip for this stop ("go before 9, it gets busy"). */
+    note: localized('note'),
+    /** Optional suggested time, `HH:MM`. */
+    visitTime: varchar('visit_time', { length: 5 }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex('itinerary_day_places_unique').on(t.dayId, t.placeId),
+    index('itinerary_day_places_order_idx').on(t.dayId, t.sortOrder),
+    index('itinerary_day_places_place_idx').on(t.placeId),
+  ],
 )
 
 export const itineraryRegions = pgTable(
@@ -640,6 +695,18 @@ export const packages = pgTable('packages', {
 
   heroImageId: uuid('hero_image_id').references(() => media.id),
 
+  // --- Phase 3 (migration 0019) ---
+
+  /** An itinerary that comes with the package (its files and pages). */
+  itineraryId: uuid('itinerary_id').references((): AnyPgColumn => itineraries.id, {
+    onDelete: 'set null',
+  }),
+  /** VIP map access comes with the package — granted on payment from `vipPlanId`. */
+  includesVip: boolean('includes_vip').notNull().default(false),
+  vipPlanId: uuid('vip_plan_id').references((): AnyPgColumn => plans.id, {
+    onDelete: 'set null',
+  }),
+
   ...publishing,
   ...timestamps,
   ...softDelete,
@@ -655,8 +722,41 @@ export const packageActivities = pgTable(
       .notNull()
       .references(() => activities.id, { onDelete: 'cascade' }),
     sortOrder: integer('sort_order').notNull().default(0),
+    /**
+     * Day of the trip it happens on, 0 = the start date. Null = not fixed: the
+     * booking is created without a date and the team arranges it.
+     */
+    dayOffset: integer('day_offset'),
   },
   (t) => [primaryKey({ columns: [t.packageId, t.activityId] })],
+)
+
+/**
+ * Packages an itinerary is sold inside (sale mode C).
+ *
+ * `priceRule`: `included` — the package price already covers the plan;
+ * `extra` — the plan is offered next to the package at its own price;
+ * `deducted_on_upgrade` — a customer who already bought the plan pays the
+ * package minus what they paid for it.
+ */
+export const itineraryPackageLinks = pgTable(
+  'itinerary_package_links',
+  {
+    itineraryId: uuid('itinerary_id')
+      .notNull()
+      .references(() => itineraries.id, { onDelete: 'cascade' }),
+    packageId: uuid('package_id')
+      .notNull()
+      .references(() => packages.id, { onDelete: 'cascade' }),
+    isDefault: boolean('is_default').notNull().default(false),
+    sortOrder: integer('sort_order').notNull().default(0),
+    priceRule: varchar('price_rule', { length: 24 }).notNull().default('included'),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.itineraryId, t.packageId] }),
+    index('itinerary_package_links_package_idx').on(t.packageId),
+  ],
 )
 
 export const packageRegions = pgTable(

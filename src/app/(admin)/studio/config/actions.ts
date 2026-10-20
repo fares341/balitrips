@@ -304,3 +304,23 @@ export async function saveAssistantSettings(form: FormData): Promise<void> {
     adminHref('/assistant/settings'),
   )
 }
+
+/**
+ * VIP map access (phase 3, Studio → Plans → VIP settings): where VIP is
+ * offered, and the refund note shown with every offer. Admin only, like
+ * every setting.
+ */
+export async function saveVipSettings(form: FormData): Promise<void> {
+  revalidatePath('/[locale]/plans', 'page')
+  await save(
+    'vip',
+    () => ({
+      sellStandalone: fbool(form, 'sellStandalone'),
+      checkoutUpsell: fbool(form, 'checkoutUpsell'),
+      upsellPlanId: fstr(form, 'upsellPlanId') ?? '',
+      refundNote: flocalized(form, 'refundNote'),
+    }),
+    'p3.ok_vip_saved',
+    adminHref('/plans/vip'),
+  )
+}

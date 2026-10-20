@@ -22,7 +22,7 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { applyPaidOrder } from '@/lib/orders/after-paid'
 import { notifyOrderPaid } from '@/lib/notify/orders'
 import { auditLog, orders, payments } from '@/db/schema'
 import { getPaymentProvider, type PaymentStatus } from '@/lib/payments'
@@ -187,8 +187,8 @@ async function promoteFromLocalPayments(candidate: Candidate): Promise<boolean> 
     if (!canTransition('pending', 'paid')) return false
 
     await tx.update(orders).set({ status: 'paid' }).where(eq(orders.id, candidate.id))
-    // نفس منح الباقات الذي يجريه webhook عند الدفع؛ متساوي النتيجة.
-    await grantOrderPlans(tx, candidate.id)
+    // نفس ما يجريه webhook عند الدفع (الباقات، الحجوزات، الموردون)؛ متساوي النتيجة.
+    await applyPaidOrder(tx, candidate.id)
 
     await tx.insert(auditLog).values({
       actorId: null,

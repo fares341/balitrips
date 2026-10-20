@@ -458,6 +458,18 @@ async function TripItem({
           </span>
         )}
         {line.kind === 'place' && <small className="muted">{t('trip_place_note')}</small>}
+        {line.coveredByName !== null && (
+          <small className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>
+            <Icon name="check" size={13} />{' '}
+            {t('p3_covered_by', { name: pick(line.coveredByName, locale, '') })}
+          </small>
+        )}
+        {line.creditMinor !== null && line.creditMinor > 0 && (
+          <small className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>
+            <Icon name="check" size={13} />{' '}
+            {t('p3_credit', { amount: money(line.creditMinor, line.currency ?? 'USD') })}
+          </small>
+        )}
 
         <div className="acts">
           {line.kind === 'activity' && line.maxQuantity !== null && (

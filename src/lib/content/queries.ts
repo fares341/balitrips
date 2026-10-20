@@ -39,6 +39,7 @@ import {
   driverVehicles,
   itineraries,
   itineraryDays,
+  itineraryPackageLinks,
   itineraryRegions,
   landmarks,
   mapPlaces,
@@ -1025,6 +1026,7 @@ export async function getItineraryBySlug(slug: string): Promise<ItineraryDetail 
       title: itineraryDays.title,
       description: itineraryDays.description,
       activityId: itineraryDays.activityId,
+      bookable: itineraryDays.bookable,
     })
     .from(itineraryDays)
     .where(eq(itineraryDays.itineraryId, row.itinerary.id))
@@ -1044,6 +1046,7 @@ export async function getItineraryBySlug(slug: string): Promise<ItineraryDetail 
     // unpublished after the plan was authored. Either way the page renders
     // the day's own copy rather than inventing "Free day to explore & relax".
     activity: day.activityId === null ? null : (activityMap.get(day.activityId) ?? null),
+    bookable: day.bookable,
   }))
 
   const galleryIds = (row.itinerary.galleryImageIds ?? []).filter((id) => typeof id === 'string')
@@ -1063,6 +1066,12 @@ export async function getItineraryBySlug(slug: string): Promise<ItineraryDetail 
     gallery,
     includesMap: row.itinerary.includesMap,
     isVip: row.itinerary.isVip,
+    saleDigital: row.itinerary.saleDigital,
+    saleWithActivities: row.itinerary.saleWithActivities,
+    saleWithPackages: row.itinerary.saleWithPackages,
+    saleCustomRequest: row.itinerary.saleCustomRequest,
+    mapAccess: row.itinerary.mapAccess,
+    vipPlanId: row.itinerary.vipPlanId,
   }
 }
 
@@ -1120,12 +1129,22 @@ export async function listPackages(): Promise<PackageSummary[]> {
   return toPackageSummaries(rows)
 }
 
-export async function getPackageBySlug(slug: string): Promise<PackageDetail | null> {
+export async function getPackageBySlug(
+  slug: string,
+  options: { includeDraft?: boolean } = {},
+): Promise<PackageDetail | null> {
+  // `includeDraft` is for the staff preview only (the route checks the role):
+  // a draft is never served to the public page.
   const rows = await db
     .select({ pkg: packages, hero: media })
     .from(packages)
     .leftJoin(media, eq(media.id, packages.heroImageId))
-    .where(and(LIVE_PACKAGE, eq(packages.slug, slug)))
+    .where(
+      and(
+        options.includeDraft === true ? isNull(packages.deletedAt) : LIVE_PACKAGE,
+        eq(packages.slug, slug),
+      ),
+    )
     .limit(1)
 
   const row = rows[0]
@@ -1136,7 +1155,7 @@ export async function getPackageBySlug(slug: string): Promise<PackageDetail | nu
   if (!summary) return null
 
   const links = await db
-    .select({ activityId: packageActivities.activityId })
+    .select({ activityId: packageActivities.activityId, dayOffset: packageActivities.dayOffset })
     .from(packageActivities)
     .where(eq(packageActivities.packageId, row.pkg.id))
     .orderBy(asc(packageActivities.sortOrder))
@@ -1144,12 +1163,112 @@ export async function getPackageBySlug(slug: string): Promise<PackageDetail | nu
   const ids = links.map((link) => link.activityId)
   const activityMap = await activitySummariesByIds(ids)
 
+  const activityDays: Record<string, number> = {}
+  for (const link of links) {
+    if (link.dayOffset !== null && link.dayOffset >= 0)
+      activityDays[link.activityId] = link.dayOffset
+  }
+
+  let itinerary: ItinerarySummary | null = null
+  if (row.pkg.itineraryId !== null) {
+    const itineraryRows = await db
+      .select({ itinerary: itineraries, hero: media })
+      .from(itineraries)
+      .leftJoin(media, eq(media.id, itineraries.heroImageId))
+      .where(and(LIVE_ITINERARY, eq(itineraries.id, row.pkg.itineraryId)))
+      .limit(1)
+    itinerary = (await toItinerarySummaries(itineraryRows))[0] ?? null
+  }
+
   return {
     ...summary,
     included: toLocalizedList(row.pkg.included),
     excluded: toLocalizedList(row.pkg.excluded),
     activities: orderByIds([...activityMap.values()], ids, (item) => item.id),
+    activityDays,
+    itinerary,
+    includesVip: row.pkg.includesVip,
+    status: row.pkg.status,
   }
+}
+
+/** A package an itinerary is sold inside (sale mode C), with its price rule. */
+export interface ItineraryPackageOffer {
+  pkg: PackageSummary
+  /** `included` | `extra` | `deducted_on_upgrade`. */
+  priceRule: string
+  isDefault: boolean
+}
+
+/**
+ * Live packages that sell this itinerary: the links set on the itinerary
+ * (`itinerary_package_links`, in their order, default first) plus any package
+ * that names the itinerary as included (`packages.itinerary_id`).
+ */
+export async function packagesForItinerary(itineraryId: string): Promise<ItineraryPackageOffer[]> {
+  const linkRows = await db
+    .select({
+      pkg: packages,
+      hero: media,
+      priceRule: itineraryPackageLinks.priceRule,
+      isDefault: itineraryPackageLinks.isDefault,
+      sortOrder: itineraryPackageLinks.sortOrder,
+    })
+    .from(itineraryPackageLinks)
+    .innerJoin(packages, eq(packages.id, itineraryPackageLinks.packageId))
+    .leftJoin(media, eq(media.id, packages.heroImageId))
+    .where(and(LIVE_PACKAGE, eq(itineraryPackageLinks.itineraryId, itineraryId)))
+    .orderBy(desc(itineraryPackageLinks.isDefault), asc(itineraryPackageLinks.sortOrder))
+  const including = await db
+    .select({ pkg: packages, hero: media })
+    .from(packages)
+    .leftJoin(media, eq(media.id, packages.heroImageId))
+    .where(and(LIVE_PACKAGE, eq(packages.itineraryId, itineraryId)))
+    .orderBy(asc(packages.priceMinor))
+
+  const linked = new Set(linkRows.map((row) => row.pkg.id))
+  const extraRows = including.filter((row) => !linked.has(row.pkg.id))
+  const summaries = await toPackageSummaries([...linkRows, ...extraRows])
+  const byId = new Map(summaries.map((summary) => [summary.id, summary]))
+
+  const out: ItineraryPackageOffer[] = []
+  for (const row of linkRows) {
+    const pkg = byId.get(row.pkg.id)
+    if (pkg) out.push({ pkg, priceRule: row.priceRule, isDefault: row.isDefault })
+  }
+  for (const row of extraRows) {
+    const pkg = byId.get(row.pkg.id)
+    if (pkg) out.push({ pkg, priceRule: 'included', isDefault: false })
+  }
+  return out
+}
+
+/** Live itineraries linked to a package (sale mode C), with the link's price rule. */
+export async function itinerariesForPackage(
+  packageId: string,
+): Promise<{ itinerary: ItinerarySummary; priceRule: string }[]> {
+  const rows = await db
+    .select({
+      itinerary: itineraries,
+      hero: media,
+      priceRule: itineraryPackageLinks.priceRule,
+    })
+    .from(itineraryPackageLinks)
+    .innerJoin(itineraries, eq(itineraries.id, itineraryPackageLinks.itineraryId))
+    .leftJoin(media, eq(media.id, itineraries.heroImageId))
+    .where(
+      and(
+        LIVE_ITINERARY,
+        eq(itineraryPackageLinks.packageId, packageId),
+        eq(itineraries.saleWithPackages, true),
+      ),
+    )
+    .orderBy(asc(itineraryPackageLinks.sortOrder))
+  const summaries = await toItinerarySummaries(rows)
+  return summaries.flatMap((itinerary) => {
+    const row = rows.find((one) => one.itinerary.id === itinerary.id)
+    return row ? [{ itinerary, priceRule: row.priceRule }] : []
+  })
 }
 
 export async function packagesWithActivity(activityId: string): Promise<PackageSummary[]> {

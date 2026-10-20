@@ -2,9 +2,8 @@ import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { entitlements, orders, payments, planMembers, webhookEvents } from '@/db/schema'
-import { grantOrderPlans } from '@/lib/entitlements/plans'
+import { applyPaidOrder } from '@/lib/orders/after-paid'
 import { releaseCustomRequestsPayment } from '@/lib/orders/custom-request'
-import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 import type { WebhookEvent } from '@/lib/payments'
 
 import { canTransition, statusForWebhook, type OrderStatus } from './state'
@@ -190,10 +189,10 @@ export async function processWebhookEvent(
       // الباقات المشتراة تُمنح في نفس المعاملة التي تثبّت الدفع: لا لحظة
       // يكون فيها الطلب مدفوعاً والخريطة مقفلة.
       if (target === 'paid') {
-        await grantOrderPlans(tx, order.id)
-        // Digital products complete; activity places are held and each
-        // booking is given to its supplier (phase 2) — same transaction.
-        await applyPaidBookings(tx, order.id)
+        // Packages become their bookings (phase 3), plans are granted, digital
+        // products complete, activity places are held and each booking is
+        // given to its supplier (phase 2) — same transaction.
+        await applyPaidOrder(tx, order.id)
       }
 
       // No `cancelled` branch any more: a failure event never cancels (see

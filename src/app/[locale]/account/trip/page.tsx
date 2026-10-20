@@ -26,6 +26,7 @@ import type { CartItemKind } from '@/lib/pricing/quote'
 import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { listTripDays } from '../_lib/queries'
+import { ItineraryPlans } from './itinerary-plans'
 import { PlannedPlaces } from './planned-places'
 import { PrintTripButton } from './print-button'
 import { TripSharePanel } from './share-panel'
@@ -91,6 +92,7 @@ export default async function AccountTripPage({ params }: { params: PageParams }
         {t('acct_trip_sub')}
       </p>
 
+      <ItineraryPlans userId={user.id} locale={locale} />
       <PlannedPlaces userId={user.id} locale={locale} />
       <TripSharePanel userId={user.id} locale={locale} />
 

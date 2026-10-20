@@ -22,6 +22,7 @@ const NAV_ICONS: Record<string, IconName> = {
   'nav.orders': 'bag',
   'nav.payments': 'card',
   'nav.plans': 'layers',
+  'nav.vip': 'star',
   'nav.entitlements': 'key',
   'nav.capacity': 'car',
   'nav.places': 'pin',

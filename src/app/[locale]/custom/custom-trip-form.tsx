@@ -26,7 +26,7 @@
  *    regardless of the language the visitor filled the form in.
  */
 
-import { useActionState, useId, useRef, useState, useSyncExternalStore } from 'react'
+import { useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
 import { ActivityCard } from '@/components/cards'
@@ -162,6 +162,27 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
     () => false,
   )
   const formRef = useRef<HTMLFormElement>(null)
+
+  // Phase 3, sale mode D: "make me something like this itinerary" opens the
+  // form with `?from=<slug>&name=…&days=N`; the notes start with that request
+  // (still editable) so the team knows what it is based on.
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+  const [basedOn, setBasedOn] = useState<string | null>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const from = params.get('from')
+    if (!from || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(from)) return
+    const name = (params.get('name') ?? from).slice(0, 100)
+    const days = Number(params.get('days') ?? '')
+    const line =
+      Number.isInteger(days) && days > 0 && days < 60
+        ? t('p3_custom_prefill_days', { name, days })
+        : t('p3_custom_prefill', { name })
+    const box = notesRef.current
+    if (box !== null && box.value.trim() === '') box.value = line
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the URL after mount
+    setBasedOn(name)
+  }, [t])
   const [chosenStep, setChosenStep] = useState(0)
   /** The server reply the traveller has already been taken to (see below). */
   const [seenReply, setSeenReply] = useState<unknown>(INITIAL_STATE)
@@ -544,7 +565,13 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
             <h2 className="bt-form-q">
               <label htmlFor={`${baseId}-notes`}>{t('cp_notes')}</label>
             </h2>
+            {basedOn !== null && (
+              <p className="muted" style={{ margin: '0 0 6px', fontSize: 13.5 }}>
+                {t('p3_custom_based', { name: basedOn })}
+              </p>
+            )}
             <textarea
+              ref={notesRef}
               id={`${baseId}-notes`}
               name="notes"
               maxLength={NOTES_MAX}

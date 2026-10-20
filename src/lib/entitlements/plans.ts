@@ -21,6 +21,7 @@ import { markCustomRequestsPaid } from '@/lib/orders/custom-request'
 
 import { isEntitlementKind, makeEntitlementSet, type EntitlementSet } from './redaction'
 import { carryOverFamily } from './family'
+import { grantablePlanLines } from './grant-rules'
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -74,11 +75,24 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
   // لا يمنح صلاحية، فلا يدخل في العدد المُعاد.
   await markCustomRequestsPaid(tx, orderId)
 
-  const lines = await tx
-    .select({ plan: plans })
+  const planLines = await tx
+    .select({ plan: plans, parentItemId: orderItems.parentItemId })
     .from(orderItems)
     .innerJoin(plans, eq(plans.id, orderItems.refId))
     .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'plan')))
+  // Phase 3: a plan line under another line (a package's VIP, or one the
+  // cart found already paid for) is granted once per plan; one under an
+  // itinerary is NOT granted — that itinerary opens VIP itself, and its
+  // refund must take the access back with it.
+  const itineraryLineIds = new Set(
+    (
+      await tx
+        .select({ id: orderItems.id })
+        .from(orderItems)
+        .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'itinerary')))
+    ).map((row) => row.id),
+  )
+  const lines = grantablePlanLines(planLines, itineraryLineIds)
 
   // الوثيقة 4.2: "هل يشمل الخريطة؟" — جدول يشمل الخريطة يمنح الوصول لها عند الدفع
   // (VIP إن كان جدول VIP). كان شراء الجدول لا يفتح الخريطة أبداً.

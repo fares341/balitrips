@@ -451,6 +451,7 @@ function settingName(t: Translate, key: string): string {
     map: 'map.settings',
     security: 'protection.settings',
     assistant: 'assistant.settings_title',
+    vip: 'p3.vip_settings',
   }
   const name = names[key]
   return name ? t(name) : key

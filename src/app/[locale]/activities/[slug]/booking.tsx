@@ -444,6 +444,18 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     }
   }, [data])
 
+  // Phase 3: an itinerary's "book this day" link opens the box with the date
+  // of that day of the trip (`?date=YYYY-MM-DD`). Ignored when malformed or
+  // already past; everything else is still picked here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('edit')) return
+    const date = params.get('date')
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayInBali()) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the URL after mount
+    setState((current) => ({ ...current, date }))
+  }, [])
+
   const pkgInfo = data.packages.find((p) => p.id === state.pkg) ?? null
   const pkg = toRule(pkgInfo, data)
   const cap = capFor(pkgInfo, data)

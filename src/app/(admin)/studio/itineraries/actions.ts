@@ -8,12 +8,22 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import {
   itineraries,
+  itineraryDayPlaces,
   itineraryDays,
+  itineraryPackageLinks,
   itineraryRegions,
+  mapPlaces,
   orderItems,
   orders,
+  packages,
   users,
 } from '@/db/schema'
+import {
+  MAP_ACCESS,
+  PACKAGE_PRICE_RULES,
+  legacyFlagsFor,
+  normaliseVisitTime,
+} from '@/lib/itineraries/sale'
 import { defaultLocale, locales, isLocale, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { notifyUsers } from '@/lib/notify'
@@ -29,6 +39,7 @@ import {
   flocalizedOrNull,
   flocalizedRequired,
   fcurrencyOr,
+  fenum,
   fmoney,
   fmulti,
   freq,
@@ -59,6 +70,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
   let outcome: Outcome
 
   try {
+    const mapAccess = fenum(form, 'mapAccess', MAP_ACCESS, 'free_only')
     const values = {
       slug: assertSlug(freq(form, 'slug', t('itineraries.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
@@ -72,8 +84,14 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
       // الوثيقة 4.2
       detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
-      includesMap: fbool(form, 'includesMap'),
-      isVip: fbool(form, 'isVip'),
+      // Phase 3: the map rule decides; the legacy flags follow it.
+      mapAccess,
+      ...legacyFlagsFor(mapAccess),
+      vipPlanId: fuuidOrNull(form, 'vipPlanId', t('p3.vip_plan')),
+      saleDigital: fbool(form, 'saleDigital'),
+      saleWithActivities: fbool(form, 'saleWithActivities'),
+      saleWithPackages: fbool(form, 'saleWithPackages'),
+      saleCustomRequest: fbool(form, 'saleCustomRequest'),
       internalNotes: fstr(form, 'internalNotes')?.slice(0, 5000) ?? null,
       galleryImageIds: fmulti(form, 'galleryImageIds').filter(isUuid).slice(0, 24),
       linkedPlaceIds: fmulti(form, 'linkedPlaceIds').filter(isUuid).slice(0, 100),
@@ -525,6 +543,8 @@ async function persistDay(
       isFreeDay,
       title: flocalizedOrNull(form, `title_${dayId}`),
       description: flocalizedOrNull(form, `description_${dayId}`),
+      // Sale mode B: only a day with an activity can be booked.
+      bookable: activityId !== null && fbool(form, `bookable_${dayId}`),
     })
     .where(eq(itineraryDays.id, dayId))
     .returning()
@@ -745,4 +765,283 @@ export async function removeItineraryPdf(id: string, form: FormData): Promise<vo
     outcome = { err: errorMessage(error) }
   }
   redirect(withOutcome(editor(id), outcome))
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: places on each day
+// ---------------------------------------------------------------------------
+
+const MAX_DAY_PLACES = 30
+
+export interface DayPlaceInput {
+  placeId: string
+  note: Record<string, string>
+  visitTime: string
+}
+
+/**
+ * Replace one day's places with the ordered list from the editor. Called from
+ * a Client Component, so it returns a result instead of redirecting.
+ */
+export async function saveDayPlaces(
+  itineraryId: string,
+  dayId: string,
+  input: DayPlaceInput[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  try {
+    if (!isUuid(itineraryId) || !isUuid(dayId)) throw new Error(t('itineraries.err_day_gone'))
+    if (!Array.isArray(input)) throw new Error(t('p3.save_failed'))
+    if (input.length > MAX_DAY_PLACES) {
+      throw new Error(t('p3.err_too_many_places', { max: MAX_DAY_PLACES }))
+    }
+    const seen = new Set<string>()
+    const rows = input.map((entry, index) => {
+      const placeId = typeof entry?.placeId === 'string' ? entry.placeId : ''
+      if (!isUuid(placeId)) throw new Error(t('p3.save_failed'))
+      if (seen.has(placeId)) throw new Error(t('p3.err_place_twice'))
+      seen.add(placeId)
+      const note: Record<string, string> = {}
+      let hasNote = false
+      for (const locale of locales) {
+        const text = typeof entry.note?.[locale] === 'string' ? entry.note[locale].trim() : ''
+        note[locale] = text.slice(0, 280)
+        if (text !== '') hasNote = true
+      }
+      const rawTime = typeof entry.visitTime === 'string' ? entry.visitTime.trim() : ''
+      const visitTime = rawTime === '' ? null : normaliseVisitTime(rawTime)
+      if (rawTime !== '' && visitTime === null) throw new Error(t('p3.err_time'))
+      return {
+        dayId,
+        placeId,
+        sortOrder: index,
+        note: hasNote ? (note as Record<Locale, string>) : null,
+        visitTime,
+      }
+    })
+
+    await db.transaction(async (tx) => {
+      const [day] = await tx
+        .select({ id: itineraryDays.id })
+        .from(itineraryDays)
+        .where(and(eq(itineraryDays.id, dayId), eq(itineraryDays.itineraryId, itineraryId)))
+        .limit(1)
+      if (!day) throw new Error(t('itineraries.err_day_gone'))
+      if (rows.length > 0) {
+        const known = await tx
+          .select({ id: mapPlaces.id })
+          .from(mapPlaces)
+          .where(
+            and(
+              inArray(
+                mapPlaces.id,
+                rows.map((row) => row.placeId),
+              ),
+              isNull(mapPlaces.deletedAt),
+            ),
+          )
+        if (known.length !== rows.length) throw new Error(t('p3.place_gone'))
+      }
+      const before = await tx
+        .select({ placeId: itineraryDayPlaces.placeId })
+        .from(itineraryDayPlaces)
+        .where(eq(itineraryDayPlaces.dayId, dayId))
+        .orderBy(asc(itineraryDayPlaces.sortOrder))
+      await tx.delete(itineraryDayPlaces).where(eq(itineraryDayPlaces.dayId, dayId))
+      if (rows.length > 0) await tx.insert(itineraryDayPlaces).values(rows)
+      await writeAudit(
+        {
+          actor: session,
+          action: 'itinerary_day.places',
+          entityType: 'itinerary_day',
+          entityId: dayId,
+          before: { places: before.map((row) => row.placeId) },
+          after: { places: rows.map((row) => row.placeId) },
+        },
+        tx,
+      )
+    })
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: packages this itinerary is sold inside (sale mode C)
+// ---------------------------------------------------------------------------
+
+export async function addItineraryPackageLink(itineraryId: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const packageId = fuuidOrNull(form, 'packageId', t('p3.link_package'))
+    if (packageId === null) throw new Error(t('p3.err_pick_package'))
+    const priceRule = fenum(form, 'priceRule', PACKAGE_PRICE_RULES, 'included')
+    await db.transaction(async (tx) => {
+      const [pkg] = await tx
+        .select({ id: packages.id })
+        .from(packages)
+        .where(and(eq(packages.id, packageId), isNull(packages.deletedAt)))
+        .limit(1)
+      if (!pkg) throw new Error(t('packages.err_gone'))
+      const existing = await tx
+        .select({ packageId: itineraryPackageLinks.packageId })
+        .from(itineraryPackageLinks)
+        .where(eq(itineraryPackageLinks.itineraryId, itineraryId))
+      if (existing.some((row) => row.packageId === packageId)) {
+        throw new Error(t('p3.err_link_exists'))
+      }
+      await tx.insert(itineraryPackageLinks).values({
+        itineraryId,
+        packageId,
+        priceRule,
+        isDefault: existing.length === 0,
+        sortOrder: existing.length,
+      })
+      await writeAudit(
+        {
+          actor: session,
+          action: 'itinerary.package_link',
+          entityType: 'itinerary',
+          entityId: itineraryId,
+          before: null,
+          after: { packageId, priceRule },
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('p3.ok_link_added') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(itineraryId), outcome))
+}
+
+export async function saveItineraryPackageLink(
+  itineraryId: string,
+  packageId: string,
+  form: FormData,
+): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const priceRule = fenum(form, 'priceRule', PACKAGE_PRICE_RULES, 'included')
+    const isDefault = fbool(form, 'isDefault')
+    await db.transaction(async (tx) => {
+      if (isDefault) {
+        await tx
+          .update(itineraryPackageLinks)
+          .set({ isDefault: false })
+          .where(eq(itineraryPackageLinks.itineraryId, itineraryId))
+      }
+      const changed = await tx
+        .update(itineraryPackageLinks)
+        .set({ priceRule, isDefault })
+        .where(
+          and(
+            eq(itineraryPackageLinks.itineraryId, itineraryId),
+            eq(itineraryPackageLinks.packageId, packageId),
+          ),
+        )
+        .returning({ packageId: itineraryPackageLinks.packageId })
+      if (changed.length === 0) throw new Error(t('p3.err_link_gone'))
+      await writeAudit(
+        {
+          actor: session,
+          action: 'itinerary.package_link_update',
+          entityType: 'itinerary',
+          entityId: itineraryId,
+          before: null,
+          after: { packageId, priceRule, isDefault },
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('p3.ok_link_saved') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(itineraryId), outcome))
+}
+
+export async function removeItineraryPackageLink(
+  itineraryId: string,
+  packageId: string,
+): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(itineraryPackageLinks)
+        .where(
+          and(
+            eq(itineraryPackageLinks.itineraryId, itineraryId),
+            eq(itineraryPackageLinks.packageId, packageId),
+          ),
+        )
+      await writeAudit(
+        {
+          actor: session,
+          action: 'itinerary.package_unlink',
+          entityType: 'itinerary',
+          entityId: itineraryId,
+          before: { packageId },
+          after: null,
+        },
+        tx,
+      )
+    })
+    outcome = { ok: t('p3.ok_link_removed') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(itineraryId), outcome))
+}
+
+/** New order of the linked packages (ids, first = shown first). */
+export async function reorderItineraryPackageLinks(
+  itineraryId: string,
+  packageIds: string[],
+): Promise<boolean> {
+  const session = await requireCapability('content.write')
+  if (!isUuid(itineraryId) || !Array.isArray(packageIds)) return false
+  const ids = packageIds.filter((id) => typeof id === 'string' && isUuid(id))
+  try {
+    await db.transaction(async (tx) => {
+      for (const [index, packageId] of ids.entries()) {
+        await tx
+          .update(itineraryPackageLinks)
+          .set({ sortOrder: index })
+          .where(
+            and(
+              eq(itineraryPackageLinks.itineraryId, itineraryId),
+              eq(itineraryPackageLinks.packageId, packageId),
+            ),
+          )
+      }
+      await writeAudit(
+        {
+          actor: session,
+          action: 'itinerary.package_reorder',
+          entityType: 'itinerary',
+          entityId: itineraryId,
+          before: null,
+          after: { order: ids },
+        },
+        tx,
+      )
+    })
+    return true
+  } catch {
+    return false
+  }
 }

@@ -110,6 +110,10 @@ export async function tripLineMeta(line: CartLineView, locale: Locale): Promise<
     )
   }
 
+  // Phase 3: never charged twice — say what already pays for this line.
+  if (line.coveredByName !== null) {
+    parts.push(t('p3_covered_by', { name: pick(line.coveredByName, locale, '') }))
+  }
   return parts.join(' · ')
 }
 

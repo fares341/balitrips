@@ -41,13 +41,17 @@ import {
   mergeAnonymousCartOnSignIn,
   type CartLineView,
 } from '@/lib/cart'
-import { pick } from '@/lib/content/localize'
+import { pick, pickOptional } from '@/lib/content/localize'
+import { readSetting } from '@/app/(admin)/_lib/settings'
+import { holdsVip, vipPlanOffer } from '@/lib/itineraries/queries'
+import { needsAccount, tripIncludesVip } from '@/lib/packages/account'
 import { splitPhone } from '@/lib/orders/contact'
 import { FEATURES } from '@/lib/features'
 
 import { toLocale } from '../_seo-hreflang'
 import { beginSignInAction } from './actions'
 import { CheckoutFlow, type DriverOffer } from './checkout-flow'
+import { VipUpsellButton } from './vip-upsell'
 import { ACCOUNT_ONLY_KINDS } from './constants'
 
 import '@/styles/bt-trip.css'
@@ -210,7 +214,24 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
     dialCode: phone.dialCode,
     phone: phone.phone,
   }
-  const guestAllowed = !lines.some((line) => ACCOUNT_ONLY_KINDS.includes(line.kind))
+  // Phase 3: a package that comes with an itinerary or VIP needs an account too.
+  const guestAllowed = !(await needsAccount(lines, ACCOUNT_ONLY_KINDS))
+
+  // Phase 3: "add VIP" — only when switched on in Studio, the trip has an
+  // itinerary or activities, nothing in it already gives VIP, and the
+  // traveller does not hold VIP. Unticked by default; a separate paid line.
+  const vipSettings = await readSetting('vip')
+  const vipUpsell =
+    user !== null &&
+    vipSettings.checkoutUpsell &&
+    lines.some((line) =>
+      ['itinerary', 'activity', 'activity_tier', 'package'].includes(line.kind),
+    ) &&
+    !(await tripIncludesVip(lines)) &&
+    !(await holdsVip(user.id))
+      ? await vipPlanOffer(vipSettings.upsellPlanId === '' ? null : vipSettings.upsellPlanId)
+      : null
+  const vipOffer = vipUpsell !== null && vipUpsell.currency === cart.currency ? vipUpsell : null
   const discountMinor = Math.max(0, cart.subtotalMinor - cart.totalMinor)
 
   const signIn = (
@@ -224,6 +245,20 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
 
   const review = (
     <div className="stack ck-review">
+      {vipOffer !== null && (
+        <div className="ck-vip" role="note">
+          <span>
+            <b>{t('p3_upsell_t')}</b>
+            <small className="muted">
+              {t('p3_upsell_b', { price: money(vipOffer.priceMinor, vipOffer.currency) })}
+            </small>
+            {pickOptional(vipSettings.refundNote, locale) !== null && (
+              <small className="muted">{pickOptional(vipSettings.refundNote, locale)}</small>
+            )}
+          </span>
+          <VipUpsellButton planId={vipOffer.planId} label={t('p3_upsell_cta')} />
+        </div>
+      )}
       {lines.map((line) => (
         <div key={line.id} className="ck-line">
           <LineThumb line={line} locale={locale} />
@@ -257,6 +292,20 @@ export default async function CheckoutPage({ params }: { params: PageParams }) {
                   adults: (line.guests ?? line.quantity) - line.children - line.infants,
                   children: line.children,
                   infants: line.infants,
+                })}
+              </small>
+            )}
+            {line.coveredByName !== null && (
+              <small className="ck-confirm ok">
+                <Icon name="check" size={14} />{' '}
+                {t('p3_covered_by', { name: pick(line.coveredByName, locale, '') })}
+              </small>
+            )}
+            {line.creditMinor !== null && line.creditMinor > 0 && (
+              <small className="ck-confirm ok">
+                <Icon name="check" size={14} />{' '}
+                {t('p3_credit', {
+                  amount: money(line.creditMinor, line.currency ?? cart.currency),
                 })}
               </small>
             )}

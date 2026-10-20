@@ -2484,3 +2484,108 @@ details > summary.a-btn::-webkit-details-marker {
   border-block-start: 1px dashed var(--a-line);
   padding-block-start: 12px;
 }
+
+/* --- Phase 3: itinerary day places, package parts, VIP --------------------- */
+
+.a-day-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.a-day-wrap > .a-day {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.a-dayplaces {
+  border: 1px solid var(--a-line);
+  border-block-start: 0;
+  border-end-start-radius: var(--a-radius);
+  border-end-end-radius: var(--a-radius);
+  background: var(--a-surface);
+  padding: 14px 16px 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.a-dayplaces-h {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--a-primary-deep);
+}
+
+.a-dayplace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.a-dayplace-no {
+  inline-size: 26px;
+  block-size: 26px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--a-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  flex: 0 0 auto;
+}
+
+.a-dayplace-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--a-muted);
+  margin-inline-start: auto;
+}
+
+.a-dayplace-time .a-input {
+  inline-size: 7.5em;
+  min-block-size: 36px;
+}
+
+.a-dayplace-note > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--a-primary-deep);
+  min-block-size: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.a-dayplace-note[open] > summary {
+  margin-block-end: 6px;
+}
+
+.a-dayplaces-search {
+  max-inline-size: 520px;
+}
+
+.a-dayplaces-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.a-cost-table td,
+.a-cost-table th {
+  text-align: start;
+}
+
+.a-cost-table td.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.a-pkg-day {
+  inline-size: 7em;
+}

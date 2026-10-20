@@ -168,6 +168,24 @@ export async function placeTeasersByIds(
 }
 
 /**
+ * Places by id, redacted for `held`, keyed by the id the CALLER asked for.
+ *
+ * The key is a server-side join handle only (the itinerary day plan holds
+ * place ids already): a locked teaser itself still carries no id, and callers
+ * must not send the map's keys to the client. Unknown / withdrawn places are
+ * absent.
+ */
+export async function placeTeasersById(
+  ids: readonly string[],
+  held: EntitlementSet,
+): Promise<Map<string, PlaceTeaser>> {
+  const wanted = [...new Set(ids.filter((id) => typeof id === 'string' && UUID.test(id)))]
+  if (wanted.length === 0) return new Map()
+  const rows = await teaserQuery().where(and(LIVE_PLACE, inArray(mapPlaces.id, wanted)))
+  return new Map(rows.map((row) => [row.place.id, toTeaser(row, held)]))
+}
+
+/**
  * The places an itinerary links to (`itineraries.linked_place_ids`, spec 4.2).
  * Only for a live itinerary — a draft's links are not public.
  */

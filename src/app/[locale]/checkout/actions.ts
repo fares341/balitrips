@@ -43,6 +43,7 @@ import {
   setPendingCheckout,
 } from '@/lib/cart'
 import { bookingsOpen } from '@/lib/bookings-open'
+import { needsAccount } from '@/lib/packages/account'
 import { CheckoutError, checkout } from '@/lib/orders/checkout'
 import { validateContact } from '@/lib/orders/contact'
 import { canViewOrder, ensureGuestTokenHash, readGuestTokenHash } from '@/lib/orders/guest'
@@ -154,8 +155,12 @@ export async function startCheckoutAction(
   if (!cart.ok) return { error: 'invalid_cart' }
 
   if (!user) {
-    const needsAccount = cart.groups.some((group) => ACCOUNT_ONLY_KINDS.includes(group.kind))
-    if (needsAccount) return { error: 'sign_in' }
+    // Phase 3: a package that comes with an itinerary or VIP counts too.
+    const accountOnly = await needsAccount(
+      cart.groups.flatMap((group) => group.lines),
+      ACCOUNT_ONLY_KINDS,
+    )
+    if (accountOnly) return { error: 'sign_in' }
   }
 
   /**

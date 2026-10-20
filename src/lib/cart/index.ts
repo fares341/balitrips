@@ -1134,6 +1134,13 @@ export interface CartLineView {
   /** Children / infants among `guests` (phase 2). */
   children: number
   infants: number
+  /**
+   * Phase 3: another line of this trip already pays for this one (an
+   * itinerary inside a package, VIP that comes with something) — its name.
+   */
+  coveredByName: Localized | null
+  /** Phase 3, packages: an earlier itinerary purchase deducted from the price. */
+  creditMinor: number | null
 }
 
 export interface CartBreakdownLine {
@@ -1291,6 +1298,13 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       })(),
       children: row.options?.children ?? 0,
       infants: row.options?.infants ?? 0,
+      coveredByName: (() => {
+        if (line?.coveredBy === undefined) return null
+        const by = rows.find((other) => other.id === line.coveredBy)
+        if (!by) return null
+        return display.get(displayKey(by.kind, by.refId))?.name ?? null
+      })(),
+      creditMinor: line?.credit?.amountMinor ?? null,
     }
   })
 

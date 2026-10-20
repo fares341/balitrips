@@ -49,6 +49,7 @@ import {
   loadEntitlements,
   type EntitlementSet,
 } from '@/lib/entitlements'
+import { readSetting } from '@/app/(admin)/_lib/settings'
 import { listPublishedPlans, loadLivePlanIds, type PlanRow } from '@/lib/entitlements/plans'
 
 import { pageMetadata } from '../_meta'
@@ -100,11 +101,14 @@ export default async function PlansPage({ params }: { params: Promise<{ locale: 
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, activities, plans] = await Promise.all([
+  const [t, activities, allPlans, vip] = await Promise.all([
     getTranslations({ locale }),
     listActivities({ locale, limit: IMAGE_SOURCE_LIMIT }),
     listPublishedPlans(),
+    readSetting('vip'),
   ])
+  // Phase 3: VIP may be sold only as an extra / inside packages (Studio → VIP).
+  const plans = allPlans.filter((plan) => vip.sellStandalone || plan.entitlementKind !== 'vip')
 
   const pool = imagePool(activities)
 
