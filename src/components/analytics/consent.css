@@ -11,9 +11,21 @@
   pointer-events: none;
 }
 
+/* Desktop: a compact card in the start corner, clear of the hero and of the
+   assistant button (which sits in the end corner). */
 @media (min-width: 1024px) {
   .bt-consent {
-    bottom: 16px;
+    bottom: 20px;
+    inset-inline: 20px auto;
+    justify-content: flex-start;
+  }
+
+  .bt-consent-inner {
+    width: 440px;
+  }
+
+  .bt-consent-actions {
+    justify-content: flex-start;
   }
 }
 
