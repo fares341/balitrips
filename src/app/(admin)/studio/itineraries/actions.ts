@@ -889,6 +889,15 @@ export async function addItineraryPackageLink(itineraryId: string, form: FormDat
     const packageId = fuuidOrNull(form, 'packageId', t('p3.link_package'))
     if (packageId === null) throw new Error(t('p3.err_pick_package'))
     const priceRule = fenum(form, 'priceRule', PACKAGE_PRICE_RULES, 'included')
+    // The price rule decides what the customer pays for this itinerary inside
+    // the package: without `prices.write` a new link keeps the default.
+    assertPriceChangeAllowed(
+      session.role,
+      { priceRule: 'included' },
+      { priceRule },
+      ['priceRule'],
+      t('team.err_prices'),
+    )
     await db.transaction(async (tx) => {
       const [pkg] = await tx
         .select({ id: packages.id })
@@ -942,6 +951,25 @@ export async function saveItineraryPackageLink(
     const priceRule = fenum(form, 'priceRule', PACKAGE_PRICE_RULES, 'included')
     const isDefault = fbool(form, 'isDefault')
     await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({ priceRule: itineraryPackageLinks.priceRule })
+        .from(itineraryPackageLinks)
+        .where(
+          and(
+            eq(itineraryPackageLinks.itineraryId, itineraryId),
+            eq(itineraryPackageLinks.packageId, packageId),
+          ),
+        )
+        .limit(1)
+      if (!current) throw new Error(t('p3.err_link_gone'))
+      // Without `prices.write` the price rule must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        { priceRule: current.priceRule },
+        { priceRule },
+        ['priceRule'],
+        t('team.err_prices'),
+      )
       if (isDefault) {
         await tx
           .update(itineraryPackageLinks)
@@ -965,7 +993,7 @@ export async function saveItineraryPackageLink(
           action: 'itinerary.package_link_update',
           entityType: 'itinerary',
           entityId: itineraryId,
-          before: null,
+          before: { packageId, priceRule: current.priceRule },
           after: { packageId, priceRule, isDefault },
         },
         tx,

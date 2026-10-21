@@ -29,6 +29,7 @@ import {
   LocalizedField,
   LocalizedListField,
   MoneyField,
+  PriceLockNote,
   TextArea,
   TextInput,
 } from '../../../_ui/field'
@@ -63,6 +64,7 @@ export default async function ItineraryEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.write')
+  const pricesLocked = !can(session.role, 'prices.write')
   const { t, locale: uiLocale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -408,7 +410,7 @@ export default async function ItineraryEditorPage({
             <MoneyField
               minor={itinerary?.priceMinor}
               currency={itinerary?.currency}
-              locked={!can(session.role, 'prices.write')}
+              locked={pricesLocked}
             />
             <OptionField
               name="heroImageId"
@@ -445,6 +447,7 @@ export default async function ItineraryEditorPage({
           <div className="a-card">
             <h2>{t('p3.section_packages')}</h2>
             <p className="a-hint">{t('p3.packages_hint')}</p>
+            {pricesLocked && <PriceLockNote />}
             {!itinerary.saleWithPackages ? <p className="a-hint">{t('p3.packages_off')}</p> : null}
             {links.length === 0 ? (
               <p className="a-hint">{t('p3.packages_empty')}</p>
@@ -462,11 +465,15 @@ export default async function ItineraryEditorPage({
                     >
                       <b>{packageName.get(link.packageId) ?? link.packageId}</b>
                       <Field label={t('p3.price_rule')} htmlFor={`rule_${link.packageId}`}>
+                        {pricesLocked && (
+                          <input type="hidden" name="priceRule" value={link.priceRule} />
+                        )}
                         <select
                           className="a-select"
                           id={`rule_${link.packageId}`}
-                          name="priceRule"
+                          name={pricesLocked ? undefined : 'priceRule'}
                           defaultValue={link.priceRule}
+                          disabled={pricesLocked}
                         >
                           {PACKAGE_PRICE_RULES.map((rule) => (
                             <option key={rule} value={rule}>
@@ -527,11 +534,13 @@ export default async function ItineraryEditorPage({
                   </select>
                 </Field>
                 <Field label={t('p3.price_rule')} htmlFor="link-rule">
+                  {pricesLocked && <input type="hidden" name="priceRule" value="included" />}
                   <select
                     className="a-select"
                     id="link-rule"
-                    name="priceRule"
+                    name={pricesLocked ? undefined : 'priceRule'}
                     defaultValue="included"
+                    disabled={pricesLocked}
                   >
                     {PACKAGE_PRICE_RULES.map((rule) => (
                       <option key={rule} value={rule}>
