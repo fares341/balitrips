@@ -1028,6 +1028,7 @@
   animation-duration: 70s;
 }
 .home-v3 .rmarq:hover .rm-track,
+.home-v3 .rmarq:active .rm-track,
 .home-v3 .rmarq:focus-within .rm-track {
   animation-play-state: paused;
 }
@@ -1244,10 +1245,12 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   .home-v3 .mq-track {
     animation: none;
   }
-  .home-v3 .rmarq {
-    overflow-x: auto;
-  }
+  /* Reviews keep moving (client: they must move on their own), only slower;
+     hover, focus or a touch still pauses them. */
   .home-v3 .rm-track {
-    animation: none;
+    animation-duration: 120s;
+  }
+  .home-v3 .rmarq.rev2 .rm-track {
+    animation-duration: 140s;
   }
 }
