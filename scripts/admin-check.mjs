@@ -2,7 +2,10 @@
 //
 // Logs in through the public sign-in page for each staff role, completes the
 // TOTP challenge, then opens every Studio nav page plus one detail page per
-// section at 1440 and 390. Everything is written to ./admin-check (pushed to
+// section at 1440 and 390. Phase 6: every visible Studio link on those pages
+// (and the links on the pages they lead to) is then requested as the same
+// role, and a link that answers 404 for that role is reported — a link the
+// role cannot open must not be shown to it. Everything is written to ./admin-check (pushed to
 // the `admin-check` branch): results.json, log.txt, summary.txt, screenshots.
 //
 // Inputs (env):
@@ -231,6 +234,9 @@ async function visit(
       .catch(() => false)
   }
   const final = page.url().replace(BASE, '')
+  if (!expectNotFound && !expectSignIn && status > 0 && status < 400) {
+    await collectLinks(page, role, final)
+  }
   const info = await page
     .evaluate(() => ({
       title: document.title,
@@ -301,6 +307,85 @@ async function visit(
   }
   flush()
   return entry
+}
+
+/* ---- Link crawl (Phase 6) ---------------------------------------------- */
+// Per role: Studio link (path + query) -> the page it was seen on. Pages the
+// tour opened itself are not requested again.
+const LINK_CAP = Number(process.env.LINK_CAP ?? 220)
+const linkQueue = new Map()
+const visitedByRole = new Map()
+const studioLink = (href) => {
+  try {
+    const url = new URL(href, BASE)
+    if (url.origin !== new URL(BASE).origin) return null
+    if (url.pathname !== ADMIN && !url.pathname.startsWith(`${ADMIN}/`)) return null
+    return url.pathname + url.search
+  } catch {
+    return null
+  }
+}
+function queueLink(role, link, from) {
+  if (!link) return
+  const queue = linkQueue.get(role) ?? new Map()
+  linkQueue.set(role, queue)
+  if (!queue.has(link)) queue.set(link, { from, depth: 1 })
+}
+async function collectLinks(page, role, from) {
+  const seen = visitedByRole.get(role) ?? new Set()
+  visitedByRole.set(role, seen)
+  seen.add(from)
+  const hrefs = await page
+    .$$eval('a[href]', (as) =>
+      as
+        .filter((a) => {
+          const box = a.getBoundingClientRect()
+          const style = getComputedStyle(a)
+          return (box.width > 0 || box.height > 0) && style.visibility !== 'hidden'
+        })
+        .map((a) => a.href),
+    )
+    .catch(() => [])
+  for (const href of hrefs) queueLink(role, studioLink(href), from)
+}
+/** Request every queued link as `role` (same cookies); a 404 is a problem. Follows one level deeper. */
+async function crawlLinks(page, role) {
+  const queue = linkQueue.get(role) ?? new Map()
+  const seen = visitedByRole.get(role) ?? new Set()
+  const checked = new Set()
+  const broken = []
+  let followed = 0
+  for (;;) {
+    const next = [...queue.keys()].find((link) => !checked.has(link) && !seen.has(link))
+    if (!next || checked.size >= LINK_CAP) break
+    checked.add(next)
+    const { from, depth } = queue.get(next)
+    const response = await page.request
+      .get(BASE + next, { maxRedirects: 5, timeout: 60000 })
+      .catch(() => null)
+    const status = response?.status() ?? 0
+    if (status === 404) {
+      broken.push(`${next} (on ${from})`)
+      continue
+    }
+    // One level deeper: the links on a page reached through a link (a detail
+    // page the tour did not open for this role). Not followed any further.
+    const type = response?.headers()['content-type'] ?? ''
+    if (status === 200 && depth === 1 && type.includes('text/html')) {
+      followed += 1
+      const html = await response.text().catch(() => '')
+      for (const m of html.matchAll(/<a\b[^>]*?\shref="([^"]+)"/g)) {
+        const link = studioLink(m[1].replace(/&amp;/g, '&'))
+        if (link && !queue.has(link)) queue.set(link, { from: next, depth: 2 })
+      }
+    }
+  }
+  const unchecked = [...queue.keys()].filter((l) => !checked.has(l) && !seen.has(l)).length
+  record(
+    role,
+    `links: ${checked.size} Studio links requested (${followed} pages read for deeper links)${unchecked ? `, ${unchecked} over the cap` : ''}`,
+    broken.map((b) => `404 for ${role}: ${b}`),
+  )
 }
 
 async function signIn(page, email, secret, start) {
@@ -679,6 +764,9 @@ for (const role of ROLE_ORDER) {
       record('admin', 'money: settings fees', [`threw: ${e.message.split('\n')[0]}`]),
     )
   }
+  await crawlLinks(page, role).catch((e) =>
+    record(role, 'links', [`crawl threw: ${e.message.split('\n')[0]}`]),
+  )
   await ctx.close()
 }
 

@@ -16,7 +16,17 @@ import {
   suppliers,
 } from '@/db/schema'
 
-import { BOOKABLE, everPaid, inRange, lineFilter, placedAt, soldLine, type Range } from '../data'
+import {
+  BOOKABLE,
+  everPaid,
+  inRange,
+  lineFilter,
+  placedAt,
+  soldLine,
+  staffAnd,
+  staffCond,
+  type Range,
+} from '../data'
 import type { ReportFilters } from '../filters'
 
 /**
@@ -25,7 +35,9 @@ import type { ReportFilters } from '../filters'
  * money grouped by currency.
  */
 
-type F = Pick<ReportFilters, 'type' | 'supplierId' | 'currency'>
+type F = Pick<ReportFilters, 'type' | 'supplierId' | 'currency'> & { staffId?: string | null }
+/** Only the staff filter (figures that honour no other filter but are orders). */
+type Staff = { staffId?: string | null }
 
 const iso = (d: Date) => d.toISOString()
 
@@ -68,6 +80,7 @@ export async function bookingLines(range: Range, f: F) {
         inRange(placedAt, range),
         inArray(orderItems.kind, [...BOOKABLE]),
         currencyCond(f),
+        staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
@@ -97,6 +110,7 @@ export async function itineraryLines(range: Range, f: F) {
         eq(orderItems.kind, 'itinerary'),
         soldLine,
         currencyCond(f),
+        staffCond(f),
       ),
     )
     .limit(20_000)
@@ -346,6 +360,7 @@ export async function addonSales(range: Range, f: F) {
       and coalesce(o.placed_at, o.created_at) >= ${iso(range.start)}::timestamptz
       and coalesce(o.placed_at, o.created_at) < ${iso(range.end)}::timestamptz
       ${f.currency ? sql`and o.presentment_currency = ${f.currency}` : sql``}
+      ${staffAnd(f, sql`o.id`)}
     group by l->>'refId', o.presentment_currency
     order by 4 desc
     limit 30
@@ -354,7 +369,7 @@ export async function addonSales(range: Range, f: F) {
 }
 
 /** Customers: lifetime totals (paid − refunded) and inactivity. */
-export async function customerTotals(now: Date, inactiveDays = 180) {
+export async function customerTotals(now: Date, f: Staff = {}, inactiveDays = 180) {
   const rows = await db.execute<{
     customer: string
     currency: string
@@ -372,6 +387,7 @@ export async function customerTotals(now: Date, inactiveDays = 180) {
            max(coalesce(o.placed_at, o.created_at)) as last_paid
     from ${orders} o
     where exists (select 1 from payments pp where pp.order_id = o.id and pp.status in ('succeeded', 'refunded'))
+      ${staffAnd(f, sql`o.id`)}
     group by 1, 2
   `)
   const cutoff = now.getTime() - inactiveDays * 86_400_000
@@ -392,7 +408,7 @@ export async function paidOrders(range: Range, f: F) {
   return db
     .select({ currency: orders.presentmentCurrency, totalMinor: orders.totalMinor })
     .from(orders)
-    .where(and(everPaid, inRange(placedAt, range), currencyCond(f)))
+    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f)))
     .limit(50_000)
 }
 
@@ -443,7 +459,7 @@ export async function abandonedCheckouts(range: Range) {
 }
 
 /** Operations: failed payments, unprocessed paid bookings, stale unpaid orders, denied files. */
-export async function failedPayments(range: Range, limit = 25) {
+export async function failedPayments(range: Range, f: Staff = {}, limit = 25) {
   return db
     .select({
       id: payments.id,
@@ -462,6 +478,7 @@ export async function failedPayments(range: Range, limit = 25) {
         eq(payments.status, 'failed'),
         gte(payments.createdAt, range.start),
         lt(payments.createdAt, range.end),
+        staffCond(f),
       ),
     )
     .orderBy(sql`${payments.createdAt} desc`)
@@ -470,7 +487,7 @@ export async function failedPayments(range: Range, limit = 25) {
 
 export const UNPROCESSED_AFTER_HOURS = 24
 
-export async function unprocessedBookings(now: Date, limit = 50) {
+export async function unprocessedBookings(now: Date, f: Staff = {}, limit = 50) {
   const before = new Date(now.getTime() - UNPROCESSED_AFTER_HOURS * 3_600_000)
   return db
     .select({
@@ -496,13 +513,14 @@ export async function unprocessedBookings(now: Date, limit = 50) {
         ]),
         sql`${placedAt} < ${iso(before)}::timestamptz`,
         inArray(orders.status, ['paid', 'confirmed', 'partially_refunded']),
+        staffCond(f),
       ),
     )
     .orderBy(placedAt)
     .limit(limit)
 }
 
-export async function staleUnpaidOrders(now: Date) {
+export async function staleUnpaidOrders(now: Date, f: Staff = {}) {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(orders)
@@ -510,6 +528,7 @@ export async function staleUnpaidOrders(now: Date) {
       and(
         eq(orders.status, 'pending'),
         sql`${orders.createdAt} < ${iso(new Date(now.getTime() - 3_600_000))}::timestamptz`,
+        staffCond(f),
       ),
     )
   return row?.n ?? 0

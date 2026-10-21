@@ -22,12 +22,13 @@ import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 
 import { buildOverview } from '@/lib/reports/builders/overview'
-import { currencyOptions, supplierOptions } from '@/lib/reports/data'
+import { currencyOptions, staffOptions, supplierOptions } from '@/lib/reports/data'
 import { parseReportFilters } from '@/lib/reports/filters'
 
 import { adminHref } from '../_lib/admin-path'
 import { getAdminI18n } from '../_lib/i18n'
 import { LEAD_STATUS_KEYS, LEAD_TONES } from '../_lib/lead-statuses'
+import { canOpenHref } from '../_lib/route-access'
 import { requireCapability } from '../_lib/session'
 import { Advanced } from '../_ui/advanced'
 import { Flash } from '../_ui/flash'
@@ -221,10 +222,15 @@ export default async function DashboardPage({
   // Phase 6: the period dashboard is a report (`reports.read`).
   const reportCtx = can(session.role, 'reports.read') ? await buildContext(session.role) : null
   const filters = parseReportFilters(params, now)
-  const [overview, supplierList, currencyList] =
+  const [overview, supplierList, currencyList, staffList] =
     reportCtx === null
-      ? [null, [], []]
-      : await Promise.all([buildOverview(filters, reportCtx), supplierOptions(), currencyOptions()])
+      ? [null, [], [], []]
+      : await Promise.all([
+          buildOverview(filters, reportCtx),
+          supplierOptions(),
+          currencyOptions(),
+          staffOptions(),
+        ])
   const lowSpots = overview?.kpis.find((kpi) => kpi.id === 'low_availability')?.value ?? null
   const lowSpotCount = lowSpots && lowSpots.kind === 'count' ? (lowSpots.value ?? 0) : 0
 
@@ -401,7 +407,11 @@ export default async function DashboardPage({
       tone: 'bad',
     })
   }
-  const pendingWork = attention.filter((item) => item.count > 0)
+  // Phase 6: only work the viewer can open (a booking agent reads orders but
+  // not the reports the low-availability list lives in).
+  const pendingWork = attention.filter(
+    (item) => item.count > 0 && canOpenHref(session.role, item.href),
+  )
 
   // --- Quick actions -------------------------------------------------------
   const quickActions: { href: string; label: string; icon: IconName }[] = []
@@ -445,16 +455,18 @@ export default async function DashboardPage({
         </div>
         {quickActions.length > 0 ? (
           <nav className="a-quick" aria-label={t('dashboard.quick_actions')}>
-            {quickActions.map((action, index) => (
-              <Link
-                key={action.href}
-                href={action.href}
-                className={index === 0 ? 'a-btn' : 'a-btn ghost'}
-              >
-                <Icon name={index === 0 ? 'plus' : action.icon} size={18} />
-                {action.label}
-              </Link>
-            ))}
+            {quickActions
+              .filter((action) => canOpenHref(session.role, action.href))
+              .map((action, index) => (
+                <Link
+                  key={action.href}
+                  href={action.href}
+                  className={index === 0 ? 'a-btn' : 'a-btn ghost'}
+                >
+                  <Icon name={index === 0 ? 'plus' : action.icon} size={18} />
+                  {action.label}
+                </Link>
+              ))}
           </nav>
         ) : null}
       </header>
@@ -536,12 +548,13 @@ export default async function DashboardPage({
             intl={intl}
             suppliers={supplierList}
             currencies={currencyList}
+            staff={staffList}
           >
             <a className="a-btn ghost" href={adminHref('/reports')}>
               {t('rp.all_reports')}
             </a>
           </FilterBar>
-          <ReportBody result={overview} t={t} intl={intl} rtl={reportCtx.rtl} />
+          <ReportBody result={overview} t={t} intl={intl} rtl={reportCtx.rtl} role={session.role} />
         </section>
       ) : null}
 

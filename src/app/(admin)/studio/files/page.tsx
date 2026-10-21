@@ -22,6 +22,7 @@ import { requireCapability } from '../../_lib/session'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
 import { labelOr } from '../protection/labels'
+import { StudioLink } from '../../_ui/studio-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -304,9 +305,9 @@ export default async function FilesPage() {
                       <td>{counts.views}</td>
                       <td>{counts.downloads}</td>
                       <td>
-                        <Link href={adminHref(`/leads/${row.doc.requestId}`)}>
+                        <StudioLink role={session.role} path={`/leads/${row.doc.requestId}`}>
                           {t('files.lead_link')}
-                        </Link>
+                        </StudioLink>
                       </td>
                     </tr>
                   )

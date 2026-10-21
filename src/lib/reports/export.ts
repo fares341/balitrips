@@ -39,6 +39,8 @@ export interface ExportLabels {
   points: string
   hours: string
   generated: string
+  /** Phase 6: "not narrowed by the staff filter" (figures marked `staffNA`). */
+  staffNA?: string
 }
 
 export function reportCsv(
@@ -58,7 +60,7 @@ export function reportCsv(
       kpiText(kpi, intl, labels.hours).join(' · '),
       prevText(kpi, intl),
       changeText(kpi, kpiChange(kpi), intl, { newLabel: labels.newLabel, points: labels.points }),
-      kpi.definition,
+      kpi.staffNA && labels.staffNA ? `${kpi.definition} (${labels.staffNA})` : kpi.definition,
     ])
   }
   for (const block of result.blocks) {
@@ -130,7 +132,7 @@ export function reportHtml(
         .map((v) => `<div class="kv">${e(v)}</div>`)
         .join('')}${changeLabel ? `<div class="kc ${tone}">${e(changeLabel)}</div>` : ''}${
         kpi.note ? `<div class="kn">${e(kpi.note)}</div>` : ''
-      }</div>`
+      }${kpi.staffNA && labels.staffNA ? `<div class="kn">${e(labels.staffNA)}</div>` : ''}</div>`
     })
     .join('')
 

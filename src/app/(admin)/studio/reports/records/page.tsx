@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { filterQuery, parseReportFilters } from '@/lib/reports/filters'
 import { isRecordMetric, recordsTable } from '@/lib/reports/records'
-import { currencyOptions, supplierOptions } from '@/lib/reports/data'
+import { currencyOptions, staffOptions, supplierOptions } from '@/lib/reports/data'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { param } from '../../../_lib/result'
@@ -38,7 +38,7 @@ export default async function RecordsPage({
     const value = param(query, key)
     if (value) extra[key] = value.slice(0, 64)
   }
-  const [table, suppliers, currencies] = await Promise.all([
+  const [table, suppliers, currencies, staff] = await Promise.all([
     recordsTable(
       {
         metric,
@@ -52,6 +52,7 @@ export default async function RecordsPage({
     ),
     supplierOptions(),
     currencyOptions(),
+    staffOptions(),
   ])
   const { t } = ctx
 
@@ -81,13 +82,15 @@ export default async function RecordsPage({
         intl={ctx.intl}
         suppliers={suppliers}
         currencies={currencies}
+        staff={staff}
         extra={extra}
       />
       <section className="a-card" style={{ marginBlockStart: 14 }}>
         <p className="a-hint" style={{ marginBlockEnd: 10 }}>
           {t('rp.records_count', { n: table.rows.length })}
         </p>
-        <DataTable block={table} />
+        {table.staffNA ? <p className="rp-staff-na-note">{t('rp.staff_na')}</p> : null}
+        <DataTable block={table} role={session.role} staffNALabel={t('rp.staff_na')} />
       </section>
     </>
   )

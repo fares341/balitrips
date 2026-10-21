@@ -918,6 +918,17 @@
   color: var(--a-muted);
 }
 
+/* Phase 6: a price the viewer's role may not change (prices.write). */
+.a-input.a-locked,
+.a-select:disabled {
+  background: var(--a-surface-2, rgba(127, 127, 127, 0.08));
+  cursor: not-allowed;
+}
+
+.a-price-lock {
+  margin: 0 0 8px;
+}
+
 .a-input,
 .a-select,
 .a-textarea {

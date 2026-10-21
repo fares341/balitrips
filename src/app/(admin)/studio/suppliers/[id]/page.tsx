@@ -21,7 +21,15 @@ import type { Translate } from '../../../_i18n'
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
-import { Checkbox, Field, Select, TextArea, TextInput } from '../../../_ui/field'
+import {
+  Checkbox,
+  Field,
+  PriceLockNote,
+  priceInputProps,
+  Select,
+  TextArea,
+  TextInput,
+} from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table } from '../../../_ui/table'
@@ -46,6 +54,9 @@ export default async function SupplierPage({
   const { id } = await params
   const query = await searchParams
   const mayWrite = can(session.role, 'suppliers.write')
+  // Phase 6: a cost or sell price also needs `prices.write` (an accountant
+  // keeps the terms and the switch, not the money).
+  const lockPrices = !can(session.role, 'prices.write')
   const isNew = id === 'new'
   if (isNew && !mayWrite) notFound()
 
@@ -299,6 +310,7 @@ export default async function SupplierPage({
                   offer={offer}
                   choices={choices}
                   t={t}
+                  locked={lockPrices}
                 />
               ) : (
                 <OfferSummary key={offer.id} offer={offer} choices={choices} t={t} />
@@ -307,6 +319,8 @@ export default async function SupplierPage({
             {mayWrite ? (
               activityRows.length === 0 ? (
                 <Empty>{t('sup.no_activities')}</Empty>
+              ) : lockPrices ? (
+                <PriceLockNote />
               ) : (
                 <OfferForm supplierId={supplier.id} offer={null} choices={choices} t={t} />
               )
@@ -423,11 +437,13 @@ function OfferForm({
   offer,
   choices,
   t,
+  locked = false,
 }: {
   supplierId: string
   offer: OfferRow | null
   choices: readonly ActivityChoice[]
   t: Translate
+  locked?: boolean
 }) {
   const key = offer?.id ?? 'new'
   const currency = offer?.currency ?? 'USD'
@@ -473,6 +489,7 @@ function OfferForm({
           ))}
         </Select>
       </Field>
+      {locked ? <PriceLockNote /> : null}
       <div className="a-row">
         <Field label={t('sup.cost')} htmlFor={`cost-${key}`} hint={t('sup.cost_hint')}>
           <TextInput
@@ -482,6 +499,7 @@ function OfferForm({
             dir="ltr"
             defaultValue={offer ? formatMoneyInput(offer.costMinor, currency) : ''}
             required
+            {...priceInputProps(locked)}
           />
         </Field>
         <Field label={t('common.currency')} htmlFor={`currency-${key}`}>
@@ -493,6 +511,7 @@ function OfferForm({
             defaultValue={currency}
             style={{ textTransform: 'uppercase' }}
             required
+            {...priceInputProps(locked)}
           />
         </Field>
         <Field label={t('sup.sell_price')} htmlFor={`sell-${key}`} hint={t('sup.sell_price_hint')}>
@@ -506,6 +525,7 @@ function OfferForm({
                 ? formatMoneyInput(offer.sellPriceMinor, currency)
                 : ''
             }
+            {...priceInputProps(locked)}
           />
         </Field>
       </div>

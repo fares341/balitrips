@@ -227,17 +227,28 @@ export async function MoneyField({
   label,
   minor,
   currency,
+  locked,
 }: {
   minorName?: string
   currencyName?: string
   label?: string
   minor?: number | null
   currency?: string | null
+  /**
+   * Phase 6: the viewer lacks `prices.write`. The fields stay in the form
+   * (read-only, so the stored value posts back unchanged and the rest of the
+   * form still saves) and say why they cannot be edited.
+   */
+  locked?: boolean
 }) {
   const { t } = await uiI18n()
   return (
     <>
-      <Field label={label ?? t('common.price')} htmlFor={minorName} hint={t('ui.money_hint')}>
+      <Field
+        label={label ?? t('common.price')}
+        htmlFor={minorName}
+        hint={locked ? t('team.prices_locked') : t('ui.money_hint')}
+      >
         <TextInput
           id={minorName}
           name={minorName}
@@ -245,9 +256,16 @@ export async function MoneyField({
           dir="ltr"
           defaultValue={formatMoneyInput(minor ?? 0, currency ?? 'USD')}
           required
+          readOnly={locked}
+          aria-readonly={locked || undefined}
+          className={locked ? 'a-locked' : undefined}
         />
       </Field>
-      <Field label={t('common.currency')} htmlFor={currencyName} hint={t('ui.currency_hint')}>
+      <Field
+        label={t('common.currency')}
+        htmlFor={currencyName}
+        hint={locked ? undefined : t('ui.currency_hint')}
+      >
         <TextInput
           id={currencyName}
           name={currencyName}
@@ -256,8 +274,53 @@ export async function MoneyField({
           defaultValue={currency ?? 'USD'}
           style={{ textTransform: 'uppercase' }}
           required
+          readOnly={locked}
+          aria-readonly={locked || undefined}
+          className={locked ? 'a-locked' : undefined}
         />
       </Field>
     </>
+  )
+}
+
+/**
+ * Props for an input that holds a price: read-only with the lock styling when
+ * the viewer lacks `prices.write` (the value still posts back as stored).
+ */
+export function priceInputProps(locked: boolean | undefined) {
+  return locked ? { readOnly: true, 'aria-readonly': true, className: 'a-locked' } : {}
+}
+
+/**
+ * A select that decides a price (pricing mode, per person/booking…). Locked,
+ * it shows the stored choice disabled and posts it from a hidden input —
+ * a disabled control would not be submitted at all.
+ */
+export function PriceSelect({
+  locked,
+  name,
+  defaultValue,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+  locked?: boolean
+  name: string
+  defaultValue: string
+}) {
+  if (!locked) return <Select {...props} name={name} defaultValue={defaultValue} />
+  return (
+    <>
+      <Select {...props} defaultValue={defaultValue} disabled aria-readonly="true" />
+      <input type="hidden" name={name} value={defaultValue} />
+    </>
+  )
+}
+
+/** The short note shown beside price fields the viewer may not change. */
+export async function PriceLockNote() {
+  const { t } = await uiI18n()
+  return (
+    <p className="a-hint a-price-lock" role="note">
+      {t('team.prices_locked')}
+    </p>
   )
 }

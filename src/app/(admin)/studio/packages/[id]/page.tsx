@@ -12,6 +12,7 @@ import {
   packages,
   plans,
 } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { packageCost } from '@/lib/packages/cost'
 import { loadOffers } from '@/lib/suppliers/offers'
@@ -26,7 +27,7 @@ import {
   LocalizedField,
   LocalizedListField,
   MoneyField,
-  Select,
+  PriceSelect,
   StatusField,
   TextArea,
   TextInput,
@@ -56,6 +57,8 @@ export default async function PackageEditorPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const session = await requireCapability('content.write')
+  // Phase 6: without `prices.write` the price fields are read-only.
+  const lockPrices = !can(session.role, 'prices.write')
   const { t, locale, intl } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -218,16 +221,21 @@ export default async function PackageEditorPage({
         <div className="a-card">
           <h2>{t('packages.section_commercial')}</h2>
           <div className="a-row">
-            <MoneyField minor={pkg?.priceMinor} currency={pkg?.currency} />
+            <MoneyField minor={pkg?.priceMinor} currency={pkg?.currency} locked={lockPrices} />
             <Field
               label={t('packages.pricing_mode')}
               htmlFor="pricingMode"
               hint={t('packages.pricing_mode_hint')}
             >
-              <Select id="pricingMode" name="pricingMode" defaultValue={pkg?.pricingMode ?? 'flat'}>
+              <PriceSelect
+                id="pricingMode"
+                name="pricingMode"
+                defaultValue={pkg?.pricingMode ?? 'flat'}
+                locked={lockPrices}
+              >
                 <option value="flat">{t('packages.flat_option')}</option>
                 <option value="per_guest">{t('packages.per_guest_option')}</option>
-              </Select>
+              </PriceSelect>
             </Field>
           </div>
           <div className="a-row">

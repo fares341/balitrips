@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { driverCapacity, driverVehicles } from '@/db/schema'
 import { todayInBali } from '@/lib/booking-rules'
+import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import { formatMoneyInput } from '@/lib/money-input'
@@ -35,7 +36,9 @@ export default async function CapacityPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('capacity.write')
+  const session = await requireCapability('capacity.write')
+  // Phase 6: the day rate is a cost — read-only without `prices.write`.
+  const lockPrices = !can(session.role, 'prices.write')
   const { t, intl, locale: adminLocale } = await getAdminI18n()
   const params = await searchParams
 
@@ -135,9 +138,15 @@ export default async function CapacityPage({
           }}
         >
           {vehicles.map((vehicle) => (
-            <VehicleForm key={vehicle.id} id={vehicle.id} vehicle={vehicle} t={t} />
+            <VehicleForm
+              key={vehicle.id}
+              id={vehicle.id}
+              vehicle={vehicle}
+              t={t}
+              locked={lockPrices}
+            />
           ))}
-          <VehicleForm id="new" vehicle={null} t={t} />
+          <VehicleForm id="new" vehicle={null} t={t} locked={lockPrices} />
         </div>
       </div>
 
@@ -239,11 +248,14 @@ function VehicleForm({
   id,
   vehicle,
   t,
+  locked,
 }: {
   id: string
   vehicle: typeof driverVehicles.$inferSelect | null
   t: Translate
+  locked: boolean
 }) {
+  const lockedClass = locked ? 'a-input a-locked' : 'a-input'
   return (
     <form className="a-day" action={saveVehicle.bind(null, id)}>
       <div className="a-day-no">{vehicle ? vehicle.vehicleClass : t('capacity.add_class')}</div>
@@ -282,18 +294,21 @@ function VehicleForm({
         <div className="a-field">
           <label htmlFor={`rate-${id}`}>{t('capacity.day_rate')}</label>
           <input
-            className="a-input"
+            className={lockedClass}
+            readOnly={locked}
             id={`rate-${id}`}
             name="dayRateMinor"
             inputMode="decimal"
             dir="ltr"
             defaultValue={formatMoneyInput(vehicle?.dayRateMinor ?? 0, vehicle?.currency ?? 'USD')}
           />
+          {locked ? <span className="a-hint">{t('team.prices_locked')}</span> : null}
         </div>
         <div className="a-field">
           <label htmlFor={`cur-${id}`}>{t('common.currency')}</label>
           <input
-            className="a-input"
+            className={lockedClass}
+            readOnly={locked}
             id={`cur-${id}`}
             name="currency"
             maxLength={3}

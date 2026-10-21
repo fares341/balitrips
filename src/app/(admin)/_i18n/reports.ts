@@ -36,6 +36,10 @@ const section: Section = {
     'rp.type_custom': 'Custom itineraries',
     'rp.supplier': 'Supplier',
     'rp.all': 'All',
+    'rp.staff': 'Staff',
+    'rp.def_staff_filter':
+      'Staff: only orders handled by this team member — orders of customers whose account is assigned to them (customer page → "Looked after by"). Guest orders have no account and belong to nobody. Figures that are not about orders are greyed.',
+    'rp.staff_na': 'The staff filter does not apply to this figure',
     'rp.compare': 'Compare with the previous period',
     'rp.apply': 'Show',
     'rp.compared_with': 'compared with',
@@ -591,6 +595,10 @@ const section: Section = {
     'rp.type_custom': 'الجداول المخصصة',
     'rp.supplier': 'المورّد',
     'rp.all': 'الكل',
+    'rp.staff': 'الموظف',
+    'rp.def_staff_filter':
+      'الموظف: الطلبات التي يتولاها هذا الموظف فقط — أي طلبات العملاء المُسنَد حسابهم إليه (صفحة العميل ← «المسؤول عنه»). طلبات الزوّار بلا حساب لا تُنسب لأحد. الأرقام التي لا تخص الطلبات تظهر باهتة.',
+    'rp.staff_na': 'لا ينطبق عليه فلتر الموظف',
     'rp.compare': 'مقارنة بالفترة السابقة',
     'rp.apply': 'عرض',
     'rp.compared_with': 'مقارنة بـ',

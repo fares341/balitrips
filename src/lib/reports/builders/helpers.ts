@@ -3,7 +3,7 @@ import { formatMoney } from '@/lib/money'
 import { filterQuery, type ReportFilters } from '../filters'
 import { mainCurrency, type Money } from '../metrics'
 import { BALI_OFFSET_MS, bucketKeys, type Period } from '../period'
-import type { Cell, Kpi, LineChartBlock } from '../types'
+import type { Block, Cell, Kpi, LineChartBlock, ReportResult } from '../types'
 import type { Range } from '../data'
 
 export type Translate = (
@@ -161,4 +161,49 @@ export function countKpi(
 /** Bali time "now" as a date string, for snapshot notes. */
 export function baliToday(now: Date): string {
   return new Date(now.getTime() + BALI_OFFSET_MS).toISOString().slice(0, 10)
+}
+
+/**
+ * Phase 6: mark a figure the "Staff" filter cannot narrow (it is not about
+ * orders). With the filter off nothing changes; with it on, the Studio shows
+ * the figure greyed with "لا ينطبق عليه فلتر الموظف" instead of passing an
+ * unfiltered number off as the staff member's.
+ */
+export function notByStaff(filters: Pick<ReportFilters, 'staffId'>, item: Kpi): Kpi
+export function notByStaff(filters: Pick<ReportFilters, 'staffId'>, item: Block): Block
+export function notByStaff(
+  filters: Pick<ReportFilters, 'staffId'>,
+  item: Kpi | Block,
+): Kpi | Block {
+  return filters.staffId ? { ...item, staffNA: true } : item
+}
+
+/** Same, for some columns of a table (`keys`). */
+export function staffNAColumns<T extends { key: string }>(
+  filters: Pick<ReportFilters, 'staffId'>,
+  columns: T[],
+  keys: readonly string[],
+): (T & { staffNA?: boolean })[] {
+  if (!filters.staffId) return columns
+  return columns.map((column) =>
+    keys.includes(column.key) ? { ...column, staffNA: true } : column,
+  )
+}
+
+/** `notByStaff` for a list of blocks (all of them come from site events). */
+export function blocksNotByStaff(
+  filters: Pick<ReportFilters, 'staffId'>,
+  blocks: Block[],
+): Block[] {
+  return blocks.map((block) => notByStaff(filters, block))
+}
+
+/** With the staff filter on, its definition leads the report's footnotes (page, CSV, PDF, email). */
+export function withStaffNote(
+  result: ReportResult,
+  filters: Pick<ReportFilters, 'staffId'>,
+  t: Translate,
+): ReportResult {
+  if (!filters.staffId) return result
+  return { ...result, notes: [t('rp.def_staff_filter'), ...result.notes] }
 }

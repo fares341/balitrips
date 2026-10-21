@@ -28,6 +28,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { deleteCoupon, saveCoupon } from '../actions'
 import { couponStateOf } from '../labels'
+import { StudioLink } from '../../../_ui/studio-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export default async function CouponPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('discounts.write')
+  const session = await requireCapability('discounts.write')
   const { t, intl, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -344,9 +345,13 @@ export default async function CouponPage({
                 {redemptions.map((row) => (
                   <tr key={row.id}>
                     <td>
-                      <Link className="a-mono" href={adminHref(`/orders/${row.orderId}`)}>
+                      <StudioLink
+                        role={session.role}
+                        path={`/orders/${row.orderId}`}
+                        className="a-mono"
+                      >
                         {row.orderNumber}
-                      </Link>
+                      </StudioLink>
                     </td>
                     <td>
                       <When value={row.createdAt} />

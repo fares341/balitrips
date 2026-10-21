@@ -23,6 +23,14 @@ export interface ReportFilters {
   type: ProductType | null
   supplierId: string | null
   currency: string | null
+  /**
+   * Phase 6 "Staff" (الموظف): only orders handled by this team member — an
+   * order is handled by the staff member assigned to the customer's account
+   * (Studio → customer → "assigned to", `users.assigned_to_user_id`). Guest
+   * orders have no account and so no staff member. See `staffOrderSql` in
+   * ./data and `rp.def_staff_filter` in the Studio dictionary.
+   */
+  staffId: string | null
 }
 
 type Params = Record<string, string | string[] | undefined>
@@ -39,6 +47,7 @@ export function parseReportFilters(params: Params, now: Date = new Date()): Repo
   const type = one(params, 'type')
   const supplier = one(params, 'supplier')
   const currency = one(params, 'currency')
+  const staff = one(params, 'staff')
   return {
     period: resolvePeriod(
       { preset: one(params, 'period'), from: one(params, 'from'), to: one(params, 'to') },
@@ -49,6 +58,7 @@ export function parseReportFilters(params: Params, now: Date = new Date()): Repo
       type && (PRODUCT_TYPES as readonly string[]).includes(type) ? (type as ProductType) : null,
     supplierId: supplier && UUID.test(supplier) ? supplier : null,
     currency: currency && /^[A-Z]{3}$/.test(currency) ? currency : null,
+    staffId: staff && UUID.test(staff) ? staff : null,
   }
 }
 
@@ -63,6 +73,7 @@ export function filterParams(filters: ReportFilters): Record<string, string> {
   if (filters.type) out.type = filters.type
   if (filters.supplierId) out.supplier = filters.supplierId
   if (filters.currency) out.currency = filters.currency
+  if (filters.staffId) out.staff = filters.staffId
   return out
 }
 

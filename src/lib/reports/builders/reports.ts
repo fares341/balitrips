@@ -40,11 +40,13 @@ import {
   money,
   moneyKpi,
   moneyText,
+  notByStaff,
   numberText,
   percentText,
   previousKeys,
   rangeLabel,
   recordsHref,
+  staffNAColumns,
   type BuildContext,
 } from './helpers'
 import { groupMoney } from './overview'
@@ -76,6 +78,11 @@ const toDate = (value: unknown): Date | null => {
 }
 
 const loc = (intl: string) => (intl.startsWith('ar') ? 'ar' : 'en') as 'ar' | 'en'
+
+/** Phase 6: grey the listed figures when the staff filter is on (see `notByStaff`). */
+function markNotByStaff(filters: ReportFilters, kpis: Kpi[], ids: readonly string[]): Kpi[] {
+  return kpis.map((kpi) => (ids.includes(kpi.id) ? notByStaff(filters, kpi) : kpi))
+}
 
 async function salesLine(filters: ReportFilters, ctx: BuildContext, currency: string, id: string) {
   const p = filters.period
@@ -551,7 +558,12 @@ export async function buildItineraries(
     id: 'itineraries',
     title: t('rp.r_itineraries'),
     description: t('rp.r_itineraries_d'),
-    kpis,
+    // Views, downloads and view → sale come from site visits, not orders.
+    kpis: markNotByStaff(filters, kpis, [
+      'itinerary_views',
+      'itinerary_downloads',
+      'itinerary_conversion',
+    ]),
     blocks: [
       {
         kind: 'bar',
@@ -573,17 +585,21 @@ export async function buildItineraries(
         kind: 'table',
         id: 'itineraries',
         title: t('rp.table_itineraries'),
-        columns: [
-          { key: 'name', label: t('rp.col_itinerary') },
-          { key: 'sold', label: t('rp.col_sold'), num: true },
-          { key: 'money', label: t('rp.col_revenue'), num: true },
-          { key: 'views', label: t('rp.col_views'), num: true },
-          { key: 'days', label: t('rp.col_day_views'), num: true },
-          { key: 'maps', label: t('rp.col_map_clicks'), num: true },
-          { key: 'downloads', label: t('rp.col_downloads'), num: true },
-          { key: 'conversion', label: t('rp.col_conversion'), num: true },
-          { key: 'vip', label: t('rp.kpi_vip_attach'), num: true },
-        ],
+        columns: staffNAColumns(
+          filters,
+          [
+            { key: 'name', label: t('rp.col_itinerary') },
+            { key: 'sold', label: t('rp.col_sold'), num: true },
+            { key: 'money', label: t('rp.col_revenue'), num: true },
+            { key: 'views', label: t('rp.col_views'), num: true },
+            { key: 'days', label: t('rp.col_day_views'), num: true },
+            { key: 'maps', label: t('rp.col_map_clicks'), num: true },
+            { key: 'downloads', label: t('rp.col_downloads'), num: true },
+            { key: 'conversion', label: t('rp.col_conversion'), num: true },
+            { key: 'vip', label: t('rp.kpi_vip_attach'), num: true },
+          ],
+          ['views', 'days', 'maps', 'downloads', 'conversion'],
+        ),
         rows: [...rows.entries()]
           .sort((a, b) => b[1].sold - a[1].sold || b[1].views - a[1].views)
           .map(([id, r]) => ({
@@ -632,67 +648,72 @@ export async function buildVip(filters: ReportFilters, ctx: BuildContext): Promi
     id: 'vip',
     title: t('rp.r_vip'),
     description: t('rp.r_vip_d'),
-    kpis: [
-      countKpi(
-        'vip_active',
-        t('rp.kpi_vip_active'),
-        t('rp.def_vip_active'),
-        facts.activeUsers,
-        null,
-        '/entitlements',
-        { note: t('rp.note_now') },
-      ),
-      countKpi(
-        'vip_new',
-        t('rp.kpi_vip_new'),
-        t('rp.def_vip_new'),
-        granted(facts.granted),
-        factsPrev ? granted(factsPrev.granted) : null,
-        '/entitlements',
-      ),
-      countKpi(
-        'vip_expired',
-        t('rp.kpi_vip_expired'),
-        t('rp.def_vip_expired'),
-        facts.ended,
-        factsPrev?.ended ?? null,
-        '/entitlements',
-        { lowerIsBetter: true },
-      ),
-      countKpi(
-        'vip_renewed',
-        t('rp.kpi_vip_renewed'),
-        t('rp.def_vip_renewed'),
-        facts.renewed,
-        factsPrev?.renewed ?? null,
-        '/entitlements',
-      ),
-      {
-        ...moneyKpi(
-          'vip_sales',
-          t('rp.kpi_vip_sales'),
-          t('rp.def_vip_sales'),
-          vipMoney.money,
-          vipMoneyPrev?.money ?? null,
-          recordsHref('lines', filters, { group: 'vip' }),
+    // Access rows and map visits are not orders; only VIP sales are.
+    kpis: markNotByStaff(
+      filters,
+      [
+        countKpi(
+          'vip_active',
+          t('rp.kpi_vip_active'),
+          t('rp.def_vip_active'),
+          facts.activeUsers,
+          null,
+          '/entitlements',
+          { note: t('rp.note_now') },
         ),
-        note: t('rp.note_sold', { n: vipMoney.count }),
-      },
-      countKpi(
-        'free_to_vip',
-        t('rp.kpi_free_to_vip'),
-        t('rp.def_free_to_vip'),
-        rate(upgrade.upgraded, upgrade.freeUsers),
-        upgradePrev ? rate(upgradePrev.upgraded, upgradePrev.freeUsers) : null,
-        undefined,
+        countKpi(
+          'vip_new',
+          t('rp.kpi_vip_new'),
+          t('rp.def_vip_new'),
+          granted(facts.granted),
+          factsPrev ? granted(factsPrev.granted) : null,
+          '/entitlements',
+        ),
+        countKpi(
+          'vip_expired',
+          t('rp.kpi_vip_expired'),
+          t('rp.def_vip_expired'),
+          facts.ended,
+          factsPrev?.ended ?? null,
+          '/entitlements',
+          { lowerIsBetter: true },
+        ),
+        countKpi(
+          'vip_renewed',
+          t('rp.kpi_vip_renewed'),
+          t('rp.def_vip_renewed'),
+          facts.renewed,
+          factsPrev?.renewed ?? null,
+          '/entitlements',
+        ),
         {
-          kind: 'percent',
-          note: t('rp.note_conversion', { buyers: upgrade.upgraded, viewers: upgrade.freeUsers }),
+          ...moneyKpi(
+            'vip_sales',
+            t('rp.kpi_vip_sales'),
+            t('rp.def_vip_sales'),
+            vipMoney.money,
+            vipMoneyPrev?.money ?? null,
+            recordsHref('lines', filters, { group: 'vip' }),
+          ),
+          note: t('rp.note_sold', { n: vipMoney.count }),
         },
-      ),
-    ],
+        countKpi(
+          'free_to_vip',
+          t('rp.kpi_free_to_vip'),
+          t('rp.def_free_to_vip'),
+          rate(upgrade.upgraded, upgrade.freeUsers),
+          upgradePrev ? rate(upgradePrev.upgraded, upgradePrev.freeUsers) : null,
+          undefined,
+          {
+            kind: 'percent',
+            note: t('rp.note_conversion', { buyers: upgrade.upgraded, viewers: upgrade.freeUsers }),
+          },
+        ),
+      ],
+      ['vip_active', 'vip_new', 'vip_expired', 'vip_renewed', 'free_to_vip'],
+    ),
     blocks: [
-      {
+      notByStaff(filters, {
         kind: 'bar',
         id: 'vip_sources',
         title: t('rp.chart_vip_sources'),
@@ -702,8 +723,8 @@ export async function buildVip(filters: ReportFilters, ctx: BuildContext): Promi
           value: facts.granted.get(key) ?? 0,
           display: numberText(facts.granted.get(key) ?? 0, intl),
         })),
-      },
-      {
+      }),
+      notByStaff(filters, {
         kind: 'table',
         id: 'top_places',
         title: t('rp.table_top_places'),
@@ -721,8 +742,8 @@ export async function buildVip(filters: ReportFilters, ctx: BuildContext): Promi
           views: cell(numberText(row.views, intl), row.views),
         })),
         empty: t('rp.empty_events'),
-      },
-      {
+      }),
+      notByStaff(filters, {
         kind: 'bar',
         id: 'top_regions',
         title: t('rp.chart_top_regions'),
@@ -732,7 +753,7 @@ export async function buildVip(filters: ReportFilters, ctx: BuildContext): Promi
           value: row.views,
           display: numberText(row.views, intl),
         })),
-      },
+      }),
     ],
     notes: [t('rp.note_consent'), t('rp.note_no_location')],
   }
@@ -960,7 +981,7 @@ export async function buildCustomers(
   const [[split, splitPrev], [orders, ordersPrev], totals] = await Promise.all([
     both(filters, (r) => customerSplit(r, filters)),
     both(filters, (r) => paidOrders(r, filters)),
-    customerTotals(ctx.now),
+    customerTotals(ctx.now, filters),
   ])
   const buyers = split.newCount + split.returningCount
   const ltv = lifetimeValue(totals)
@@ -1123,62 +1144,71 @@ export async function buildMarketing(
     id: 'marketing',
     title: t('rp.r_marketing'),
     description: t('rp.r_marketing_d'),
-    kpis: [
-      countKpi(
-        'visitors',
-        t('rp.kpi_visitors'),
-        t('rp.def_visitors'),
-        visits,
-        stepsPrev?.get('page_view') ?? null,
-      ),
-      countKpi(
-        'site_conversion',
-        t('rp.kpi_site_conversion'),
-        t('rp.def_site_conversion'),
-        rate(purchase, visits),
-        stepsPrev ? rate(stepsPrev.get('purchase') ?? 0, stepsPrev.get('page_view') ?? 0) : null,
-        undefined,
-        { kind: 'percent' },
-      ),
-      countKpi(
-        'checkouts_started',
-        t('rp.kpi_checkouts_started'),
-        t('rp.def_checkouts_started'),
-        abandoned.started,
-        abandonedPrev?.started ?? null,
-      ),
-      countKpi(
-        'abandoned',
-        t('rp.kpi_abandoned'),
-        t('rp.def_abandoned'),
-        abandoned.abandoned,
-        abandonedPrev?.abandoned ?? null,
-        undefined,
-        { lowerIsBetter: true },
-      ),
-      countKpi(
-        'reminders',
-        t('rp.kpi_reminders'),
-        t('rp.def_reminders'),
-        abandoned.reminded,
-        abandonedPrev?.reminded ?? null,
-        '/marketing',
-      ),
-    ],
+    // Visits, the funnel and abandoned checkouts are site events, not orders.
+    kpis: markNotByStaff(
+      filters,
+      [
+        countKpi(
+          'visitors',
+          t('rp.kpi_visitors'),
+          t('rp.def_visitors'),
+          visits,
+          stepsPrev?.get('page_view') ?? null,
+        ),
+        countKpi(
+          'site_conversion',
+          t('rp.kpi_site_conversion'),
+          t('rp.def_site_conversion'),
+          rate(purchase, visits),
+          stepsPrev ? rate(stepsPrev.get('purchase') ?? 0, stepsPrev.get('page_view') ?? 0) : null,
+          undefined,
+          { kind: 'percent' },
+        ),
+        countKpi(
+          'checkouts_started',
+          t('rp.kpi_checkouts_started'),
+          t('rp.def_checkouts_started'),
+          abandoned.started,
+          abandonedPrev?.started ?? null,
+        ),
+        countKpi(
+          'abandoned',
+          t('rp.kpi_abandoned'),
+          t('rp.def_abandoned'),
+          abandoned.abandoned,
+          abandonedPrev?.abandoned ?? null,
+          undefined,
+          { lowerIsBetter: true },
+        ),
+        countKpi(
+          'reminders',
+          t('rp.kpi_reminders'),
+          t('rp.def_reminders'),
+          abandoned.reminded,
+          abandonedPrev?.reminded ?? null,
+          '/marketing',
+        ),
+      ],
+      ['visitors', 'site_conversion', 'checkouts_started', 'abandoned', 'reminders'],
+    ),
     blocks: [
       {
         kind: 'table',
         id: 'sources',
         title: t('rp.table_sources', { currency }),
         definition: t('rp.def_sources'),
-        columns: [
-          { key: 'source', label: t('rp.col_source') },
-          { key: 'campaign', label: t('rp.col_campaign') },
-          { key: 'visitors', label: t('rp.col_visitors'), num: true },
-          { key: 'orders', label: t('rp.col_orders'), num: true },
-          { key: 'revenue', label: t('rp.col_revenue'), num: true },
-          { key: 'conversion', label: t('rp.col_conversion'), num: true },
-        ],
+        columns: staffNAColumns(
+          filters,
+          [
+            { key: 'source', label: t('rp.col_source') },
+            { key: 'campaign', label: t('rp.col_campaign') },
+            { key: 'visitors', label: t('rp.col_visitors'), num: true },
+            { key: 'orders', label: t('rp.col_orders'), num: true },
+            { key: 'revenue', label: t('rp.col_revenue'), num: true },
+            { key: 'conversion', label: t('rp.col_conversion'), num: true },
+          ],
+          ['visitors', 'conversion'],
+        ),
         rows: [...rows.values()]
           .sort((a, b) => b.minor - a.minor || b.visitors - a.visitors)
           .map((r) => ({
@@ -1194,7 +1224,7 @@ export async function buildMarketing(
           })),
         empty: t('rp.empty'),
       },
-      {
+      notByStaff(filters, {
         kind: 'bar',
         id: 'funnel',
         title: t('rp.chart_funnel'),
@@ -1211,7 +1241,7 @@ export async function buildMarketing(
                 : `${numberText(n, intl)} · ${percentText(rate(n, before), intl)}`,
           }
         }),
-      },
+      }),
     ],
     notes: [t('rp.note_consent'), t('rp.note_last_touch')],
   }
@@ -1365,9 +1395,9 @@ export async function buildOperations(
   const range: Range = currentRange(filters)
   const [failed, unprocessed, stale, [denied, deniedPrev], [errors, errorsPrev]] =
     await Promise.all([
-      failedPayments(range),
-      unprocessedBookings(ctx.now),
-      staleUnpaidOrders(ctx.now),
+      failedPayments(range, filters),
+      unprocessedBookings(ctx.now, filters),
+      staleUnpaidOrders(ctx.now, filters),
       both(filters, (r) => deniedDownloads(r)),
       both(filters, (r) => mapErrors(r)),
     ])
@@ -1383,53 +1413,58 @@ export async function buildOperations(
     id: 'operations',
     title: t('rp.r_operations'),
     description: t('rp.r_operations_d'),
-    kpis: [
-      countKpi(
-        'failed_payments',
-        t('rp.kpi_payment_failed'),
-        t('rp.def_payment_failed'),
-        failed.length,
-        null,
-        recordsHref('payments', filters, { status: 'failed' }),
-        { lowerIsBetter: true },
-      ),
-      countKpi(
-        'unprocessed',
-        t('rp.kpi_unprocessed'),
-        t('rp.def_unprocessed', { hours: UNPROCESSED_AFTER_HOURS }),
-        unprocessed.length,
-        null,
-        undefined,
-        { lowerIsBetter: true, note: t('rp.note_now') },
-      ),
-      countKpi(
-        'stale_unpaid',
-        t('rp.kpi_stale_unpaid'),
-        t('rp.def_stale_unpaid'),
-        stale,
-        null,
-        '/orders?status=pending',
-        { lowerIsBetter: true, note: t('rp.note_now') },
-      ),
-      countKpi(
-        'denied_downloads',
-        t('rp.kpi_denied_downloads'),
-        t('rp.def_denied_downloads'),
-        denied,
-        deniedPrev,
-        '/protection/activity',
-        { lowerIsBetter: true },
-      ),
-      countKpi(
-        'map_errors',
-        t('rp.kpi_map_errors'),
-        t('rp.def_map_errors'),
-        errorTotal(errors),
-        errorsPrev ? errorTotal(errorsPrev) : null,
-        '/map-analytics',
-        { lowerIsBetter: true },
-      ),
-    ],
+    // Refused downloads and map errors are not orders.
+    kpis: markNotByStaff(
+      filters,
+      [
+        countKpi(
+          'failed_payments',
+          t('rp.kpi_payment_failed'),
+          t('rp.def_payment_failed'),
+          failed.length,
+          null,
+          recordsHref('payments', filters, { status: 'failed' }),
+          { lowerIsBetter: true },
+        ),
+        countKpi(
+          'unprocessed',
+          t('rp.kpi_unprocessed'),
+          t('rp.def_unprocessed', { hours: UNPROCESSED_AFTER_HOURS }),
+          unprocessed.length,
+          null,
+          undefined,
+          { lowerIsBetter: true, note: t('rp.note_now') },
+        ),
+        countKpi(
+          'stale_unpaid',
+          t('rp.kpi_stale_unpaid'),
+          t('rp.def_stale_unpaid'),
+          stale,
+          null,
+          '/orders?status=pending',
+          { lowerIsBetter: true, note: t('rp.note_now') },
+        ),
+        countKpi(
+          'denied_downloads',
+          t('rp.kpi_denied_downloads'),
+          t('rp.def_denied_downloads'),
+          denied,
+          deniedPrev,
+          '/protection/activity',
+          { lowerIsBetter: true },
+        ),
+        countKpi(
+          'map_errors',
+          t('rp.kpi_map_errors'),
+          t('rp.def_map_errors'),
+          errorTotal(errors),
+          errorsPrev ? errorTotal(errorsPrev) : null,
+          '/map-analytics',
+          { lowerIsBetter: true },
+        ),
+      ],
+      ['denied_downloads', 'map_errors'],
+    ),
     blocks: [
       {
         kind: 'table',
@@ -1476,7 +1511,7 @@ export async function buildOperations(
         })),
         empty: t('rp.empty_good'),
       },
-      {
+      notByStaff(filters, {
         kind: 'bar',
         id: 'map_errors',
         title: t('rp.kpi_map_errors'),
@@ -1486,7 +1521,7 @@ export async function buildOperations(
           value: row.n,
           display: numberText(row.n, intl),
         })),
-      },
+      }),
     ],
     notes: [t('rp.note_bali_time')],
   }

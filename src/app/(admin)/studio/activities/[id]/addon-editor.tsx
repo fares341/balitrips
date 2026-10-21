@@ -3,7 +3,17 @@ import { pick } from '@/lib/content/localize'
 
 import { getAdminI18n } from '../../../_lib/i18n'
 import type { Option } from '../../../_lib/lookups'
-import { Checkbox, Field, LocalizedField, MoneyField, Select, TextInput } from '../../../_ui/field'
+import {
+  Checkbox,
+  Field,
+  LocalizedField,
+  MoneyField,
+  PriceLockNote,
+  PriceSelect,
+  priceInputProps,
+  Select,
+  TextInput,
+} from '../../../_ui/field'
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { addActivityAddon, removeActivityAddon, saveActivityAddon } from '../actions'
@@ -37,12 +47,15 @@ export async function AddonEditor({
   addons,
   packages,
   currency,
+  locked = false,
 }: {
   activityId: string
   addons: readonly AddonRow[]
   /** This activity's packages, for "only with these packages". */
   packages: readonly Option[]
   currency: string
+  /** The viewer lacks `prices.write`: prices read-only (a new extra starts free). */
+  locked?: boolean
 }) {
   const { t, locale } = await getAdminI18n()
   const label = (name: Localized) => pick(name, locale)
@@ -53,11 +66,11 @@ export async function AddonEditor({
       htmlFor={id}
       hint={t('activities.addon_pricing_hint')}
     >
-      <Select id={id} name="pricing" defaultValue={value}>
+      <PriceSelect id={id} name="pricing" defaultValue={value} locked={locked}>
         <option value="per_person">{t('activities.addon_per_person')}</option>
         <option value="per_booking">{t('activities.addon_per_booking')}</option>
         <option value="per_qty">{t('activities.addon_per_qty')}</option>
-      </Select>
+      </PriceSelect>
     </Field>
   )
 
@@ -89,6 +102,7 @@ export async function AddonEditor({
           : t('activities.addons_count', { count: addons.length })}
       </p>
       <p className="a-hint">{t('activities.addons_rules')}</p>
+      {locked ? <PriceLockNote /> : null}
 
       <div
         style={{
@@ -134,7 +148,7 @@ export async function AddonEditor({
               label={t('activities.addon_description')}
               value={addon.description}
             />
-            <MoneyField minor={addon.priceMinor} currency={addon.currency} />
+            <MoneyField minor={addon.priceMinor} currency={addon.currency} locked={locked} />
             <div className="a-row">
               {pricingSelect(`pricing_${addon.id}`, addon.pricing)}
               <Field
@@ -149,6 +163,7 @@ export async function AddonEditor({
                   min={1}
                   dir="ltr"
                   defaultValue={addon.maxQty ?? ''}
+                  {...priceInputProps(locked)}
                 />
               </Field>
               <Field label={t('activities.sort_order')} htmlFor={`sort_${addon.id}`}>
@@ -189,7 +204,7 @@ export async function AddonEditor({
           </div>
           <LocalizedField name="name" label={t('activities.addon_name')} required />
           <LocalizedField name="description" label={t('activities.addon_description')} />
-          <MoneyField currency={currency} />
+          <MoneyField currency={currency} locked={locked} />
           <div className="a-row">
             {pricingSelect('new_addon_pricing', 'per_booking')}
             <Field
@@ -197,7 +212,14 @@ export async function AddonEditor({
               htmlFor="new_addon_max"
               hint={t('activities.addon_max_qty_hint')}
             >
-              <TextInput id="new_addon_max" name="maxQty" type="number" min={1} dir="ltr" />
+              <TextInput
+                id="new_addon_max"
+                name="maxQty"
+                type="number"
+                min={1}
+                dir="ltr"
+                {...priceInputProps(locked)}
+              />
             </Field>
             <Field label={t('activities.sort_order')} htmlFor="new_addon_sort">
               <TextInput

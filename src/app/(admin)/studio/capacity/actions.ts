@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { driverCapacity, driverVehicles } from '@/db/schema'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -74,6 +75,14 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
             )[0] ?? null)
 
       if (id !== 'new' && !before) throw new Error(t('capacity.err_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['dayRateMinor', 'currency'] : ['dayRateMinor'],
+        t('team.err_prices'),
+      )
 
       const [row] =
         id === 'new'

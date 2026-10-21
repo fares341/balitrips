@@ -4,12 +4,21 @@ import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
 import { activities, activityAddonLinks, addonsLibrary } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { requireCapability } from '../../../_lib/session'
-import { Checkbox, Field, LocalizedField, MoneyField, Select, TextInput } from '../../../_ui/field'
+import {
+  Checkbox,
+  Field,
+  LocalizedField,
+  MoneyField,
+  PriceSelect,
+  priceInputProps,
+  TextInput,
+} from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
@@ -25,7 +34,9 @@ export default async function LibraryAddonPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('content.write')
+  const session = await requireCapability('content.write')
+  // Phase 6: without `prices.write` the price fields are read-only.
+  const locked = !can(session.role, 'prices.write')
   const { t, locale } = await getAdminI18n()
   const { id } = await params
   const query = await searchParams
@@ -77,7 +88,7 @@ export default async function LibraryAddonPage({
             rows={2}
           />
           <div className="a-row">
-            <MoneyField minor={addon?.priceMinor} currency={addon?.currency} />
+            <MoneyField minor={addon?.priceMinor} currency={addon?.currency} locked={locked} />
           </div>
           <LocalizedField
             name="unitLabel"
@@ -87,11 +98,16 @@ export default async function LibraryAddonPage({
           />
           <div className="a-row">
             <Field label={t('addons.pricing')} htmlFor="pricing">
-              <Select id="pricing" name="pricing" defaultValue={addon?.pricing ?? 'per_booking'}>
+              <PriceSelect
+                id="pricing"
+                name="pricing"
+                defaultValue={addon?.pricing ?? 'per_booking'}
+                locked={locked}
+              >
                 <option value="per_person">{t('activities.addon_per_person')}</option>
                 <option value="per_booking">{t('activities.addon_per_booking')}</option>
                 <option value="per_qty">{t('activities.addon_per_qty')}</option>
-              </Select>
+              </PriceSelect>
             </Field>
             <Field label={t('addons.max_qty')} htmlFor="maxQty" hint={t('addons.max_qty_hint')}>
               <TextInput
@@ -101,6 +117,7 @@ export default async function LibraryAddonPage({
                 min={1}
                 dir="ltr"
                 defaultValue={addon?.maxQty ?? ''}
+                {...priceInputProps(locked)}
               />
             </Field>
             <Field label={t('addons.sort_order')} htmlFor="sortOrder">

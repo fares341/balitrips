@@ -49,7 +49,7 @@ from yet; the future portal must enrol them before showing anything.
 | `payments.read` | ✓ | ✓ | ✓ |  |  |  |  | ✓ | Payments |
 | `entitlements.grant` | ✓ |  |  |  |  |  |  |  | Manual map/VIP grants |
 | `capacity.write` | ✓ | ✓ | ✓ | ✓ |  |  |  |  | Capacity, availability calendar |
-| `prices.write` (new) | ✓ | ✓ | ✓ |  |  |  |  |  | Package prices, seasonal prices, CSV cost import |
+| `prices.write` (new) | ✓ | ✓ | ✓ |  |  |  |  |  | Every stored price or cost: activity "from" price, package and child prices, seasonal prices, legacy and library add-on prices (and per-activity overrides), itinerary and package prices, plan prices, supplier offer cost and sell price (with `suppliers.write`), vehicle day rates, CSV cost import (`src/lib/auth/price-guard.ts`) |
 | `customers.read` | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ | Customers, entitlements list, duplicates |
 | `customers.export` | ✓ |  |  |  |  |  |  |  | CSV exports of personal data |
 | `customers.merge` | ✓ |  |  |  |  |  |  |  | Merge accounts |
@@ -74,8 +74,19 @@ from yet; the future portal must enrol them before showing anything.
 Staff hold all three, so a
 staff account can do exactly what it could before; the split exists so that a
 content editor cannot change prices and a support agent cannot confirm
-bookings. Without `prices.write`, the package editor still saves names, texts
-and options but refuses a changed price ("Your role cannot change prices").
+bookings. Without `prices.write`, every editor above still saves names, texts
+and options but the server refuses a changed price ("Your role cannot change
+prices"; `assertPriceChangeAllowed` in `src/lib/auth/price-guard.ts`, unit
+tested in `price-guard.test.ts`). The Studio shows those price fields
+read-only with a short note for such a role, so an ordinary save posts the
+stored price back unchanged. Discount codes keep `discounts.write`.
+
+**Links follow access too.** `src/app/(admin)/_lib/route-access.ts` mirrors
+the capability every Studio page requires (a unit test reads each page and
+fails on drift); in-page links, dashboard shortcuts and report drill-downs to
+a page the viewer cannot open are hidden or shown as plain text
+(`StudioLink`). `scripts/admin-check.mjs` requests every visible Studio link
+as each role and reports any that answers 404.
 
 ## Team management rules (Studio → Team & permissions)
 

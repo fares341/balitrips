@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { buildMapAnalytics } from '@/lib/reports/builders/map'
-import { currencyOptions } from '@/lib/reports/data'
+import { currencyOptions, staffOptions } from '@/lib/reports/data'
 import { parseReportFilters } from '@/lib/reports/filters'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -23,9 +23,10 @@ export default async function MapAnalyticsPage({
   const query = await searchParams
   const ctx = await buildContext(session.role)
   const filters = parseReportFilters(query, ctx.now)
-  const [result, currencies] = await Promise.all([
+  const [result, currencies, staff] = await Promise.all([
     buildMapAnalytics(filters, ctx),
     currencyOptions(),
+    staffOptions(),
   ])
   const { t } = ctx
   return (
@@ -46,10 +47,18 @@ export default async function MapAnalyticsPage({
         intl={ctx.intl}
         suppliers={[]}
         currencies={currencies}
+        staff={staff}
         showType={false}
         showSupplier={false}
       />
-      <ReportBody result={result} t={t} intl={ctx.intl} rtl={ctx.rtl} wideFirstChart={false} />
+      <ReportBody
+        result={result}
+        t={t}
+        intl={ctx.intl}
+        rtl={ctx.rtl}
+        wideFirstChart={false}
+        role={session.role}
+      />
     </>
   )
 }

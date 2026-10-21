@@ -7,6 +7,9 @@ import {
   LocalizedField,
   LocalizedListField,
   MoneyField,
+  PriceLockNote,
+  PriceSelect,
+  priceInputProps,
   Select,
   StatusField,
   TextInput,
@@ -59,12 +62,15 @@ export async function TierEditor({
   tiers,
   currency,
   addons,
+  locked = false,
 }: {
   activityId: string
   tiers: readonly TierRow[]
   currency: string
   /** This activity's add-ons, for "included in this package". */
   addons: readonly Option[]
+  /** The viewer lacks `prices.write`: prices read-only, no new or removed packages. */
+  locked?: boolean
 }) {
   const { t } = await getAdminI18n()
   // Rows saved before migration 0013 may still say per_guest / flat.
@@ -82,6 +88,7 @@ export async function TierEditor({
           ? t('activities.tiers_empty')
           : t('activities.tiers_count', { count: tiers.length })}
       </p>
+      {locked ? <PriceLockNote /> : null}
 
       <div
         style={{
@@ -110,13 +117,15 @@ export async function TierEditor({
                 <button className="a-btn ghost small" type="submit">
                   {t('activities.tier_save')}
                 </button>
-                <button
-                  className="a-btn danger small"
-                  type="submit"
-                  formAction={removeActivityTier.bind(null, activityId, tier.id)}
-                >
-                  {t('common.remove')}
-                </button>
+                {locked ? null : (
+                  <button
+                    className="a-btn danger small"
+                    type="submit"
+                    formAction={removeActivityTier.bind(null, activityId, tier.id)}
+                  >
+                    {t('common.remove')}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -133,7 +142,7 @@ export async function TierEditor({
               hint={t('activities.tier_tagline_hint')}
             />
 
-            <MoneyField minor={tier.priceMinor} currency={tier.currency} />
+            <MoneyField minor={tier.priceMinor} currency={tier.currency} locked={locked} />
             <Field
               label={t('av.child_price')}
               htmlFor={`childPrice_${tier.id}`}
@@ -149,6 +158,7 @@ export async function TierEditor({
                     ? ''
                     : formatMoneyInput(tier.childPriceMinor, tier.currency)
                 }
+                {...priceInputProps(locked)}
               />
             </Field>
 
@@ -158,15 +168,16 @@ export async function TierEditor({
                 htmlFor={`pricingMode_${tier.id}`}
                 hint={t('activities.pricing_mode_hint')}
               >
-                <Select
+                <PriceSelect
                   id={`pricingMode_${tier.id}`}
                   name="pricingMode"
                   defaultValue={mode(tier.pricingMode)}
+                  locked={locked}
                 >
                   <option value="per_person">{t('activities.per_person')}</option>
                   <option value="per_group">{t('activities.per_group')}</option>
                   <option value="per_couple">{t('ae.per_couple')}</option>
-                </Select>
+                </PriceSelect>
               </Field>
 
               <Field
@@ -196,6 +207,7 @@ export async function TierEditor({
                   min={1}
                   dir="ltr"
                   defaultValue={tier.groupMax ?? ''}
+                  {...priceInputProps(locked)}
                 />
               </Field>
 
@@ -276,78 +288,80 @@ export async function TierEditor({
 
         {/* Add. Separate form so a blank new-tier row can never be submitted
             by pressing Enter inside an existing tier's fields. */}
-        <form className="a-day" action={addActivityTier.bind(null, activityId)}>
-          <div className="a-day-head">
-            <div className="a-day-no">{t('activities.tier_new')}</div>
-            <div className="a-actions">
-              <button className="a-btn small" type="submit">
-                {t('activities.tier_add')}
-              </button>
+        {locked ? null : (
+          <form className="a-day" action={addActivityTier.bind(null, activityId)}>
+            <div className="a-day-head">
+              <div className="a-day-no">{t('activities.tier_new')}</div>
+              <div className="a-actions">
+                <button className="a-btn small" type="submit">
+                  {t('activities.tier_add')}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <Field
-            label={t('activities.tier_key')}
-            htmlFor="new_tier_key"
-            hint={t('activities.tier_key_hint')}
-          >
-            <TextInput id="new_tier_key" name="key" placeholder="premium" required />
-          </Field>
-
-          <LocalizedField name="name" label={t('activities.tier_name')} required />
-          <LocalizedField name="tagline" label={t('activities.tier_tagline')} />
-
-          <MoneyField currency={currency} />
-
-          <div className="a-row">
-            <Field label={t('activities.pricing_mode')} htmlFor="new_tier_mode">
-              <Select id="new_tier_mode" name="pricingMode" defaultValue="per_person">
-                <option value="per_person">{t('activities.per_person')}</option>
-                <option value="per_group">{t('activities.per_group')}</option>
-                <option value="per_couple">{t('ae.per_couple')}</option>
-              </Select>
-            </Field>
             <Field
-              label={t('ae.tier_min_guests')}
-              htmlFor="new_tier_min"
-              hint={t('ae.tier_min_guests_hint')}
+              label={t('activities.tier_key')}
+              htmlFor="new_tier_key"
+              hint={t('activities.tier_key_hint')}
             >
-              <TextInput id="new_tier_min" name="minGuests" type="number" min={1} dir="ltr" />
+              <TextInput id="new_tier_key" name="key" placeholder="premium" required />
             </Field>
-            <Field
-              label={t('activities.group_max')}
-              htmlFor="new_tier_group"
-              hint={t('activities.group_max_hint')}
-            >
-              <TextInput id="new_tier_group" name="groupMax" type="number" min={1} dir="ltr" />
-            </Field>
-            <Field
-              label={t('activities.max_guests')}
-              htmlFor="new_tier_max"
-              hint={t('activities.tier_max_guests_new_hint')}
-            >
-              <TextInput id="new_tier_max" name="maxGuests" type="number" min={1} />
-            </Field>
-          </div>
 
-          <Checkbox name="available" label={t('activities.pkg_available')} defaultChecked />
-          <Checkbox name="isPopular" label={t('activities.tier_popular')} />
-          <LocalizedListField name="includes" label={t('activities.pkg_includes')} />
-          <LocalizedListField name="excludes" label={t('activities.pkg_excludes')} />
-          <OptionChecklist
-            name="includesAddons"
-            label={t('activities.pkg_includes_addons')}
-            options={addons}
-            values={[]}
-          />
+            <LocalizedField name="name" label={t('activities.tier_name')} required />
+            <LocalizedField name="tagline" label={t('activities.tier_tagline')} />
 
-          <LocalizedListField name="features" label={t('activities.tier_features')} />
-          <LocalizedListField name="highlights" label={t('activities.tier_highlights')} />
-          <LocalizedListField name="details" label={t('activities.tier_details')} />
-          <LocalizedListField name="notes" label={t('activities.tier_notes')} />
+            <MoneyField currency={currency} />
 
-          <StatusField />
-        </form>
+            <div className="a-row">
+              <Field label={t('activities.pricing_mode')} htmlFor="new_tier_mode">
+                <Select id="new_tier_mode" name="pricingMode" defaultValue="per_person">
+                  <option value="per_person">{t('activities.per_person')}</option>
+                  <option value="per_group">{t('activities.per_group')}</option>
+                  <option value="per_couple">{t('ae.per_couple')}</option>
+                </Select>
+              </Field>
+              <Field
+                label={t('ae.tier_min_guests')}
+                htmlFor="new_tier_min"
+                hint={t('ae.tier_min_guests_hint')}
+              >
+                <TextInput id="new_tier_min" name="minGuests" type="number" min={1} dir="ltr" />
+              </Field>
+              <Field
+                label={t('activities.group_max')}
+                htmlFor="new_tier_group"
+                hint={t('activities.group_max_hint')}
+              >
+                <TextInput id="new_tier_group" name="groupMax" type="number" min={1} dir="ltr" />
+              </Field>
+              <Field
+                label={t('activities.max_guests')}
+                htmlFor="new_tier_max"
+                hint={t('activities.tier_max_guests_new_hint')}
+              >
+                <TextInput id="new_tier_max" name="maxGuests" type="number" min={1} />
+              </Field>
+            </div>
+
+            <Checkbox name="available" label={t('activities.pkg_available')} defaultChecked />
+            <Checkbox name="isPopular" label={t('activities.tier_popular')} />
+            <LocalizedListField name="includes" label={t('activities.pkg_includes')} />
+            <LocalizedListField name="excludes" label={t('activities.pkg_excludes')} />
+            <OptionChecklist
+              name="includesAddons"
+              label={t('activities.pkg_includes_addons')}
+              options={addons}
+              values={[]}
+            />
+
+            <LocalizedListField name="features" label={t('activities.tier_features')} />
+            <LocalizedListField name="highlights" label={t('activities.tier_highlights')} />
+            <LocalizedListField name="details" label={t('activities.tier_details')} />
+            <LocalizedListField name="notes" label={t('activities.tier_notes')} />
+
+            <StatusField />
+          </form>
+        )}
       </div>
     </div>
   )

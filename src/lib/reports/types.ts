@@ -27,9 +27,18 @@ export interface Kpi {
   lowerIsBetter?: boolean
   /** Shown under the number, e.g. "now" for snapshot figures. */
   note?: string
+  /**
+   * Phase 6: the "Staff" filter is on and this figure is not about orders
+   * (site visits, tickets, live availability…), so it cannot be narrowed to
+   * one staff member. Shown greyed with "لا ينطبق عليه فلتر الموظف" rather
+   * than silently unfiltered.
+   */
+  staffNA?: boolean
 }
 
 export interface LineChartBlock {
+  /** Phase 6: see `Kpi.staffNA`. */
+  staffNA?: boolean
   kind: 'line'
   id: string
   title: string
@@ -46,6 +55,8 @@ export interface LineChartBlock {
 }
 
 export interface BarChartBlock {
+  /** Phase 6: see `Kpi.staffNA`. */
+  staffNA?: boolean
   kind: 'bar'
   id: string
   title: string
@@ -67,11 +78,14 @@ export interface Cell {
 }
 
 export interface TableBlock {
+  /** Phase 6: see `Kpi.staffNA`. */
+  staffNA?: boolean
   kind: 'table'
   id: string
   title: string
   definition?: string
-  columns: { key: string; label: string; num?: boolean }[]
+  /** `staffNA`: this column is not narrowed by the staff filter (see `Kpi.staffNA`). */
+  columns: { key: string; label: string; num?: boolean; staffNA?: boolean }[]
   rows: Record<string, Cell>[]
   empty: string
 }

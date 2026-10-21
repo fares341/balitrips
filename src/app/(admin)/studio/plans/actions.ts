@@ -8,6 +8,7 @@ import { db } from '@/db'
 import { plans } from '@/db/schema'
 import { ENTITLEMENT_KINDS } from '@/lib/entitlements'
 import { MAX_DEVICE_LIMIT } from '@/lib/security/config'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -87,6 +88,14 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
           ? null
           : ((await tx.select().from(plans).where(eq(plans.id, id)).limit(1))[0] ?? null)
       if (id !== 'new' && !before) throw new Error(t('plans.err_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['priceMinor', 'currency'] : ['priceMinor'],
+        t('team.err_prices'),
+      )
 
       const publishedAt =
         status === 'published' ? (before?.publishedAt ?? new Date()) : (before?.publishedAt ?? null)

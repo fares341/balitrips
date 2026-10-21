@@ -13,6 +13,7 @@ import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { accessKindLabel } from '../orders/labels'
+import { StudioLink } from '../../_ui/studio-link'
 import { extendEntitlement, grantEntitlement, revokeEntitlement } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -181,9 +182,13 @@ export default async function EntitlementsPage({
                   <td>{accessKindLabel(t, row.kind)}</td>
                   <td>
                     {row.orderId ? (
-                      <Link href={adminHref(`/orders/${row.orderId}`)} className="a-mono">
+                      <StudioLink
+                        role={session.role}
+                        path={`/orders/${row.orderId}`}
+                        className="a-mono"
+                      >
                         {row.orderNumber ?? t('entitlements.order_fallback')}
-                      </Link>
+                      </StudioLink>
                     ) : row.actorId ? (
                       <Pill tone="info">{t('entitlements.by_staff')}</Pill>
                     ) : (

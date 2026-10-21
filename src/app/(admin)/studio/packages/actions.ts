@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { activities, packageActivities, packageRegions, packages } from '@/db/schema'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -86,6 +87,14 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
           : ((await tx.select().from(packages).where(eq(packages.id, id)).limit(1))[0] ?? null)
 
       if (id !== 'new' && !before) throw new Error(t('packages.err_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['priceMinor', 'currency', 'pricingMode'] : ['priceMinor'],
+        t('team.err_prices'),
+      )
 
       const [row] =
         id === 'new'

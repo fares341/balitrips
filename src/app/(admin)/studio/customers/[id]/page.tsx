@@ -45,6 +45,7 @@ import {
 } from '../actions'
 import { revokeEntitlement } from '../../entitlements/actions'
 import { accessLine, loadAccountSummaries } from '../summary'
+import { StudioLink } from '../../../_ui/studio-link'
 import { CrmPanel } from './crm-panel'
 import { ProtectionPanel } from './protection-panel'
 
@@ -542,9 +543,9 @@ export default async function CustomerPage({
               {orderRows.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <Link className="a-mono" href={adminHref(`/orders/${row.id}`)}>
+                    <StudioLink role={session.role} path={`/orders/${row.id}`} className="a-mono">
                       {row.orderNumber}
-                    </Link>
+                    </StudioLink>
                   </td>
                   <td>
                     <OrderStatusPill status={row.status} />
@@ -578,15 +579,19 @@ export default async function CustomerPage({
               {scheduleRows.map((row) => (
                 <tr key={row.orderItemId}>
                   <td>
-                    <Link href={adminHref(`/itineraries/${row.itineraryId}`)}>
+                    <StudioLink role={session.role} path={`/itineraries/${row.itineraryId}`}>
                       {row.name ? pick(row.name, locale) : t('customers.itinerary')}
-                    </Link>
+                    </StudioLink>
                     <div className="a-muted">v{row.version}</div>
                   </td>
                   <td>
-                    <Link className="a-mono" href={adminHref(`/orders/${row.orderId}`)}>
+                    <StudioLink
+                      role={session.role}
+                      path={`/orders/${row.orderId}`}
+                      className="a-mono"
+                    >
                       {row.orderNumber}
-                    </Link>
+                    </StudioLink>
                   </td>
                   <td>
                     {row.documentReady ? (
@@ -612,10 +617,10 @@ export default async function CustomerPage({
                     </div>
                   </td>
                   <td>
-                    <Link href={adminHref(`/leads/${requestId}`)}>
+                    <StudioLink role={session.role} path={`/leads/${requestId}`}>
                       {t('customers.custom_request')}
                       {startDate ? ` · ${startDate}` : ''}
-                    </Link>
+                    </StudioLink>
                   </td>
                   <td>
                     {doc.withdrawnAt ? (
@@ -711,20 +716,20 @@ export default async function CustomerPage({
                   <td>{accessKindLabel(t, row.kind)}</td>
                   <td>
                     {row.planId ? (
-                      <Link href={adminHref(`/plans/${row.planId}`)}>
+                      <StudioLink role={session.role} path={`/plans/${row.planId}`}>
                         {planName
                           ? pick(planName, locale, planSlug ?? t('customers.plan_fallback'))
                           : t('customers.plan_fallback')}
-                      </Link>
+                      </StudioLink>
                     ) : (
                       <span className="a-muted">—</span>
                     )}
                   </td>
                   <td>
                     {row.grantedByOrderId ? (
-                      <Link href={adminHref(`/orders/${row.grantedByOrderId}`)}>
+                      <StudioLink role={session.role} path={`/orders/${row.grantedByOrderId}`}>
                         {t('customers.source_order')}
-                      </Link>
+                      </StudioLink>
                     ) : row.grantedByActorId ? (
                       <Pill tone="info">{t('customers.source_staff')}</Pill>
                     ) : row.sharedByUserId ? (

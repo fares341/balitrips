@@ -15,5 +15,6 @@ export function exportLabels(t: T): ExportLabels {
     points: t('rp.change_points'),
     hours: t('rp.hours_short'),
     generated: t('rp.generated'),
+    staffNA: t('rp.staff_na'),
   }
 }

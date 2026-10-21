@@ -12,6 +12,7 @@ import { requireCapability } from '../../../_lib/session'
 import { readSetting } from '../../../_lib/settings'
 import { Checkbox, Field, LocalizedField } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
+import { StudioLink } from '../../../_ui/studio-link'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, PublishPill, Table } from '../../../_ui/table'
 import { saveVipSettings } from '../../config/actions'
@@ -31,7 +32,7 @@ export default async function VipSettingsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('vip.manage')
+  const session = await requireCapability('vip.manage')
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
@@ -50,9 +51,11 @@ export default async function VipSettingsPage({
         title={t('p3.vip_settings')}
         description={t('p3.vip_settings_description')}
         actions={
-          <Link className="a-btn ghost" href={adminHref('/plans')}>
+          // Phase 6: an operations manager holds `vip.manage` but cannot open
+          // the plans themselves — no dead "back" button for them.
+          <StudioLink role={session.role} path="/plans" fallback="hide" className="a-btn ghost">
             {t('p3.back_to_plans')}
-          </Link>
+          </StudioLink>
         }
       />
       <Flash searchParams={params} />
@@ -134,9 +137,9 @@ export default async function VipSettingsPage({
               {vipPlans.map((plan) => (
                 <tr key={plan.id}>
                   <td>
-                    <Link href={adminHref(`/plans/${plan.id}`)}>
+                    <StudioLink role={session.role} path={`/plans/${plan.id}`}>
                       {pick(plan.name, locale, plan.slug)}
-                    </Link>
+                    </StudioLink>
                   </td>
                   <td>{formatMoney(plan.priceMinor, plan.currency, intl)}</td>
                   <td>

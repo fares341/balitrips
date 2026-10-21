@@ -6,7 +6,7 @@ import { weekdayList } from '@/lib/availability/rules'
 import { formatMoney } from '@/lib/money'
 
 import { getAdminI18n } from '../../../_lib/i18n'
-import { Field, TextInput } from '../../../_ui/field'
+import { Field, PriceLockNote, TextInput } from '../../../_ui/field'
 import { Empty } from '../../../_ui/table'
 import { addSeasonalPrice, removeSeasonalPrice, saveChildAges } from '../availability-actions'
 
@@ -63,8 +63,11 @@ export async function ChildAgesCard({ activity }: { activity: ActivityRow }) {
 export async function SeasonEditor({
   activityId,
   tiers,
+  locked = false,
 }: {
   activityId: string
+  /** The viewer lacks `prices.write`: seasons are listed, not added or removed. */
+  locked?: boolean
   tiers: readonly {
     id: string
     name: string
@@ -91,6 +94,7 @@ export async function SeasonEditor({
     <div className="a-card">
       <h2>{t('av.seasons_title')}</h2>
       <p className="a-hint">{t('av.seasons_hint')}</p>
+      {locked ? <PriceLockNote /> : null}
       <div
         style={{
           display: 'flex',
@@ -146,82 +150,92 @@ export async function SeasonEditor({
                               {weekdays.map((index) => days[index]).join(' ')}
                             </span>
                           ) : null}
-                          <button className="a-btn danger small" type="submit">
-                            {t('common.remove')}
-                          </button>
+                          {locked ? null : (
+                            <button className="a-btn danger small" type="submit">
+                              {t('common.remove')}
+                            </button>
+                          )}
                         </form>
                       </li>
                     )
                   })}
                 </ul>
               )}
-              <form action={addSeasonalPrice.bind(null, activityId, tier.id)}>
-                <input type="hidden" name="currency" value={tier.currency} />
-                <div className="a-row">
-                  <Field
-                    label={t('av.season_label')}
-                    htmlFor={`sl-${tier.id}`}
-                    hint={t('av.season_label_hint')}
-                  >
-                    <TextInput id={`sl-${tier.id}`} name="label" maxLength={80} />
-                  </Field>
-                  <Field label={t('av.from')} htmlFor={`sf-${tier.id}`}>
-                    <TextInput
-                      id={`sf-${tier.id}`}
-                      name="fromDate"
-                      type="date"
-                      dir="ltr"
-                      required
-                    />
-                  </Field>
-                  <Field label={t('av.to')} htmlFor={`st-${tier.id}`}>
-                    <TextInput id={`st-${tier.id}`} name="toDate" type="date" dir="ltr" required />
-                  </Field>
-                  <Field
-                    label={`${t('common.price')} (${tier.currency})`}
-                    htmlFor={`sp-${tier.id}`}
-                  >
-                    <TextInput
-                      id={`sp-${tier.id}`}
-                      name="price"
-                      inputMode="decimal"
-                      dir="ltr"
-                      required
-                    />
-                  </Field>
-                  {tier.childPriceMinor !== null ? (
+              {locked ? null : (
+                <form action={addSeasonalPrice.bind(null, activityId, tier.id)}>
+                  <input type="hidden" name="currency" value={tier.currency} />
+                  <div className="a-row">
                     <Field
-                      label={t('av.child_price')}
-                      htmlFor={`sc-${tier.id}`}
-                      hint={t('av.season_child_hint')}
+                      label={t('av.season_label')}
+                      htmlFor={`sl-${tier.id}`}
+                      hint={t('av.season_label_hint')}
                     >
+                      <TextInput id={`sl-${tier.id}`} name="label" maxLength={80} />
+                    </Field>
+                    <Field label={t('av.from')} htmlFor={`sf-${tier.id}`}>
                       <TextInput
-                        id={`sc-${tier.id}`}
-                        name="childPrice"
-                        inputMode="decimal"
+                        id={`sf-${tier.id}`}
+                        name="fromDate"
+                        type="date"
                         dir="ltr"
+                        required
                       />
                     </Field>
-                  ) : null}
-                </div>
-                <fieldset className="a-field" style={{ border: 0, padding: 0, margin: 0 }}>
-                  <legend>{t('av.season_weekdays')}</legend>
-                  <div className="a-row" style={{ gap: 12 }}>
-                    {days.map((name, index) => (
-                      <label key={name} className="a-check">
-                        <input type="checkbox" name="weekdays" value={String(index)} />
-                        {name}
-                      </label>
-                    ))}
+                    <Field label={t('av.to')} htmlFor={`st-${tier.id}`}>
+                      <TextInput
+                        id={`st-${tier.id}`}
+                        name="toDate"
+                        type="date"
+                        dir="ltr"
+                        required
+                      />
+                    </Field>
+                    <Field
+                      label={`${t('common.price')} (${tier.currency})`}
+                      htmlFor={`sp-${tier.id}`}
+                    >
+                      <TextInput
+                        id={`sp-${tier.id}`}
+                        name="price"
+                        inputMode="decimal"
+                        dir="ltr"
+                        required
+                      />
+                    </Field>
+                    {tier.childPriceMinor !== null ? (
+                      <Field
+                        label={t('av.child_price')}
+                        htmlFor={`sc-${tier.id}`}
+                        hint={t('av.season_child_hint')}
+                      >
+                        <TextInput
+                          id={`sc-${tier.id}`}
+                          name="childPrice"
+                          inputMode="decimal"
+                          dir="ltr"
+                        />
+                      </Field>
+                    ) : null}
                   </div>
-                  <span className="a-hint">{t('av.season_weekdays_hint')}</span>
-                </fieldset>
-                <div className="a-actions">
-                  <button className="a-btn ghost small" type="submit">
-                    {t('av.season_add')}
-                  </button>
-                </div>
-              </form>
+                  <fieldset className="a-field" style={{ border: 0, padding: 0, margin: 0 }}>
+                    <legend>{t('av.season_weekdays')}</legend>
+                    <div className="a-row" style={{ gap: 12 }}>
+                      {days.map((name, index) => (
+                        <label key={name} className="a-check">
+                          <input type="checkbox" name="weekdays" value={String(index)} />
+                          {name}
+                        </label>
+                      ))}
+                    </div>
+                    <span className="a-hint">{t('av.season_weekdays_hint')}</span>
+                  </fieldset>
+                  <div className="a-actions">
+                    <button className="a-btn ghost small" type="submit">
+                      {t('av.season_add')}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           )
         })}

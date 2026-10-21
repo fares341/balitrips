@@ -16,6 +16,7 @@ import {
   addonsLibrary,
   tierIncludedActivities,
 } from '@/db/schema'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 import { can } from '@/lib/auth/roles'
 import { activityStatus, isPublicStatus } from '@/lib/content/activity-status'
 import { parseVideoUrl } from '@/lib/content/video'
@@ -210,6 +211,17 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
           : ((await tx.select().from(activities).where(eq(activities.id, id)).limit(1))[0] ?? null)
 
       if (id !== 'new' && !before) throw new Error(t('activities.err_gone'))
+      // The "from" price lives on the basics tab: without `prices.write` it
+      // must come back as stored (a new activity: no price).
+      if (section === 'basics') {
+        assertPriceChangeAllowed(
+          session.role,
+          before,
+          values,
+          before ? ['priceMinor', 'currency'] : ['priceMinor'],
+          t('team.err_prices'),
+        )
+      }
 
       let row: typeof activities.$inferSelect | undefined
       if (id === 'new') {
@@ -834,6 +846,9 @@ async function addonValuesFrom(
   }
 }
 
+/** What an add-on charges: guarded by `prices.write`. */
+const ADDON_PRICE_KEYS = ['priceMinor', 'currency', 'pricing', 'maxQty'] as const
+
 const addonOf = (activityId: string, addonId: string) =>
   and(
     eq(activityAddons.id, addonId),
@@ -848,6 +863,7 @@ export async function addActivityAddon(activityId: string, form: FormData): Prom
 
   try {
     const values = await addonValuesFrom(form, t, activityId, null)
+    assertPriceChangeAllowed(session.role, null, values, ['priceMinor'], t('team.err_prices'))
     await db.transaction(async (tx) => {
       const [row] = await tx
         .insert(activityAddons)
@@ -893,6 +909,7 @@ export async function saveActivityAddon(
         .where(addonOf(activityId, addonId))
         .limit(1)
       if (!before) throw new Error(t('activities.err_addon_gone'))
+      assertPriceChangeAllowed(session.role, before, values, ADDON_PRICE_KEYS, t('team.err_prices'))
       const [row] = await tx
         .update(activityAddons)
         .set({ ...values, updatedAt: new Date() })
@@ -1244,6 +1261,23 @@ export async function linkLibraryAddon(activityId: string, form: FormData): Prom
     if (!addon) throw new Error(t('ae.err_link_unknown'))
     const values = await linkValuesFrom(form, t, activityId, addon.currency)
     await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ priceMinor: activityAddonLinks.priceMinor })
+        .from(activityAddonLinks)
+        .where(
+          and(
+            eq(activityAddonLinks.activityId, activityId),
+            eq(activityAddonLinks.addonId, addonId),
+          ),
+        )
+        .limit(1)
+      assertPriceChangeAllowed(
+        session.role,
+        existing ?? null,
+        values,
+        ['priceMinor'],
+        t('team.err_prices'),
+      )
       const [row] = await tx
         .insert(activityAddonLinks)
         .values({ activityId, addonId, ...values })
@@ -1286,6 +1320,23 @@ export async function saveLibraryLink(
     if (!addon) throw new Error(t('ae.err_link_unknown'))
     const values = await linkValuesFrom(form, t, activityId, addon.currency)
     await db.transaction(async (tx) => {
+      const [before] = await tx
+        .select({ priceMinor: activityAddonLinks.priceMinor })
+        .from(activityAddonLinks)
+        .where(
+          and(
+            eq(activityAddonLinks.activityId, activityId),
+            eq(activityAddonLinks.addonId, addonId),
+          ),
+        )
+        .limit(1)
+      assertPriceChangeAllowed(
+        session.role,
+        before ?? null,
+        values,
+        ['priceMinor'],
+        t('team.err_prices'),
+      )
       const [row] = await tx
         .update(activityAddonLinks)
         .set({ ...values, updatedAt: new Date() })

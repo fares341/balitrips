@@ -405,7 +405,11 @@ export default async function ItineraryEditorPage({
         <div className="a-card">
           <h2>{t('itineraries.section_commercial')}</h2>
           <div className="a-row">
-            <MoneyField minor={itinerary?.priceMinor} currency={itinerary?.currency} />
+            <MoneyField
+              minor={itinerary?.priceMinor}
+              currency={itinerary?.currency}
+              locked={!can(session.role, 'prices.write')}
+            />
             <OptionField
               name="heroImageId"
               label={t('itineraries.hero_image')}

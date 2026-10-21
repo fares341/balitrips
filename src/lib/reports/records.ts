@@ -14,6 +14,8 @@ import {
   lowAvailability,
   placedAt,
   soldLine,
+  staffAnd,
+  staffCond,
 } from './data'
 import type { ReportFilters } from './filters'
 import { bookingGroup } from './metrics'
@@ -122,6 +124,7 @@ export async function recordsTable(
           inRange(placedAt, range),
           input.metric === 'orders_paid' ? everPaid : undefined,
           currency,
+          staffCond(f),
           hasLine,
         ),
       )
@@ -182,6 +185,7 @@ export async function recordsTable(
           lt(payments.createdAt, range.end),
           statuses ? inArray(payments.status, statuses) : undefined,
           f.currency ? eq(payments.currency, f.currency) : undefined,
+          staffCond(f),
           hasLine,
         ),
       )
@@ -234,6 +238,7 @@ export async function recordsTable(
           gte(refunds.createdAt, range.start),
           lt(refunds.createdAt, range.end),
           f.currency ? eq(refunds.currency, f.currency) : undefined,
+          staffCond(f),
           line ?? undefined,
         ),
       )
@@ -288,6 +293,7 @@ export async function recordsTable(
           everPaid,
           inRange(placedAt, range),
           currency,
+          staffCond(f),
           line ?? undefined,
           bookings ? inArray(orderItems.kind, [...BOOKABLE]) : soldLine,
           groupLines(bookings ? null : input.group),
@@ -367,6 +373,7 @@ export async function recordsTable(
           and coalesce(o.placed_at, o.created_at) >= ${range.start.toISOString()}::timestamptz
           and coalesce(o.placed_at, o.created_at) < ${range.end.toISOString()}::timestamptz
           ${f.currency ? sql`and o.presentment_currency = ${f.currency}` : sql``}
+          ${staffAnd(f, sql`o.id`)}
         group by 1
       ),
       firsts as (
@@ -412,10 +419,11 @@ export async function recordsTable(
     }
   }
 
-  // low_availability
+  // low_availability: live capacity, not orders — the staff filter does not apply.
   const rows = await lowAvailability()
   return {
     ...base,
+    ...(f.staffId ? { staffNA: true } : {}),
     title: t('rp.rec_low_availability'),
     columns: [
       { key: 'activity', label: t('rp.col_product') },

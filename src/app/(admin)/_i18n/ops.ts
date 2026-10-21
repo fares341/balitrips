@@ -99,6 +99,8 @@ const section: Section = {
     'team.err_mail': 'The e-mail could not be sent. Please try again later.',
     'team.err_prices':
       'Your role cannot change prices. Ask an administrator or operations manager.',
+    'team.prices_locked':
+      'Read-only: your role cannot change prices. Everything else on this form still saves.',
 
     // Integrations
     'int.title': 'Integrations',
@@ -522,6 +524,8 @@ const section: Section = {
     'team.err_last_admin': 'هذا آخر مدير فعّال. أضف مديراً آخر أولاً.',
     'team.err_mail': 'تعذّر إرسال البريد. حاول لاحقاً.',
     'team.err_prices': 'دورك لا يسمح بتغيير الأسعار. اطلب ذلك من المدير أو مدير العمليات.',
+    'team.prices_locked':
+      'للقراءة فقط: دورك لا يسمح بتغيير الأسعار. باقي حقول النموذج تُحفظ كالمعتاد.',
 
     // Integrations
     'int.title': 'التكاملات',

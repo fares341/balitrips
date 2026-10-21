@@ -71,6 +71,16 @@ export async function buildReport(
   ctx: BuildContext,
 ): Promise<ReportResult> {
   const builders = await import('./builders/reports')
+  const { withStaffNote } = await import('./builders/helpers')
+  return withStaffNote(await build(builders, id, filters, ctx), filters, ctx.t)
+}
+
+async function build(
+  builders: typeof import('./builders/reports'),
+  id: ReportId,
+  filters: ReportFilters,
+  ctx: BuildContext,
+): Promise<ReportResult> {
   switch (id) {
     case 'financial':
       return builders.buildFinancial(filters, ctx)

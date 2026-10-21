@@ -41,11 +41,13 @@ import {
   lineChart,
   money,
   moneyKpi,
+  notByStaff,
   numberText,
   previousKeys,
   rangeLabel,
   recordsHref,
   type BuildContext,
+  withStaffNote,
 } from './helpers'
 
 /**
@@ -54,6 +56,18 @@ import {
  */
 
 const GROUPS: readonly BookingGroup[] = ['confirmed', 'pending', 'cancelled']
+
+/**
+ * Figures that are not about orders (requests, tickets, live availability,
+ * supplier connections, site visits): the staff filter cannot narrow them.
+ */
+const NOT_BY_STAFF = new Set([
+  'open_requests',
+  'open_tickets',
+  'low_availability',
+  'supplier_sync_errors',
+  'view_to_booking',
+])
 
 export function groupMoney(
   groups: Map<SalesGroup, { count: number; money: Money[] }> | null,
@@ -420,12 +434,16 @@ export async function buildOverview(
       })),
   })
 
-  return {
-    id: 'overview',
-    title: t('rp.overview_title'),
-    description: t('rp.overview_description'),
-    kpis,
-    blocks,
-    notes: [t('rp.note_currency'), t('rp.note_bali_time'), t('rp.note_consent')],
-  }
+  return withStaffNote(
+    {
+      id: 'overview',
+      title: t('rp.overview_title'),
+      description: t('rp.overview_description'),
+      kpis: kpis.map((kpi) => (NOT_BY_STAFF.has(kpi.id) ? notByStaff(filters, kpi) : kpi)),
+      blocks,
+      notes: [t('rp.note_currency'), t('rp.note_bali_time'), t('rp.note_consent')],
+    },
+    filters,
+    t,
+  )
 }

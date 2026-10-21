@@ -28,6 +28,7 @@ import { defaultLocale, locales, isLocale, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { notifyUsers } from '@/lib/notify'
 import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit, type Tx } from '../../_lib/audit'
@@ -107,6 +108,14 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
             null)
 
       if (id !== 'new' && !before) throw new Error(t('itineraries.err_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['priceMinor', 'currency'] : ['priceMinor'],
+        t('team.err_prices'),
+      )
 
       const [row] =
         id === 'new'

@@ -86,6 +86,8 @@ export default async function ActivityEditorPage({
   const query = await searchParams
 
   const isNew = id === 'new'
+  // Phase 6: without `prices.write` every price on this editor is read-only.
+  const lockPrices = !can(session.role, 'prices.write')
   const requested = param(query, 'tab')
   const tab: Tab =
     !isNew && requested !== null && (TABS as readonly string[]).includes(requested)
@@ -177,6 +179,7 @@ export default async function ActivityEditorPage({
           save={save('basics')}
           actions={actions}
           isAdmin={session.role === 'admin'}
+          locked={lockPrices}
         />
       ) : null}
 
@@ -429,12 +432,20 @@ export default async function ActivityEditorPage({
         </form>
       ) : null}
 
-      {activity && tab === 'packages' ? <PackagesTab activity={activity} /> : null}
+      {activity && tab === 'packages' ? (
+        <PackagesTab activity={activity} locked={lockPrices} />
+      ) : null}
       {activity && tab === 'availability' ? (
-        <AvailabilityTab activity={activity} monthParam={param(query, 'month')} />
+        <AvailabilityTab
+          activity={activity}
+          monthParam={param(query, 'month')}
+          role={session.role}
+        />
       ) : null}
       {activity && tab === 'included' ? <IncludedTab activity={activity} /> : null}
-      {activity && tab === 'addons' ? <AddonsTab activity={activity} intl={intl} /> : null}
+      {activity && tab === 'addons' ? (
+        <AddonsTab activity={activity} intl={intl} locked={lockPrices} />
+      ) : null}
 
       {activity && tab === 'basics' ? (
         <form className="a-card" action={deleteActivity.bind(null, activity.id)}>
@@ -462,11 +473,13 @@ async function BasicsTab({
   save,
   actions,
   isAdmin,
+  locked,
 }: {
   activity: ActivityRow | null
   save: (form: FormData) => Promise<void>
   actions: ReactNode
   isAdmin: boolean
+  locked: boolean
 }) {
   const { t, locale } = await getAdminI18n()
   const [regions, categories, tagRows, selectedCategories, selectedTags] = await Promise.all([
@@ -589,7 +602,7 @@ async function BasicsTab({
         <h2>{t('ae.base_price')}</h2>
         <p className="a-hint">{t('ae.base_price_hint')}</p>
         <div className="a-row">
-          <MoneyField minor={activity?.priceMinor} currency={activity?.currency} />
+          <MoneyField minor={activity?.priceMinor} currency={activity?.currency} locked={locked} />
         </div>
         <Advanced
           show={isAdmin}
@@ -755,7 +768,7 @@ async function addonOptions(activityId: string, locale: Parameters<typeof pick>[
   }
 }
 
-async function PackagesTab({ activity }: { activity: ActivityRow }) {
+async function PackagesTab({ activity, locked }: { activity: ActivityRow; locked: boolean }) {
   const { t, locale, intl } = await getAdminI18n()
   const [tiers, addons] = await Promise.all([
     loadTiers(activity.id),
@@ -816,9 +829,11 @@ async function PackagesTab({ activity }: { activity: ActivityRow }) {
         }))}
         currency={activity.currency}
         addons={addons.options}
+        locked={locked}
       />
       <SeasonEditor
         activityId={activity.id}
+        locked={locked}
         tiers={tiers.map((tier) => ({
           id: tier.id,
           name: pick(tier.name, locale, tier.key),
@@ -883,7 +898,15 @@ async function IncludedTab({ activity }: { activity: ActivityRow }) {
 // Extras
 // ---------------------------------------------------------------------------
 
-async function AddonsTab({ activity, intl }: { activity: ActivityRow; intl: string }) {
+async function AddonsTab({
+  activity,
+  intl,
+  locked,
+}: {
+  activity: ActivityRow
+  intl: string
+  locked: boolean
+}) {
   const { locale } = await getAdminI18n()
   const [tiers, addons, library, links] = await Promise.all([
     loadTiers(activity.id),
@@ -907,6 +930,7 @@ async function AddonsTab({ activity, intl }: { activity: ActivityRow; intl: stri
     <>
       <LibraryLinks
         activityId={activity.id}
+        locked={locked}
         packages={packages}
         library={library.map((addon) => ({
           id: addon.id,
@@ -925,6 +949,7 @@ async function AddonsTab({ activity, intl }: { activity: ActivityRow; intl: stri
       />
       <AddonEditor
         activityId={activity.id}
+        locked={locked}
         currency={activity.currency}
         packages={packages}
         addons={addons.own.map((addon) => ({

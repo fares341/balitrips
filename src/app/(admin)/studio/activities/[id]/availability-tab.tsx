@@ -1,6 +1,7 @@
 import { and, asc, eq, gte, isNull, lte } from 'drizzle-orm'
 import Link from 'next/link'
 
+import type { Role } from '@/lib/auth/roles'
 import { db } from '@/db'
 import { activities, activityAvailability, activitySupplierOffers, suppliers } from '@/db/schema'
 import { todayInBali } from '@/lib/booking-rules'
@@ -21,6 +22,8 @@ import {
   setAvailabilityRange,
   toggleAvailabilityDay,
 } from '../availability-actions'
+import { canOpen } from '../../../_lib/route-access'
+import { StudioLink } from '../../../_ui/studio-link'
 
 type ActivityRow = typeof activities.$inferSelect
 
@@ -44,9 +47,12 @@ function shiftMonth(year: number, monthIndex: number, delta: number): string {
 export async function AvailabilityTab({
   activity,
   monthParam,
+  role,
 }: {
   activity: ActivityRow
   monthParam: string | null
+  /** The viewer: supplier links only for a role that can open suppliers. */
+  role: Role
 }) {
   const { t, intl } = await getAdminI18n()
   const today = todayInBali()
@@ -295,7 +301,9 @@ export async function AvailabilityTab({
           <ul>
             {offers.map(({ offer, supplierName, status }) => (
               <li key={offer.id}>
-                <Link href={adminHref(`/suppliers/${offer.supplierId}`)}>{supplierName}</Link>
+                <StudioLink role={role} path={`/suppliers/${offer.supplierId}`}>
+                  {supplierName}
+                </StudioLink>
                 {' · '}
                 {offer.confirmationMode === 'instant'
                   ? t('sup.mode_instant')
@@ -305,11 +313,13 @@ export async function AvailabilityTab({
             ))}
           </ul>
         )}
-        <div className="a-actions" style={{ marginBlockStart: 8 }}>
-          <Link className="a-btn ghost small" href={adminHref('/suppliers')}>
-            {t('nav.suppliers')}
-          </Link>
-        </div>
+        {canOpen(role, '/suppliers') ? (
+          <div className="a-actions" style={{ marginBlockStart: 8 }}>
+            <Link className="a-btn ghost small" href={adminHref('/suppliers')}>
+              {t('nav.suppliers')}
+            </Link>
+          </div>
+        ) : null}
       </div>
     </>
   )

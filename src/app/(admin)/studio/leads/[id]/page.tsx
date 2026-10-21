@@ -29,6 +29,7 @@ import {
   uploadCustomPdf,
   withdrawCustomPdf,
 } from '../request-actions'
+import { StudioLink } from '../../../_ui/studio-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -205,9 +206,13 @@ export default async function LeadDetailPage({
               <>
                 {' '}
                 · {t('leads.paid_with')}{' '}
-                <Link href={adminHref(`/orders/${request.paidOrderId}`)} className="a-mono">
+                <StudioLink
+                  role={session.role}
+                  path={`/orders/${request.paidOrderId}`}
+                  className="a-mono"
+                >
                   {row.paidOrderNumber ?? t('leads.order')}
-                </Link>
+                </StudioLink>
               </>
             ) : null}
           </p>

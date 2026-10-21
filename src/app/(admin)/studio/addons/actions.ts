@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { activityAddonLinks, activityTiers, addonsLibrary } from '@/db/schema'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -74,6 +75,14 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
                 .limit(1)
             )[0] ?? null)
       if (id !== 'new' && !before) throw new Error(t('addons.err_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['priceMinor', 'currency', 'pricing', 'maxQty'] : ['priceMinor'],
+        t('team.err_prices'),
+      )
       const [row] =
         id === 'new'
           ? await tx.insert(addonsLibrary).values(values).returning()

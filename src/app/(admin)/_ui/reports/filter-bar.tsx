@@ -18,6 +18,7 @@ export function FilterBar({
   intl,
   suppliers,
   currencies,
+  staff = [],
   extra,
   showType = true,
   showSupplier = true,
@@ -29,6 +30,11 @@ export function FilterBar({
   intl: string
   suppliers: readonly { id: string; name: string }[]
   currencies: readonly string[]
+  /**
+   * Phase 6: team members for the "Staff" filter (orders handled by them —
+   * see `rp.def_staff_filter`). Every page with this bar passes the same list.
+   */
+  staff?: readonly { id: string; name: string | null; email: string }[]
   extra?: Record<string, string>
   showType?: boolean
   showSupplier?: boolean
@@ -122,6 +128,27 @@ export function FilterBar({
             </select>
           </div>
         ) : null}
+        {staff.length > 0 || filters.staffId ? (
+          <div className="a-field">
+            <label htmlFor="rp-staff" title={t('rp.def_staff_filter')}>
+              {t('rp.staff')}
+            </label>
+            <select
+              id="rp-staff"
+              name="staff"
+              className="a-select"
+              defaultValue={filters.staffId ?? ''}
+              aria-describedby="rp-staff-def"
+            >
+              <option value="">{t('rp.all')}</option>
+              {staff.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name?.trim() || member.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <label className="rp-compare">
           {/* Checked sends "1" first; unchecked sends only the hidden "0". */}
           <input type="checkbox" name="compare" value="1" defaultChecked={filters.compare} />
@@ -145,6 +172,10 @@ export function FilterBar({
         ) : null}
         {' · '}
         {t('rp.bali_time')}
+      </p>
+      {/* The definition of the staff filter, shown while it is on (and read by screen readers). */}
+      <p id="rp-staff-def" className="a-hint rp-staff-def" hidden={!filters.staffId}>
+        {t('rp.def_staff_filter')}
       </p>
     </>
   )

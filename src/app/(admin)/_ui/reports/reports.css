@@ -551,3 +551,26 @@
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 13px;
 }
+
+/* Phase 6: a figure the "Staff" filter cannot narrow — greyed, with a note. */
+.rp-staff-na .rp-kpi-value,
+.rp-staff-na .rp-bars,
+.rp-staff-na svg,
+td.rp-staff-na,
+th.rp-staff-na {
+  opacity: 0.45;
+}
+
+.rp-kpi.rp-staff-na {
+  background: var(--a-surface-2, transparent);
+}
+
+.rp-staff-na-note {
+  font-size: 12px;
+  color: var(--a-muted);
+  font-style: italic;
+}
+
+p.rp-staff-na-note {
+  margin: 0 0 8px;
+}

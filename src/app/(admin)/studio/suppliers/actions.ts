@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { activitySupplierOffers, activityTiers, suppliers } from '@/db/schema'
 import { CONFIRMATION_MODES, SUPPLIER_TYPES } from '@/lib/suppliers/assign'
+import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -269,6 +270,14 @@ export async function saveOffer(
                 .limit(1)
             )[0] ?? null)
       if (offerId !== 'new' && !before) throw new Error(t('sup.err_offer_gone'))
+      // Phase 6: without `prices.write` the price must come back as stored.
+      assertPriceChangeAllowed(
+        session.role,
+        before,
+        values,
+        before ? ['costMinor', 'currency', 'sellPriceMinor'] : ['costMinor', 'sellPriceMinor'],
+        t('team.err_prices'),
+      )
       const [row] =
         offerId === 'new'
           ? await tx.insert(activitySupplierOffers).values(values).returning()

@@ -5,7 +5,14 @@ import { formatMoneyInput } from '@/lib/money-input'
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
 import type { Option } from '../../../_lib/lookups'
-import { Checkbox, Field, Select, TextInput } from '../../../_ui/field'
+import {
+  Checkbox,
+  Field,
+  PriceLockNote,
+  priceInputProps,
+  Select,
+  TextInput,
+} from '../../../_ui/field'
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { linkLibraryAddon, saveLibraryLink, unlinkLibraryAddon } from '../actions'
@@ -37,11 +44,14 @@ export async function LibraryLinks({
   library,
   links,
   packages,
+  locked = false,
 }: {
   activityId: string
   library: readonly LibraryItem[]
   links: readonly LibraryLink[]
   packages: readonly Option[]
+  /** The viewer lacks `prices.write`: the price for this activity is read-only. */
+  locked?: boolean
 }) {
   const { t } = await getAdminI18n()
   const byId = new Map(library.map((item) => [item.id, item]))
@@ -66,6 +76,7 @@ export async function LibraryLinks({
                 ? ''
                 : formatMoneyInput(link.priceMinor, item.currency)
             }
+            {...priceInputProps(locked)}
           />
         </Field>
         <Field label={t('ae.lib_order')} htmlFor={`${prefix}_order`}>
@@ -104,6 +115,7 @@ export async function LibraryLinks({
         </Link>
       </div>
       <p className="a-hint">{t('ae.lib_hint')}</p>
+      {locked ? <PriceLockNote /> : null}
 
       <div className="a-stack">
         {links.map((link) => {

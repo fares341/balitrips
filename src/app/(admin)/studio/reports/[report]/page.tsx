@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { buildReport, isReportId, mayOpen } from '@/lib/reports/catalog'
-import { currencyOptions, supplierOptions } from '@/lib/reports/data'
+import { currencyOptions, staffOptions, supplierOptions } from '@/lib/reports/data'
 import { filterQuery, parseReportFilters } from '@/lib/reports/filters'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -28,10 +28,11 @@ export default async function ReportPage({
   const query = await searchParams
   const ctx = await buildContext(session.role)
   const filters = parseReportFilters(query, ctx.now)
-  const [result, suppliers, currencies] = await Promise.all([
+  const [result, suppliers, currencies, staff] = await Promise.all([
     buildReport(report, filters, ctx),
     supplierOptions(),
     currencyOptions(),
+    staffOptions(),
   ])
   const { t } = ctx
   const qs = filterQuery(filters)
@@ -55,6 +56,7 @@ export default async function ReportPage({
         intl={ctx.intl}
         suppliers={suppliers}
         currencies={currencies}
+        staff={staff}
       >
         <a className="a-btn ghost" href={adminHref(`/reports/${report}/export?${qs}&format=csv`)}>
           {t('rp.export_csv')}
@@ -63,7 +65,7 @@ export default async function ReportPage({
           {t('rp.export_pdf')}
         </a>
       </FilterBar>
-      <ReportBody result={result} t={t} intl={ctx.intl} rtl={ctx.rtl} />
+      <ReportBody result={result} t={t} intl={ctx.intl} rtl={ctx.rtl} role={session.role} />
     </>
   )
 }

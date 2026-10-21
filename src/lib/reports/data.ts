@@ -1,4 +1,16 @@
-import { and, eq, gte, inArray, isNull, lt, ne, notInArray, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  notInArray,
+  sql,
+  type SQL,
+  type SQLWrapper,
+} from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
@@ -14,6 +26,8 @@ import {
   supportTickets,
   users,
 } from '@/db/schema'
+
+import { STUDIO_ROLES } from '@/lib/auth/roles'
 
 import type { ProductType, ReportFilters } from './filters'
 import { sumByCurrency, type Money } from './metrics'
@@ -89,7 +103,29 @@ function currencyCond(filters: Pick<ReportFilters, 'currency'>): SQL | undefined
   return filters.currency ? eq(orders.presentmentCurrency, filters.currency) : undefined
 }
 
-type F = Pick<ReportFilters, 'type' | 'supplierId' | 'currency'>
+/**
+ * Phase 6 staff filter: "orders handled by this staff member" = orders whose
+ * customer account is assigned to them (`users.assigned_to_user_id`, set on
+ * the customer page). A guest order has no account, so no staff member.
+ *
+ * `orderId` is the SQL of the order's id column (`orders.id`, or `o.id` in
+ * raw SQL), so the same definition serves every query.
+ */
+export function staffOrderSql(staffId: string, orderId: SQLWrapper): SQL {
+  return sql`exists (select 1 from orders so join users su on su.id = so.user_id where so.id = ${orderId} and su.assigned_to_user_id = ${staffId})`
+}
+
+/** The staff condition on the `orders` table, or nothing without the filter. */
+export function staffCond(f: { staffId?: string | null }): SQL | undefined {
+  return f.staffId ? staffOrderSql(f.staffId, orders.id) : undefined
+}
+
+/** The staff condition for raw SQL where the orders table is aliased (`and …`, or empty). */
+export function staffAnd(f: { staffId?: string | null }, orderIdSql: SQL): SQL {
+  return f.staffId ? sql`and ${staffOrderSql(f.staffId, orderIdSql)}` : sql``
+}
+
+type F = Pick<ReportFilters, 'type' | 'supplierId' | 'currency'> & { staffId?: string | null }
 
 /* --------------------------------------------------------------------------
    Sales
@@ -105,7 +141,7 @@ export async function bookingsValue(range: Range, f: F): Promise<Money[]> {
         minor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8`,
       })
       .from(orders)
-      .where(and(everPaid, inRange(placedAt, range), currencyCond(f)))
+      .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f)))
       .groupBy(orders.presentmentCurrency)
     return sumByCurrency(rows)
   }
@@ -116,7 +152,7 @@ export async function bookingsValue(range: Range, f: F): Promise<Money[]> {
     })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
-    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), line))
+    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f), line))
     .groupBy(orders.presentmentCurrency)
   return sumByCurrency(rows)
 }
@@ -133,7 +169,7 @@ export async function discountTotals(
       orders: sql<number>`count(*) filter (where ${orders.discountMinor} > 0)::int`,
     })
     .from(orders)
-    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), orderHasLine(f)))
+    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f), orderHasLine(f)))
     .groupBy(orders.presentmentCurrency)
   return { money: sumByCurrency(rows), orders: rows.reduce((sum, r) => sum + r.orders, 0) }
 }
@@ -146,7 +182,7 @@ export async function orderCounts(range: Range, f: F): Promise<{ placed: number;
       paid: sql<number>`count(*) filter (where ${everPaid})::int`,
     })
     .from(orders)
-    .where(and(inRange(placedAt, range), currencyCond(f), orderHasLine(f)))
+    .where(and(inRange(placedAt, range), currencyCond(f), staffCond(f), orderHasLine(f)))
   return { placed: row?.placed ?? 0, paid: row?.paid ?? 0 }
 }
 
@@ -165,6 +201,7 @@ export async function collected(range: Range, f: F): Promise<Money[]> {
         gte(payments.createdAt, range.start),
         lt(payments.createdAt, range.end),
         f.currency ? eq(payments.currency, f.currency) : undefined,
+        staffCond(f),
         orderHasLine(f),
       ),
     )
@@ -189,6 +226,12 @@ export async function refundTotals(range: Range, f: F): Promise<{ money: Money[]
         gte(refunds.createdAt, range.start),
         lt(refunds.createdAt, range.end),
         f.currency ? eq(refunds.currency, f.currency) : undefined,
+        f.staffId
+          ? staffOrderSql(
+              f.staffId,
+              sql`(select rp.order_id from payments rp where rp.id = ${refunds.paymentId})`,
+            )
+          : undefined,
         line ?? undefined,
       ),
     )
@@ -215,6 +258,7 @@ export async function costLines(range: Range, f: F) {
         inRange(placedAt, range),
         inArray(orderItems.kind, [...BOOKABLE]),
         currencyCond(f),
+        staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
@@ -232,6 +276,7 @@ export async function bookingStatusCounts(range: Range, f: F): Promise<Map<strin
         inRange(placedAt, range),
         inArray(orderItems.kind, [...BOOKABLE]),
         currencyCond(f),
+        staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
@@ -256,6 +301,7 @@ export async function paymentOutcomes(
         gte(payments.createdAt, range.start),
         lt(payments.createdAt, range.end),
         f.currency ? eq(payments.currency, f.currency) : undefined,
+        staffCond(f),
         orderHasLine(f),
       ),
     )
@@ -299,6 +345,7 @@ export async function salesByGroup(
         inRange(placedAt, range),
         soldLine,
         currencyCond(f),
+        staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
@@ -328,6 +375,7 @@ export async function customerSplit(
       from ${orders}
       where ${everPaid} and ${inRange(placedAt, range)}
         ${f.currency ? sql`and ${orders.presentmentCurrency} = ${f.currency}` : sql``}
+        ${staffAnd(f, sql`${orders.id}`)}
         ${orderHasLine(f) ? sql`and ${orderHasLine(f)}` : sql``}
     ),
     firsts as (
@@ -455,7 +503,14 @@ export async function salesSeries(
       ? await db
           .select({ key, minor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8` })
           .from(orders)
-          .where(and(everPaid, inRange(placedAt, range), eq(orders.presentmentCurrency, currency)))
+          .where(
+            and(
+              everPaid,
+              inRange(placedAt, range),
+              eq(orders.presentmentCurrency, currency),
+              staffCond(f),
+            ),
+          )
           .groupBy(sql`1`)
       : await db
           .select({
@@ -465,7 +520,13 @@ export async function salesSeries(
           .from(orderItems)
           .innerJoin(orders, eq(orders.id, orderItems.orderId))
           .where(
-            and(everPaid, inRange(placedAt, range), eq(orders.presentmentCurrency, currency), line),
+            and(
+              everPaid,
+              inRange(placedAt, range),
+              eq(orders.presentmentCurrency, currency),
+              staffCond(f),
+              line,
+            ),
           )
           .groupBy(sql`1`)
   return new Map(rows.map((row) => [row.key, row.minor]))
@@ -493,6 +554,7 @@ export async function topProducts(range: Range, currency: string, f: F, limit = 
         inRange(placedAt, range),
         soldLine,
         eq(orders.presentmentCurrency, currency),
+        staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
@@ -513,7 +575,7 @@ export async function ordersBySource(range: Range, f: F) {
       minor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8`,
     })
     .from(orders)
-    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), orderHasLine(f)))
+    .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f), orderHasLine(f)))
     .groupBy(orders.utmSource, orders.utmMedium, orders.utmCampaign, orders.presentmentCurrency)
 }
 
@@ -596,6 +658,18 @@ export async function currencyOptions(): Promise<string[]> {
     .groupBy(orders.presentmentCurrency)
     .orderBy(sql`2 desc`)
   return rows.map((row) => row.currency)
+}
+
+/**
+ * Phase 6: team members for the "Staff" report filter — every account with a
+ * Studio role, active or not (an inactive member's past orders still count).
+ */
+export async function staffOptions() {
+  return db
+    .select({ id: users.id, name: users.name, email: users.email })
+    .from(users)
+    .where(and(inArray(users.role, [...STUDIO_ROLES]), isNull(users.deletedAt)))
+    .orderBy(users.name, users.email)
 }
 
 /** Staff and admins (for scheduled report recipients). */

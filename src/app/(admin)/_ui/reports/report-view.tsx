@@ -3,7 +3,10 @@ import Link from 'next/link'
 import { changeText, kpiChange, kpiText } from '@/lib/reports/format'
 import type { BarChartBlock, Kpi, ReportResult, TableBlock } from '@/lib/reports/types'
 
+import type { Role } from '@/lib/auth/roles'
+
 import { adminHref } from '../../_lib/admin-path'
+import { canOpen } from '../../_lib/route-access'
 import type { Translate } from '../../_i18n'
 import { LineChart } from './line-chart'
 
@@ -26,7 +29,25 @@ function DefinitionTip({ text, label }: { text: string; label: string }) {
   )
 }
 
-export function KpiCard({ kpi, t, intl }: { kpi: Kpi; t: Translate; intl: string }) {
+/**
+ * Phase 6: a drill-down link is drawn only for a viewer who can open it (a
+ * marketing manager reads reports, not orders). Without a role, every link is
+ * drawn (callers that already checked).
+ */
+const mayFollow = (role: Role | undefined, href: string): boolean =>
+  href !== '' && (role === undefined || canOpen(role, href))
+
+export function KpiCard({
+  kpi,
+  t,
+  intl,
+  role,
+}: {
+  kpi: Kpi
+  t: Translate
+  intl: string
+  role?: Role
+}) {
   const change = kpiChange(kpi)
   const values = kpiText(kpi, intl, t('rp.hours_short'))
   const changeLabel = changeText(kpi, change, intl, {
@@ -36,7 +57,11 @@ export function KpiCard({ kpi, t, intl }: { kpi: Kpi; t: Translate; intl: string
   const tone = change.good === null ? '' : change.good ? 'good' : 'bad'
   const arrow = change.direction === 'up' ? '▲' : change.direction === 'down' ? '▼' : ''
   return (
-    <div className="rp-kpi" data-kpi={kpi.id}>
+    <div
+      className={kpi.staffNA ? 'rp-kpi rp-staff-na' : 'rp-kpi'}
+      data-kpi={kpi.id}
+      data-staff-na={kpi.staffNA ? 'true' : undefined}
+    >
       <div className="rp-kpi-head">
         <span className="rp-kpi-label">{kpi.label}</span>
         <DefinitionTip text={kpi.definition} label={t('rp.what_is_this', { name: kpi.label })} />
@@ -62,7 +87,8 @@ export function KpiCard({ kpi, t, intl }: { kpi: Kpi; t: Translate; intl: string
           </span>
         ) : null}
         {kpi.note ? <span>{kpi.note}</span> : null}
-        {kpi.href ? (
+        {kpi.staffNA ? <span className="rp-staff-na-note">{t('rp.staff_na')}</span> : null}
+        {kpi.href && mayFollow(role, kpi.href) ? (
           <Link className="rp-kpi-link" href={adminHref(kpi.href)}>
             {t('rp.see_records')}
           </Link>
@@ -72,7 +98,7 @@ export function KpiCard({ kpi, t, intl }: { kpi: Kpi; t: Translate; intl: string
   )
 }
 
-export function BarChart({ block, t }: { block: BarChartBlock; t: Translate }) {
+export function BarChart({ block, t, role }: { block: BarChartBlock; t: Translate; role?: Role }) {
   const max = Math.max(1, ...block.rows.map((row) => row.value))
   if (block.rows.length === 0) return <p className="a-muted">{t('rp.empty')}</p>
   return (
@@ -96,7 +122,7 @@ export function BarChart({ block, t }: { block: BarChartBlock; t: Translate }) {
         )
         return (
           <li key={`${row.label}-${i}`}>
-            {row.href ? (
+            {row.href && mayFollow(role, row.href) ? (
               <Link className="rp-bar" href={adminHref(row.href)}>
                 {inner}
               </Link>
@@ -110,7 +136,16 @@ export function BarChart({ block, t }: { block: BarChartBlock; t: Translate }) {
   )
 }
 
-export function DataTable({ block }: { block: TableBlock }) {
+export function DataTable({
+  block,
+  role,
+  staffNALabel,
+}: {
+  block: TableBlock
+  role?: Role
+  /** Shown on columns the staff filter does not narrow. */
+  staffNALabel?: string
+}) {
   if (block.rows.length === 0) return <p className="a-muted">{block.empty}</p>
   return (
     <div className="a-table-wrap">
@@ -118,8 +153,17 @@ export function DataTable({ block }: { block: TableBlock }) {
         <thead>
           <tr>
             {block.columns.map((column) => (
-              <th key={column.key} className={column.num ? 'num' : undefined} scope="col">
+              <th
+                key={column.key}
+                className={
+                  [column.num ? 'num' : '', column.staffNA ? 'rp-staff-na' : ''].join(' ').trim() ||
+                  undefined
+                }
+                scope="col"
+                title={column.staffNA ? staffNALabel : undefined}
+              >
                 {column.label}
+                {column.staffNA ? <span className="rp-staff-na-mark"> *</span> : null}
               </th>
             ))}
           </tr>
@@ -131,8 +175,19 @@ export function DataTable({ block }: { block: TableBlock }) {
                 const cell = row[column.key]
                 const text = cell?.text ?? ''
                 return (
-                  <td key={column.key} className={column.num ? 'num' : undefined}>
-                    {cell?.href ? <Link href={adminHref(cell.href)}>{text}</Link> : text}
+                  <td
+                    key={column.key}
+                    className={
+                      [column.num ? 'num' : '', column.staffNA ? 'rp-staff-na' : '']
+                        .join(' ')
+                        .trim() || undefined
+                    }
+                  >
+                    {cell?.href && mayFollow(role, cell.href) ? (
+                      <Link href={adminHref(cell.href)}>{text}</Link>
+                    ) : (
+                      text
+                    )}
                   </td>
                 )
               })}
@@ -150,18 +205,21 @@ export function ReportBody({
   intl,
   rtl,
   wideFirstChart = true,
+  role,
 }: {
   result: ReportResult
   t: Translate
   intl: string
   rtl: boolean
   wideFirstChart?: boolean
+  /** The viewer: drill-down links to pages they cannot open are left out. */
+  role?: Role
 }) {
   return (
     <>
       <section className="rp-kpis" aria-label={t('rp.numbers')}>
         {result.kpis.map((kpi) => (
-          <KpiCard key={kpi.id} kpi={kpi} t={t} intl={intl} />
+          <KpiCard key={kpi.id} kpi={kpi} t={t} intl={intl} role={role} />
         ))}
       </section>
 
@@ -172,8 +230,9 @@ export function ReportBody({
           return (
             <section
               key={block.id}
-              className={`a-card rp-chart${wide ? ' rp-chart-wide' : ''}`}
+              className={`a-card rp-chart${wide ? ' rp-chart-wide' : ''}${block.staffNA ? ' rp-staff-na' : ''}`}
               aria-labelledby={`rp-${block.id}`}
+              data-staff-na={block.staffNA ? 'true' : undefined}
             >
               <div className="rp-chart-head">
                 <h2 id={`rp-${block.id}`}>{block.title}</h2>
@@ -184,6 +243,7 @@ export function ReportBody({
                   />
                 ) : null}
               </div>
+              {block.staffNA ? <p className="rp-staff-na-note">{t('rp.staff_na')}</p> : null}
               {block.kind === 'line' &&
               block.current.every((v) => v === 0) &&
               (block.previous ?? []).every((v) => v === 0) ? (
@@ -201,9 +261,9 @@ export function ReportBody({
                   }}
                 />
               ) : block.kind === 'bar' ? (
-                <BarChart block={block} t={t} />
+                <BarChart block={block} t={t} role={role} />
               ) : (
-                <DataTable block={block} />
+                <DataTable block={block} role={role} staffNALabel={t('rp.staff_na')} />
               )}
               {block.definition && block.kind !== 'table' ? (
                 <p className="rp-def">{block.definition}</p>

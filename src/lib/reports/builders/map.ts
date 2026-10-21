@@ -5,13 +5,16 @@ import type { ReportFilters } from '../filters'
 import { rate } from '../metrics'
 import type { Kpi, ReportResult } from '../types'
 import {
+  blocksNotByStaff,
   both,
   countKpi,
   currentRange,
   moneyKpi,
+  notByStaff,
   numberText,
   recordsHref,
   type BuildContext,
+  withStaffNote,
 } from './helpers'
 import { groupMoney } from './overview'
 import {
@@ -189,93 +192,99 @@ export async function buildMapAnalytics(
   const SOURCES = ['standalone', 'itinerary', 'package', 'staff', 'family'] as const
   const deviceTotal = devices.reduce((sum, row) => sum + row.visitors, 0)
 
-  return {
-    id: 'map',
-    title: t('rp.map_title'),
-    description: t('rp.map_description'),
-    kpis,
-    blocks: [
-      {
-        kind: 'bar',
-        id: 'vip_sources',
-        title: t('rp.chart_vip_sources'),
-        definition: t('rp.def_chart_vip_sources'),
-        rows: SOURCES.map((key) => ({
-          label: t(`rp.vip_source_${key}`),
-          value: facts.granted.get(key) ?? 0,
-          display: numberText(facts.granted.get(key) ?? 0, intl),
-        })),
-      },
-      {
-        kind: 'table',
-        id: 'places',
-        title: t('rp.table_top_places'),
-        definition: t('rp.def_place_views'),
-        columns: [
-          { key: 'name', label: t('rp.col_place') },
-          { key: 'region', label: t('rp.col_region') },
-          { key: 'access', label: t('rp.col_access') },
-          { key: 'views', label: t('rp.col_views'), num: true },
-        ],
-        rows: places.map((row) => ({
-          name: {
-            text: pick(row.name, locale, row.slug),
-            raw: row.slug,
-            href: `/places/${row.placeId}`,
-          },
-          region: { text: row.region ? pick(row.region, locale) : '—' },
-          access: { text: row.vip ? 'VIP' : t('rp.access_free'), raw: row.vip ? 'vip' : 'free' },
-          views: { text: numberText(row.views, intl), raw: row.views },
-        })),
-        empty: t('rp.empty_events'),
-      },
-      {
-        kind: 'bar',
-        id: 'filters',
-        title: t('rp.chart_filters'),
-        definition: t('rp.def_chart_filters'),
-        rows: filtersUsed.map((row) => ({
-          label: row.value === '' ? '—' : t(`rp.filter_${row.value}`),
-          value: row.n,
-          display: numberText(row.n, intl),
-        })),
-      },
-      {
-        kind: 'bar',
-        id: 'routes',
-        title: t('rp.chart_routes'),
-        definition: t('rp.def_chart_routes'),
-        rows: routes.slice(0, 10).map((row) => ({
-          label: (row.itemId ? itineraryName.get(row.itemId) : null) ?? row.itemRef ?? '—',
-          value: row.n,
-          display: numberText(row.n, intl),
-        })),
-      },
-      {
-        kind: 'bar',
-        id: 'devices',
-        title: t('rp.chart_devices'),
-        definition: t('rp.def_chart_devices'),
-        rows: devices
-          .sort((a, b) => b.visitors - a.visitors)
-          .map((row) => ({
-            label: t(`rp.device_${row.device ?? 'unknown'}`),
-            value: row.visitors,
-            display: `${numberText(row.visitors, intl)} · ${numberText(rate(row.visitors, deviceTotal), intl, 1)}%`,
+  return withStaffNote(
+    {
+      id: 'map',
+      title: t('rp.map_title'),
+      description: t('rp.map_description'),
+      // Phase 6: map use is site events and access rows, not orders — only VIP
+      // sales follow the staff filter.
+      kpis: kpis.map((kpi) => (kpi.id === 'vip_sales' ? kpi : notByStaff(filters, kpi))),
+      blocks: blocksNotByStaff(filters, [
+        {
+          kind: 'bar',
+          id: 'vip_sources',
+          title: t('rp.chart_vip_sources'),
+          definition: t('rp.def_chart_vip_sources'),
+          rows: SOURCES.map((key) => ({
+            label: t(`rp.vip_source_${key}`),
+            value: facts.granted.get(key) ?? 0,
+            display: numberText(facts.granted.get(key) ?? 0, intl),
           })),
-      },
-      {
-        kind: 'bar',
-        id: 'errors',
-        title: t('rp.kpi_map_errors'),
-        definition: t('rp.def_map_errors'),
-        rows: errors.map((row) => ({
-          label: row.code,
-          value: row.n,
-          display: numberText(row.n, intl),
-        })),
-      },
-    ],
-    notes: [t('rp.note_consent'), t('rp.note_no_location'), t('rp.note_map_sources')],
-  }
+        },
+        {
+          kind: 'table',
+          id: 'places',
+          title: t('rp.table_top_places'),
+          definition: t('rp.def_place_views'),
+          columns: [
+            { key: 'name', label: t('rp.col_place') },
+            { key: 'region', label: t('rp.col_region') },
+            { key: 'access', label: t('rp.col_access') },
+            { key: 'views', label: t('rp.col_views'), num: true },
+          ],
+          rows: places.map((row) => ({
+            name: {
+              text: pick(row.name, locale, row.slug),
+              raw: row.slug,
+              href: `/places/${row.placeId}`,
+            },
+            region: { text: row.region ? pick(row.region, locale) : '—' },
+            access: { text: row.vip ? 'VIP' : t('rp.access_free'), raw: row.vip ? 'vip' : 'free' },
+            views: { text: numberText(row.views, intl), raw: row.views },
+          })),
+          empty: t('rp.empty_events'),
+        },
+        {
+          kind: 'bar',
+          id: 'filters',
+          title: t('rp.chart_filters'),
+          definition: t('rp.def_chart_filters'),
+          rows: filtersUsed.map((row) => ({
+            label: row.value === '' ? '—' : t(`rp.filter_${row.value}`),
+            value: row.n,
+            display: numberText(row.n, intl),
+          })),
+        },
+        {
+          kind: 'bar',
+          id: 'routes',
+          title: t('rp.chart_routes'),
+          definition: t('rp.def_chart_routes'),
+          rows: routes.slice(0, 10).map((row) => ({
+            label: (row.itemId ? itineraryName.get(row.itemId) : null) ?? row.itemRef ?? '—',
+            value: row.n,
+            display: numberText(row.n, intl),
+          })),
+        },
+        {
+          kind: 'bar',
+          id: 'devices',
+          title: t('rp.chart_devices'),
+          definition: t('rp.def_chart_devices'),
+          rows: devices
+            .sort((a, b) => b.visitors - a.visitors)
+            .map((row) => ({
+              label: t(`rp.device_${row.device ?? 'unknown'}`),
+              value: row.visitors,
+              display: `${numberText(row.visitors, intl)} · ${numberText(rate(row.visitors, deviceTotal), intl, 1)}%`,
+            })),
+        },
+        {
+          kind: 'bar',
+          id: 'errors',
+          title: t('rp.kpi_map_errors'),
+          definition: t('rp.def_map_errors'),
+          rows: errors.map((row) => ({
+            label: row.code,
+            value: row.n,
+            display: numberText(row.n, intl),
+          })),
+        },
+      ]),
+      notes: [t('rp.note_consent'), t('rp.note_no_location'), t('rp.note_map_sources')],
+    },
+    filters,
+    t,
+  )
 }
