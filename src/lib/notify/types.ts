@@ -76,6 +76,12 @@ export const USER_NOTIFICATION_TYPES = {
   ticket_resolved: { email: true, whatsapp: false },
   /** Phase 4: to a member of staff — a follow-up task is due today. */
   task_due: { email: true, whatsapp: false },
+  /**
+   * «أبلغني عند التوفر»: the activity can be booked again. Sent directly to the
+   * contact the visitor gave (src/lib/notify/availability.ts), not via
+   * `notifyUser`; listed here for its WhatsApp template and email text.
+   */
+  activity_available: { email: true, whatsapp: true },
 } as const
 
 export const STAFF_NOTIFICATION_TYPES = {
@@ -131,6 +137,7 @@ export const WHATSAPP_PARAM_ORDER: Partial<Record<NotificationType, readonly str
   pdf_ready_whatsapp: ['name', 'link'],
   password_reset_whatsapp: ['link'],
   phone_otp: ['code'],
+  activity_available: ['name', 'link'],
   admin_message: ['body'],
   staff_custom_request: ['name', 'travellers'],
   staff_security_alert: ['rule', 'subject'],

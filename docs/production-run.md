@@ -174,10 +174,20 @@ deploy\start-production.cmd seed test-accounts
    | `bali_password_reset_whatsapp` | Utility | الرابط |
    | `bali_phone_otp` | **Authentication** | الرمز (6 أرقام) |
    | `bali_plan_expired` | Utility | اسم الباقة |
+   | `bali_activity_available` | Utility | اسم النشاط، رابط النشاط («أبلغني عند التوفر») |
 
    قالب `bali_phone_otp` من فئة Authentication يحتاج **زر "نسخ الرمز"**؛ الكود يرسل الرمز للنص وللزر معاً.
 
    قالب `bali_pdf_ready_whatsapp` يُستعمل الآن للجداول الجاهزة والمخصصة معاً. اكتب نصه عاماً، مثل: "جدول رحلتك {{1}} جاهز: {{2}}".
+
+6. **Stripe — بطاقات + Apple Pay + Google Pay.** الكود لا يحدد `payment_method_types`،
+   فصفحة Stripe Checkout تعرض ما هو مفعّل في لوحة Stripe. في الوضع الحي (live):
+   - Dashboard ← Settings ← Payments ← **Payment methods**: فعّل Cards وApple Pay وGoogle Pay،
+     وأطفئ أي طريقة أخرى (القرار: Stripe فقط، بطاقات + محافظ).
+   - **لا يلزم توثيق النطاق لـ Apple Pay** لأن الدفع على صفحة Stripe المستضافة
+     (checkout.stripe.com). يلزم فقط إن استُبدلت لاحقاً بـ Payment Element داخل موقعنا:
+     Settings ← Payment method domains ← أضف النطاق.
+   - Apple Pay يظهر فقط على Safari/أجهزة Apple بها بطاقة في Wallet، وGoogle Pay على Chrome بحساب به بطاقة.
 
 ## التحديث التلقائي من GitHub
 

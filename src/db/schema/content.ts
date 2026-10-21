@@ -211,7 +211,7 @@ export const activities = pgTable(
     closedWeekdays: jsonb('closed_weekdays').$type<number[]>(),
     /**
      * Child age band for packages with a child price (e.g. 4–11). Younger than
-     * `childAgeMin` = infant, free. Null = no child pricing on this activity.
+     * `childAgeMin` = infant, free. Null = the defaults (3–11, `@/lib/content/child-ages`).
      */
     childAgeMin: integer('child_age_min'),
     childAgeMax: integer('child_age_max'),

@@ -122,6 +122,9 @@ describe('StripePaymentProvider', () => {
     expect(headers['Idempotency-Key']).toBe('idem-1')
     expect(String(calls[0]?.init.body)).toContain('locale=ar')
     expect(String(calls[0]?.init.body)).toContain('unit_amount%5D=3900')
+    // Dynamic payment methods: cards + Apple Pay / Google Pay come from the
+    // Dashboard settings; an explicit list would switch the wallets off.
+    expect(String(calls[0]?.init.body)).not.toContain('payment_method_types')
   })
   it('refuses a three-decimal amount Stripe would reject', async () => {
     await expect(

@@ -1497,6 +1497,26 @@
   background: var(--warn-bg);
   color: var(--warn);
 }
+/* «Notify me when available» form inside the unavailable panel */
+.bk-alert {
+  text-align: start;
+  padding: 12px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+}
+.bk-alert h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bk-alert-ok {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--ok, #1a7f4b);
+}
 
 /* Phase 2: how the booking gets confirmed (supplier terms), under the total. */
 .bk-confirm {

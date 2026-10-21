@@ -14,3 +14,4 @@ export * from './crm'
 
 export * from './analytics'
 export * from './ops'
+export * from './alerts'

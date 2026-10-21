@@ -244,7 +244,7 @@ const section: Section = {
 
     'av.children_title': 'Children',
     'av.children_hint':
-      'Set the ages that count as children, then give a package a child price. Younger children (infants) are free. Leave empty if there are no child prices.',
+      'Set the ages that count as children, then give a package a child price. Younger children (infants) are free. Leave empty to use the defaults: children 3–11, infants under 3 free, 12+ adult.',
     'av.child_min': 'Child from age',
     'av.child_min_hint': 'Younger = infant, free.',
     'av.child_max': 'Child up to age',
@@ -499,7 +499,7 @@ const section: Section = {
 
     'av.children_title': 'الأطفال',
     'av.children_hint':
-      'حدد الأعمار التي تُحسب أطفالاً، ثم ضع سعر طفل للباقة. الأصغر سناً (الرضّع) مجاناً. اتركه فارغاً إن لم توجد أسعار أطفال.',
+      'حدد الأعمار التي تُحسب أطفالاً، ثم ضع سعر طفل للباقة. الأصغر سناً (الرضّع) مجاناً. اتركه فارغاً لاستخدام الافتراضي: الأطفال 3–11 سنة، الرضّع دون 3 مجاناً، 12+ بالغ.',
     'av.child_min': 'طفل من عمر',
     'av.child_min_hint': 'الأصغر = رضيع، مجاناً.',
     'av.child_max': 'طفل حتى عمر',

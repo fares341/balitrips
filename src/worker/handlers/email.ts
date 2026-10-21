@@ -144,6 +144,10 @@ export async function handleEmailJob(job: EmailJob): Promise<void> {
       const { sendNotificationEmail } = await import('./notify')
       return sendNotificationEmail(job.notificationId)
     }
+    case 'availability_alert': {
+      const { sendAvailabilityAlert } = await import('@/lib/notify/availability')
+      return sendAvailabilityAlert(job.alertId)
+    }
   }
 }
 

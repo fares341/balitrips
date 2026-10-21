@@ -16,7 +16,7 @@
  */
 
 import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { FormEvent, ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Calendar, type CalendarRange } from '@/components/booking/calendar'
@@ -50,6 +50,7 @@ import {
 } from '@/lib/availability/rules'
 
 import { bookActivityAction, loadBookingFactsAction, loadTripBookingAction } from './actions'
+import { alertPrefillAction, subscribeAlertAction } from './alert-actions'
 import type { BookingFacts, BookingField } from './booking-contract'
 
 // ---------------------------------------------------------------------------
@@ -705,7 +706,7 @@ function perLabel(t: ReturnType<typeof useTranslations>, pkg: BookingPackage) {
  */
 export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const t = useTranslations()
-  const { state, pkgInfo, cap, min, setPeople, childMode, setParty } = useBooking()
+  const { state, data, pkgInfo, cap, min, setPeople, childMode, setParty } = useBooking()
   if (childMode) {
     // Adults here; children and infants have their own steppers in the box.
     const kids = state.children + state.infants
@@ -716,7 +717,7 @@ export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
         onChange={(value) => setParty(value, state.children, state.infants)}
         min={Math.max(1, min - kids)}
         max={Math.max(1, cap - kids)}
-        label={t('act_s_adults')}
+        label={adultsLabel(t, data.childAges)}
         decreaseLabel={t('c_qty_dec')}
         increaseLabel={t('c_qty_inc')}
       />
@@ -736,6 +737,14 @@ export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
       increaseLabel={t('c_qty_inc')}
     />
   )
+}
+
+/** "Adults (12+)": the age after the child band. */
+function adultsLabel(
+  t: ReturnType<typeof useTranslations>,
+  ages: { min: number; max: number } | null,
+): string {
+  return ages ? t('act_s_adults_from', { min: ages.max + 1 }) : t('act_s_adults')
 }
 
 /** Children and infants steppers (child-priced packages). */
@@ -1471,7 +1480,7 @@ export function BookingBox() {
           {b.childMode ? (
             <div className="row between" style={{ flexWrap: 'nowrap' }}>
               <small>
-                <b>{t('act_s_adults')}</b>
+                <b>{adultsLabel(t, b.data.childAges)}</b>
               </small>
               <PartyStepper size="sm" />
             </div>
@@ -1782,20 +1791,119 @@ export function MobileBookBar() {
 
 function UnavailableBox() {
   const t = useTranslations()
+  const locale = useLocale()
   const { data } = useBooking()
   const wa = whatsappLink(t('act_unavailable_wa_msg', { name: data.name }))
+  const uid = useId()
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Signed-in visitors: their own email / phone, filled in (the page is cached).
+  useEffect(() => {
+    let alive = true
+    alertPrefillAction()
+      .then((prefill) => {
+        if (!alive) return
+        setEmail((value) => value || prefill.email)
+        setPhone((value) => value || prefill.phone)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await subscribeAlertAction({
+        activityId: data.activityId,
+        email,
+        phone,
+        locale,
+      })
+      if (result.ok) setDone(true)
+      else setError(t(`act_alert_err_${result.error}`))
+    } catch {
+      setError(t('act_alert_err_failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
-    <div className="panel bk bk-off" id="bk-form" role="status">
+    <div className="panel bk bk-off" id="bk-form">
       <div className="bk-body">
         <span className="bk-off-ill" aria-hidden="true">
           <Icon name="info" size={26} />
         </span>
         <h2 className="h3">{t('act_unavailable_t')}</h2>
         <p className="muted">{t('act_unavailable_b')}</p>
+        {done ? (
+          <p className="bk-alert-ok" role="status">
+            <Icon name="check" size={18} /> {t('act_alert_ok')}
+          </p>
+        ) : (
+          <form className="stack bk-alert" style={{ gap: 10 }} onSubmit={submit} noValidate>
+            <h3 className="h4" style={{ margin: 0 }}>
+              <Icon name="bell" size={18} /> {t('act_alert_t')}
+            </h3>
+            <small className="muted">{t('act_alert_b')}</small>
+            <div className="bt-field" style={{ marginBottom: 0 }}>
+              <label className="bt-flabel" htmlFor={`${uid}-email`}>
+                {t('act_alert_email')}
+              </label>
+              <input
+                id={`${uid}-email`}
+                className="bt-input"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                dir="ltr"
+                maxLength={254}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
+            <div className="bt-field" style={{ marginBottom: 0 }}>
+              <label className="bt-flabel" htmlFor={`${uid}-phone`}>
+                {t('act_alert_phone')}
+              </label>
+              <input
+                id={`${uid}-phone`}
+                className="bt-input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                dir="ltr"
+                maxLength={24}
+                placeholder="+62"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+            </div>
+            <small className="muted">{t('act_alert_consent')}</small>
+            {error ? (
+              <p className="bt-errmsg" role="alert" style={{ margin: 0 }}>
+                {error}
+              </p>
+            ) : null}
+            <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
+              {t('act_alert_submit')}
+            </button>
+          </form>
+        )}
+        <small className="muted center">{t('act_alert_or_contact')}</small>
         <div className="stack" style={{ gap: 8 }}>
           {wa ? (
             <a
-              className="btn btn-primary btn-block"
+              className="btn btn-ghost btn-block"
               href={wa}
               target="_blank"
               rel="noopener noreferrer"

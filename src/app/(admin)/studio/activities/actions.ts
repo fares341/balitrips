@@ -20,6 +20,7 @@ import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 import { can } from '@/lib/auth/roles'
 import { activityStatus, isPublicStatus } from '@/lib/content/activity-status'
 import { parseVideoUrl } from '@/lib/content/video'
+import { queueAvailabilityAlerts } from '@/lib/notify/availability'
 
 import { adminHref } from '../../_lib/admin-path'
 import { feventRange } from '../../_lib/bali-time'
@@ -204,6 +205,7 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
     const tagIds = section === 'basics' ? [...new Set(fmulti(form, 'tagIds'))] : null
     const galleryIds = section === 'media' ? [...new Set(fmulti(form, 'galleryIds'))] : null
 
+    let republished: string | null = null
     const savedId = await db.transaction(async (tx) => {
       const before =
         id === 'new'
@@ -304,8 +306,14 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
         tx,
       )
 
+      if (before && before.status !== 'published' && row.status === 'published') {
+        republished = row.id
+      }
       return row.id
     })
+
+    // «أبلغني عند التوفر»: back on sale → alert everyone waiting, once each.
+    if (republished) await queueAvailabilityAlerts(republished)
 
     target = sectionHref(savedId, section)
     outcome = { ok: t('activities.ok_saved') }
@@ -385,9 +393,11 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
   try {
     const next = status === 'published' ? 'published' : 'draft'
 
+    let republished = false
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(activities).where(eq(activities.id, id)).limit(1)
       if (!before) throw new Error(t('activities.err_gone'))
+      republished = before.status !== 'published' && next === 'published'
 
       const [after] = await tx
         .update(activities)
@@ -411,6 +421,8 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
         tx,
       )
     })
+
+    if (republished) await queueAvailabilityAlerts(id)
 
     outcome = {
       ok: status === 'published' ? t('activities.ok_published') : t('activities.ok_drafted'),

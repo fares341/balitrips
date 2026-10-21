@@ -22,6 +22,7 @@ import { activityStatus, ACTIVITY_STATUSES } from '@/lib/content/activity-status
 import { pick } from '@/lib/content/localize'
 import { mediaUrl } from '@/lib/content/queries'
 import { formatMoney } from '@/lib/money'
+import { countWaitingAlerts, listAlerts } from '@/lib/notify/availability'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { baliInputValue } from '../../../_lib/bali-time'
@@ -447,6 +448,8 @@ export default async function ActivityEditorPage({
         <AddonsTab activity={activity} intl={intl} locked={lockPrices} />
       ) : null}
 
+      {activity && tab === 'basics' ? <AlertsCard activityId={activity.id} /> : null}
+
       {activity && tab === 'basics' ? (
         <form className="a-card" action={deleteActivity.bind(null, activity.id)}>
           <h2>{t('activities.section_archive')}</h2>
@@ -463,6 +466,64 @@ export default async function ActivityEditorPage({
 }
 
 type ActivityRow = typeof activities.$inferSelect
+
+// ---------------------------------------------------------------------------
+// «أبلغني عند التوفر»: who is waiting (used for that alert only)
+// ---------------------------------------------------------------------------
+
+async function AlertsCard({ activityId }: { activityId: string }) {
+  const { t } = await getAdminI18n()
+  const [waiting, rows] = await Promise.all([
+    countWaitingAlerts(activityId),
+    listAlerts(activityId),
+  ])
+  const when = (value: Date | null) =>
+    value ? value.toISOString().slice(0, 16).replace('T', ' ') : '—'
+  return (
+    <section className="a-card" id="availability-alerts">
+      <h2>{t('ae.alerts_title')}</h2>
+      <p className="a-hint">{t('ae.alerts_hint')}</p>
+      <p>
+        <b>{t('ae.alerts_waiting', { count: waiting })}</b>
+      </p>
+      {rows.length > 0 ? (
+        <details>
+          <summary>{t('ae.alerts_list', { count: rows.length })}</summary>
+          <div className="a-table-wrap">
+            <table className="a-table">
+              <thead>
+                <tr>
+                  <th>{t('ae.alerts_email')}</th>
+                  <th>{t('ae.alerts_phone')}</th>
+                  <th>{t('ae.alerts_lang')}</th>
+                  <th>{t('ae.alerts_asked')}</th>
+                  <th>{t('ae.alerts_sent')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td dir="ltr">{row.email ?? '—'}</td>
+                    <td dir="ltr">{row.phone ? `+${row.phone}` : '—'}</td>
+                    <td>{row.locale}</td>
+                    <td dir="ltr">{when(row.createdAt)}</td>
+                    <td dir="ltr">
+                      {row.sentAt
+                        ? when(row.sentAt)
+                        : row.notifiedAt
+                          ? t('ae.alerts_queued')
+                          : t('ae.alerts_pending')}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ) : null}
+    </section>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Basic details

@@ -247,6 +247,10 @@ export class StripePaymentProvider implements PaymentProvider {
       '/checkout/sessions',
       {
         mode: 'payment',
+        // No `payment_method_types`: Checkout then offers the methods turned on
+        // in Dashboard → Settings → Payment methods (cards, Apple Pay, Google
+        // Pay). Listing only `card` would hide the wallets. Hosted Checkout runs
+        // on checkout.stripe.com, so Apple Pay needs no domain verification.
         client_reference_id: input.orderId,
         // Phone-only accounts have a reserved, undeliverable address — let
         // Stripe Checkout ask for a receipt e-mail instead.

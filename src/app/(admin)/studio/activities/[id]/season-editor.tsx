@@ -3,6 +3,7 @@ import { asc, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import { tierSeasonalPrices, type activities } from '@/db/schema'
 import { weekdayList } from '@/lib/availability/rules'
+import { DEFAULT_CHILD_AGE_MAX, DEFAULT_CHILD_AGE_MIN } from '@/lib/content/child-ages'
 import { formatMoney } from '@/lib/money'
 
 import { getAdminI18n } from '../../../_lib/i18n'
@@ -36,6 +37,7 @@ export async function ChildAgesCard({ activity }: { activity: ActivityRow }) {
             max={17}
             dir="ltr"
             defaultValue={activity.childAgeMin ?? ''}
+            placeholder={String(DEFAULT_CHILD_AGE_MIN)}
           />
         </Field>
         <Field label={t('av.child_max')} htmlFor="childAgeMax">
@@ -47,6 +49,7 @@ export async function ChildAgesCard({ activity }: { activity: ActivityRow }) {
             max={17}
             dir="ltr"
             defaultValue={activity.childAgeMax ?? ''}
+            placeholder={String(DEFAULT_CHILD_AGE_MAX)}
           />
         </Field>
         <div className="a-actions">

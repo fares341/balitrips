@@ -96,6 +96,7 @@ import {
   LISTED_STATUSES,
   PAGE_STATUSES,
 } from './activity-status'
+import { resolveChildAges } from './child-ages'
 import { parseVideoUrl } from './video'
 
 // ---------------------------------------------------------------------------
@@ -756,10 +757,8 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
         ? a.freeCancellationHours
         : null,
     minGuests: Math.max(1, a.minGuests),
-    childAges:
-      a.childAgeMin !== null && a.childAgeMax !== null && a.childAgeMax >= a.childAgeMin
-        ? { min: a.childAgeMin, max: a.childAgeMax }
-        : null,
+    // Default band 3–11 (infants under 3 free, 12+ adult) unless set per activity.
+    childAges: resolveChildAges(a.childAgeMin, a.childAgeMax),
     mobileHero: toMedia(mobileHero),
     video: parseVideoUrl(a.videoUrl),
     tags: tagRows,

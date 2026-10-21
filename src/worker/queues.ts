@@ -92,6 +92,8 @@ export const emailJobSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('refund_notice'), orderId: z.uuid(), refundId: z.uuid().optional() }),
   /** Any row in `notifications` (src/lib/notify). */
   z.object({ kind: z.literal('notification'), notificationId: z.uuid() }),
+  /** «أبلغني عند التوفر» (src/lib/notify/availability.ts): email and/or WhatsApp. */
+  z.object({ kind: z.literal('availability_alert'), alertId: z.uuid() }),
 ])
 
 export type EmailJob = z.infer<typeof emailJobSchema>

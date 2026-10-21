@@ -30,6 +30,8 @@ export const RATE_RULES = {
   otpVerify: { window: 15 * 60, max: 20 },
   /** Browser error reports, per IP. */
   clientError: { window: 10 * 60, max: 30 },
+  /** «Notify me when available» requests, per IP. */
+  availabilityAlert: { window: 60 * 60, max: 8 },
   /** Inbound supplier webhooks, per connection. */
   webhook: { window: 60, max: 120 },
 } as const satisfies Record<string, RateRule>
