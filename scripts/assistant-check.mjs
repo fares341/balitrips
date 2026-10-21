@@ -157,6 +157,16 @@ async function signIn(page, role) {
 
 /* ---- Public panel helpers ---------------------------------------------- */
 async function openPanel(page) {
+  // Phase 5's consent banner sits over the floating buttons on a phone until
+  // the visitor answers it (it is not a modal). Answer it like a visitor.
+  const consent = page.locator('.bt-consent')
+  if (await consent.isVisible().catch(() => false)) {
+    await consent
+      .getByRole('button', { name: /necessary only|الضرورية فقط|hanya yang diperlukan/i })
+      .click()
+      .catch(() => {})
+    await consent.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
+  }
   await page.locator('.ai-fab').click()
   await page.locator('.ai-panel').waitFor({ state: 'visible', timeout: 15000 })
   await page

@@ -198,12 +198,14 @@ export function blocksNotByStaff(
   return blocks.map((block) => notByStaff(filters, block))
 }
 
-/** With the staff filter on, its definition leads the report's footnotes (page, CSV, PDF, email). */
+/** The staff filter's definition in the report's footnotes (page, CSV, PDF, email). */
 export function withStaffNote(
   result: ReportResult,
   filters: Pick<ReportFilters, 'staffId'>,
   t: Translate,
 ): ReportResult {
-  if (!filters.staffId) return result
+  // Off: the definition closes the footnotes, so the filter is explained
+  // before anyone uses it. On: it leads them.
+  if (!filters.staffId) return { ...result, notes: [...result.notes, t('rp.def_staff_filter')] }
   return { ...result, notes: [t('rp.def_staff_filter'), ...result.notes] }
 }

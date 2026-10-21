@@ -368,6 +368,12 @@ async function crawlLinks(page, role) {
       broken.push(`${next} (on ${from})`)
       continue
     }
+    // Sent away from the Studio (signed out, 2FA screen) would hide a 404.
+    const landed = (response?.url() ?? '').replace(BASE, '')
+    if (status === 200 && !landed.startsWith(ADMIN) && !next.includes('/export')) {
+      broken.push(`${next} (on ${from}) ended at ${landed}`)
+      continue
+    }
     // One level deeper: the links on a page reached through a link (a detail
     // page the tour did not open for this role). Not followed any further.
     const type = response?.headers()['content-type'] ?? ''
@@ -386,6 +392,71 @@ async function crawlLinks(page, role) {
     `links: ${checked.size} Studio links requested (${followed} pages read for deeper links)${unchecked ? `, ${unchecked} over the cap` : ''}`,
     broken.map((b) => `404 for ${role}: ${b}`),
   )
+}
+
+/** The first detail link on a Studio list page (or null). */
+async function firstDetail(page, listPath) {
+  const full = `${ADMIN}${listPath}`
+  await page.goto(BASE + full, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {})
+  const hrefs = await page
+    .$$eval(
+      'main a[href]',
+      (as, prefix) =>
+        as
+          .map((a) => a.getAttribute('href') ?? '')
+          .filter((h) => h.startsWith(prefix + '/') && !h.includes('?') && !h.endsWith('/new')),
+      full,
+    )
+    .catch(() => [])
+  return hrefs.find((h) => !/\/(export|vip)(\/|$)/.test(h)) ?? null
+}
+
+/**
+ * Phase 6: pages a narrower role works on — prices read-only without
+ * `prices.write` (content editor, accountant), and the staff report filter.
+ */
+async function roleExtras(page, role) {
+  if (role === 'content_editor' || role === 'marketing_manager') {
+    const activity = await firstDetail(page, '/activities')
+    if (activity) {
+      for (const tab of ['', '?tab=packages', '?tab=addons'])
+        await visit(page, role, `${activity}${tab}`, 1440, { label: `prices-locked${tab}` })
+    }
+    const pkg = await firstDetail(page, '/packages')
+    if (pkg) await visit(page, role, pkg, 1440, { label: 'prices-locked-package' })
+  }
+  if (role === 'accountant') {
+    const supplier = await firstDetail(page, '/suppliers')
+    if (supplier) await visit(page, role, supplier, 1440, { label: 'prices-locked-supplier' })
+  }
+  if (role === 'admin') {
+    await page.goto(`${BASE}${ADMIN}?period=30d`, { waitUntil: 'networkidle', timeout: 60000 })
+    const staffId = await page
+      .$$eval('#rp-staff option', (os) => os.map((o) => o.value).find((v) => v !== '') ?? null)
+      .catch(() => null)
+    if (!staffId) {
+      record(role, 'staff filter', ['no staff member offered in the dashboard filter'])
+      return
+    }
+    for (const path of [
+      `?period=30d&staff=${staffId}`,
+      `/reports/marketing?period=30d&staff=${staffId}`,
+      `/reports/financial?period=30d&staff=${staffId}`,
+      `/reports/records?metric=low_availability&staff=${staffId}`,
+    ]) {
+      const entry = await visit(page, role, `${ADMIN}${path}`, 1440, {
+        label: `staff-filter${path.split('?')[0].replace(/\//g, '-')}`,
+      })
+      const greyed = await page.locator('[data-staff-na="true"], .rp-staff-na-note').count()
+      if (path.includes('marketing') || path.startsWith('?') || path.includes('low_availability')) {
+        if (greyed === 0) {
+          entry.ok = false
+          entry.problems.push('staff filter on but no figure marked "not filtered by staff"')
+        }
+      }
+    }
+    flush()
+  }
 }
 
 async function signIn(page, email, secret, start) {
@@ -764,6 +835,9 @@ for (const role of ROLE_ORDER) {
       record('admin', 'money: settings fees', [`threw: ${e.message.split('\n')[0]}`]),
     )
   }
+  await roleExtras(page, role).catch((e) =>
+    record(role, 'role extras', [`threw: ${e.message.split('\n')[0]}`]),
+  )
   await crawlLinks(page, role).catch((e) =>
     record(role, 'links', [`crawl threw: ${e.message.split('\n')[0]}`]),
   )

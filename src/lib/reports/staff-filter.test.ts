@@ -144,7 +144,7 @@ describe('staff filter reaches every query that honours the other filters', () =
     for (const result of results) {
       expect(result.kpis.filter((kpi) => kpi.staffNA)).toEqual([])
       expect(result.blocks.filter((block) => block.staffNA)).toEqual([])
-      expect(result.notes).not.toContain('rp.def_staff_filter')
+      expect(result.notes.at(-1)).toBe('rp.def_staff_filter')
     }
     expect(tables.filter((table) => table.staffNA)).toEqual([])
   })
