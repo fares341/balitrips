@@ -104,7 +104,7 @@ describe('staff filter reaches every query that honours the other filters', () =
     state.queries.length = 0
   })
 
-  for (const variant of [
+  const variants: { label: string; params: Record<string, string> }[] = [
     { label: 'currency only', params: { period: '30d', currency: 'XTS', staff: STAFF } },
     {
       label: 'currency, type and supplier',
@@ -116,7 +116,8 @@ describe('staff filter reaches every query that honours the other filters', () =
         supplier: SUPPLIER,
       },
     },
-  ]) {
+  ]
+  for (const variant of variants) {
     it(`every currency-filtered statement also filters by staff (${variant.label})`, async () => {
       const { queries } = await buildEverything(variant.params)
       expect(queries.length).toBeGreaterThan(40)
