@@ -50,6 +50,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
       - run: pnpm db:seed
+      # One activity marked unavailable, for the «notify me» panel shot.
+      - name: Mark one activity unavailable
+        run: psql "$DATABASE_URL" -c "update activities set status = 'unavailable', slug = 'ci-unavailable-activity' where id = (select id from activities where slug not in ('mount-batur-sunrise-hike', 'ubud-jungle-spa-ritual') order by sort_order desc limit 1)"
       # Real photos of the seeded places (Wikimedia Commons, see the manifest),
       # so the shots show what production shows. Not fatal if Commons is slow.
       - name: Import place photos

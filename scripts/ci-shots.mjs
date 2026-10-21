@@ -146,6 +146,8 @@ const SWEEP = [
   // Activities with the phase-1 content (packages, boxes, meeting point…).
   ['activity-batur', '/activities/mount-batur-sunrise-hike'],
   ['activity-spa', '/activities/ubud-jungle-spa-ritual'],
+  // Client decision: «notify me when available» on an unavailable activity.
+  ['activity-unavailable', '/activities/ci-unavailable-activity'],
   ['itineraries', '/itineraries'],
   ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
   // Phase 3: one itinerary day on the map (numbered pins, line, locked count).
@@ -188,6 +190,7 @@ const EN_KEY = new Set([
   'activity',
   'activity-batur',
   'activity-spa',
+  'activity-unavailable',
   'my-trip',
   'checkout',
   'packages',
