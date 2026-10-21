@@ -169,6 +169,13 @@
       "when": 1793300000000,
       "tag": "0023_availability_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793400000000,
+      "tag": "0024_plans_free_and_map",
+      "breakpoints": true
     }
   ]
 }

@@ -69,10 +69,17 @@ export interface VipOffer {
 }
 
 /**
- * The VIP plan to offer: the one picked in Studio when it is published and
- * VIP, else the cheapest published VIP plan. Null when none is on sale.
+ * The paid map plan to offer: the one picked in Studio when it is published
+ * and VIP, else the cheapest published VIP plan. When no VIP plan is on sale
+ * (client, Oct 2026: /plans shows only Free and the $19 map plan) the
+ * cheapest published map-access plan is offered instead — unless `userId`
+ * already holds map access, which that plan would only repeat. Null when
+ * nothing fits.
  */
-export async function vipPlanOffer(preferredId: string | null): Promise<VipOffer | null> {
+export async function vipPlanOffer(
+  preferredId: string | null,
+  userId: string | null = null,
+): Promise<VipOffer | null> {
   const rows = await db
     .select({
       id: plans.id,
@@ -81,13 +88,23 @@ export async function vipPlanOffer(preferredId: string | null): Promise<VipOffer
       priceMinor: plans.priceMinor,
       currency: plans.currency,
       durationDays: plans.durationDays,
+      kind: plans.entitlementKind,
     })
     .from(plans)
     .where(
-      and(eq(plans.status, 'published'), isNull(plans.deletedAt), eq(plans.entitlementKind, 'vip')),
+      and(
+        eq(plans.status, 'published'),
+        isNull(plans.deletedAt),
+        inArray(plans.entitlementKind, ['vip', 'map_access']),
+      ),
     )
     .orderBy(asc(plans.priceMinor))
-  const chosen = rows.find((row) => row.id === preferredId) ?? rows[0]
+  const vip = rows.filter((row) => row.kind === 'vip')
+  let chosen = vip.find((row) => row.id === preferredId) ?? vip[0]
+  if (!chosen) {
+    chosen = rows.find((row) => row.kind === 'map_access')
+    if (chosen && (await holdsMapAccess(userId))) return null
+  }
   if (!chosen) return null
   return {
     planId: chosen.id,
@@ -97,6 +114,26 @@ export async function vipPlanOffer(preferredId: string | null): Promise<VipOffer
     currency: chosen.currency,
     durationDays: chosen.durationDays,
   }
+}
+
+/** Does the user hold live paid map access (map access or VIP, any source)? */
+export async function holdsMapAccess(userId: string | null): Promise<boolean> {
+  if (userId === null) return false
+  const now = new Date()
+  const [row] = await db
+    .select({ id: entitlements.id })
+    .from(entitlements)
+    .where(
+      and(
+        eq(entitlements.userId, userId),
+        inArray(entitlements.kind, ['vip', 'map_access']),
+        isNull(entitlements.revokedAt),
+        or(isNull(entitlements.expiresAt), gt(entitlements.expiresAt, now)),
+        lte(entitlements.startsAt, now),
+      ),
+    )
+    .limit(1)
+  return row !== undefined
 }
 
 /** Does the user hold live VIP right now (any source)? */

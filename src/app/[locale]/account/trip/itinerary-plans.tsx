@@ -49,7 +49,9 @@ export async function ItineraryPlans({ userId, locale }: { userId: string; local
         plans.map(async (plan) => {
           const name = pick(plan.name, locale, plan.slug)
           const offer =
-            plan.mapAccess === 'vip_later' && !vip ? await vipPlanOffer(plan.vipPlanId) : null
+            plan.mapAccess === 'vip_later' && !vip
+              ? await vipPlanOffer(plan.vipPlanId, userId)
+              : null
           const withPlaces = plan.days.filter((day) => (stops.get(day.id) ?? []).length > 0)
           return (
             <details key={plan.id} className="card it-mine-card" open={plans.length === 1}>

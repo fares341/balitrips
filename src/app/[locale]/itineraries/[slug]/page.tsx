@@ -219,7 +219,7 @@ export default async function ItineraryDetailPage({
   const vipNote = pickOptional(vipSettings.refundNote, locale)
   const offer =
     mapAccess === 'vip_addon' && !(await holdsVip(viewer?.id ?? null))
-      ? await vipPlanOffer(itinerary.vipPlanId)
+      ? await vipPlanOffer(itinerary.vipPlanId, viewer?.id ?? null)
       : null
   const vipBox =
     offer === null

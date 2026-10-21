@@ -238,7 +238,10 @@ export default async function CheckoutPage({
     ) &&
     !(await tripIncludesVip(lines)) &&
     !(await holdsVip(user.id))
-      ? await vipPlanOffer(vipSettings.upsellPlanId === '' ? null : vipSettings.upsellPlanId)
+      ? await vipPlanOffer(
+          vipSettings.upsellPlanId === '' ? null : vipSettings.upsellPlanId,
+          user.id,
+        )
       : null
   const vipOffer = vipUpsell !== null && vipUpsell.currency === cart.currency ? vipUpsell : null
   const words = {
