@@ -2410,7 +2410,7 @@
   "wa_chat": "Chat dengan kami",
   "wa_chat_aria": "Chat dengan kami di WhatsApp (membuka tab baru)",
   "notif_activity_available_t": "Kabar baik: {name} tersedia lagi",
-  "notif_activity_available_b": "{name} bisa dipesan lagi di Bali Trips. Tempat bisa cepat habis — pesan sekarang jika masih berminat.",
+  "notif_activity_available_b": "{name} bisa dipesan lagi di Bali Trips. Tempat bisa cepat habis — pesan sekarang jika masih berminat. Pesan di sini: {link}",
   "act_alert_t": "Kabari saya saat tersedia",
   "act_alert_b": "Tinggalkan email dan/atau nomor WhatsApp, kami akan mengabari sekali saat aktivitas ini bisa dipesan lagi.",
   "act_alert_email": "Email",
