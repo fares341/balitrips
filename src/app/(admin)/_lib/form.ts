@@ -337,7 +337,8 @@ export function ffaq(
       q[locale] = raw(form, `${name}_q_${locale}_${index}`)
       a[locale] = raw(form, `${name}_a_${locale}_${index}`)
     }
-    if (q.en === '') continue
+    // A question written in any one language is kept (Arabic-only too).
+    if (locales.every((locale) => q[locale] === '')) continue
     out.push({ q, a })
   }
 

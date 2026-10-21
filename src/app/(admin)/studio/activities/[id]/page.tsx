@@ -59,7 +59,7 @@ import { deleteActivity, reorderTiers, saveActivity } from '../actions'
 export const dynamic = 'force-dynamic'
 
 /** Must match FAQ_ROWS in ../actions.ts — the action reads exactly this many slots. */
-const FAQ_ROWS = 12
+const FAQ_ROWS = 30
 
 const TABS = [
   'basics',

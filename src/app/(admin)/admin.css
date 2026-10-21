@@ -2600,3 +2600,19 @@ details > summary.a-btn::-webkit-details-marker {
 .a-pkg-day {
   inline-size: 7em;
 }
+
+/* FAQ: each "+ add another question" opens one more row */
+.a-faq-more {
+  margin-top: 12px;
+}
+.a-faq-more > summary {
+  list-style: none;
+  display: inline-flex;
+  cursor: pointer;
+}
+.a-faq-more > summary::-webkit-details-marker {
+  display: none;
+}
+.a-faq-more[open] > summary {
+  display: none;
+}

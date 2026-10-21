@@ -57,7 +57,7 @@ import { requireCapability } from '../../_lib/session'
 const LIST = adminHref('/activities')
 
 /** How many FAQ rows the editor posts back — see the editor's blank rows. */
-const FAQ_ROWS = 12
+const FAQ_ROWS = 30
 
 /** The editor's sections that post the activity form (the others have their own forms). */
 type ActivitySection = 'basics' | 'content' | 'media' | 'booking' | 'faq'

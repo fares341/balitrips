@@ -192,7 +192,8 @@ const section: Section = {
     'ui.checklist_empty': 'Nothing to choose from yet.',
     'ui.faq_title': 'Frequently asked questions',
     'ui.faq_hint':
-      'Two empty rows are always shown for new questions. To delete a question, clear its English text. Up to {max} questions.',
+      'Write a question in any language. Press "+ Add another question" for more. To delete a question, clear its text in every language. Up to {max} questions.',
+    'ui.faq_add': '+ Add another question',
     'ui.faq_question_no': 'Question {number}',
     'ui.faq_question_in': 'Question — {language}',
     'ui.faq_answer_in': 'Answer — {language}',
@@ -418,7 +419,8 @@ const section: Section = {
     'ui.checklist_empty': 'لا توجد خيارات بعد.',
     'ui.faq_title': 'الأسئلة الشائعة',
     'ui.faq_hint':
-      'يظهر دائماً سطران فارغان لأسئلة جديدة. لحذف سؤال امسح نصه الإنجليزي. الحد الأقصى {max} سؤالاً.',
+      'اكتب السؤال بأي لغة. لإضافة المزيد اضغط «+ إضافة سؤال آخر». لحذف سؤال امسح نصه في كل اللغات. الحد الأقصى {max} سؤالاً.',
+    'ui.faq_add': '+ إضافة سؤال آخر',
     'ui.faq_question_no': 'السؤال {number}',
     'ui.faq_question_in': 'السؤال — {language}',
     'ui.faq_answer_in': 'الإجابة — {language}',
