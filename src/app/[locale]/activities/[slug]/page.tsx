@@ -19,7 +19,7 @@
 
 import type { Metadata } from 'next'
 import type { ReactElement } from 'react'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Breadcrumbs, LinkButton, Stars, Tag } from '@/components/bt'
@@ -29,6 +29,7 @@ import { Icon } from '@/components/ui'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { Markdown } from '@/components/shared/markdown'
+import { showsGroupSize } from '@/lib/content/activity-status'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import { markdownToPlain } from '@/lib/content/markdown'
 import {
@@ -36,6 +37,7 @@ import {
   itinerariesWithActivity,
   listActivityPageSlugs,
   listDriverVehicles,
+  mergedActivitySlug,
   packagesWithActivity,
   reviewsForActivity,
   similarActivities,
@@ -126,6 +128,12 @@ export default async function ActivityDetailPage({ params }: PageProps) {
   const { locale, slug } = await params
   setRequestLocale(locale)
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
+
+  // An activity folded into another one as a package: its old link lands there.
+  const mergedInto = await mergedActivitySlug(slug)
+  if (mergedInto !== null) {
+    permanentRedirect(getPathname({ href: `${HUB_PATH}/${mergedInto}`, locale: lang }))
+  }
 
   const activity = await getActivityBySlug(slug)
   if (!activity) notFound()
@@ -264,14 +272,17 @@ export default async function ActivityDetailPage({ params }: PageProps) {
     ltr?: boolean
   }[] = []
   if (place) quick.push({ icon: 'pin', label: t('act_qf_location'), value: place })
-  quick.push({
-    icon: 'users',
-    label: t('act_qf_group'),
-    value:
-      min > 1
-        ? t('act_qf_group_v', { min, max: activity.maxGuests })
-        : t('act_qf_group_upto', { max: activity.maxGuests }),
-  })
+  // A cap left at the column default is not a fact the owner gave: not shown.
+  if (showsGroupSize(activity.maxGuests, min)) {
+    quick.push({
+      icon: 'users',
+      label: t('act_qf_group'),
+      value:
+        min > 1
+          ? t('act_qf_group_v', { min, max: activity.maxGuests })
+          : t('act_qf_group_upto', { max: activity.maxGuests }),
+    })
+  }
   quick.push({
     icon: 'cal',
     label: t('act_qf_schedule'),

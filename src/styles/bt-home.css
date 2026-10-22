@@ -714,6 +714,10 @@
     width: 220px;
     height: 150px;
   }
+  /* An even count leaves the last card alone on its row: let it span. */
+  .home-v3 .svc .ncard:last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 420px) {
   .home-v3 .svc .ncard {

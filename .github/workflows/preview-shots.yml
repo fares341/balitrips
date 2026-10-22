@@ -53,6 +53,24 @@ jobs:
       # One activity marked unavailable, for the «notify me» panel shot.
       - name: Mark one activity unavailable
         run: psql "$DATABASE_URL" -c "update activities set status = 'unavailable', slug = 'ci-unavailable-activity' where id = (select id from activities where slug not in ('mount-batur-sunrise-hike', 'ubud-jungle-spa-ritual') order by sort_order desc limit 1)"
+      # A7: four look-alike activities, then the merge from migration 0027 run
+      # on them, for the merged-activity shot and its old-link redirect.
+      - name: Merge fixture (migration 0027 on four water-sports copies)
+        run: |
+          {
+            echo "create temp table f (like activities);"
+            echo "insert into f select * from activities where slug = 'blue-lagoon-snorkeling';"
+            for row in "a|Water Sports Package A|4500" "b|Water Sports Package B|5500" "c|Water Sports Package C (with Sea Walker)|7500" "premium|Water Sports Premium VIP Package|9900"; do
+              IFS='|' read -r key name price <<< "$row"
+              echo "update f set id = gen_random_uuid(), legacy_id = null, slug = 'water-sports-package-$key', name = jsonb_build_object('en', '$name', 'ar', '$name', 'id', '$name'), price_minor = $price;"
+              echo "insert into activities select * from f;"
+              echo "insert into activity_categories select (select id from activities where slug = 'water-sports-package-$key'), category_id from activity_categories where activity_id = (select id from activities where slug = 'blue-lagoon-snorkeling');"
+            done
+            awk '/^CREATE OR REPLACE FUNCTION pg_temp.bt_merge_activities/,/^END \$\$;$/' drizzle/0027_activities_list_cleanup.sql
+            awk '/^SELECT pg_temp.bt_merge_activities\($/{p=1} p{print} /^\);$/{if(p){exit}}' drizzle/0027_activities_list_cleanup.sql
+          } > merge-fixture.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f merge-fixture.sql
+          psql "$DATABASE_URL" -c "select slug, status, merged_into_id is not null as merged from activities where slug like 'water-sports%' order by slug" -c "select key, name->>'en' as name, price_minor from activity_tiers where activity_id = (select id from activities where slug = 'water-sports-bali') order by sort_order"
       # Real photos of the seeded places (Wikimedia Commons, see the manifest),
       # so the shots show what production shows. Not fatal if Commons is slow.
       - name: Import place photos

@@ -54,3 +54,15 @@ export function activityVisibility(value: string | null | undefined): ActivityVi
 export function isPublicStatus(value: string | null | undefined): boolean {
   return activityStatus(value) !== 'draft'
 }
+
+/**
+ * The `activities.max_guests` column default. A cap still at this value was
+ * never set by the owner, so pages do not advertise it as "up to 20 people"
+ * (it stays the booking limit all the same).
+ */
+export const DEFAULT_MAX_GUESTS = 20
+
+/** Whether a party-size cap is worth showing as a fact on the page. */
+export function showsGroupSize(max: number, min: number): boolean {
+  return max !== DEFAULT_MAX_GUESTS || min > 1
+}

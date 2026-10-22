@@ -223,6 +223,15 @@ export const activities = pgTable(
     childAgeMin: integer('child_age_min'),
     childAgeMax: integer('child_age_max'),
 
+    /**
+     * Set when this activity was folded into another one as one of its
+     * packages (migration 0027): the old link answers with a permanent
+     * redirect to that activity. The row is kept, hidden, never deleted.
+     */
+    mergedIntoId: uuid('merged_into_id').references((): AnyPgColumn => activities.id, {
+      onDelete: 'set null',
+    }),
+
     sortOrder: integer('sort_order').notNull().default(0),
     /**
      * draft | published | hidden | unavailable (`@/lib/content/activity-status`):

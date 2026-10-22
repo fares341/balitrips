@@ -148,6 +148,9 @@ const SWEEP = [
   ['activity-spa', '/activities/ubud-jungle-spa-ritual'],
   // Client decision: «notify me when available» on an unavailable activity.
   ['activity-unavailable', '/activities/ci-unavailable-activity'],
+  // A7: four look-alike activities merged into one with packages (fixture in the workflow).
+  ['activity-merged', '/activities/water-sports-bali'],
+  ['activity-merged-old-link', '/activities/water-sports-package-b'],
   ['itineraries', '/itineraries'],
   ['itinerary', { from: '/itineraries', match: '/itineraries/' }],
   // Phase 3: one itinerary day on the map (numbered pins, line, locked count).
