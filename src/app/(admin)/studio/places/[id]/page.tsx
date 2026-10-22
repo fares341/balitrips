@@ -24,7 +24,6 @@ import {
   Checkbox,
   Field,
   LocalizedField,
-  Select,
   StatusField,
   TextArea,
   TextInput,
