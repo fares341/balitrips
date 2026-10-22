@@ -16,7 +16,7 @@ export const ART_H = 1438
 /** The artwork: a 1600 px copy for first paint / phones, the original for zooming in. */
 export const ART_SMALL_URL = '/brand/bali-art-1600.webp'
 export const ART_SMALL_W = 1600
-export const ART_FULL_URL = '/brand/bali-art.jpg'
+export const ART_FULL_URL = '/brand/bali-art.webp'
 
 export type Pt = [number, number]
 

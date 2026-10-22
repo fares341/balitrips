@@ -19,6 +19,7 @@ import { locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const ABOUT_HREF = '/about'
 
@@ -43,6 +44,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
     description: t('ab4_lede'),
     alternates: alternatesFor(ABOUT_HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('ab4_title'),
       description: t('ab4_lede'),
@@ -96,7 +98,7 @@ export default async function AboutPage({ params }: { params: PageParams }) {
             </div>
             <div className="ab-img">
               {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
-              <img src="/brand/temple-gate.jpg" alt="" />
+              <img src="/brand/temple-gate.webp" alt="" />
             </div>
           </div>
         </div>
@@ -135,9 +137,9 @@ export default async function AboutPage({ params }: { params: PageParams }) {
           </div>
           <div className="ph">
             {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
-            <img src="/brand/rice-walk.jpg" alt="" loading="lazy" />
+            <img src="/brand/rice-walk.webp" alt="" loading="lazy" />
             {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
-            <img src="/brand/kelingking.jpg" alt="" loading="lazy" />
+            <img src="/brand/kelingking.webp" alt="" loading="lazy" />
           </div>
         </div>
       </section>

@@ -26,7 +26,7 @@ import { Modal } from '@/components/shared/modal'
 import { useToast } from '@/components/shared/toast'
 import { CART_CHANGED_EVENT, CART_HREF } from '@/components/layout/routes'
 import { Icon, type IconName } from '@/components/ui/icon'
-import { CONTACT_EMAIL, whatsappLink } from '@/components/layout/contact-config'
+import { useContact, useWhatsappLink } from '@/components/layout/contact-context'
 import type { Locale } from '@/i18n/config'
 import { Link, useRouter } from '@/i18n/routing'
 import { isWithinLeadTime, todayInBali, type VehicleClass } from '@/lib/booking-rules'
@@ -1793,7 +1793,8 @@ function UnavailableBox() {
   const t = useTranslations()
   const locale = useLocale()
   const { data } = useBooking()
-  const wa = whatsappLink(t('act_unavailable_wa_msg', { name: data.name }))
+  const wa = useWhatsappLink(t('act_unavailable_wa_msg', { name: data.name }))
+  const contact = useContact()
   const uid = useId()
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -1915,7 +1916,7 @@ function UnavailableBox() {
             <Icon name="mail" size={18} /> {t('act_unavailable_contact')}
           </Link>
           <small className="muted center" dir="ltr">
-            {CONTACT_EMAIL}
+            {contact.email}
           </small>
         </div>
       </div>

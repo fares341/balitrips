@@ -44,6 +44,7 @@ import { DayRouteMap } from './day-route-map'
 import { MapApp } from './map-app'
 import type { MapClientPlace } from './projection'
 import { buildRegionBubbles } from './regions'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const MAP_PATH = '/map'
 
@@ -89,7 +90,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         'x-default': url(defaultLocale),
       },
     },
-    openGraph: { title: t('mp_title'), description: t('mp_sub'), url: url(lang), type: 'website' },
+    openGraph: {
+      title: t('mp_title'),
+      description: t('mp_sub'),
+      url: url(lang),
+      type: 'website',
+      images: [DEFAULT_SHARE_IMAGE],
+    },
   }
 }
 

@@ -23,6 +23,7 @@ import { ENTITY_PATHS, type RegionDto } from '@/lib/content/types'
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { PageBanner } from '../_ui/page-banner'
 import { regionHref, regionViews } from './region-data'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
 
@@ -63,6 +64,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: t('ex4_sub'),
     alternates: alternatesFor(EXPLORE_HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('ex4_title'),
       description: t('ex4_sub'),
@@ -89,7 +91,7 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
   return (
     <main>
       <PageBanner
-        imageSrc="/brand/aerial-cliff.jpg"
+        imageSrc="/brand/aerial-cliff.webp"
         tag={t('navr_explore')}
         title={t('ex4_title')}
         subtitle={t('ex4_sub')}

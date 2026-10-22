@@ -34,6 +34,7 @@ import { getPackageBySlug, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { alternates } from '../_meta'
 import { PackageDetailView } from './view'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
 
@@ -82,7 +83,7 @@ export async function generateMetadata({
               alt: pick(pkg.hero.alt, locale, name),
             },
           ]
-        : undefined,
+        : [DEFAULT_SHARE_IMAGE],
     },
   }
 }

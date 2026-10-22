@@ -67,7 +67,7 @@ export default async function RegionPage({ params }: PageProps) {
   return (
     <main>
       <PageBanner
-        imageSrc={view.image ?? '/brand/rice-walk.jpg'}
+        imageSrc={view.image ?? '/brand/rice-walk.webp'}
         tag={t('navr_explore')}
         title={name}
         subtitle={t('rg4_sub', { region: name })}

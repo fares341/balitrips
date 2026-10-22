@@ -26,6 +26,7 @@
  *    regardless of the language the visitor filled the form in.
  */
 
+import { useContact } from '@/components/layout/contact-context'
 import { useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
@@ -710,6 +711,7 @@ function Proposal({
 }) {
   const t = useTranslations()
   const format = useFormatter()
+  const contact = useContact()
 
   const { answers, recommendations } = state
   const labelFor = (key: string) => interests.find((one) => one.key === key)?.label ?? key
@@ -718,7 +720,7 @@ function Proposal({
     format.dateTime(new Date(`${value}T00:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' })
 
   const waHref = whatsAppHref(
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+    contact.whatsappDigits ?? undefined,
     buildMessage({
       intro: t('cp_wa_intro'),
       lines: [

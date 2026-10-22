@@ -24,6 +24,7 @@ import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { StartQuiz, type QuizOption } from './start-quiz'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const SERVICES_HREF = '/services'
 
@@ -38,11 +39,11 @@ type Service = {
 
 const ALL_SERVICES: readonly Service[] = [
   { icon: 'map', key: 'map', image: '/map/bali-satellite.webp', href: '/map', signature: true },
-  { icon: 'compass', key: 'act', image: '/brand/jeep.jpg', href: '/activities' },
-  { icon: 'doc', key: 'itin', image: '/brand/flatlay.jpg', href: '/itineraries' },
-  { icon: 'box', key: 'pkg', image: '/brand/green-dress.jpg', href: '/packages' },
-  { icon: 'wand', key: 'cust', image: '/brand/consultant.jpg', href: CUSTOM_HREF },
-  { icon: 'car', key: 'drv', image: '/brand/driver-car.jpg', href: '/driver' },
+  { icon: 'compass', key: 'act', image: '/brand/jeep.webp', href: '/activities' },
+  { icon: 'doc', key: 'itin', image: '/brand/flatlay.webp', href: '/itineraries' },
+  { icon: 'box', key: 'pkg', image: '/brand/green-dress.webp', href: '/packages' },
+  { icon: 'wand', key: 'cust', image: '/brand/consultant.webp', href: CUSTOM_HREF },
+  { icon: 'car', key: 'drv', image: '/brand/driver-car.webp', href: '/driver' },
 ]
 
 /** The driver card is listed only while the service is on (lib/features.ts). */
@@ -64,6 +65,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
     description: t('sv4_sub'),
     alternates: alternatesFor(SERVICES_HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('sv4_title'),
       description: t('sv4_sub'),
@@ -112,7 +114,7 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
     <main>
       <PageBanner
         image={null}
-        imageSrc="/brand/flatlay-wide.jpg"
+        imageSrc="/brand/flatlay-wide.webp"
         tag={t('sv4_eyebrow')}
         title={t('sv4_title')}
         subtitle={t('sv4_sub')}

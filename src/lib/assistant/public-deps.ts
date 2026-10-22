@@ -8,7 +8,7 @@ import { and, asc, eq, inArray } from 'drizzle-orm'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { listInvoices } from '@/app/[locale]/account/_lib/queries'
 import { FAQ_GROUPS } from '@/app/[locale]/faq/groups'
-import { CONTACT_EMAIL, WHATSAPP_DISPLAY } from '@/components/layout/contact-config'
+import { getContact } from '@/components/layout/contact-server'
 import { db } from '@/db'
 import { orderItems, orders } from '@/db/schema'
 import type { Locale } from '@/i18n/config'
@@ -218,7 +218,10 @@ export const publicDeps: PublicDeps = {
   findPlace: async (slug) => (await listMapPlaces()).find((place) => place.slug === slug) ?? null,
   drivers: () => listDriverVehicles(),
   policy: (id) => readSetting(`policy.${id}`),
-  contact: async () => ({ whatsapp: WHATSAPP_DISPLAY, email: CONTACT_EMAIL }),
+  contact: async () => {
+    const contact = await getContact()
+    return { whatsapp: contact.whatsappDisplay, email: contact.email }
+  },
   messages: (locale) => MESSAGES[locale](),
   faqKeys: () => FAQ_GROUPS,
   quote: quoteActivityBooking,

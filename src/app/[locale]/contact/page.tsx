@@ -26,22 +26,10 @@ import { Link } from '@/i18n/routing'
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { PlainHead } from '../_ui/plain-head'
 import { ContactForm } from './contact-form'
+import { getContact } from '@/components/layout/contact-server'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const CONTACT_HREF = '/contact'
-
-/** Display form of the support number, as in the design's footer. */
-const PHONE = process.env.NEXT_PUBLIC_WHATSAPP_DISPLAY ?? '+966 4815 654 4666'
-
-/**
- * wa.me takes digits only — no `+`, no spaces.
- *
- * Derived from the display number rather than declared twice, so the two
- * cannot disagree; `NEXT_PUBLIC_WHATSAPP_NUMBER` overrides it when the
- * dialling form differs from the printed one.
- */
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? PHONE.replace(/\D/g, '')
-
-const EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? 'hello@balitrips.com'
 
 /** Office lines, in the design's order. */
 const OFFICES = ['Seminyak, Bali · Indonesia', 'Jeddah · Saudi Arabia']
@@ -62,6 +50,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
     description: t('co_sub'),
     alternates: alternatesFor(CONTACT_HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('co_title'),
       description: t('co_sub'),
@@ -76,6 +65,9 @@ export default async function ContactPage({ params }: { params: PageParams }) {
 
   const locale = toLocale(raw)
   const t = await getTranslations({ locale })
+  const contact = await getContact()
+  const PHONE = contact.whatsappDisplay ?? ''
+  const EMAIL = contact.email
 
   return (
     <main>
@@ -95,7 +87,7 @@ export default async function ContactPage({ params }: { params: PageParams }) {
         <div className="wrap bt-contact-grid">
           <div className="bt-contact-cards">
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
+              href={`https://wa.me/${contact.whatsappDigits ?? ''}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bt-contact-card"

@@ -13,7 +13,7 @@
 import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 
-import { whatsappLink } from '@/components/layout/contact-config'
+import { useWhatsappLink } from '@/components/layout/contact-context'
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
 import { Icon } from '@/components/ui'
 import { Link } from '@/i18n/routing'
@@ -135,7 +135,7 @@ export function AssistantPanel({
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const origin = typeof window === 'undefined' ? null : window.location.origin
-  const wa = whatsappLink(t('ai_human_wa'))
+  const wa = useWhatsappLink(t('ai_human_wa'))
 
   useEffect(() => {
     if (open) inputRef.current?.focus()

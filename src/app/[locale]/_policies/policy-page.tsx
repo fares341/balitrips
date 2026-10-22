@@ -33,6 +33,7 @@ import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 
 import { alternatesFor } from '../_seo-hreflang'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 export type PolicyId = 'terms' | 'privacy' | 'refund' | 'cookies' | 'platform-use' | 'map-use'
 
@@ -144,6 +145,7 @@ export async function policyMetadata(id: PolicyId, locale: Locale): Promise<Meta
     alternates: alternatesFor(policyHref(id), locale),
     robots: { index: false, follow: true },
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t(copy.titleKey),
       description: t(copy.subKey),

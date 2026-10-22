@@ -62,6 +62,17 @@ export default function proxy(request: NextRequest) {
    * URL, which is what that rotation is actually for.
    */
 
+  // H20: the bare domain opens the Arabic site. A visitor who already picked a
+  // language (next-intl's NEXT_LOCALE cookie) keeps it; Accept-Language is
+  // deliberately not consulted here, so balitrips.co always lands on /ar.
+  if (pathname === '/') {
+    const chosen = request.cookies.get('NEXT_LOCALE')?.value
+    const target = chosen && (routing.locales as readonly string[]).includes(chosen) ? chosen : 'ar'
+    const url = request.nextUrl.clone()
+    url.pathname = `/${target}`
+    return NextResponse.redirect(url)
+  }
+
   return localeProxy(request)
 }
 

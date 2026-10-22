@@ -22,7 +22,8 @@ import { getTranslations } from 'next-intl/server'
 import { Icon, Logo, type IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 
-import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from './contact-config'
+import { whatsappHref } from './contact-config'
+import { getContact } from './contact-server'
 import { FOOTER_QUICK_ROUTES, INFO_ROUTES, POLICY_ROUTES } from './routes'
 
 /** What Stripe Checkout accepts on this account — see /payment-methods. */
@@ -37,7 +38,10 @@ const SOCIAL_LINKS: { label: string; icon: IconName; href: string | undefined }[
 export async function Footer() {
   const t = await getTranslations()
   const year = new Date().getFullYear()
-  const wa = whatsappLink()
+  const contact = await getContact()
+  const wa = whatsappHref(contact.whatsappDigits)
+  const WHATSAPP_DISPLAY = contact.whatsappDisplay
+  const CONTACT_EMAIL = contact.email
   const social = SOCIAL_LINKS.filter(
     (link): link is { label: string; icon: IconName; href: string } => Boolean(link.href),
   )

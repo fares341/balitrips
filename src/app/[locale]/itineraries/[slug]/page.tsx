@@ -40,7 +40,8 @@ import { notFound } from 'next/navigation'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { HOME_HREF } from '@/components/layout'
-import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '@/components/layout/contact-config'
+import { whatsappHref } from '@/components/layout/contact-config'
+import { getContact } from '@/components/layout/contact-server'
 import { Breadcrumbs } from '@/components/shared'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
@@ -65,6 +66,7 @@ import { formatPrice } from '../../_ui/price'
 import { ItineraryBuyBox } from './buy-box'
 import { LinkedPlaces } from './linked-places'
 import { TripActivities, type BookableDay } from './trip-activities'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const INDEX_HREF = ENTITY_PATHS.itinerary
 
@@ -138,7 +140,7 @@ export async function generateMetadata({
               alt: pick(itinerary.hero.alt, locale, name),
             },
           ]
-        : undefined,
+        : [DEFAULT_SHARE_IMAGE],
     },
   }
 }
@@ -283,7 +285,8 @@ export default async function ItineraryDetailPage({
   const regionNames = itinerary.regions.map((region) => pick(region.label, locale, region.key))
   const tripType = pickOptional(itinerary.tripType, locale)
   const price = formatPrice(itinerary.priceMinor, itinerary.currency, locale)
-  const wa = whatsappLink(`${t('it_wa_prefix')} ${name}`)
+  const contact = await getContact()
+  const wa = whatsappHref(contact.whatsappDigits, `${t('it_wa_prefix')} ${name}`)
 
   /**
    * Key facts, all read from the row. A fact the record does not carry is
@@ -720,15 +723,15 @@ export default async function ItineraryDetailPage({
                   <Icon name="whatsapp" size={18} />
                   <span>
                     <strong>WhatsApp</strong>
-                    <span dir="ltr">{WHATSAPP_DISPLAY}</span>
+                    <span dir="ltr">{contact.whatsappDisplay}</span>
                   </span>
                 </a>
               )}
-              <a href={`mailto:${CONTACT_EMAIL}`} className="bt-expert-link">
+              <a href={`mailto:${contact.email}`} className="bt-expert-link">
                 <Icon name="mail" size={18} />
                 <span>
                   <strong>{t('co_mail')}</strong>
-                  <span dir="ltr">{CONTACT_EMAIL}</span>
+                  <span dir="ltr">{contact.email}</span>
                 </span>
               </a>
               <Link href="/contact" className="bt-expert-link">

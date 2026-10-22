@@ -15,6 +15,11 @@ import {
   TILT_RANGE,
   type StoredMapSettings,
 } from '@/app/[locale]/map/map-style'
+import {
+  DEFAULT_WHATSAPP_DISPLAY,
+  DEFAULT_WHATSAPP_NUMBER,
+  FALLBACK_CONTACT,
+} from '@/components/layout/contact-config'
 import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
@@ -323,9 +328,9 @@ export const SETTING_DEFAULTS: SettingsShape = {
     taxLabel: { en: '', ar: '', id: '' },
   },
   contact: {
-    whatsappNumber: '966481565446',
-    whatsappDisplay: '+966 4815 654 4666',
-    supportEmail: 'hello@balitrips.test',
+    whatsappNumber: FALLBACK_CONTACT.whatsappDigits ?? DEFAULT_WHATSAPP_NUMBER,
+    whatsappDisplay: FALLBACK_CONTACT.whatsappDisplay ?? DEFAULT_WHATSAPP_DISPLAY,
+    supportEmail: FALLBACK_CONTACT.email,
   },
   // من env عند التحميل حتى يبقى سلوك الدفعة الأولى ثابتاً إلى أن يُحفظ صف.
   security: {

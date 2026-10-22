@@ -28,21 +28,21 @@ const FALLBACK_CENTERS: Record<string, { lat: number; lon: number }> = {
 
 /** Decorative bubble thumbnails from the brand package (public/brand). */
 const REGION_IMAGES: Record<string, string> = {
-  ubud: '/brand/rice-walk.jpg',
-  central: '/brand/jungle.jpg',
-  canggu: '/brand/beach-palms.jpg',
-  seminyak: '/brand/sunset.jpg',
-  kuta: '/brand/beach-palms.jpg',
-  sanur: '/brand/beach-palms.jpg',
-  'nusa-dua': '/brand/jungle-pool.jpg',
-  south: '/brand/cliff-beach.jpg',
-  uluwatu: '/brand/cliff-beach.jpg',
-  islands: '/brand/kelingking.jpg',
-  'nusa-penida': '/brand/kelingking.jpg',
-  north: '/brand/aerial-cliff.jpg',
-  kintamani: '/brand/aerial-cliff.jpg',
-  east: '/brand/lempuyang.jpg',
-  'east-bali': '/brand/lempuyang.jpg',
+  ubud: '/brand/rice-walk.webp',
+  central: '/brand/jungle.webp',
+  canggu: '/brand/beach-palms.webp',
+  seminyak: '/brand/sunset.webp',
+  kuta: '/brand/beach-palms.webp',
+  sanur: '/brand/beach-palms.webp',
+  'nusa-dua': '/brand/jungle-pool.webp',
+  south: '/brand/cliff-beach.webp',
+  uluwatu: '/brand/cliff-beach.webp',
+  islands: '/brand/kelingking.webp',
+  'nusa-penida': '/brand/kelingking.webp',
+  north: '/brand/aerial-cliff.webp',
+  kintamani: '/brand/aerial-cliff.webp',
+  east: '/brand/lempuyang.webp',
+  'east-bali': '/brand/lempuyang.webp',
 }
 
 export interface RegionBubble {

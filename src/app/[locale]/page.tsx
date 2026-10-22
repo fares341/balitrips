@@ -60,6 +60,9 @@ import { CUSTOM_TRIP_PHOTO } from './_home/media'
 import { MoodTabs, type MoodTab } from './_home/mood-tabs'
 import { SvcCards } from './_home/svc-cards'
 import { CUSTOM_HREF } from './_ui/routes-extra'
+import { JsonLd } from '@/components/seo/json-ld'
+import { getContact } from '@/components/layout/contact-server'
+import { SHARE_ORIGIN, shareUrl } from '@/lib/seo/site-origin'
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 
@@ -84,17 +87,17 @@ const BLOG_COUNT = 3
 /** "What are you planning today?" — one card per service page (no driver: v3.2). */
 const SERVICES: readonly { href: string; icon: IconName; image: string; key: string }[] = [
   { href: '/map', icon: 'map', image: '/map/bali-satellite.webp', key: 'map' },
-  { href: '/activities', icon: 'compass', image: '/brand/jeep.jpg', key: 'act' },
-  { href: '/itineraries', icon: 'doc', image: '/brand/rice-walk.jpg', key: 'itin' },
-  { href: '/packages', icon: 'box', image: '/brand/green-dress.jpg', key: 'pkg' },
+  { href: '/activities', icon: 'compass', image: '/brand/jeep.webp', key: 'act' },
+  { href: '/itineraries', icon: 'doc', image: '/brand/rice-walk.webp', key: 'itin' },
+  { href: '/packages', icon: 'box', image: '/brand/green-dress.webp', key: 'pkg' },
   { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
 ]
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(
-  (name) => `/brand/${name}.jpg`,
+  (name) => `/brand/${name}.webp`,
 )
 const SLIDER_DOWN = ['penida-cove', 'kelingking', 'jungle-pool', 'lempuyang', 'beach-palms'].map(
-  (name) => `/brand/${name}.jpg`,
+  (name) => `/brand/${name}.webp`,
 )
 
 const VALUES: readonly { icon: IconName; key: string }[] = [
@@ -292,8 +295,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       .map((text) => ({ text, em: false })),
   ].filter((word) => word.text !== '')
 
+  const contact = await getContact()
+  const organizationLd = {
+    '@context': 'https://schema.org',
+    '@type': ['Organization', 'TravelAgency'],
+    name: 'Bali Trips',
+    url: SHARE_ORIGIN,
+    logo: shareUrl('/brand/logo.png'),
+    email: contact.email,
+    ...(contact.whatsappDisplay ? { telephone: contact.whatsappDisplay } : {}),
+    areaServed: 'Bali, Indonesia',
+  }
+
   return (
     <main className="home-v3">
+      <JsonLd data={organizationLd} />
       {/* 1 — hero: full-screen video slider */}
       <HeroVideo
         labelledBy="hero-h"

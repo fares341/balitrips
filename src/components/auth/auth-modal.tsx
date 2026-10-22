@@ -85,7 +85,7 @@ export type AuthModalProps = {
 
 const DEFAULT_CALLBACK_PATH = '/account'
 /** The photo beside the form on the sign-in page (v3 login.html). */
-const AUTH_PHOTO = '/brand/penida-cove.jpg'
+const AUTH_PHOTO = '/brand/penida-cove.webp'
 const RESET_PATH = '/reset-password'
 
 /** Which submit is in flight. `null` means the form is idle. */

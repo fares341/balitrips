@@ -53,9 +53,9 @@ export type LanguageSwitcherProps = {
  * The accessible name is the full endonym from `localeConfig`.
  */
 const PILL_LABEL: Record<Locale, string> = {
-  en: 'EN',
-  ar: 'ع',
-  id: 'ID',
+  en: 'English',
+  ar: 'عربي',
+  id: 'Bahasa Indonesia',
 }
 
 function menuItems(menu: HTMLElement | null): HTMLAnchorElement[] {

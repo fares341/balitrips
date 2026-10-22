@@ -23,14 +23,14 @@ import { useTranslations } from 'next-intl'
 import { Icon } from '@/components/ui'
 import { usePathname } from '@/i18n/routing'
 
-import { whatsappLink } from './contact-config'
+import { useWhatsappLink } from './contact-context'
 
 const HIDDEN_ON = ['/map', '/checkout']
 
 export function WhatsAppFab() {
   const t = useTranslations()
   const pathname = usePathname()
-  const href = whatsappLink()
+  const href = useWhatsappLink()
 
   if (href === null) return null
   if (HIDDEN_ON.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null

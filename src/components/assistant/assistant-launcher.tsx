@@ -18,7 +18,7 @@ import dynamic from 'next/dynamic'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRef, useState } from 'react'
 
-import { whatsappLink } from '@/components/layout/contact-config'
+import { useWhatsappLink } from '@/components/layout/contact-context'
 import { Icon } from '@/components/ui'
 import { usePathname } from '@/i18n/routing'
 
@@ -41,9 +41,10 @@ export function AssistantLauncher() {
   const [status, setStatus] = useState<AssistantStatus>({ state: 'unknown' })
   const button = useRef<HTMLButtonElement>(null)
 
+  const waHref = useWhatsappLink()
   const onMap = pathname === '/map' || pathname.startsWith('/map/')
   const solo =
-    whatsappLink() === null ||
+    waHref === null ||
     NO_WHATSAPP.some((path) => pathname === path || pathname.startsWith(`${path}/`))
 
   function openPanel() {

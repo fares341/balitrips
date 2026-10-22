@@ -55,6 +55,7 @@ import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
 
 import { alternatesFor, toLocale } from '../../_seo-hreflang'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const BLOG_HREF = '/blog'
 const PLANS_HREF = '/plans'
@@ -131,7 +132,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
       description,
       locale,
       publishedTime: article.publishedAt ?? undefined,
-      images: article.hero === null ? undefined : [{ url: article.hero.url }],
+      images: article.hero === null ? [DEFAULT_SHARE_IMAGE] : [{ url: article.hero.url }],
     },
   }
 }

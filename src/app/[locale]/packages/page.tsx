@@ -25,6 +25,7 @@ import { listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS, type PackageSummary } from '@/lib/content/types'
 import { pick } from '@/lib/content/localize'
 import { alternates } from './_meta'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
 
@@ -66,6 +67,7 @@ export async function generateMetadata({
     description: t('ph_sub'),
     alternates: alternates(HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('ph_title'),
       description: t('ph_sub'),
@@ -92,7 +94,7 @@ export default async function PackagesPage({
 
   const banner = packages[0]?.hero ?? null
   /** The package's banner photo when no package has one. */
-  const bannerSrc = banner?.url ?? '/brand/green-dress.jpg'
+  const bannerSrc = banner?.url ?? '/brand/green-dress.webp'
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)

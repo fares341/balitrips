@@ -36,6 +36,7 @@ import { ENTITY_PATHS } from '@/lib/content/types'
 import { HOME_HREF } from '@/components/layout'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { alternates } from './_meta'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const HREF = ENTITY_PATHS.itinerary
 
@@ -71,6 +72,7 @@ export async function generateMetadata({
     description: t('ih_sub'),
     alternates: alternates(HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('ih_title'),
       description: t('ih_sub'),
@@ -97,7 +99,7 @@ export default async function ItinerariesPage({
 
   const banner = itineraries[0]?.hero ?? null
   /** The package's banner photo when no itinerary has one. */
-  const bannerSrc = banner?.url ?? '/brand/flatlay.jpg'
+  const bannerSrc = banner?.url ?? '/brand/flatlay.webp'
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)

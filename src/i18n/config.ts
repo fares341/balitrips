@@ -16,7 +16,7 @@ export const defaultLocale: Locale = 'en'
 export const localeConfig: Record<Locale, { label: string; short: string; dir: 'ltr' | 'rtl' }> = {
   en: { label: 'English', short: 'EN', dir: 'ltr' },
   ar: { label: 'العربية', short: 'ع', dir: 'rtl' },
-  id: { label: 'Indonesia', short: 'ID', dir: 'ltr' },
+  id: { label: 'Bahasa Indonesia', short: 'ID', dir: 'ltr' },
 }
 
 export function isLocale(value: string): value is Locale {

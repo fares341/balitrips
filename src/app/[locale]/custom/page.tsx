@@ -108,7 +108,7 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
     <main>
       <PageBanner
         image={null}
-        imageSrc="/brand/consultant.jpg"
+        imageSrc="/brand/consultant.webp"
         tag={t('svc_cust_t')}
         title={t('cp4_title')}
         subtitle={t('cp4_sub')}

@@ -18,7 +18,7 @@ import { Link } from '@/i18n/routing'
 
 export type ServiceTileProps = {
   href: string
-  /** Photo URL, e.g. '/brand/driver-car.jpg'. */
+  /** Photo URL, e.g. '/brand/driver-car.webp'. */
   image: string
   icon: IconName
   title: ReactNode

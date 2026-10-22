@@ -20,6 +20,7 @@ import type { Metadata } from 'next'
 
 import { defaultLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 /**
  * Public origin, no trailing slash.
@@ -74,6 +75,8 @@ export function pageMetadata({
       siteName: 'Bali Trips',
       locale,
       type: 'website',
+      images: [DEFAULT_SHARE_IMAGE],
     },
+    twitter: { card: 'summary_large_image', title, description, images: [DEFAULT_SHARE_IMAGE.url] },
   }
 }

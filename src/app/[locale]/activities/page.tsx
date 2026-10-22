@@ -28,6 +28,7 @@ import { FEATURES } from '@/lib/features'
 import { ActivitiesExplorer, type ExplorerFilters } from './activities-explorer'
 import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
 
@@ -68,6 +69,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       },
     },
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       title: t('act_hub_title'),
       description: t('act_hub_sub'),
       url: url(lang),
@@ -119,7 +121,7 @@ export default async function ActivitiesPage({ params, searchParams }: PageProps
     <main className="act-hub">
       <section className="banner">
         {/* eslint-disable-next-line @next/next/no-img-element -- decorative banner, CSS-cropped */}
-        <img className="bg" src="/brand/jeep.jpg" alt="" style={{ objectPosition: '50% 60%' }} />
+        <img className="bg" src="/brand/jeep.webp" alt="" style={{ objectPosition: '50% 60%' }} />
         <div className="wrap">
           <Breadcrumbs
             light

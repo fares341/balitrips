@@ -40,6 +40,7 @@ import { listArticleCategories, listArticles } from '@/lib/content/queries'
 import type { EntitlementKind } from '@/lib/entitlements'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const BLOG_HREF = '/blog'
 
@@ -70,6 +71,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
     description: t('bh_sub'),
     alternates: alternatesFor(BLOG_HREF, locale),
     openGraph: {
+      images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
       title: t('bh_title'),
       description: t('bh_sub'),

@@ -54,6 +54,10 @@ import {
   type BookingData,
 } from './booking'
 import { Gallery, InfoTabs, SaveButton, SectionNav, ShareButton } from './detail-client'
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
+import { JsonLd } from '@/components/seo/json-ld'
+import { toMajor } from '@/lib/analytics/pixels'
+import { shareUrl } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
 
@@ -106,10 +110,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: name,
       description,
       url: url(lang),
-      type: 'article',
       images:
         activity.hero === null
-          ? undefined
+          ? [DEFAULT_SHARE_IMAGE]
           : [
               {
                 url: activity.hero.url,
@@ -359,8 +362,39 @@ export default async function ActivityDetailPage({ params }: PageProps) {
     : null
   const mapHref = activity.region ? `/map?region=${activity.region.key}` : '/map'
 
+  // L17/L18: structured data and og:type=product. React hoists the <meta>
+  // into <head>; Next's typed openGraph has no 'product' type.
+  const ldDescription =
+    pickOptional(activity.shortDescription, lang) ?? pickOptional(activity.headline, lang) ?? name
+  const productLd: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': ['Product', 'TouristTrip'],
+    name,
+    description: ldDescription,
+    url: shareUrl(getPathname({ href: `${HUB_PATH}/${activity.slug}`, locale: lang })),
+    ...(activity.hero ? { image: shareUrl(activity.hero.url) } : {}),
+    brand: { '@type': 'Brand', name: 'Bali Trips' },
+    offers: {
+      '@type': 'Offer',
+      price: toMajor(activity.priceMinor, activity.currency),
+      priceCurrency: activity.currency,
+      availability: 'https://schema.org/InStock',
+    },
+    ...(reviewAverage !== null
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Math.round(reviewAverage * 10) / 10,
+            reviewCount: reviews.length,
+          },
+        }
+      : {}),
+  }
+
   return (
     <main className="act-detail act2">
+      <meta property="og:type" content="product" />
+      <JsonLd data={productLd} />
       <div className="wrap">
         <Breadcrumbs
           label={t('c_breadcrumb')}

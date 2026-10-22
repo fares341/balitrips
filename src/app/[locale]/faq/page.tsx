@@ -10,7 +10,7 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { whatsappLink } from '@/components/layout/contact-config'
+import { getWhatsappLink } from '@/components/layout/contact-server'
 import { Accordion } from '@/components/shared'
 import { locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
@@ -19,6 +19,7 @@ import { pageMetadata } from '../_meta'
 import { toLocale } from '../_seo-hreflang'
 import { PlainHead } from '../_ui/plain-head'
 import { FAQ_GROUPS as GROUPS } from './groups'
+import { JsonLd } from '@/components/seo/json-ld'
 
 const FAQ_PATH = '/faq'
 
@@ -41,10 +42,23 @@ export default async function FaqPage({ params }: PageProps) {
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
-  const wa = whatsappLink()
+  const wa = await getWhatsappLink()
+
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: GROUPS.flatMap((group) =>
+      group.items.map((item) => ({
+        '@type': 'Question',
+        name: t(item.q),
+        acceptedAnswer: { '@type': 'Answer', text: t(item.a) },
+      })),
+    ),
+  }
 
   return (
     <main>
+      <JsonLd data={faqLd} />
       <PlainHead
         title={t('faq_title')}
         lede={t('faq_sub')}
