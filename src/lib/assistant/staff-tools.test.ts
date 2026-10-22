@@ -317,7 +317,8 @@ describe('Adding a map place from a location', () => {
       regionId: REGION_ID,
       categoryId: CATEGORY_ID,
       categoryLabel: { en: 'Cafés', ar: 'مقاهٍ' },
-      isFree: true,
+      // Cafés are a VIP category (client, Oct 2026), wherever the place is.
+      isFree: false,
     })
     // Nothing is written: the only "write" is the stored proposal.
     expect(d.calls.filter((c) => c === 'createAction')).toHaveLength(1)
