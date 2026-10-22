@@ -20,7 +20,8 @@
 
 import { z } from 'zod'
 
-import { buildFreeZone, freeRegionKey, inFreeZone, regionAt } from '@/app/[locale]/map/regions'
+import { regionAt } from '@/app/[locale]/map/regions'
+import { MAP_FREE_CATEGORY_KEYS } from '@/lib/content/map-access'
 import { can, isElevated, type Capability, type Role } from '@/lib/auth/roles'
 import { BOOKING_STATUSES } from '@/lib/orders/booking-status'
 import { ORDER_STATUSES } from '@/lib/orders/state'
@@ -755,7 +756,7 @@ export function placeSlug(name: string): string {
     .replace(/-+$/, '')
 }
 
-/** Everything the card and the model need to know about a spot: the editor's checks, area, free zone. */
+/** Everything the card and the model need to know about a spot: the editor's checks and area. */
 async function spotFacts(ctx: StaffCtx, point: { lat: number; lon: number }) {
   const [existing, inWater, taxonomy] = await Promise.all([
     ctx.deps.placesNear(point, ctx.locale),
@@ -764,12 +765,10 @@ async function spotFacts(ctx: StaffCtx, point: { lat: number; lon: number }) {
   ])
   const check = checkSpot(point, { inWater, existing })
   const region = regionAt(taxonomy.regions, point)
-  const zone = buildFreeZone(taxonomy.regions, freeRegionKey())
   return {
     check,
     region,
     regionName: region ? labelIn(region.label, ctx.locale, region.key) : null,
-    free: inFreeZone(zone, point),
     regions: taxonomy.regions,
     categories: taxonomy.categories,
   }
@@ -821,7 +820,7 @@ const findLocation = staffTool({
         label: found.label,
         area: facts.regionName,
         regionKey: facts.region?.key ?? null,
-        freeForEveryone: facts.free,
+        freeCategories: MAP_FREE_CATEGORY_KEYS,
         warnings: facts.check.warnings,
         nearbyPlaces: facts.check.nearby.map((p) => ({
           name: p.name,
@@ -914,6 +913,9 @@ const proposePlaceDraft = staffTool({
       }
     }
     const categoryId = category ? await ctx.deps.categoryId(category.key) : null
+    // Free or VIP follows the category (client, Oct 2026), never the area.
+    const free =
+      category !== null && (MAP_FREE_CATEGORY_KEYS as readonly string[]).includes(category.key)
 
     const regionKey = args.regionKey ?? facts.region?.key ?? null
     const regionId = regionKey ? await ctx.deps.regionId(regionKey) : null
@@ -943,7 +945,7 @@ const proposePlaceDraft = staffTool({
           : null,
         descriptionEn: args.descriptionEn,
         descriptionAr: args.descriptionAr,
-        isFree: facts.free,
+        isFree: free,
       },
       {
         place: args.nameEn,
@@ -952,7 +954,7 @@ const proposePlaceDraft = staffTool({
         coordinates: `${point.lat.toFixed(6)}, ${point.lon.toFixed(6)}`,
         region: regionName,
         description: description ?? null,
-        free: facts.free,
+        free,
         slug,
         status: 'draft',
         warnings: facts.check.warnings.length > 0 ? facts.check.warnings : null,

@@ -29,6 +29,8 @@ export interface RealMapOptions {
   /** Opening tilt / turn (with `center`). */
   pitch?: number
   bearing?: number
+  /** Straight down only (the public map is 2D, client Oct 2026): no tilt, no turn. */
+  flat?: boolean
   /** false: a static preview that ignores pointer input (place page). */
   interactive?: boolean
 }
@@ -55,7 +57,8 @@ export function createRealMap(
     maxBounds: REAL_MAX_BOUNDS,
     minZoom: REAL_MIN_ZOOM,
     maxZoom: REAL_MAX_ZOOM,
-    maxPitch: REAL_MAX_PITCH,
+    maxPitch: options.flat === true ? 0 : REAL_MAX_PITCH,
+    ...(options.flat === true ? { dragRotate: false, pitchWithRotate: false } : {}),
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     // The pages draw their own attribution line (always visible, in the site font).
     attributionControl: false,

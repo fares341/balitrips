@@ -238,8 +238,8 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'places.detailed_description': ['Detailed description', 'الوصف التفصيلي'],
   'places.free_to_view': ['Free to view', 'متاح مجاناً'],
   'places.free_to_view_hint': [
-    'Free places are shown to everyone. Paid places show only a marker to visitors without a plan — never the name or exact location.',
-    'الأماكن المجانية تظهر للجميع. أما المدفوعة فيرى الزائر بلا باقة علامة فقط — دون الاسم أو الموقع الدقيق.',
+    'Set by the category on save: Free categories (activities, tourist sites, malls) are open to everyone, VIP categories need the VIP subscription. This box counts only for a category with no map level.',
+    'يُحدَّد من التصنيف عند الحفظ: التصنيفات المجانية (الأنشطة، المزارات، المولات) مفتوحة للجميع، وتصنيفات VIP تحتاج اشتراك VIP. هذا الخيار يُستخدم فقط لتصنيف بلا مستوى على الخريطة.',
   ],
   'places.required_entitlement': ['Plan needed', 'الباقة المطلوبة'],
   'places.required_entitlement_hint': [
@@ -248,8 +248,8 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   ],
   'places.hidden_gem': ['Hidden Gem', 'جوهرة مخفية'],
   'places.hidden_gem_hint': [
-    'Hidden Gems are VIP-only, whatever the two fields above say.',
-    'الجواهر المخفية لمشتركي VIP فقط، بغض النظر عن الحقلين أعلاه.',
+    'Hidden Gems are VIP-only, whatever the category says.',
+    'الجواهر المخفية لمشتركي VIP فقط، مهما كان التصنيف.',
   ],
   'places.hide': ['Hide from map and search', 'إخفاء من الخريطة والبحث'],
   'places.hide_hint': [
@@ -537,6 +537,15 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'taxonomy.key': ['Short code', 'رمز مختصر'],
   'taxonomy.label': ['Name', 'الاسم'],
   'taxonomy.icon': ['Icon', 'الأيقونة'],
+  'taxonomy.map_tier': ['On the map', 'على الخريطة'],
+  'taxonomy.map_tier_none': ['Not a map category', 'ليس تصنيف خريطة'],
+  'taxonomy.map_tier_free': ['Free — open to everyone', 'مجاني — مفتوح للجميع'],
+  'taxonomy.map_tier_vip': ['VIP — needs the VIP subscription', 'VIP — يحتاج اشتراك VIP'],
+  'taxonomy.map_tier_hint': [
+    'Places whose main category is this one follow it, on save. Map categories appear as the map filters.',
+    'الأماكن التي تصنيفها الرئيسي هذا تتبعه عند الحفظ. تصنيفات الخريطة هي فلاتر الخريطة.',
+  ],
+  'taxonomy.map_order': ['Order on the map', 'الترتيب في الخريطة'],
   'taxonomy.sort_order': ['Sort order', 'ترتيب العرض'],
   'taxonomy.parent_area': ['Parent area', 'المنطقة الأم'],
   'taxonomy.add_new': ['Add new', 'إضافة جديد'],

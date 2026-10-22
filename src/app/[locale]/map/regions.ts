@@ -1,5 +1,5 @@
 /**
- * Region bubbles and the free zone — computed on the SERVER from region data.
+ * Region bubbles — computed on the SERVER from region data.
  *
  * Pure (no database) so it can be unit-tested. Input is the unredacted place
  * list, which never leaves the server; output is region-level only: a key, a
@@ -58,20 +58,6 @@ export interface RegionBubble {
   image: string | null
 }
 
-export interface FreeZone {
-  key: string
-  label: Record<string, string>
-  lat: number
-  lon: number
-  radiusKm: number
-}
-
-/** The configurable free area: `MAP_FREE_REGION` (a region key), Ubud by default. */
-export function freeRegionKey(): string {
-  const raw = (process.env.MAP_FREE_REGION ?? '').trim().toLowerCase()
-  return /^[a-z0-9-]{1,64}$/.test(raw) ? raw : 'ubud'
-}
-
 function inRegion(place: FullMapPlace, key: string): boolean {
   return place.regionKey === key || place.parentRegionKey === key
 }
@@ -84,33 +70,14 @@ function centerOf(region: MapRegion): { lat: number; lon: number } | null {
 }
 
 /**
- * The free area's outline: the region's centre and radius, widened so every
- * FREE place in that region sits inside it. Free places are public to every
- * visitor, so reading their coordinates here exposes nothing; locked places
- * never influence the circle.
+ * No region is free any more (client, Oct 2026): access follows the place's
+ * CATEGORY, so a bubble is "locked" only when it holds places this viewer
+ * cannot see.
  */
-export function buildFreeZone(
-  regions: readonly MapRegion[],
-  key: string,
-  places: readonly FullMapPlace[] = [],
-): FreeZone | null {
-  const region = regions.find((entry) => entry.key === key)
-  if (region === undefined) return null
-  const center = centerOf(region)
-  if (center === null) return null
-  let radiusKm = region.radiusKm ?? 6
-  for (const place of places) {
-    if (!place.isFree || !inRegion(place, key)) continue
-    radiusKm = Math.max(radiusKm, haversineKm(center, place) + 1.5)
-  }
-  return { key, label: region.label, ...center, radiusKm: Math.min(radiusKm, 25) }
-}
-
 export function buildRegionBubbles(
   places: readonly FullMapPlace[],
   regions: readonly MapRegion[],
   held: EntitlementSet,
-  freeKey: string,
 ): RegionBubble[] {
   const unlocked = held.has('map_access')
   const visible = (place: FullMapPlace) => place.isFree || held.has(place.requiredEntitlement)
@@ -125,9 +92,8 @@ export function buildRegionBubbles(
       !regions.some((child) => child.parentKey === region.key && shownKeys.has(child.key)),
   )
 
-  // Chip/bubble order: the free area first, then neighbourhoods, then broad regions.
-  const rank = (region: MapRegion) =>
-    region.key === freeKey ? 0 : region.parentKey !== null ? 1 : 2
+  // Chip/bubble order: neighbourhoods, then broad regions.
+  const rank = (region: MapRegion) => (region.parentKey !== null ? 1 : 2)
   const ordered = [...leaf].sort((a, b) => rank(a) - rank(b))
 
   return ordered.map((region) => {
@@ -142,7 +108,7 @@ export function buildRegionBubbles(
       lon: center.lon,
       radiusKm: region.radiusKm ?? 4,
       lockedCount,
-      locked: !unlocked && region.key !== freeKey,
+      locked: !unlocked && lockedCount > 0,
       image: REGION_IMAGES[region.key] ?? REGION_IMAGES[region.parentKey ?? ''] ?? null,
     }
   })
@@ -178,9 +144,4 @@ export function regionAt(
     closest(measured.filter((e) => e.inside)) ??
     closest(measured.filter((e) => e.region.parentKey === null && e.km <= 40))
   )
-}
-
-/** Inside the free area's circle: a new place there is free by default, like its neighbours. */
-export function inFreeZone(zone: FreeZone | null, point: { lat: number; lon: number }): boolean {
-  return zone !== null && haversineKm(zone, point) <= zone.radiusKm
 }

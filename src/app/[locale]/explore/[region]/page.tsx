@@ -60,7 +60,7 @@ export default async function RegionPage({ params }: PageProps) {
 
   const facts = [
     { label: t('rg4_f_acts'), value: view.activities.length },
-    { label: t('rg4_f_places'), value: view.places.length },
+    { label: t('rg4_f_places'), value: view.placeCount },
     { label: t('rg4_f_itins'), value: view.itineraries.length },
   ]
 

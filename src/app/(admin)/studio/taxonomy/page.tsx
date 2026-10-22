@@ -38,6 +38,8 @@ interface TaxonomyRow {
   centerLat?: number | null
   centerLon?: number | null
   radiusKm?: number | null
+  mapTier?: string | null
+  mapOrder?: number
 }
 
 /** حقول إضافية: الوصف والحالة (تصنيف ومنطقة)، والأب والمركز ونصف القطر (منطقة). */
@@ -62,6 +64,8 @@ export default async function TaxonomyPage({
         sortOrder: categories.sortOrder,
         description: categories.description,
         status: categories.status,
+        mapTier: categories.mapTier,
+        mapOrder: categories.mapOrder,
       })
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.key)),
@@ -166,6 +170,37 @@ function ExtraFields({
             <option value="inactive">{t('common.inactive')}</option>
           </select>
         </div>
+        {extra.kind === 'category' ? (
+          <>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-tier`}>{t('taxonomy.map_tier')}</label>
+              <select
+                className="a-input"
+                id={`${idPrefix}-tier`}
+                name="mapTier"
+                defaultValue={row?.mapTier ?? ''}
+                aria-describedby={`${idPrefix}-tier-hint`}
+              >
+                <option value="">{t('taxonomy.map_tier_none')}</option>
+                <option value="free">{t('taxonomy.map_tier_free')}</option>
+                <option value="vip">{t('taxonomy.map_tier_vip')}</option>
+              </select>
+              <p className="a-hint" id={`${idPrefix}-tier-hint`}>
+                {t('taxonomy.map_tier_hint')}
+              </p>
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-morder`}>{t('taxonomy.map_order')}</label>
+              <input
+                className="a-input"
+                id={`${idPrefix}-morder`}
+                name="mapOrder"
+                inputMode="numeric"
+                defaultValue={String(row?.mapOrder ?? 0)}
+              />
+            </div>
+          </>
+        ) : null}
         {extra.kind === 'region' ? (
           <>
             <div className="a-field">

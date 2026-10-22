@@ -175,9 +175,12 @@ describe('map places: locked places stay redacted', () => {
     }
   })
 
-  it('a hidden gem stays locked even when marked free, unless the viewer holds VIP', () => {
-    expect(placeForModel(gem, makeEntitlementSet(['map_access']), 'en')).toMatchObject({
+  it('a hidden gem stays locked even when marked free, until the viewer holds the plan', () => {
+    expect(placeForModel(gem, emptyEntitlements(), 'en')).toMatchObject({
       available: false,
+    })
+    expect(placeForModel(gem, makeEntitlementSet(['map_access']), 'en')).toMatchObject({
+      available: true,
     })
     expect(placeForModel(gem, makeEntitlementSet(['vip']), 'en')).toMatchObject({
       available: true,

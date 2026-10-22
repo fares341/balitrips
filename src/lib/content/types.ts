@@ -383,6 +383,8 @@ export interface LandmarkDto {
   region: RegionRef | null
   /** Set when the landmark has a bookable activity behind it. */
   activitySlug: string | null
+  /** The map place this landmark is — its page is the card's link. */
+  placeSlug: string | null
   hero: MediaDto | null
 }
 

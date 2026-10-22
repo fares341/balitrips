@@ -59,6 +59,7 @@ import {
 } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
 import { vehicleForPassengers, type VehicleClass } from '@/lib/booking-rules'
+import { syncPlaceAccess } from '@/lib/content/map-access'
 
 import arMessages from '../../../messages/ar.json'
 import enMessages from '../../../messages/en.json'
@@ -147,13 +148,54 @@ const SPEC_AREAS: readonly {
 ]
 
 /** تصنيفات الخريطة من الوثيقة (6.2، 10.1) التي لا تغطيها تصنيفات الأنشطة. */
-const SPEC_PLACE_CATEGORIES: readonly { key: string; label: Localized }[] = [
-  { key: 'activities', label: { en: 'Activities', ar: 'أنشطة', id: 'Aktivitas' } },
-  { key: 'sights', label: { en: 'Sights', ar: 'أماكن سياحية', id: 'Tempat Wisata' } },
-  { key: 'market', label: { en: 'Markets', ar: 'أسواق', id: 'Pasar' } },
-  { key: 'shopping', label: { en: 'Shopping', ar: 'تسوق', id: 'Belanja' } },
-  { key: 'events', label: { en: 'Events', ar: 'فعاليات', id: 'Acara' } },
-  { key: 'hospital', label: { en: 'Hospitals', ar: 'مستشفيات', id: 'Rumah Sakit' } },
+const SPEC_PLACE_CATEGORIES: readonly { key: string; label: Localized; tier: 'free' | 'vip' }[] = [
+  {
+    key: 'activities',
+    label: { en: 'Activities', ar: 'الأنشطة والفعاليات', id: 'Aktivitas' },
+    tier: 'free',
+  },
+  {
+    key: 'sights',
+    label: { en: 'Tourist sites', ar: 'المزارات السياحية', id: 'Tempat wisata' },
+    tier: 'free',
+  },
+  {
+    key: 'malls',
+    label: { en: 'Malls & markets', ar: 'المولات والأسواق', id: 'Mal & pasar' },
+    tier: 'free',
+  },
+  { key: 'restaurants', label: { en: 'Restaurants', ar: 'المطاعم', id: 'Restoran' }, tier: 'vip' },
+  { key: 'cafes', label: { en: 'Cafés', ar: 'المقاهي', id: 'Kafe' }, tier: 'vip' },
+  { key: 'spa', label: { en: 'Spa', ar: 'السبا', id: 'Spa' }, tier: 'vip' },
+  {
+    key: 'kids-care',
+    label: { en: "Kids' nurseries", ar: 'حضانات الأطفال', id: 'Penitipan anak' },
+    tier: 'vip',
+  },
+  {
+    key: 'beauty',
+    label: {
+      en: "Beauty & ladies' salons",
+      ar: 'مراكز التجميل والصالونات النسائية',
+      id: 'Salon kecantikan',
+    },
+    tier: 'vip',
+  },
+  {
+    key: 'waterfalls',
+    label: { en: 'Bali waterfalls', ar: 'شلالات بالي', id: 'Air terjun Bali' },
+    tier: 'vip',
+  },
+  {
+    key: 'beaches',
+    label: { en: 'Bali beaches', ar: 'شواطئ بالي', id: 'Pantai Bali' },
+    tier: 'vip',
+  },
+  { key: 'barbers', label: { en: 'Barbers', ar: 'الحلاقين', id: 'Tukang cukur' }, tier: 'vip' },
+  { key: 'hospital', label: { en: 'Hospitals', ar: 'مستشفيات', id: 'Rumah Sakit' }, tier: 'free' },
+  { key: 'market', label: { en: 'Markets', ar: 'أسواق', id: 'Pasar' }, tier: 'free' },
+  { key: 'shopping', label: { en: 'Shopping', ar: 'تسوق', id: 'Belanja' }, tier: 'free' },
+  { key: 'events', label: { en: 'Events', ar: 'فعاليات', id: 'Acara' }, tier: 'free' },
 ]
 
 /** وسوم الوثيقة (10.2). */
@@ -189,15 +231,15 @@ const PLACE_AREA: Record<string, string> = {
 
 /** التصنيف الرئيسي لكل مكان من التصميم — كي تعمل فلترة التصنيف من أول تنصيب. */
 const PLACE_CATEGORY: Record<string, string> = {
-  batur: 'nature',
+  batur: 'activities',
   tega: 'sights',
-  ubud: 'culture',
-  canggu: 'beach',
+  ubud: 'sights',
+  canggu: 'beaches',
   uluwatu: 'sights',
-  lempuyang: 'culture',
-  penida: 'beach',
-  diamond: 'beach',
-  sekumpul: 'nature',
+  lempuyang: 'sights',
+  penida: 'beaches',
+  diamond: 'beaches',
+  sekumpul: 'waterfalls',
 }
 
 /**
@@ -351,9 +393,16 @@ async function seed(): Promise<Map<string, number>> {
           key: cat.key,
           label: cat.label,
           sortOrder: 20 + index,
+          // market / shopping / events stay filters of their own (folded into
+          // malls and activities on the map), so only the first 12 are chips.
+          mapTier: index < 12 ? cat.tier : null,
+          mapOrder: index + 1,
         })),
       )
-      .onConflictDoUpdate({ target: categories.key, set: overwrite(categories, ['label']) })
+      .onConflictDoUpdate({
+        target: categories.key,
+        set: overwrite(categories, ['label', 'mapTier', 'mapOrder']),
+      })
       .returning({ id: categories.id, key: categories.key })
     for (const row of insertedPlaceCategories) categoryId.set(row.key, row.id)
 
@@ -695,6 +744,8 @@ async function seed(): Promise<Map<string, number>> {
       })
       .returning({ id: mapPlaces.id, legacyId: mapPlaces.legacyId })
     counts.set('map_places', insertedMapPlaces.length)
+    // Free or VIP follows the category (client, Oct 2026), as in migration 0026.
+    await syncPlaceAccess(tx)
 
     // الوسوم في جدولها (place_tags). كانت الهجرة 0006 تنقلها من أماكن موجودة
     // قبل الـ seed فقط، فكان كل تنصيب جديد بلا وسوم وفلتر الوسوم فارغاً.

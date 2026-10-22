@@ -13,22 +13,26 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { Breadcrumbs, LinkButton, Stars, Tag } from '@/components/bt'
+import { ActivityCompact } from '@/components/cards'
 import { Icon, Photo } from '@/components/ui'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
-import { listMapPlaces } from '@/lib/content/queries'
+import { listActivities, listMapPlaces } from '@/lib/content/queries'
 import { loadEntitlements, redactPlace } from '@/lib/entitlements'
 import { haversineKm } from '@/lib/geo'
 import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
+import { pageMetadata } from '../../_meta'
+
 import { categoryIcon } from '../../map/geo'
 import { mapViewSettings } from '../../map/map-style'
 import { PlaceActions } from '../../map/place-actions'
 import { PlaceMiniMap } from '../../map/place-mini-map'
 import { PlaceThumb } from '../../map/place-thumb'
+import { relatedActivities } from './related'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,11 +45,44 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const place = (await listMapPlaces()).find((entry) => entry.slug === slug)
   // Only a free place is named here: metadata is not per-viewer.
   if (place === undefined || !place.isFree)
-    return { title: t('mp_title'), robots: { index: false } }
-  return {
+    return { title: t('mp3_pl_locked_t'), robots: { index: false } }
+  return pageMetadata({
+    locale: lang,
+    path: `/places/${place.slug}`,
     title: pick(place.name, lang, place.slug),
-    description: pickOptional(place.description, lang) ?? undefined,
-  }
+    description: placeDescription(place, lang, t),
+  })
+}
+
+type Translate = Awaited<ReturnType<typeof getTranslations>>
+
+/**
+ * The place's own description, or one line built from what is known about it
+ * (name, category, area) — never an empty page or meta description (list H10).
+ */
+function placeDescription(
+  place: {
+    name: Record<string, string>
+    slug: string
+    description: Record<string, string> | null
+    categoryLabel: Record<string, string> | null
+    category: Record<string, string> | null
+    regionLabel: Record<string, string> | null
+    parentRegionLabel: Record<string, string> | null
+  },
+  lang: Locale,
+  t: Translate,
+): string {
+  const own = pickOptional(place.description, lang)
+  if (own) return own
+  const category = pickOptional(place.categoryLabel, lang) ?? pickOptional(place.category, lang)
+  const region =
+    pickOptional(place.regionLabel, lang) ?? pickOptional(place.parentRegionLabel, lang)
+  return t('pl_auto_desc', {
+    name: pick(place.name, lang, place.slug),
+    category: category ?? t('pl_auto_place'),
+    region: region ?? t('pl_auto_bali'),
+  })
 }
 
 export default async function PlacePage({ params }: PageProps) {
@@ -54,11 +91,12 @@ export default async function PlacePage({ params }: PageProps) {
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
 
   const access = await checkSecureAccess(`place:${slug}`)
-  const [t, places, held, mapSettings] = await Promise.all([
+  const [t, places, held, mapSettings, activities] = await Promise.all([
     getTranslations(),
     listMapPlaces(),
     loadEntitlements(access.ok ? access.user.id : null),
     readSetting('map'),
+    listActivities({ locale: lang, limit: 200 }),
   ])
   const full = places.find((entry) => entry.slug === slug)
   if (full === undefined) notFound()
@@ -94,7 +132,8 @@ export default async function PlacePage({ params }: PageProps) {
   const region =
     pickOptional(place.regionLabel, lang) ?? pickOptional(place.parentRegionLabel, lang) ?? ''
   const category = pickOptional(place.categoryLabel, lang) ?? pickOptional(place.category, lang)
-  const description = pickOptional(place.description, lang)
+  const description = placeDescription(place, lang, t)
+  const related = relatedActivities(place, activities)
   const detailed = pickOptional(place.detailedDescription, lang)
 
   // Nearby: other places THIS viewer can see, nearest first.
@@ -175,6 +214,17 @@ export default async function PlacePage({ params }: PageProps) {
             label={t('mp5_mini_map')}
             settings={mapViewSettings(mapSettings)}
           />
+
+          {related.length > 0 && (
+            <section className="stack" style={{ gap: 8 }}>
+              <h2 className="h3">{t('pl_related')}</h2>
+              <div className="pl-related">
+                {related.map((activity) => (
+                  <ActivityCompact key={activity.id} activity={activity} fav={false} />
+                ))}
+              </div>
+            </section>
+          )}
 
           {nearby.length > 0 && (
             <section className="stack" style={{ gap: 8 }}>

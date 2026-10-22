@@ -1,7 +1,8 @@
 /**
  * LandmarkCard — a landmark on /explore, in the v3 place-card shape.
  *
- * Opens the bookable activity when the landmark has one, otherwise the map.
+ * Opens the landmark's own place page (list H8), else its bookable activity,
+ * else the map.
  */
 
 import { useLocale, useTranslations } from 'next-intl'
@@ -26,9 +27,11 @@ export function LandmarkCard({ landmark, priority = false }: LandmarkCardProps) 
   const type = pickOptional(landmark.type, locale)
   const blurb = pickOptional(landmark.blurb, locale)
   const href =
-    landmark.activitySlug === null
-      ? ENTITY_PATHS.place
-      : entityHref('activity', landmark.activitySlug)
+    landmark.placeSlug !== null
+      ? `/places/${landmark.placeSlug}`
+      : landmark.activitySlug === null
+        ? ENTITY_PATHS.place
+        : entityHref('activity', landmark.activitySlug)
 
   return (
     <Card id={landmark.slug}>

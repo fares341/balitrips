@@ -64,6 +64,13 @@ export const categories = pgTable('categories', {
   /** Icon name from the design's ~45-glyph set. */
   icon: varchar('icon', { length: 32 }),
   sortOrder: integer('sort_order').notNull().default(0),
+  /**
+   * The map's two levels (client, Oct 2026): 'free' or 'vip'. NULL = not a map
+   * category (activity-only). A place's access follows its main category.
+   */
+  mapTier: varchar('map_tier', { length: 8 }),
+  /** Order of the category chips on the map. */
+  mapOrder: integer('map_order').notNull().default(0),
   ...timestamps,
 })
 

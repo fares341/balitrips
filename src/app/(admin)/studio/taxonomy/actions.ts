@@ -1,6 +1,6 @@
 'use server'
 
-import { count, eq } from 'drizzle-orm'
+import { count, eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -18,6 +18,7 @@ import {
   tags,
 } from '@/db/schema'
 import { isIconName } from '@/components/ui/icon'
+import { isMapTier, syncPlaceAccess, type MapTier } from '@/lib/content/map-access'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -84,6 +85,8 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
       status: fenum(form, 'status', STATUSES, 'active'),
       icon,
       sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
+      mapTier: isMapTier(form.get('mapTier')) ? (form.get('mapTier') as MapTier) : null,
+      mapOrder: fint(form, 'mapOrder', 0, t('taxonomy.map_order')),
     }
 
     await db.transaction(async (tx) => {
@@ -98,6 +101,11 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
         id === 'new'
           ? await tx.insert(categories).values(values).returning()
           : await tx.update(categories).set(values).where(eq(categories.id, id)).returning()
+
+      // Its places follow the category's map level (Free / VIP).
+      if (row !== undefined && (before === null || before.mapTier !== row.mapTier)) {
+        await syncPlaceAccess(tx, sql`mp.category_id = ${row.id}`)
+      }
 
       await writeAudit(
         {

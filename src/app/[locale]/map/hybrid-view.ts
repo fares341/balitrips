@@ -84,7 +84,8 @@ export class HybridView {
   private shown = false
   /** Real-map zoom of the framed island (the page's "z0" on the real map). */
   private homeZoomMap = 9
-  private tilted = true
+  /** The public map is 2D only (client, Oct 2026): never tilted. */
+  private readonly tilted = false
   private anim = 0
   private endTimer = 0
   private timers: number[] = []
@@ -217,6 +218,7 @@ export class HybridView {
       map = createRealMap(engine, this.o.mapContainer, this.o.settings, {
         freeZone: this.o.freeZone,
         locale: this.o.locale,
+        flat: true,
       })
     } catch {
       // No WebGL, or the engine refused: the artwork stays fully usable.
@@ -335,18 +337,6 @@ export class HybridView {
     this.modeValue = mode
     this.shown = shown
     this.o.onEvent('mode')
-  }
-
-  /** 3D (tilted) or straight down — the real map only. */
-  setTilt(on: boolean): void {
-    this.tilted = on
-    const map = this.map
-    if (map === null || this.modeValue !== 'map') return
-    map.easeTo({
-      pitch: on ? this.o.settings.tiltOnEnter : 0,
-      duration: this.o.reducedMotion() ? 0 : 850,
-      essential: true,
-    })
   }
 
   // ---- camera commands (both modes) -----------------------------------------

@@ -183,6 +183,13 @@
       "when": 1793500000000,
       "tag": "0025_itinerary_pdf_maps",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793600000000,
+      "tag": "0026_map_free_vip_categories",
+      "breakpoints": true
     }
   ]
 }

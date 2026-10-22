@@ -147,22 +147,25 @@ describe('map payload', () => {
 describe('placeAccess (Hidden Gems)', async () => {
   const { placeAccess, canSeePlace, makeEntitlementSet } = await import('./redaction')
 
-  it('forces Hidden Gems to VIP even when the row says free', () => {
+  it('keeps Hidden Gems locked even when the row says free', () => {
     expect(
       placeAccess({ isFree: true, requiredEntitlement: 'map_access', isHiddenGem: true }),
     ).toEqual({
       isFree: false,
-      requiredEntitlement: 'vip',
+      requiredEntitlement: 'map_access',
     })
   })
-  it('keeps a Hidden Gem locked for map_access holders and open for VIP', () => {
+  it('two levels: the map plan (VIP subscription) opens every locked place, gems included', () => {
     const gem = { isFree: false, requiredEntitlement: 'map_access', isHiddenGem: true }
-    expect(canSeePlace(gem, makeEntitlementSet(['map_access']))).toBe(false)
+    const oldVip = { isFree: false, requiredEntitlement: 'vip' }
+    expect(canSeePlace(gem, makeEntitlementSet(['map_access']))).toBe(true)
+    expect(canSeePlace(oldVip, makeEntitlementSet(['map_access']))).toBe(true)
     expect(canSeePlace(gem, makeEntitlementSet(['vip']))).toBe(true)
+    expect(canSeePlace(gem, makeEntitlementSet([]))).toBe(false)
   })
-  it('fails closed on an unknown requirement', () => {
+  it('an unknown requirement still needs the plan', () => {
     expect(placeAccess({ isFree: false, requiredEntitlement: 'gold' }).requiredEntitlement).toBe(
-      'vip',
+      'map_access',
     )
   })
 })
@@ -192,10 +195,10 @@ describe('basic (PDF-only plan)', () => {
     expect(redactPlace(place(), makeEntitlementSet(['basic'])).locked).toBe(true)
   })
 
-  it('treats a place row requiring "basic" as VIP, not as open to basic holders', async () => {
+  it('treats a place row requiring "basic" as locked, not as open to basic holders', async () => {
     const { placeAccess, canSeePlace } = await import('./redaction')
     expect(placeAccess({ isFree: false, requiredEntitlement: 'basic' }).requiredEntitlement).toBe(
-      'vip',
+      'map_access',
     )
     expect(
       canSeePlace({ isFree: false, requiredEntitlement: 'basic' }, makeEntitlementSet(['basic'])),

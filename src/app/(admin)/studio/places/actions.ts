@@ -7,7 +7,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { mapPlaces, placeTags, tags } from '@/db/schema'
+import { categories, mapPlaces, placeTags, tags } from '@/db/schema'
+import { freeOnMap } from '@/lib/content/map-access'
 import { isStorageConfigured, publicUrl, uploadPublic } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -116,6 +117,20 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       eventEndsAt,
       status,
     }
+
+    // Free or VIP follows the main category (client, Oct 2026 — two levels,
+    // locked by category). VIP = the published map plan (`map_access`).
+    if (values.categoryId !== null) {
+      const [category] = await db
+        .select({ mapTier: categories.mapTier })
+        .from(categories)
+        .where(eq(categories.id, values.categoryId))
+        .limit(1)
+      if (category?.mapTier === 'free' || category?.mapTier === 'vip') {
+        values.isFree = freeOnMap(category.mapTier, values.isHiddenGem)
+      }
+    }
+    values.requiredEntitlement = 'map_access'
 
     const savedId = await db.transaction(async (tx) => {
       const before =

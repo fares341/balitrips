@@ -11,30 +11,16 @@
 import { revalidatePath } from 'next/cache'
 import { getLocale } from 'next-intl/server'
 
-import { readSetting } from '@/app/(admin)/_lib/settings'
 import { redirect } from '@/i18n/routing'
-import { addItem } from '@/lib/cart'
-import { loadPlansById } from '@/lib/entitlements/plans'
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { addPlanToCart } from './plan-cart'
 
 export async function buyPlan(form: FormData): Promise<void> {
   const locale = await getLocale()
-  const raw = form.get('planId')
-  const planId = typeof raw === 'string' && UUID.test(raw) ? raw : null
-
-  const [plan] = planId === null ? [] : await loadPlansById([planId])
-  // Phase 3: standalone VIP can be switched off in Studio → VIP settings.
-  const standaloneOff =
-    plan !== undefined &&
-    plan.entitlementKind === 'vip' &&
-    !(await readSetting('vip')).sellStandalone
-  if (plan === undefined || standaloneOff) {
+  if (!(await addPlanToCart(form.get('planId')))) {
     redirect({ href: '/plans', locale })
     return
   }
-
-  await addItem({ kind: 'plan', refId: plan.id })
   revalidatePath('/[locale]/my-trip', 'page')
   redirect({ href: '/my-trip', locale })
 }

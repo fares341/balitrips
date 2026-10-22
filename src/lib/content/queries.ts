@@ -22,7 +22,7 @@
  * has to de-duplicate.
  */
 
-import { and, asc, desc, eq, inArray, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
 import { alias } from 'drizzle-orm/pg-core'
 
@@ -497,6 +497,15 @@ export async function listRegions(options: { includeAreas?: boolean } = {}): Pro
     label: row.label,
     sortOrder: row.sortOrder,
   }))
+}
+
+/** Each area's broad region (`ubud` → `central`); a broad region maps to itself. */
+export async function regionParentKeys(): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ key: regions.key, parentKey: parentRegion.key })
+    .from(regions)
+    .leftJoin(parentRegion, eq(parentRegion.id, regions.parentId))
+  return new Map(rows.map((row) => [row.key, row.parentKey ?? row.key]))
 }
 
 export async function listCategories(): Promise<CategoryDto[]> {
@@ -1306,6 +1315,24 @@ export async function listLandmarks(options: ListLandmarksOptions = {}): Promise
     .orderBy(asc(landmarks.sortOrder), asc(landmarks.slug))
     .limit(limit)
 
+  // The map place each landmark is (list H8): same legacy code ("lm_batur" ↔
+  // "batur") or the same English name. Its page is where "Discover" goes.
+  const placeRows =
+    rows.length === 0
+      ? []
+      : await db
+          .select({ slug: mapPlaces.slug, legacyId: mapPlaces.legacyId, name: mapPlaces.name })
+          .from(mapPlaces)
+          .where(LIVE_PLACE)
+  const norm = (value: string | null | undefined) => (value ?? '').trim().toLowerCase()
+  const byLegacy = new Map<string, string>()
+  const byName = new Map<string, string>()
+  for (const row of placeRows) {
+    if (row.legacyId) byLegacy.set(norm(row.legacyId), row.slug)
+    const en = norm(row.name.en)
+    if (en !== '' && !byName.has(en)) byName.set(en, row.slug)
+  }
+
   return rows.map(({ landmark, region, hero, activitySlug }) => ({
     id: landmark.id,
     slug: landmark.slug,
@@ -1315,6 +1342,10 @@ export async function listLandmarks(options: ListLandmarksOptions = {}): Promise
     blurb: landmark.blurb,
     region: toRegionRef(region),
     activitySlug,
+    placeSlug:
+      byLegacy.get(norm(landmark.legacyId).replace(/^lm_/, '')) ??
+      byName.get(norm(landmark.name.en)) ??
+      null,
     hero: toMedia(hero),
   }))
 }
@@ -1591,9 +1622,16 @@ export async function listMapTaxonomy(): Promise<MapTaxonomy> {
     db
       .select({ key: categories.key, label: categories.label })
       .from(categories)
-      // "all" تبويب "الكل" في فلتر الأنشطة، لا تصنيف أماكن.
-      .where(and(eq(categories.status, 'active'), ne(categories.key, 'all')))
-      .orderBy(asc(categories.sortOrder), asc(categories.key)),
+      // The map's chips are the map categories only (Free / VIP, client Oct
+      // 2026); activity-only categories stay sub-categories for search.
+      .where(
+        and(
+          eq(categories.status, 'active'),
+          ne(categories.key, 'all'),
+          isNotNull(categories.mapTier),
+        ),
+      )
+      .orderBy(asc(categories.mapOrder), asc(categories.key)),
     db
       .select({ key: tags.key, label: tags.label })
       .from(tags)

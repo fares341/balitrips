@@ -890,35 +890,6 @@
 .mp-ctrl-top > * {
   pointer-events: auto;
 }
-.mp-seg {
-  display: inline-flex;
-  padding: 4px;
-  gap: 2px;
-  border-radius: 99px;
-  background: rgba(19, 48, 26, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-.mp-seg button {
-  border: 0;
-  background: transparent;
-  color: #fff;
-  padding: 7px 14px;
-  border-radius: 99px;
-  font: inherit;
-  font-weight: 700;
-  font-size: 13px;
-  min-height: 36px;
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  cursor: pointer;
-}
-.mp-seg button[aria-pressed='true'] {
-  background: #fff;
-  color: var(--forest);
-}
 .mp-pill {
   display: inline-flex;
   align-items: center;
@@ -933,12 +904,8 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-.mp-seg button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
-/* notes column: attribution, 3D hint, "real map unavailable" */
+/* notes column: attribution, "real map unavailable" */
 .mp-notes {
   position: absolute;
   z-index: 12;
@@ -1214,22 +1181,6 @@
   .mp-pill {
     display: none;
   }
-  .mp-seg {
-    flex-direction: column;
-    border-radius: 14px;
-    padding: 3px;
-  }
-  .mp-seg button {
-    min-height: 36px;
-    width: 40px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 11px;
-    font-size: 12px;
-  }
-  .mp-seg button svg {
-    display: none;
-  }
   .mp-ctrl-zoom {
     bottom: auto;
     top: 158px;
@@ -1502,10 +1453,6 @@
   }
 
   /* Controls: 44 px targets, stacked on the inline-end edge, never under the card. */
-  .mp-seg button {
-    min-height: 44px;
-    width: 44px;
-  }
 
   /* Bigger hit areas for markers without bigger markers. */
   .mp-dot::after {
@@ -1732,9 +1679,6 @@
 @media (max-width: 1023px) {
   /* the glass controls need more body over the light land colours */
   .mp-gbtn,
-  .mp-seg {
-    background: rgba(19, 48, 26, 0.88);
-  }
 }
 
 /* ---------- Phase 3: one itinerary day (`/map?itinerary=&day=`) ---------- */
@@ -1928,4 +1872,11 @@
   gap: 10px;
   justify-items: start;
   max-width: 560px;
+}
+
+/* Place page: related activities (list H10). */
+.pl-related {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }

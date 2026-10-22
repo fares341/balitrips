@@ -7,7 +7,7 @@
  * The redaction chain is `listMapPlaces()` → `buildMapPayload(places, held)`,
  * and only `payload` is passed to the Client Component. `places` — names,
  * coordinates, images of every gated place — stays a server-local value.
- * Region bubbles and the free zone (`./regions.ts`) are computed here from
+ * Region bubbles (`./regions.ts`) are computed here from
  * REGION data (centres from the `regions` table + a locked COUNT per region);
  * no locked place's id, name or coordinate is in them.
  *
@@ -43,7 +43,7 @@ import { mapViewSettings } from './map-style'
 import { DayRouteMap } from './day-route-map'
 import { MapApp } from './map-app'
 import type { MapClientPlace } from './projection'
-import { buildFreeZone, buildRegionBubbles, freeRegionKey } from './regions'
+import { buildRegionBubbles } from './regions'
 
 const MAP_PATH = '/map'
 
@@ -139,9 +139,8 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   // region-level aggregates (bubbles), or is public data FILTERED by the
   // locked places (landmarks). No field of a locked place is sent.
   const payload = buildMapPayload(places, held)
-  const freeKey = freeRegionKey()
-  const regions = buildRegionBubbles(places, taxonomy.regions, held, freeKey)
-  const freeZone = buildFreeZone(taxonomy.regions, freeKey, places)
+  // Free or VIP is decided per CATEGORY (client, Oct 2026); no area is free.
+  const regions = buildRegionBubbles(places, taxonomy.regions, held)
 
   // The client's landmarks, minus any that would name or pinpoint a place this
   // viewer cannot see (several share a name and spot with a gated place).
@@ -192,7 +191,6 @@ export default async function MapPage({ params, searchParams }: PageProps) {
       vipFirst={held.has('vip')}
       viewerLabel={viewerLabel}
       regions={regions}
-      freeZone={freeZone}
       price={price}
       settings={mapViewSettings(settings)}
       landmarks={landmarks}

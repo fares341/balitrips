@@ -4,9 +4,9 @@
  * The interactive map (v3): design-reference/prototype/map.html, screens
  * 03-map, 03b-map-region-ubud, 03c-map-place-card, 03d-map-3d.
  *
- * Engine (`./hybrid-view.ts`): the real 3D map (MapLibre GL 5 from a pinned
+ * Engine (`./hybrid-view.ts`): the real map (MapLibre GL 5 from a pinned
  * CDN build: terrain, satellite, OpenStreetMap, sky/fog), opening on the
- * whole island tilted ~50°. The client's illustrated artwork is its poster
+ * whole island, straight down (2D only — client, Oct 2026). The client's illustrated artwork is its poster
  * while it loads and the fallback if it cannot run. Everything interactive on
  * top — region bubbles, place pins, landmarks, "you are here" — is an HTML
  * overlay positioned with `view.project()` on every camera move, so the same
@@ -49,9 +49,9 @@ import type { MapTaxonomy } from '@/lib/search/query'
 import { FEATURES } from '@/lib/features'
 import { reportMapError, track } from '@/lib/analytics/client'
 
-import { ART_FULL_URL, ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from './art-warp'
-import { categoryIcon, circleRing, declutter, inBounds, type ViewBounds } from './geo'
-import { HybridView, type Pad, type RealMapState, type ViewMode } from './hybrid-view'
+import { ART_FULL_URL, ART_SMALL_URL, ART_SMALL_W, ART_W } from './art-warp'
+import { categoryIcon, declutter, inBounds, type ViewBounds } from './geo'
+import { HybridView, type Pad, type RealMapState } from './hybrid-view'
 import { LANDMARK_COLORS, RANK_MINZOOM, type MapLandmark } from './landmark-style'
 import { useMapFilters } from './map-filters'
 import { MapWatermark, protectionHandlers } from './map-protect'
@@ -60,7 +60,7 @@ import { loadMapLibre, type EngineLoader } from './maplibre-loader'
 import { PlaceActions } from './place-actions'
 import { PlaceThumb } from './place-thumb'
 import { buildPins, type MapClientPlace, type MapPin, type OpenMapPlace } from './projection'
-import type { FreeZone, RegionBubble } from './regions'
+import type { RegionBubble } from './regions'
 
 const PLANS_HREF = '/plans'
 const DRIVER_HREF = '/driver'
@@ -89,7 +89,6 @@ export interface MapAppProps {
   /** "email · date" watermark for signed-in viewers; null for guests. */
   viewerLabel: string | null
   regions: RegionBubble[]
-  freeZone: FreeZone | null
   /** The map plan's real price, formatted; null when no plan is on sale. */
   price: string | null
   /**
@@ -160,22 +159,10 @@ function landmarkCardBox(at: { x: number; y: number }, viewW: number): CSSProper
     : { width, left, insetInlineStart: 'auto' }
 }
 
-/**
- * The paywall on the artwork: everything outside the free area dimmed, with
- * the area's dashed outline — an SVG path in ARTWORK pixels (the same space
- * as the image, so it pans and zooms with it).
- */
-function artMaskPaths(zone: FreeZone): { mask: string; outline: string } {
-  const ring = circleRing(zone, zone.radiusKm, 72).map(([lon, lat]) => geoToArt(lon, lat))
-  const poly =
-    ring.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join('') + 'Z'
-  return { mask: `M0 0H${ART_W}V${ART_H}H0Z${poly}`, outline: poly }
-}
-
 export function MapApp(props: MapAppProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
-  const { unlocked, freeZone, regions, price, viewerLabel } = props
+  const { unlocked, regions, price, viewerLabel } = props
   const settings = props.settings ?? MAP_SETTING_DEFAULTS
   const landmarks = props.landmarks ?? NO_LANDMARKS
 
@@ -188,10 +175,8 @@ export function MapApp(props: MapAppProps) {
   const [lockedPick, setLockedPick] = useState<string | null>(null)
   const [landmarkPick, setLandmarkPick] = useState<string | null>(null)
   const [mobileView, setMobileView] = useState<MobileView>('map')
-  const [viewMode, setViewMode] = useState<ViewMode>('art')
   const [mapShown, setMapShown] = useState(false)
   const [realState, setRealState] = useState<RealMapState>('idle')
-  const [tilted, setTilted] = useState(true)
   const [tilesFailed, setTilesFailed] = useState(false)
   const [attribOpen, setAttribOpen] = useState(false)
   const [noteHidden, setNoteHidden] = useState(false)
@@ -213,11 +198,6 @@ export function MapApp(props: MapAppProps) {
   const viewRef = useRef<HybridView | null>(null)
   const frameRef = useRef(0)
   const settleRef = useRef(0)
-
-  const artMask = useMemo(
-    () => (unlocked || freeZone === null ? null : artMaskPaths(freeZone)),
-    [unlocked, freeZone],
-  )
 
   const flyToPlace = useCallback((place: OpenMapPlace) => {
     viewRef.current?.flyTo(place.lon, place.lat, 1.6, 14)
@@ -362,10 +342,6 @@ export function MapApp(props: MapAppProps) {
 
   // ---- engine lifecycle ---------------------------------------------------
   const loadEngine = props.loadEngine ?? loadMapLibre
-  const freeRing = useMemo(
-    () => (unlocked || freeZone === null ? null : circleRing(freeZone, freeZone.radiusKm, 96)),
-    [unlocked, freeZone],
-  )
   useEffect(() => {
     const root = viewBoxRef.current
     const stage = stageRef.current
@@ -386,7 +362,8 @@ export function MapApp(props: MapAppProps) {
       smallWidth: ART_SMALL_W,
       mapContainer,
       settings,
-      freeZone: freeRing,
+      // No free AREA any more: access follows the category (client, Oct 2026).
+      freeZone: null,
       locale,
       initial: target ? { lng: target.place.lon, lat: target.place.lat, zoom: 14 } : null,
       padding,
@@ -395,7 +372,6 @@ export function MapApp(props: MapAppProps) {
         if (event === 'move') schedule()
         else if (event === 'moveend') settle()
         else if (event === 'mode') {
-          setViewMode(view.mode)
           setMapShown(view.mapVisible)
           if (view.mode !== 'map') setLandmarkPick(null)
           schedule()
@@ -430,7 +406,7 @@ export function MapApp(props: MapAppProps) {
       view.destroy()
       viewRef.current = null
     }
-  }, [loadEngine, attempt, settings, freeRing, padding, schedule, settle, flyToPlace, locale])
+  }, [loadEngine, attempt, settings, padding, schedule, settle, flyToPlace, locale])
 
   // Filters changed: re-project the pins (async — no setState in the effect body).
   useEffect(() => {
@@ -469,11 +445,6 @@ export function MapApp(props: MapAppProps) {
     if (region === undefined) return
     const wide = region.radiusKm >= 10
     view.flyTo(region.lon, region.lat, wide ? 1.05 : 1.35, wide ? 11.5 : 12.5)
-  }
-
-  const setTilt = (on: boolean) => {
-    setTilted(on)
-    viewRef.current?.setTilt(on)
   }
 
   const zoomBy = (dir: 1 | -1) => viewRef.current?.zoomBy(dir)
@@ -540,7 +511,6 @@ export function MapApp(props: MapAppProps) {
           .filter((r) => filters.region === null || r.key === filters.region)
           .reduce((sum, r) => sum + r.lockedCount, 0)
   const viewCount = inView.length + (bounds === null ? props.lockedCount : lockedInView)
-  const freeName = freeZone === null ? '' : pick(freeZone.label, locale, freeZone.key)
   const hasFilters =
     filters.category !== null ||
     filters.filterTag !== null ||
@@ -610,7 +580,7 @@ export function MapApp(props: MapAppProps) {
               ]}
             />
             <h1 id="mp-h">{t('mp3_title')}</h1>
-            <p className="mp-lede">{t('mp3_lede', { area: freeName || 'Ubud' })}</p>
+            <p className="mp-lede">{t('mp3_lede')}</p>
             <button
               type="button"
               className="mp-howto-btn"
@@ -653,12 +623,7 @@ export function MapApp(props: MapAppProps) {
           aria-label={t('mp3_results_label')}
         >
           <div className="mp-side-head">
-            <SheetUnlock
-              unlocked={unlocked}
-              freeName={freeName}
-              price={price}
-              unlockLabel={unlockLabel}
-            />
+            <SheetUnlock unlocked={unlocked} price={price} unlockLabel={unlockLabel} />
             <div className="mp-search-box">
               <label className="mp-search">
                 <Icon name="search" size={18} />
@@ -739,7 +704,9 @@ export function MapApp(props: MapAppProps) {
                 <div className="mp-res-head">
                   <span>
                     <b dir="ltr">{listed.length}</b>{' '}
-                    {useAll && bounds !== null ? t('mp3_results_all') : t('mp3_results_view')}
+                    {useAll && bounds !== null
+                      ? t('mp3_results_all_n', { n: listed.length })
+                      : t('mp3_results_view_n', { n: listed.length })}
                   </span>
                   {near !== null && (
                     <Tag variant="info" icon="locate">
@@ -868,12 +835,6 @@ export function MapApp(props: MapAppProps) {
                   draggable={false}
                   decoding="async"
                 />
-                {artMask !== null && (
-                  <svg viewBox={`0 0 ${ART_W} ${ART_H}`} aria-hidden="true">
-                    <path className="mp-art-dim" d={artMask.mask} fillRule="evenodd" />
-                    <path className="mp-art-zone" d={artMask.outline} />
-                  </svg>
-                )}
               </div>
             </div>
             <div className="mp-overlay">
@@ -1107,27 +1068,9 @@ export function MapApp(props: MapAppProps) {
           </div>
 
           <div className="mp-ctrl mp-ctrl-top">
-            <div className="mp-seg" role="group" aria-label={t('mp3_view_mode')}>
-              <button
-                type="button"
-                aria-pressed={!tilted}
-                disabled={viewMode !== 'map'}
-                onClick={() => setTilt(false)}
-              >
-                2D
-              </button>
-              <button
-                type="button"
-                aria-pressed={tilted}
-                disabled={viewMode !== 'map'}
-                onClick={() => setTilt(true)}
-              >
-                <Icon name="cube" size={15} />
-                3D
-              </button>
-            </div>
             <span className="mp-pill">
-              <Icon name="pin" size={15} /> <b dir="ltr">{viewCount}</b> {t('mp3_places_view')}
+              <Icon name="pin" size={15} /> <b dir="ltr">{viewCount}</b>{' '}
+              {t('mp3_places_view_n', { n: viewCount })}
             </span>
           </div>
 
@@ -1210,7 +1153,7 @@ export function MapApp(props: MapAppProps) {
                     <Icon name="lock" size={20} />
                   </span>
                   <span>
-                    <b>{t('mp3_free_title', { area: freeName })}</b>
+                    <b>{t('mp3_free_title')}</b>
                     <span>{t('mp3_free_text')}</span>
                   </span>
                 </span>
@@ -1329,12 +1272,10 @@ export function MapApp(props: MapAppProps) {
 
 function SheetUnlock({
   unlocked,
-  freeName,
   price,
   unlockLabel,
 }: {
   unlocked: boolean
-  freeName: string
   price: string | null
   unlockLabel: string
 }) {
@@ -1351,7 +1292,7 @@ function SheetUnlock({
   return (
     <div className="mp-m-unlock">
       <span>
-        <Icon name="lock" size={16} /> <b>{t('mp3_free_short', { area: freeName })}</b>
+        <Icon name="lock" size={16} /> <b>{t('mp3_free_short')}</b>
       </span>
       <LinkButton href={PLANS_HREF} size="sm">
         <span>

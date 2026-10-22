@@ -109,7 +109,7 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
                     name={pick(view.region.label, locale, view.region.key)}
                     tagline={t('ex4_counts', {
                       a: view.activities.length,
-                      p: view.places.length,
+                      p: view.placeCount,
                     })}
                     cta={t('ex4_cta')}
                     tall
@@ -142,7 +142,7 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
                           </Link>
                         </th>
                         <td dir="ltr">{view.activities.length}</td>
-                        <td dir="ltr">{view.places.length}</td>
+                        <td dir="ltr">{view.placeCount}</td>
                         <td dir="ltr">{view.itineraries.length}</td>
                       </tr>
                     ))}

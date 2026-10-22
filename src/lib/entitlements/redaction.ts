@@ -111,23 +111,21 @@ export interface FullMapPlace {
 /**
  * الصلاحية الفعلية لمكان، في مكان واحد.
  *
- * Hidden Gems حصرية لـ VIP بحسب الوثيقة ("VIP: الوصول إلى Hidden Gems")،
- * فعلامة `is_hidden_gem` ترفع المتطلب إلى `vip` وتلغي `is_free` مهما كانت
- * قيمتهما في الصف. خطأ في لوحة التحكم (جوهرة معلّمة "مجانية") لا يفتحها.
- * قيمة متطلب غير معروفة تُعامل كـ `vip` — الإغلاق هو اتجاه الفشل الآمن.
+ * مستويان فقط على الخريطة (العميل، أكتوبر 2026): مجاني و VIP، والقفل حسب
+ * التصنيف (`categories.map_tier` ← `is_free`). "VIP" هو ما تمنحه باقة الخريطة
+ * المنشورة (`map_access`)، فكل مكان مقفل يتطلب `map_access` — ومن يملك `vip`
+ * القديمة يراه أيضاً (vip ⊃ map_access). شراء الباقة يفتح بالضبط ما تقفله الخريطة.
+ *
+ * Hidden Gems تبقى مقفلة دائماً للزائر المجاني، حتى لو عُلّمت "مجانية" خطأً.
  */
 export function placeAccess(row: {
   isFree: boolean
   requiredEntitlement: string
   isHiddenGem?: boolean | null
 }): { isFree: boolean; requiredEntitlement: MapEntitlementKind } {
-  if (row.isHiddenGem === true) return { isFree: false, requiredEntitlement: 'vip' }
   return {
-    isFree: row.isFree,
-    // 'basic' (أو أي قيمة ليست من أنواع الخريطة) متطلباً لمكان → vip، لا "مفتوح لـ basic".
-    requiredEntitlement: isMapEntitlementKind(row.requiredEntitlement)
-      ? row.requiredEntitlement
-      : 'vip',
+    isFree: row.isFree && row.isHiddenGem !== true,
+    requiredEntitlement: 'map_access',
   }
 }
 

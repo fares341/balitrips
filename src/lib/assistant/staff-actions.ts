@@ -128,7 +128,7 @@ async function invoke(kind: string, args: Record<string, unknown>, existingNotes
           lon: String(args.lon),
           regionId: typeof args.regionId === 'string' ? args.regionId : '',
           categoryId: typeof args.categoryId === 'string' ? args.categoryId : '',
-          // Inside the free area a new place is free, like its neighbours.
+          // Free or VIP follows the category (client, Oct 2026); savePlace re-derives it.
           isFree: args.isFree === true ? 'on' : null,
           requiredEntitlement: 'map_access',
           canFavorite: 'on',

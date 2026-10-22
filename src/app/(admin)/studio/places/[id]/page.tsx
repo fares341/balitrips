@@ -208,20 +208,8 @@ export default async function PlaceEditorPage({
               defaultChecked={place?.isFree ?? false}
               hint={t('places.free_to_view_hint')}
             />
-            <Field
-              label={t('places.required_entitlement')}
-              htmlFor="requiredEntitlement"
-              hint={t('places.required_entitlement_hint')}
-            >
-              <Select
-                id="requiredEntitlement"
-                name="requiredEntitlement"
-                defaultValue={place?.requiredEntitlement ?? 'map_access'}
-              >
-                <option value="map_access">{t('places.required_map')}</option>
-                <option value="vip">{t('places.required_vip')}</option>
-              </Select>
-            </Field>
+            {/* Two levels (client, Oct 2026): every locked place needs the VIP subscription. */}
+            <input type="hidden" name="requiredEntitlement" value="map_access" />
           </div>
           <div className="a-row">
             <Checkbox

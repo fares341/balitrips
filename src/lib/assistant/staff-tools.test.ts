@@ -236,7 +236,7 @@ describe('Adding a map place from a location', () => {
       lon: 115.2625,
       area: 'Ubud',
       regionKey: 'ubud',
-      freeForEveryone: true,
+      freeCategories: ['activities', 'sights', 'malls', 'hospital'],
       warnings: [],
       categories: [{ key: 'cafes' }, { key: 'temples' }],
     })

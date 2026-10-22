@@ -36,10 +36,12 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { buttonClass } from '@/components/bt'
 import { HOME_HREF } from '@/components/layout'
 import { Button } from '@/components/shared'
 import { Icon, Photo, isIconName, type IconName } from '@/components/ui'
 import { isLocale, locales, type Locale } from '@/i18n/config'
+import { getPathname } from '@/i18n/routing'
 import { listActivities } from '@/lib/content/queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { MediaDto } from '@/lib/content/types'
@@ -57,7 +59,6 @@ import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { formatPrice } from '../_ui/price'
 import { currentUserId } from '../_viewer/session'
-import { buyPlan } from './actions'
 import { PLAN_TIERS } from './tiers'
 
 const PLANS_HREF = '/plans'
@@ -388,18 +389,21 @@ function PlanGrid({
                 </Button>
               ) : (
                 // The only thing that grants this plan is a settled payment; the
-                // form puts the plan in the cart, and checkout prices it server-side.
-                <form action={buyPlan}>
-                  <input type="hidden" name="planId" value={plan.id} />
-                  <Button
-                    type="submit"
-                    variant={plan.featured ? 'orange' : 'ghost'}
-                    block
-                    className="bt-ptier-cta"
-                  >
-                    {t('sub_choose')}
-                  </Button>
-                </form>
+                // link puts the plan in the cart (a real href — list H12; no
+                // prefetch, it is not a page), and checkout prices it server-side.
+                <a
+                  href={getPathname({
+                    href: `/plans/buy/${encodeURIComponent(plan.id)}`,
+                    locale,
+                  })}
+                  rel="nofollow"
+                  className={buttonClass(
+                    { variant: plan.featured ? 'orange' : 'ghost', block: true },
+                    'bt-ptier-cta',
+                  )}
+                >
+                  {t('sub_choose')}
+                </a>
               )}
 
               <ul className="bt-ptier-list">
