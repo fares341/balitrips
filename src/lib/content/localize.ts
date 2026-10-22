@@ -73,6 +73,16 @@ export function pick(value: LocalizedInput, locale: Locale, fallback = ''): stri
 }
 
 /**
+ * Image alt text for one locale (L12). The alt written in that language when
+ * there is one; otherwise the subject's own localized name, which describes
+ * the photo better on an Arabic page than an English sentence would.
+ */
+export function pickAlt(alt: LocalizedInput, locale: Locale, name: string): string {
+  const requested = alt?.[locale]
+  return usable(requested) ? requested : name
+}
+
+/**
  * Same resolution, but reports absence instead of papering over it.
  *
  * Use this for optional copy the layout should omit entirely — a blurb, an

@@ -25,7 +25,7 @@ import {
 import { Tag } from '@/components/bt/chip'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import type { PackageSummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
 
@@ -48,7 +48,7 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
     <Card>
       <CardMedia
         src={pkg.hero?.url}
-        alt={pick(pkg.hero?.alt, locale)}
+        alt={pickAlt(pkg.hero?.alt, locale, name)}
         srcSetAvif={pkg.hero?.srcSetAvif}
         srcSetWebp={pkg.hero?.srcSetWebp}
         ratio="16/11"

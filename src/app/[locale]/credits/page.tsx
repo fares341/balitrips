@@ -42,10 +42,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw } = await params
   const locale = toLocale(raw)
+  const t = await getTranslations({ locale })
 
   return {
-    title: 'Image credits',
-    description: 'Photographers, licences and sources for the photography used on this site.',
+    title: t('cr_title'),
+    description: t('cr_sub'),
     alternates: alternatesFor(CREDITS_HREF, locale),
     // Useful to people, not to search engines, and it would compete with real
     // content for crawl budget.
@@ -53,19 +54,51 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
   }
 }
 
+type Credit = {
+  photographer: string | null
+  licence: string | null
+  source: string | null
+  url: string | null
+  raw: string
+}
+
+const LICENCE =
+  /\b(CC[ -]?(BY|0)[^-–—]*|CC0|Public domain|PD[ -]\w+|Unsplash Licen[cs]e|Pexels Licen[cs]e|GFDL)\b/i
+const UNKNOWN = /^(unknown( photographer)?|n\/?a|-|—)$/i
+
 /**
- * Split "Photo: Name - LICENCE - via Source - https://url" into its parts.
- *
- * The string is built by scripts/import-photos.ts and by hand in Studio, so
- * this is tolerant: anything it cannot parse is shown verbatim rather than
- * mangled or dropped. Losing a credit to a formatting mismatch would be the
- * one failure mode that actually matters here.
+ * Split "Photo: Name - LICENCE - via Source - https://url" into its parts
+ * (the form scripts/import-photos.ts writes). Tolerant: a part it cannot
+ * place stays null, and the row is then flagged rather than dropped — losing
+ * a credit to a formatting mismatch would be the one failure that matters.
  */
-function parseCredit(credit: string): { text: string; url: string | null } {
+function parseCredit(credit: string): Credit {
   const match = /(https?:\/\/\S+)/.exec(credit)
   const url = match ? match[1]! : null
-  const text = url === null ? credit : credit.replace(url, '').replace(/[\s—-]+$/u, '')
-  return { text: text.trim(), url }
+  const text = (url === null ? credit : credit.replace(url, ''))
+    .replace(/^\s*(photo|image|credit)\s*:\s*/i, '')
+    .trim()
+  const parts = text
+    .split(/\s+[-–—]\s+/u)
+    .map((part) => part.trim().replace(/[\s,;—–-]+$/u, ''))
+    .filter((part) => part !== '')
+
+  let licence: string | null = null
+  let source: string | null = null
+  const rest: string[] = []
+  for (const part of parts) {
+    if (licence === null && LICENCE.test(part)) licence = part
+    else if (source === null && /^via\s+/i.test(part)) source = part.replace(/^via\s+/i, '')
+    else rest.push(part)
+  }
+  const who = rest[0] ?? null
+  return {
+    photographer: who === null || UNKNOWN.test(who) ? null : who,
+    licence,
+    source,
+    url,
+    raw: credit,
+  }
 }
 
 export default async function CreditsPage({ params }: { params: PageParams }) {
@@ -81,64 +114,94 @@ export default async function CreditsPage({ params }: { params: PageParams }) {
     .where(and(isNotNull(media.credit), ne(media.credit, '')))
     .orderBy(asc(media.credit))
 
+  const credits = rows.map((row) => ({ id: row.id, ...parseCredit(row.credit ?? '') }))
+  const incomplete = credits.filter((c) => c.photographer === null || c.licence === null).length
+
   return (
     <main>
       <PageBanner
         tag={t('navr_about')}
-        title="Image credits"
-        subtitle="Photographers, licences and sources for the photography on this site."
-        breadcrumbLabel="Image credits"
+        title={t('cr_title')}
+        subtitle={t('cr_sub')}
+        breadcrumbLabel={t('cr_title')}
       />
 
       <section className="bt-sec">
         <div className="bt-wrap">
           <p className="muted" style={{ maxWidth: '62ch' }}>
-            Photography on this site is used under Creative Commons licences, or is in the public
-            domain. Each entry below names the photographer and the licence, and links to the
-            original.
+            {t('cr_intro')}
           </p>
 
-          {rows.length === 0 ? (
-            <p className="muted">No credited images yet.</p>
+          {credits.length === 0 ? (
+            <p className="muted">{t('cr_empty')}</p>
           ) : (
-            <ul
-              style={{
-                listStyle: 'none',
-                padding: 0,
-                margin: '24px 0 0',
-                display: 'grid',
-                gap: 10,
-              }}
-            >
-              {rows.map((row) => {
-                const { text, url } = parseCredit(row.credit ?? '')
-                return (
-                  <li
-                    key={row.id}
-                    style={{
-                      fontSize: 14.5,
-                      lineHeight: 1.6,
-                      paddingBottom: 10,
-                      borderBottom: '1px solid var(--line, rgba(0,0,0,.08))',
-                      overflowWrap: 'anywhere',
-                    }}
-                  >
-                    {text}
-                    {url !== null && (
-                      <>
-                        {' — '}
-                        <a href={url} rel="noopener noreferrer nofollow" target="_blank">
-                          source
-                        </a>
-                      </>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
+            <>
+              {incomplete > 0 && (
+                <p className="muted" style={{ fontSize: 14 }}>
+                  {t('cr_incomplete_n', { n: incomplete })}
+                </p>
+              )}
+              <div style={{ overflowX: 'auto', marginTop: 16 }}>
+                <table className="cmp" style={{ width: '100%', fontSize: 14, lineHeight: 1.5 }}>
+                  <thead>
+                    <tr>
+                      <th scope="col">{t('cr_col_photographer')}</th>
+                      <th scope="col">{t('cr_col_licence')}</th>
+                      <th scope="col">{t('cr_col_source')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {credits.map((c) => (
+                      <tr
+                        key={c.id}
+                        data-incomplete={c.photographer === null || c.licence === null || undefined}
+                      >
+                        <td dir="auto" style={{ overflowWrap: 'anywhere' }}>
+                          {c.photographer ?? <Missing label={t('cr_missing')} />}
+                        </td>
+                        <td dir="ltr">{c.licence ?? <Missing label={t('cr_missing')} />}</td>
+                        <td style={{ overflowWrap: 'anywhere' }}>
+                          {c.url !== null ? (
+                            <a
+                              href={c.url}
+                              rel="noopener noreferrer nofollow"
+                              target="_blank"
+                              dir="ltr"
+                            >
+                              {c.source ?? t('cr_source_link')}
+                            </a>
+                          ) : (
+                            <span dir="ltr">{c.source ?? '—'}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </section>
     </main>
+  )
+}
+
+/** A required field the credit line does not carry (H15): shown, not hidden. */
+function Missing({ label }: { label: string }) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '1px 8px',
+        borderRadius: 999,
+        background: 'var(--orange-soft, #fde7cf)',
+        color: 'var(--orange-ink, #8a4b00)',
+        fontSize: 12.5,
+        fontWeight: 700,
+      }}
+    >
+      {label}
+    </span>
   )
 }

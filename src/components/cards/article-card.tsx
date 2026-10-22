@@ -12,7 +12,7 @@ import { Tag } from '@/components/bt/chip'
 import { Icon, Photo } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import type { ArticleSummary } from '@/lib/content/types'
 
 export type ArticleCardProps = {
@@ -62,7 +62,7 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
     <Card>
       <CardMedia
         src={article.hero?.url}
-        alt={pick(article.hero?.alt, locale)}
+        alt={pickAlt(article.hero?.alt, locale, title)}
         srcSetAvif={article.hero?.srcSetAvif}
         srcSetWebp={article.hero?.srcSetWebp}
         ratio="16/10"

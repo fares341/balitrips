@@ -527,13 +527,19 @@ export function AuthModal({
           />
           {t('auth_remember')}
         </label>
-        <button
-          type="button"
-          onClick={() => switchMode('forgot')}
-          disabled={busy}
+        <Link
+          // H18: a real link (works without JS and shows in the page);
+          // with JS it switches the form in place.
+          href="/forgot-password"
+          onClick={(event) => {
+            event.preventDefault()
+            if (!busy) switchMode('forgot')
+          }}
+          aria-disabled={busy || undefined}
           style={{
             background: 'none',
             border: 0,
+            textDecoration: 'none',
             color: 'var(--orange-ink)',
             fontWeight: 600,
             cursor: 'pointer',
@@ -542,7 +548,7 @@ export function AuthModal({
           }}
         >
           {t('auth_forgot_link')}
-        </button>
+        </Link>
       </div>
 
       <Button type="submit" variant="orange" block disabled={busy}>
@@ -553,13 +559,19 @@ export function AuthModal({
 
       <p className="center muted" style={{ fontSize: 13.5, margin: 0 }}>
         {t('auth_no_acct')}{' '}
-        <button
-          type="button"
-          onClick={() => switchMode('signup')}
-          disabled={busy}
+        <Link
+          // H18: a real link (works without JS and shows in the page);
+          // with JS it switches the form in place.
+          href="/register"
+          onClick={(event) => {
+            event.preventDefault()
+            if (!busy) switchMode('signup')
+          }}
+          aria-disabled={busy || undefined}
           style={{
             background: 'none',
             border: 0,
+            textDecoration: 'none',
             color: 'var(--orange-ink)',
             fontWeight: 700,
             cursor: 'pointer',
@@ -568,7 +580,7 @@ export function AuthModal({
           }}
         >
           {t('auth_tab_up')}
-        </button>
+        </Link>
       </p>
     </form>
   )

@@ -89,6 +89,7 @@ export function Chip({
     >
       {icon !== undefined && <Icon name={icon} size={16} />}
       {children}
+      {count !== undefined && ' '}
       {count !== undefined && (
         <span className="ct" dir="ltr">
           {count}
@@ -123,6 +124,7 @@ export function ChipLink({
     >
       {icon !== undefined && <Icon name={icon} size={16} />}
       {children}
+      {count !== undefined && ' '}
       {count !== undefined && (
         <span className="ct" dir="ltr">
           {count}

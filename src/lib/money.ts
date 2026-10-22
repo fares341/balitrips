@@ -38,10 +38,19 @@ export function minorUnitExponent(currency: string): number {
   return 2
 }
 
+/**
+ * The Intl locale to format an amount with. US dollars print as "$49" in
+ * every language (site terminology: not "49 US$" or "US$49"), so USD is
+ * formatted with en-US; other currencies keep the page's own conventions.
+ */
+export function moneyLocale(locale: string, currency: string): string {
+  return currency.toUpperCase() === 'USD' ? 'en-US' : locale
+}
+
 /** Format for display, localized. Never hard-code a symbol. */
 export function formatMoney(minor: number, currency: string, locale: string): string {
   const exponent = minorUnitExponent(currency)
-  const text = new Intl.NumberFormat(locale, {
+  const text = new Intl.NumberFormat(moneyLocale(locale, currency), {
     style: 'currency',
     currency: currency.toUpperCase(),
     minimumFractionDigits: exponent,

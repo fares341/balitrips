@@ -609,6 +609,12 @@
   color: #fff;
   font: 800 26px var(--f-en);
 }
+.bk-head .bk-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
 .bk-body {
   padding: 18px 20px 20px;
   display: flex;

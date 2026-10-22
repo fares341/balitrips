@@ -34,7 +34,7 @@ import { Tag } from '@/components/bt/chip'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { cardLine } from '@/lib/content/card-line'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { markdownToPlain } from '@/lib/content/markdown'
 import type { ActivitySummary } from '@/lib/content/types'
 
@@ -82,7 +82,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
     <Card>
       <CardMedia
         src={activity.hero?.url}
-        alt={pick(activity.hero?.alt, locale)}
+        alt={pickAlt(activity.hero?.alt, locale, name)}
         srcSetAvif={activity.hero?.srcSetAvif}
         srcSetWebp={activity.hero?.srcSetWebp}
         priority={priority}

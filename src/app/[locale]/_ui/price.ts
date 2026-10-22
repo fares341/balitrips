@@ -6,7 +6,7 @@
  * drop them only when they are zero, so "$29.50" still shows its cents.
  */
 
-import { minorUnitExponent } from '@/lib/money'
+import { minorUnitExponent, moneyLocale } from '@/lib/money'
 
 /** Arabic is the only right-to-left locale; mirrors the private check in money.ts. */
 function isRtlLocale(locale: string): boolean {
@@ -21,7 +21,7 @@ export interface PricePoint {
 export function formatPrice(minor: number, currency: string, locale: string): string {
   const exponent = minorUnitExponent(currency)
   const whole = minor % 10 ** exponent === 0
-  const text = new Intl.NumberFormat(locale, {
+  const text = new Intl.NumberFormat(moneyLocale(locale, currency), {
     style: 'currency',
     currency: currency.toUpperCase(),
     minimumFractionDigits: whole ? 0 : exponent,

@@ -11,7 +11,7 @@ import { Card, CardBody, CardMedia, CardText, CardTitle } from '@/components/bt/
 import { Tag } from '@/components/bt/chip'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { ENTITY_PATHS, entityHref, type LandmarkDto } from '@/lib/content/types'
 
 export type LandmarkCardProps = {
@@ -37,7 +37,7 @@ export function LandmarkCard({ landmark, priority = false }: LandmarkCardProps) 
     <Card id={landmark.slug}>
       <CardMedia
         src={landmark.hero?.url}
-        alt={pick(landmark.hero?.alt, locale)}
+        alt={pickAlt(landmark.hero?.alt, locale, name)}
         srcSetAvif={landmark.hero?.srcSetAvif}
         srcSetWebp={landmark.hero?.srcSetWebp}
         priority={priority}

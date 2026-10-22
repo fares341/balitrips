@@ -25,7 +25,7 @@ import {
 import { Tag } from '@/components/bt/chip'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import type { ItinerarySummary } from '@/lib/content/types'
 
 const MAX_REGIONS = 3
@@ -52,7 +52,7 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
     <Card>
       <CardMedia
         src={itinerary.hero?.url}
-        alt={pick(itinerary.hero?.alt, locale)}
+        alt={pickAlt(itinerary.hero?.alt, locale, name)}
         srcSetAvif={itinerary.hero?.srcSetAvif}
         srcSetWebp={itinerary.hero?.srcSetWebp}
         ratio="5/4"

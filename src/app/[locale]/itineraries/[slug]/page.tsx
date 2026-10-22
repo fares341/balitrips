@@ -49,7 +49,7 @@ import { Link } from '@/i18n/routing'
 import { can } from '@/lib/auth/roles'
 import { getUser } from '@/lib/auth/session'
 import { ownsItinerary } from '@/lib/content/extra-queries'
-import { pick, pickList, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickList, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries, packagesForItinerary } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
@@ -137,7 +137,7 @@ export async function generateMetadata({
               url: itinerary.hero.url,
               width: itinerary.hero.width,
               height: itinerary.hero.height,
-              alt: pick(itinerary.hero.alt, locale, name),
+              alt: pickAlt(itinerary.hero.alt, locale, name),
             },
           ]
         : [DEFAULT_SHARE_IMAGE],
@@ -181,6 +181,15 @@ export default async function ItineraryDetailPage({
     viewer !== null &&
     (can(viewer.role, 'content.read') || (await ownsItinerary(viewer.id, itinerary.id)))
   const orderedDays = [...itinerary.dayPlans].sort((a, b) => a.dayNumber - b.dayNumber)
+  /**
+   * L5: a plan sold as "4 days" may carry a fifth row for the travel day
+   * (day 0, or a number past `itinerary.days`). It is labelled as such rather
+   * than "Day 5", and the heading says the count includes it.
+   */
+  const isTravelDay = (n: number) => n < 1 || n > itinerary.days
+  const travelDays = orderedDays.filter((day) => isTravelDay(day.dayNumber)).length
+  const dayLabel = (n: number) =>
+    isTravelDay(n) ? t('it_travel_day') : `${t('dt_day_n')} ${format.number(n)}`
   const openDays = fullPlan ? orderedDays : orderedDays.slice(0, 1)
   const lockedDays = fullPlan
     ? []
@@ -469,6 +478,11 @@ export default async function ItineraryDetailPage({
           {orderedDays.length > 0 && (
             <div className="bt-detail-block">
               <h2 className="bt-detail-h">{t('id_daybyday')}</h2>
+              {travelDays > 0 && (
+                <p className="muted" style={{ marginTop: -6 }}>
+                  {t('it_days_plus_travel', { n: itinerary.days })}
+                </p>
+              )}
               <ol className="bt-timeline" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {openDays.map((day) => {
                   const dayTitle = pickOptional(day.title, locale)
@@ -477,9 +491,7 @@ export default async function ItineraryDetailPage({
 
                   return (
                     <li key={day.id} className="bt-tl-item">
-                      <span className="bt-tl-day">
-                        {t('dt_day_n')} {format.number(day.dayNumber)}
-                      </span>
+                      <span className="bt-tl-day">{dayLabel(day.dayNumber)}</span>
 
                       {activity !== null ? (
                         <>
@@ -568,9 +580,7 @@ export default async function ItineraryDetailPage({
                 })}
                 {lockedDays.map((day) => (
                   <li key={day.id} className="bt-tl-item" aria-disabled="true">
-                    <span className="bt-tl-day">
-                      {t('dt_day_n')} {format.number(day.dayNumber)}
-                    </span>
+                    <span className="bt-tl-day">{dayLabel(day.dayNumber)}</span>
                     <div
                       className="bt-tl-rest"
                       style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: 0.75 }}

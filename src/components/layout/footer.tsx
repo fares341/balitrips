@@ -16,7 +16,6 @@
  * No 'use client'.
  */
 
-import { CookieSettingsButton } from '@/components/analytics/consent-banner'
 import { getTranslations } from 'next-intl/server'
 
 import { Icon, Logo, type IconName } from '@/components/ui'
@@ -90,14 +89,13 @@ export async function Footer() {
           <nav aria-labelledby="ftr-policies">
             <h4 id="ftr-policies">{t('ft_policies')}</h4>
             <ul>
+              {/* L14: one cookie entry — "Cookie preferences" opens /cookies,
+                  whose button reopens the consent panel. */}
               {POLICY_ROUTES.map((route) => (
                 <li key={route.href}>
                   <Link href={route.href}>{t(route.key)}</Link>
                 </li>
               ))}
-              <li>
-                <CookieSettingsButton />
-              </li>
             </ul>
           </nav>
 

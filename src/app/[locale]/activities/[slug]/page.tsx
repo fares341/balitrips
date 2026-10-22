@@ -29,7 +29,7 @@ import { Icon } from '@/components/ui'
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { Markdown } from '@/components/shared/markdown'
-import { pick, pickList, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickList, pickOptional } from '@/lib/content/localize'
 import { markdownToPlain } from '@/lib/content/markdown'
 import {
   getActivityBySlug,
@@ -118,7 +118,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
                 url: activity.hero.url,
                 width: activity.hero.width,
                 height: activity.hero.height,
-                alt: pick(activity.hero.alt, lang, name),
+                alt: pickAlt(activity.hero.alt, lang, name),
               },
             ],
     },
@@ -348,7 +348,7 @@ export default async function ActivityDetailPage({ params }: PageProps) {
   const galleryImages = activity.gallery.map((image) => ({
     id: image.id,
     url: image.url,
-    alt: pick(image.alt, lang, name),
+    alt: pickAlt(image.alt, lang, name),
     srcSetAvif: image.srcSetAvif,
     srcSetWebp: image.srcSetWebp,
   }))

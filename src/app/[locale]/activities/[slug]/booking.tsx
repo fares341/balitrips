@@ -1323,14 +1323,14 @@ export function BookingBox() {
       aria-labelledby={`${uid}-h`}
     >
       <div className="bk-head">
-        <span id={`${uid}-h`}>
-          {t('act_from')}
-          <br />
+        <span id={`${uid}-h`}>{t('act_from')}</span>
+        {/* L8: price before its unit, so the text reads "From US$22 per person". */}
+        <span className="bk-price">
+          <b className="price" dir="ltr">
+            {money(fromMinor)}
+          </b>
           <small>{from ? perLabel(t, from) : t('act_per_person')}</small>
         </span>
-        <b className="price" dir="ltr">
-          {money(fromMinor)}
-        </b>
       </div>
 
       <div className="bk-body">
@@ -1916,7 +1916,7 @@ function UnavailableBox() {
             <Icon name="mail" size={18} /> {t('act_unavailable_contact')}
           </Link>
           <small className="muted center" dir="ltr">
-            {contact.email}
+            <a href={`mailto:${contact.email}`}>{contact.email}</a>
           </small>
         </div>
       </div>

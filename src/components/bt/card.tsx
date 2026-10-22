@@ -28,7 +28,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { Photo } from '@/components/ui/photo'
 import { Link } from '@/i18n/routing'
-import { minorUnitExponent } from '@/lib/money'
+import { minorUnitExponent, moneyLocale } from '@/lib/money'
 
 export type CardProps = {
   children: ReactNode
@@ -222,7 +222,7 @@ export function formatPrice(minor: number, currency: string, locale: string): st
   const exponent = minorUnitExponent(currency)
   const value = minor / 10 ** exponent
   const whole = Number.isInteger(value)
-  return new Intl.NumberFormat(locale === 'ar' ? 'en-US' : locale, {
+  return new Intl.NumberFormat(locale === 'ar' ? 'en-US' : moneyLocale(locale, currency), {
     style: 'currency',
     currency: currency.toUpperCase(),
     minimumFractionDigits: whole ? 0 : exponent,

@@ -105,6 +105,19 @@ const schema = z.object({
   whatsappOptIn: z.boolean(),
 })
 
+/**
+ * H16: "+966" from the code picker and the number typed beside it. A number
+ * already written with its own `+` or `00` prefix is kept as typed, and an
+ * empty number stays empty (the field is optional).
+ */
+function joinPhone(code: FormDataEntryValue | null, raw: FormDataEntryValue | null): string {
+  const number = typeof raw === 'string' ? raw.trim() : ''
+  if (number === '') return ''
+  if (number.startsWith('+') || number.startsWith('00')) return number
+  const dial = typeof code === 'string' && /^\+\d{1,4}$/.test(code) ? code : ''
+  return dial === '' ? number : `${dial} ${number.replace(/^0+/, '')}`
+}
+
 export async function submitCustomTrip(
   _previous: CustomTripState,
   formData: FormData,
@@ -112,7 +125,7 @@ export async function submitCustomTrip(
   const parsed = schema.safeParse({
     name: formData.get('name') ?? '',
     email: formData.get('email') ?? '',
-    phone: formData.get('phone') ?? '',
+    phone: joinPhone(formData.get('phoneCountry'), formData.get('phone')),
     startDate: formData.get('startDate') ?? '',
     endDate: formData.get('endDate') ?? '',
     travellers: formData.get('travellers') ?? '',

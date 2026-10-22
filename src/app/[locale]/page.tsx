@@ -327,6 +327,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       >
         <h1 className="hv-title" id="hero-h">
           <span className="hv-bali">{t('hv4_bali')}</span>
+          {/* L6/L7: a real space, so the title reads "بالي كما…" / "Bali yang…"
+              as text (copy, search, screen readers), not "باليكما". */}{' '}
           <span className="hv-sub">
             {words.map((word, index) => {
               const span = (

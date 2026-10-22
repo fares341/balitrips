@@ -14,6 +14,8 @@ import { Button, LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { requireActiveUser } from '@/lib/security/require'
+import { enabledSocialProviders } from '@/lib/auth/server'
+import { getUser } from '@/lib/auth/session'
 import { pick, pickOptional } from '@/lib/content/localize'
 
 import { toLocale } from '../../_seo-hreflang'
@@ -21,6 +23,7 @@ import { accountMetadata } from '../_lib/meta'
 import { listFavorites } from '../_lib/queries'
 import { createTripFromFavoritesAction } from '../actions'
 import { FavoriteControls } from './favorite-controls'
+import { SignedOutPane } from '../signed-out-pane'
 
 const MAP_HREF = '/map'
 
@@ -38,6 +41,17 @@ export default async function AccountFavoritesPage({ params }: { params: PagePar
 
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
+  // H18: signed out, the page keeps its own title ("Favourites") and shows
+  // the sign-in pane in place, returning here afterwards.
+  if ((await getUser()) === null) {
+    return (
+      <SignedOutPane
+        providers={enabledSocialProviders()}
+        next="/account/favorites"
+        autoOpen={false}
+      />
+    )
+  }
   const user = await requireActiveUser('account:favorites')
 
   const items = await listFavorites(user.id)

@@ -35,7 +35,9 @@ type PageSearch = Promise<Record<string, string | string[] | undefined>>
 
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
   const { locale: raw } = await params
-  return accountMetadata(toLocale(raw), 'acct_nav_profile')
+  // H18: a signed-out visitor sees the sign-in pane, so the tab says so.
+  const user = await getUser()
+  return accountMetadata(toLocale(raw), user === null ? 'acct_signin_cta' : 'acct_nav_profile')
 }
 
 /**

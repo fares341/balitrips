@@ -599,7 +599,10 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
             <h2 className="bt-form-q">{t('cp_contact')}</h2>
             <div className="bt-daterange">
               <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-                <span className="bt-flabel">{t('co_name')}</span>
+                <span className="bt-flabel">
+                  {t('co_name')}
+                  <RequiredMark />
+                </span>
                 <input
                   name="name"
                   type="text"
@@ -616,7 +619,10 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
               </label>
 
               <label className="bt-field" style={{ flex: 1, marginBottom: 0 }}>
-                <span className="bt-flabel">{t('co_email')}</span>
+                <span className="bt-flabel">
+                  {t('co_email')}
+                  <RequiredMark />
+                </span>
                 <input
                   name="email"
                   type="email"
@@ -635,16 +641,34 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
 
             <label className="bt-field" style={{ marginTop: 12, marginBottom: 0, maxWidth: 420 }}>
               <span className="bt-flabel">{t('auth_phone')}</span>
-              <input
-                name="phone"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                maxLength={PHONE_MAX}
-                className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-                aria-invalid={errors.phone !== undefined}
-                aria-describedby={errors.phone === undefined ? undefined : `${baseId}-phone-err`}
-              />
+              {/* H16: the country code is picked, the number typed after it;
+                  the action joins the two. */}
+              <span className="row" style={{ gap: 8 }} dir="ltr">
+                <select
+                  name="phoneCountry"
+                  aria-label={t('cp_phone_code')}
+                  defaultValue={DEFAULT_DIAL[locale]}
+                  className="bt-input"
+                  style={{ width: 'auto', flex: '0 0 auto' }}
+                >
+                  {DIAL_CODES.map(([code, dial]) => (
+                    <option key={code} value={dial}>
+                      {code} {dial}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  maxLength={PHONE_MAX}
+                  style={{ flex: 1, minWidth: 0 }}
+                  className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                  aria-invalid={errors.phone !== undefined}
+                  aria-describedby={errors.phone === undefined ? undefined : `${baseId}-phone-err`}
+                />
+              </span>
               {errors.phone !== undefined && (
                 <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
               )}
@@ -827,6 +851,40 @@ function Proposal({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Visible "required" asterisk; the input's `required` carries it to AT. */
+function RequiredMark() {
+  return (
+    <span aria-hidden="true" style={{ color: 'var(--orange-ink)', marginInlineStart: 3 }}>
+      *
+    </span>
+  )
+}
+
+/** Country calling codes offered beside the phone field (H16). */
+const DIAL_CODES: readonly (readonly [string, string])[] = [
+  ['SA', '+966'],
+  ['AE', '+971'],
+  ['KW', '+965'],
+  ['QA', '+974'],
+  ['BH', '+973'],
+  ['OM', '+968'],
+  ['JO', '+962'],
+  ['EG', '+20'],
+  ['ID', '+62'],
+  ['MY', '+60'],
+  ['SG', '+65'],
+  ['GB', '+44'],
+  ['US', '+1'],
+  ['AU', '+61'],
+  ['DE', '+49'],
+  ['FR', '+33'],
+  ['NL', '+31'],
+  ['TR', '+90'],
+  ['IN', '+91'],
+]
+
+const DEFAULT_DIAL: Record<Locale, string> = { ar: '+966', en: '+44', id: '+62' }
 
 function FieldError({ id, children }: { id: string; children: string }) {
   return (

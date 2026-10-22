@@ -29,7 +29,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { isLocale, locales } from '@/i18n/config'
-import { pick, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { getPackageBySlug, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { alternates } from '../_meta'
@@ -80,7 +80,7 @@ export async function generateMetadata({
               url: pkg.hero.url,
               width: pkg.hero.width,
               height: pkg.hero.height,
-              alt: pick(pkg.hero.alt, locale, name),
+              alt: pickAlt(pkg.hero.alt, locale, name),
             },
           ]
         : [DEFAULT_SHARE_IMAGE],
