@@ -91,6 +91,7 @@ const SERVICES: readonly { href: string; icon: IconName; image: string; key: str
   { href: '/itineraries', icon: 'doc', image: '/brand/rice-walk.webp', key: 'itin' },
   { href: '/packages', icon: 'box', image: '/brand/green-dress.webp', key: 'pkg' },
   { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
+  { href: '/map?cat=malls', icon: 'pin', image: '/brand/flatlay.jpg', key: 'shop' },
 ]
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(

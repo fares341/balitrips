@@ -197,6 +197,13 @@
       "when": 1793700000000,
       "tag": "0027_content_text_fixes",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793700100000,
+      "tag": "0028_activities_list_cleanup",
+      "breakpoints": true
     }
   ]
 }

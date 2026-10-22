@@ -874,6 +874,27 @@ function googleMapsUrl(
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`
 }
 
+/**
+ * Where an activity that was folded into another one now lives: the slug of
+ * the activity it became a package of, or null. Old links keep working.
+ */
+export async function mergedActivitySlug(slug: string): Promise<string | null> {
+  const target = alias(activities, 'merged_target')
+  const rows = await db
+    .select({ slug: target.slug })
+    .from(activities)
+    .innerJoin(target, eq(target.id, activities.mergedIntoId))
+    .where(
+      and(
+        eq(activities.slug, slug),
+        inArray(target.status, [...PAGE_STATUSES]),
+        isNull(target.deletedAt),
+      ),
+    )
+    .limit(1)
+  return rows[0]?.slug ?? null
+}
+
 /** Every activity whose page opens (listed or link-only), for prerendering. */
 export async function listActivityPageSlugs(): Promise<string[]> {
   const rows = await db

@@ -31,6 +31,7 @@ import type { Locale } from '@/i18n/config'
 import { Link, useRouter } from '@/i18n/routing'
 import { isWithinLeadTime, todayInBali, type VehicleClass } from '@/lib/booking-rules'
 import { FEATURES } from '@/lib/features'
+import { showsGroupSize } from '@/lib/content/activity-status'
 import {
   addonState,
   driverDays,
@@ -1058,10 +1059,12 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
   if (schedule) facts.push({ icon: 'cal', text: schedule, ltr: /^[\d:·\s]+$/.test(schedule) })
   if (info.place) facts.push({ icon: 'pin', text: info.place })
   if (info.duration) facts.push({ icon: 'clock', text: info.duration })
-  facts.push({
-    icon: 'users',
-    text: min > 1 ? t('act_qf_group_v', { min, max: cap }) : t('act_qf_group_upto', { max: cap }),
-  })
+  if (showsGroupSize(cap, min)) {
+    facts.push({
+      icon: 'users',
+      text: min > 1 ? t('act_qf_group_v', { min, max: cap }) : t('act_qf_group_upto', { max: cap }),
+    })
+  }
   return (
     <section className="tdetail panel" aria-labelledby="tdetail-h">
       <div className="tdetail-head">
@@ -1608,7 +1611,7 @@ export function BookingBox() {
 
         <div className="sum" aria-live="polite">
           <div className="sum-row">
-            <span>{t('act_sum_when')}</span>
+            <span>{data.timeSlots.length > 0 ? t('act_sum_when') : t('act_sum_date')}</span>
             <span>
               {state.date
                 ? state.endDate

@@ -668,16 +668,7 @@ async function BasicsTab({
         <Advanced
           show={isAdmin}
           title={t('common.advanced')}
-          keep={[
-            ['legacyId', activity?.legacyId ?? ''],
-            [
-              'ratingTenths',
-              activity?.rating === null || activity?.rating === undefined
-                ? ''
-                : String(Math.round(activity.rating * 10)),
-            ],
-            ['reviewCount', String(activity?.reviewCount ?? 0)],
-          ]}
+          keep={[['legacyId', activity?.legacyId ?? '']]}
         >
           <div className="a-row">
             <Field
@@ -686,30 +677,6 @@ async function BasicsTab({
               hint={t('activities.legacy_id_hint')}
             >
               <TextInput id="legacyId" name="legacyId" defaultValue={activity?.legacyId ?? ''} />
-            </Field>
-            <Field
-              label={t('activities.f_rating')}
-              htmlFor="ratingTenths"
-              hint={t('activities.f_rating_hint')}
-            >
-              <TextInput
-                id="ratingTenths"
-                name="ratingTenths"
-                inputMode="numeric"
-                defaultValue={
-                  activity?.rating === null || activity?.rating === undefined
-                    ? ''
-                    : String(Math.round(activity.rating * 10))
-                }
-              />
-            </Field>
-            <Field label={t('activities.f_review_count')} htmlFor="reviewCount">
-              <TextInput
-                id="reviewCount"
-                name="reviewCount"
-                inputMode="numeric"
-                defaultValue={String(activity?.reviewCount ?? 0)}
-              />
             </Field>
           </div>
         </Advanced>
