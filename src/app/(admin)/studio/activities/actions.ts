@@ -96,8 +96,6 @@ async function sectionValues(
         regionId: fuuidOrNull(form, 'regionId', t('activities.region')),
         priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
         currency: fcurrency(form, 'currency'),
-        rating: ratingFromTenths(form, t),
-        reviewCount: fint(form, 'reviewCount', 0, t('activities.f_review_count')),
         primaryCategoryId: fuuidOrNull(form, 'primaryCategoryId', t('ae.primary_category')),
         isFeatured: fbool(form, 'isFeatured'),
         isMostPopular: fbool(form, 'isMostPopular'),
@@ -477,17 +475,6 @@ export async function deleteActivity(id: string): Promise<void> {
   }
 
   redirect(withOutcome(LIST, outcome))
-}
-
-/**
- * Rating is stored as a `real` but authored as tenths, so an operator types
- * 47 for 4.7 and cannot introduce a float that renders as 4.699999.
- */
-function ratingFromTenths(form: FormData, t: Translate): number | null {
-  const tenths = fintOrNull(form, 'ratingTenths', t('activities.f_rating_short'))
-  if (tenths === null) return null
-  if (tenths < 0 || tenths > 50) throw new Error(t('activities.err_rating_range'))
-  return tenths / 10
 }
 
 /**

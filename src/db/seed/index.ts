@@ -52,7 +52,6 @@ import {
   packages,
   placeTags,
   regions,
-  reviews,
   tags,
   translations,
   type Localized,
@@ -65,7 +64,7 @@ import arMessages from '../../../messages/ar.json'
 import enMessages from '../../../messages/en.json'
 import idMessages from '../../../messages/id.json'
 import contentJson from './content.json'
-import { SEED_CURRENCY, assignSlugs, deterministicId, must, overwrite, toMinor } from './helpers'
+import { SEED_CURRENCY, assignSlugs, must, overwrite, toMinor } from './helpers'
 import { seedRichContent } from './rich'
 import type { ContentData } from './types'
 
@@ -425,8 +424,6 @@ async function seed(): Promise<Map<string, number>> {
       regionId: must(regionId, a.region, 'region'),
       priceMinor: toMinor(a.price),
       currency: SEED_CURRENCY,
-      rating: a.rating,
-      reviewCount: a.reviews,
       timeSlots: DEFAULT_TIME_SLOTS,
       sortOrder: index,
       status: 'published',
@@ -446,8 +443,6 @@ async function seed(): Promise<Map<string, number>> {
           'regionId',
           'priceMinor',
           'currency',
-          'rating',
-          'reviewCount',
           'sortOrder',
         ]),
       })
@@ -744,7 +739,7 @@ async function seed(): Promise<Map<string, number>> {
       })
       .returning({ id: mapPlaces.id, legacyId: mapPlaces.legacyId })
     counts.set('map_places', insertedMapPlaces.length)
-    // Free or VIP follows the category (client, Oct 2026), as in migration 0026.
+    // Free or VIP follows the category (client, Oct 2026), as in migration 0027.
     await syncPlaceAccess(tx)
 
     // الوسوم في جدولها (place_tags). كانت الهجرة 0006 تنقلها من أماكن موجودة
@@ -876,45 +871,12 @@ async function seed(): Promise<Map<string, number>> {
     // -----------------------------------------------------------------------
 
     /*
-     * The handoff kept one pool of six reviews and picked them per page by tag
-     * overlap, falling back to `slice(0, 3)` when nothing matched — so a
-     * review about Mount Batur could appear under a café. Here each pool entry
-     * is attached to the activities its tags actually name, producing real
-     * rows with a real foreign key. Tags that name a category rather than an
-     * activity are dropped; they were never attribution, only filtering.
+     * No reviews are seeded. The handoff's pool of six invented reviews was
+     * shown as real ones (migration 0027 deleted them); an activity's rating
+     * and review count now come only from reviews travellers wrote, kept in
+     * step by a trigger on `reviews`.
      */
-    const reviewRows = content.REVIEW_POOL.flatMap((review) =>
-      review.tags
-        .filter((tag) => activityId.has(tag))
-        .map((tag) => ({
-          // No natural key exists for a review, so the id is derived from
-          // author + activity. That makes the insert idempotent without
-          // inventing a unique index the application does not need.
-          id: deterministicId(`review:${review.name}:${tag}`),
-          authorName: review.name,
-          authorCountry: review.from,
-          stars: review.stars,
-          body: review.text,
-          activityId: must(activityId, tag, 'activity'),
-          isPublished: true,
-        })),
-    )
-    const insertedReviews = await tx
-      .insert(reviews)
-      .values(reviewRows)
-      .onConflictDoUpdate({
-        target: reviews.id,
-        set: overwrite(reviews, [
-          'authorName',
-          'authorCountry',
-          'stars',
-          'body',
-          'activityId',
-          'isPublished',
-        ]),
-      })
-      .returning({ id: reviews.id })
-    counts.set('reviews', insertedReviews.length)
+    counts.set('reviews', 0)
 
     // -----------------------------------------------------------------------
     // Driver fleet
