@@ -12,7 +12,7 @@
  * names a price.
  */
 
-import { and, eq, gt, sql } from 'drizzle-orm'
+import { and, gt, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { customTripRequests } from '@/db/schema'
