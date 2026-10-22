@@ -30,7 +30,8 @@ export function TierFilter({ basePath, active, counts, total }: TierFilterProps)
       <ChipLink href={basePath} active={active === null} count={total}>
         {t('bud_all')}
       </ChipLink>
-      {BUDGET_TIERS.map((tier) => (
+      {/* An empty band is not offered: "Luxury (0)" is a dead end. */}
+      {BUDGET_TIERS.filter((tier) => counts[tier] > 0 || active === tier).map((tier) => (
         <ChipLink
           key={tier}
           href={`${basePath}?budget=${tier}`}

@@ -3,8 +3,8 @@
  *
  * Linked from the footer's "General information" column. Describes what the
  * checkout really accepts: cards and wallets through Stripe Checkout
- * (src/lib/payments/stripe.ts), and bank transfer, which staff record against
- * an order by hand (`bank_transfer` in PAYMENT_METHODS, src/lib/payments/types.ts).
+ * (src/lib/payments/stripe.ts). Stripe is the only way to pay (client decision,
+ * A9): no bank-transfer option is offered to travellers.
  */
 
 import type { Metadata } from 'next'
@@ -23,7 +23,6 @@ const PATH = '/payment-methods'
 const METHODS: readonly { icon: IconName; title: string; body: string; marks?: string[] }[] = [
   { icon: 'tag', title: 'pm_card_t', body: 'pm_card_b', marks: ['VISA', 'Mastercard', 'Amex'] },
   { icon: 'phone', title: 'pm_wallet_t', body: 'pm_wallet_b', marks: ['Apple Pay', 'Google Pay'] },
-  { icon: 'home', title: 'pm_bank_t', body: 'pm_bank_b' },
   { icon: 'shield', title: 'pm_secure_t', body: 'pm_secure_b' },
   { icon: 'globe', title: 'pm_currency_t', body: 'pm_currency_b' },
 ]

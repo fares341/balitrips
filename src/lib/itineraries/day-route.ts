@@ -121,3 +121,16 @@ export function openDayNumbers(dayNumbers: readonly number[], fullPlan: boolean)
   const sorted = [...dayNumbers].sort((a, b) => a - b)
   return new Set(fullPlan ? sorted : sorted.slice(0, 1))
 }
+
+/** A Google Maps link that opens one point (search by coordinates). */
+export function googleMapsPlaceUrl(lat: number, lon: number): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+}
+
+/** A Google Maps search for a named spot ("Mount Batur Sunrise Hike, Kintamani, Bali"). */
+export function googleMapsSearchUrl(...parts: (string | null | undefined)[]): string {
+  const text = [...parts.filter((part): part is string => !!part && part.trim() !== ''), 'Bali']
+    .map((part) => part.trim())
+    .join(', ')
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(text)}`
+}

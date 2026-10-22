@@ -27,9 +27,10 @@ import {
   BUDGET_TIER_LABEL,
   BUDGET_TIERS,
   parseBudgetTier,
-  tierForPrice,
+  tiersFromPrices,
   type BudgetTier,
 } from '@/lib/budget-tier'
+import { pick } from '@/lib/content/localize'
 import { listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { HOME_HREF } from '@/components/layout'
@@ -100,9 +101,14 @@ export default async function ItinerariesPage({
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)
-  const tiers = itineraries.map((itinerary) => ({
+  // Bands from the real prices on sale (lib/budget-tier.ts), not fixed figures.
+  const itineraryTiers = tiersFromPrices(itineraries, (itinerary) => ({
+    minor: itinerary.priceMinor,
+    currency: itinerary.currency,
+  }))
+  const tiers = itineraries.map((itinerary, index) => ({
     itinerary,
-    tier: tierForPrice(itinerary.priceMinor, itinerary.currency, 'itinerary'),
+    tier: itineraryTiers[index] ?? null,
   }))
   const counts = Object.fromEntries(
     BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.tier === key).length]),
@@ -113,19 +119,36 @@ export default async function ItinerariesPage({
   )
   const daysParam = Number(Array.isArray(query.days) ? query.days[0] : query.days)
   const days = dayOptions.includes(daysParam) ? daysParam : null
+  // Region (?region=north): the regions the catalogue's itineraries really visit.
+  const regionOptions = new Map<string, (typeof itineraries)[number]['regions'][number]>()
+  for (const itinerary of itineraries) {
+    for (const region of itinerary.regions) {
+      if (!regionOptions.has(region.key)) regionOptions.set(region.key, region)
+    }
+  }
+  const regionParam = Array.isArray(query.region) ? query.region[0] : query.region
+  const region = regionParam !== undefined && regionOptions.has(regionParam) ? regionParam : null
   const shown = tiers
     .filter(
       (one) =>
-        (tier === null || one.tier === tier) && (days === null || one.itinerary.days === days),
+        (tier === null || one.tier === tier) &&
+        (days === null || one.itinerary.days === days) &&
+        (region === null || one.itinerary.regions.some((r) => r.key === region)),
     )
     .map((one) => one.itinerary)
-  /** This listing with one filter changed and the other kept. */
-  const hrefWith = (next: { days?: number | null; budget?: BudgetTier | null }) => {
+  /** This listing with one filter changed and the others kept. */
+  const hrefWith = (next: {
+    days?: number | null
+    budget?: BudgetTier | null
+    region?: string | null
+  }) => {
     const d = next.days === undefined ? days : next.days
     const b = next.budget === undefined ? tier : next.budget
+    const r = next.region === undefined ? region : next.region
     const params = new URLSearchParams()
     if (d !== null) params.set('days', String(d))
     if (b !== null) params.set('budget', b)
+    if (r !== null) params.set('region', r)
     const qs = params.toString()
     return qs === '' ? HREF : `${HREF}?${qs}`
   }
@@ -189,6 +212,31 @@ export default async function ItinerariesPage({
                     {dayOptions.map((n) => (
                       <ChipLink key={n} href={hrefWith({ days: n })} active={days === n}>
                         {t('c_days_n', { n })}
+                      </ChipLink>
+                    ))}
+                  </ChipRow>
+                </div>
+              )}
+              {regionOptions.size > 1 && (
+                <div className="it-frow">
+                  <span className="label" aria-hidden="true">
+                    {t('it_f_region')}
+                  </span>
+                  <ChipRow scroll label={t('it_f_region')}>
+                    <ChipLink href={hrefWith({ region: null })} active={region === null}>
+                      {t('it_f_all')}
+                    </ChipLink>
+                    {[...regionOptions.values()].map((option) => (
+                      <ChipLink
+                        key={option.key}
+                        href={hrefWith({ region: option.key })}
+                        active={region === option.key}
+                        count={
+                          itineraries.filter((it) => it.regions.some((r) => r.key === option.key))
+                            .length
+                        }
+                      >
+                        {pick(option.label, locale, option.key)}
                       </ChipLink>
                     ))}
                   </ChipRow>

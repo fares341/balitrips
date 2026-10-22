@@ -369,6 +369,7 @@ export default async function OrderDetailPage({
                     {line.kind}
                     {line.refVersion !== null ? ` · v${line.refVersion}` : ''}
                     {line.vehicleClass ? ` · ${line.vehicleClass}` : ''}
+                    {line.options?.audience ? ` · ${line.options.audience}` : ''}
                   </div>
                 </td>
                 <td className="a-mono">

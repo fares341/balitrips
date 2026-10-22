@@ -41,7 +41,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { HOME_HREF } from '@/components/layout'
 import { CONTACT_EMAIL, WHATSAPP_DISPLAY, whatsappLink } from '@/components/layout/contact-config'
-import { Accordion, Breadcrumbs } from '@/components/shared'
+import { Breadcrumbs } from '@/components/shared'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
@@ -56,6 +56,7 @@ import { ItineraryCard, PackageCard } from '@/components/cards'
 import { DayStops } from '@/components/trip/day-stops'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
+import { googleMapsSearchUrl } from '@/lib/itineraries/day-route'
 import { holdsVip, loadDayStops, vipPlanOffer } from '@/lib/itineraries/queries'
 import { mapAccessOf, sellsPlanDirectly, visibleSaleModes } from '@/lib/itineraries/sale'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -234,12 +235,20 @@ export default async function ItineraryDetailPage({
   const customHref = `/custom?from=${encodeURIComponent(itinerary.slug)}&days=${itinerary.days}&name=${encodeURIComponent(name.slice(0, 100))}`
   // The optional VIP box sits with the main (sidebar) button only, so the
   // page never shows the same choice three times.
+  // With several audiences the buyer picks one first; that choice lives in
+  // the sidebar box only, and the other buy buttons lead to it.
+  const choosesAudience = audience.length > 1
   const buy = (className: string, style?: React.CSSProperties, withVip = false) =>
-    sellsPlan ? (
+    sellsPlan && choosesAudience && !withVip ? (
+      <a href="#it-buy" className={className} style={style}>
+        {t('ih_buy')}
+      </a>
+    ) : sellsPlan ? (
       <div style={style}>
         <ItineraryBuyBox
           itineraryId={itinerary.id}
           vip={withVip ? vipBox : null}
+          audiences={withVip ? audience : []}
           className={className}
         >
           {t('ih_buy')}
@@ -496,6 +505,23 @@ export default async function ItineraryDetailPage({
                             </span>
                             <Icon name="chevronr" size={16} color="var(--muted)" className="flip" />
                           </Link>
+                          <a
+                            href={googleMapsSearchUrl(
+                              pick(activity.name, locale, activity.slug),
+                              pickOptional(activity.area, locale),
+                            )}
+                            className="it-stop-gmaps"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: 12.5,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <Icon name="pin" size={12} /> {t('it_gmaps')}
+                          </a>
 
                           {dayNote !== null && (
                             <p className="muted" style={{ fontSize: 13, margin: 0 }}>
@@ -666,7 +692,21 @@ export default async function ItineraryDetailPage({
           )}
           <div className="bt-detail-block">
             <h2 className="bt-detail-h">{t('ad_faq')}</h2>
-            <Accordion className="bt-pacc" defaultOpen={-1} items={faq} />
+            {/* Answers are printed, not folded away: the questions are the
+                ones a buyer asks before paying ("how do I receive the plan?"),
+                and an answer hidden behind a click reads as no answer. */}
+            <dl className="it-faq" style={{ display: 'grid', gap: 14, margin: 0 }}>
+              {faq.map((entry) => (
+                <div key={entry.id} className="panel" style={{ padding: '14px 16px' }}>
+                  <dt style={{ fontWeight: 700, color: 'var(--forest)', marginBottom: 6 }}>
+                    {entry.question}
+                  </dt>
+                  <dd className="muted" style={{ margin: 0, lineHeight: 1.65 }}>
+                    {entry.answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
           </div>
 
           <div className="bt-expert">
@@ -702,7 +742,7 @@ export default async function ItineraryDetailPage({
           </div>
         </div>
 
-        <aside className="bt-booking bt-ibook" aria-label={t('ih_buy')}>
+        <aside id="it-buy" className="bt-booking bt-ibook" aria-label={t('ih_buy')}>
           <div className="bt-ibook-price">
             <strong className="bt-money">{price}</strong>
             <span>{t('sub_once')}</span>

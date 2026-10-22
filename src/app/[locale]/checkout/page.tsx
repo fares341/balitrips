@@ -313,6 +313,9 @@ export default async function CheckoutPage({
                 })}
               </small>
             )}
+            {line.audience !== null && (
+              <small className="muted">{t('it_aud_line', { audience: line.audience })}</small>
+            )}
             {line.coveredByName !== null && (
               <small className="ck-confirm ok">
                 <Icon name="check" size={14} />{' '}

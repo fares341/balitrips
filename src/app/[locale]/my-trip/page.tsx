@@ -470,6 +470,9 @@ async function TripItem({
           </span>
         )}
         {line.kind === 'place' && <small className="muted">{t('trip_place_note')}</small>}
+        {line.audience !== null && (
+          <small className="muted">{t('it_aud_line', { audience: line.audience })}</small>
+        )}
         {line.coveredByName !== null && (
           <small className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>
             <Icon name="check" size={13} />{' '}

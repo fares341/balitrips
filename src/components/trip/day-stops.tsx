@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
-import type { DayStop } from '@/lib/itineraries/day-route'
+import { googleMapsPlaceUrl, type DayStop } from '@/lib/itineraries/day-route'
 
 export async function DayStops({
   stops,
@@ -73,6 +73,18 @@ export async function DayStops({
                 {pickOptional(stop.note, locale) !== null && (
                   <small className="it-stop-note">{pickOptional(stop.note, locale)}</small>
                 )}
+                {/* The place in Google Maps — what a traveller opens on the
+                    road. Visible stops only: a locked stop carries no
+                    coordinates to link to. */}
+                <a
+                  href={googleMapsPlaceUrl(stop.place.lat, stop.place.lon)}
+                  className="it-stop-gmaps"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                >
+                  <Icon name="pin" size={12} /> {t('it_gmaps')}
+                </a>
               </span>
             </li>
           ),

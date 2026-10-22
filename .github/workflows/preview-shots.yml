@@ -82,3 +82,71 @@ jobs:
           git add -A
           git commit -q -m "Screenshots for ${GITHUB_SHA}"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ci-shots
+
+  # C2: the whole purchase path in the sandbox payment mode (the stand-in for
+  # Stripe test mode): itinerary → pay → PDF download; activity package and
+  # package → pay → confirmation. Playwright, desktop and phone.
+  purchase:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bali
+          POSTGRES_PASSWORD: bali
+          POSTGRES_DB: bali
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bali"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      gotenberg:
+        image: gotenberg/gotenberg:8
+        ports:
+          - 3100:3000
+    env:
+      DATABASE_URL: postgresql://bali:bali@localhost:5433/bali
+      BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ALLOW_BOOKINGS: 'true'
+      PAYMENT_PROVIDER: sandbox
+      ALLOW_SANDBOX_PAYMENTS: 'true'
+      PAYMENT_WEBHOOK_SECRET: ci-webhook-secret
+      GOTENBERG_URL: http://localhost:3100
+      PRIVATE_STORAGE_DIR: ${{ github.workspace }}/private-files
+      E2E_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm exec tsx scripts/seed-tiers.ts
+      - run: mkdir -p "$PRIVATE_STORAGE_DIR"
+      - name: Render itinerary PDFs
+        run: pnpm exec tsx scripts/render-itinerary-pdfs.ts
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Start the site
+        run: |
+          cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+          (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
+      - name: Purchase path (Playwright)
+        run: pnpm exec playwright test e2e/purchase.spec.ts --reporter=list
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: purchase-results
+          path: |
+            test-results
+            server.log
+          retention-days: 7

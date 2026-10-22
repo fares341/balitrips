@@ -652,8 +652,10 @@ function orderItemOptions(
 ): OrderItemOptions | null {
   if (line.credit !== undefined) return { credit: line.credit }
   if (line.coveredBy !== undefined) return { coveredByCartLine: true }
-  if (!line.breakdown) return null
+  const audience = item?.options?.audience
+  if (!line.breakdown) return audience ? { audience } : null
   return {
+    ...(audience ? { audience } : {}),
     addons: item?.options?.addons ?? [],
     ...(item?.options?.included && item.options.included.length > 0
       ? { included: item.options.included }

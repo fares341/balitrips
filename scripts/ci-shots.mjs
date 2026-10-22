@@ -350,6 +350,12 @@ if (!ONLY.length || ONLY.includes('account')) {
           timeout: 60000,
         })
         .catch(() => null)
+      // H1: pick who the trip is for first when the plan asks.
+      await page
+        .locator('#it-buy .it-audience input[type="radio"]')
+        .first()
+        .check({ timeout: 3000 })
+        .catch(() => {})
       await page
         .locator('aside button.btn-primary')
         .first()

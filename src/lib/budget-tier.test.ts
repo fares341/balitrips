@@ -6,6 +6,7 @@ import {
   parseBudgetTier,
   tierForLegacyBudget,
   tierForPrice,
+  tiersFromPrices,
 } from './budget-tier'
 
 describe('tierForPrice', () => {
@@ -53,5 +54,31 @@ describe('tierForLegacyBudget', () => {
     expect(tierForLegacyBudget(2_500_00, 'USD')).toBe('luxury')
     expect(tierForLegacyBudget(null, 'USD')).toBeNull()
     expect(tierForLegacyBudget(800_00, 'EUR')).toBeNull()
+  })
+})
+
+describe('tiersFromPrices', () => {
+  const usd = (minor: number) => ({ minor, currency: 'USD' })
+
+  it('splits the six live packages into thirds instead of six economy ones', () => {
+    const prices = [42000, 48000, 69000, 62000, 54000, 58000]
+    expect(tiersFromPrices(prices, usd)).toEqual([
+      'economy',
+      'economy',
+      'luxury',
+      'luxury',
+      'mid',
+      'mid',
+    ])
+  })
+
+  it('keeps equal prices together and an all-equal catalogue in mid-range', () => {
+    expect(tiersFromPrices([5000, 5000, 9000], usd)).toEqual(['economy', 'economy', 'luxury'])
+    expect(tiersFromPrices([5000, 5000], usd)).toEqual(['mid', 'mid'])
+  })
+
+  it('gives no tier to an item without a usable price', () => {
+    expect(tiersFromPrices([0, 5000, 9000], usd)).toEqual([null, 'economy', 'mid'])
+    expect(tiersFromPrices([1], () => null)).toEqual([null])
   })
 })

@@ -117,11 +117,10 @@ export function PackageBookingBox({
         <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--forest-deep)' }}>
           {formatMoney(priceMinor, currency, locale)}
         </span>
-        {perGuest && (
-          <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
-            {t('c_pp')}
-          </span>
-        )}
+        {/* Always say what the price is for: per person, or the whole group. */}
+        <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
+          {perGuest ? t('c_pp') : t('pk_per_group', { n: upperGuests })}
+        </span>
       </div>
 
       {/* The start date on the shared calendar (v3 package.html), from Bali's
@@ -184,6 +183,11 @@ export function PackageBookingBox({
           <span>{t('c_total')}</span>
           <span>{formatMoney(totalMinor, currency, locale)}</span>
         </div>
+        <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
+          {perGuest
+            ? t('pk_total_pp_note', { n: guests })
+            : t('pk_total_flat_note', { n: upperGuests })}
+        </p>
       </div>
 
       {date === '' ? (

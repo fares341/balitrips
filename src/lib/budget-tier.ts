@@ -98,3 +98,37 @@ export function tierForLegacyBudget(
   if (whole < high) return 'mid'
   return 'luxury'
 }
+
+/**
+ * Tiers relative to the catalogue being listed: the cheapest third is
+ * economy, the middle third mid-range, the dearest third luxury.
+ *
+ * The fixed thresholds above put every package of a small catalogue in one
+ * band (six packages at $420–$690 were all "economy", and "luxury (0)" was
+ * offered as a filter). A listing filter has to split what is actually on
+ * sale, so the bands are computed from the real prices. Prices are compared
+ * within one currency only; an item without a usable price gets no tier.
+ * Equal prices always share a tier; a catalogue whose prices are all equal is
+ * all mid-range.
+ */
+export function tiersFromPrices<T>(
+  items: readonly T[],
+  priceOf: (item: T) => { minor: number; currency: string } | null,
+): (BudgetTier | null)[] {
+  const prices = items.map(priceOf)
+  const byCurrency = new Map<string, number[]>()
+  for (const price of prices) {
+    if (price === null || !Number.isFinite(price.minor) || price.minor <= 0) continue
+    const key = price.currency.toUpperCase()
+    byCurrency.set(key, [...(byCurrency.get(key) ?? []), price.minor])
+  }
+  return prices.map((price) => {
+    if (price === null || !Number.isFinite(price.minor) || price.minor <= 0) return null
+    const all = byCurrency.get(price.currency.toUpperCase()) ?? []
+    const lowest = Math.min(...all)
+    const highest = Math.max(...all)
+    if (lowest === highest) return 'mid'
+    const cheaper = all.filter((value) => value < price.minor).length
+    return BUDGET_TIERS[Math.min(2, Math.floor((3 * cheaper) / all.length))] ?? null
+  })
+}

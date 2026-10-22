@@ -121,6 +121,9 @@ function baseStyles(locale: Locale): string {
     .day-label { font-size: 8.5pt; letter-spacing: 0.08em; text-transform: uppercase; color: ${COLOR.muted}; margin: 0 0 1mm; }
     .day-area { font-size: 9pt; color: ${COLOR.muted}; margin: 0 0 2mm; }
     .free-day { color: ${COLOR.muted}; font-style: italic; }
+    .day-places { margin: 0 0 2mm; padding-inline-start: 5mm; font-size: 9.5pt; }
+    .day-places li { margin: 0 0 1.2mm; }
+    .day a, .day-places a { color: ${COLOR.accent}; }
     table { width: 100%; border-collapse: collapse; margin: 0 0 6mm; }
     th {
       font-size: 8.5pt;
@@ -179,6 +182,10 @@ export interface ItineraryPdfDay {
   description: string | null
   area: string | null
   isFreeDay: boolean
+  /** Google Maps link for the day's activity, when it has one. */
+  mapsUrl?: string | null
+  /** The day's places in visiting order, each with its Google Maps link. */
+  places?: readonly { name: string; time: string | null; note: string | null; mapsUrl: string }[]
 }
 
 export interface ItineraryPdfInput {
@@ -194,6 +201,8 @@ export interface ItineraryPdfInput {
     dayByDay: string
     dayNumber: (n: number) => string
     freeDay: string
+    /** Link text for a Google Maps link ("Open in Google Maps"). */
+    maps?: string
     version: string
     generated: string
     confidential: string
@@ -203,6 +212,24 @@ export interface ItineraryPdfInput {
 
 export function itineraryPdfHtml(input: ItineraryPdfInput): string {
   const { labels } = input
+  const mapsLabel = labels.maps ?? 'Google Maps'
+  const places = (day: ItineraryPdfDay): string =>
+    day.places === undefined || day.places.length === 0
+      ? ''
+      : `<ol class="day-places">${day.places
+          .map(
+            (place) =>
+              `<li><strong>${escapeHtml(place.name)}</strong>${
+                place.time === null
+                  ? ''
+                  : ` <span class="day-area">${escapeHtml(place.time)}</span>`
+              } — <a href="${escapeHtml(place.mapsUrl)}">${escapeHtml(mapsLabel)}</a>${
+                place.note === null
+                  ? ''
+                  : `<br><span class="day-area">${escapeHtml(place.note)}</span>`
+              }</li>`,
+          )
+          .join('')}</ol>`
 
   const days = input.days
     .map((day) => {
@@ -217,6 +244,12 @@ export function itineraryPdfHtml(input: ItineraryPdfInput): string {
         ${heading}
         ${day.area === null ? '' : `<p class="day-area">${escapeHtml(day.area)}</p>`}
         ${day.description === null ? '' : `<p>${escapeHtml(day.description)}</p>`}
+        ${
+          day.mapsUrl
+            ? `<p class="day-area"><a href="${escapeHtml(day.mapsUrl)}">${escapeHtml(mapsLabel)}</a></p>`
+            : ''
+        }
+        ${places(day)}
       </section>`
     })
     .join('\n')

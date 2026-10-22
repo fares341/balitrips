@@ -33,6 +33,12 @@ export interface BookingOptions {
    * slot (`tier_included_activities.timing = 'own_slot'`). Null time = none.
    */
   included?: { activityId: string; time: string | null }[]
+  /**
+   * Itinerary line: who the plan is for (one of the itinerary's own
+   * audience labels, as the buyer saw it — e.g. "Families"). One product
+   * serves several audiences; this is the buyer's choice, shown to staff.
+   */
+  audience?: string
 }
 
 /** One line between subtotal and total, frozen on the order (phase 4). */

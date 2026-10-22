@@ -32,7 +32,12 @@ import { defineConfig, devices } from '@playwright/test'
  */
 
 const PORT = 3200
-const BASE_URL = `http://localhost:${PORT}`
+/**
+ * `E2E_BASE_URL` points the suite at a server that is already running (the
+ * preview-shots workflow starts one on :3000); then no server is launched.
+ */
+const EXTERNAL_URL = process.env.E2E_BASE_URL?.trim() || null
+const BASE_URL = EXTERNAL_URL ?? `http://localhost:${PORT}`
 
 const isCI = process.env.CI !== undefined && process.env.CI !== ''
 
@@ -96,12 +101,15 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: `"${process.execPath}" scripts/serve-standalone.mjs ${PORT}`,
-    url: `${BASE_URL}/en`,
-    reuseExistingServer: !isCI,
-    timeout: 180_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer:
+    EXTERNAL_URL !== null
+      ? undefined
+      : {
+          command: `"${process.execPath}" scripts/serve-standalone.mjs ${PORT}`,
+          url: `${BASE_URL}/en`,
+          reuseExistingServer: !isCI,
+          timeout: 180_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
 })

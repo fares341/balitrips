@@ -23,11 +23,19 @@
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { activities, itineraries, itineraryDays, itineraryDocuments } from '@/db/schema'
+import {
+  activities,
+  itineraries,
+  itineraryDayPlaces,
+  itineraryDays,
+  itineraryDocuments,
+  mapPlaces,
+} from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
 import { translator } from '@/lib/email/catalogue'
 import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 import { pick, pickOptional, type LocalizedInput } from '@/lib/content/localize'
+import { googleMapsPlaceUrl, googleMapsSearchUrl, orderStops } from '@/lib/itineraries/day-route'
 import { uploadPrivate } from '@/lib/storage'
 
 import { renderPdf } from './gotenberg'
@@ -64,6 +72,7 @@ export interface GenerateItineraryOptions {
  * is exactly what `pick()` exists to resolve.
  */
 interface DayRow {
+  id: string
   dayNumber: number
   isFreeDay: boolean
   title: LocalizedInput
@@ -114,6 +123,7 @@ export async function generateItineraryDocuments(
 
   const dayRows: DayRow[] = await db
     .select({
+      id: itineraryDays.id,
       dayNumber: itineraryDays.dayNumber,
       isFreeDay: itineraryDays.isFreeDay,
       title: itineraryDays.title,
@@ -133,6 +143,31 @@ export async function generateItineraryDocuments(
     // support ticket; failing loudly is not.
     throw new ItineraryDocumentError('Itinerary has no authored days', itineraryId)
   }
+
+  /**
+   * The places of each day, in visiting order, each with its Google Maps
+   * link. The PDF is the paid product, so every place is printed — the
+   * map's per-place gate applies to the website, not to the buyer's file.
+   */
+  const placeRows = await db
+    .select({
+      dayId: itineraryDayPlaces.dayId,
+      sortOrder: itineraryDayPlaces.sortOrder,
+      note: itineraryDayPlaces.note,
+      visitTime: itineraryDayPlaces.visitTime,
+      name: mapPlaces.name,
+      slug: mapPlaces.slug,
+      lat: mapPlaces.lat,
+      lon: mapPlaces.lon,
+    })
+    .from(itineraryDayPlaces)
+    .innerJoin(mapPlaces, eq(mapPlaces.id, itineraryDayPlaces.placeId))
+    .where(
+      inArray(
+        itineraryDayPlaces.dayId,
+        dayRows.map((row) => row.id),
+      ),
+    )
 
   const existing = await db
     .select({ locale: itineraryDocuments.locale })
@@ -181,6 +216,19 @@ export async function generateItineraryDocuments(
         pickOptional(row.description, locale) ?? pickOptional(row.activityDescription, locale),
       area: pickOptional(row.activityArea, locale),
       isFreeDay: row.isFreeDay,
+      mapsUrl:
+        pickOptional(row.activityName, locale) === null
+          ? null
+          : googleMapsSearchUrl(
+              pickOptional(row.activityName, locale),
+              pickOptional(row.activityArea, locale),
+            ),
+      places: orderStops(placeRows.filter((place) => place.dayId === row.id)).map((place) => ({
+        name: pick(place.name as LocalizedInput, locale, place.slug),
+        time: place.visitTime,
+        note: pickOptional(place.note as LocalizedInput, locale),
+        mapsUrl: googleMapsPlaceUrl(place.lat, place.lon),
+      })),
     }))
 
     const name = pick(itinerary.name, locale, itinerary.slug)
@@ -196,6 +244,7 @@ export async function generateItineraryDocuments(
         dayByDay: t('dt_daybyday'),
         dayNumber: (n) => t('pdf_day_n', { n: number.format(n) }),
         freeDay: t('pdf_free_day'),
+        maps: t('it_gmaps'),
         version: t('pdf_version', { version: number.format(itinerary.version) }),
         generated: t('pdf_generated', { date: generated }),
         confidential: t('pdf_confidential'),

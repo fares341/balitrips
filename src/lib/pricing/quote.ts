@@ -78,6 +78,8 @@ export interface QuoteRequestItem {
     /** How many of `guests` are children / infants (phase 2). */
     children?: number
     infants?: number
+    /** Itinerary: the audience chosen (display only, never priced). */
+    audience?: string
   } | null
 }
 

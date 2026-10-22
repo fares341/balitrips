@@ -81,6 +81,7 @@ export function PackageCard({ pkg, action, priority = false }: PackageCardProps)
           <PriceFrom
             label={t('bt_from')}
             amount={formatPrice(pkg.priceMinor, pkg.currency, locale)}
+            unit={pkg.pricingMode === 'per_guest' ? t('pk_unit_person') : t('pk_unit_group')}
           />
           <CardActions>
             {action}

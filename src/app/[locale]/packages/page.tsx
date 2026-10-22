@@ -20,7 +20,7 @@ import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs, LinkButton } from '@/components/shared'
 import { Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
-import { BUDGET_TIERS, parseBudgetTier, tierForPrice, type BudgetTier } from '@/lib/budget-tier'
+import { BUDGET_TIERS, parseBudgetTier, tiersFromPrices, type BudgetTier } from '@/lib/budget-tier'
 import { listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS, type PackageSummary } from '@/lib/content/types'
 import { pick } from '@/lib/content/localize'
@@ -33,11 +33,16 @@ const HREF = ENTITY_PATHS.package
 /** Above-the-fold row on the widest breakpoint is four cards. */
 const PRIORITY_CARDS = 4
 
-/** A package's budget category, from its real price (lib/budget-tier.ts). */
-function packageTier(pkg: PackageSummary): BudgetTier | null {
-  return tierForPrice(pkg.priceMinor, pkg.currency, 'package', {
-    perGuest: pkg.pricingMode === 'per_guest',
-  })
+/**
+ * Each package's budget category, relative to the packages on sale
+ * (lib/budget-tier.ts). Compared on the group price: a per-person package is
+ * counted for two, the size the fixed thresholds also assumed.
+ */
+function packageTiers(packages: readonly PackageSummary[]): (BudgetTier | null)[] {
+  return tiersFromPrices(packages, (pkg) => ({
+    minor: pkg.pricingMode === 'per_guest' ? pkg.priceMinor * 2 : pkg.priceMinor,
+    currency: pkg.currency,
+  }))
 }
 
 export function generateStaticParams() {
@@ -91,7 +96,8 @@ export default async function PackagesPage({
 
   // Budget category filter (?budget=economy|mid|luxury); unknown → all.
   const tier = parseBudgetTier(query.budget)
-  const tiers = packages.map((pkg) => ({ pkg, tier: packageTier(pkg) }))
+  const packageTierList = packageTiers(packages)
+  const tiers = packages.map((pkg, index) => ({ pkg, tier: packageTierList[index] ?? null }))
   const counts = Object.fromEntries(
     BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.tier === key).length]),
   ) as Record<BudgetTier, number>
@@ -174,7 +180,12 @@ export default async function PackagesPage({
                       <th scope="row">{t('pk_cmp_from')}</th>
                       {shown.map((pkg) => (
                         <td key={pkg.id}>
-                          <b dir="ltr">{formatPrice(pkg.priceMinor, pkg.currency, locale)}</b>
+                          <b dir="ltr">{formatPrice(pkg.priceMinor, pkg.currency, locale)}</b>{' '}
+                          <small className="muted">
+                            {pkg.pricingMode === 'per_guest'
+                              ? t('c_pp')
+                              : t('pk_per_group', { n: pkg.maxGuests })}
+                          </small>
                         </td>
                       ))}
                     </tr>

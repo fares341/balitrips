@@ -44,7 +44,7 @@ import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 
 import { db } from '@/db'
-import { cartItems, carts, type OrderAdjustmentLine } from '@/db/schema'
+import { cartItems, carts, itineraries, type OrderAdjustmentLine } from '@/db/schema'
 import type { CouponRejection } from '@/lib/finance/coupons'
 import { adjustQuote } from '@/lib/finance/pricing'
 import { itemKindForCart, trackFromServer } from '@/lib/analytics/server-track'
@@ -423,6 +423,11 @@ export interface AddItemInput {
    * driver behind.
    */
   driver?: DriverAddOn | null
+  /**
+   * Itinerary only: who the plan is for — one of the itinerary's audience
+   * labels. Checked against the itinerary row; anything else is dropped.
+   */
+  audience?: string | null
 }
 
 export interface MutationResult {
@@ -472,9 +477,31 @@ function sameBooking(row: CartItemRow, input: AddItemInput): boolean {
     row.endDate === normalise(input.endDate) &&
     row.parentItemId === null &&
     // A line booked through the activity booking box (package, add-ons) is
-    // its own booking; a bare "add to trip" never merges into it.
-    row.options === null
+    // its own booking; a bare "add to trip" never merges into it. An
+    // itinerary is bought once whatever audience was picked.
+    (row.options === null || row.kind === 'itinerary')
   )
+}
+
+/**
+ * The audience label a buyer picked, if it really is one of the itinerary's
+ * own (in any language); null otherwise. Display text, never priced.
+ */
+async function checkedAudience(
+  itineraryId: string | null,
+  raw: string | null | undefined,
+): Promise<string | null> {
+  const wanted = typeof raw === 'string' ? raw.trim().slice(0, 120) : ''
+  if (itineraryId === null || wanted === '') return null
+  const [row] = await db
+    .select({ audience: itineraries.audience })
+    .from(itineraries)
+    .where(eq(itineraries.id, itineraryId))
+    .limit(1)
+  const labels = (row?.audience ?? []).flatMap((entry) =>
+    Object.values(entry ?? {}).filter((value): value is string => typeof value === 'string'),
+  )
+  return labels.some((label) => label.trim() === wanted) ? wanted : null
 }
 
 export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
@@ -530,6 +557,8 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   const requested = singular ? 1 : clampQuantity(input.quantity, CART_MAX_QUANTITY)
 
   const existing = rows.find((row) => sameBooking(row, input))
+  const audience = input.kind === 'itinerary' ? await checkedAudience(refId, input.audience) : null
+  const lineOptions = audience === null ? null : { audience }
 
   let itemId: string
   if (existing) {
@@ -543,6 +572,8 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
         // step means the order snapshot cannot disagree with what was paid.
         guests: input.kind === 'activity' ? next : (input.guests ?? existing.guests),
         unitPriceMinor: price.priceMinor,
+        // A new audience choice replaces the old one on the same plan.
+        ...(input.kind === 'itinerary' ? { options: lineOptions } : {}),
       })
       .where(eq(cartItems.id, existing.id))
     itemId = existing.id
@@ -564,6 +595,7 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
         endDate: normalise(input.endDate),
         unitPriceMinor: price.priceMinor,
         parentItemId: null,
+        options: lineOptions,
       })
       .returning({ id: cartItems.id })
 
@@ -1165,6 +1197,8 @@ export interface CartLineView {
   /** Children / infants among `guests` (phase 2). */
   children: number
   infants: number
+  /** Itinerary lines: the audience the buyer picked ("Families"). */
+  audience: string | null
   /**
    * Phase 3: another line of this trip already pays for this one (an
    * itinerary inside a package, VIP that comes with something) — its name.
@@ -1340,6 +1374,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       })(),
       children: row.options?.children ?? 0,
       infants: row.options?.infants ?? 0,
+      audience: row.options?.audience ?? null,
       coveredByName: (() => {
         if (line?.coveredBy === undefined) return null
         const by = rows.find((other) => other.id === line.coveredBy)
