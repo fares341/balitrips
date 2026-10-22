@@ -179,11 +179,21 @@ export async function processWebhookEvent(
     }
 
     if (from !== target) {
-      await tx.update(orders).set({ status: target }).where(eq(orders.id, order.id))
+      await tx
+        .update(orders)
+        .set(
+          target === 'authorized'
+            ? { status: target, authorizedAt: new Date() }
+            : { status: target },
+        )
+        .where(eq(orders.id, order.id))
 
       await tx
         .update(payments)
-        .set({ status: target === 'paid' ? 'succeeded' : 'failed' })
+        .set({
+          status:
+            target === 'paid' ? 'succeeded' : target === 'authorized' ? 'authorized' : 'failed',
+        })
         .where(eq(payments.providerPaymentId, event.providerPaymentId))
 
       // الباقات المشتراة تُمنح في نفس المعاملة التي تثبّت الدفع: لا لحظة

@@ -188,6 +188,8 @@ export function holdsCapacity(status: BookingStatus): boolean {
  */
 export type PaymentState =
   | 'success'
+  /** Card held until the supplier confirms (client, Oct 2026). */
+  | 'authorized'
   | 'failed'
   | 'processing'
   | 'transfer'
@@ -226,6 +228,8 @@ export function paymentState(
     case 'confirmed':
     case 'partially_refunded':
       return 'success'
+    case 'authorized':
+      return 'authorized'
     case 'refunded':
       return 'refunded'
     case 'cancelled':
@@ -274,6 +278,7 @@ export function itemTag(payment: PaymentState, kind: string, status: BookingStat
   if (payment === 'failed') return { tone: 'err', key: 'trip_st_unpaid' }
   if (payment === 'processing') return { tone: 'warn', key: 'trip_st_processing' }
   if (payment === 'transfer') return { tone: 'warn', key: 'trip_st_transfer' }
+  if (payment === 'authorized') return { tone: 'warn', key: 'cf_st_authorized' }
 
   switch (status) {
     case 'cancel_requested':

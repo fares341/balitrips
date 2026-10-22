@@ -188,7 +188,7 @@ const SPEC_PLACE_CATEGORIES: readonly { key: string; label: Localized; tier: 'fr
   {
     key: 'beaches',
     label: { en: 'Bali beaches', ar: 'شواطئ بالي', id: 'Pantai Bali' },
-    tier: 'vip',
+    tier: 'free',
   },
   { key: 'barbers', label: { en: 'Barbers', ar: 'الحلاقين', id: 'Tukang cukur' }, tier: 'vip' },
   { key: 'hospital', label: { en: 'Hospitals', ar: 'مستشفيات', id: 'Rumah Sakit' }, tier: 'free' },

@@ -32,7 +32,7 @@ import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 import { db } from '@/db'
-import { payments } from '@/db/schema'
+import { orders, payments } from '@/db/schema'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { minorUnitExponent } from '@/lib/money'
 import { sandboxPaymentsAllowed } from '@/lib/live-mode'
@@ -104,8 +104,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const rows = await db
-    .select({ amountMinor: payments.amountMinor, currency: payments.currency })
+    .select({
+      amountMinor: payments.amountMinor,
+      currency: payments.currency,
+      captureMode: orders.captureMode,
+    })
     .from(payments)
+    .innerJoin(orders, eq(orders.id, payments.orderId))
     .where(eq(payments.providerPaymentId, intent))
     .limit(1)
 
@@ -183,8 +188,13 @@ export async function POST(request: Request): Promise<Response> {
   if (intent === '') return new NextResponse('Missing intent', { status: 400 })
 
   const rows = await db
-    .select({ amountMinor: payments.amountMinor, currency: payments.currency })
+    .select({
+      amountMinor: payments.amountMinor,
+      currency: payments.currency,
+      captureMode: orders.captureMode,
+    })
     .from(payments)
+    .innerJoin(orders, eq(orders.id, payments.orderId))
     .where(eq(payments.providerPaymentId, intent))
     .limit(1)
 
@@ -195,7 +205,13 @@ export async function POST(request: Request): Promise<Response> {
     // the duplicate path only when the provider genuinely replays — which is
     // what `webhook_events` is indexed for.
     id: `evt_${randomUUID()}`,
-    type: decision === 'approve' ? 'payment.succeeded' : 'payment.failed',
+    // A booking order is only authorised, like Stripe's manual capture.
+    type:
+      decision !== 'approve'
+        ? 'payment.failed'
+        : payment?.captureMode === 'manual'
+          ? 'payment.authorized'
+          : 'payment.succeeded',
     paymentId: intent,
     amountMinor: payment?.amountMinor ?? null,
     currency: payment?.currency ?? null,

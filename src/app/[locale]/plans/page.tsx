@@ -300,10 +300,13 @@ function PlanGrid({
         const facts: { icon: IconName; text: string }[] = [
           {
             icon: 'clock',
+            // Stated before purchase (client, Oct 2026): "3 months", or lifetime.
             text:
               plan.durationDays === null
                 ? t('pl_lifetime')
-                : t('sub_for_days', { days: plan.durationDays }),
+                : plan.durationDays % 30 === 0
+                  ? t('sub_for_months', { months: plan.durationDays / 30 })
+                  : t('sub_for_days', { days: plan.durationDays }),
           },
           {
             icon: mapless ? 'pdf' : 'pin',
@@ -360,6 +363,13 @@ function PlanGrid({
                 {/* The duration is the first fact above; the price line only
                     says how it is paid. */}
                 <span>/ {t('sub_once')}</span>
+              </p>
+              <p className="muted" style={{ fontSize: 12.5, margin: '0 0 6px' }}>
+                {plan.durationDays === null
+                  ? t('sub_lifetime_note')
+                  : plan.durationDays % 30 === 0
+                    ? t('sub_duration_note', { months: plan.durationDays / 30 })
+                    : t('sub_for_days', { days: plan.durationDays })}
               </p>
 
               <p className="bt-ptier-upsell">

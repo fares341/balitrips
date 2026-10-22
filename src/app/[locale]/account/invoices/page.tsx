@@ -40,6 +40,7 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
 /** Badge colour per status. Green is reserved for money that actually arrived. */
 const STATUS_VARIANT: Record<OrderStatus, TagVariant> = {
   pending: 'default',
+  authorized: 'orange',
   paid: 'palm',
   confirmed: 'palm',
   cancelled: 'default',

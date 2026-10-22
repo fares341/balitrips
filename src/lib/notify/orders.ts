@@ -110,8 +110,37 @@ export async function notifyPaymentFailed(orderId: string): Promise<void> {
     )
 }
 
+/** Client, Oct 2026: a booking's card is held — tell staff to confirm and capture. */
+export async function notifyOrderAuthorized(orderId: string): Promise<void> {
+  try {
+    const [order] = await db
+      .select({
+        orderNumber: orders.orderNumber,
+        totalMinor: orders.totalMinor,
+        currency: orders.presentmentCurrency,
+      })
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1)
+    if (!order) return
+    await notifyStaff(
+      'staff_order_authorized',
+      {
+        orderNumber: order.orderNumber,
+        total: formatMoney(order.totalMinor, order.currency, 'en'),
+      },
+      `/orders/${orderId}`,
+    )
+    await notifyOrderUpdated(orderId, 'authorized')
+  } catch (error) {
+    console.error('[notify] order authorized notification failed', { orderId, error })
+  }
+}
+
 /** الحالات التي يُبلَّغ بها العميل عند تغييرها من لوحة التحكم. */
 export const ORDER_UPDATE_STATUSES = [
+  'authorized',
+  'released',
   'confirmed',
   'delivered',
   'cancelled',

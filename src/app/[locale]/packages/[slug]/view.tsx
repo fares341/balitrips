@@ -14,7 +14,8 @@ import { Icon, Photo } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickList, pickOptional } from '@/lib/content/localize'
-import { FEATURES } from '@/lib/features'
+import { readSetting } from '@/app/(admin)/_lib/settings'
+import { packageDayPlan } from '@/lib/packages/estimate'
 import { itinerariesForPackage, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS, type PackageDetail } from '@/lib/content/types'
 
@@ -34,7 +35,11 @@ export async function PackageDetailView({
   /** Staff preview of a draft: a banner, and no "other packages" strip. */
   preview: boolean
 }) {
-  const [t, format] = await Promise.all([getTranslations({ locale }), getFormatter({ locale })])
+  const [t, format, vehicleSetting] = await Promise.all([
+    getTranslations({ locale }),
+    getFormatter({ locale }),
+    readSetting('vehicles'),
+  ])
 
   const name = pick(pkg.name, locale, pkg.slug)
   const blurb = pickOptional(pkg.blurb, locale)
@@ -138,18 +143,12 @@ export async function PackageDetailView({
       ? included
       : [
           ...(pkg.activities.length > 0 ? [t('pk_inc_acts', { n: pkg.activities.length })] : []),
-          ...(FEATURES.driver && pkg.driverIncluded ? [t('pd_driver_inc')] : []),
+          // Client, Oct 2026: every package includes a driver.
+          t('pk_driver_all'),
           ...(pkg.itinerary !== null ? [t('pk_inc_itinerary')] : []),
           ...(pkg.includesVip ? [t('p3_vip_map')] : []),
         ]
-  const excludedList =
-    excluded.length > 0
-      ? excluded
-      : [
-          t('pk_exc_flights'),
-          ...(FEATURES.driver && pkg.driverIncluded ? [] : [t('pk_exc_transport')]),
-          t('pk_exc_personal'),
-        ]
+  const excludedList = excluded.length > 0 ? excluded : [t('pk_exc_flights'), t('pk_exc_personal')]
 
   return (
     <main className="bt-detailwrap pd-page">
@@ -184,11 +183,9 @@ export async function PackageDetailView({
             >
               {t('c_days_n', { n: pkg.days })}
             </span>
-            {FEATURES.driver && pkg.driverIncluded && (
-              <span className="tag tag-palm">
-                <Icon name="car" size={13} /> {t('pd_driver_inc')}
-              </span>
-            )}
+            <span className="tag tag-palm">
+              <Icon name="car" size={13} /> {t('pd_driver_inc')}
+            </span>
           </span>
           <h1 className="bt-banner-title">{name}</h1>
           {blurb !== null && <p className="bt-banner-sub">{blurb}</p>}
@@ -223,11 +220,7 @@ export async function PackageDetailView({
                     </b>
                     {day.activities.length === 0 ? (
                       <p className="muted" style={{ margin: 0, fontSize: 14 }}>
-                        {t(
-                          FEATURES.driver && pkg.driverIncluded
-                            ? 'pk_day_free_driver'
-                            : 'pk_day_free',
-                        )}
+                        {t('pk_day_free_driver')}
                       </p>
                     ) : (
                       <ul className="sr-list pd-acts" role="list">
@@ -358,11 +351,17 @@ export async function PackageDetailView({
         </div>
 
         <PackageBookingBox
-          packageId={pkg.id}
-          priceMinor={pkg.priceMinor}
-          currency={pkg.currency}
-          pricingMode={pkg.pricingMode}
+          slug={pkg.slug}
+          days={pkg.days}
           maxGuests={pkg.maxGuests}
+          dayPlan={packageDayPlan({
+            days: pkg.days,
+            activities: pkg.activities,
+            activityDays: pkg.activityDays,
+            fallbackRegion: pkg.regions[0] ?? null,
+          })}
+          vehicles={vehicleSetting.vehicles.filter((vehicle) => vehicle.active)}
+          sarPerUsd={vehicleSetting.sarPerUsd}
         />
       </div>
 

@@ -204,6 +204,11 @@ export default async function OrderPage({
           ? t('trip_ok_b_noemail', { order: order.orderNumber })
           : t('trip_ok_b', { order: order.orderNumber, email }),
     },
+    authorized: {
+      icon: <Icon name="shield" size={40} stroke={2.2} />,
+      title: t('ord_authorized'),
+      body: t('ord_authorized_b'),
+    },
     failed: {
       icon: <Icon name="cross" size={40} stroke={2.6} />,
       title: t('trip_fail_t'),
@@ -269,7 +274,9 @@ export default async function OrderPage({
             <h1 className="h2">{hero.title}</h1>
             <p style={{ maxWidth: '52ch' }}>{hero.body}</p>
             {state === 'processing' && <OrderStatusWatcher state={state} />}
-            {state === 'success' && <OrderStatusWatcher state={state} />}
+            {(state === 'success' || state === 'authorized') && (
+              <OrderStatusWatcher state={state} />
+            )}
 
             {state === 'failed' && retryReason !== null && (
               <p className="alert alert-err" role="alert">

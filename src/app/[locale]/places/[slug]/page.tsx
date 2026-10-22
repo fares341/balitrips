@@ -132,6 +132,9 @@ export default async function PlacePage({ params }: PageProps) {
   const region =
     pickOptional(place.regionLabel, lang) ?? pickOptional(place.parentRegionLabel, lang) ?? ''
   const category = pickOptional(place.categoryLabel, lang) ?? pickOptional(place.category, lang)
+  // Client (Oct 2026): tourist sites (مزارات) are information only — no
+  // booking link and no "book an activity" strip on their page.
+  const infoOnly = place.categoryKey === 'sights'
   const description = placeDescription(place, lang, t)
   const related = relatedActivities(place, activities)
   const detailed = pickOptional(place.detailedDescription, lang)
@@ -215,7 +218,7 @@ export default async function PlacePage({ params }: PageProps) {
             settings={mapViewSettings(mapSettings)}
           />
 
-          {related.length > 0 && (
+          {related.length > 0 && !infoOnly && (
             <section className="stack" style={{ gap: 8 }}>
               <h2 className="h3">{t('pl_related')}</h2>
               <div className="pl-related">
@@ -282,7 +285,7 @@ export default async function PlacePage({ params }: PageProps) {
           >
             {t('mp3_directions')}
           </LinkButton>
-          {place.activitySlug !== null && (
+          {place.activitySlug !== null && !infoOnly && (
             <LinkButton href={`/activities/${place.activitySlug}`} variant="ghost" icon="bolt">
               {t('mp3_bookable')}
             </LinkButton>

@@ -204,6 +204,13 @@
       "when": 1793700100000,
       "tag": "0028_activities_list_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793700200000,
+      "tag": "0029_client_answers",
+      "breakpoints": true
     }
   ]
 }

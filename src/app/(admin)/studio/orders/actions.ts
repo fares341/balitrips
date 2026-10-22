@@ -35,6 +35,7 @@ import {
   type OrderStatus,
 } from '@/lib/orders/state'
 import { applyPaidOrder } from '@/lib/orders/after-paid'
+import { captureAuthorizedOrder, releaseAuthorizedOrder } from '@/lib/orders/authorization'
 import { isLineLive } from '@/lib/entitlements/grant-rules'
 import { isOrderUpdateStatus, notifyOrderPaid, notifyOrderUpdated } from '@/lib/notify/orders'
 import { canMoveBooking, isBookingStatus, type BookingStatus } from '@/lib/orders/booking-status'
@@ -874,5 +875,48 @@ export async function setBookingStatus(orderId: string, form: FormData): Promise
     outcome = { err: errorMessage(error) }
   }
 
+  redirect(withOutcome(detail(orderId), outcome))
+}
+
+/**
+ * Client, Oct 2026 — the supplier confirmed an authorised booking: charge the
+ * card hold. Idempotent: a second click finds the order already paid.
+ */
+export async function captureAuthorized(orderId: string): Promise<void> {
+  const session = await requireCapability('bookings.confirm')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const result = await captureAuthorizedOrder(orderId, session.userId)
+    if (result.ok) {
+      await notifyOrderPaid(orderId)
+      outcome = { ok: t('ca.ok_captured') }
+    } else {
+      outcome = { err: t(`ca.err_${result.reason}`) }
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(detail(orderId), outcome))
+}
+
+/** The supplier cannot run it: release the card hold (nothing charged) and tell the customer. */
+export async function releaseAuthorized(orderId: string): Promise<void> {
+  const session = await requireCapability('bookings.confirm')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const result = await releaseAuthorizedOrder(orderId, 'supplier refused', session.userId)
+    if (result.ok) {
+      await notifyOrderUpdated(orderId, 'released', { by: session.userId })
+      outcome = { ok: t('ca.ok_released') }
+    } else {
+      outcome = { err: t(`ca.err_${result.reason}`) }
+    }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
   redirect(withOutcome(detail(orderId), outcome))
 }

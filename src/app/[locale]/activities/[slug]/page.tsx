@@ -163,7 +163,8 @@ export default async function ActivityDetailPage({ params }: PageProps) {
   const importantNotes = pickList(activity.importantNotes, lang)
   const whatToBring = pickList(activity.whatToBring, lang)
   const ageConditions = pickList(activity.ageConditions, lang)
-  const cancellation = pickOptional(activity.cancellationPolicy, lang)
+  // Site-wide default (client, Oct 2026) when the activity has its own none.
+  const cancellation = pickOptional(activity.cancellationPolicy, lang) ?? t('cancel_default')
   const meetingAddress = pickOptional(activity.meeting.address, lang)
   const meetingTime = pickOptional(activity.meeting.timeNote, lang)
   const money = (minor: number, currency = activity.currency) => formatPrice(minor, currency, lang)

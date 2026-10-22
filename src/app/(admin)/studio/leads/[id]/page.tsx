@@ -88,6 +88,18 @@ export default async function LeadDetailPage({
     [t('leads.days'), request.days === null ? '—' : String(request.days)],
     [t('leads.travellers'), String(request.travellers ?? '—')],
     [t('leads.trip_type'), request.theme ?? '—'],
+    // Package request (client, Oct 2026): the vehicle and the estimate shown.
+    ...(request.packageId !== null
+      ? ([
+          [t('veh.lead_vehicle'), request.vehicleKey ?? '—'],
+          [
+            t('veh.lead_estimate'),
+            request.estimateMinor === null
+              ? '—'
+              : formatMoney(request.estimateMinor, request.estimateCurrency ?? 'USD', intl),
+          ],
+        ] as [string, string][])
+      : []),
     [t('leads.budget'), budgetLabel(t, intl, request)],
     [t('leads.interests'), (request.interests ?? []).join(', ') || '—'],
     [t('leads.wants_driver'), yesNo(request.wantsDriver)],
@@ -224,8 +236,10 @@ export default async function LeadDetailPage({
             <MoneyField
               minorName="quoteMinor"
               currencyName="quoteCurrency"
-              minor={request.quoteMinor}
-              currency={request.quoteCurrency ?? request.currency ?? 'USD'}
+              minor={request.quoteMinor ?? request.estimateMinor}
+              currency={
+                request.quoteCurrency ?? request.estimateCurrency ?? request.currency ?? 'USD'
+              }
             />
             <div className="a-actions">
               <button className="a-btn" type="submit">

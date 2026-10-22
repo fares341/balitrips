@@ -824,6 +824,8 @@ export const mapPlaces = pgTable(
      * merely masked it with a CSS blur.
      */
     isFree: boolean('is_free').notNull().default(false),
+    /** Free on the map even though its category is VIP (client: Sekumpul waterfall). */
+    freeOverride: boolean('free_override').notNull().default(false),
     /** Which entitlement unlocks it: 'map_access' or 'vip'. */
     requiredEntitlement: varchar('required_entitlement', { length: 32 })
       .notNull()

@@ -96,6 +96,16 @@ export class SandboxPaymentProvider implements PaymentProvider {
     return false
   }
 
+  async capture(): Promise<boolean> {
+    // The sandbox holds nothing; capturing an authorised sandbox payment
+    // always succeeds, so CI exercises the same Studio path as Stripe.
+    return true
+  }
+
+  async voidAuthorization(): Promise<boolean> {
+    return true
+  }
+
   async getPaymentMethod(): Promise<string | null> {
     // The sandbox challenge page simulates a card with 3-D Secure.
     return 'card'
@@ -141,6 +151,7 @@ export class SandboxPaymentProvider implements PaymentProvider {
 function normaliseType(type: string | undefined): WebhookEvent['type'] {
   switch (type) {
     case 'payment.succeeded':
+    case 'payment.authorized':
     case 'payment.failed':
     case 'payment.cancelled':
     case 'refund.succeeded':

@@ -1,6 +1,7 @@
 import activityEditor from './activity-editor'
 import assistant from './assistant'
 import catalog from './catalog'
+import clientAnswers from './client-answers'
 import commerce from './commerce'
 import common from './common'
 import content from './content'
@@ -33,6 +34,7 @@ const SECTIONS = [
   financeCrm,
   reports,
   ops,
+  clientAnswers,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

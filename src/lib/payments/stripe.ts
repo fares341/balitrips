@@ -156,9 +156,26 @@ export function verifyStripeSignature(
   if (!ok) throw new PaymentProviderError('invalid Stripe signature', 'invalid_signature')
 }
 
-export function webhookType(stripeType: string, session?: StripeSession): WebhookEvent['type'] {
+interface StripeSessionWithMeta extends StripeSession {
+  metadata?: Record<string, string> | null
+}
+
+/** A session created with `payment_intent_data.capture_method = manual` (we tag it in metadata). */
+function isManualCapture(session?: StripeSessionWithMeta): boolean {
+  return session?.metadata?.captureMethod === 'manual'
+}
+
+export function webhookType(
+  stripeType: string,
+  session?: StripeSessionWithMeta,
+): WebhookEvent['type'] {
   switch (stripeType) {
     case 'checkout.session.completed':
+      // Manual capture: Checkout completes with the card authorised and
+      // `payment_status: unpaid` — held, not charged (client, Oct 2026).
+      if (isManualCapture(session) && session?.payment_status === 'unpaid') {
+        return 'payment.authorized'
+      }
       // بطاقة: مدفوعة الآن. طريقة مؤجلة: "complete" لكن غير مدفوعة بعد — ننتظر
       // async_payment_succeeded بدل اعتبارها مدفوعة.
       return session?.payment_status === 'paid' || session?.payment_status === 'no_payment_required'
@@ -275,11 +292,19 @@ export class StripePaymentProvider implements PaymentProvider {
           },
         ],
         payment_intent_data: {
+          // Bookings: authorise only; Studio captures once the supplier
+          // confirms (or voids). Stripe holds the authorisation ~7 days.
+          ...(input.captureMethod === 'manual' ? { capture_method: 'manual' } : {}),
           description: `Order ${input.orderNumber}`,
           statement_descriptor_suffix: input.statementDescriptor?.slice(0, 22),
           metadata: { orderId: input.orderId, orderNumber: input.orderNumber },
         },
-        metadata: { orderId: input.orderId, orderNumber: input.orderNumber, ...input.metadata },
+        metadata: {
+          orderId: input.orderId,
+          orderNumber: input.orderNumber,
+          ...input.metadata,
+          ...(input.captureMethod === 'manual' ? { captureMethod: 'manual' } : {}),
+        },
       },
       input.idempotencyKey,
     )
@@ -367,6 +392,58 @@ export class StripePaymentProvider implements PaymentProvider {
     }
   }
 
+  private async intentIdOf(providerPaymentId: string): Promise<string | null> {
+    const session = await this.call<StripeSession>(
+      'GET',
+      `/checkout/sessions/${encodeURIComponent(providerPaymentId)}`,
+    )
+    return typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : (session.payment_intent?.id ?? null)
+  }
+
+  async capture(providerPaymentId: string, idempotencyKey: string): Promise<boolean> {
+    const intentId = await this.intentIdOf(providerPaymentId)
+    if (intentId === null) return false
+    try {
+      const intent = await this.call<{ status: string }>(
+        'POST',
+        `/payment_intents/${encodeURIComponent(intentId)}/capture`,
+        {},
+        idempotencyKey,
+      )
+      return intent.status === 'succeeded'
+    } catch (error) {
+      if (!(error instanceof PaymentProviderError) || error.retryable) throw error
+      // Already captured, or the authorisation expired / was cancelled: ask.
+      const intent = await this.call<{ status: string }>(
+        'GET',
+        `/payment_intents/${encodeURIComponent(intentId)}`,
+      )
+      return intent.status === 'succeeded'
+    }
+  }
+
+  async voidAuthorization(providerPaymentId: string): Promise<boolean> {
+    const intentId = await this.intentIdOf(providerPaymentId)
+    if (intentId === null) return this.cancelIntent(providerPaymentId)
+    try {
+      const intent = await this.call<{ status: string }>(
+        'POST',
+        `/payment_intents/${encodeURIComponent(intentId)}/cancel`,
+        { cancellation_reason: 'abandoned' },
+      )
+      return intent.status === 'canceled'
+    } catch (error) {
+      if (!(error instanceof PaymentProviderError) || error.retryable) throw error
+      const intent = await this.call<{ status: string }>(
+        'GET',
+        `/payment_intents/${encodeURIComponent(intentId)}`,
+      )
+      return intent.status === 'canceled'
+    }
+  }
+
   async getPaymentMethod(providerPaymentId: string): Promise<string | null> {
     const session = await this.call<StripeSession>(
       'GET',
@@ -387,7 +464,7 @@ export class StripePaymentProvider implements PaymentProvider {
     const event = JSON.parse(rawBody) as {
       id?: string
       type?: string
-      data?: { object?: StripeSession & { object?: string } }
+      data?: { object?: StripeSessionWithMeta & { object?: string } }
     }
     if (!event.id || !event.type)
       throw new PaymentProviderError('webhook missing id/type', 'invalid_payload')

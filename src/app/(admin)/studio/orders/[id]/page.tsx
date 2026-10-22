@@ -30,7 +30,9 @@ import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../../../_ui/table'
 import {
+  captureAuthorized,
   confirmOrder,
+  releaseAuthorized,
   issueReceipt,
   markOrderPaidOffline,
   refundOrderItem,
@@ -296,6 +298,25 @@ export default async function OrderDetailPage({
           </p>
         </div>
       </div>
+
+      {mayConfirm && status === 'authorized' ? (
+        <div className="a-card a-row">
+          <h2 style={{ width: '100%', margin: 0 }}>{t('ca.heading')}</h2>
+          <p className="a-hint" style={{ width: '100%' }}>
+            {t('ca.hint')}
+          </p>
+          <form action={captureAuthorized.bind(null, row.id)}>
+            <button className="a-btn accent" type="submit">
+              {t('ca.capture')}
+            </button>
+          </form>
+          <form action={releaseAuthorized.bind(null, row.id)}>
+            <button className="a-btn danger" type="submit">
+              {t('ca.release')}
+            </button>
+          </form>
+        </div>
+      ) : null}
 
       {mayRefund && status === 'pending' ? (
         <form className="a-card a-row" action={markOrderPaidOffline.bind(null, row.id)}>

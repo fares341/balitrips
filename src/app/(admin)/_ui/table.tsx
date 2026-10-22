@@ -33,6 +33,7 @@ export function Pill({
 
 const ORDER_TONES: Record<string, PillTone> = {
   pending: 'warn',
+  authorized: 'warn',
   paid: 'info',
   confirmed: 'good',
   cancelled: 'bad',
@@ -42,6 +43,7 @@ const ORDER_TONES: Record<string, PillTone> = {
 
 const ORDER_STATUS_KEYS: Record<string, string> = {
   pending: 'ui.order_pending',
+  authorized: 'ca.order_authorized',
   paid: 'ui.order_paid',
   confirmed: 'ui.order_confirmed',
   cancelled: 'ui.order_cancelled',

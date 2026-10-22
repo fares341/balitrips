@@ -38,7 +38,8 @@ export function OrderStatusWatcher({ state }: OrderStatusWatcherProps) {
   const attempts = useRef(0)
 
   useEffect(() => {
-    if (state !== 'success') return
+    // The checkout is done (paid, or the card held for the supplier).
+    if (state !== 'success' && state !== 'authorized') return
     document.cookie = `${CART_COUNT_COOKIE}=0; path=/; max-age=${60 * 60 * 24 * 60}; samesite=lax`
     window.dispatchEvent(new Event(CART_CHANGED_EVENT))
   }, [state])

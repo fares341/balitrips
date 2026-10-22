@@ -243,6 +243,14 @@ export const orders = pgTable(
     /** The cart the order was placed from; the webhook empties a guest's cart by it. */
     sourceCartId: uuid('source_cart_id'),
 
+    /**
+     * Client, Oct 2026: 'manual' = the card is only authorised at checkout and
+     * charged once the supplier confirms (bookings); 'automatic' = charged at
+     * once (digital products). `authorized_at` starts the 6-day window.
+     */
+    captureMode: varchar('capture_mode', { length: 12 }).notNull().default('automatic'),
+    authorizedAt: timestamp('authorized_at', { withTimezone: true }),
+
     // --- Phase 4 (migration 0020): discounts, fees, taxes, invoices ---
 
     /**
@@ -590,6 +598,15 @@ export const customTripRequests = pgTable('custom_trip_requests', {
   quotedAt: timestamp('quoted_at', { withTimezone: true }),
   /** الطلب المدفوع الذي سدّد العرض. NULL = لم يُدفع. */
   paidOrderId: uuid('paid_order_id').references(() => orders.id, { onDelete: 'set null' }),
+  /**
+   * Package request (client, Oct 2026): the package asked for, the vehicle
+   * chosen and the estimate shown to the customer. FK in SQL (ON DELETE SET
+   * NULL), not here — ./content imports nothing from this file's side.
+   */
+  packageId: uuid('package_id'),
+  vehicleKey: varchar('vehicle_key', { length: 32 }),
+  estimateMinor: moneyMinor('estimate_minor'),
+  estimateCurrency: varchar('estimate_currency', { length: 3 }),
   /** Phase 4: الموظف المسؤول عن هذا الطلب. */
   assignedToUserId: uuid('assigned_to_user_id').references(() => users.id, {
     onDelete: 'set null',

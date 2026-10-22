@@ -43,7 +43,7 @@ import { recordPaymentMethod } from '@/lib/orders/payment-method'
 import { processWebhookEvent } from '@/lib/orders/webhook'
 import { recordError } from '@/lib/monitoring/errors'
 import { getPaymentProvider } from '@/lib/payments'
-import { notifyOrderPaid, notifyPaymentFailed } from '@/lib/notify/orders'
+import { notifyOrderAuthorized, notifyOrderPaid, notifyPaymentFailed } from '@/lib/notify/orders'
 
 export const dynamic = 'force-dynamic'
 /** node:crypto and Postgres: this cannot run on the edge. */
@@ -80,6 +80,12 @@ export async function POST(request: Request): Promise<Response> {
       // that fails to empty must never roll back a confirmed payment.
       await releaseCartFor(outcome.orderId)
       await notifyOrderPaid(outcome.orderId)
+    }
+    // Manual capture (client, Oct 2026): the card is held, the checkout is
+    // done — empty the cart and ask staff to confirm with the supplier.
+    if (outcome.handled && outcome.to === 'authorized' && outcome.from !== outcome.to) {
+      await releaseCartFor(outcome.orderId)
+      await notifyOrderAuthorized(outcome.orderId)
     }
     // A failed attempt leaves the order open for a retry on the same order
     // number (see processWebhookEvent); staff still hear about it.

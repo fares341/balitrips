@@ -22,7 +22,7 @@ import { canTransition, shouldRevokeEntitlements } from '@/lib/orders/state'
  * job exists not to cause. Only `failed` and `cancelled` payments — and
  * orders that never got as far as a payment row — are expired.
  */
-const LIVE_PAYMENT_STATES = ['succeeded', 'requires_action', 'processing'] as const
+const LIVE_PAYMENT_STATES = ['succeeded', 'requires_action', 'processing', 'authorized'] as const
 
 /** Returns the number of vehicle-days handed back, or null when skipped. */
 export async function cancelUnpaidOrder(
@@ -30,6 +30,12 @@ export async function cancelUnpaidOrder(
   orderNumber: string,
   reason: string,
   auditAction = 'order.expired',
+  /**
+   * 'authorized': a released card hold (client, Oct 2026). The caller has
+   * already voided the authorisation at the provider, so the payment-in-flight
+   * veto does not apply.
+   */
+  fromStatus: 'pending' | 'authorized' = 'pending',
 ): Promise<number | null> {
   return db.transaction(async (tx) => {
     const [locked] = await tx
@@ -41,8 +47,8 @@ export async function cancelUnpaidOrder(
 
     // Paid between the candidate query and this lock. Nothing to do, and the
     // whole point of taking the lock.
-    if (!locked || locked.status !== 'pending') return null
-    if (!canTransition('pending', 'cancelled')) return null
+    if (!locked || locked.status !== fromStatus) return null
+    if (!canTransition(fromStatus, 'cancelled')) return null
 
     const [live] = await tx
       .select({ id: payments.id, status: payments.status })
@@ -58,7 +64,7 @@ export async function cancelUnpaidOrder(
       )
       .limit(1)
 
-    if (live) {
+    if (live && fromStatus === 'pending') {
       console.info('[capacity] leaving an order alone; money is still in play', {
         orderId,
         orderNumber,
@@ -105,7 +111,7 @@ export async function cancelUnpaidOrder(
       action: auditAction,
       entityType: 'order',
       entityId: orderId,
-      before: { status: 'pending' },
+      before: { status: fromStatus },
       after: {
         status: 'cancelled',
         reason,

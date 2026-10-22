@@ -23,6 +23,7 @@ import {
 import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
+import { VEHICLES_DEFAULT, vehiclesSchema, type VehiclesSetting } from '@/lib/packages/vehicles'
 
 /**
  * Site configuration: the typed layer over `site_settings`.
@@ -266,6 +267,7 @@ export type SettingKey =
   | 'assistant'
   | 'vip'
   | 'seller'
+  | 'vehicles'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -277,6 +279,7 @@ export interface SettingsShape {
   assistant: AssistantSetting
   vip: VipSetting
   seller: SellerSetting
+  vehicles: VehiclesSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -357,6 +360,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     refundNote: { en: '', ar: '', id: '' },
   },
   seller: { businessName: '', address: '', taxId: '', email: '', phone: '' },
+  vehicles: VEHICLES_DEFAULT,
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -372,6 +376,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   assistant: assistantSchema,
   vip: vipSchema,
   seller: sellerSchema,
+  vehicles: vehiclesSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

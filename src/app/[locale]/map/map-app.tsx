@@ -1372,7 +1372,8 @@ function PlaceDetail({
           {t('mp3_directions')}
         </LinkButton>
       </PlaceActions>
-      {place.activitySlug !== null && (
+      {/* Tourist sites are information only (client, Oct 2026). */}
+      {place.activitySlug !== null && place.categoryKey !== 'sights' && (
         <Link href={`/activities/${place.activitySlug}`} className="panel mp-bookable">
           <Icon name="bolt" size={20} />
           <span>

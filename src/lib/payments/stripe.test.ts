@@ -222,3 +222,54 @@ describe('payment method (22.7)', () => {
     expect(paymentMethodFromSession({ id: 'cs' })).toBeNull()
   })
 })
+
+describe('StripePaymentProvider — manual capture (pay after the supplier confirms)', () => {
+  const calls: { url: string; init: RequestInit }[] = []
+  const fakeFetch = (async (url: string, init: RequestInit) => {
+    calls.push({ url, init })
+    if (url.endsWith('/checkout/sessions')) {
+      return new Response(
+        JSON.stringify({
+          id: 'cs_m',
+          url: 'https://checkout.stripe.com/c/pay/cs_m',
+          status: 'open',
+        }),
+        { status: 200 },
+      )
+    }
+    if (url.includes('/checkout/sessions/cs_m')) {
+      return new Response(JSON.stringify({ id: 'cs_m', payment_intent: 'pi_m' }), { status: 200 })
+    }
+    if (url.endsWith('/payment_intents/pi_m/capture')) {
+      return new Response(JSON.stringify({ id: 'pi_m', status: 'succeeded' }), { status: 200 })
+    }
+    if (url.endsWith('/payment_intents/pi_m/cancel')) {
+      return new Response(JSON.stringify({ id: 'pi_m', status: 'canceled' }), { status: 200 })
+    }
+    return new Response('{}', { status: 404 })
+  }) as unknown as typeof fetch
+  const provider = new StripePaymentProvider('sk_test_x', SECRET, fakeFetch)
+
+  it('asks Checkout to authorise only, and tags the session', async () => {
+    await provider.createIntent({
+      orderId: 'o1',
+      orderNumber: 'BT-1',
+      amountMinor: 5000,
+      currency: 'USD',
+      idempotencyKey: 'k1',
+      customer: { email: 'a@test.dev', locale: 'en' },
+      returnUrl: 'https://x',
+      captureMethod: 'manual',
+    })
+    const body = decodeURIComponent(String(calls[0]?.init.body))
+    expect(body).toContain('payment_intent_data[capture_method]=manual')
+    expect(body).toContain('metadata[captureMethod]=manual')
+  })
+
+  it('captures and voids through the session payment intent, with the idempotency key', async () => {
+    await expect(provider.capture('cs_m', 'capture:o1')).resolves.toBe(true)
+    const capture = calls.find((call) => call.url.endsWith('/capture'))
+    expect((capture?.init.headers as Record<string, string>)['Idempotency-Key']).toBe('capture:o1')
+    await expect(provider.voidAuthorization('cs_m')).resolves.toBe(true)
+  })
+})

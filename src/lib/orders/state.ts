@@ -9,6 +9,12 @@
 
 export const ORDER_STATUSES = [
   'pending',
+  /**
+   * Manual capture (client, Oct 2026): the card is authorised — held, not
+   * charged — until staff confirm with the supplier (→ paid) or the hold is
+   * released (→ cancelled, nothing charged).
+   */
+  'authorized',
   'paid',
   'confirmed',
   'cancelled',
@@ -27,7 +33,8 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number]
  * uncollectable.
  */
 const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  pending: ['paid', 'cancelled'],
+  pending: ['authorized', 'paid', 'cancelled'],
+  authorized: ['paid', 'cancelled'],
   paid: ['confirmed', 'cancelled', 'refunded', 'partially_refunded'],
   confirmed: ['refunded', 'partially_refunded', 'cancelled'],
   partially_refunded: ['refunded', 'partially_refunded'],
@@ -93,6 +100,7 @@ export function statusAfterRefund(
 export function statusForWebhook(
   eventType:
     | 'payment.succeeded'
+    | 'payment.authorized'
     | 'payment.failed'
     | 'payment.cancelled'
     | 'refund.succeeded'
@@ -101,6 +109,8 @@ export function statusForWebhook(
   switch (eventType) {
     case 'payment.succeeded':
       return 'paid'
+    case 'payment.authorized':
+      return 'authorized'
     case 'payment.failed':
     case 'payment.cancelled':
       return 'cancelled'

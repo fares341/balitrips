@@ -62,6 +62,8 @@ export type CheckoutFlowProps = {
   driverOffers: DriverOffer[]
   /** Sign-in form (server action), rendered by the server. */
   signIn: ReactNode
+  /** The card is only held until the supplier confirms (bookings). */
+  authorizeOnly?: boolean
 }
 
 type Step = 1 | 2 | 3
@@ -414,6 +416,21 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 </Link>
               </span>
             </div>
+            {/* Client, Oct 2026: the site-wide cancellation policy, and how
+                a booking is paid, stated before the customer agrees. */}
+            <div className="alert alert-info">
+              <Icon name="shield" size={18} />
+              <span>
+                <b>{t('chk_cancel_policy_t')}: </b>
+                {t('cancel_default')}
+              </span>
+            </div>
+            {props.authorizeOnly === true && (
+              <div className="alert alert-info">
+                <Icon name="info" size={18} />
+                <span>{t('chk_auth_hold')}</span>
+              </div>
+            )}
             <div className={`field${errors.terms ? ' has-error' : ''}`}>
               <label className="check" htmlFor={id('terms')}>
                 <input

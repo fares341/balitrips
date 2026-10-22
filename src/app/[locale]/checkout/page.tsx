@@ -54,6 +54,7 @@ import { applyCouponAction, beginSignInAction } from './actions'
 import { CheckoutFlow, type DriverOffer } from './checkout-flow'
 import { VipUpsellButton } from './vip-upsell'
 import { ACCOUNT_ONLY_KINDS } from './constants'
+import { captureModeFor } from '@/lib/orders/capture'
 
 import '@/styles/bt-trip.css'
 
@@ -461,6 +462,7 @@ export default async function CheckoutPage({
       summary={summary}
       driverOffers={driverOffers}
       signIn={signIn}
+      authorizeOnly={captureModeFor(lines.map((line) => line.kind)) === 'manual'}
     />,
   )
 }

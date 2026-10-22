@@ -4,6 +4,7 @@ import type { Translate } from '../../_i18n'
 
 const ORDER_STATUS_KEYS: Record<string, string> = {
   pending: 'orders.status_pending',
+  authorized: 'ca.order_authorized',
   paid: 'orders.status_paid',
   confirmed: 'orders.status_confirmed',
   cancelled: 'orders.status_cancelled',
@@ -34,6 +35,7 @@ const BOOKING_STATUS_KEYS: Record<string, string> = {
 }
 
 const PAYMENT_STATUS_KEYS: Record<string, string> = {
+  authorized: 'ca.payment_authorized',
   requires_action: 'payments.status_requires_action',
   processing: 'payments.status_processing',
   succeeded: 'payments.status_succeeded',

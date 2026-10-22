@@ -207,6 +207,12 @@ export default async function PlaceEditorPage({
               defaultChecked={place?.isFree ?? false}
               hint={t('places.free_to_view_hint')}
             />
+            <Checkbox
+              name="freeOverride"
+              label={t('places.free_override')}
+              defaultChecked={place?.freeOverride ?? false}
+              hint={t('places.free_override_hint')}
+            />
             {/* Two levels (client, Oct 2026): every locked place needs the VIP subscription. */}
             <input type="hidden" name="requiredEntitlement" value="map_access" />
           </div>

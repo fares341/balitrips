@@ -95,6 +95,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
        * merely blurred it in CSS, which any reader of the DOM could undo.
        */
       isFree: fbool(form, 'isFree'),
+      freeOverride: fbool(form, 'freeOverride'),
       requiredEntitlement: fenum(form, 'requiredEntitlement', ENTITLEMENTS, 'map_access'),
       isHiddenGem: fbool(form, 'isHiddenGem'),
       isHidden: fbool(form, 'isHidden'),
@@ -127,7 +128,7 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
         .where(eq(categories.id, values.categoryId))
         .limit(1)
       if (category?.mapTier === 'free' || category?.mapTier === 'vip') {
-        values.isFree = freeOnMap(category.mapTier, values.isHiddenGem)
+        values.isFree = freeOnMap(category.mapTier, values.isHiddenGem, values.freeOverride)
       }
     }
     values.requiredEntitlement = 'map_access'

@@ -29,6 +29,9 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { orders } from '@/db/schema'
 import { cancelUnpaidOrder } from '@/lib/orders/expire'
+import { expiredAuthorizations, releaseAuthorizedOrder } from '@/lib/orders/authorization'
+import { AUTHORIZATION_DAYS } from '@/lib/orders/capture'
+import { notifyOrderUpdated } from '@/lib/notify/orders'
 
 import type { CapacityJob } from '../queues'
 
@@ -52,6 +55,8 @@ export interface CapacitySummary {
   cancelled: number
   skipped: number
   daysReleased: number
+  /** Card holds released after waiting too long for the supplier. */
+  released?: number
 }
 
 export async function handleCapacityJob(job: CapacityJob): Promise<CapacitySummary> {
@@ -82,6 +87,25 @@ export async function handleCapacityJob(job: CapacityJob): Promise<CapacitySumma
     } else {
       summary.cancelled += 1
       summary.daysReleased += released
+    }
+  }
+
+  // Client, Oct 2026: a booking whose card hold waited 6 days for the
+  // supplier is released — nothing charged, customer told. One failure must
+  // not stop the rest; the next run retries it.
+  for (const held of await expiredAuthorizations()) {
+    try {
+      const outcome = await releaseAuthorizedOrder(
+        held.id,
+        `no supplier confirmation within ${AUTHORIZATION_DAYS} days`,
+        null,
+      )
+      if (outcome.ok) {
+        summary.released = (summary.released ?? 0) + 1
+        await notifyOrderUpdated(held.id, 'released')
+      }
+    } catch (error) {
+      console.error('[capacity] could not release an authorisation', { orderId: held.id, error })
     }
   }
 

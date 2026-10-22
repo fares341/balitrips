@@ -1,130 +1,139 @@
 'use client'
 
 /**
- * Package booking sidebar.
+ * Package request sidebar (client, Oct 2026).
  *
- * Ported from the `<aside className="bt-booking">` in `PackageDetailPage`
- * (design/handoff/sections-bt/page-plans.jsx, lines 169-180).
- *
- * The handoff's total was wrong, and wrong in a way that would have reached a
- * card statement. It rendered:
- *
- *     <SummaryRow label={t("c_guests")} value={guests} />
- *     <div className="bt-summary-total"><span>${p.price}</span></div>
- *
- * — collecting a guest count, showing it back, and then charging a flat price
- * that ignored it. For a per-guest package a family of six saw the price for
- * one. `pricingMode` is the schema's answer to that contradiction, and this
- * component honours it: `per_guest` multiplies, `flat` does not, and the
- * summary says which is happening rather than leaving the visitor to guess why
- * the number did or did not move.
- *
- * The arithmetic here is display only. `buildQuote()` recomputes the same
- * total server-side from the catalogue row at checkout and refuses to charge on
- * a mismatch — the browser is never trusted for an amount.
- *
- * 'use client' is required: date and guest count are live state.
+ * Packages are not bought instantly for now. The customer picks the start
+ * date, the travellers and the vehicle (every package includes a driver), sees
+ * the estimated total — the activities' real prices per traveller plus one
+ * driver day per day, priced for the vehicle by the zone of each day — and
+ * sends a REQUEST. Staff confirm it with the suppliers and send a payment
+ * link. The estimate here is display only; the server recomputes it.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
-import { Button, Stepper, useToast } from '@/components/shared'
+import { Button, Stepper } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { BALI_TIME_ZONE, todayInBali } from '@/lib/booking-rules'
-import type { PricingMode } from '@/lib/content/types'
-import { formatMoney, lineTotalMinor } from '@/lib/money'
+import { pick } from '@/lib/content/localize'
+import { formatMoney } from '@/lib/money'
 import { Calendar } from '@/components/booking/calendar'
+import { estimatePackage, type EstimateDay } from '@/lib/packages/estimate'
+import { isLuxury, type Vehicle } from '@/lib/packages/vehicles'
 
-import { CART_CHANGED_EVENT } from '@/components/layout/routes'
-import { addToCartAction } from '../../my-trip/actions'
+import { requestPackageAction } from './actions'
 
 export type PackageBookingBoxProps = {
-  /** Cart lines reference the row, not the slug, which is editable. */
-  packageId: string
-  priceMinor: number
-  currency: string
-  pricingMode: PricingMode
+  slug: string
+  days: number
   maxGuests: number
+  dayPlan: EstimateDay[]
+  vehicles: Vehicle[]
+  sarPerUsd: number
 }
 
-/** Party size the design pre-selects, never above what the package allows. */
 const DEFAULT_GUESTS = 2
 
-const HINT_ID = 'bt-pkg-date-hint'
-
 export function PackageBookingBox({
-  packageId,
-  priceMinor,
-  currency,
-  pricingMode,
+  slug,
+  days,
   maxGuests,
+  dayPlan,
+  vehicles,
+  sarPerUsd,
 }: PackageBookingBoxProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const format = useFormatter()
-  const { toast } = useToast()
-  const [busy, setBusy] = useState(false)
 
   const upperGuests = Math.max(1, maxGuests)
   const [guests, setGuests] = useState(Math.min(DEFAULT_GUESTS, upperGuests))
   const [date, setDate] = useState('')
+  const firstFit = (n: number) => vehicles.find((v) => v.capacity >= n)?.key ?? ''
+  const [vehicleKey, setVehicleKey] = useState(() =>
+    firstFit(Math.min(DEFAULT_GUESTS, upperGuests)),
+  )
+  const [contact, setContact] = useState({ name: '', email: '', phone: '', notes: '' })
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle')
 
-  /**
-   * Earliest selectable date, computed after mount.
-   *
-   * Deliberately not computed during render: this page is prerendered, so
-   * "today" resolved at build time would still be baked into the HTML weeks
-   * later and would let a visitor pick a date already in the past. Empty until
-   * hydration, which also keeps the server and client markup identical.
-   */
+  // "today" is not derivable at build time (the page is prerendered).
   const [minDate, setMinDate] = useState('')
   useEffect(() => {
-    // "today" is not derivable at build time; resolving it after mount is
-    // the point. Validation enforces the constraint regardless.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinDate(todayInBali())
   }, [])
 
-  const perGuest = pricingMode === 'per_guest'
-  const totalMinor = perGuest ? lineTotalMinor(priceMinor, guests) : priceMinor
+  const vehicle = vehicles.find((v) => v.key === vehicleKey) ?? null
+  const fits = vehicle !== null && vehicle.capacity >= guests
 
-  /*
-   * This used to build a `/cart?add=package&slug=...` link.
-   *
-   * The cart never read searchParams, so the button was a dead link: it opened
-   * an empty cart and the selection was silently dropped. Its own comment said
-   * "a cart that ignores them still opens correctly" -- which is precisely how
-   * a broken buy path survives review, because nothing errors. It now calls
-   * the same server action the activity page uses.
-   */
+  const estimate = useMemo(
+    () =>
+      vehicle === null
+        ? null
+        : estimatePackage({ days: dayPlan, travellers: guests, vehicle, sarPerUsd }),
+    [vehicle, dayPlan, guests, sarPerUsd],
+  )
+  const money = (minor: number) => formatMoney(minor, estimate?.currency ?? 'USD', locale)
 
   const dateLabel =
     date === ''
       ? '—'
       : format.dateTime(new Date(`${date}T00:00:00Z`), {
           dateStyle: 'medium',
-          // A travel date is a calendar date in Bali, not an instant in the
-          // reader's life. Pinning the zone keeps 12 March reading as 12 March
-          // from Riyadh, London and New York alike.
           timeZone: BALI_TIME_ZONE,
         })
 
-  return (
-    <aside className="bt-booking" aria-label={t('pd_checkout')}>
-      <div className="bt-booking-price">
-        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--forest-deep)' }}>
-          {formatMoney(priceMinor, currency, locale)}
-        </span>
-        {/* Always say what the price is for: per person, or the whole group. */}
-        <span className="muted" style={{ fontSize: 13, fontWeight: 700 }}>
-          {perGuest ? t('c_pp') : t('pk_per_group', { n: upperGuests })}
-        </span>
-      </div>
+  const ready =
+    date !== '' &&
+    fits &&
+    contact.name.trim().length >= 2 &&
+    /\S+@\S+\.\S+/.test(contact.email) &&
+    contact.phone.trim().length >= 7
 
-      {/* The start date on the shared calendar (v3 package.html), from Bali's
-          today; rendered once that is known on the client. */}
+  if (state === 'sent') {
+    return (
+      <aside className="bt-booking" aria-live="polite">
+        <h2 className="h3" style={{ marginTop: 0 }}>
+          <Icon name="check" size={20} /> {t('pk_req_sent_t')}
+        </h2>
+        <p>{t('pk_req_sent_b')}</p>
+      </aside>
+    )
+  }
+
+  const field = (key: keyof typeof contact, label: string, type = 'text', auto?: string) => (
+    <label className="bt-field" style={{ display: 'block' }}>
+      <span className="bt-flabel">{label}</span>
+      {key === 'notes' ? (
+        <textarea
+          className="bt-input"
+          rows={2}
+          maxLength={1000}
+          value={contact.notes}
+          onChange={(event) => setContact((c) => ({ ...c, notes: event.target.value }))}
+        />
+      ) : (
+        <input
+          className="bt-input"
+          type={type}
+          autoComplete={auto}
+          value={contact[key]}
+          dir={type === 'tel' || type === 'email' ? 'ltr' : undefined}
+          onChange={(event) => setContact((c) => ({ ...c, [key]: event.target.value }))}
+        />
+      )}
+    </label>
+  )
+
+  return (
+    <aside className="bt-booking" aria-label={t('pk_req_submit')}>
+      <p className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>
+        <Icon name="car" size={13} /> {t('pk_driver_all')}
+      </p>
+
       <div className="bt-field">
         <span className="bt-flabel">{t('c_date')}</span>
         {minDate === '' ? (
@@ -144,103 +153,125 @@ export function PackageBookingBox({
         <div className="bt-flabel">
           {t('ad_guests')} ({t('ph_maxg')} {format.number(upperGuests)})
         </div>
-        {/*
-          Capped at the package's own maxGuests. The handoff passed the same
-          bound, but its cart stepper did not — this one enforces it on the
-          keyboard path as well, and the server re-checks it at checkout.
-        */}
         <Stepper
           value={guests}
-          onChange={setGuests}
+          onChange={(n) => {
+            setGuests(n)
+            if (vehicle === null || vehicle.capacity < n) setVehicleKey(firstFit(n))
+          }}
           min={1}
           max={upperGuests}
           label={t('c_guests')}
         />
       </div>
 
-      <div className="bt-summary">
-        <div className="bt-summary-row">
-          <span>{t('c_date')}</span>
-          <span>{dateLabel}</span>
+      <fieldset className="bt-field" style={{ border: 0, padding: 0, margin: 0 }}>
+        <legend className="bt-flabel">{t('pk_req_vehicle')}</legend>
+        <div className="stack" style={{ gap: 8 }}>
+          {vehicles.map((option) => {
+            const small = option.capacity < guests
+            return (
+              <label
+                key={option.key}
+                className="check"
+                style={{
+                  alignItems: 'flex-start',
+                  opacity: small ? 0.55 : 1,
+                  border: '1px solid var(--line, #e3ddd2)',
+                  borderRadius: 12,
+                  padding: '8px 10px',
+                }}
+              >
+                <input
+                  type="radio"
+                  name="vehicle"
+                  value={option.key}
+                  checked={vehicleKey === option.key}
+                  disabled={small}
+                  onChange={() => setVehicleKey(option.key)}
+                />
+                <span>
+                  <b>{pick(option.name, locale, option.key)}</b>{' '}
+                  {isLuxury(option) && (
+                    // Client: luxury cars have their own mark.
+                    <span className="tag tag-sun" style={{ fontSize: 11 }}>
+                      <Icon name="star" size={12} /> {t('pk_req_luxury')}
+                    </span>
+                  )}
+                  <small className="muted" style={{ display: 'block' }}>
+                    {small ? t('pk_req_too_small') : t('pk_req_seats', { n: option.capacity })}
+                  </small>
+                </span>
+              </label>
+            )
+          })}
         </div>
-        <div className="bt-summary-row">
-          <span>{t('c_guests')}</span>
-          <span>{format.number(guests)}</span>
-        </div>
-        {/*
-          Shown only in per-guest mode, where it is the reason the total moves.
-          In flat mode the total is deliberately independent of the guest count
-          and repeating the unit price would imply a multiplication that is not
-          happening.
-        */}
-        {perGuest && (
-          <div className="bt-summary-row">
-            <span>{t('c_pp')}</span>
-            <span>{formatMoney(priceMinor, currency, locale)}</span>
-          </div>
-        )}
-        <div className="bt-summary-total">
-          <span>{t('c_total')}</span>
-          <span>{formatMoney(totalMinor, currency, locale)}</span>
-        </div>
-        <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
-          {perGuest
-            ? t('pk_total_pp_note', { n: guests })
-            : t('pk_total_flat_note', { n: upperGuests })}
-        </p>
-      </div>
+      </fieldset>
 
-      {date === '' ? (
-        <>
-          <Button
-            variant="orange"
-            block
-            disabled
-            aria-describedby={HINT_ID}
-            style={{ marginTop: 14 }}
-          >
-            <Icon name="plus" size={17} color="#fff" /> {t('pd_checkout')}
-          </Button>
-          <p id={HINT_ID} className="muted center" style={{ fontSize: 12.5, marginTop: 8 }}>
-            {t('ad_seldate')}
-          </p>
-        </>
-      ) : (
-        <Button
-          variant="orange"
-          block
-          disabled={busy}
-          style={{ marginTop: 14 }}
-          onClick={() => {
-            void (async () => {
-              setBusy(true)
-              try {
-                const result = await addToCartAction({
-                  kind: 'package',
-                  refId: packageId,
-                  quantity: guests,
-                  travelDate: date,
-                  travelTime: null,
-                  guests,
-                  driver: null,
-                })
-                if (!result.ok) {
-                  toast(t(result.reason === 'bookings_closed' ? 'bk_closed_t' : 'c_error'))
-                  return
-                }
-                toast(t('c_added'))
-                window.dispatchEvent(new Event(CART_CHANGED_EVENT))
-              } catch {
-                toast(t('c_error'))
-              } finally {
-                setBusy(false)
-              }
-            })()
-          }}
-        >
-          <Icon name="plus" size={17} color="#fff" /> {t('pd_checkout')}
-        </Button>
+      {estimate !== null && (
+        <div className="bt-summary">
+          <div className="bt-summary-row">
+            <span>{t('c_date')}</span>
+            <span>{dateLabel}</span>
+          </div>
+          <div className="bt-summary-row">
+            <span>{t('pk_req_acts', { n: guests })}</span>
+            <span>{money(estimate.activitiesMinor)}</span>
+          </div>
+          <div className="bt-summary-row">
+            <span>{t('pk_req_driver', { n: days })}</span>
+            <span>{money(estimate.driverMinor)}</span>
+          </div>
+          <div className="bt-summary-total">
+            <span>{t('pk_req_total')}</span>
+            <span>{money(estimate.totalMinor)}</span>
+          </div>
+          {estimate.incomplete && (
+            <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
+              {t('pk_req_incomplete')}
+            </p>
+          )}
+        </div>
       )}
+
+      {field('name', t('pk_req_name'), 'text', 'name')}
+      {field('email', t('pk_req_email'), 'email', 'email')}
+      {field('phone', t('pk_req_phone'), 'tel', 'tel')}
+      {field('notes', t('pk_req_notes'))}
+
+      <p className="muted" style={{ fontSize: 12.5 }}>
+        <Icon name="info" size={14} /> {t('pk_req_note')}
+      </p>
+      {state === 'error' && (
+        <p className="err" role="alert">
+          {t('pk_req_err')}
+        </p>
+      )}
+      <Button
+        variant="orange"
+        block
+        disabled={!ready || state === 'busy'}
+        onClick={() => {
+          void (async () => {
+            setState('busy')
+            try {
+              const result = await requestPackageAction({
+                slug,
+                startDate: date,
+                travellers: guests,
+                vehicleKey,
+                ...contact,
+                locale,
+              })
+              setState(result.ok ? 'sent' : 'error')
+            } catch {
+              setState('error')
+            }
+          })()
+        }}
+      >
+        <Icon name="arrow" size={17} color="#fff" className="flip" /> {t('pk_req_submit')}
+      </Button>
     </aside>
   )
 }

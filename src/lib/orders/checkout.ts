@@ -46,6 +46,7 @@ import {
   type Quote,
   type QuoteRequestItem,
 } from '@/lib/pricing/quote'
+import { captureModeFor } from './capture'
 
 /**
  * Checkout.
@@ -412,6 +413,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         termsAcceptedAt: new Date(),
         termsVersion: input.termsVersion,
         placedAt: new Date(),
+        captureMode: captureModeFor(quote.lines.map((line) => line.kind)),
       })
       .returning({ id: orders.id })
 
@@ -498,6 +500,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
       customer: input.customer,
       returnUrl: input.returnUrl,
       statementDescriptor: 'BALI TRIPS',
+      captureMethod: captureModeFor(quote.lines.map((line) => line.kind)),
     })
   } catch (error) {
     // لم تُنشأ جلسة دفع: نحذف صف المفتاح (فتعيد ضغطة "ادفع" المحاولة بطلب جديد

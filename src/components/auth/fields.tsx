@@ -25,7 +25,7 @@
  * remember to do it.
  */
 
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -115,6 +115,31 @@ export function TextField({
   inputMode,
 }: TextFieldProps) {
   const { id, errorId, hintId, describedBy } = useFieldIds(error, hint)
+  const t = useTranslations()
+  // Client, Oct 2026: a show/hide eye on every password field.
+  const [shown, setShown] = useState(false)
+  const isPassword = type === 'password'
+
+  const input = (
+    <input
+      id={id}
+      className={error ? 'bt-input bt-input-err' : 'bt-input'}
+      type={isPassword && shown ? 'text' : type}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      maxLength={maxLength}
+      inputMode={inputMode}
+      disabled={disabled}
+      // Only ever set on the first field of a dialog the visitor
+      // deliberately opened, where focus has to move inside anyway.
+      autoFocus={autoFocus}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={describedBy}
+      style={isPassword ? { paddingInlineEnd: 44 } : undefined}
+    />
+  )
 
   return (
     <div className="bt-field" style={{ marginBottom: 0 }}>
@@ -127,23 +152,52 @@ export function TextField({
           </span>
         )}
       </label>
-      <input
-        id={id}
-        className={error ? 'bt-input bt-input-err' : 'bt-input'}
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        maxLength={maxLength}
-        inputMode={inputMode}
-        disabled={disabled}
-        // Only ever set on the first field of a dialog the visitor
-        // deliberately opened, where focus has to move inside anyway.
-        autoFocus={autoFocus}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-      />
+      {isPassword ? (
+        <div style={{ position: 'relative' }}>
+          {input}
+          <button
+            type="button"
+            className="bt-pw-eye"
+            onClick={() => setShown((value) => !value)}
+            aria-label={t(shown ? 'pw_hide' : 'pw_show')}
+            aria-pressed={shown}
+            aria-controls={id}
+            disabled={disabled}
+            style={{
+              position: 'absolute',
+              insetInlineEnd: 6,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 36,
+              height: 36,
+              display: 'grid',
+              placeItems: 'center',
+              border: 0,
+              background: 'transparent',
+              color: 'var(--ink-soft, #555)',
+              cursor: 'pointer',
+              borderRadius: 8,
+            }}
+          >
+            <Icon name="eye" size={18} />
+            {shown && (
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  width: 20,
+                  height: 2,
+                  background: 'currentColor',
+                  transform: 'rotate(-45deg)',
+                  borderRadius: 1,
+                }}
+              />
+            )}
+          </button>
+        </div>
+      ) : (
+        input
+      )}
       <FieldMessage error={error} errorId={errorId} hint={hint} hintId={hintId} />
     </div>
   )

@@ -10,7 +10,10 @@
  * Two constraints are baked in deliberately, because retrofitting them
  * would mean rewriting checkout:
  *
- * 1. There is no authorise-then-capture-later flow. Several rails a global
+ * 1. (Superseded for bookings, client Oct 2026: an intent may ask for
+ *    `captureMethod: 'manual'` — authorise now, capture once the supplier
+ *    confirms, or void. Providers that cannot do it ignore the flag and
+ *    capture at once.) Originally: there is no authorise-then-capture-later flow. Several rails a global
  *    travel merchant will want support neither authorisation-only nor
  *    partial capture, and turn voids into refunds. Deposits and balances
  *    must therefore be two independent full charges. Designing for the more
@@ -41,6 +44,8 @@ export interface CreateIntentInput {
   /** Shown on the cardholder's statement. Recognisable descriptors reduce disputes. */
   statementDescriptor?: string
   metadata?: Record<string, string>
+  /** 'manual' = only authorise; capture later with `capture()`. Default 'automatic'. */
+  captureMethod?: 'automatic' | 'manual'
 }
 
 export interface PaymentIntent {
@@ -84,6 +89,8 @@ export interface WebhookEvent {
   providerEventId: string
   type:
     | 'payment.succeeded'
+    /** Manual capture: the card is held, nothing charged yet. */
+    | 'payment.authorized'
     | 'payment.failed'
     | 'payment.cancelled'
     | 'refund.succeeded'
@@ -120,6 +127,19 @@ export interface PaymentProvider {
    * record it after the fact and never block order state on it.
    */
   getPaymentMethod?(providerPaymentId: string): Promise<string | null>
+
+  /**
+   * Charge an authorised payment (manual capture). Resolves `true` when the
+   * money is captured (or already was), `false` when the authorisation is
+   * gone (expired / voided). Throws on a transient failure.
+   */
+  capture?(providerPaymentId: string, idempotencyKey: string): Promise<boolean>
+
+  /**
+   * Release an authorisation without charging. Resolves `true` when nothing
+   * is (or will be) charged.
+   */
+  voidAuthorization?(providerPaymentId: string): Promise<boolean>
 
   /**
    * Verify the signature and parse. MUST throw on an invalid signature —

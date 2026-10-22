@@ -114,6 +114,7 @@ export async function retryOrderPayment(input: {
       },
       returnUrl: input.returnUrlFor(key),
       statementDescriptor: 'BALI TRIPS',
+      captureMethod: order.captureMode === 'manual' ? 'manual' : 'automatic',
     })
   } catch (error) {
     // No session exists: drop the attempt so the next press can try again.

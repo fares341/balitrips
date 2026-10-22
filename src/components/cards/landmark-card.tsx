@@ -12,7 +12,7 @@ import { Tag } from '@/components/bt/chip'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
-import { ENTITY_PATHS, entityHref, type LandmarkDto } from '@/lib/content/types'
+import { ENTITY_PATHS, type LandmarkDto } from '@/lib/content/types'
 
 export type LandmarkCardProps = {
   landmark: LandmarkDto
@@ -26,12 +26,9 @@ export function LandmarkCard({ landmark, priority = false }: LandmarkCardProps) 
   const name = pick(landmark.name, locale, landmark.slug)
   const type = pickOptional(landmark.type, locale)
   const blurb = pickOptional(landmark.blurb, locale)
-  const href =
-    landmark.placeSlug !== null
-      ? `/places/${landmark.placeSlug}`
-      : landmark.activitySlug === null
-        ? ENTITY_PATHS.place
-        : entityHref('activity', landmark.activitySlug)
+  // A landmark (مزار) is information only (client, Oct 2026): it opens its
+  // place page, never a booking page.
+  const href = landmark.placeSlug !== null ? `/places/${landmark.placeSlug}` : ENTITY_PATHS.place
 
   return (
     <Card id={landmark.slug}>
