@@ -140,13 +140,20 @@ jobs:
           (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
           for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
       - name: Purchase path (Playwright)
-        run: pnpm exec playwright test e2e/purchase.spec.ts --reporter=list
-      - name: Keep the results
+        run: |
+          set -o pipefail
+          pnpm exec playwright test e2e/purchase.spec.ts --reporter=github,list 2>&1 | tee playwright.log
+      - name: Push results to the purchase-check branch
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: purchase-results
-          path: |
-            test-results
-            server.log
-          retention-days: 7
+        run: |
+          mkdir -p purchase-check
+          cp -r test-results purchase-check/ 2>/dev/null || true
+          cp server.log playwright.log purchase-check/ 2>/dev/null || true
+          cd purchase-check
+          git init -q
+          git config user.name "purchase-check"
+          git config user.email "purchase-check@users.noreply.github.com"
+          git checkout -q -b purchase-check
+          git add -A
+          git commit -q -m "Purchase check for ${GITHUB_SHA}" --allow-empty
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" purchase-check
