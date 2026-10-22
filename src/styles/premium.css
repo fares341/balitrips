@@ -1208,6 +1208,10 @@ h2.section-title {
   .bt-ibook {
     display: none;
   }
+  /* …unless it holds the audience choice (H1): the hero button leads here. */
+  .bt-ibook.has-audience {
+    display: block;
+  }
 }
 
 /* ===========================================================================

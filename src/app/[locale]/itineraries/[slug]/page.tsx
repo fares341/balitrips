@@ -742,7 +742,11 @@ export default async function ItineraryDetailPage({
           </div>
         </div>
 
-        <aside id="it-buy" className="bt-booking bt-ibook" aria-label={t('ih_buy')}>
+        <aside
+          id="it-buy"
+          className={choosesAudience ? 'bt-booking bt-ibook has-audience' : 'bt-booking bt-ibook'}
+          aria-label={t('ih_buy')}
+        >
           <div className="bt-ibook-price">
             <strong className="bt-money">{price}</strong>
             <span>{t('sub_once')}</span>
