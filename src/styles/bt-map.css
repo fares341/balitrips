@@ -1678,7 +1678,9 @@
 }
 @media (max-width: 1023px) {
   /* the glass controls need more body over the light land colours */
-  .mp-gbtn,
+  .mp-gbtn {
+    background: rgba(19, 48, 26, 0.88);
+  }
 }
 
 /* ---------- Phase 3: one itinerary day (`/map?itinerary=&day=`) ---------- */
