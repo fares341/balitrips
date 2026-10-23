@@ -1,5 +1,6 @@
--- Activity page v2: fill the empty sections of the seven merged activities
--- (0028) so their live pages are as complete as the v2 design.
+-- Activity page v2: fill the empty sections of every published activity
+-- (the seven merged in 0028 and the single ones) so their live pages are as
+-- complete as the v2 design.
 --
 -- Data only and additive. Every field is written ONLY when it is empty
 -- (NULL, '' or an empty list), so nothing the owner has edited is touched,
@@ -154,21 +155,40 @@ DECLARE
     {"ar":"حذاء مغلق","en":"Closed-toe shoes","id":"Sepatu tertutup"},
     {"ar":"ماء للشرب","en":"Drinking water","id":"Air minum"}
   ]';
+  air jsonb := '[
+    {"ar":"ملابس مريحة","en":"Comfortable clothes","id":"Pakaian yang nyaman"},
+    {"ar":"حذاء مغلق","en":"Closed-toe shoes","id":"Sepatu tertutup"},
+    {"ar":"سترة خفيفة","en":"A light jacket","id":"Jaket tipis"},
+    {"ar":"نظارة شمسية وواقي شمس","en":"Sunglasses and sunscreen","id":"Kacamata hitam dan tabir surya"},
+    {"ar":"كاميرا أو هاتف للتصوير","en":"Camera or phone for photos","id":"Kamera atau ponsel untuk foto"}
+  ]';
+  land jsonb := '[
+    {"ar":"ملابس مريحة","en":"Comfortable clothes","id":"Pakaian yang nyaman"},
+    {"ar":"حذاء مريح للمشي","en":"Comfortable walking shoes","id":"Sepatu yang nyaman untuk berjalan"},
+    {"ar":"قبعة وواقي شمس","en":"Hat and sunscreen","id":"Topi dan tabir surya"},
+    {"ar":"ماء للشرب","en":"Drinking water","id":"Air minum"},
+    {"ar":"نقود للمصاريف الشخصية","en":"Cash for personal expenses","id":"Uang tunai untuk keperluan pribadi"}
+  ]';
+  k text;
   rec record;
 BEGIN
+  -- Every published activity; the list of things to bring is chosen from
+  -- the slug and English name.
   FOR rec IN
-    SELECT a."id", a."slug" FROM "activities" a
-    WHERE a."slug" IN ('water-sports-bali', 'nusa-penida-tour', 'bali-safari', 'bali-marine-safari',
-                       'bali-shooting-club', 'telaga-waja-rafting', 'jet-ski-tanjung-benoa')
-      AND a."deleted_at" IS NULL AND a."merged_into_id" IS NULL
+    SELECT a."id", a."slug", lower(a."slug" || ' ' || coalesce(a."name"->>'en', '')) AS words
+    FROM "activities" a
+    WHERE a."status" = 'published' AND a."deleted_at" IS NULL AND a."merged_into_id" IS NULL
   LOOP
+    k := rec.words;
     PERFORM pg_temp.bt_from_sources(rec."id");
-    PERFORM pg_temp.bt_fill_text(rec."id", CASE rec."slug"
-      WHEN 'water-sports-bali' THEN water
-      WHEN 'jet-ski-tanjung-benoa' THEN water
-      WHEN 'telaga-waja-rafting' THEN rafting
-      WHEN 'nusa-penida-tour' THEN island
-      WHEN 'bali-shooting-club' THEN shooting
+    PERFORM pg_temp.bt_fill_text(rec."id", CASE
+      WHEN k ~ '(shooting|paintball)' THEN shooting
+      WHEN k ~ 'rafting' THEN rafting
+      WHEN k ~ '(paraglid|balloon|helicopter)' THEN air
+      WHEN k ~ 'nusa-penida' THEN island
+      WHEN rec."slug" IN ('bali-safari', 'bali-marine-safari') THEN park
+      WHEN k ~ '(water|jet-?ski|snorkel|scuba|div|sea-walker|flyboard|banana|donut|flying-fish|parasail|boat|surf)' THEN water
+      WHEN k ~ '(jeep|vw|horse|tour|temple|trek|hike)' THEN land
       ELSE park END);
   END LOOP;
 END $$;
