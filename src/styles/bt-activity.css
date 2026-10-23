@@ -2422,3 +2422,11 @@
 .map-card2-foot .muted {
   font-size: 13px;
 }
+.pmore {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
