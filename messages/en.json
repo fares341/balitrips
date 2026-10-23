@@ -2515,5 +2515,7 @@
   "act_sum_currency": "Prices in {currency}",
   "act_more_info_t": "More information",
   "act_rev_count_paren": "({n} reviews)",
-  "act_map_google": "View on Google Maps"
+  "act_map_google": "View on Google Maps",
+  "act_preview_t": "Preview.",
+  "act_preview_b": "Status «{status}» — this page is not public; booking is off."
 }

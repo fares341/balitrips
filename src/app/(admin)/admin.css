@@ -2616,3 +2616,63 @@ details > summary.a-btn::-webkit-details-marker {
 .a-faq-more[open] > summary {
   display: none;
 }
+
+/* ---------- Activity page v2: repeater options, FAQ repeater, checklist ---------- */
+.a-rep-row.is-hidden {
+  opacity: 0.55;
+}
+.a-rep-opts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+.a-faq-row {
+  align-items: flex-start;
+}
+.a-faq-row .a-rep-fields {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+.a-faq-row textarea {
+  min-block-size: 70px;
+}
+.a-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+}
+.a-checklist li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.a-checklist li.ok::before {
+  content: '✓';
+  color: var(--a-good, #1f7a3a);
+  font-weight: 800;
+}
+.a-checklist li.missing::before {
+  content: '✕';
+  color: var(--a-bad);
+  font-weight: 800;
+}
+.a-checklist li.warn::before {
+  content: '!';
+  color: #9a5b00;
+  font-weight: 800;
+}
+.a-thumb {
+  inline-size: 56px;
+  block-size: 42px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--a-sunken);
+  display: block;
+}
+.a-import-table td.bad {
+  color: var(--a-bad);
+}

@@ -1,4 +1,5 @@
 import activityEditor from './activity-editor'
+import activityV2 from './activity-v2'
 import assistant from './assistant'
 import catalog from './catalog'
 import clientAnswers from './client-answers'
@@ -35,6 +36,7 @@ const SECTIONS = [
   reports,
   ops,
   clientAnswers,
+  activityV2,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

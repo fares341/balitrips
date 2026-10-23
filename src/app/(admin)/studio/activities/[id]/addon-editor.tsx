@@ -14,6 +14,7 @@ import {
   Select,
   TextInput,
 } from '../../../_ui/field'
+import { AddonPricingOptions, AddonRuleFields } from '../../../_ui/addon-extras'
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { addActivityAddon, removeActivityAddon, saveActivityAddon } from '../actions'
@@ -30,6 +31,9 @@ export interface AddonRow {
   requiresAddonId: string | null
   available: boolean
   sortOrder: number
+  /** v2: price steps by quantity and add-ons it cannot be booked with. */
+  priceTiers: { minQty: number; priceMinor: number }[] | null
+  incompatibleWith: string[] | null
 }
 
 /**
@@ -67,9 +71,7 @@ export async function AddonEditor({
       hint={t('activities.addon_pricing_hint')}
     >
       <PriceSelect id={id} name="pricing" defaultValue={value} locked={locked}>
-        <option value="per_person">{t('activities.addon_per_person')}</option>
-        <option value="per_booking">{t('activities.addon_per_booking')}</option>
-        <option value="per_qty">{t('activities.addon_per_qty')}</option>
+        <AddonPricingOptions />
       </PriceSelect>
     </Field>
   )
@@ -184,6 +186,16 @@ export async function AddonEditor({
               hint={t('activities.addon_only_packages_hint')}
             />
             {requiresSelect(`requires_${addon.id}`, addon.id, addon.requiresAddonId)}
+            <AddonRuleFields
+              idPrefix={`addon_${addon.id}`}
+              tiers={addon.priceTiers}
+              currency={addon.currency}
+              incompatible={addons
+                .filter((other) => other.id !== addon.id)
+                .map((other) => ({ value: other.id, label: label(other.name) }))}
+              values={addon.incompatibleWith}
+              locked={locked}
+            />
             <Checkbox
               name="available"
               label={t('activities.addon_available')}
@@ -239,6 +251,14 @@ export async function AddonEditor({
             hint={t('activities.addon_only_packages_hint')}
           />
           {requiresSelect('new_addon_requires', null, null)}
+          <AddonRuleFields
+            idPrefix="new_addon"
+            tiers={null}
+            currency={currency}
+            incompatible={addons.map((other) => ({ value: other.id, label: label(other.name) }))}
+            values={[]}
+            locked={locked}
+          />
           <Checkbox name="available" label={t('activities.addon_available')} defaultChecked />
         </form>
       </div>

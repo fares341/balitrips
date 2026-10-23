@@ -19,6 +19,8 @@ import type { Option } from '../../../_lib/lookups'
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { addActivityTier, removeActivityTier, saveActivityTier } from '../actions'
+import { duplicateActivityTier } from '../v2-actions'
+import type { PickerItem } from '../../../_ui/media-picker'
 
 export interface TierRow {
   id: string
@@ -43,7 +45,16 @@ export interface TierRow {
   status: string
   /** Phase 2: price per child (per-person packages). Null = adult price. */
   childPriceMinor: number | null
+  /** v2: reference price, ribbon, picture, duration, longer text. */
+  compareAtPriceMinor: number | null
+  badgeLabel: Localized | null
+  badgeColor: string | null
+  imageId: string | null
+  duration: Localized | null
+  description: Localized | null
 }
+
+const BADGE_COLORS = ['sun', 'palm', 'forest', 'coral', 'sky', 'ink'] as const
 
 /**
  * Service tiers for one activity.
@@ -62,6 +73,7 @@ export async function TierEditor({
   tiers,
   currency,
   addons,
+  media = [],
   locked = false,
 }: {
   activityId: string
@@ -69,6 +81,8 @@ export async function TierEditor({
   currency: string
   /** This activity's add-ons, for "included in this package". */
   addons: readonly Option[]
+  /** Media library, for the package picture. */
+  media?: readonly PickerItem[]
   /** The viewer lacks `prices.write`: prices read-only, no new or removed packages. */
   locked?: boolean
 }) {
@@ -79,7 +93,9 @@ export async function TierEditor({
       ? 'per_couple'
       : value === 'per_group' || value === 'flat'
         ? 'per_group'
-        : 'per_person'
+        : value === 'fixed'
+          ? 'fixed'
+          : 'per_person'
   return (
     <div className="a-card">
       <h2>{t('activities.tiers_title')}</h2>
@@ -119,6 +135,16 @@ export async function TierEditor({
                 </button>
                 {locked ? null : (
                   <button
+                    className="a-btn ghost small"
+                    type="submit"
+                    formAction={duplicateActivityTier.bind(null, activityId, tier.id)}
+                    formNoValidate
+                  >
+                    {t('av2.duplicate_pkg')}
+                  </button>
+                )}
+                {locked ? null : (
+                  <button
                     className="a-btn danger small"
                     type="submit"
                     formAction={removeActivityTier.bind(null, activityId, tier.id)}
@@ -141,8 +167,78 @@ export async function TierEditor({
               value={tier.tagline}
               hint={t('activities.tier_tagline_hint')}
             />
+            <LocalizedField
+              name="description"
+              label={t('av2.pkg_description')}
+              value={tier.description}
+              rows={2}
+              hint={t('av2.pkg_description_hint')}
+            />
 
             <MoneyField minor={tier.priceMinor} currency={tier.currency} locked={locked} />
+            <Field
+              label={t('av2.compare_at')}
+              htmlFor={`compareAt_${tier.id}`}
+              hint={t('av2.compare_at_hint')}
+            >
+              <TextInput
+                id={`compareAt_${tier.id}`}
+                name="compareAtPrice"
+                inputMode="decimal"
+                dir="ltr"
+                defaultValue={
+                  tier.compareAtPriceMinor === null
+                    ? ''
+                    : formatMoneyInput(tier.compareAtPriceMinor, tier.currency)
+                }
+                {...priceInputProps(locked)}
+              />
+            </Field>
+            <div className="a-row">
+              <Field
+                label={t('av2.pkg_image')}
+                htmlFor={`imageId_${tier.id}`}
+                hint={t('av2.pkg_image_hint')}
+              >
+                <Select id={`imageId_${tier.id}`} name="imageId" defaultValue={tier.imageId ?? ''}>
+                  <option value="">{t('av2.pkg_image_none')}</option>
+                  {tier.imageId !== null && !media.some((item) => item.id === tier.imageId) ? (
+                    <option value={tier.imageId}>{t('av2.pkg_image_keep')}</option>
+                  ) : null}
+                  {media.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.objectKey.split('/').pop()}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('av2.badge_color')} htmlFor={`badgeColor_${tier.id}`}>
+                <Select
+                  id={`badgeColor_${tier.id}`}
+                  name="badgeColor"
+                  defaultValue={tier.badgeColor ?? ''}
+                >
+                  <option value="">{t('av2.badge_color_default')}</option>
+                  {BADGE_COLORS.map((color) => (
+                    <option key={color} value={color}>
+                      {t(`av2.color_${color}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <LocalizedField
+              name="badgeLabel"
+              label={t('av2.badge_label')}
+              value={tier.badgeLabel}
+              hint={t('av2.badge_label_hint')}
+            />
+            <LocalizedField
+              name="duration"
+              label={t('av2.pkg_duration')}
+              value={tier.duration}
+              hint={t('av2.pkg_duration_hint')}
+            />
             <Field
               label={t('av.child_price')}
               htmlFor={`childPrice_${tier.id}`}
@@ -177,6 +273,7 @@ export async function TierEditor({
                   <option value="per_person">{t('activities.per_person')}</option>
                   <option value="per_group">{t('activities.per_group')}</option>
                   <option value="per_couple">{t('ae.per_couple')}</option>
+                  <option value="fixed">{t('av2.per_fixed')}</option>
                 </PriceSelect>
               </Field>
 
@@ -318,6 +415,7 @@ export async function TierEditor({
                   <option value="per_person">{t('activities.per_person')}</option>
                   <option value="per_group">{t('activities.per_group')}</option>
                   <option value="per_couple">{t('ae.per_couple')}</option>
+                  <option value="fixed">{t('av2.per_fixed')}</option>
                 </Select>
               </Field>
               <Field

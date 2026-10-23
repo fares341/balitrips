@@ -18,7 +18,7 @@ import {
   tierIncludedActivities,
 } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
-import { activityStatus, ACTIVITY_STATUSES } from '@/lib/content/activity-status'
+import { activityStatus, ACTIVITY_STATUSES, isPublicStatus } from '@/lib/content/activity-status'
 import { pick } from '@/lib/content/localize'
 import { mediaUrl } from '@/lib/content/queries'
 import { formatMoney } from '@/lib/money'
@@ -39,7 +39,7 @@ import {
   TextArea,
   TextInput,
 } from '../../../_ui/field'
-import { FaqField } from '../../../_ui/faq-field'
+import { FaqRepeater, type FaqRepeaterEntry } from '../../../_ui/faq-repeater'
 import { Flash } from '../../../_ui/flash'
 import { MarkdownEditor } from '../../../_ui/markdown-editor'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
@@ -55,11 +55,10 @@ import { IncludedEditor } from './included-editor'
 import { LibraryLinks } from './library-links'
 import { TierEditor } from './tier-editor'
 import { deleteActivity, reorderTiers, saveActivity } from '../actions'
+import { duplicateActivity } from '../v2-actions'
+import { ChecklistCard, HistoryCard, packageScopes, SeoTab, TemplateCard } from './v2-cards'
 
 export const dynamic = 'force-dynamic'
-
-/** Must match FAQ_ROWS in ../actions.ts — the action reads exactly this many slots. */
-const FAQ_ROWS = 30
 
 const TABS = [
   'basics',
@@ -71,6 +70,7 @@ const TABS = [
   'booking',
   'availability',
   'faq',
+  'seo',
 ] as const
 type Tab = (typeof TABS)[number]
 
@@ -111,6 +111,8 @@ export default async function ActivityEditorPage({
   if (!isNew && !activity) notFound()
 
   const title = activity ? pick(activity.name, locale, activity.slug) : t('activities.new')
+  // v2: list lines and FAQ may be tied to one package.
+  const scopes = activity && tab === 'content' ? await packageScopes(activity.id, locale) : []
   const tabHref = (key: Tab) =>
     adminHref(`/activities/${id}${key === 'basics' ? '' : `?tab=${key}`}`)
   const save = (section: string) => saveActivity.bind(null, isNew ? 'new' : id, section)
@@ -136,7 +138,7 @@ export default async function ActivityEditorPage({
         }
         actions={
           <>
-            {activity && activityStatus(activity.status) !== 'draft' ? (
+            {activity && isPublicStatus(activity.status) ? (
               <a
                 className="a-btn ghost"
                 href={`/ar/activities/${activity.slug}`}
@@ -145,6 +147,26 @@ export default async function ActivityEditorPage({
               >
                 {t('ae.view_page')}
               </a>
+            ) : null}
+            {activity ? (
+              <a
+                className="a-btn ghost"
+                href={`/ar/activities/${activity.slug}/preview`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t('av2.preview')}
+              </a>
+            ) : null}
+            {activity ? (
+              <form
+                action={duplicateActivity.bind(null, activity.id)}
+                style={{ display: 'inline' }}
+              >
+                <button className="a-btn ghost" type="submit">
+                  {t('av2.duplicate')}
+                </button>
+              </form>
             ) : null}
             <Link className="a-btn ghost" href={adminHref('/activities')}>
               {t('activities.back_to_list')}
@@ -185,6 +207,9 @@ export default async function ActivityEditorPage({
       ) : null}
 
       {activity && tab === 'content' ? (
+        <TemplateCard activityId={activity.id} current={activity.contentTemplate} />
+      ) : null}
+      {activity && tab === 'content' ? (
         <form className="a-form" action={save('content')}>
           <div className="a-card">
             <h2>{t('ae.tab_content')}</h2>
@@ -208,6 +233,7 @@ export default async function ActivityEditorPage({
             />
             <LocalizedRepeater
               name="highlights"
+              toggles
               label={t('ae.highlights')}
               values={activity.highlights}
             />
@@ -217,23 +243,39 @@ export default async function ActivityEditorPage({
             <p className="a-hint">{t('ae.lists_hint')}</p>
             <LocalizedRepeater
               name="included"
+              toggles
+              scopes={scopes}
               label={t('ae.included_list')}
               values={activity.included}
             />
             <LocalizedRepeater
               name="excluded"
+              toggles
+              scopes={scopes}
               label={t('ae.excluded_list')}
               values={activity.excluded}
             />
             <LocalizedRepeater
               name="suitableFor"
+              toggles
+              scopes={scopes}
               label={t('ae.suitable_for')}
               values={activity.suitableFor}
             />
             <LocalizedRepeater
               name="importantNotes"
+              toggles
+              scopes={scopes}
               label={t('ae.important_notes')}
               values={activity.importantNotes}
+            />
+          </div>
+          <div className="a-card">
+            <Checkbox
+              name="needsReview"
+              label={t('av2.needs_review')}
+              defaultChecked={activity.needsReview}
+              hint={t('av2.needs_review_hint')}
             />
           </div>
           {actions}
@@ -378,11 +420,13 @@ export default async function ActivityEditorPage({
             />
             <LocalizedRepeater
               name="whatToBring"
+              toggles
               label={t('ae.what_to_bring')}
               values={activity.whatToBring}
             />
             <LocalizedRepeater
               name="ageConditions"
+              toggles
               label={t('ae.age_conditions')}
               values={activity.ageConditions}
             />
@@ -427,7 +471,10 @@ export default async function ActivityEditorPage({
       {activity && tab === 'faq' ? (
         <form className="a-form" action={save('faq')}>
           <div className="a-card">
-            <FaqField entries={activity.faq} maxRows={FAQ_ROWS} />
+            <FaqRepeater
+              entries={(activity.faq ?? []) as unknown as FaqRepeaterEntry[]}
+              scopes={await packageScopes(activity.id, locale)}
+            />
           </div>
           {actions}
         </form>
@@ -448,7 +495,13 @@ export default async function ActivityEditorPage({
         <AddonsTab activity={activity} intl={intl} locked={lockPrices} />
       ) : null}
 
+      {activity && tab === 'seo' ? (
+        <SeoTab activity={activity} save={save('seo')} actions={actions} />
+      ) : null}
+
+      {activity && tab === 'basics' ? <ChecklistCard activityId={activity.id} /> : null}
       {activity && tab === 'basics' ? <AlertsCard activityId={activity.id} /> : null}
+      {activity && tab === 'basics' ? <HistoryCard activityId={activity.id} /> : null}
 
       {activity && tab === 'basics' ? (
         <form className="a-card" action={deleteActivity.bind(null, activity.id)}>
@@ -798,9 +851,10 @@ async function addonOptions(activityId: string, locale: Parameters<typeof pick>[
 
 async function PackagesTab({ activity, locked }: { activity: ActivityRow; locked: boolean }) {
   const { t, locale, intl } = await getAdminI18n()
-  const [tiers, addons] = await Promise.all([
+  const [tiers, addons, mediaList] = await Promise.all([
     loadTiers(activity.id),
     addonOptions(activity.id, locale),
+    loadPickerMedia(),
   ])
   return (
     <>
@@ -854,9 +908,16 @@ async function PackagesTab({ activity, locked }: { activity: ActivityRow; locked
           notes: tier.notes,
           status: tier.status,
           childPriceMinor: tier.childPriceMinor,
+          compareAtPriceMinor: tier.compareAtPriceMinor,
+          badgeLabel: tier.badgeLabel,
+          badgeColor: tier.badgeColor,
+          imageId: tier.imageId,
+          duration: tier.duration,
+          description: tier.description,
         }))}
         currency={activity.currency}
         addons={addons.options}
+        media={mediaList}
         locked={locked}
       />
       <SeasonEditor
@@ -992,6 +1053,8 @@ async function AddonsTab({
           requiresAddonId: addon.requiresAddonId,
           available: addon.available,
           sortOrder: addon.sortOrder,
+          priceTiers: addon.priceTiers,
+          incompatibleWith: addon.incompatibleWith,
         }))}
       />
     </>

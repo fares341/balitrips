@@ -31,7 +31,7 @@ describe('activity status visibility', () => {
   })
 
   it('draft and unknown values are closed', () => {
-    for (const value of ['draft', 'archived', '', null, undefined]) {
+    for (const value of ['draft', 'in_review', 'archived', 'deleted', '', null, undefined]) {
       expect(activityVisibility(value)).toEqual({
         page: false,
         listed: false,
@@ -42,9 +42,11 @@ describe('activity status visibility', () => {
     expect(activityStatus('PUBLISHED')).toBe('draft')
   })
 
-  it('only draft is non-public', () => {
+  it('draft, in review and archived are non-public', () => {
     expect(isPublicStatus('draft')).toBe(false)
     expect(isPublicStatus('hidden')).toBe(true)
     expect(isPublicStatus('unavailable')).toBe(true)
+    expect(isPublicStatus('in_review')).toBe(false)
+    expect(isPublicStatus('archived')).toBe(false)
   })
 })

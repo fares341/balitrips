@@ -19,6 +19,7 @@ import {
   priceInputProps,
   TextInput,
 } from '../../../_ui/field'
+import { AddonPricingOptions, AddonRuleFields } from '../../../_ui/addon-extras'
 import { Flash } from '../../../_ui/flash'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
@@ -53,7 +54,7 @@ export default async function LibraryAddonPage({
       )[0] ?? null)
   if (!isNew && !addon) notFound()
 
-  const [mediaList, usedBy] = await Promise.all([
+  const [mediaList, usedBy, others] = await Promise.all([
     loadPickerMedia(),
     addon
       ? db
@@ -63,6 +64,11 @@ export default async function LibraryAddonPage({
           .where(and(eq(activityAddonLinks.addonId, addon.id), isNull(activities.deletedAt)))
           .orderBy(asc(activities.sortOrder))
       : Promise.resolve([]),
+    db
+      .select({ id: addonsLibrary.id, name: addonsLibrary.name })
+      .from(addonsLibrary)
+      .where(isNull(addonsLibrary.deletedAt))
+      .orderBy(asc(addonsLibrary.sortOrder)),
   ])
 
   return (
@@ -104,9 +110,7 @@ export default async function LibraryAddonPage({
                 defaultValue={addon?.pricing ?? 'per_booking'}
                 locked={locked}
               >
-                <option value="per_person">{t('activities.addon_per_person')}</option>
-                <option value="per_booking">{t('activities.addon_per_booking')}</option>
-                <option value="per_qty">{t('activities.addon_per_qty')}</option>
+                <AddonPricingOptions />
               </PriceSelect>
             </Field>
             <Field label={t('addons.max_qty')} htmlFor="maxQty" hint={t('addons.max_qty_hint')}>
@@ -130,6 +134,16 @@ export default async function LibraryAddonPage({
               />
             </Field>
           </div>
+          <AddonRuleFields
+            idPrefix="lib"
+            tiers={addon?.priceTiers}
+            currency={addon?.currency ?? 'USD'}
+            incompatible={others
+              .filter((other) => other.id !== addon?.id)
+              .map((other) => ({ value: other.id, label: pick(other.name, locale) }))}
+            values={addon?.incompatibleWith}
+            locked={locked}
+          />
           <Checkbox
             name="available"
             label={t('addons.available')}

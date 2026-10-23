@@ -65,6 +65,7 @@ const PUBLISH_KEYS: Record<string, string> = {
   archived: 'common.archived',
   hidden: 'ae.status_pill_hidden',
   unavailable: 'ae.status_pill_unavailable',
+  in_review: 'av2.status_pill_in_review',
 }
 
 export async function PublishPill({ status }: { status: string }) {
@@ -75,7 +76,7 @@ export async function PublishPill({ status }: { status: string }) {
       ? 'good'
       : status === 'unavailable'
         ? 'warn'
-        : status === 'hidden'
+        : status === 'hidden' || status === 'in_review'
           ? 'info'
           : 'neutral'
   return <Pill tone={tone}>{key ? t(key) : status}</Pill>

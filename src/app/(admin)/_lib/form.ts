@@ -1,6 +1,7 @@
 import type { Localized } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
 import {
+  normalizeNumberText,
   parseMoneyInput,
   parsePercentInput,
   parseScaled,
@@ -384,4 +385,109 @@ export function ffloatOrNull(form: FormData, name: string, label = name): number
   if (!Number.isFinite(parsed))
     throw invalid(`${label} must be a number, got "${value}"`, 'form.not_number', { label, value })
   return parsed
+}
+
+/** A list line with its v2 per-line settings: switched off, or tied to one package. */
+export type ScopedRow = Localized & { hidden?: true; pkg?: string }
+
+function readJsonRows(form: FormData, name: string): unknown[] {
+  const value = form.get(`${name}__json`)
+  if (typeof value !== 'string' || value.trim() === '') return []
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    throw invalid(`${name} could not be read`, 'form.invalid_value', {})
+  }
+  return Array.isArray(parsed) ? parsed : []
+}
+
+function localizedFrom(entry: unknown, limit: number): { row: Localized; any: boolean } {
+  const row = {} as Localized
+  let any = false
+  for (const locale of locales) {
+    const text =
+      typeof entry === 'object' && entry !== null
+        ? (entry as Record<string, unknown>)[locale]
+        : undefined
+    row[locale] = typeof text === 'string' ? text.trim().slice(0, limit) : ''
+    if (row[locale] !== '') any = true
+  }
+  return { row, any }
+}
+
+/** The per-line settings of a posted row, a package kept only when it is one of `pkgIds`. */
+function scopeOf(entry: unknown, pkgIds: readonly string[]): { hidden?: true; pkg?: string } {
+  if (typeof entry !== 'object' || entry === null) return {}
+  const { hidden, pkg } = entry as { hidden?: unknown; pkg?: unknown }
+  return {
+    ...(hidden === true ? { hidden: true as const } : {}),
+    ...(typeof pkg === 'string' && pkgIds.includes(pkg) ? { pkg } : {}),
+  }
+}
+
+/**
+ * `<LocalizedRepeater toggles scopes>` rows: each line keeps its «hidden»
+ * switch and the package it belongs to (one of `pkgIds`; anything else means
+ * every package). Order is the posted order.
+ */
+export function fscopedRows(
+  form: FormData,
+  name: string,
+  pkgIds: readonly string[],
+  max = 100,
+): ScopedRow[] {
+  const out: ScopedRow[] = []
+  for (const entry of readJsonRows(form, name).slice(0, max)) {
+    const { row, any } = localizedFrom(entry, 500)
+    if (any) out.push({ ...row, ...scopeOf(entry, pkgIds) })
+  }
+  return out
+}
+
+/**
+ * `<FaqRepeater>` rows: question + answer per language, hidden switch and an
+ * optional package. A question written in any language is kept. No fixed
+ * number of rows; `max` only stops a crafted post.
+ */
+export function ffaqRows(
+  form: FormData,
+  name: string,
+  pkgIds: readonly string[],
+  max = 200,
+): ({ q: Localized; a: Localized } & { hidden?: true; pkg?: string })[] {
+  const out: ({ q: Localized; a: Localized } & { hidden?: true; pkg?: string })[] = []
+  for (const entry of readJsonRows(form, name).slice(0, max)) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const q = localizedFrom((entry as { q?: unknown }).q, 300)
+    const a = localizedFrom((entry as { a?: unknown }).a, 4000)
+    if (!q.any) continue
+    out.push({ q: q.row, a: a.row, ...scopeOf(entry, pkgIds) })
+  }
+  return out
+}
+
+/**
+ * v2 tiered add-on prices, one step per line: «3 = 25.00» (from 3 units on,
+ * 25.00 each). Quantities start at 2 and must rise; prices may not be negative.
+ */
+export function fpriceTiers(
+  form: FormData,
+  currency: string,
+  message: (line: string) => string,
+): { minQty: number; priceMinor: number }[] {
+  const out: { minQty: number; priceMinor: number }[] = []
+  for (const line of flines(form, 'priceTiers')) {
+    const match = /^\s*(\d+)\s*[=:]\s*(.+)$/.exec(normalizeNumberText(line))
+    const parsed = match ? parseMoneyInput(match[2] ?? '', currency) : null
+    const minQty = match ? Number(match[1]) : NaN
+    if (!match || !parsed || !parsed.ok || !Number.isInteger(minQty) || minQty < 2) {
+      throw new Error(message(line))
+    }
+    if (parsed.value < 0 || out.some((tier) => tier.minQty >= minQty)) {
+      throw new Error(message(line))
+    }
+    out.push({ minQty, priceMinor: parsed.value })
+  }
+  return out
 }

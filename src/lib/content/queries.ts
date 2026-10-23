@@ -647,13 +647,18 @@ async function regionCenter(
     : null
 }
 
-export async function getActivityBySlug(slug: string): Promise<ActivityDetail | null> {
+export async function getActivityBySlug(
+  slug: string,
+  options: { includeDraft?: boolean } = {},
+): Promise<ActivityDetail | null> {
+  // Staff preview (v2): any status that is not deleted; never bookable then.
+  const scope = options.includeDraft === true ? isNull(activities.deletedAt) : PAGE_ACTIVITY
   const rows = await db
     .select({ activity: activities, region: regions, hero: media })
     .from(activities)
     .leftJoin(regions, eq(regions.id, activities.regionId))
     .leftJoin(media, eq(media.id, activities.heroImageId))
-    .where(and(PAGE_ACTIVITY, eq(activities.slug, slug)))
+    .where(and(scope, eq(activities.slug, slug)))
     .limit(1)
 
   const row = rows[0]

@@ -2515,5 +2515,7 @@
   "act_sum_currency": "Harga dalam {currency}",
   "act_more_info_t": "Informasi tambahan",
   "act_rev_count_paren": "({n} ulasan)",
-  "act_map_google": "Lihat di Google Maps"
+  "act_map_google": "Lihat di Google Maps",
+  "act_preview_t": "Pratinjau.",
+  "act_preview_b": "Status «{status}» — halaman ini belum publik; pemesanan nonaktif."
 }

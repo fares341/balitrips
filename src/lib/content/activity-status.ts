@@ -9,11 +9,21 @@
  *  - `unavailable`  page open and listed in the catalogue, but booking is off —
  *                   the page shows a clear message and a contact button. Never
  *                   picked for the home page.
+ *  - `in_review`    (v2) written, waiting for a check: not on the site, like a
+ *                   draft; staff open it with «Preview».
+ *  - `archived`     (v2) retired: not on the site, kept for orders and history.
  *
  * Unknown values read as `draft` (fail closed).
  */
 
-export const ACTIVITY_STATUSES = ['draft', 'published', 'hidden', 'unavailable'] as const
+export const ACTIVITY_STATUSES = [
+  'draft',
+  'in_review',
+  'published',
+  'hidden',
+  'unavailable',
+  'archived',
+] as const
 export type ActivityStatus = (typeof ACTIVITY_STATUSES)[number]
 
 export function activityStatus(value: string | null | undefined): ActivityStatus {
@@ -50,9 +60,9 @@ export function activityVisibility(value: string | null | undefined): ActivityVi
   }
 }
 
-/** Publishing-level statuses need the publish capability in the Studio. */
+/** Publishing-level statuses (the page opens) need the publish capability in the Studio. */
 export function isPublicStatus(value: string | null | undefined): boolean {
-  return activityStatus(value) !== 'draft'
+  return PAGE_STATUSES.includes(activityStatus(value))
 }
 
 /**

@@ -20,7 +20,10 @@ import {
   flocalizedOrNull,
   flocalizedRequired,
   fmoney,
+  fmulti,
+  fpriceTiers,
   fuuidOrNull,
+  isUuid,
 } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
@@ -45,7 +48,7 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
     const pricing = fenum(
       form,
       'pricing',
-      ['per_person', 'per_booking', 'per_qty'] as const,
+      ['per_person', 'per_booking', 'per_qty', 'per_hour', 'tiered'] as const,
       'per_booking',
     )
     const maxQty = fintOrNull(form, 'maxQty', t('addons.max_qty'))
@@ -58,7 +61,19 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
       priceMinor,
       currency: fcurrency(form, 'currency'),
       pricing,
-      maxQty: pricing === 'per_qty' ? (maxQty ?? 1) : null,
+      maxQty:
+        pricing === 'per_qty' || pricing === 'per_hour'
+          ? (maxQty ?? 1)
+          : pricing === 'tiered'
+            ? maxQty
+            : null,
+      priceTiers:
+        pricing === 'tiered'
+          ? fpriceTiers(form, fcurrencyOr(form, 'currency'), (line) => t('av2.err_tiers', { line }))
+          : null,
+      incompatibleWith: [...new Set(fmulti(form, 'incompatibleWith'))].filter(
+        (other) => isUuid(other) && other !== id,
+      ),
       available: fbool(form, 'available'),
       sortOrder: fint(form, 'sortOrder', 0, t('addons.sort_order')),
     }
@@ -80,7 +95,7 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
         session.role,
         before,
         values,
-        before ? ['priceMinor', 'currency', 'pricing', 'maxQty'] : ['priceMinor'],
+        before ? ['priceMinor', 'currency', 'pricing', 'maxQty', 'priceTiers'] : ['priceMinor'],
         t('team.err_prices'),
       )
       const [row] =

@@ -19,6 +19,8 @@ import {
 import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 import { can } from '@/lib/auth/roles'
 import { activityStatus, isPublicStatus } from '@/lib/content/activity-status'
+
+import { assertPublishable } from './checklist'
 import { parseVideoUrl } from '@/lib/content/video'
 import { queueAvailabilityAlerts } from '@/lib/notify/availability'
 
@@ -29,7 +31,6 @@ import {
   fbool,
   fcurrency,
   fenum,
-  ffaq,
   fint,
   fintOrNull,
   flines,
@@ -37,8 +38,10 @@ import {
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  flocalizedRows,
   fcurrencyOr,
+  ffaqRows,
+  fpriceTiers,
+  fscopedRows,
   fmoney,
   fmoneyOrNull,
   fmulti,
@@ -57,12 +60,20 @@ import { requireCapability } from '../../_lib/session'
 const LIST = adminHref('/activities')
 
 /** How many FAQ rows the editor posts back — see the editor's blank rows. */
-const FAQ_ROWS = 30
-
 /** The editor's sections that post the activity form (the others have their own forms). */
-type ActivitySection = 'basics' | 'content' | 'media' | 'booking' | 'faq'
+type ActivitySection = 'basics' | 'content' | 'media' | 'booking' | 'faq' | 'seo'
 
-const SECTIONS: readonly ActivitySection[] = ['basics', 'content', 'media', 'booking', 'faq']
+const SECTIONS: readonly ActivitySection[] = ['basics', 'content', 'media', 'booking', 'faq', 'seo']
+
+/** Package ids of an activity (v2: list lines and FAQ may be tied to one). */
+async function tierIdsOf(activityId: string): Promise<string[]> {
+  if (!isUuid(activityId)) return []
+  const rows = await db
+    .select({ id: activityTiers.id })
+    .from(activityTiers)
+    .where(and(eq(activityTiers.activityId, activityId), isNull(activityTiers.deletedAt)))
+  return rows.map((row) => row.id)
+}
 
 /** Public pages that show activities, refreshed after an edit. */
 function refreshPublic(): void {
@@ -80,6 +91,7 @@ async function sectionValues(
   section: ActivitySection,
   form: FormData,
   t: Translate,
+  activityId: string,
 ): Promise<Partial<typeof activities.$inferInsert>> {
   switch (section) {
     case 'basics': {
@@ -103,17 +115,21 @@ async function sectionValues(
         status,
       }
     }
-    case 'content':
+    case 'content': {
+      // v2: each line may be switched off or tied to one package.
+      const pkgIds = await tierIdsOf(activityId)
       return {
         headline: flocalizedOrNull(form, 'headline'),
         shortDescription: flocalizedOrNull(form, 'shortDescription'),
         description: flocalizedOrNull(form, 'description'),
-        highlights: flocalizedRows(form, 'highlights'),
-        suitableFor: flocalizedRows(form, 'suitableFor'),
-        importantNotes: flocalizedRows(form, 'importantNotes'),
-        included: flocalizedRows(form, 'included'),
-        excluded: flocalizedRows(form, 'excluded'),
+        highlights: fscopedRows(form, 'highlights', []),
+        suitableFor: fscopedRows(form, 'suitableFor', pkgIds),
+        importantNotes: fscopedRows(form, 'importantNotes', pkgIds),
+        included: fscopedRows(form, 'included', pkgIds),
+        excluded: fscopedRows(form, 'excluded', pkgIds),
+        needsReview: fbool(form, 'needsReview'),
       }
+    }
     case 'media': {
       const raw = fstr(form, 'videoUrl')
       const video = raw === null ? null : parseVideoUrl(raw)
@@ -158,15 +174,31 @@ async function sectionValues(
         meetingLng: lng,
         meetingMapUrl: mapUrl,
         meetingTimeNote: flocalizedOrNull(form, 'meetingTimeNote'),
-        whatToBring: flocalizedRows(form, 'whatToBring'),
-        ageConditions: flocalizedRows(form, 'ageConditions'),
+        whatToBring: fscopedRows(form, 'whatToBring', []),
+        ageConditions: fscopedRows(form, 'ageConditions', []),
         instantConfirmation: fbool(form, 'instantConfirmation'),
         freeCancellationHours: freeHours,
         cancellationPolicy: flocalizedOrNull(form, 'cancellationPolicy'),
       }
     }
     case 'faq':
-      return { faq: ffaq(form, 'faq', FAQ_ROWS) }
+      return { faq: ffaqRows(form, 'faq', await tierIdsOf(activityId)) }
+    case 'seo': {
+      const canonical = fstr(form, 'canonicalUrl')
+      if (canonical !== null && !/^https:\/\/\S+$/i.test(canonical)) {
+        throw new Error(t('av2.err_canonical'))
+      }
+      const related = [...new Set(fmulti(form, 'relatedIds'))]
+        .filter((value) => isUuid(value) && value !== activityId)
+        .slice(0, 12)
+      return {
+        seoTitle: flocalizedOrNull(form, 'seoTitle'),
+        seoDescription: flocalizedOrNull(form, 'seoDescription'),
+        ogImageId: fuuidOrNull(form, 'ogImageId', t('av2.og_image')),
+        canonicalUrl: canonical,
+        relatedIds: related,
+      }
+    }
   }
 }
 
@@ -187,7 +219,7 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
 
   try {
     if (id === 'new' && section !== 'basics') throw new Error(t('ae.new_first'))
-    const values = await sectionValues(section, form, t)
+    const values = await sectionValues(section, form, t, id)
 
     // Basics also carry the categories and tags; the main category is always
     // one of the categories.
@@ -211,6 +243,20 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
           : ((await tx.select().from(activities).where(eq(activities.id, id)).limit(1))[0] ?? null)
 
       if (id !== 'new' && !before) throw new Error(t('activities.err_gone'))
+      // v2: going public needs the pre-publish checklist complete. A page
+      // that is already public may still be edited (it only shows warnings).
+      if (
+        section === 'basics' &&
+        isPublicStatus(values.status) &&
+        !(before !== null && isPublicStatus(before.status))
+      ) {
+        if (id === 'new') throw new Error(t('av2.err_new_public'))
+        await assertPublishable(tx, id, t, {
+          regionId: values.regionId ?? null,
+          name: values.name ?? null,
+          categoryCount: (categoryIds ?? []).length,
+        })
+      }
       // The "from" price lives on the basics tab: without `prices.write` it
       // must come back as stored (a new activity: no price).
       if (section === 'basics') {
@@ -396,6 +442,9 @@ export async function setActivityStatus(id: string, status: string): Promise<voi
       const [before] = await tx.select().from(activities).where(eq(activities.id, id)).limit(1)
       if (!before) throw new Error(t('activities.err_gone'))
       republished = before.status !== 'published' && next === 'published'
+      if (next === 'published' && !isPublicStatus(before.status)) {
+        await assertPublishable(tx, id, t)
+      }
 
       const [after] = await tx
         .update(activities)
@@ -535,7 +584,7 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
   const pricingMode = fenum(
     form,
     'pricingMode',
-    ['per_person', 'per_group', 'per_couple'] as const,
+    ['per_person', 'per_group', 'per_couple', 'fixed'] as const,
     'per_person',
   )
   const minGuests = fintOrNull(form, 'minGuests', t('ae.tier_min_guests'))
@@ -553,6 +602,23 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
       ? fmoneyOrNull(form, 'childPrice', fcurrencyOr(form, 'currency'), t('av.child_price'))
       : null
 
+  // v2: a reference price must be above the price to mean a discount.
+  const compareAtPriceMinor = fmoneyOrNull(
+    form,
+    'compareAtPrice',
+    fcurrencyOr(form, 'currency'),
+    t('av2.compare_at'),
+  )
+  if (compareAtPriceMinor !== null && compareAtPriceMinor <= priceMinor) {
+    throw new Error(t('av2.err_compare_at'))
+  }
+  const badgeColor = fenum(
+    form,
+    'badgeColor',
+    ['', 'sun', 'palm', 'forest', 'coral', 'sky', 'ink'] as const,
+    '',
+  )
+
   return {
     name: flocalizedRequired(form, 'name', t('activities.tier_name')),
     tagline: flocalizedOrNull(form, 'tagline'),
@@ -563,6 +629,12 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
     groupMax: pricingMode === 'per_group' ? groupMax : null,
     maxGuests,
     minGuests,
+    compareAtPriceMinor,
+    badgeLabel: flocalizedOrNull(form, 'badgeLabel'),
+    badgeColor: badgeColor === '' ? null : badgeColor,
+    imageId: fuuidOrNull(form, 'imageId', t('av2.pkg_image')),
+    duration: flocalizedOrNull(form, 'duration'),
+    description: flocalizedOrNull(form, 'description'),
     includes: flocalizedList(form, 'includes'),
     excludes: flocalizedList(form, 'excludes'),
     includesAddons: await ownIds(form, 'includesAddons', await includableAddonIds(activityId), t),
@@ -682,6 +754,7 @@ export async function saveActivityTier(
         !can(session.role, 'prices.write') &&
         (values.priceMinor !== before.priceMinor ||
           values.childPriceMinor !== before.childPriceMinor ||
+          values.compareAtPriceMinor !== before.compareAtPriceMinor ||
           values.currency !== before.currency ||
           values.pricingMode !== before.pricingMode ||
           values.groupMax !== before.groupMax)
@@ -796,11 +869,15 @@ async function addonValuesFrom(
   const pricing = fenum(
     form,
     'pricing',
-    ['per_person', 'per_booking', 'per_qty'] as const,
+    ['per_person', 'per_booking', 'per_qty', 'per_hour', 'tiered'] as const,
     'per_booking',
   )
   const maxQty = fintOrNull(form, 'maxQty', t('activities.addon_max_qty'))
   if (maxQty !== null && maxQty < 1) throw new Error(t('activities.err_addon_max_qty'))
+  const priceTiers =
+    pricing === 'tiered'
+      ? fpriceTiers(form, fcurrencyOr(form, 'currency'), (line) => t('av2.err_tiers', { line }))
+      : null
 
   const tierRows = await db
     .select({ id: activityTiers.id })
@@ -831,13 +908,29 @@ async function addonValuesFrom(
     }
   }
 
+  const incompatibleWith = (
+    await ownIds(
+      form,
+      'incompatibleWith',
+      addonRows.map((row) => row.id),
+      t,
+    )
+  ).filter((id) => id !== selfId)
+
   return {
     name: flocalizedRequired(form, 'name', t('activities.addon_name')),
     description: flocalizedOrNull(form, 'description'),
     priceMinor,
     currency: fcurrency(form, 'currency'),
     pricing,
-    maxQty: pricing === 'per_qty' ? (maxQty ?? 1) : null,
+    maxQty:
+      pricing === 'per_qty' || pricing === 'per_hour'
+        ? (maxQty ?? 1)
+        : pricing === 'tiered'
+          ? maxQty
+          : null,
+    priceTiers,
+    incompatibleWith,
     onlyPackages,
     requiresAddonId,
     available: fbool(form, 'available'),
@@ -846,7 +939,7 @@ async function addonValuesFrom(
 }
 
 /** What an add-on charges: guarded by `prices.write`. */
-const ADDON_PRICE_KEYS = ['priceMinor', 'currency', 'pricing', 'maxQty'] as const
+const ADDON_PRICE_KEYS = ['priceMinor', 'currency', 'pricing', 'maxQty', 'priceTiers'] as const
 
 const addonOf = (activityId: string, addonId: string) =>
   and(

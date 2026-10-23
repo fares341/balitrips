@@ -2515,5 +2515,7 @@
   "act_sum_currency": "الأسعار بعملة {currency}",
   "act_more_info_t": "معلومات إضافية",
   "act_rev_count_paren": "({n} تقييم)",
-  "act_map_google": "عرض الموقع على خرائط جوجل"
+  "act_map_google": "عرض الموقع على خرائط جوجل",
+  "act_preview_t": "معاينة.",
+  "act_preview_b": "الحالة «{status}» — هذه الصفحة غير منشورة؛ الحجز متوقف."
 }

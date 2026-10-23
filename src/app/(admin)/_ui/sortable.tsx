@@ -375,7 +375,10 @@ export function GalleryEditor({
 // Localized repeater
 // ---------------------------------------------------------------------------
 
-type Row = { id: string; text: Record<Locale, string> }
+type Row = { id: string; text: Record<Locale, string>; hidden?: boolean; pkg?: string }
+
+/** A package a line can be tied to (v2). */
+export type ScopeOption = { value: string; label: string }
 
 /** Arabic first: the owner writes in Arabic; the others are optional. */
 const ORDER: readonly Locale[] = ['ar', 'en', 'id']
@@ -385,19 +388,30 @@ export function LocalizedRepeater({
   label,
   values,
   hint,
+  toggles = false,
+  scopes,
 }: {
   name: string
   label: string
   values: readonly Record<Locale, string>[] | null | undefined
   hint?: string
+  /** v2: a show / hide switch per line (hidden lines stay saved, off the site). */
+  toggles?: boolean
+  /** v2: each line applies to every package, or to the one picked here. */
+  scopes?: readonly ScopeOption[]
 }) {
   const { t } = useAdminT()
   const uid = useId()
   const [rows, setRows] = useState<Row[]>(() =>
-    (values ?? []).map((value, index) => ({
-      id: `r${index}`,
-      text: { ar: value.ar ?? '', en: value.en ?? '', id: value.id ?? '' },
-    })),
+    (values ?? []).map((value, index) => {
+      const extra = value as { hidden?: unknown; pkg?: unknown }
+      return {
+        id: `r${index}`,
+        text: { ar: value.ar ?? '', en: value.en ?? '', id: value.id ?? '' },
+        hidden: extra.hidden === true,
+        pkg: typeof extra.pkg === 'string' ? extra.pkg : '',
+      }
+    }),
   )
   const [added, setAdded] = useState(0)
   const { rowRef, handleProps, move, dragging } = useDragSort(rows, setRows)
@@ -409,7 +423,15 @@ export function LocalizedRepeater({
       ),
     )
 
-  const payload = JSON.stringify(rows.map((row) => row.text))
+  const payload = JSON.stringify(
+    rows.map((row) => ({
+      ...row.text,
+      ...(toggles && row.hidden ? { hidden: true } : {}),
+      ...(scopes && row.pkg ? { pkg: row.pkg } : {}),
+    })),
+  )
+  const setRow = (rowId: string, patch: Partial<Row>) =>
+    setRows(rows.map((row) => (row.id === rowId ? { ...row, ...patch } : row)))
 
   return (
     <fieldset className="a-fieldset">
@@ -424,7 +446,7 @@ export function LocalizedRepeater({
           <li
             key={row.id}
             ref={rowRef(row.id)}
-            className={dragging === row.id ? 'a-rep-row is-dragging' : 'a-rep-row'}
+            className={`a-rep-row${dragging === row.id ? ' is-dragging' : ''}${row.hidden ? ' is-hidden' : ''}`}
           >
             <button
               type="button"
@@ -449,6 +471,38 @@ export function LocalizedRepeater({
                   />
                 </label>
               ))}
+              {toggles || scopes ? (
+                <span className="a-rep-opts">
+                  {scopes && scopes.length > 0 ? (
+                    <label className="a-rep-field" htmlFor={`${uid}-${row.id}-pkg`}>
+                      <span>{t('av2.rep_scope')}</span>
+                      <select
+                        className="a-select"
+                        id={`${uid}-${row.id}-pkg`}
+                        value={row.pkg ?? ''}
+                        onChange={(event) => setRow(row.id, { pkg: event.target.value })}
+                      >
+                        <option value="">{t('av2.rep_scope_all')}</option>
+                        {scopes.map((scope) => (
+                          <option key={scope.value} value={scope.value}>
+                            {scope.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  {toggles ? (
+                    <label className="a-check">
+                      <input
+                        type="checkbox"
+                        checked={!row.hidden}
+                        onChange={(event) => setRow(row.id, { hidden: !event.target.checked })}
+                      />{' '}
+                      {t('av2.rep_visible')}
+                    </label>
+                  ) : null}
+                </span>
+              ) : null}
             </div>
             <span className="a-sort-arrows">
               <button
