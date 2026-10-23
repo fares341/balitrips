@@ -2492,3 +2492,8 @@
     font-size: 16px;
   }
 }
+/* Anything scrolled into view (links, focus, find-in-page, tests) clears the
+ * sticky section bar instead of landing under it. */
+html:has(.act3 .anav) {
+  scroll-padding-top: 72px;
+}
