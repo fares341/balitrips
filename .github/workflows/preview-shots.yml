@@ -77,6 +77,10 @@ jobs:
         run: pnpm exec tsx scripts/import-photos.ts --only=map_places,activities
         continue-on-error: true
         timeout-minutes: 8
+      # Activity page v2: a demo activity shaped like the client's reference
+      # design (sample prices from the image, CI only — never on live).
+      - name: Activity v2 demo fixture
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/ci-activity-v2-fixture.sql
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site
