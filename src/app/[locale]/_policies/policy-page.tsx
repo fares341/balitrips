@@ -187,7 +187,8 @@ export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale 
   // Contact details in the texts come from Studio → Configuration → Contact.
   const contactValues = {
     email: contact.email,
-    whatsapp: contact.whatsappDisplay ?? '',
+    // Isolated left-to-right so «+966 …» keeps its order inside Arabic text.
+    whatsapp: contact.whatsappDisplay ? `\u2066${contact.whatsappDisplay}\u2069` : '',
   }
 
   const title = t(copy.titleKey)
