@@ -1,0 +1,8 @@
+
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/purchase.spec.ts:82:5 › itinerary: choose audience, buy, pay, download the PDF (8.9s)
+  ✓  2 [chromium] › e2e/purchase.spec.ts:125:5 › activity package: choose, date, time, pay, confirmation (9.3s)
+  ✓  3 [chromium] › e2e/purchase.spec.ts:148:5 › package: request with date, travellers and vehicle (3.8s)
+  ✓  4 [mobile-chrome] › e2e/purchase.spec.ts:82:5 › itinerary: choose audience, buy, pay, download the PDF (13.8s)
+  ✘  5 [mobile-chrome] › e2e/purchase.spec.ts:125:5 › activity package: choose, date, time, pay, confirmation (1.5m)
