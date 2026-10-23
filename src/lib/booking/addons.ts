@@ -17,7 +17,7 @@ import { db } from '@/db'
 import { activityAddonLinks, activityAddons, addonsLibrary } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
 
-import { addonPricing, type AddonRule } from './price'
+import { addonPricing, type AddonPriceTier, type AddonRule } from './price'
 
 export interface ActivityAddonRow extends AddonRule {
   activityId: string
@@ -61,6 +61,8 @@ export async function loadActivityAddons(
       onlyPackages: Array.isArray(row.onlyPackages) ? row.onlyPackages : [],
       requiresAddonId: row.requiresAddonId,
       available: row.available,
+      priceTiers: cleanTiers(row.priceTiers),
+      incompatibleWith: Array.isArray(row.incompatibleWith) ? row.incompatibleWith : [],
       sortOrder: row.sortOrder,
       source: 'activity',
       imageId: null,
@@ -92,6 +94,8 @@ export async function loadActivityAddons(
       onlyPackages: Array.isArray(link.onlyPackages) ? link.onlyPackages : [],
       requiresAddonId: null,
       available: addon.available,
+      priceTiers: cleanTiers(addon.priceTiers),
+      incompatibleWith: Array.isArray(addon.incompatibleWith) ? addon.incompatibleWith : [],
       required: link.required,
       sortOrder: link.sortOrder,
       source: 'library',
@@ -113,6 +117,23 @@ export async function loadActivityAddons(
   return out
 }
 
+/** Stored price steps, malformed ones dropped, lowest quantity first. */
+export function cleanTiers(value: unknown): AddonPriceTier[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter(
+      (tier): tier is AddonPriceTier =>
+        typeof tier === 'object' &&
+        tier !== null &&
+        Number.isInteger((tier as AddonPriceTier).minQty) &&
+        (tier as AddonPriceTier).minQty >= 1 &&
+        Number.isInteger((tier as AddonPriceTier).priceMinor) &&
+        (tier as AddonPriceTier).priceMinor >= 0,
+    )
+    .map((tier) => ({ minQty: tier.minQty, priceMinor: tier.priceMinor }))
+    .sort((a, b) => a.minQty - b.minQty)
+}
+
 /** Strip display fields: the shape `CatalogSnapshot.activityAddons` holds. */
 export function addonRules(map: ReadonlyMap<string, ActivityAddonRow[]>): Map<string, AddonRule[]> {
   return new Map(
@@ -129,6 +150,10 @@ export function addonRules(map: ReadonlyMap<string, ActivityAddonRow[]>): Map<st
           requiresAddonId: row.requiresAddonId,
           available: row.available,
           ...(row.required === true ? { required: true } : {}),
+          ...(row.priceTiers && row.priceTiers.length > 0 ? { priceTiers: row.priceTiers } : {}),
+          ...(row.incompatibleWith && row.incompatibleWith.length > 0
+            ? { incompatibleWith: row.incompatibleWith }
+            : {}),
         }),
       ),
     ]),

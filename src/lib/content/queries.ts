@@ -227,12 +227,20 @@ function toRegionRef(row: RegionRow | null | undefined): RegionRef | null {
   return { id: row.id, key: row.key, label: row.label }
 }
 
-function toLocalizedList(value: LocalizedText[] | null | undefined): LocalizedText[] {
-  return Array.isArray(value) ? value : []
+/**
+ * A stored list, without the lines switched off in the Studio (`hidden`).
+ * Other per-line fields (`pkg`, the package a line belongs to) are kept.
+ */
+function toLocalizedList<T extends LocalizedText>(value: T[] | null | undefined): T[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(
+    (line) =>
+      typeof line === 'object' && line !== null && (line as { hidden?: unknown }).hidden !== true,
+  )
 }
 
 function toFaq(value: FaqEntry[] | null | undefined): FaqEntry[] {
-  return Array.isArray(value) ? value : []
+  return toLocalizedList(value as (FaqEntry & LocalizedText)[] | null | undefined) as FaqEntry[]
 }
 
 function toIconNames(value: string[] | null | undefined): IconName[] {
@@ -721,6 +729,28 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
         .filter((id): id is string => id !== null),
     ),
   ]
+  // Package pictures and the share picture (v2).
+  const extraImageIds = [
+    ...new Set(
+      [...tierRows.map((tier) => tier.imageId), row.activity.ogImageId].filter(
+        (id): id is string => id !== null,
+      ),
+    ),
+  ]
+  const extraImages =
+    extraImageIds.length === 0
+      ? new Map<string, MediaDto>()
+      : new Map(
+          (
+            await db
+              .select()
+              .from(media)
+              .where(and(inArray(media.id, extraImageIds), isNull(media.deletedAt)))
+          )
+            .map((image) => toMedia(image))
+            .filter((image): image is MediaDto => image !== null)
+            .map((image) => [image.id, image]),
+        )
   const addonImages =
     addonImageIds.length === 0
       ? new Map<string, MediaDto>()
@@ -794,6 +824,8 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       required: addon.required === true,
       image: addon.imageId === null ? null : (addonImages.get(addon.imageId) ?? null),
       unitLabel: addon.unitLabel,
+      priceTiers: [...(addon.priceTiers ?? [])],
+      incompatibleWith: [...(addon.incompatibleWith ?? [])],
     })),
     tiers: tierRows.map((tier) => ({
       id: tier.id,
@@ -832,7 +864,21 @@ export async function getActivityBySlug(slug: string): Promise<ActivityDetail | 
       notes: toLocalizedList(tier.notes),
       childPriceMinor: tier.childPriceMinor,
       seasons: seasonsByTier.get(tier.id) ?? [],
+      compareAtPriceMinor:
+        tier.compareAtPriceMinor !== null && tier.compareAtPriceMinor > tier.priceMinor
+          ? tier.compareAtPriceMinor
+          : null,
+      badgeLabel: tier.badgeLabel,
+      badgeColor: tier.badgeColor,
+      image: tier.imageId === null ? null : (extraImages.get(tier.imageId) ?? null),
+      duration: tier.duration,
+      description: tier.description,
     })),
+    seoTitle: a.seoTitle,
+    seoDescription: a.seoDescription,
+    ogImage: a.ogImageId === null ? null : (extraImages.get(a.ogImageId) ?? null),
+    canonicalUrl: a.canonicalUrl,
+    relatedIds: Array.isArray(a.relatedIds) ? a.relatedIds : [],
     // The hero leads the gallery when it is not already one of the images.
     gallery:
       summary.hero && !galleryDtos.some((g) => g.id === summary.hero?.id)
@@ -989,6 +1035,30 @@ export async function similarActivities(activityId: string, n = 3): Promise<Acti
   const ids = ranked.map((row) => row.id)
   const summaries = await activitySummariesByIds(ids)
   return orderByIds([...summaries.values()], ids, (item) => item.id)
+}
+
+/**
+ * «Similar activities you may like» (v2): the ones picked by hand in the
+ * Studio first, in their order (listed ones only), then the automatic
+ * matches by category, without repeats.
+ */
+export async function relatedActivities(
+  activityId: string,
+  pickedIds: readonly string[],
+  n = 8,
+): Promise<ActivitySummary[]> {
+  const limit = clampLimit(n, 8)
+  const wanted = [...new Set(pickedIds.filter((id) => id !== activityId))].slice(0, limit)
+  const picked =
+    wanted.length === 0 ? new Map<string, ActivitySummary>() : await activitySummariesByIds(wanted)
+  const out = orderByIds([...picked.values()], wanted, (item) => item.id)
+  if (out.length >= limit) return out
+  const seen = new Set(out.map((item) => item.id))
+  for (const item of await similarActivities(activityId, limit)) {
+    if (out.length >= limit) break
+    if (!seen.has(item.id)) out.push(item)
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------

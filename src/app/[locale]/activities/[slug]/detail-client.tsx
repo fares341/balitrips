@@ -14,6 +14,7 @@ import { toggleFavorite } from '@/app/[locale]/_actions/favorites'
 import { favoriteKey, setFavorite, useFavorites } from '@/components/bt/favorites-store'
 import { useToast } from '@/components/shared/toast'
 import { Icon } from '@/components/ui/icon'
+import { Link } from '@/i18n/routing'
 
 // ---------------------------------------------------------------------------
 // Gallery + lightbox
@@ -100,7 +101,9 @@ export function Gallery({
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState<number | null>(null)
-  const [active, setActive] = useState<number | 'video'>(0)
+  // A real video leads, on its own poster with a play button (client design).
+  const [active, setActive] = useState<number | 'video'>(video && images.length > 0 ? 'video' : 0)
+  const swipe = useRef<{ x: number; y: number } | null>(null)
   const [playing, setPlaying] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
@@ -133,7 +136,27 @@ export function Gallery({
   return (
     <>
       <div className="mgal">
-        <div className="mgal-main">
+        <div
+          className="mgal-main"
+          onTouchStart={(event) => {
+            const touch = event.touches[0]
+            swipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null
+          }}
+          onTouchEnd={(event) => {
+            const start = swipe.current
+            const touch = event.changedTouches[0]
+            swipe.current = null
+            if (!start || !touch || images.length < 2) return
+            const dx = touch.clientX - start.x
+            if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(touch.clientY - start.y)) return
+            // Swiping toward the reading direction's start shows the next photo.
+            const rtl = document.documentElement.dir === 'rtl'
+            const step = dx < 0 !== rtl ? 1 : -1
+            const from = active === 'video' ? 0 : active
+            setPlaying(false)
+            setActive((from + step + images.length) % images.length)
+          }}
+        >
           {showVideo && video ? (
             playing ? (
               <iframe
@@ -446,5 +469,122 @@ export function InfoTabs({
         {selected.content}
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// «فعاليات مشابهة قد تعجبك» — a row of small cards with arrows
+// ---------------------------------------------------------------------------
+
+export type RelatedItem = {
+  id: string
+  href: string
+  name: string
+  area: string | null
+  /** Formatted «from» price; null when the activity has none set. */
+  price: string | null
+  imageUrl: string | null
+  unavailable: boolean
+}
+
+export function RelatedRow({ title, items }: { title: string; items: RelatedItem[] }) {
+  const t = useTranslations()
+  const rail = useRef<HTMLDivElement>(null)
+  const scroll = (direction: 1 | -1) => {
+    const el = rail.current
+    if (!el) return
+    const rtl = document.documentElement.dir === 'rtl'
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    el.scrollBy({
+      left: direction * (rtl ? -1 : 1) * Math.max(200, el.clientWidth * 0.8),
+      behavior: reduce ? 'auto' : 'smooth',
+    })
+  }
+  return (
+    <div className="relrow">
+      <div className="relrow-head">
+        <h2 className="h3">
+          <Icon name="map" size={20} /> {title}
+        </h2>
+        {items.length > 2 ? (
+          <span className="row" style={{ gap: 6 }}>
+            <button
+              type="button"
+              className="icon-btn relrow-arrow"
+              aria-label={t('act_gal_prev')}
+              onClick={() => scroll(-1)}
+            >
+              <Icon name="chevronr" size={18} className="flip-ltr" />
+            </button>
+            <button
+              type="button"
+              className="icon-btn relrow-arrow"
+              aria-label={t('act_gal_next')}
+              onClick={() => scroll(1)}
+            >
+              <Icon name="chevronr" size={18} className="flip" />
+            </button>
+          </span>
+        ) : null}
+      </div>
+      <div className="relrow-rail" ref={rail} role="list">
+        {items.map((item) => (
+          <article key={item.id} className="relcard" role="listitem">
+            <Link className="relcard-img" href={item.href} tabIndex={-1} aria-hidden="true">
+              {item.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- CMS media, already sized
+                <img src={item.imageUrl} alt="" loading="lazy" decoding="async" />
+              ) : null}
+            </Link>
+            <FavHeart activityId={item.id} name={item.name} />
+            <Link className="relcard-name" href={item.href}>
+              {item.name}
+            </Link>
+            {item.unavailable ? (
+              <small className="why">{t('act_unavailable_tag')}</small>
+            ) : item.price ? (
+              <b className="price" dir="ltr">
+                {item.price}
+              </b>
+            ) : null}
+            {item.area ? (
+              <small className="muted">
+                <Icon name="pin" size={13} /> {item.area}
+              </small>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** The heart on a small card: same favourites as «Save» beside the title. */
+function FavHeart({ activityId, name }: { activityId: string; name: string }) {
+  const t = useTranslations()
+  const { toast } = useToast()
+  const favorites = useFavorites()
+  const key = favoriteKey('activity', activityId)
+  const pressed = favorites.keys.has(key)
+  return (
+    <button
+      type="button"
+      className="icon-btn relcard-fav"
+      aria-pressed={pressed}
+      aria-label={`${t('act_save')} · ${name}`}
+      onClick={async () => {
+        if (favorites.loaded && !favorites.signedIn) {
+          toast(t('bt_fav_signin'), { link: { href: '/account', label: t('bt_login') } })
+          return
+        }
+        const result = await toggleFavorite('activity', activityId)
+        if (result.ok) setFavorite(key, result.saved)
+        else if (result.reason === 'signed_out') {
+          toast(t('bt_fav_signin'), { link: { href: '/account', label: t('bt_login') } })
+        } else toast(t('c_error'), { error: true })
+      }}
+    >
+      <Icon name="heart" size={16} />
+    </button>
   )
 }

@@ -142,7 +142,7 @@ export function confirmationPromise(
  */
 export function lineCostMinor(
   offer: Pick<OfferFacts, 'costMinor'>,
-  pricing: 'per_person' | 'per_group' | 'per_couple',
+  pricing: 'per_person' | 'per_group' | 'per_couple' | 'fixed',
   people: number,
   units: number,
 ): number {

@@ -82,7 +82,7 @@ export async function assignLineSupplier(orderId: string, form: FormData): Promi
         if (!offer || target === null || offer.activityId !== target.activityId) {
           throw new Error(t('sup.err_offer_other_activity'))
         }
-        let pricing: 'per_person' | 'per_group' | 'per_couple' = 'per_person'
+        let pricing: ReturnType<typeof tierPricing> = 'per_person'
         if (target.tierId) {
           const [tier] = await tx
             .select({ pricingMode: activityTiers.pricingMode })

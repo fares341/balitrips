@@ -232,6 +232,22 @@ export const activities = pgTable(
       onDelete: 'set null',
     }),
 
+    // --- Activity page v2 (migration 0030) ---
+
+    /** Search-engine title / description per language. Empty = the name / short text. */
+    seoTitle: localized('seo_title'),
+    seoDescription: localized('seo_description'),
+    /** Share picture. Null = the hero image. */
+    ogImageId: uuid('og_image_id').references(() => media.id, { onDelete: 'set null' }),
+    /** Canonical link when the page duplicates another one. Null = its own URL. */
+    canonicalUrl: text('canonical_url'),
+    /** Hand-picked «similar activities», in order; the rest is filled automatically. */
+    relatedIds: jsonb('related_ids').$type<string[]>(),
+    /** Content template the texts were started from (`@/lib/content/activity-templates`). */
+    contentTemplate: varchar('content_template', { length: 32 }),
+    /** Texts came from a template (or an import) and wait for a human check. */
+    needsReview: boolean('needs_review').notNull().default(false),
+
     sortOrder: integer('sort_order').notNull().default(0),
     /**
      * draft | published | hidden | unavailable (`@/lib/content/activity-status`):
@@ -342,6 +358,20 @@ export const activityTiers = pgTable(
      */
     childPriceMinor: moneyMinor('child_price_minor'),
 
+    // --- Activity page v2 (migration 0030) ---
+    /** Price before the discount. Shown struck through only when above `priceMinor`. */
+    compareAtPriceMinor: moneyMinor('compare_at_price_minor'),
+    /** Ribbon text (e.g. «Best value»). Null = «Most popular» when `isPopular`. */
+    badgeLabel: localized('badge_label'),
+    /** Ribbon colour: a palette name (`sun`, `palm`, `forest`, `coral`, `sky`). */
+    badgeColor: varchar('badge_color', { length: 16 }),
+    /** Picture of the package. Null = the activity's hero. */
+    imageId: uuid('image_id').references(() => media.id, { onDelete: 'set null' }),
+    /** Duration of this package when it differs from the activity's. */
+    duration: localized('duration'),
+    /** Longer text for the selected-package card. */
+    description: localized('description'),
+
     /** Package card: what this package includes / leaves out (localized lists). */
     includes: jsonb('includes').$type<Localized[]>(),
     excludes: jsonb('excludes').$type<Localized[]>(),
@@ -414,6 +444,10 @@ export const activityAddons = pgTable(
 
     /** `activity_tiers.id`s this add-on may be bought with. Empty/null = all. */
     onlyPackages: jsonb('only_packages').$type<string[]>(),
+    /** Unit price by quantity for `tiered` pricing: the highest `minQty` reached wins. */
+    priceTiers: jsonb('price_tiers').$type<{ minQty: number; priceMinor: number }[]>(),
+    /** Add-on ids that cannot be booked together with this one. */
+    incompatibleWith: jsonb('incompatible_with').$type<string[]>(),
     /** Another add-on of the same activity that must be selected first. */
     requiresAddonId: uuid('requires_addon_id').references((): AnyPgColumn => activityAddons.id, {
       onDelete: 'set null',
@@ -478,6 +512,8 @@ export const addonsLibrary = pgTable(
     /** per_person | per_booking | per_qty */
     pricing: varchar('pricing', { length: 16 }).notNull().default('per_booking'),
     maxQty: integer('max_qty'),
+    priceTiers: jsonb('price_tiers').$type<{ minQty: number; priceMinor: number }[]>(),
+    incompatibleWith: jsonb('incompatible_with').$type<string[]>(),
     available: boolean('available').notNull().default(true),
     sortOrder: integer('sort_order').notNull().default(0),
     ...timestamps,

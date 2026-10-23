@@ -19,7 +19,7 @@
  * these types without pulling a connection into the bundle.
  */
 
-import type { AddonPricing, PackagePricing } from '@/lib/booking/price'
+import type { AddonPriceTier, AddonPricing, PackagePricing } from '@/lib/booking/price'
 import type { SeasonalPrice } from '@/lib/booking/seasonal'
 import type { IconName } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
@@ -120,7 +120,12 @@ export interface ArticleCategoryDto {
 export interface FaqEntry {
   q: LocalizedText
   a: LocalizedText
+  /** Shown only for this package (`activity_tiers.id`). Absent/null = every package. */
+  pkg?: string | null
 }
+
+/** A list line that may apply to one package only (`pkg` = `activity_tiers.id`). */
+export type ScopedText = LocalizedText & { pkg?: string | null }
 
 // ---------------------------------------------------------------------------
 // Activities
@@ -191,6 +196,15 @@ export interface ActivityTierDto {
   childPriceMinor: number | null
   /** Seasonal prices (phase 2); the travel date picks one. */
   seasons: SeasonalPrice[]
+  /** v2: reference price, struck through only when above `priceMinor`. */
+  compareAtPriceMinor: number | null
+  /** v2: ribbon text; null = «Most popular» when `isPopular`. */
+  badgeLabel: LocalizedText | null
+  badgeColor: string | null
+  /** v2: package picture (null = the activity's hero), duration, longer text. */
+  image: MediaDto | null
+  duration: LocalizedText | null
+  description: LocalizedText | null
 }
 
 /** An activity a package includes (same date; own slot or the package's time). */
@@ -212,8 +226,8 @@ export interface ActivityDetail extends ActivitySummary {
   description: LocalizedText | null
   headline: LocalizedText | null
   highlights: LocalizedText[]
-  suitableFor: LocalizedText[]
-  importantNotes: LocalizedText[]
+  suitableFor: ScopedText[]
+  importantNotes: ScopedText[]
   whatToBring: LocalizedText[]
   ageConditions: LocalizedText[]
   meeting: {
@@ -234,9 +248,16 @@ export interface ActivityDetail extends ActivitySummary {
   video: ParsedVideo | null
   tags: { id: string; key: string; label: LocalizedText }[]
   /** Per-activity, not the one shared list the prototype hard-coded. */
-  included: LocalizedText[]
-  excluded: LocalizedText[]
+  included: ScopedText[]
+  excluded: ScopedText[]
   faq: FaqEntry[]
+  /** v2 SEO, per language; null = derived from the name / short description. */
+  seoTitle: LocalizedText | null
+  seoDescription: LocalizedText | null
+  ogImage: MediaDto | null
+  canonicalUrl: string | null
+  /** v2: hand-picked related activities (ids, in order). */
+  relatedIds: string[]
   cancellationPolicy: LocalizedText | null
   /** Bookable start times as `HH:mm`. Empty means "no fixed slots". */
   timeSlots: string[]
@@ -269,6 +290,10 @@ export interface ActivityAddonDto {
   /** Library add-ons: picture and unit label for the add-on card. */
   image: MediaDto | null
   unitLabel: LocalizedText | null
+  /** v2: unit price by quantity (`tiered`). */
+  priceTiers: AddonPriceTier[]
+  /** v2: add-ons that cannot be booked with this one. */
+  incompatibleWith: string[]
 }
 
 // ---------------------------------------------------------------------------

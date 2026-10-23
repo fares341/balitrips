@@ -4,9 +4,12 @@
  *   total        = packageCost + Σ addonCost + driverCost
  *   packageCost  = per_group  ? ceil(people / group_max) × price
  *                : per_couple ? ceil(people / 2) × price     // "للزوجين"
+ *                : fixed      ? price                        // one price, any party
  *                :              people × price
  *   addonCost    = per_person ? price × people
  *                : per_qty    ? price × min(qty, max_qty)
+ *                : per_hour   ? price × min(hours, max_qty)
+ *                : tiered     ? tierPrice(qty) × min(qty, max_qty)
  *                :              price                      // per_booking
  *   driverCost   = vehicleFor(people).day_rate × days      // days = 1 unless multi-day
  *
@@ -44,11 +47,28 @@ import { daysBetweenInclusive, vehicleForPassengers, type VehicleClass } from '@
 
 import { priceOn, type SeasonalPrice } from './seasonal'
 
-export type PackagePricing = 'per_person' | 'per_group' | 'per_couple'
-export type AddonPricing = 'per_person' | 'per_booking' | 'per_qty'
+export type PackagePricing = 'per_person' | 'per_group' | 'per_couple' | 'fixed'
+export type AddonPricing = 'per_person' | 'per_booking' | 'per_qty' | 'per_hour' | 'tiered'
 
-export const PACKAGE_PRICINGS: readonly PackagePricing[] = ['per_person', 'per_group', 'per_couple']
-export const ADDON_PRICINGS: readonly AddonPricing[] = ['per_person', 'per_booking', 'per_qty']
+export const PACKAGE_PRICINGS: readonly PackagePricing[] = [
+  'per_person',
+  'per_group',
+  'per_couple',
+  'fixed',
+]
+export const ADDON_PRICINGS: readonly AddonPricing[] = [
+  'per_person',
+  'per_booking',
+  'per_qty',
+  'per_hour',
+  'tiered',
+]
+
+/** One step of a `tiered` add-on: from `minQty` units on, each costs `priceMinor`. */
+export interface AddonPriceTier {
+  minQty: number
+  priceMinor: number
+}
 
 /**
  * A stored `activity_tiers.pricing_mode`, read tolerantly. Rows written before
@@ -57,6 +77,7 @@ export const ADDON_PRICINGS: readonly AddonPricing[] = ['per_person', 'per_booki
  */
 export function tierPricing(mode: string | null | undefined): PackagePricing {
   if (mode === 'per_couple') return 'per_couple'
+  if (mode === 'fixed') return 'fixed'
   return mode === 'per_group' || mode === 'flat' ? 'per_group' : 'per_person'
 }
 
@@ -64,7 +85,14 @@ export function tierPricing(mode: string | null | undefined): PackagePricing {
 export const COUPLE_SIZE = 2
 
 export function addonPricing(mode: string | null | undefined): AddonPricing {
-  return mode === 'per_person' || mode === 'per_qty' ? mode : 'per_booking'
+  return mode === 'per_person' || mode === 'per_qty' || mode === 'per_hour' || mode === 'tiered'
+    ? mode
+    : 'per_booking'
+}
+
+/** Add-on pricings where the traveller picks a quantity (units or hours). */
+export function addonHasQty(pricing: AddonPricing): boolean {
+  return pricing === 'per_qty' || pricing === 'per_hour' || pricing === 'tiered'
 }
 
 /** What pricing needs to know about the chosen package. */
@@ -97,6 +125,10 @@ export interface AddonRule {
   available: boolean
   /** Always added and charged (library link marked required). Absent = optional. */
   required?: boolean
+  /** `tiered` only: unit price by quantity. */
+  priceTiers?: readonly AddonPriceTier[] | null
+  /** Add-ons that cannot be booked with this one (checked both ways). */
+  incompatibleWith?: readonly string[] | null
 }
 
 export interface VehicleRate {
@@ -122,6 +154,8 @@ export type AddonState =
   | { kind: 'requires'; requiresAddonId: string }
   /** Always part of the booking and charged: checked, locked. */
   | { kind: 'required' }
+  /** Cannot be combined with an add-on already selected. */
+  | { kind: 'incompatible'; withAddonId: string }
 
 export type AddonRejection =
   | 'unknown'
@@ -131,6 +165,7 @@ export type AddonRejection =
   | 'unavailable'
   | 'not_for_package'
   | 'requires'
+  | 'incompatible'
 
 export interface PriceLine {
   /** `child`: the children of a per-person package, at the child price. */
@@ -172,6 +207,7 @@ export function packageUnits(
   assertPeople(people)
   if (pkg.pricing === 'per_person') return people
   if (pkg.pricing === 'per_couple') return Math.ceil(people / COUPLE_SIZE)
+  if (pkg.pricing === 'fixed') return 1
   const groupMax = positiveInt(pkg.groupMax)
   return groupMax === null ? 1 : Math.ceil(people / groupMax)
 }
@@ -187,6 +223,11 @@ export function packageCostMinor(
 // Add-ons
 // ---------------------------------------------------------------------------
 
+/** Most units a quantity add-on may be booked for. `tiered` without a cap: 99. */
+export function addonMaxQty(addon: Pick<AddonRule, 'pricing' | 'maxQty'>): number {
+  return positiveInt(addon.maxQty) ?? (addon.pricing === 'tiered' ? 99 : 1)
+}
+
 /** The multiplier an add-on is charged at. */
 export function addonUnits(
   addon: Pick<AddonRule, 'pricing' | 'maxQty'>,
@@ -196,17 +237,43 @@ export function addonUnits(
   assertPeople(people)
   if (addon.pricing === 'per_person') return people
   if (addon.pricing === 'per_booking') return 1
-  const max = positiveInt(addon.maxQty) ?? 1
   const wanted = positiveInt(qty) ?? 1
-  return Math.min(wanted, max)
+  return Math.min(wanted, addonMaxQty(addon))
+}
+
+/**
+ * Price of one unit. For `tiered`, the step with the highest `minQty` not
+ * above the quantity (invalid steps ignored); below every step, the base price.
+ */
+export function addonUnitPriceMinor(
+  addon: Pick<AddonRule, 'pricing' | 'priceMinor' | 'priceTiers'>,
+  units: number,
+): number {
+  if (addon.pricing !== 'tiered' || !addon.priceTiers) return addon.priceMinor
+  let best: AddonPriceTier | null = null
+  for (const tier of addon.priceTiers) {
+    if (positiveInt(tier.minQty) === null) continue
+    if (!Number.isInteger(tier.priceMinor) || tier.priceMinor < 0) continue
+    if (tier.minQty <= units && (best === null || tier.minQty > best.minQty)) best = tier
+  }
+  return best?.priceMinor ?? addon.priceMinor
 }
 
 export function addonCostMinor(
-  addon: Pick<AddonRule, 'pricing' | 'maxQty' | 'priceMinor'>,
+  addon: Pick<AddonRule, 'pricing' | 'maxQty' | 'priceMinor' | 'priceTiers'>,
   people: number,
   qty: number,
 ): number {
-  return addon.priceMinor * addonUnits(addon, people, qty)
+  const units = addonUnits(addon, people, qty)
+  return addonUnitPriceMinor(addon, units) * units
+}
+
+/** Whether two add-ons exclude each other (either side may say so). */
+export function addonsClash(
+  a: Pick<AddonRule, 'id' | 'incompatibleWith'>,
+  b: Pick<AddonRule, 'id' | 'incompatibleWith'>,
+): boolean {
+  return (a.incompatibleWith ?? []).includes(b.id) || (b.incompatibleWith ?? []).includes(a.id)
 }
 
 /**
@@ -232,6 +299,8 @@ export function addonState(
     return { kind: 'requires', requiresAddonId: addon.requiresAddonId }
   }
   if (addon.required === true) return { kind: 'required' }
+  const clash = (addon.incompatibleWith ?? []).find((id) => id !== addon.id && selected.has(id))
+  if (clash !== undefined) return { kind: 'incompatible', withAddonId: clash }
   return { kind: 'selectable' }
 }
 
@@ -292,12 +361,25 @@ export function resolveAddons(
     candidates.push({ addon, qty: 1 })
   }
 
+  // Incompatible pairs: the first in the request (required ones count as
+  // earlier) wins, the later one is rejected.
+  candidates.sort((a, b) => Number(b.addon.required === true) - Number(a.addon.required === true))
+  const kept: typeof candidates = []
+  for (const candidate of candidates) {
+    const clash = kept.find((other) => addonsClash(other.addon, candidate.addon))
+    if (clash) rejected.push({ id: candidate.addon.id, reason: 'incompatible' })
+    else kept.push(candidate)
+  }
+  candidates = kept
+
   for (;;) {
     const selected = new Set(candidates.map((c) => c.addon.id))
     const next: typeof candidates = []
     for (const candidate of candidates) {
       const state = addonState(candidate.addon, pkg, selected)
-      if (state.kind === 'selectable' || state.kind === 'required') next.push(candidate)
+      // Clashes were settled above; what remains of the pair is kept.
+      if (state.kind === 'selectable' || state.kind === 'required' || state.kind === 'incompatible')
+        next.push(candidate)
       else
         rejected.push({
           id: candidate.addon.id,
@@ -311,7 +393,7 @@ export function resolveAddons(
   return {
     accepted: candidates.map(({ addon, qty }) => ({
       id: addon.id,
-      qty: addon.pricing === 'per_qty' ? Math.min(qty, positiveInt(addon.maxQty) ?? 1) : 1,
+      qty: addonHasQty(addon.pricing) ? Math.min(qty, addonMaxQty(addon)) : 1,
     })),
     included: catalog.filter((a) => pkg.includesAddons.includes(a.id)).map((a) => a.id),
     rejected,
@@ -487,12 +569,13 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
     const addon = byId.get(pick.id)
     if (!addon) continue
     const quantity = addonUnits(addon, people, pick.qty)
-    const totalMinor = addon.priceMinor * quantity
+    const unitMinor = addonUnitPriceMinor(addon, quantity)
+    const totalMinor = unitMinor * quantity
     addonsMinor += totalMinor
     lines.push({
       kind: 'addon',
       refId: addon.id,
-      unitMinor: addon.priceMinor,
+      unitMinor,
       quantity,
       totalMinor,
     })

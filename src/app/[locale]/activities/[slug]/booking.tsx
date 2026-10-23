@@ -38,6 +38,10 @@ import {
   hasChildPricing,
   priceBooking,
   resolveAddons,
+  addonHasQty,
+  addonMaxQty,
+  addonUnitPriceMinor,
+  type AddonPriceTier,
   type AddonPricing,
   type AddonRule,
   type PackagePricing,
@@ -91,7 +95,16 @@ export type BookingPackage = {
   childPriceMinor: number | null
   /** Seasonal prices; the travel date picks one. */
   seasons: SeasonalPrice[]
+  /** v2: reference price (only when above the price), ribbon, picture, duration, text. */
+  compareAtPriceMinor: number | null
+  badge: { label: string | null; color: string | null } | null
+  imageUrl: string | null
+  duration: string | null
+  description: string | null
 }
+
+/** A list line of the activity; `pkg` = shown with that package only. */
+export type ScopedLine = { text: string; pkg: string | null }
 
 export type BookingAddon = {
   id: string
@@ -109,6 +122,9 @@ export type BookingAddon = {
   /** Library add-ons: picture and unit line for the add-on card. */
   imageUrl: string | null
   unitLabel: string | null
+  /** v2: unit price by quantity (`tiered`) and add-ons it cannot be combined with. */
+  priceTiers: AddonPriceTier[]
+  incompatibleWith: string[]
 }
 
 export type BookingVehicle = {
@@ -147,11 +163,15 @@ export type BookingInfo = {
   freeCancellationHours: number | null
   place: string | null
   duration: string | null
-  /** Activity-level lists, used when no package is chosen or it has none. */
-  included: string[]
-  excluded: string[]
-  suitableFor: string[]
-  importantNotes: string[]
+  /** Activity-level lists; a line with `pkg` shows with that package only. */
+  included: ScopedLine[]
+  excluded: ScopedLine[]
+  suitableFor: ScopedLine[]
+  importantNotes: ScopedLine[]
+  /** Hero picture: the selected-package card's picture when the package has none. */
+  heroUrl: string | null
+  /** Short cancellation line for the package card (null = none set). */
+  cancelShort: string | null
 }
 
 // ---------------------------------------------------------------------------
@@ -198,6 +218,8 @@ type Ctx = {
   /** How the booking will be confirmed; null = no supplier terms set up. */
   promise: ConfirmPromise | null
   setPackage: (id: string, el?: HTMLElement | null) => void
+  /** Pick a package and the party size on its card in one step. */
+  choosePackage: (id: string, people: number) => void
   setDate: (value: string) => void
   setRange: (value: CalendarRange) => void
   setTime: (value: string) => void
@@ -312,7 +334,14 @@ function addonRules(data: BookingData): AddonRule[] {
     requiresAddonId: a.requiresAddonId,
     available: a.available,
     required: a.required,
+    priceTiers: a.priceTiers,
+    incompatibleWith: a.incompatibleWith,
   }))
+}
+
+/** The lines of an activity list that show with this package. */
+export function forPackage(lines: readonly ScopedLine[], pkg: string | null): string[] {
+  return [...new Set(lines.filter((l) => l.pkg === null || l.pkg === pkg).map((l) => l.text))]
 }
 
 /** Drop every pick the rules no longer allow (package change, prerequisite off). */
@@ -614,6 +643,19 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     void save(mode, state.driver)
   }
 
+  /** Switching package drops add-ons it does not allow: say which. */
+  function notifyDropped(nextPkg: string) {
+    if (nextPkg === state.pkg) return
+    const kept = prune({ ...state, pkg: nextPkg }, data).addons
+    const dropped = Object.keys(state.addons).filter((id) => kept[id] === undefined)
+    if (dropped.length === 0) return
+    const names = dropped
+      .map((id) => data.addons.find((a) => a.id === id)?.name)
+      .filter((name): name is string => !!name)
+      .join(locale === 'ar' ? '، ' : ', ')
+    toast(t('act_addon_dropped', { names }))
+  }
+
   const ctx: Ctx = {
     data,
     state,
@@ -643,9 +685,16 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     modalOpen,
     closeModal: () => setModalOpen(false),
     editing: editing !== null,
+    choosePackage: (id, people) => {
+      const target = data.packages.find((p) => p.id === id)
+      if (!target || !target.available) return
+      notifyDropped(id)
+      update({ pkg: id, people }, 'people')
+    },
     setPackage: (id, el) => {
       const target = data.packages.find((p) => p.id === id)
       if (!target || !target.available) return
+      notifyDropped(id)
       update({ pkg: id }, 'package')
       if (el && typeof el.animate === 'function' && !reducedMotion()) {
         el.animate([{ transform: 'scale(.97)' }, { transform: 'translateY(-2px)' }], {
@@ -694,6 +743,7 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
 
 function perLabel(t: ReturnType<typeof useTranslations>, pkg: BookingPackage) {
   if (pkg.pricing === 'per_couple') return t('act_per_couple')
+  if (pkg.pricing === 'fixed') return t('act_per_fixed')
   return pkg.pricing === 'per_group'
     ? pkg.groupMax
       ? t('act_per_group_max', { n: pkg.groupMax })
@@ -804,9 +854,97 @@ function ChildSteppers() {
   )
 }
 
-/** Short list on a package card: its inclusions and feature chips. */
+/** Short list on a package card: its feature chips, then its inclusions. */
 function cardChecks(p: BookingPackage): string[] {
-  return [...new Set([...p.includes, ...p.features])]
+  return [...new Set([...p.features, ...p.includes])]
+}
+
+/** Head icon of a package card: a heart for couples, then a fixed ladder. */
+const CARD_ICONS: readonly IconName[] = ['plane', 'star', 'gem', 'sparkle']
+
+function cardIcon(p: BookingPackage, index: number): IconName {
+  return p.pricing === 'per_couple' ? 'heart' : (CARD_ICONS[index % CARD_ICONS.length] ?? 'star')
+}
+
+/** Ribbon palette (Studio `badge_color`); anything else reads as the default orange. */
+const BADGE_COLORS = new Set(['sun', 'palm', 'forest', 'coral', 'sky', 'ink'])
+
+/** The ribbon of a package: its own label, else «Most popular» when flagged. */
+export function PackageBadge({
+  p,
+  className = 'pbadge',
+}: {
+  p: BookingPackage
+  className?: string
+}) {
+  const t = useTranslations()
+  const label = p.badge?.label ?? (p.popular ? t('act_pkg_popular') : null)
+  if (!label) return null
+  const color = p.badge?.color && BADGE_COLORS.has(p.badge.color) ? p.badge.color : 'sun'
+  return <span className={`${className} bdg-${color}`}>{label}</span>
+}
+
+/** «US$ 240.00» with the reference price struck through and the saving, when valid. */
+function PackagePrice({ p }: { p: BookingPackage }) {
+  const t = useTranslations()
+  const { money } = useBooking()
+  const compare = p.compareAtPriceMinor
+  const off = compare !== null && compare > p.priceMinor ? compare - p.priceMinor : 0
+  return (
+    <p className="pprice">
+      <b className="price" dir="ltr">
+        {money(p.priceMinor)}
+      </b>
+      {off > 0 && compare !== null ? (
+        <>
+          {' '}
+          <s className="pcompare" dir="ltr">
+            {money(compare)}
+          </s>{' '}
+          <span className="poff">
+            {t('act_pkg_save_pct', { n: Math.round((off / compare) * 100) })}
+          </span>
+        </>
+      ) : null}
+    </p>
+  )
+}
+
+/**
+ * The party stepper on one package card. On the chosen card it is the party;
+ * on another card, changing it chooses that package with that party.
+ */
+function CardStepper({ p }: { p: BookingPackage }) {
+  const t = useTranslations()
+  const { data, state, choosePackage, setPeople } = useBooking()
+  const on = state.pkg === p.id
+  const couples = p.pricing === 'per_couple'
+  const cap = capFor(p, data)
+  const min = Math.min(minFor(p, data), cap)
+  const people = on ? state.people : clampPeople(state.people, p, data)
+  const label = couples ? t('act_qty_couples') : t('act_qty_people')
+  const set = (value: number) => {
+    const next = couples ? value * 2 : value
+    if (on) setPeople(next)
+    else choosePackage(p.id, next)
+  }
+  return (
+    <div className="pqty">
+      <small>
+        <Icon name="users" size={14} /> {label}
+      </small>
+      <Stepper
+        size="sm"
+        value={couples ? Math.max(1, Math.round(people / 2)) : people}
+        onChange={set}
+        min={couples ? Math.max(1, Math.round(min / 2)) : min}
+        max={couples ? Math.max(1, Math.floor(cap / 2)) : cap}
+        label={`${label} · ${p.name}`}
+        decreaseLabel={t('c_qty_dec')}
+        increaseLabel={t('c_qty_inc')}
+      />
+    </div>
+  )
 }
 
 export function PackageCards() {
@@ -819,8 +957,11 @@ export function PackageCards() {
 
   return (
     <>
-      <div className="row between">
-        <h2>{t('act_choose_t')}</h2>
+      <div className="sec-head">
+        <div className="stack" style={{ gap: 2 }}>
+          <h2>{t('act_choose_t')}</h2>
+          <p className="muted">{t('act_choose_sub')}</p>
+        </div>
         {data.packages.length > 1 && features.length > 0 ? (
           <button
             type="button"
@@ -833,8 +974,12 @@ export function PackageCards() {
           </button>
         ) : null}
       </div>
-      <div className="tcards" role="list" aria-label={t('act_pkgs_label')}>
-        {data.packages.map((p) => {
+      <div
+        className={`pcards n${Math.min(data.packages.length, 4)}`}
+        role="list"
+        aria-label={t('act_pkgs_label')}
+      >
+        {data.packages.map((p, index) => {
           const on = state.pkg === p.id
           const checks = cardChecks(p)
           const extra =
@@ -847,20 +992,21 @@ export function PackageCards() {
             <article
               key={p.id}
               role="listitem"
-              className={`tcard${on ? ' on' : ''}${p.available ? '' : ' off'}`}
+              className={`pcard${on ? ' on' : ''}${p.available ? '' : ' off'}`}
               aria-label={p.name}
             >
-              {p.popular ? <span className="badge-top">{t('act_pkg_popular')}</span> : null}
-              <h3 className="tname">{p.name}</h3>
-              <p className="tprice">
-                <b className="price" dir="ltr">
-                  {money(p.priceMinor)}
-                </b>{' '}
-                <small>{perLabel(t, p)}</small>
-              </p>
-              {p.tagline ? <p className="muted ttag">{p.tagline}</p> : null}
-              {checks.length > 0 ? (
-                <ul className="tchecks">
+              <PackageBadge p={p} />
+              <header className="pcard-h">
+                <span className="pico" aria-hidden="true">
+                  <Icon name={cardIcon(p, index)} size={20} />
+                </span>
+                <h3 className="tname">{p.name}</h3>
+              </header>
+              <PackagePrice p={p} />
+              <small className="punit">{perLabel(t, p)}</small>
+              {p.tagline ? <p className="ptag">{p.tagline}</p> : null}
+              {checks.length > 0 && !expanded ? (
+                <ul className="pchecks">
                   {checks.slice(0, TIER_CHECKS).map((line) => (
                     <li key={line}>
                       <Icon name="check" size={15} stroke={2.4} />
@@ -869,10 +1015,15 @@ export function PackageCards() {
                   ))}
                 </ul>
               ) : null}
+              {expanded ? (
+                <div id={panelId} className="tall">
+                  <TierLists p={p} />
+                </div>
+              ) : null}
               {extra ? (
                 <button
                   type="button"
-                  className="link tmore"
+                  className="link pmore"
                   aria-expanded={expanded}
                   aria-controls={panelId}
                   onClick={() => setOpen((value) => ({ ...value, [p.id]: !expanded }))}
@@ -880,16 +1031,11 @@ export function PackageCards() {
                   {expanded ? t('act_less_features') : t('act_all_features')}
                 </button>
               ) : null}
-              {expanded ? (
-                <div id={panelId} className="tall">
-                  <TierLists p={p} />
-                </div>
-              ) : null}
-              <div className="tfoot">
-                {on ? <PartyStepper size="sm" /> : null}
+              <div className="pfoot">
+                {p.available && data.bookable ? <CardStepper p={p} /> : null}
                 <button
                   type="button"
-                  className={on ? 'btn btn-forest btn-sm' : 'btn btn-primary btn-sm'}
+                  className={on ? 'btn btn-primary pchoose' : 'btn btn-outline pchoose'}
                   aria-pressed={on}
                   disabled={!p.available}
                   onClick={(event) => setPackage(p.id, event.currentTarget.closest('article'))}
@@ -952,7 +1098,9 @@ export function PackageCards() {
                         ? t('act_cmp_group')
                         : p.pricing === 'per_couple'
                           ? t('act_cmp_couple')
-                          : t('act_cmp_person')}
+                          : p.pricing === 'fixed'
+                            ? t('act_cmp_fixed')
+                            : t('act_cmp_person')}
                     </td>
                   ))}
                 </tr>
@@ -967,7 +1115,7 @@ export function PackageCards() {
 }
 
 /** Cards show this many ticks before "see all features". */
-const TIER_CHECKS = 4
+const TIER_CHECKS = 5
 
 /** Every list a package carries, for its expanded card. */
 function TierLists({ p }: { p: BookingPackage }) {
@@ -1032,128 +1180,196 @@ function IncludedList({ items }: { items: BookingIncluded[] }) {
 
 /**
  * The chosen package in detail (or the activity itself when it has none):
- * the confirmation and cancellation promises, schedule, place, duration,
- * party size, what else it includes, and "Book now".
+ * picture, name, text and ribbon; price, unit, party and «Book now»; then the
+ * quick specs — cancellation, confirmation, place, schedule, duration, party.
  */
 export function TierDetail({ schedule }: { schedule: string | null }) {
   const t = useTranslations()
-  const { data, pkgInfo, price, money, cap, min, promise } = useBooking()
+  const { data, pkgInfo, money, cap, min, promise } = useBooking()
   const info = data.info
-  const facts: { icon: IconName; text: string; ltr?: boolean; ok?: boolean }[] = []
+  const facts: { icon: IconName; value: string; label: string; ltr?: boolean; ok?: boolean }[] = []
+  if (info.freeCancellationHours !== null) {
+    facts.push({
+      icon: 'shield',
+      value: t('act_spec_free_cancel'),
+      label: t('act_spec_until_h', { n: info.freeCancellationHours }),
+      ok: true,
+    })
+  } else if (info.cancelShort) {
+    facts.push({ icon: 'shield', value: info.cancelShort, label: t('act_spec_cancel') })
+  }
   // Supplier terms, when set up, decide the promise; otherwise the page flag.
   if (promise !== null) {
     facts.push(
       promise.instant
-        ? { icon: 'bolt', text: t('act_detail_instant'), ok: true }
-        : { icon: 'clock', text: t('act_confirm_hours', { n: promise.hours }) },
+        ? { icon: 'bolt', value: t('act_spec_instant'), label: t('act_spec_after'), ok: true }
+        : {
+            icon: 'clock',
+            value: t('act_confirm_hours', { n: promise.hours }),
+            label: t('act_spec_confirm'),
+          },
     )
-  } else if (info.instantConfirmation)
-    facts.push({ icon: 'bolt', text: t('act_detail_instant'), ok: true })
-  if (info.freeCancellationHours !== null) {
+  } else if (info.instantConfirmation) {
     facts.push({
-      icon: 'shield',
-      text: t('act_detail_free_cancel', { n: info.freeCancellationHours }),
+      icon: 'bolt',
+      value: t('act_spec_instant'),
+      label: t('act_spec_after'),
       ok: true,
     })
   }
-  if (schedule) facts.push({ icon: 'cal', text: schedule, ltr: /^[\d:·\s]+$/.test(schedule) })
-  if (info.place) facts.push({ icon: 'pin', text: info.place })
-  if (info.duration) facts.push({ icon: 'clock', text: info.duration })
+  if (info.place) facts.push({ icon: 'pin', value: info.place, label: t('act_qf_location') })
+  if (schedule) {
+    facts.push({
+      icon: 'cal',
+      value: schedule,
+      label: t('act_qf_schedule'),
+      ltr: /^[\d:·\s]+$/.test(schedule),
+    })
+  }
+  const duration = pkgInfo?.duration ?? info.duration
+  if (duration) facts.push({ icon: 'clock', value: duration, label: t('act_qf_duration') })
   if (showsGroupSize(cap, min)) {
     facts.push({
       icon: 'users',
-      text: min > 1 ? t('act_qf_group_v', { min, max: cap }) : t('act_qf_group_upto', { max: cap }),
+      value: t('act_qf_group_v', { min, max: cap }),
+      label: t('act_spec_people'),
     })
   }
+  const image = pkgInfo?.imageUrl ?? info.heroUrl
+  const text = pkgInfo?.description ?? pkgInfo?.tagline ?? null
   return (
-    <section className="tdetail panel" aria-labelledby="tdetail-h">
-      <div className="tdetail-head">
-        <div className="stack" style={{ gap: 2 }}>
-          {pkgInfo?.popular ? <span className="tag tag-sun">{t('act_pkg_popular')}</span> : null}
-          <h3 id="tdetail-h" className="h3">
+    <section className="selpkg panel" aria-labelledby="tdetail-h" id="pkg-detail">
+      <div className="selpkg-top">
+        {image ? (
+          <figure className="selpkg-img">
+            {/* eslint-disable-next-line @next/next/no-img-element -- CMS media, already sized */}
+            <img src={image} alt="" loading="lazy" decoding="async" />
+            {pkgInfo ? <PackageBadge p={pkgInfo} className="pbadge pbadge-img" /> : null}
+          </figure>
+        ) : null}
+        <div className="selpkg-txt">
+          <h3 id="tdetail-h" className="h2">
             {pkgInfo?.name ?? t('act_base_line')}
           </h3>
-          {pkgInfo?.tagline ? <p className="muted">{pkgInfo.tagline}</p> : null}
+          {text ? <p className="muted">{text}</p> : null}
+          {pkgInfo && pkgInfo.includedActivities.length > 0 ? (
+            <div className="tlist">
+              <b>{t('act_detail_included_acts')}</b>
+              <IncludedList items={pkgInfo.includedActivities} />
+            </div>
+          ) : null}
         </div>
-        <p className="tprice">
-          <b className="price" dir="ltr">
-            {money(pkgInfo?.priceMinor ?? data.basePriceMinor)}
-          </b>{' '}
-          <small>{pkgInfo ? perLabel(t, pkgInfo) : t('act_per_person')}</small>
-        </p>
+        <div className="selpkg-buy">
+          {pkgInfo ? (
+            <PackagePrice p={pkgInfo} />
+          ) : (
+            <p className="pprice">
+              <b className="price" dir="ltr">
+                {money(data.basePriceMinor)}
+              </b>
+            </p>
+          )}
+          <small className="punit">{pkgInfo ? perLabel(t, pkgInfo) : t('act_per_person')}</small>
+          {data.bookable ? (
+            <>
+              <div className="pqty">
+                <small>
+                  <Icon name="users" size={14} />{' '}
+                  {pkgInfo?.pricing === 'per_couple' ? t('act_qty_couples') : t('act_qty_people')}
+                </small>
+                <PartyStepper size="sm" />
+              </div>
+              <a
+                className="btn btn-primary btn-block"
+                href="#book"
+                onClick={(event) => {
+                  event.preventDefault()
+                  document.getElementById('bk-form')?.scrollIntoView({
+                    behavior: reducedMotion() ? 'auto' : 'smooth',
+                    block: 'start',
+                  })
+                }}
+              >
+                {t('act_book_now')}
+              </a>
+            </>
+          ) : null}
+        </div>
       </div>
-      <ul className="tfacts">
-        {facts.map((fact) => (
-          <li key={fact.text} className={fact.ok ? 'ok' : undefined}>
-            <Icon name={fact.icon} size={17} />
-            <span dir={fact.ltr ? 'ltr' : undefined}>{fact.text}</span>
-          </li>
-        ))}
-      </ul>
-      {pkgInfo && pkgInfo.includedActivities.length > 0 ? (
-        <div className="tlist">
-          <b>{t('act_detail_included_acts')}</b>
-          <IncludedList items={pkgInfo.includedActivities} />
-        </div>
-      ) : null}
-      {data.bookable ? (
-        <div className="row between tdetail-foot">
-          <span className="muted">
-            {t('act_sum_total')}{' '}
-            <b className="price" dir="ltr">
-              {money(price.totalMinor)}
-            </b>
-          </span>
-          <a
-            className="btn btn-primary"
-            href="#book"
-            onClick={(event) => {
-              event.preventDefault()
-              document
-                .getElementById('bk-form')
-                ?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' })
-            }}
-          >
-            {t('act_book_now')}
-          </a>
-        </div>
+      {facts.length > 0 ? (
+        <ul className="selpkg-facts">
+          {facts.map((fact) => (
+            <li key={fact.label} className={fact.ok ? 'ok' : undefined}>
+              <Icon name={fact.icon} size={20} />
+              <b dir={fact.ltr ? 'ltr' : undefined}>{fact.value}</b>
+              <small className="muted">{fact.label}</small>
+            </li>
+          ))}
+        </ul>
       ) : null}
     </section>
   )
 }
 
-/** تشمل الباقة / لا تشمل الباقة / مناسبة لـ / ملاحظات مهمة — for the chosen package. */
+/**
+ * تشمل الباقة / لا تشمل الباقة / مناسبة لـ / ملاحظات مهمة — for the chosen
+ * package: its own lists (or the activity's general lines when it has none),
+ * plus the activity lines the Studio tied to this package.
+ */
 export function InfoBoxes() {
   const t = useTranslations()
-  const { data, pkgInfo } = useBooking()
+  const { data, pkgInfo, state } = useBooking()
   const info = data.info
-  const includes = pkgInfo && cardChecks(pkgInfo).length > 0 ? cardChecks(pkgInfo) : info.included
-  const excludes = pkgInfo && pkgInfo.excludes.length > 0 ? pkgInfo.excludes : info.excluded
-  const notes = [...new Set([...(pkgInfo?.notes ?? []), ...info.importantNotes])]
+  const only = (lines: readonly ScopedLine[]) =>
+    lines.filter((l) => l.pkg !== null && l.pkg === state.pkg).map((l) => l.text)
+  const general = (lines: readonly ScopedLine[]) =>
+    lines.filter((l) => l.pkg === null).map((l) => l.text)
+  const own = pkgInfo ? cardChecks(pkgInfo) : []
+  const includes = [
+    ...new Set([...(own.length > 0 ? own : general(info.included)), ...only(info.included)]),
+  ]
+  const excludes = [
+    ...new Set([
+      ...(pkgInfo && pkgInfo.excludes.length > 0 ? pkgInfo.excludes : general(info.excluded)),
+      ...only(info.excluded),
+    ]),
+  ]
+  const notes = [
+    ...new Set([...(pkgInfo?.notes ?? []), ...forPackage(info.importantNotes, state.pkg)]),
+  ]
   const boxes: { key: string; title: string; items: string[]; icon: IconName; tone: string }[] = [
     { key: 'inc', title: t('act_box_inc'), items: includes, icon: 'check', tone: 'ok' },
     { key: 'exc', title: t('act_box_exc'), items: excludes, icon: 'cross', tone: 'no' },
     {
       key: 'suit',
       title: t('act_box_suits'),
-      items: info.suitableFor,
-      icon: 'users',
+      items: forPackage(info.suitableFor, state.pkg),
+      icon: 'heart',
       tone: 'info',
     },
-    { key: 'notes', title: t('act_box_notes'), items: notes, icon: 'info', tone: 'warn' },
+    { key: 'notes', title: t('act_box_notes'), items: notes, icon: 'bell', tone: 'warn' },
   ]
   const shown = boxes.filter((box) => box.items.length > 0)
   if (shown.length === 0) return null
   return (
-    <div className="iboxes">
+    <div className={`iboxes4 n${shown.length}`}>
       {shown.map((box) => (
-        <div key={box.key} className={`panel ibox ibox-${box.tone}`}>
+        <div key={box.key} className={`panel ibox4 ibox-${box.tone}`}>
           <b className="ibox-h">
-            <Icon name={box.icon} size={18} stroke={2.2} /> {box.title}
+            <span className="ibox-ico" aria-hidden="true">
+              <Icon
+                name={box.key === 'suit' ? 'users' : box.key === 'notes' ? 'alert' : box.icon}
+                size={18}
+              />
+            </span>{' '}
+            {box.title}
           </b>
           <ul>
             {box.items.map((line) => (
-              <li key={line}>{line}</li>
+              <li key={line}>
+                <Icon name={box.icon} size={15} stroke={2.4} />
+                <span>{line}</span>
+              </li>
             ))}
           </ul>
         </div>
@@ -1162,68 +1378,124 @@ export function InfoBoxes() {
   )
 }
 
-/** Optional extras as cards with a + button; the same picks as the booking box. */
+/**
+ * Optional extras as cards with a + button (same picks as the booking box):
+ * only those that can be booked with the chosen package.
+ */
 export function AddonStrip() {
   const t = useTranslations()
   const b = useBooking()
   const { data, state, money } = b
   if (data.addons.length === 0 || !data.bookable) return null
   const selected = new Set(Object.keys(state.addons))
+  const byId = new Map(data.addons.map((a) => [a.id, a]))
+  const rows = data.addons
+    .map((a) => {
+      const rule = addonRules({ ...data, addons: [a] })[0]
+      const st = rule ? addonState(rule, b.pkg, selected) : ({ kind: 'unavailable' } as const)
+      return { a, st }
+    })
+    .filter(({ st }) => st.kind !== 'not_for_package' && st.kind !== 'unavailable')
+  if (rows.length === 0) return null
   return (
-    <div className="astrip" role="list">
-      {data.addons.map((a) => {
-        const rule = addonRules({ ...data, addons: [a] })[0]
-        const st = rule ? addonState(rule, b.pkg, selected) : { kind: 'unavailable' as const }
-        const included = st.kind === 'included'
-        const required = st.kind === 'required'
-        const on = included || required || state.addons[a.id] !== undefined
-        const locked = st.kind !== 'selectable'
-        return (
-          <article key={a.id} role="listitem" className={`acard${on ? ' on' : ''}`}>
-            {a.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- CMS media, already-sized derivative
-              <img src={a.imageUrl} alt="" loading="lazy" decoding="async" />
-            ) : (
-              <span className="acard-ph" aria-hidden="true">
-                <Icon name="sparkle" size={22} />
-              </span>
-            )}
-            <span className="acard-txt">
-              <b>{a.name}</b>
-              {a.description ? <small className="muted">{a.description}</small> : null}
-              <span className="acard-price">
+    <section className="panel addsec" aria-labelledby="addsec-h">
+      <div className="sec-head">
+        <span className="sec-ico" aria-hidden="true">
+          <Icon name="box" size={20} />
+        </span>
+        <div className="stack" style={{ gap: 2 }}>
+          <h2 id="addsec-h" className="h3">
+            {t('act_addons_t')}
+          </h2>
+          <p className="muted">{t('act_addons_sub')}</p>
+        </div>
+      </div>
+      <div className="astrip2" role="list">
+        {rows.map(({ a, st }) => {
+          const included = st.kind === 'included'
+          const required = st.kind === 'required'
+          const on = included || required || state.addons[a.id] !== undefined
+          const locked = st.kind !== 'selectable'
+          const qty = state.addons[a.id]
+          const why =
+            st.kind === 'incompatible'
+              ? t('act_addon_incompatible', { name: byId.get(st.withAddonId)?.name ?? '' })
+              : st.kind === 'requires'
+                ? t('act_addon_requires', { name: byId.get(st.requiresAddonId)?.name ?? '' })
+                : required
+                  ? t('act_addon_required')
+                  : null
+          return (
+            <article key={a.id} role="listitem" className={`acard2${on ? ' on' : ''}`}>
+              {a.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- CMS media, already-sized derivative
+                <img src={a.imageUrl} alt="" loading="lazy" decoding="async" />
+              ) : (
+                <span className="acard-ph" aria-hidden="true">
+                  <Icon name="sparkle" size={22} />
+                </span>
+              )}
+              <span className="acard-txt">
+                <b>{a.name}</b>
                 <span className="price" dir="ltr">
                   {included ? t('act_included') : money(a.priceMinor)}
-                </span>{' '}
+                </span>
                 <small className="muted">{a.unitLabel ?? perAddon(t, a)}</small>
+                {why ? <small className="why">{why}</small> : null}
               </span>
-              {required ? <small className="why">{t('act_addon_required')}</small> : null}
-            </span>
-            <button
-              type="button"
-              className={on ? 'icon-btn acard-btn on' : 'icon-btn acard-btn'}
-              aria-pressed={on}
-              aria-label={
-                on ? t('act_addon_remove', { name: a.name }) : t('act_addon_add', { name: a.name })
-              }
-              disabled={locked}
-              onClick={() => b.toggleAddon(a.id, !on)}
-            >
-              <Icon name={on ? 'check' : 'plus'} size={18} stroke={2.4} />
-            </button>
-          </article>
-        )
-      })}
-    </div>
+              {on && qty !== undefined && addonHasQty(a.pricing) ? (
+                <Stepper
+                  size="sm"
+                  value={qty}
+                  onChange={(value) => b.setAddonQty(a.id, value)}
+                  min={1}
+                  max={addonMaxQty(a)}
+                  label={a.name}
+                  decreaseLabel={t('c_qty_dec')}
+                  increaseLabel={t('c_qty_inc')}
+                />
+              ) : null}
+              <button
+                type="button"
+                className={on ? 'icon-btn acard-btn on' : 'icon-btn acard-btn'}
+                aria-pressed={on}
+                aria-label={
+                  on
+                    ? t('act_addon_remove', { name: a.name })
+                    : t('act_addon_add', { name: a.name })
+                }
+                disabled={locked && !(st.kind === 'incompatible' && on)}
+                onClick={() => b.toggleAddon(a.id, !on)}
+              >
+                <Icon name={on ? 'check' : 'plus'} size={18} stroke={2.4} />
+              </button>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
+/** How an add-on is charged, for its card and the booking box. */
 function perAddon(t: ReturnType<typeof useTranslations>, a: BookingAddon): string {
-  return a.pricing === 'per_person'
-    ? t('act_addon_pp')
-    : a.pricing === 'per_qty'
-      ? t('act_addon_unit')
-      : t('act_addon_booking')
+  switch (a.pricing) {
+    case 'per_person':
+      return t('act_addon_pp')
+    case 'per_qty':
+      return t('act_addon_unit')
+    case 'per_hour':
+      return t('act_addon_hour')
+    case 'tiered': {
+      const best = a.priceTiers.reduce<number>(
+        (low, tier) => Math.min(low, addonUnitPriceMinor(a, tier.minQty)),
+        a.priceMinor,
+      )
+      return best < a.priceMinor ? t('act_addon_tiered') : t('act_addon_unit')
+    }
+    default:
+      return t('act_addon_booking')
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1306,7 +1578,7 @@ export function BookingBox() {
     const addon = line.refId ? addonById.get(line.refId) : undefined
     const name = addon?.name ?? ''
     if (line.included) return `${name} · ${t('act_included')}`
-    return line.quantity > 1 ? `${name} × ${line.quantity}` : name
+    return line.quantity > 1 ? `${name} (${line.quantity} × ${money(line.unitMinor)})` : name
   }
 
   const selected = new Set(Object.keys(state.addons))
@@ -1533,7 +1805,11 @@ export function BookingBox() {
                             ? t('act_addon_requires', {
                                 name: addonById.get(st.requiresAddonId)?.name ?? '',
                               })
-                            : null
+                            : st.kind === 'incompatible'
+                              ? t('act_addon_incompatible', {
+                                  name: addonById.get(st.withAddonId)?.name ?? '',
+                                })
+                              : null
                 return (
                   <label key={a.id} className={`check addon-row${included ? ' is-included' : ''}`}>
                     <input
@@ -1546,7 +1822,7 @@ export function BookingBox() {
                       <b>{a.name}</b>
                       {a.description ? <small>{a.description}</small> : null}
                       {why ? <small className="why">{why}</small> : null}
-                      {a.pricing === 'per_qty' && state.addons[a.id] !== undefined ? (
+                      {addonHasQty(a.pricing) && state.addons[a.id] !== undefined ? (
                         <span
                           className="addon-qty"
                           onClick={(event) => event.preventDefault()}
@@ -1557,7 +1833,7 @@ export function BookingBox() {
                             value={state.addons[a.id] ?? 1}
                             onChange={(qty) => b.setAddonQty(a.id, qty)}
                             min={1}
-                            max={a.maxQty ?? 1}
+                            max={addonMaxQty(a)}
                             label={a.name}
                             decreaseLabel={t('c_qty_dec')}
                             increaseLabel={t('c_qty_inc')}
@@ -1653,7 +1929,9 @@ export function BookingBox() {
                 : t('act_confirm_hours', { n: b.promise.hours })}
             </small>
           ) : null}
-          <small className="muted">{t('act_sum_note')}</small>
+          <small className="muted">
+            {t('act_sum_currency', { currency: data.currency })} · {t('act_sum_note')}
+          </small>
         </div>
 
         <div className="stack" style={{ gap: 8 }}>
