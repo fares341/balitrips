@@ -490,6 +490,12 @@ for (const lang of ['ar', 'en']) {
   try {
     await page.goto(`${BASE}/${lang}/map`, { waitUntil: 'networkidle', timeout: 60000 })
     await page.waitForSelector('.mp-view.is-map', { timeout: 30000 }).catch(() => {})
+    // the cookie banner would hide the bottom carousel
+    await page
+      .locator('.bt-consent .bt-consent-btn.primary')
+      .last()
+      .click({ timeout: 5000 })
+      .catch(() => {})
     await page.waitForTimeout(6000)
     await shot('1-map')
     const bubble = page.locator('.mp-rb').filter({ hasText: lang === 'ar' ? 'أوبود' : 'Ubud' })
