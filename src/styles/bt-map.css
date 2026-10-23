@@ -1375,7 +1375,9 @@
 }
 
 /* ---------- Place photo placeholder (a place with no photo yet) ---------- */
-.pl-ph {
+/* zero specificity: a slot's own size (.mp-lbl-img, .mp-mcard-img…) always wins,
+   otherwise a photo-less pin label stretched its thumb to 100% of the map */
+:where(.pl-ph) {
   display: grid;
   place-items: center;
   width: 100%;
@@ -1384,7 +1386,7 @@
   background: linear-gradient(135deg, var(--ivory-2, #f3eee6), var(--palm-soft, #e3f6e4));
   color: var(--forest);
 }
-.pl-ph svg {
+:where(.pl-ph) svg {
   opacity: 0.7;
 }
 .mp-gal > .pl-ph,
@@ -1611,8 +1613,10 @@
     margin: 0;
   }
 
-  /* the desktop's floating label next to a pin would cover the card */
-  .mp-pin.is-on .mp-lbl {
+  /* the desktop's floating label next to a pin would cover the card, and on a
+     phone a label per pin (frosted, past LABELS_AT) buries the map itself */
+  .mp-pin.is-on .mp-lbl,
+  .mp-view.show-labels .mp-pin:not(:hover) .mp-lbl {
     display: none;
   }
 }

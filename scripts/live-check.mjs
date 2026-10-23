@@ -2,6 +2,8 @@
 import { chromium } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
+import { auditPlaces } from './live-places.mjs'
+
 const BASE = process.env.LIVE_URL ?? 'https://152-42-252-61.sslip.io'
 const OUT = 'live'
 mkdirSync(OUT, { recursive: true })
@@ -147,6 +149,12 @@ for (const path of [
     log.push(`STICKY ERROR ${e.message}`)
   }
   await page.close()
+}
+// Places audit: every map place, its page and its images (live/places.{json,csv}).
+try {
+  log.push(await auditPlaces(browser, BASE, OUT, writeFileSync))
+} catch (e) {
+  log.push(`PLACES ERROR ${e.stack}`)
 }
 await browser.close()
 writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n')
