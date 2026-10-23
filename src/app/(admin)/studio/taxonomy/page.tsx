@@ -2,6 +2,9 @@ import { asc } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { articleCategories, categories, regions, tags } from '@/db/schema'
+
+import { isPlaceholder } from '../../_lib/media-refs'
+import { loadPickerMedia } from '../../_ui/media-picker'
 import type { Localized } from '@/db/schema'
 import { localeConfig, locales } from '@/i18n/config'
 
@@ -40,10 +43,13 @@ interface TaxonomyRow {
   radiusKm?: number | null
   mapTier?: string | null
   mapOrder?: number
+  imageId?: string | null
 }
 
 /** حقول إضافية: الوصف والحالة (تصنيف ومنطقة)، والأب والمركز ونصف القطر (منطقة). */
-type Extra = { kind: 'category' } | { kind: 'region'; parents: { id: string; label: string }[] }
+type Extra =
+  | { kind: 'category'; images: readonly { id: string; label: string }[] }
+  | { kind: 'region'; parents: { id: string; label: string }[] }
 
 export default async function TaxonomyPage({
   searchParams,
@@ -54,7 +60,7 @@ export default async function TaxonomyPage({
   const { t } = await getAdminI18n()
   const params = await searchParams
 
-  const [categoryRows, regionRows, articleCategoryRows, tagRows] = await Promise.all([
+  const [categoryRows, regionRows, articleCategoryRows, tagRows, pickerMedia] = await Promise.all([
     db
       .select({
         id: categories.id,
@@ -66,6 +72,7 @@ export default async function TaxonomyPage({
         status: categories.status,
         mapTier: categories.mapTier,
         mapOrder: categories.mapOrder,
+        imageId: categories.imageId,
       })
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.key)),
@@ -97,7 +104,14 @@ export default async function TaxonomyPage({
       .select({ id: tags.id, key: tags.key, label: tags.label, sortOrder: tags.sortOrder })
       .from(tags)
       .orderBy(asc(tags.sortOrder), asc(tags.key)),
+    loadPickerMedia(),
   ])
+  // Category card photo (home «free Bali guide»): a light <select> per row
+  // rather than a thumbnail grid per category.
+  const images = pickerMedia.map((item) => ({
+    id: item.id,
+    label: `${item.objectKey.split('/').pop() ?? item.objectKey}${isPlaceholder(item.credit) ? ' (placeholder)' : ''}`,
+  }))
 
   return (
     <>
@@ -111,7 +125,7 @@ export default async function TaxonomyPage({
         withIcon
         save={saveCategory}
         remove={deleteCategory}
-        extra={{ kind: 'category' }}
+        extra={{ kind: 'category', images }}
       />
       <TaxonomySection
         t={t}
@@ -198,6 +212,29 @@ function ExtraFields({
                 inputMode="numeric"
                 defaultValue={String(row?.mapOrder ?? 0)}
               />
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-image`}>{t('sr.category_image')}</label>
+              <select
+                className="a-input"
+                id={`${idPrefix}-image`}
+                name="imageId"
+                defaultValue={row?.imageId ?? ''}
+                aria-describedby={`${idPrefix}-image-hint`}
+              >
+                <option value="">{t('sr.category_image_none')}</option>
+                {row?.imageId && !extra.images.some((image) => image.id === row.imageId) ? (
+                  <option value={row.imageId}>{t('sr.category_image_kept')}</option>
+                ) : null}
+                {extra.images.map((image) => (
+                  <option key={image.id} value={image.id}>
+                    {image.label}
+                  </option>
+                ))}
+              </select>
+              <p className="a-hint" id={`${idPrefix}-image-hint`}>
+                {t('sr.category_image_hint')}
+              </p>
             </div>
           </>
         ) : null}

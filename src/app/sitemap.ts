@@ -35,6 +35,7 @@ const STATIC_PATHS = [
   '/privacy',
   '/terms',
   '/refund',
+  '/payment-policy',
   '/cookies',
   '/payment-methods',
 ]

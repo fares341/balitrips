@@ -1939,3 +1939,55 @@ export async function search(
 
   return hits.slice(0, perType)
 }
+
+/**
+ * The home «free Bali guide» cards (owner, Oct 2026): label, icon and the
+ * owner's card photo (Studio → Taxonomy) for the given category keys, in the
+ * order asked. A category not in the database yet is simply absent.
+ */
+export async function listGuideCategories(keys: readonly string[]): Promise<
+  {
+    key: string
+    label: LocalizedText
+    icon: string | null
+    imageUrl: string | null
+  }[]
+> {
+  if (keys.length === 0) return []
+  const rows = await db
+    .select({
+      key: categories.key,
+      label: categories.label,
+      icon: categories.icon,
+      objectKey: media.objectKey,
+      mediaDeleted: media.deletedAt,
+    })
+    .from(categories)
+    .leftJoin(media, eq(media.id, categories.imageId))
+    .where(and(inArray(categories.key, [...keys]), eq(categories.status, 'active')))
+  const byKey = new Map(rows.map((row) => [row.key, row]))
+  return keys.flatMap((key) => {
+    const row = byKey.get(key)
+    if (!row) return []
+    return [
+      {
+        key: row.key,
+        label: row.label,
+        icon: row.icon,
+        imageUrl:
+          row.objectKey !== null && row.mediaDeleted === null ? mediaUrl(row.objectKey) : null,
+      },
+    ]
+  })
+}
+
+/** One media-library image's public URL (null when missing or archived). */
+export async function mediaUrlById(id: string): Promise<string | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null
+  const [row] = await db
+    .select({ objectKey: media.objectKey })
+    .from(media)
+    .where(and(eq(media.id, id), isNull(media.deletedAt)))
+    .limit(1)
+  return row ? mediaUrl(row.objectKey) : null
+}

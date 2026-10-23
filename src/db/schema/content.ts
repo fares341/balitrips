@@ -71,6 +71,10 @@ export const categories = pgTable('categories', {
   mapTier: varchar('map_tier', { length: 8 }),
   /** Order of the category chips on the map. */
   mapOrder: integer('map_order').notNull().default(0),
+  /**
+   * Card photo for the home «free Bali guide» (owner, Oct 2026; migration 0031).
+   */
+  imageId: uuid('image_id').references(() => media.id, { onDelete: 'set null' }),
   ...timestamps,
 })
 

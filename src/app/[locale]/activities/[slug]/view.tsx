@@ -35,7 +35,8 @@ import {
   TierDetail,
   type BookingData,
 } from './booking'
-import { Gallery, InfoTabs, RelatedRow, SaveButton, ShareButton } from './detail-client'
+import { Gallery, InfoTabs, RelatedRow, SaveButton, SectionNav, ShareButton } from './detail-client'
+import { dedupeImages } from '@/lib/content/image-dedupe'
 import { JsonLd } from '@/components/seo/json-ld'
 import { toMajor } from '@/lib/analytics/pixels'
 import { shareUrl } from '@/lib/seo/site-origin'
@@ -363,7 +364,8 @@ export async function ActivityView({
       : null,
   ].filter((tab): tab is { id: string; title: string; content: ReactElement } => tab !== null)
 
-  const galleryImages = activity.gallery.map((image) => ({
+  // Each picture once (merged activities gathered every source's photos).
+  const galleryImages = dedupeImages(activity.gallery).map((image) => ({
     id: image.id,
     url: image.url,
     alt: pickAlt(image.alt, lang, name),
@@ -507,6 +509,15 @@ export async function ActivityView({
             </span>
           </div>
         ) : null}
+
+        <SectionNav
+          label={t('act_sections')}
+          sections={[
+            ...(hasPackages ? [{ id: 'packages', label: t('act_nav_packages') }] : []),
+            { id: 'overview', label: t('act_sec_overview') },
+            ...(infoTabs.length > 0 ? [{ id: 'details', label: t('act_sec_details') }] : []),
+          ]}
+        />
 
         <BookingProvider data={booking}>
           {hasPackages ? (

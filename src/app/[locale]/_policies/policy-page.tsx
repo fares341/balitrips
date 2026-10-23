@@ -27,6 +27,7 @@ import type { Metadata } from 'next'
 import { getFormatter, getTranslations } from 'next-intl/server'
 
 import { Breadcrumbs, LinkButton } from '@/components/shared'
+import { getContact } from '@/components/layout/contact-server'
 import { POLICY_ROUTES } from '@/components/layout/routes'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
@@ -35,7 +36,14 @@ import { Link } from '@/i18n/routing'
 import { alternatesFor } from '../_seo-hreflang'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
-export type PolicyId = 'terms' | 'privacy' | 'refund' | 'cookies' | 'platform-use' | 'map-use'
+export type PolicyId =
+  | 'terms'
+  | 'privacy'
+  | 'refund'
+  | 'payment'
+  | 'cookies'
+  | 'platform-use'
+  | 'map-use'
 
 type PolicyCopy = {
   /** Message key for the page title. Shared with the footer's link label. */
@@ -69,29 +77,42 @@ function sectionKeys(prefix: string, count: number): { titleKey: string; bodyKey
 }
 
 const POLICIES: Record<PolicyId, PolicyCopy> = {
+  // Owner, Oct 2026: full texts in ar/en/id (drafts; the lawyer-review note
+  // is shown in Studio only, not to visitors).
   terms: {
     titleKey: 'ft_p_terms',
     subKey: 'pol_terms_sub',
     scopeKey: 'pol_terms_scope',
-    updated: '2026-08-07',
+    updated: '2026-10-23',
+    sections: sectionKeys('pol_tc', 11),
   },
   privacy: {
     titleKey: 'ft_p_privacy',
     subKey: 'pol_privacy_sub',
     scopeKey: 'pol_privacy_scope',
-    updated: '2026-08-07',
+    updated: '2026-10-23',
+    sections: sectionKeys('pol_pr', 10),
   },
   refund: {
     titleKey: 'ft_p_refund',
     subKey: 'pol_refund_sub',
     scopeKey: 'pol_refund_scope',
-    updated: '2026-08-07',
+    updated: '2026-10-23',
+    sections: sectionKeys('pol_rf', 8),
+  },
+  payment: {
+    titleKey: 'ft_p_payment',
+    subKey: 'pol_payment_sub',
+    scopeKey: 'pol_payment_sub',
+    updated: '2026-10-23',
+    sections: sectionKeys('pol_pay', 7),
   },
   cookies: {
     titleKey: 'ft_p_cookies',
     subKey: 'pol_cookies_sub',
     scopeKey: 'pol_cookies_scope',
-    updated: '2026-08-07',
+    updated: '2026-10-23',
+    sections: sectionKeys('pol_ck', 6),
   },
   'platform-use': {
     titleKey: 'ft_p_platform_use',
@@ -143,7 +164,8 @@ export async function policyMetadata(id: PolicyId, locale: Locale): Promise<Meta
     title: t(copy.titleKey),
     description: t(copy.subKey),
     alternates: alternatesFor(policyHref(id), locale),
-    robots: { index: false, follow: true },
+    // Pages with their full text are indexable; a placeholder never is.
+    robots: { index: copy.sections !== undefined, follow: true },
     openGraph: {
       images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
@@ -157,7 +179,16 @@ export async function policyMetadata(id: PolicyId, locale: Locale): Promise<Meta
 export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale }) {
   const copy = POLICIES[id]
 
-  const [t, format] = await Promise.all([getTranslations({ locale }), getFormatter({ locale })])
+  const [t, format, contact] = await Promise.all([
+    getTranslations({ locale }),
+    getFormatter({ locale }),
+    getContact(),
+  ])
+  // Contact details in the texts come from Studio → Configuration → Contact.
+  const contactValues = {
+    email: contact.email,
+    whatsapp: contact.whatsappDisplay ?? '',
+  }
 
   const title = t(copy.titleKey)
 
@@ -213,24 +244,26 @@ export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale 
           is reachable and announced as a distinct block rather than read as
           part of the policy it is standing in for.
         */}
-            <div
-              role="note"
-              aria-labelledby="policy-placeholder"
-              className="card card-pad"
-              style={{ marginTop: 28, borderColor: 'var(--orange)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <span className="bt-vm-ic" style={{ background: 'rgba(255,144,0,0.16)' }}>
-                  <Icon name="shield" size={18} color="var(--orange-deep)" />
-                </span>
-                <h2 id="policy-placeholder" style={{ fontSize: 17 }}>
-                  {t('pol_placeholder_t')}
-                </h2>
+            {copy.sections === undefined ? (
+              <div
+                role="note"
+                aria-labelledby="policy-placeholder"
+                className="card card-pad"
+                style={{ marginTop: 28, borderColor: 'var(--orange)' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <span className="bt-vm-ic" style={{ background: 'rgba(255,144,0,0.16)' }}>
+                    <Icon name="shield" size={18} color="var(--orange-deep)" />
+                  </span>
+                  <h2 id="policy-placeholder" style={{ fontSize: 17 }}>
+                    {t('pol_placeholder_t')}
+                  </h2>
+                </div>
+                <p className="muted" style={{ fontSize: 14, margin: 0 }}>
+                  {t('pol_placeholder_b')}
+                </p>
               </div>
-              <p className="muted" style={{ fontSize: 14, margin: 0 }}>
-                {t('pol_placeholder_b')}
-              </p>
-            </div>
+            ) : null}
 
             {copy.sections !== undefined ? (
               <div className="bt-article-body">
@@ -239,7 +272,12 @@ export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale 
                     <h2 id={`policy-s${index + 1}`} style={{ fontSize: 21, marginBottom: 10 }}>
                       {index + 1}. {t(section.titleKey)}
                     </h2>
-                    <p>{t(section.bodyKey)}</p>
+                    {t(section.bodyKey, contactValues)
+                      .split('\n')
+                      .filter((line) => line.trim() !== '')
+                      .map((line, lineIndex) => (
+                        <p key={lineIndex}>{line}</p>
+                      ))}
                   </div>
                 ))}
               </div>

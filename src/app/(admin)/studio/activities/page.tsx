@@ -168,6 +168,9 @@ export default async function ActivitiesPage({
         actions={
           mayWrite ? (
             <>
+              <Link className="a-btn ghost" href={adminHref('/activities/images')}>
+                {t('sr.img_title')}
+              </Link>
               <Link className="a-btn ghost" href={adminHref('/activity-import')}>
                 {t('av2.import')}
               </Link>

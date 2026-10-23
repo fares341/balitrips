@@ -1258,3 +1258,224 @@ html[dir='ltr'] .home-v3 .rm-track > li {
     animation-duration: 140s;
   }
 }
+
+/* ---------- Hero foot: «Plan your trip» + Bali info strip (owner, Oct 2026) ---------- */
+.home-v3 .hv-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px 22px;
+}
+.home-v3 .hv-info {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  opacity: 0;
+  animation: hv-fade-up 0.8s var(--ease) 1.75s forwards;
+}
+.home-v3 .hv-info-i {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 6px 14px 6px 8px;
+  padding-inline-start: 8px;
+  padding-inline-end: 14px;
+  border-radius: 99px;
+  color: #fff;
+  background: rgba(10, 30, 16, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.home-v3 .hv-info-ic {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
+}
+.home-v3 .hv-info-tx {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  text-align: start;
+}
+.home-v3 .hv-info-l {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 251, 248, 0.72);
+}
+.home-v3 .hv-info-tx b {
+  font-size: 14px;
+  font-weight: 700;
+}
+.home-v3 .hv-info-tx b small {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 251, 248, 0.82);
+}
+.home-v3 .hv-info-tx a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+}
+@media (max-width: 560px) {
+  .home-v3 .hv-foot {
+    gap: 10px;
+  }
+  .home-v3 .hv-info {
+    gap: 6px;
+  }
+  .home-v3 .hv-info-i {
+    min-height: 40px;
+    padding-block: 4px;
+    padding-inline: 5px 11px;
+    gap: 7px;
+  }
+  .home-v3 .hv-info-ic {
+    width: 26px;
+    height: 26px;
+  }
+  .home-v3 .hv-info-ic svg {
+    width: 17px;
+    height: 17px;
+  }
+  .home-v3 .hv-info-l {
+    font-size: 10.5px;
+  }
+  .home-v3 .hv-info-tx b {
+    font-size: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-v3 .hv-info {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- «Your free Bali guide»: five category cards (owner, Oct 2026) ---------- */
+.home-v3 .guide-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.home-v3 .guide-grid > li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+@media (min-width: 760px) {
+  .home-v3 .guide-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .home-v3 .guide-grid > li:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+@media (min-width: 1100px) {
+  .home-v3 .guide-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+.home-v3 .gcard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 22px;
+  background: var(--white);
+  border: 1px solid rgba(38, 85, 46, 0.1);
+  box-shadow: var(--sh-1);
+  color: var(--forest);
+  overflow: hidden;
+  transition:
+    box-shadow var(--d-base),
+    transform var(--d-base);
+}
+.home-v3 .gcard:hover {
+  box-shadow: var(--sh-2);
+  transform: translateY(-2px);
+}
+.home-v3 .gc-ph {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  background: linear-gradient(140deg, var(--palm-soft), var(--ivory-2));
+}
+.home-v3 .gc-ph img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 1.2s var(--ease);
+}
+.home-v3 .gcard:hover .gc-ph img {
+  transform: scale(1.06);
+}
+.home-v3 .gc-art {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--forest);
+  opacity: 0.35;
+}
+.home-v3 .gc-ic {
+  position: absolute;
+  bottom: -18px;
+  inset-inline-start: 14px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--forest);
+  color: #fff;
+  box-shadow:
+    0 0 0 3px var(--white),
+    var(--sh-2);
+}
+.home-v3 .gc-b {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 26px 14px 14px;
+  flex: 1;
+}
+.home-v3 .gc-t {
+  font-size: 16px;
+  line-height: 1.3;
+}
+.home-v3 .gc-n {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.home-v3 .gc-soon {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 99px;
+  background: var(--orange-soft);
+  color: var(--orange-deep, #b45f00);
+}
+.home-v3 .gc-go {
+  margin-top: auto;
+  padding-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--forest);
+}

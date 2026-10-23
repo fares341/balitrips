@@ -23,7 +23,15 @@ import { Checkbox, Field, LocalizedField, TextArea, TextInput } from '../../_ui/
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Pill, When } from '../../_ui/table'
-import { saveContact, saveCurrencies, saveFees, savePolicy, saveSeller } from './actions'
+import { loadPickerMedia, MediaPicker } from '../../_ui/media-picker'
+import {
+  saveContact,
+  saveCurrencies,
+  saveFees,
+  saveHomeSettings,
+  savePolicy,
+  saveSeller,
+} from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +93,7 @@ export default async function ConfigPage({
       bps / 100,
     )
 
-  const [{ values, invalid, missing }, rows] = await Promise.all([
+  const [{ values, invalid, missing }, rows, pickerMedia] = await Promise.all([
     readSettings(),
     db
       .select({
@@ -97,6 +105,7 @@ export default async function ConfigPage({
       .leftJoin(users, eq(users.id, siteSettings.updatedByActorId))
       .where(inArray(siteSettings.key, SETTING_KEYS))
       .orderBy(desc(siteSettings.updatedAt)),
+    loadPickerMedia(),
   ])
 
   const meta = new Map(rows.map((row) => [row.key, row]))
@@ -106,6 +115,7 @@ export default async function ConfigPage({
   const currencies = values.currencies
   const contact = values.contact
   const seller = values.seller
+  const home = values.home
 
   return (
     <>
@@ -349,6 +359,59 @@ export default async function ConfigPage({
         </form>
       </div>
 
+      <div className="a-card" id="home">
+        <h2>{t('sr.home_title')}</h2>
+        <p className="a-hint">{t('sr.home_hint')}</p>
+        <SectionMeta t={t} name="home" meta={meta} missing={missing} />
+        <form className="a-form" action={saveHomeSettings} style={{ marginBlockStart: 12 }}>
+          <h3 style={{ fontSize: 15 }}>{t('sr.visa_title')}</h3>
+          <p className="a-hint">{t('sr.visa_hint')}</p>
+          <div className="a-row">
+            <Field label={t('sr.visa_amount')} htmlFor="visaAmount" hint={t('sr.visa_amount_hint')}>
+              <TextInput
+                id="visaAmount"
+                name="visaAmount"
+                dir="ltr"
+                inputMode="decimal"
+                defaultValue={home.visaAmount}
+              />
+            </Field>
+            <Field label={t('sr.visa_currency')} htmlFor="visaCurrency">
+              <TextInput
+                id="visaCurrency"
+                name="visaCurrency"
+                dir="ltr"
+                placeholder="IDR"
+                defaultValue={home.visaCurrency}
+              />
+            </Field>
+            <Field label={t('sr.visa_link')} htmlFor="visaLink" hint={t('sr.visa_link_hint')}>
+              <TextInput
+                id="visaLink"
+                name="visaLink"
+                type="url"
+                dir="ltr"
+                defaultValue={home.visaLink}
+              />
+            </Field>
+          </div>
+          <LocalizedField name="visaNote" label={t('sr.visa_note')} value={home.visaNote} />
+          <h3 style={{ fontSize: 15, marginBlockStart: 12 }}>{t('sr.shop_title')}</h3>
+          <MediaPicker
+            name="shopImageId"
+            label={t('sr.shop_image')}
+            hint={t('sr.shop_image_hint')}
+            items={pickerMedia}
+            value={home.shopImageId || null}
+          />
+          <div className="a-actions">
+            <button className="a-btn" type="submit">
+              {t('sr.save_home')}
+            </button>
+          </div>
+        </form>
+      </div>
+
       <div className="a-card">
         <h2>{t('config.contact_title')}</h2>
         <p className="a-hint">{t('config.contact_hint')}</p>
@@ -406,6 +469,12 @@ export default async function ConfigPage({
       <div className="a-card">
         <h2>{t('config.policies_title')}</h2>
         <p className="a-hint">{t('config.policies_hint')}</p>
+        {/* Owner request (Oct 2026): Studio-only — the public pages carry no draft banner. */}
+        <div className="a-flash warn" role="note" style={{ marginBlockStart: 10 }}>
+          <div>
+            <strong>{t('sr.policy_lawyer_t')}</strong> {t('sr.policy_lawyer_b')}
+          </div>
+        </div>
       </div>
 
       {POLICY_IDS.map((id) => {
@@ -536,6 +605,7 @@ function settingName(t: Translate, key: string): string {
     security: 'protection.settings',
     assistant: 'assistant.settings_title',
     vip: 'p3.vip_settings',
+    home: 'sr.home_title',
   }
   const name = names[key]
   return name ? t(name) : key

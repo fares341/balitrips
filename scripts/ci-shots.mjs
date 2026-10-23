@@ -179,6 +179,8 @@ const SWEEP = [
   ['faq', '/faq'],
   ['privacy', '/privacy'],
   ['refund', '/refund'],
+  ['terms', '/terms'],
+  ['payment-policy', '/payment-policy'],
   ['cookies', '/cookies'],
   ['events', '/events'],
   ['plans', '/plans'],

@@ -452,6 +452,21 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                   </Link>
                 </span>
               </label>
+              {/* Owner, Oct 2026: every policy reachable from checkout. */}
+              <small className="muted co-pol-links">
+                {t('chk_more_policies')}{' '}
+                <Link className="link" href="/payment-policy">
+                  {t('ft_p_payment')}
+                </Link>
+                {' · '}
+                <Link className="link" href="/privacy">
+                  {t('ft_p_privacy')}
+                </Link>
+                {' · '}
+                <Link className="link" href="/cookies">
+                  {t('ft_p_cookies')}
+                </Link>
+              </small>
               {errors.terms && (
                 <span className="err" id={`${id('terms')}-err`} role="alert">
                   <Icon name="alert" size={15} /> <span>{t(errors.terms)}</span>

@@ -298,42 +298,79 @@ export function Gallery({
 // Section tabs
 // ---------------------------------------------------------------------------
 
-export function SectionNav({ sections }: { sections: { id: string; label: string }[] }) {
-  const t = useTranslations()
+/**
+ * The in-page section bar «Packages / Overview / Details» (owner, Oct 2026).
+ *
+ * Sticky at the top of the viewport (the site header scrolls away), it
+ * highlights the section being read, scrolls smoothly on click and lands the
+ * heading just below itself (`scroll-margin-top` on the sections). It sits at
+ * the top, so it never meets the phone's bottom book bar.
+ */
+export function SectionNav({
+  sections,
+  label,
+}: {
+  sections: { id: string; label: string }[]
+  label: string
+}) {
   const [current, setCurrent] = useState(sections[0]?.id ?? '')
+  const [stuck, setStuck] = useState(false)
+  const barRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) if (entry.isIntersecting) setCurrent(entry.target.id)
-      },
-      { rootMargin: '-40% 0px -55% 0px' },
-    )
-    for (const s of sections) {
-      const el = document.getElementById(s.id)
-      if (el) observer.observe(el)
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const bar = barRef.current
+      const offset = (bar?.offsetHeight ?? 0) + 24
+      let active = sections[0]?.id ?? ''
+      for (const section of sections) {
+        const el = document.getElementById(section.id)
+        if (el && el.getBoundingClientRect().top - offset <= 0) active = section.id
+      }
+      // At the very bottom the last section is the one being read.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) {
+        const last = sections[sections.length - 1]
+        if (last && document.getElementById(last.id)) active = last.id
+      }
+      setCurrent(active)
+      setStuck(bar !== null && bar.getBoundingClientRect().top <= 0.5)
     }
-    return () => observer.disconnect()
+    const onScroll = () => {
+      if (frame === 0) frame = window.requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame !== 0) window.cancelAnimationFrame(frame)
+    }
   }, [sections])
 
   return (
-    <nav className="sec-nav tabs" aria-label={t('act_sections')}>
-      {sections.map((s) => (
-        <a
-          key={s.id}
-          href={`#${s.id}`}
-          aria-current={current === s.id ? 'page' : undefined}
-          onClick={(event) => {
-            event.preventDefault()
-            const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-            document.getElementById(s.id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
-            setCurrent(s.id)
-          }}
-        >
-          {s.label}
-        </a>
-      ))}
+    <nav ref={barRef} className={stuck ? 'anav stuck' : 'anav'} aria-label={label}>
+      <div className="anav-in">
+        {sections.map((s) => (
+          <a
+            key={s.id}
+            href={`#${s.id}`}
+            aria-current={current === s.id ? 'location' : undefined}
+            onClick={(event) => {
+              const target = document.getElementById(s.id)
+              if (!target) return
+              event.preventDefault()
+              const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+              target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+              history.replaceState(null, '', `#${s.id}`)
+              setCurrent(s.id)
+            }}
+          >
+            {s.label}
+          </a>
+        ))}
+      </div>
     </nav>
   )
 }

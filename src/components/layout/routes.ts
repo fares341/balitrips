@@ -103,6 +103,7 @@ export const POLICY_ROUTES: readonly NavRoute[] = [
   { href: '/privacy', key: 'ft_p_privacy' },
   { href: '/terms', key: 'ft_p_terms' },
   { href: '/refund', key: 'ft_p_refund' },
+  { href: '/payment-policy', key: 'ft_p_payment' },
   { href: '/platform-use', key: 'ft_p_platform_use' },
   { href: '/map-use', key: 'ft_p_map_use' },
   { href: '/cookies', key: 'ft_p_cookies' },

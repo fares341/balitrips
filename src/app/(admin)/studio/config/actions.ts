@@ -347,3 +347,23 @@ export async function saveVipSettings(form: FormData): Promise<void> {
     'vip.manage',
   )
 }
+
+/**
+ * Home page extras (owner, Oct 2026): the Bali visa price shown in the hero
+ * strip (hidden while the amount is empty) and the «Shopping in Bali» card
+ * image. Revalidates the home page so the change shows without a deploy.
+ */
+export async function saveHomeSettings(form: FormData): Promise<void> {
+  revalidatePath('/[locale]', 'page')
+  await save(
+    'home',
+    () => ({
+      visaAmount: (fstr(form, 'visaAmount') ?? '').slice(0, 32),
+      visaCurrency: (fstr(form, 'visaCurrency') ?? '').toUpperCase().slice(0, 8),
+      visaNote: flocalized(form, 'visaNote'),
+      visaLink: fstr(form, 'visaLink') ?? '',
+      shopImageId: fstr(form, 'shopImageId') ?? '',
+    }),
+    'sr.ok_home',
+  )
+}

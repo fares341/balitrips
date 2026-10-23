@@ -87,6 +87,7 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
       sortOrder: fint(form, 'sortOrder', 0, t('taxonomy.sort_order')),
       mapTier: isMapTier(form.get('mapTier')) ? (form.get('mapTier') as MapTier) : null,
       mapOrder: fint(form, 'mapOrder', 0, t('taxonomy.map_order')),
+      imageId: fuuidOrNull(form, 'imageId'),
     }
 
     await db.transaction(async (tx) => {

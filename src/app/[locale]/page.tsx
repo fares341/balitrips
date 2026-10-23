@@ -8,8 +8,10 @@
  *                   name changing with each clip, search → /search?q=,
  *                   "Plan your trip" → /services
  *   planning today  photo + icon cards, one per service page (svc-cards.tsx)
- *   in the mood     free map places by category (listMapPlaces, redacted for
- *                   an anonymous visitor) as photo cards → /places/…
+ *   free guide      «Your free Bali guide» (owner, Oct 2026): five free map
+ *                   categories (hospitals, pharmacies, mosques, malls,
+ *                   popular markets), live counts, each → /map?cat=…
+ *                   (hero info strip: Bali time, weather, visa — bali-info.tsx)
  *   most requested  photo cards of the top activities only (client; events
  *                   excluded); a swipe row on phones/tablets, three per row
  *                   on desktop
@@ -30,10 +32,10 @@
 
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 
 import { LinkButton, SectionHead } from '@/components/bt'
-import { ActivityCard, PlaceCard } from '@/components/cards'
+import { ActivityCard } from '@/components/cards'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
@@ -41,23 +43,27 @@ import { EVENTS_CATEGORY_KEY } from '@/lib/content/extra-queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import {
   listActivities,
+  listGuideCategories,
   listHomeActivities,
   listArticles,
   listMapPlaces,
   listMapTaxonomy,
+  mediaUrlById,
   reviewsForActivity,
 } from '@/lib/content/queries'
+import { getBaliWeather } from '@/lib/weather/bali'
+import { readSetting, SETTING_DEFAULTS } from '@/app/(admin)/_lib/settings'
 import type { ActivitySummary, ArticleSummary, ReviewDto } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
 import { suggestKeys, type SuggestEntry } from '@/lib/search/fuzzy'
 
 import { pageMetadata } from './_meta'
 import { AboutSlider } from './_home/about-slider'
+import { BaliInfoStrip, type VisaInfo } from './_home/bali-info'
 import { HERO_CLIPS } from './_home/hero-media'
 import { HeroSearch } from './_home/hero-search'
 import { HeroVideo } from './_home/hero-video'
 import { CUSTOM_TRIP_PHOTO } from './_home/media'
-import { MoodTabs, type MoodTab } from './_home/mood-tabs'
 import { SvcCards } from './_home/svc-cards'
 import { CUSTOM_HREF } from './_ui/routes-extra'
 import { JsonLd } from '@/components/seo/json-ld'
@@ -73,9 +79,6 @@ type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 const CATALOGUE_LIMIT = 40
 /** Activities the hero search can suggest (names only travel with the page). */
 const SUGGEST_ACTIVITY_LIMIT = 120
-/** Places per mood tab. */
-const MOOD_CARD_COUNT = 4
-const MOOD_TAB_LIMIT = 7
 /** Cards shown per tab. */
 const MR_SHOWN = 6
 const REVIEW_SOURCE_COUNT = 8
@@ -91,8 +94,23 @@ const SERVICES: readonly { href: string; icon: IconName; image: string; key: str
   { href: '/itineraries', icon: 'doc', image: '/brand/rice-walk.webp', key: 'itin' },
   { href: '/packages', icon: 'box', image: '/brand/green-dress.webp', key: 'pkg' },
   { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
-  { href: '/map?cat=malls', icon: 'pin', image: '/brand/flatlay.jpg', key: 'shop' },
+  // Owner, Oct 2026: the photo is the Studio pick (Configuration → Home) when
+  // set; the fallback is a licensed brand photo (the old `.jpg` did not exist).
+  { href: '/map?cat=malls', icon: 'bag', image: '/brand/flatlay-wide.webp', key: 'shop' },
 ]
+
+/**
+ * «Your free Bali guide» (owner, Oct 2026): exactly these five free map
+ * categories, in this order, each a card → /map filtered to it.
+ */
+const GUIDE_KEYS = ['hospital', 'pharmacies', 'mosques', 'malls', 'markets'] as const
+const GUIDE_ICONS: Record<(typeof GUIDE_KEYS)[number], IconName> = {
+  hospital: 'shield',
+  pharmacies: 'drop',
+  mosques: 'compass',
+  malls: 'bag',
+  markets: 'cart',
+}
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(
   (name) => `/brand/${name}.webp`,
@@ -160,7 +178,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   const t = await getTranslations()
 
-  const [catalogue, mapPlaces, taxonomy, articles, allActivities, homePicks] = await Promise.all([
+  const [
+    catalogue,
+    mapPlaces,
+    taxonomy,
+    articles,
+    allActivities,
+    homePicks,
+    weather,
+    homeSettings,
+    guideCategories,
+  ] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
     listMapPlaces(),
     listMapTaxonomy(),
@@ -173,7 +201,25 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       locale,
       exclude: (activity) => inCategory(activity, EVENTS_CATEGORY_KEY),
     }),
+    getBaliWeather(),
+    readSetting('home').catch(() => SETTING_DEFAULTS.home),
+    listGuideCategories(GUIDE_KEYS).catch(() => []),
   ])
+
+  // --- hero info strip: visa only once the owner has set an amount ----------
+  const visa: VisaInfo | null =
+    homeSettings.visaAmount === ''
+      ? null
+      : {
+          amount: homeSettings.visaAmount,
+          currency: homeSettings.visaCurrency,
+          note: pickOptional(homeSettings.visaNote, locale),
+          link: homeSettings.visaLink === '' ? null : homeSettings.visaLink,
+        }
+  const shopImage =
+    homeSettings.shopImageId === ''
+      ? null
+      : await mediaUrlById(homeSettings.shopImageId).catch(() => null)
 
   // --- most requested: activities only (client) ------------------------------
   const requestedActivities = homePicks
@@ -210,28 +256,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   // --- map places (free only: redacted for an anonymous visitor) ------------
   const openPlaces = buildMapPayload(mapPlaces, emptyEntitlements()).places.filter(isOpen)
 
-  const usedCategories = taxonomy.categories.filter((category) =>
-    openPlaces.some((place) => place.categoryKey === category.key),
-  )
-
-  const placeCards = (places: readonly OpenPlace[]) => (
-    <div className="grid fs-grid">
-      {places.slice(0, MOOD_CARD_COUNT).map((place) => (
-        <PlaceCard key={place.id} place={place} showFree={false} />
-      ))}
-    </div>
-  )
-
-  const moodTabs: MoodTab[] = usedCategories.slice(0, MOOD_TAB_LIMIT).map((category) => ({
-    key: category.key,
-    label: pick(category.label, locale, category.key),
-  }))
-  const moodPanels: Record<string, ReactNode> = {}
-  for (const tab of moodTabs) {
-    moodPanels[tab.key] = placeCards(openPlaces.filter((place) => place.categoryKey === tab.key))
-  }
-  const moodFallback =
-    moodTabs.length === 0 && openPlaces.length > 0 ? placeCards(openPlaces) : null
+  // --- free Bali guide: five categories, live counts --------------------------
+  const guideCards = guideCategories.map((category) => {
+    const places = openPlaces.filter((place) => place.categoryKey === category.key)
+    // The owner's photo first; else a real photo of one of its places.
+    const fallback =
+      places.find((place) => place.heroImageUrl !== null && !place.heroImageUrl.endsWith('.svg'))
+        ?.heroImageUrl ?? null
+    return {
+      key: category.key,
+      label: pick(category.label, locale, category.key),
+      icon: GUIDE_ICONS[category.key as (typeof GUIDE_KEYS)[number]],
+      count: places.length,
+      imageUrl: category.imageUrl ?? fallback,
+    }
+  })
 
   const searchAction = getPathname({ href: '/search', locale })
 
@@ -364,9 +403,32 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             },
           }}
         />
-        <Link className="hv-link" href="/services">
-          {t('hv3_cta_plan')} <Icon name="arrow" size={16} stroke={2.2} className="flip" />
-        </Link>
+        <div className="hv-foot">
+          <Link className="hv-link" href="/services">
+            {t('hv3_cta_plan')} <Icon name="arrow" size={16} stroke={2.2} className="flip" />
+          </Link>
+          <BaliInfoStrip
+            locale={locale}
+            weather={weather}
+            visa={visa}
+            labels={{
+              region: t('hv6_info_label'),
+              time: t('hv6_time'),
+              zone: t('hv6_zone'),
+              weather: t('hv6_weather'),
+              kinds: {
+                clear: t('hv6_w_clear'),
+                partly: t('hv6_w_partly'),
+                cloudy: t('hv6_w_cloudy'),
+                fog: t('hv6_w_fog'),
+                drizzle: t('hv6_w_drizzle'),
+                rain: t('hv6_w_rain'),
+                storm: t('hv6_w_storm'),
+              },
+              visa: t('hv6_visa'),
+            }}
+          />
+        </div>
       </HeroVideo>
 
       {/* 2 — what are you planning today? (icon cards only here: v3.3) */}
@@ -389,7 +451,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <span className="nc-ph" aria-hidden="true">
                   <span className="clip">
                     {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
-                    <img src={service.image} alt="" loading="lazy" />
+                    <img
+                      src={service.key === 'shop' && shopImage !== null ? shopImage : service.image}
+                      alt=""
+                      loading="lazy"
+                    />
                   </span>
                   <span className="nc-ic">
                     <Icon name={service.icon} size={24} stroke={1.7} />
@@ -409,9 +475,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* 3 — what are you in the mood for? */}
-      {openPlaces.length > 0 && (
-        <section className="sec" aria-labelledby="fs-h">
+      {/* 3 — your free Bali guide: five free map categories (owner, Oct 2026) */}
+      {guideCards.length > 0 && (
+        <section className="sec guide-sec" aria-labelledby="fs-h">
           <div className="wrap">
             <SectionHead
               id="fs-h"
@@ -424,9 +490,45 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 </LinkButton>
               }
             />
-            {moodFallback ?? (
-              <MoodTabs tabs={moodTabs} panels={moodPanels} label={t('hv3_fs_cats')} />
-            )}
+            <ul className="guide-grid" role="list">
+              {guideCards.map((card) => (
+                <li key={card.key}>
+                  <Link
+                    className="gcard"
+                    href={{ pathname: '/map', query: { cat: card.key } }}
+                    aria-label={`${card.label} — ${
+                      card.count > 0 ? t('hv6_guide_count', { n: card.count }) : t('hv6_guide_soon')
+                    }`}
+                  >
+                    <span className="gc-ph" aria-hidden="true">
+                      {card.imageUrl !== null ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- Studio-picked category photo
+                        <img src={card.imageUrl} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <span className="gc-art">
+                          <Icon name={card.icon} size={44} stroke={1.3} />
+                        </span>
+                      )}
+                      <span className="gc-ic">
+                        <Icon name={card.icon} size={20} stroke={1.8} />
+                      </span>
+                    </span>
+                    <span className="gc-b">
+                      <b className="gc-t">{card.label}</b>
+                      {card.count > 0 ? (
+                        <span className="gc-n">{t('hv6_guide_count', { n: card.count })}</span>
+                      ) : (
+                        <span className="gc-n gc-soon">{t('hv6_guide_soon')}</span>
+                      )}
+                      <span className="gc-go">
+                        {t('hv6_guide_go')}{' '}
+                        <Icon name="arrow" size={14} stroke={2.2} className="flip" />
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
       )}

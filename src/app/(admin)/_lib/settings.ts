@@ -245,6 +245,37 @@ export const vipSchema = z.object({
 
 export type VipSetting = z.infer<typeof vipSchema>
 
+/**
+ * Home page extras (owner requests, Oct 2026; Studio → Configuration → Home).
+ *
+ * The visa price is the owner's figure, never a guess: while `visaAmount` is
+ * empty the hero strip simply leaves the visa item out. `shopImageId` is a
+ * media-library image for the «Shopping in Bali» card (empty = the built-in
+ * fallback photo).
+ */
+const uuidOrEmpty = z
+  .string()
+  .trim()
+  .regex(/^$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+
+export const homeSchema = z.object({
+  /** As typed by the owner, e.g. "35" or "500,000". Empty = hidden. */
+  visaAmount: z.string().trim().max(32).default(''),
+  visaCurrency: z.string().trim().max(8).default(''),
+  /** Short note under the price ("30 days, extendable once"…). */
+  visaNote: localizedText.default({ en: '', ar: '', id: '' }),
+  /** Optional official link (https only). */
+  visaLink: z
+    .string()
+    .trim()
+    .max(500)
+    .regex(/^$|^https:\/\/\S+$/, 'Use a full https:// link')
+    .default(''),
+  shopImageId: uuidOrEmpty.default(''),
+})
+
+export type HomeSetting = z.infer<typeof homeSchema>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type CurrenciesSetting = z.infer<typeof currenciesSchema>
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -268,6 +299,7 @@ export type SettingKey =
   | 'vip'
   | 'seller'
   | 'vehicles'
+  | 'home'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -280,6 +312,7 @@ export interface SettingsShape {
   vip: VipSetting
   seller: SellerSetting
   vehicles: VehiclesSetting
+  home: HomeSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -361,6 +394,13 @@ export const SETTING_DEFAULTS: SettingsShape = {
   },
   seller: { businessName: '', address: '', taxId: '', email: '', phone: '' },
   vehicles: VEHICLES_DEFAULT,
+  home: {
+    visaAmount: '',
+    visaCurrency: '',
+    visaNote: { en: '', ar: '', id: '' },
+    visaLink: '',
+    shopImageId: '',
+  },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -377,6 +417,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   vip: vipSchema,
   seller: sellerSchema,
   vehicles: vehiclesSchema,
+  home: homeSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,
