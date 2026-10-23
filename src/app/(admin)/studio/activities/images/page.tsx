@@ -40,7 +40,7 @@ const KIND_KEYS: Record<IssueKind, string> = {
  * shows each picture once.
  */
 export default async function ActivityImagesReport() {
-  await requireCapability('content.read')
+  await requireCapability('content.write')
   const { t, locale } = await getAdminI18n()
 
   const rows = await db
