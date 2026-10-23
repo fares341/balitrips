@@ -1,0 +1,8 @@
+ok activity-v2-ar-390 sw=390 
+ok activity-v2-ar-1440 sw=1440 
+ok activity-v2-ar-360 sw=360 
+ok activity-v2-ar-768 sw=768 
+ok activity-v2-en-390 sw=390 
+ok activity-v2-en-1440 sw=1440 
+ok activity-v2-en-360 sw=360 
+ok activity-v2-en-768 sw=768 

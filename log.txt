@@ -1,0 +1,14 @@
+sweep activity-v2 ar: /ar/activities/ci-demo-swing -> HTTP 200 http://localhost:3000/ar/activities/ci-demo-swing
+sweep /ar/activities/ci-demo-swing 768: images still loading
+sweep /en/activities/ci-demo-swing 390: images still loading
+sweep activity-v2 en: /en/activities/ci-demo-swing -> HTTP 200 http://localhost:3000/en/activities/ci-demo-swing
+sweep /en/activities/ci-demo-swing 768: images still loading
+phone ar: pins 1, tapped true
+phone ar: details http://localhost:3000/ar/places/ubud mini=pl-mini is-ready
+phone ar: list rows 8 overflow false
+phone en: pins 1, tapped true
+phone en: details http://localhost:3000/en/places/ubud mini=pl-mini is-ready
+phone en: list rows 8 overflow false
+gltest: warning A parser-blocking, cross site (i.e. different eTLD+1) script, https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js, is invoked via document.write. The network request for this script MAY be blocked by the browser in this or a future page load due to poor network connectivity. If blocked in this p
+gltest: warning A parser-blocking, cross site (i.e. different eTLD+1) script, https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js, is invoked via document.write. The network request for this script MAY be blocked by the browser in this or a future page load due to poor network connectivity. If blocked in this p
+gltest: log idle
