@@ -1,0 +1,107 @@
+/studio-ci7/customers
+
+تخطَّ إلى المحتوى
+القائمة
+B
+بالي تريبس
+العملاء
+
+حسابات العملاء والفريق. تغيير الدور وحذف الحساب يتمّان من صفحة كل حساب، وكل منهما يُحفظ في سجل التغييرات.
+
+بحث
+الدور
+الكل
+عميل
+موظف
+مدير
+مدير العمليات
+موظف حجوزات
+خدمة العملاء
+محرر المحتوى
+مدير التسويق
+محاسب
+مورد (البوابة)
+الحالة
+نشط
+محذوف
+وسم
+قائمة جاهزة
+الكل
+اشترى خطة رحلة ولم يحجز نشاطاً
+اشترى خطة رحلة وليس لديه خريطة VIP
+المسؤول عنه
+الكل
+Test Accountant
+Test Admin
+Test Bookings
+Test Content
+Test Marketing
+Test Operations
+Test Staff
+Test Support
+الموافقون على العروض فقط
+تصفية
+إعادة تعيين
+الحساب	الحالة	المرحلة	الباقة الحالية	آخر دخول	الدور	الدخول بخطوتين	مسجّل الدخول على	الطلبات	اللغة	تاريخ الإنشاء
+suspended@test.balitrips.local
+Test Suspended
+	معلّق	مهتم	لا يوجد	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
++628100000099
+Test Phone Only · جوال فقط
+	نشط	مهتم	لا يوجد	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+family-member@test.balitrips.local
+Test Family Member
+	نشط	مهتم	
+TEST · Family (حتى 22‏/11‏/2026، مقعد عائلي)
+	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+family@test.balitrips.local
+Test Family Owner
+	نشط	مهتم	
+TEST · Family (حتى 22‏/11‏/2026)
+	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+basic@test.balitrips.local
+Test PDF Only
+	نشط	مهتم	
+TEST · PDF only (حتى 22‏/11‏/2026)
+	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+vip@test.balitrips.local
+Test VIP
+	نشط	مهتم	
+TEST · VIP 30 days (حتى 22‏/11‏/2026)
+	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+map@test.balitrips.local
+Test Map Holder
+	نشط	مهتم	
+TEST · Map 30 days (حتى 22‏/11‏/2026)
+	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+customer@test.balitrips.local
+Test Customer
+	نشط	مهتم	لا يوجد	—	عميل	لا ينطبق	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+supplier_portal@test.balitrips.local
+Test Supplier Portal
+	نشط	مهتم	لا يوجد	—	مورد (البوابة)	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+accountant@test.balitrips.local
+Test Accountant
+	نشط	مهتم	لا يوجد	—	محاسب	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+marketing_manager@test.balitrips.local
+Test Marketing
+	نشط	مهتم	لا يوجد	—	مدير التسويق	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+content_editor@test.balitrips.local
+Test Content
+	نشط	مهتم	لا يوجد	—	محرر المحتوى	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+support_agent@test.balitrips.local
+Test Support
+	نشط	مهتم	لا يوجد	—	خدمة العملاء	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+booking_agent@test.balitrips.local
+Test Bookings
+	نشط	مهتم	لا يوجد	—	موظف حجوزات	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+operations_manager@test.balitrips.local
+Test Operations
+	نشط	مهتم	لا يوجد	—	مدير العمليات	مفعّل	0	0	العربية · ID	23‏/10‏/2026، 11:54 م
+staff@test.balitrips.local
+Test Staff
+	نشط	مهتم	لا يوجد	24‏/10‏/2026، 12:12 ص	موظف	مفعّل	1	0	العربية · ID	23‏/10‏/2026، 11:54 م
+admin@test.balitrips.local
+Test Admin
+	نشط	مهتم	لا يوجد	24‏/10‏/2026، 12:06 ص	مدير	مفعّل	1	0	العربية · ID	23‏/10‏/2026، 11:54 م
+1–17 من 17

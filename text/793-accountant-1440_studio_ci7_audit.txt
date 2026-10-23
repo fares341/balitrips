@@ -1,0 +1,272 @@
+/studio-ci7/audit
+
+تخطَّ إلى المحتوى
+B
+بالي تريبس
+لوحة الإدارة
+نظرة عامة
+الرئيسية
+صندوق الوارد
+التقارير
+إحصاءات الخريطة
+المساعد
+العملاء
+العملاء
+عملاء مكررون محتملون
+المبيعات
+الطلبات
+المدفوعات
+وصول العملاء
+الموردون
+مستحقات الموردين
+الأرباح
+مطابقة المدفوعات
+النظام
+سجل التغييرات
+الدخول بخطوتين
+English
+T
+Test Accountant
+محاسب
+سجل التغييرات
+
+كل تغيير أجراه فريقك في لوحة التحكم: من قام به، ومتى، وما الذي تغيّر.
+
+بحث
+القسم
+الكل
+مستوى نشاط
+طلب رحلة خاصة
+طلب
+Report
+عملية دخول
+الإعدادات
+حساب
+من
+إلى
+تصفية
+إعادة تعيين
+الوقت	مَن	ماذا	القسم	قبل	بعد
+24‏/10‏/2026، 12:28 ص	accountant@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: payments
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: payments
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: orders_all
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: refunds
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: collected
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: low_availability
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: orders_paid
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — export pdf	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:28 ص	marketing_manager@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:26 ص	marketing_manager@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+24‏/10‏/2026، 12:23 ص	content_editor@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+24‏/10‏/2026، 12:21 ص	support_agent@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+24‏/10‏/2026، 12:19 ص	booking_agent@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: low_availability
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: customers
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: lines
+Filters: (عنصر مرتبط)
+
+24‏/10‏/2026، 12:19 ص	operations_manager@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: payments
+Filters: (عنصر مرتبط)
+1–50 من 189
+التالي

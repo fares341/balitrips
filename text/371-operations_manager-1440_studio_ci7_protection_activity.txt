@@ -1,0 +1,139 @@
+/studio-ci7/protection/activity
+
+تخطَّ إلى المحتوى
+B
+بالي تريبس
+لوحة الإدارة
+نظرة عامة
+الرئيسية
+صندوق الوارد
+التقارير
+إحصاءات الخريطة
+المساعد
+العملاء
+العملاء
+الطلبات الخاصة
+المهام
+الدعم
+عملاء مكررون محتملون
+المبيعات
+الطلبات
+المدفوعات
+إعدادات VIP
+وصول العملاء
+سعة السائقين
+الموردون
+الحماية
+الحظر والحماية
+التنبيهات
+عمليات الدخول الحالية
+الأجهزة
+سجل النشاط
+النظام
+سجل التغييرات
+الدخول بخطوتين
+English
+T
+Test Operations
+مدير العمليات
+سجل النشاط
+
+ما قام به العملاء: تسجيلات الدخول والمحاولات الفاشلة والأجهزة الجديدة وتنزيلات PDF والوصول المحجوب. التغييرات التي أجراها فريقك موجودة في سجل التغييرات.
+
+بحث
+الإجراء
+الكل
+تسجيل دخول
+تسجيل خروج
+دخول فاشل
+دخول محظور
+جهاز جديد
+خروج جهاز (تجاوز الحد)
+رفض بسبب حد الأجهزة
+جهاز بانتظار الموافقة
+إزالة جهاز
+فتح الخريطة
+بحث في الخريطة
+عرض مكان
+حفظ مكان
+إضافة إلى الرحلة
+عرض PDF
+تنزيل PDF
+محاولة فتح محتوى مدفوع
+تغيير كلمة المرور
+شراء
+طلب تحديث
+حظر
+رفع الحظر
+تعليق
+رفع التعليق
+تحديث طلب
+زيارة صفحة
+تحرير رقم الجوال لحساب آخر
+من
+إلى
+تصفية
+إعادة تعيين
+الوقت	المستخدم	الإجراء	الجهاز	التفاصيل
+24‏/10‏/2026، 12:17 ص
+10.66.0.3
+	operations_manager@test.balitrips.local	تسجيل دخول	Chrome · Linux	
+Via: /sign-in/email
+City: —
+Country: —
+
+24‏/10‏/2026، 12:17 ص
+10.66.0.3
+	operations_manager@test.balitrips.local	جهاز جديد	Chrome · Linux	
+Os: Linux
+Weak: لا
+Limit: —
+Active: 0
+Browser: Chrome
+Decision: allow
+Evicted id: —
+Device type: desktop
+
+24‏/10‏/2026، 12:12 ص
+10.66.0.2
+	staff@test.balitrips.local	تسجيل دخول	Chrome · Linux	
+Via: /sign-in/email
+City: —
+Country: —
+
+24‏/10‏/2026، 12:12 ص
+10.66.0.2
+	staff@test.balitrips.local	جهاز جديد	Chrome · Linux	
+Os: Linux
+Weak: لا
+Limit: —
+Active: 0
+Browser: Chrome
+Decision: allow
+Evicted id: —
+Device type: desktop
+
+24‏/10‏/2026، 12:11 ص
+10.66.0.1
+	admin@test.balitrips.local	زيارة صفحة	—	
+Path: /en/activities/mount-batur-sunrise-hike
+
+24‏/10‏/2026، 12:06 ص
+10.66.0.1
+	admin@test.balitrips.local	تسجيل دخول	Chrome · Linux	
+Via: /sign-in/email
+City: —
+Country: —
+
+24‏/10‏/2026، 12:06 ص
+10.66.0.1
+	admin@test.balitrips.local	جهاز جديد	Chrome · Linux	
+Os: Linux
+Weak: لا
+Limit: —
+Active: 0
+Browser: Chrome
+Decision: allow
+Evicted id: —
+Device type: desktop
+1–7 من 7
