@@ -23,6 +23,7 @@
  * No 'use client'.
  */
 
+import { LocalPrice } from '@/components/currency/currency-context'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { Icon, type IconName } from '@/components/ui/icon'
@@ -170,9 +171,12 @@ export type PriceFromProps = {
   amount: string
   /** Unit after a slash: "person" → "$65 / person". */
   unit?: ReactNode
+  /** Raw amount, to show an approximate local-currency line under it. */
+  minor?: number
+  currency?: string
 }
 
-export function PriceFrom({ label, amount, unit }: PriceFromProps) {
+export function PriceFrom({ label, amount, unit, minor, currency }: PriceFromProps) {
   return (
     <div className="from">
       {label !== undefined && label !== null && <small>{label}</small>}
@@ -182,6 +186,9 @@ export function PriceFrom({ label, amount, unit }: PriceFromProps) {
         </bdi>
         {unit !== undefined && unit !== null && <em> / {unit}</em>}
       </b>
+      {minor !== undefined && currency !== undefined && (
+        <LocalPrice minor={minor} currency={currency} />
+      )}
     </div>
   )
 }

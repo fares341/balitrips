@@ -72,6 +72,8 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
           <PriceFrom
             label={t('bt_pdf_map')}
             amount={formatPrice(itinerary.priceMinor, itinerary.currency, locale)}
+            minor={itinerary.priceMinor}
+            currency={itinerary.currency}
           />
           <CardActions>
             <LinkButton

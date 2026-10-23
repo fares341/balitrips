@@ -33,6 +33,7 @@ import { Link, usePathname } from '@/i18n/routing'
 
 import { AdminLink } from './admin-link'
 import { LanguageSwitcher } from './language-switcher'
+import { CurrencySwitcher } from '@/components/currency/currency-context'
 import { NotificationBell } from './notification-bell'
 import {
   ACCOUNT_HREF,
@@ -213,6 +214,9 @@ export function Header() {
                 <Icon name="menu" size={24} />
               </button>
               <LanguageSwitcher variant="menu" />
+              <span className="only-desk-flex">
+                <CurrencySwitcher />
+              </span>
               <AccountMenu signedIn={favorites.signedIn} />
               <span className="only-desk-flex">
                 <NotificationBell />
@@ -332,6 +336,7 @@ export function Header() {
             {favorites.signedIn ? t('nav_account') : t('bt_login')}
           </LinkButton>
           <LanguageSwitcher />
+          <CurrencySwitcher />
         </div>
       </aside>
     </>

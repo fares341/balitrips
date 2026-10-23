@@ -100,6 +100,8 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
           <PriceFrom
             label={t('bt_from')}
             amount={formatPrice(activity.priceMinor, activity.currency, locale)}
+            minor={activity.priceMinor}
+            currency={activity.currency}
             unit={t('bt_per_person')}
           />
           <CardActions>

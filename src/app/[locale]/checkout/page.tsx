@@ -18,6 +18,7 @@
  * a retry can reuse it), and no bank-transfer radio (see the payment step).
  */
 
+import { LocalPrice } from '@/components/currency/currency-context'
 import { randomUUID } from 'node:crypto'
 
 import type { Metadata } from 'next'
@@ -403,7 +404,9 @@ export default async function CheckoutPage({
           {money(cart.totalMinor, cart.currency)}
         </b>
       </div>
+      <LocalPrice minor={cart.totalMinor} currency={cart.currency} />
       <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
+      <small className="muted">{t('cur_checkout_note')}</small>
       <form action={applyCouponAction} className="ck-coupon stack" style={{ gap: 8 }}>
         <input type="hidden" name="locale" value={locale} />
         <label htmlFor="ck-coupon-code" className="muted" style={{ fontSize: 13 }}>
