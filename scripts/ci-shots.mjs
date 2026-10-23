@@ -503,6 +503,12 @@ for (const lang of ['ar', 'en']) {
   try {
     await page.goto(`${BASE}/${lang}/map`, { waitUntil: 'networkidle', timeout: 60000 })
     await page.waitForSelector('.mp-view.is-map', { timeout: 30000 }).catch(() => {})
+    // the cookie banner would hide the bottom carousel
+    await page
+      .locator('.bt-consent .bt-consent-btn.primary')
+      .last()
+      .click({ timeout: 5000 })
+      .catch(() => {})
     await page.waitForTimeout(6000)
     await shot('1-map')
     const bubble = page.locator('.mp-rb').filter({ hasText: lang === 'ar' ? 'أوبود' : 'Ubud' })
@@ -524,7 +530,30 @@ for (const lang of ['ar', 'en']) {
     log.push(`phone ${lang}: pins ${n}, tapped ${tapped}`)
     await page.waitForTimeout(2500)
     await shot('3-card')
-    const details = page.locator('.mp-mcard a', { hasText: lang === 'ar' ? 'التفاصيل' : 'Details' })
+    log.push(
+      `phone ${lang}: carousel cards ${await page.locator('.mp-ccard').count()} on=${await page
+        .locator('.mp-ccard.is-on .mp-ccard-name')
+        .textContent()
+        .catch(
+          () => null,
+        )} pinOn=${await page.locator('.mp-pin.is-on').count()} clusters=${await page.locator('.mp-cl').count()}`,
+    )
+    // swipe the carousel one card sideways: the next pin becomes the selected one
+    await page
+      .locator('.mp-car-row')
+      .evaluate((row) =>
+        row.scrollBy({ left: (row.clientWidth - 40) * (document.dir === 'rtl' ? -1 : 1) }),
+      )
+      .catch(() => {})
+    await page.waitForTimeout(2000)
+    await shot('3b-swipe')
+    log.push(
+      `phone ${lang}: after swipe on=${await page
+        .locator('.mp-ccard.is-on .mp-ccard-name')
+        .textContent()
+        .catch(() => null)}`,
+    )
+    const details = page.locator('.mp-ccard.is-on .mp-ccard-name')
     if (await details.count()) {
       await Promise.all([page.waitForURL(/\/places\//, { timeout: 30000 }), details.first().tap()])
       await page.waitForTimeout(3000)
