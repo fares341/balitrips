@@ -86,6 +86,10 @@ export async function auditPlaces(browser, BASE, OUT, writeFileSync) {
       const resp = await req.get(abs, { timeout: 30000, maxRedirects: 3 })
       const body = await resp.body()
       r = { status: resp.status(), bytes: body.length, type: resp.headers()['content-type'] ?? '' }
+      if (r.type.includes('text/html')) {
+        const text = body.toString('utf8')
+        r.h1 = (text.match(/<h1[^>]*>(.*?)<\/h1>/s)?.[1] ?? '').replace(/<[^>]+>/g, '').slice(0, 80)
+      }
     } catch (e) {
       r = { status: 0, bytes: 0, type: '', error: e.message.split('\n')[0].slice(0, 120) }
     }
@@ -115,6 +119,14 @@ export async function auditPlaces(browser, BASE, OUT, writeFileSync) {
         const pagePath = `/ar/places/${encodeURIComponent(p.slug)}`
         const pg = await probe(pagePath)
         if (pg.status !== 200) issues.push(`page-${pg.status}`)
+        const nm = p.name?.ar ?? ''
+        if (pg.status === 200 && nm && !pg.h1.includes(nm.slice(0, 6)))
+          issues.push('page-h1-mismatch')
+        let act = null
+        if (p.activitySlug && p.categoryKey !== 'sights') {
+          act = await probe(`/ar/activities/${encodeURIComponent(p.activitySlug)}`)
+          if (act.status !== 200) issues.push(`activity-${act.status}`)
+        }
         const imgs = [p.heroImageUrl, ...(p.gallery ?? [])].filter(Boolean)
         if (!p.locked && !p.heroImageUrl) issues.push('no-hero')
         const imgResults = []
@@ -136,6 +148,9 @@ export async function auditPlaces(browser, BASE, OUT, writeFileSync) {
           lat: p.lat ?? null,
           lon: p.lon ?? null,
           pageStatus: pg.status,
+          pageH1: pg.h1 ?? '',
+          activitySlug: p.activitySlug ?? null,
+          activityStatus: act?.status ?? null,
           hero: p.heroImageUrl ?? null,
           images: imgResults,
           issues: [...new Set(issues)],
@@ -157,7 +172,10 @@ export async function auditPlaces(browser, BASE, OUT, writeFileSync) {
     brokenImage: rows.filter((r) =>
       r.issues.some((i) => /^img-(\d|0b|type)/.test(i) && i !== 'img-200'),
     ).length,
-    pageNot200: count('page-'),
+    pageNot200: count('page-4') + count('page-5') + count('page-0'),
+    pageH1Mismatch: count('page-h1'),
+    activityBroken: count('activity-'),
+    lockedBubbles: [...flight.matchAll(/"lockedCount":(\d+)/g)].map((m) => +m[1]),
     noCoords: count('no-coords'),
     noCategory: count('no-category'),
     lockedLeak: count('LOCKED-LEAK'),
