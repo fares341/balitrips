@@ -225,6 +225,13 @@
       "when": 1793700400000,
       "tag": "0031_owner_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793700500000,
+      "tag": "0032_activity_v2_fill",
+      "breakpoints": true
     }
   ]
 }
