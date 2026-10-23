@@ -53,9 +53,14 @@ export async function auditPlaces(browser, BASE, OUT, writeFileSync) {
     if (r.url().includes('/api/')) apis.push(`${r.status()} ${r.url().slice(0, 200)}`)
   })
   const res = await page.goto(BASE + '/ar/map', { waitUntil: 'networkidle', timeout: 90000 })
-  const flight = await page.evaluate(() =>
-    (self.__next_f ?? []).map((x) => (typeof x[1] === 'string' ? x[1] : '')).join(''),
-  )
+  // the RSC payload, from the raw HTML (self.__next_f.push([1,"…"]) chunks)
+  const html = await (await page.context().request.get(BASE + '/ar/map')).text()
+  let flight = ''
+  for (const m of html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)) {
+    try {
+      flight += JSON.parse(m[1])
+    } catch {}
+  }
   const brokenImgsOnMap = await page.evaluate(() =>
     [...document.images]
       .filter((i) => i.complete && i.naturalWidth === 0)
