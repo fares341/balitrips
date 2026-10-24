@@ -23,7 +23,15 @@ import { accessLabel } from '@/lib/notify/plans'
 import { isNotificationType } from '@/lib/notify/types'
 import { sendWhatsappTemplate, toWhatsappNumber } from '@/lib/notify/whatsapp'
 
+import { readWhatsappSettings } from '@/lib/whatsapp/settings'
+
 import type { NotifySweepJob, WhatsappJob } from '../queues'
+
+const OVERLAPS_AUTOMATION: ReadonlySet<string> = new Set([
+  'order_paid',
+  'order_updated',
+  'custom_completed',
+])
 
 function origin(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
@@ -155,6 +163,10 @@ export async function handleWhatsappJob(job: WhatsappJob): Promise<void> {
     if (result.sent) await recordDelivery(job.notificationId, 'whatsapp', to ?? '')
     return
   }
+
+  // The WhatsApp automations (Studio → WhatsApp) carry these events once
+  // switched on; the older Meta template for the same event would be a duplicate.
+  if (OVERLAPS_AUTOMATION.has(notification.type) && (await readWhatsappSettings()).enabled) return
 
   // موافقة صريحة فقط (سياسة Meta). بلا موافقة لا نرسل حتى رسالة تشغيلية.
   if (!user || user.deletedAt !== null || !user.whatsappOptIn) return

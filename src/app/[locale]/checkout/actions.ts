@@ -37,6 +37,7 @@ import { db } from '@/db'
 import { orders, payments, users } from '@/db/schema'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
+import { triggerOrderAutomation } from '@/lib/whatsapp/dispatch'
 import {
   getCartWithTotals,
   getSessionUser,
@@ -218,6 +219,13 @@ export async function startCheckoutAction(
       .where(eq(users.id, user.id))
   }
 
+  // WhatsApp automation consent (client proposal §11): booking updates on
+  // WhatsApp only for a traveller who ticks it. Remembered on the account.
+  const whatsappConsent = formData.get('whatsappConsent') === 'on'
+  if (user && whatsappConsent) {
+    await db.update(users).set({ whatsappOptIn: true }).where(eq(users.id, user.id))
+  }
+
   let result
   try {
     result = await checkout({
@@ -233,6 +241,7 @@ export async function startCheckoutAction(
         locale,
         ...(notes === null ? {} : { notes }),
         ...(marketingConsent ? { marketingConsent: true } : {}),
+        ...(whatsappConsent ? { whatsappConsent: true } : {}),
       },
       termsVersion: TERMS_VERSION,
       returnUrl: returnUrlFor(locale, idempotencyKey),
@@ -288,6 +297,9 @@ export async function startCheckoutAction(
 
   // Phase 5: campaign (UTM), visitor id and tracking choices on the order.
   await attachOrderAttribution(result.orderId)
+
+  // WhatsApp «order received» (proposal §03), right after the order exists.
+  await triggerOrderAutomation('order_received', result.orderId)
 
   followProvider(result.payment.nextAction, locale, result.orderNumber)
 }

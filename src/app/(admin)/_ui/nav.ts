@@ -104,6 +104,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/translations', labelKey: 'nav.translations', capability: 'translations.write' },
       { path: '/config', labelKey: 'nav.config', capability: 'config.write' },
       { path: '/marketing', labelKey: 'nav.marketing', capability: 'config.write' },
+      { path: '/whatsapp', labelKey: 'nav.whatsapp', capability: 'config.write' },
       { path: '/audit', labelKey: 'nav.audit', capability: 'audit.read' },
       { path: '/team', labelKey: 'nav.team', capability: 'users.manage' },
       { path: '/integrations', labelKey: 'nav.integrations', capability: 'integrations.write' },

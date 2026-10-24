@@ -54,6 +54,10 @@ export const QUEUES = {
   integrationWebhook: 'integration.webhook',
   /** Phase 6: every 15 minutes — alerts (backup, dead letters, errors, payments), housekeeping. */
   systemMonitor: 'system.monitor',
+  /** WhatsApp automations (client proposal): send one logged message. */
+  waAuto: 'whatsapp.auto',
+  /** Every 10 minutes: time-based WhatsApp automations (reminders, follow-ups). */
+  waSweep: 'whatsapp.sweep',
 } as const
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES]
@@ -191,6 +195,12 @@ export const integrationWebhookJobSchema = z.object({
 })
 export type IntegrationWebhookJob = z.infer<typeof integrationWebhookJobSchema>
 
+export const waAutoJobSchema = z.object({ messageId: z.uuid() })
+export type WaAutoJob = z.infer<typeof waAutoJobSchema>
+
+export const waSweepJobSchema = z.object({})
+export type WaSweepJob = z.infer<typeof waSweepJobSchema>
+
 export const systemMonitorJobSchema = z.object({})
 export type SystemMonitorJob = z.infer<typeof systemMonitorJobSchema>
 
@@ -228,6 +238,23 @@ export const QUEUE_SETTINGS: Record<QueueName, QueueSettings> = {
     retryDelayMax: HOUR,
     expireInSeconds: 120,
     deleteAfterSeconds: 7 * DAY,
+  },
+
+  /** Provider outages: back off, give up after ~1h; the row shows «failed» with the error. */
+  [QUEUES.waAuto]: {
+    retryLimit: 4,
+    retryDelay: 60,
+    retryBackoff: true,
+    retryDelayMax: HOUR,
+    expireInSeconds: 120,
+    deleteAfterSeconds: 7 * DAY,
+  },
+  [QUEUES.waSweep]: {
+    retryLimit: 1,
+    retryDelay: 60,
+    retryBackoff: false,
+    expireInSeconds: 5 * 60,
+    deleteAfterSeconds: 3 * DAY,
   },
 
   [QUEUES.notifySweep]: {
@@ -498,6 +525,10 @@ async function enqueue(
 
 export async function enqueueEmail(job: EmailJob): Promise<string | null> {
   return enqueue(QUEUES.email, job)
+}
+
+export async function enqueueWaAuto(job: WaAutoJob): Promise<string | null> {
+  return enqueue(QUEUES.waAuto, job)
 }
 
 export async function enqueueWhatsapp(job: WhatsappJob): Promise<string | null> {

@@ -206,6 +206,8 @@ export const orders = pgTable(
       notes?: string
       /** Phase 4: ticked "send me offers" at checkout (unticked by default). */
       marketingConsent?: boolean
+      /** Ticked «send my booking updates on WhatsApp» at checkout. */
+      whatsappConsent?: boolean
     }>(),
 
     /**

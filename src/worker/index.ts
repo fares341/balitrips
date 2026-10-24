@@ -60,6 +60,7 @@ import { handleSystemMonitor } from './handlers/monitor'
 import { handleSecurityPruneJob } from './handlers/security'
 import type { EnqueueOptions, WorkerContext } from './handlers/context'
 import { handleEmailJob } from './handlers/email'
+import { deliverWhatsappMessage, runWhatsappSweep } from '@/lib/whatsapp/dispatch'
 import { handlePdfJob } from './handlers/pdf'
 import { handleReconcileJob } from './handlers/reconcile'
 import { handleAnalyticsJob } from './handlers/analytics'
@@ -73,6 +74,8 @@ import {
   integrationWebhookJobSchema,
   systemMonitorJobSchema,
   whatsappJobSchema,
+  waAutoJobSchema,
+  waSweepJobSchema,
   createBoss,
   deadLetterQueue,
   emailJobSchema,
@@ -109,6 +112,18 @@ const WORK_OPTIONS: Record<QueueName, PerJobOptions> = {
     batchSize: 1,
     localConcurrency: 2,
     pollingIntervalSeconds: 5,
+  },
+  [QUEUES.waAuto]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 2,
+    pollingIntervalSeconds: 5,
+  },
+  [QUEUES.waSweep]: {
+    perJobResults: true,
+    batchSize: 1,
+    localConcurrency: 1,
+    pollingIntervalSeconds: 30,
   },
   [QUEUES.notifySweep]: {
     perJobResults: true,
@@ -423,6 +438,13 @@ interface ScheduleSpec {
  */
 const SCHEDULES: readonly ScheduleSpec[] = [
   {
+    // WhatsApp automations: 24h reminders, thanks, review requests, unpaid orders.
+    queue: QUEUES.waSweep,
+    cron: '3-59/10 * * * *',
+    data: {},
+    options: { tz: 'Etc/UTC' },
+  },
+  {
     // 09:07 Bali time (01:07 UTC): plan-expiry reminders arrive in the morning.
     queue: QUEUES.notifySweep,
     cron: '7 1 * * *',
@@ -648,6 +670,10 @@ async function main(): Promise<void> {
   )
   await register(boss, QUEUES.capacity, capacityJobSchema, (job) => handleCapacityJob(job))
   await register(boss, QUEUES.whatsapp, whatsappJobSchema, (job) => handleWhatsappJob(job))
+  await register(boss, QUEUES.waAuto, waAutoJobSchema, (job) =>
+    deliverWhatsappMessage(job.messageId),
+  )
+  await register(boss, QUEUES.waSweep, waSweepJobSchema, () => runWhatsappSweep())
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))
   await register(boss, QUEUES.crmSweep, crmSweepJobSchema, (job) => handleCrmSweep(job))
   await register(boss, QUEUES.analytics, analyticsJobSchema, (job) => handleAnalyticsJob(job))

@@ -89,6 +89,7 @@ export interface CheckoutInput {
     locale: string
     notes?: string
     marketingConsent?: boolean
+    whatsappConsent?: boolean
   }
   /** Timestamped proof the cancellation ladder was accepted. */
   termsVersion: string

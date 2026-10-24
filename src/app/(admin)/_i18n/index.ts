@@ -16,6 +16,7 @@ import protection from './protection'
 import reports from './reports'
 import suppliers from './suppliers'
 import system from './system'
+import whatsapp from './whatsapp'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
 
 export * from './types'
@@ -39,6 +40,7 @@ const SECTIONS = [
   clientAnswers,
   activityV2,
   ownerRequests,
+  whatsapp,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
