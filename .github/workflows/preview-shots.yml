@@ -71,6 +71,15 @@ jobs:
           } > merge-fixture.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f merge-fixture.sql
           psql "$DATABASE_URL" -c "select slug, status, merged_into_id is not null as merged from activities where slug like 'water-sports%' order by slug" -c "select key, name->>'en' as name, price_minor from activity_tiers where activity_id = (select id from activities where slug = 'water-sports-bali') order by sort_order"
+      # Migration 0032 ran before the merge above, so run it again on the
+      # merged fixture (twice: the second run must change nothing).
+      - name: Activity fill (migration 0032 on the merged fixture)
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0032_activity_v2_fill.sql
+          psql "$DATABASE_URL" -c "select updated_at from activities where slug = 'water-sports-bali'" -t > before.txt
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0032_activity_v2_fill.sql
+          psql "$DATABASE_URL" -c "select updated_at from activities where slug = 'water-sports-bali'" -t | diff before.txt -
+          psql "$DATABASE_URL" -c "select slug, jsonb_array_length(highlights) h, jsonb_array_length(what_to_bring) b, jsonb_array_length(age_conditions) a, jsonb_array_length(faq) f, hero_image_id is not null hero, (select count(*) from activity_images i where i.activity_id = activities.id) imgs, (select count(*) from activity_tiers t where t.activity_id = activities.id) tiers, needs_review from activities where status = 'published' and merged_into_id is null order by slug"
       # Real photos of the seeded places (Wikimedia Commons, see the manifest),
       # so the shots show what production shows. Not fatal if Commons is slow.
       - name: Import place photos

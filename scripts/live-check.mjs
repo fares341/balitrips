@@ -3,6 +3,7 @@ import { chromium } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
 import { auditPlaces } from './live-places.mjs'
+import { auditActivities } from './live-activities.mjs'
 
 const BASE = process.env.LIVE_URL ?? 'https://152-42-252-61.sslip.io'
 const OUT = 'live'
@@ -155,6 +156,12 @@ try {
   log.push(await auditPlaces(browser, BASE, OUT, writeFileSync))
 } catch (e) {
   log.push(`PLACES ERROR ${e.stack}`)
+}
+// Activity v2 audit: which sections render per live activity (live/activities.json).
+try {
+  log.push(await auditActivities(browser, BASE, OUT, writeFileSync))
+} catch (e) {
+  log.push(`ACTIVITIES ERROR ${e.stack}`)
 }
 await browser.close()
 writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n')
