@@ -1,0 +1,3451 @@
+{
+ "summary": {
+  "mapStatus": 200,
+  "flightBytes": 462237,
+  "places": 186,
+  "open": 186,
+  "locked": 0,
+  "categoriesInPayload": [],
+  "noHero": 177,
+  "brokenImage": 0,
+  "pageNot200": 0,
+  "pageH1Mismatch": 0,
+  "activityBroken": 0,
+  "lockedBubbles": [
+   483,
+   40,
+   74,
+   98,
+   54,
+   36,
+   17,
+   76,
+   0,
+   28,
+   7
+  ],
+  "noCoords": 0,
+  "noCategory": 0,
+  "lockedLeak": 0,
+  "brokenImgsOnMap": [
+   ""
+  ],
+  "apis": [
+   "200 https://152-42-252-61.sslip.io/api/notifications/count",
+   "200 https://152-42-252-61.sslip.io/api/favorites",
+   "200 https://152-42-252-61.sslip.io/api/admin-link",
+   "204 https://152-42-252-61.sslip.io/api/activity/page",
+   "200 https://152-42-252-61.sslip.io/api/currency"
+  ],
+  "imageHosts": [
+   "152-42-252-61.sslip.io"
+  ],
+  "imageStatuses": {
+   "200": 9
+  }
+ },
+ "rows": [
+  {
+   "slug": "air-terjun-colek-pamor",
+   "name": "شلال Colek Pamor",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.19547,
+   "lon": 115.13642899999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Colek Pamor",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "al-huda-grand-mosque",
+   "name": "مسجد Al Huda Grand Mosque",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "central",
+   "lat": -8.5557653,
+   "lon": 115.1426924,
+   "pageStatus": 200,
+   "pageH1": "مسجد Al Huda Grand Mosque",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "alas-harum-bali",
+   "name": "Alas Harum Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.439799599999999,
+   "lon": 115.28072739999999,
+   "pageStatus": 200,
+   "pageH1": "Alas Harum Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "aling-aling-waterfall",
+   "name": "شلال Aling-Aling",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1746122,
+   "lon": 115.1047284,
+   "pageStatus": 200,
+   "pageH1": "شلال Aling-Aling",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "aloha-ubud-swing",
+   "name": "Aloha Ubud Swing",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4639133,
+   "lon": 115.27651139999999,
+   "pageStatus": 200,
+   "pageH1": "Aloha Ubud Swing",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "amplitude",
+   "name": "Amplitude",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6596637,
+   "lon": 115.1632944,
+   "pageStatus": 200,
+   "pageH1": "Amplitude",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "atv-bukit-sari",
+   "name": "ATV Bukit Sari",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.829821599999999,
+   "lon": 115.11375389999999,
+   "pageStatus": 200,
+   "pageH1": "ATV Bukit Sari",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "atv-ubud-adventure",
+   "name": "ATV Ubud Adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.453386199999999,
+   "lon": 115.2432206,
+   "pageStatus": 200,
+   "pageH1": "ATV Ubud Adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "atv-ubud-bali",
+   "name": "ATV Ubud Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5410073,
+   "lon": 115.24704009999999,
+   "pageStatus": 200,
+   "pageH1": "ATV Ubud Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bakas-levi-rafting-elephant-tour",
+   "name": "Bakas levi rafting & Elephant Tour",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.520485899999999,
+   "lon": 115.3588298,
+   "pageStatus": 200,
+   "pageH1": "Bakas levi rafting &amp; Elephant Tour",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "balangan-beach",
+   "name": "Balangan Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.7910968,
+   "lon": 115.1243377,
+   "pageStatus": 200,
+   "pageH1": "Balangan Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-bird-park",
+   "name": "Bali Bird Park",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5996431,
+   "lon": 115.2520569,
+   "pageStatus": 200,
+   "pageH1": "Bali Bird Park",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-botanical-garden",
+   "name": "Bali Botanical Garden",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2761215,
+   "lon": 115.1542029,
+   "pageStatus": 200,
+   "pageH1": "Bali Botanical Garden",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-chocolate-factory-ocean-view-big-swing-peaceful-place-to-relax-in-nature",
+   "name": "Bali Chocolate Factory & Ocean View Big Swing ( Peaceful Place To Relax in Nature)",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4835957,
+   "lon": 115.6170719,
+   "pageStatus": 200,
+   "pageH1": "Bali Chocolate Factory &amp; Ocean View Big Swing ( Peaceful Place To Relax in N",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-collection",
+   "name": "Bali Collection",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "nusa-dua",
+   "lat": -8.802521,
+   "lon": 115.23017139999999,
+   "pageStatus": 200,
+   "pageH1": "Bali Collection",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-equestrian-centre",
+   "name": "Bali Equestrian Centre",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "canggu",
+   "lat": -8.655282699999999,
+   "lon": 115.1451992,
+   "pageStatus": 200,
+   "pageH1": "Bali Equestrian Centre",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-exotic-marine-park",
+   "name": "Bali Exotic Marine Park",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.7237978,
+   "lon": 115.2165033,
+   "pageStatus": 200,
+   "pageH1": "Bali Exotic Marine Park",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-farm-house",
+   "name": "Bali Farm House",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2443238,
+   "lon": 115.1497093,
+   "pageStatus": 200,
+   "pageH1": "Bali Farm House",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-fire-shooting-club",
+   "name": "Bali Fire Shooting Club",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "sanur",
+   "lat": -8.7051269,
+   "lon": 115.2453018,
+   "pageStatus": 200,
+   "pageH1": "Bali Fire Shooting Club",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-handara-gate",
+   "name": "Bali Handara Gate",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2529949,
+   "lon": 115.15827569999999,
+   "pageStatus": 200,
+   "pageH1": "Bali Handara Gate",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-hot-air-balloon-adventures",
+   "name": "Bali Hot Air Balloon Adventures",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.594407,
+   "lon": 115.33751389999999,
+   "pageStatus": 200,
+   "pageH1": "Bali Hot Air Balloon Adventures",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-paragliding-tours",
+   "name": "Bali Paragliding Tours",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.8373832,
+   "lon": 115.2034683,
+   "pageStatus": 200,
+   "pageH1": "Bali Paragliding Tours",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-wana-adventure",
+   "name": "Bali Wana Adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.434687499999999,
+   "lon": 115.2811875,
+   "pageStatus": 200,
+   "pageH1": "Bali Wana Adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-water-sport-tanjung-benoa",
+   "name": "Bali Water Sport Tanjung Benoa",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.7599875,
+   "lon": 115.2224451,
+   "pageStatus": 200,
+   "pageH1": "Bali Water Sport Tanjung Benoa",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-zipline",
+   "name": "Bali ZIPLINE",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.432690899999999,
+   "lon": 115.2723262,
+   "pageStatus": 200,
+   "pageH1": "Bali ZIPLINE",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bali-zoo",
+   "name": "Bali Zoo",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5918875,
+   "lon": 115.2656748,
+   "pageStatus": 200,
+   "pageH1": "Bali Zoo",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "balicopter-helicopter-tours-and-charters",
+   "name": "Balicopter - Helicopter Tours And Charters",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.6139375,
+   "lon": 115.10506249999999,
+   "pageStatus": 200,
+   "pageH1": "Balicopter - Helicopter Tours And Charters",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "batur-black-lava-atv-jeep-adventure",
+   "name": "Batur Black Lava ATV & Jeep Adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.225220799999999,
+   "lon": 115.35954439999999,
+   "pageStatus": 200,
+   "pageH1": "Batur Black Lava ATV &amp; Jeep Adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bendungan-kastala",
+   "name": "Bendungan Kastala",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4466824,
+   "lon": 115.56164299999999,
+   "pageStatus": 200,
+   "pageH1": "Bendungan Kastala",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bimc-ubud-medical-centre",
+   "name": "BIMC Ubud Medical Centre",
+   "locked": false,
+   "categoryKey": "hospital",
+   "regionKey": "ubud",
+   "lat": -8.4875659,
+   "lon": 115.2537857,
+   "pageStatus": 200,
+   "pageH1": "BIMC Ubud Medical Centre",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bliss-barber-jimbaran",
+   "name": "Bliss Barber Jimbaran",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "nusa-dua",
+   "lat": -8.782253899999999,
+   "lon": 115.1671044,
+   "pageStatus": 200,
+   "pageH1": "Bliss Barber Jimbaran",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bmw-rafting",
+   "name": "BMW Rafting",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4235588,
+   "lon": 115.4352875,
+   "pageStatus": 200,
+   "pageH1": "BMW Rafting",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "buggy-bali-ubud-tours",
+   "name": "Buggy Bali & Ubud Tours",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4961112,
+   "lon": 115.2660394,
+   "pageStatus": 200,
+   "pageH1": "Buggy Bali &amp; Ubud Tours",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "bukit-trunyan-bali",
+   "name": "Bukit Trunyan Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.2530298,
+   "lon": 115.4301651,
+   "pageStatus": 200,
+   "pageH1": "Bukit Trunyan Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "campuhan-ridge-walk",
+   "name": "Campuhan Ridge Walk",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5035806,
+   "lon": 115.2547579,
+   "pageStatus": 200,
+   "pageH1": "Campuhan Ridge Walk",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "canggu",
+   "name": "تشانغو",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "canggu",
+   "lat": -8.648,
+   "lon": 115.138,
+   "pageStatus": 200,
+   "pageH1": "تشانغو",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/ee8a20c0-01e5-514e-abaf-739f796b465a/1280.webp",
+   "images": [
+    {
+     "url": "/media/ee8a20c0-01e5-514e-abaf-739f796b465a/1280.webp",
+     "status": 200,
+     "bytes": 95274,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "canggu-beach",
+   "name": "Canggu Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "canggu",
+   "lat": -8.6609933,
+   "lon": 115.1321265,
+   "pageStatus": 200,
+   "pageH1": "Canggu Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "diamond-beach",
+   "name": "شاطئ دايموند",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "islands",
+   "lat": -8.795,
+   "lon": 115.595,
+   "pageStatus": 200,
+   "pageH1": "شاطئ دايموند",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/f6a8ec44-03bd-5ab9-960f-797fa96112d2/1280.webp",
+   "images": [
+    {
+     "url": "/media/f6a8ec44-03bd-5ab9-960f-797fa96112d2/1280.webp",
+     "status": 200,
+     "bytes": 458724,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "dolphin-lovina-tour",
+   "name": "Dolphin Lovina Tour",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1465034,
+   "lon": 115.0431583,
+   "pageStatus": 200,
+   "pageH1": "Dolphin Lovina Tour",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "dreamland-beach",
+   "name": "Dreamland Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.7992774,
+   "lon": 115.1177233,
+   "pageStatus": 200,
+   "pageH1": "Dreamland Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "duta-orchid-garden",
+   "name": "Duta Orchid Garden",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6444984,
+   "lon": 115.25675269999999,
+   "pageStatus": 200,
+   "pageH1": "Duta Orchid Garden",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "easy-day-laundry-pererenan",
+   "name": "Easy Day Laundry Pererenan",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "canggu",
+   "lat": -8.6374016,
+   "lon": 115.1320246,
+   "pageStatus": 200,
+   "pageH1": "Easy Day Laundry Pererenan",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "fiji-waterfall-lemukih",
+   "name": "شلال Fiji  Lemukih",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1804559,
+   "lon": 115.1815599,
+   "pageStatus": 200,
+   "pageH1": "شلال Fiji  Lemukih",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "fly-bali-helicopter-taro-ubud",
+   "name": "Fly Bali Helicopter - Taro Ubud",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.392798599999999,
+   "lon": 115.2851383,
+   "pageStatus": 200,
+   "pageH1": "Fly Bali Helicopter - Taro Ubud",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "gatep-lawas-ambengan",
+   "name": "Gatep Lawas Ambengan",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.189647899999999,
+   "lon": 115.1134453,
+   "pageStatus": 200,
+   "pageH1": "Gatep Lawas Ambengan",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "gembleng-waterfall",
+   "name": "Gembleng Waterfall",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4926826,
+   "lon": 115.46085699999999,
+   "pageStatus": 200,
+   "pageH1": "Gembleng Waterfall",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "gitgit-waterfall",
+   "name": "شلال Gitgit",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1878978,
+   "lon": 115.13654009999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Gitgit",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "goa-rang-reng-waterfall",
+   "name": "شلال Goa Rang Reng",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5155934,
+   "lon": 115.3313441,
+   "pageStatus": 200,
+   "pageH1": "شلال Goa Rang Reng",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "golden-valley-waterfalls",
+   "name": "شلال Golden Valley s",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2543204,
+   "lon": 115.07358389999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Golden Valley s",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "happy-swing-bali",
+   "name": "HAPPY SWING BALI",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.4314605,
+   "lon": 115.27649129999999,
+   "pageStatus": 200,
+   "pageH1": "HAPPY SWING BALI",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "happy-time-discovery-mall-bali-first-floor-ff",
+   "name": "Happy Time - Discovery Mall Bali (First Floor (FF))",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "kuta",
+   "lat": -8.7278666,
+   "lon": 115.1675655,
+   "pageStatus": 200,
+   "pageH1": "Happy Time - Discovery Mall Bali (First Floor (FF))",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "horse-riding-seminyak-beach-bali",
+   "name": "Horse Riding Seminyak Beach Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "seminyak",
+   "lat": -8.6942241,
+   "lon": 115.16231409999999,
+   "pageStatus": 200,
+   "pageH1": "Horse Riding Seminyak Beach Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "hq-cuts-ink-barber-tattoo",
+   "name": "HQ Cut's ink Barber Tattoo",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "uluwatu",
+   "lat": -8.8205151,
+   "lon": 115.150458,
+   "pageStatus": 200,
+   "pageH1": "HQ Cut&#x27;s ink Barber Tattoo",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "icon-bali",
+   "name": "Icon Bali",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "sanur",
+   "lat": -8.6868254,
+   "lon": 115.26336239999999,
+   "pageStatus": 200,
+   "pageH1": "Icon Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "island-golf-canggu-island-sport-clubs",
+   "name": "Island Golf Canggu - Island Sport Clubs",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "canggu",
+   "lat": -8.6551036,
+   "lon": 115.14494889999999,
+   "pageStatus": 200,
+   "pageH1": "Island Golf Canggu - Island Sport Clubs",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "jambe-asri-atv",
+   "name": "JAMBE ASRI ATV",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6061354,
+   "lon": 115.25059069999999,
+   "pageStatus": 200,
+   "pageH1": "JAMBE ASRI ATV",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "jami-an-nur-mosque",
+   "name": "مسجد Jami' An-Nur Mosque",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "islands",
+   "lat": -8.4475368,
+   "lon": 115.6131253,
+   "pageStatus": 200,
+   "pageH1": "مسجد Jami&#x27; An-Nur Mosque",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "jimbaran-beach",
+   "name": "Jimbaran Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "nusa-dua",
+   "lat": -8.7765946,
+   "lon": 115.1663701,
+   "pageStatus": 200,
+   "pageH1": "Jimbaran Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "jimbaran-hill-paintball-by-bali-paintball-arena",
+   "name": "JIMBARAN HILL PAINTBALL by Bali Paintball Arena",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.818007,
+   "lon": 115.16385729999999,
+   "pageStatus": 200,
+   "pageH1": "JIMBARAN HILL PAINTBALL by Bali Paintball Arena",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kanto-lampo-waterfall",
+   "name": "شلال Kanto Lampo",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5325074,
+   "lon": 115.33286129999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Kanto Lampo",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "karang-boma-cliff",
+   "name": "Karang Boma Cliff",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.8345366,
+   "lon": 115.0877251,
+   "pageStatus": 200,
+   "pageH1": "Karang Boma Cliff",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "karisma-barber-keluarga",
+   "name": "Karisma Barber Keluarga",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "north",
+   "lat": -8.2634283,
+   "lon": 115.0326752,
+   "pageStatus": 200,
+   "pageH1": "Karisma Barber Keluarga",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kebali-surf-lesson",
+   "name": "kebali surf lesson",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.6078178,
+   "lon": 115.0828246,
+   "pageStatus": 200,
+   "pageH1": "kebali surf lesson",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kebon-vintage-cars",
+   "name": "Kebon Vintage Cars",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.646857599999999,
+   "lon": 115.2709051,
+   "pageStatus": 200,
+   "pageH1": "Kebon Vintage Cars",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kecak-uluwatu",
+   "name": "Kecak Uluwatu",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.8305729,
+   "lon": 115.0854093,
+   "pageStatus": 200,
+   "pageH1": "Kecak Uluwatu",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kemenuh-butterfly-park-bali",
+   "name": "Kemenuh Butterfly Park, Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5728188,
+   "lon": 115.2871347,
+   "pageStatus": 200,
+   "pageH1": "Kemenuh Butterfly Park, Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kemenuh-monkey-river",
+   "name": "Kemenuh Monkey River",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.568728,
+   "lon": 115.28867699999999,
+   "pageStatus": 200,
+   "pageH1": "Kemenuh Monkey River",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "keramas-beach",
+   "name": "Keramas Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "south",
+   "lat": -8.597643099999999,
+   "lon": 115.33907769999999,
+   "pageStatus": 200,
+   "pageH1": "Keramas Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "krisna-funtasticland",
+   "name": "Krisna Funtasticland",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1789193,
+   "lon": 114.9942777,
+   "pageStatus": 200,
+   "pageH1": "Krisna Funtasticland",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kuda-p-stables-bali-horse-riding-experience",
+   "name": "Kuda P Stables Bali Horse Riding Experience",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.5945258,
+   "lon": 115.08702609999999,
+   "pageStatus": 200,
+   "pageH1": "Kuda P Stables Bali Horse Riding Experience",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "kuta-beach",
+   "name": "Kuta Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "kuta",
+   "lat": -8.7184926,
+   "lon": 115.16863219999999,
+   "pageStatus": 200,
+   "pageH1": "Kuta Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "langgahan-waterfalls",
+   "name": "شلال Langgahan s",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.317437199999999,
+   "lon": 115.27243449999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Langgahan s",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "lapangan-niti-mandala-renon-monumen-perjuangan-rakyat-bali",
+   "name": "Lapangan Niti Mandala Renon - Monumen Perjuangan Rakyat Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.671259,
+   "lon": 115.2338623,
+   "pageStatus": 200,
+   "pageH1": "Lapangan Niti Mandala Renon - Monumen Perjuangan Rakyat Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "laundry-projects-seminyak",
+   "name": "Laundry Projects Seminyak",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "seminyak",
+   "lat": -8.6781784,
+   "lon": 115.1605153,
+   "pageStatus": 200,
+   "pageH1": "Laundry Projects Seminyak",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "leke-leke-waterfall",
+   "name": "شلال Leke Leke",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.366982499999999,
+   "lon": 115.1982865,
+   "pageStatus": 200,
+   "pageH1": "شلال Leke Leke",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "lempuyang-temple",
+   "name": "معبد ليمبويانغ",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "east",
+   "lat": -8.392,
+   "lon": 115.631,
+   "pageStatus": 200,
+   "pageH1": "معبد ليمبويانغ",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/d2f774c4-b69e-56af-865c-770642865684/1280.webp",
+   "images": [
+    {
+     "url": "/media/d2f774c4-b69e-56af-865c-770642865684/1280.webp",
+     "status": 200,
+     "bytes": 232044,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "lemukih-waterfalls",
+   "name": "شلال Lemukih s",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2094724,
+   "lon": 115.1718078,
+   "pageStatus": 200,
+   "pageH1": "شلال Lemukih s",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "level-21-mall",
+   "name": "Level 21 Mall",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "south",
+   "lat": -8.6697572,
+   "lon": 115.21390439999999,
+   "pageStatus": 200,
+   "pageH1": "Level 21 Mall",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "lippo-mall-kuta",
+   "name": "Lippo Mall Kuta",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "kuta",
+   "lat": -8.735538,
+   "lon": 115.1664885,
+   "pageStatus": 200,
+   "pageH1": "Lippo Mall Kuta",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "living-world-mall-denpasar",
+   "name": "Living World Mall Denpasar",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "south",
+   "lat": -8.634148099999999,
+   "lon": 115.232232,
+   "pageStatus": 200,
+   "pageH1": "Living World Mall Denpasar",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "lumintang-park",
+   "name": "Lumintang Park",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6359218,
+   "lon": 115.2129875,
+   "pageStatus": 200,
+   "pageH1": "Lumintang Park",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "masjid-agung-bangli",
+   "name": "مسجد Masjid Agung Bangli",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "central",
+   "lat": -8.463182399999999,
+   "lon": 115.35421,
+   "pageStatus": 200,
+   "pageH1": "مسجد Masjid Agung Bangli",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "masjid-al-falah-padang-bai",
+   "name": "مسجد Masjid Al Falah Padang Bai",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "islands",
+   "lat": -8.5330319,
+   "lon": 115.50723269999999,
+   "pageStatus": 200,
+   "pageH1": "مسجد Masjid Al Falah Padang Bai",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "masjid-al-hasanah-tibubeneng-permai",
+   "name": "مسجد Masjid Al Hasanah Tibubeneng Permai",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "canggu",
+   "lat": -8.6482212,
+   "lon": 115.1454957,
+   "pageStatus": 200,
+   "pageH1": "مسجد Masjid Al Hasanah Tibubeneng Permai",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "masjid-raya-ukhuwwah-denpasar",
+   "name": "مسجد Masjid Raya Ukhuwwah Denpasar",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "south",
+   "lat": -8.6583264,
+   "lon": 115.2135685,
+   "pageStatus": 200,
+   "pageH1": "مسجد Masjid Raya Ukhuwwah Denpasar",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "mason-elephant-park-lodge",
+   "name": "Mason Elephant Park & Lodge",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.391231,
+   "lon": 115.28396699999999,
+   "pageStatus": 200,
+   "pageH1": "Mason Elephant Park &amp; Lodge",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "melanting-waterfall",
+   "name": "شلال Melanting waterfall",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2608842,
+   "lon": 115.0627329,
+   "pageStatus": 200,
+   "pageH1": "شلال Melanting waterfall",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "milky-verse",
+   "name": "MILKY VERSE",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6659431,
+   "lon": 115.2161491,
+   "pageStatus": 200,
+   "pageH1": "MILKY VERSE",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "mount-batur",
+   "name": "جبل باتور",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.242,
+   "lon": 115.375,
+   "pageStatus": 200,
+   "pageH1": "جبل باتور",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/8e2e30df-a41d-5b7b-8546-397ddfff67fd/1280.webp",
+   "images": [
+    {
+     "url": "/media/8e2e30df-a41d-5b7b-8546-397ddfff67fd/1280.webp",
+     "status": 200,
+     "bytes": 163668,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "mount-batur-view-point",
+   "name": "Mount Batur View Point",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.282639399999999,
+   "lon": 115.36430689999999,
+   "pageStatus": 200,
+   "pageH1": "Mount Batur View Point",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "muara-adventure",
+   "name": "Muara Adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "sanur",
+   "lat": -8.6545012,
+   "lon": 115.26543989999999,
+   "pageStatus": 200,
+   "pageH1": "Muara Adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "munduk-waterfalls-trekking-point",
+   "name": "شلال Munduk s Trekking Point",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.260741699999999,
+   "lon": 115.06852289999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Munduk s Trekking Point",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "my-swing-bali",
+   "name": "My Swing Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4931824,
+   "lon": 115.2404207,
+   "pageStatus": 200,
+   "pageH1": "My Swing Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "new-kuta-golf-bali",
+   "name": "New Kuta Golf Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.804020999999999,
+   "lon": 115.12805639999999,
+   "pageStatus": 200,
+   "pageH1": "New Kuta Golf Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "nungnung-waterfall-carpark",
+   "name": "شلال Nungnung  Carpark",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.3317643,
+   "lon": 115.2273295,
+   "pageStatus": 200,
+   "pageH1": "شلال Nungnung  Carpark",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "nusa-dua-beach",
+   "name": "Nusa Dua Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "nusa-dua",
+   "lat": -8.795761599999999,
+   "lon": 115.2328213,
+   "pageStatus": 200,
+   "pageH1": "Nusa Dua Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "nusa-penida",
+   "name": "نوسا بنيدا",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "islands",
+   "lat": -8.727,
+   "lon": 115.544,
+   "pageStatus": 200,
+   "pageH1": "نوسا بنيدا",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/31885c22-a9b1-5148-8a4d-8a2c8414cea0/1280.webp",
+   "images": [
+    {
+     "url": "/media/31885c22-a9b1-5148-8a4d-8a2c8414cea0/1280.webp",
+     "status": 200,
+     "bytes": 170994,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "ozzy-bali-adventure",
+   "name": "ozzy bali adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.5281854,
+   "lon": 115.0379454,
+   "pageStatus": 200,
+   "pageH1": "ozzy bali adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "padang-padang-beach",
+   "name": "Padang Padang Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.8111377,
+   "lon": 115.10376579999999,
+   "pageStatus": 200,
+   "pageH1": "Padang Padang Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "panda-paragliding-bali-paragliding",
+   "name": "Panda Paragliding ( Bali Paragliding )",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.8453122,
+   "lon": 115.175989,
+   "pageStatus": 200,
+   "pageH1": "Panda Paragliding ( Bali Paragliding )",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pandawa-beach",
+   "name": "Pandawa Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "nusa-dua",
+   "lat": -8.8444517,
+   "lon": 115.18584209999999,
+   "pageStatus": 200,
+   "pageH1": "Pandawa Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pantai-batu-bolong",
+   "name": "Pantai Batu Bolong",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "canggu",
+   "lat": -8.6594824,
+   "lon": 115.1301361,
+   "pageStatus": 200,
+   "pageH1": "Pantai Batu Bolong",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pantai-nunggalan",
+   "name": "Pantai Nunggalan",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.8454398,
+   "lon": 115.11103159999999,
+   "pageStatus": 200,
+   "pageH1": "Pantai Nunggalan",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pantai-suluban",
+   "name": "Pantai Suluban",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.8160096,
+   "lon": 115.08825089999999,
+   "pageStatus": 200,
+   "pageH1": "Pantai Suluban",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pantai-tanah-barak",
+   "name": "Pantai Tanah Barak",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.8450051,
+   "lon": 115.17428989999999,
+   "pageStatus": 200,
+   "pageH1": "Pantai Tanah Barak",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "paragliding-bali-adventure",
+   "name": "paragliding bali adventure",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.8445856,
+   "lon": 115.1123684,
+   "pageStatus": 200,
+   "pageH1": "paragliding bali adventure",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "parc-valle-pererenan",
+   "name": "Parc Valle Pererenan",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "canggu",
+   "lat": -8.6441514,
+   "lon": 115.12837739999999,
+   "pageStatus": 200,
+   "pageH1": "Parc Valle Pererenan",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "penataran-agung-lempuyang-temple",
+   "name": "Penataran Agung Lempuyang Temple",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.3917875,
+   "lon": 115.63155569999999,
+   "pageStatus": 200,
+   "pageH1": "Penataran Agung Lempuyang Temple",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-10",
+   "name": "منتجع وغولف هاندارا بالي",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2452551,
+   "lon": 115.1613579,
+   "pageStatus": 200,
+   "pageH1": "منتجع وغولف هاندارا بالي",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-11",
+   "name": "بورا أولان دانو براتان",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2751807,
+   "lon": 115.1668234,
+   "pageStatus": 200,
+   "pageH1": "بورا أولان دانو براتان",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-12",
+   "name": "مياه انغسيري الحارة",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.3546623,
+   "lon": 115.157544,
+   "pageStatus": 200,
+   "pageH1": "مياه انغسيري الحارة",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-13",
+   "name": "مغامرة كوبر بالي ركوب الدبابات",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4512625,
+   "lon": 115.246112,
+   "pageStatus": 200,
+   "pageH1": "مغامرة كوبر بالي ركوب الدبابات",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-14",
+   "name": "منطاد بالي",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5230587,
+   "lon": 115.282839,
+   "pageStatus": 200,
+   "pageH1": "منطاد بالي",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-15",
+   "name": "جبل باتور",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.2401299,
+   "lon": 115.37749439999999,
+   "pageStatus": 200,
+   "pageH1": "جبل باتور",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-16",
+   "name": "معبد بيساكيه الأم",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.3739976,
+   "lon": 115.45255669999999,
+   "pageStatus": 200,
+   "pageH1": "معبد بيساكيه الأم",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-17",
+   "name": "قصر تيرتا جانجا",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4123473,
+   "lon": 115.5872919,
+   "pageStatus": 200,
+   "pageH1": "قصر تيرتا جانجا",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-18",
+   "name": "حقول الارز تقاللانق",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.431711199999999,
+   "lon": 115.279303,
+   "pageStatus": 200,
+   "pageH1": "حقول الارز تقاللانق",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-19",
+   "name": "بالي ووتربومب",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "kuta",
+   "lat": -8.728581499999999,
+   "lon": 115.16928879999999,
+   "pageStatus": 200,
+   "pageH1": "بالي ووتربومب",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-20",
+   "name": "غارودا ويسنو كانشانا",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.8101936,
+   "lon": 115.1680614,
+   "pageStatus": 200,
+   "pageH1": "غارودا ويسنو كانشانا",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-28",
+   "name": "مسجد اوبوديا",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "ubud",
+   "lat": -8.527306399999999,
+   "lon": 115.27120409999999,
+   "pageStatus": 200,
+   "pageH1": "مسجد اوبوديا",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-29",
+   "name": "مسجد نور اليقين",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "ubud",
+   "lat": -8.5357401,
+   "lon": 115.3060644,
+   "pageStatus": 200,
+   "pageH1": "مسجد نور اليقين",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-36",
+   "name": "مسجد المجاهدين",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "kuta",
+   "lat": -8.7255863,
+   "lon": 115.1760688,
+   "pageStatus": 200,
+   "pageH1": "مسجد المجاهدين",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-37",
+   "name": "مسجد",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "kuta",
+   "lat": -8.7159578,
+   "lon": 115.17033889999999,
+   "pageStatus": 200,
+   "pageH1": "مسجد",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-4",
+   "name": "سانور بالي",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "sanur",
+   "lat": -8.7071782,
+   "lon": 115.2626236,
+   "pageStatus": 200,
+   "pageH1": "سانور بالي",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-42",
+   "name": "مركز تسوق بيتشوالك",
+   "locked": false,
+   "categoryKey": "markets",
+   "regionKey": "kuta",
+   "lat": -8.7164495,
+   "lon": 115.1692697,
+   "pageStatus": 200,
+   "pageH1": "مركز تسوق بيتشوالك",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-43",
+   "name": "مول بالي جاليري",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "kuta",
+   "lat": -8.7234639,
+   "lon": 115.18384359999999,
+   "pageStatus": 200,
+   "pageH1": "مول بالي جاليري",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-44",
+   "name": "مجمع ديسكفري مول",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "kuta",
+   "lat": -8.7284638,
+   "lon": 115.16800269999999,
+   "pageStatus": 200,
+   "pageH1": "مجمع ديسكفري مول",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-5",
+   "name": "شاطئ لوفينا",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "north",
+   "lat": -8.161140999999999,
+   "lon": 115.02435659999999,
+   "pageStatus": 200,
+   "pageH1": "شاطئ لوفينا",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-6",
+   "name": "ماجربته",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6085275,
+   "lon": 115.3212238,
+   "pageStatus": 200,
+   "pageH1": "ماجربته",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-7",
+   "name": "وادي بيجي جوانق المخفي",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.609527,
+   "lon": 115.2890415,
+   "pageStatus": 200,
+   "pageH1": "وادي بيجي جوانق المخفي",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-8",
+   "name": "تاناه لوط",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.621213,
+   "lon": 115.086807,
+   "pageStatus": 200,
+   "pageH1": "تاناه لوط",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "place-9",
+   "name": "بالي حديقة الفراشات",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.479504799999999,
+   "lon": 115.1348148,
+   "pageStatus": 200,
+   "pageH1": "بالي حديقة الفراشات",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "poh-gading-waterfall",
+   "name": "شلال Poh Gading",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5550751,
+   "lon": 115.28998809999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Poh Gading",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pohgading-cafe",
+   "name": "شلال Pohgading Cafe",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.554708699999999,
+   "lon": 115.291157,
+   "pageStatus": 200,
+   "pageH1": "شلال Pohgading Cafe",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pt-bali-sunrise-adventure-horse-riding-bali",
+   "name": "PT.Bali Sunrise Adventure - Horse Riding Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.6491271,
+   "lon": 115.27537,
+   "pageStatus": 200,
+   "pageH1": "PT.Bali Sunrise Adventure - Horse Riding Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "puncak-wanagiri",
+   "name": "Puncak Wanagiri",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.237139299999999,
+   "lon": 115.14177919999999,
+   "pageStatus": 200,
+   "pageH1": "Puncak Wanagiri",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "pura-segara-ulun-danu-batur",
+   "name": "Pura Segara Ulun Danu Batur",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.2691059,
+   "lon": 115.38621719999999,
+   "pageStatus": 200,
+   "pageH1": "Pura Segara Ulun Danu Batur",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "real-bali-swing",
+   "name": "Real Bali Swing",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4906347,
+   "lon": 115.2399794,
+   "pageStatus": 200,
+   "pageH1": "Real Bali Swing",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "romat",
+   "name": "romat",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "seminyak",
+   "lat": -8.671183899999999,
+   "lon": 115.16460749999999,
+   "pageStatus": 200,
+   "pageH1": "romat",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sacred-monkey-forest-sanctuary",
+   "name": "Sacred Monkey Forest Sanctuary",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5193727,
+   "lon": 115.2606299,
+   "pageStatus": 200,
+   "pageH1": "Sacred Monkey Forest Sanctuary",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "samasta-lifestyle-village",
+   "name": "Samasta Lifestyle Village",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "nusa-dua",
+   "lat": -8.7853653,
+   "lon": 115.1644987,
+   "pageStatus": 200,
+   "pageH1": "Samasta Lifestyle Village",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sangeh-monkey-forest",
+   "name": "Sangeh Monkey Forest",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.4818231,
+   "lon": 115.20646409999999,
+   "pageStatus": 200,
+   "pageH1": "Sangeh Monkey Forest",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "secret-garden-village",
+   "name": "Secret Garden Village",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.3726635,
+   "lon": 115.1932669,
+   "pageStatus": 200,
+   "pageH1": "Secret Garden Village",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sekumpul-waterfall",
+   "name": "شلال سيكومبول",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.16,
+   "lon": 115.16,
+   "pageStatus": 200,
+   "pageH1": "شلال سيكومبول",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/7d365709-85ba-5f54-b1be-d92d66531338/1280.webp",
+   "images": [
+    {
+     "url": "/media/7d365709-85ba-5f54-b1be-d92d66531338/1280.webp",
+     "status": 200,
+     "bytes": 590100,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "sekumpul-waterfall-2",
+   "name": "شلال Sekumpul",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1775308,
+   "lon": 115.1825825,
+   "pageStatus": 200,
+   "pageH1": "شلال Sekumpul",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sekumpul-waterfall-and-fiji-waterfall-information",
+   "name": "شلال Sekumpul waterfall and Fiji waterfall information",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1981266,
+   "lon": 115.1789644,
+   "pageStatus": 200,
+   "pageH1": "شلال Sekumpul waterfall and Fiji waterfall information",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sekumpul-waterfall-official-post-1",
+   "name": "شلال SEKUMPUL WATERFALL OFFICIAL (POST 1)",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.171880699999999,
+   "lon": 115.1862116,
+   "pageStatus": 200,
+   "pageH1": "شلال SEKUMPUL WATERFALL OFFICIAL (POST 1)",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "seminyak-beach",
+   "name": "Seminyak Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "seminyak",
+   "lat": -8.6920123,
+   "lon": 115.1578837,
+   "pageStatus": 200,
+   "pageH1": "Seminyak Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "seminyak-village",
+   "name": "Seminyak Village",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "seminyak",
+   "lat": -8.6833565,
+   "lon": 115.157134,
+   "pageStatus": 200,
+   "pageH1": "Seminyak Village",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "seseh-beach-pantai-seseh",
+   "name": "SESEH BEACH - PANTAI SESEH",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "canggu",
+   "lat": -8.6473999,
+   "lon": 115.1142271,
+   "pageStatus": 200,
+   "pageH1": "SESEH BEACH - PANTAI SESEH",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "siloam-hospital-denpasar",
+   "name": "Siloam Hospital Denpasar",
+   "locked": false,
+   "categoryKey": "hospital",
+   "regionKey": "kuta",
+   "lat": -8.7152253,
+   "lon": 115.18497099999999,
+   "pageStatus": 200,
+   "pageH1": "Siloam Hospital Denpasar",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sira-village-grand-outlet-bali",
+   "name": "Sira Village Grand Outlet Bali",
+   "locked": false,
+   "categoryKey": "malls",
+   "regionKey": "south",
+   "lat": -8.7370076,
+   "lon": 115.22262409999999,
+   "pageStatus": 200,
+   "pageH1": "Sira Village Grand Outlet Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sky-bike-at-abian-desa-rice-terraces-pakudui",
+   "name": "Sky bike at Abian Desa rice terraces Pakudui",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.4300188,
+   "lon": 115.2794538,
+   "pageStatus": 200,
+   "pageH1": "Sky bike at Abian Desa rice terraces Pakudui",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sky-swing-bali",
+   "name": "Sky Swing Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4610483,
+   "lon": 115.23656709999999,
+   "pageStatus": 200,
+   "pageH1": "Sky Swing Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "spice-beach-club-bali",
+   "name": "Spice Beach Club Bali",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "north",
+   "lat": -8.1641371,
+   "lon": 115.02121679999999,
+   "pageStatus": 200,
+   "pageH1": "Spice Beach Club Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "sukawana-sunrise-spot",
+   "name": "Sukawana Sunrise Spot",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.2173061,
+   "lon": 115.3562975,
+   "pageStatus": 200,
+   "pageH1": "Sukawana Sunrise Spot",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "suwat-waterfall",
+   "name": "شلال Suwat",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.4876645,
+   "lon": 115.31786439999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Suwat",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "swing-heaven",
+   "name": "Swing Heaven",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.501114099999999,
+   "lon": 115.23630349999999,
+   "pageStatus": 200,
+   "pageH1": "Swing Heaven",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "taman-safari",
+   "name": "Taman Safari",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5822029,
+   "lon": 115.3472573,
+   "pageStatus": 200,
+   "pageH1": "Taman Safari",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "taman-sari-waterfall-natural-pool",
+   "name": "شلال Taman Sari  & Natural pool",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5022188,
+   "lon": 115.32832189999999,
+   "pageStatus": 200,
+   "pageH1": "شلال Taman Sari  &amp; Natural pool",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "taman-ujung",
+   "name": "Taman Ujung",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.4630811,
+   "lon": 115.6306692,
+   "pageStatus": 200,
+   "pageH1": "Taman Ujung",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "tanjung-benoa-beach",
+   "name": "Tanjung Benoa Beach",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "nusa-dua",
+   "lat": -8.7565223,
+   "lon": 115.22209819999999,
+   "pageStatus": 200,
+   "pageH1": "Tanjung Benoa Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "tegallalang-rice-terraces",
+   "name": "مدرّجات تيغالالانغ",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "ubud",
+   "lat": -8.431,
+   "lon": 115.279,
+   "pageStatus": 200,
+   "pageH1": "مدرّجات تيغالالانغ",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/cd5b7c3d-39f3-5762-8122-65227d314bb5/1280.webp",
+   "images": [
+    {
+     "url": "/media/cd5b7c3d-39f3-5762-8122-65227d314bb5/1280.webp",
+     "status": 200,
+     "bytes": 355950,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "tegenungan",
+   "name": "شلال شلال Tegenungan",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "ubud",
+   "lat": -8.5753621,
+   "lon": 115.2889599,
+   "pageStatus": 200,
+   "pageH1": "شلال شلال Tegenungan",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "telaga-waja-river-rafting-bali",
+   "name": "Telaga Waja River Rafting Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "islands",
+   "lat": -8.424264899999999,
+   "lon": 115.43812659999999,
+   "pageStatus": 200,
+   "pageH1": "Telaga Waja River Rafting Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "the-beach-love",
+   "name": "The Beach Love",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "central",
+   "lat": -8.6127868,
+   "lon": 115.0840197,
+   "pageStatus": 200,
+   "pageH1": "The Beach Love",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "the-blooms",
+   "name": "The Blooms",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.302094799999999,
+   "lon": 115.1587735,
+   "pageStatus": 200,
+   "pageH1": "The Blooms",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "tibumana-waterfall",
+   "name": "شلال Tibumana",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.5068384,
+   "lon": 115.3330831,
+   "pageStatus": 200,
+   "pageH1": "شلال Tibumana",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "timezone-level-21-mall-1st-floor-arcade-games",
+   "name": "Timezone Level 21 Mall 1st Floor - Arcade Games",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.669645899999999,
+   "lon": 115.21378639999999,
+   "pageStatus": 200,
+   "pageH1": "Timezone Level 21 Mall 1st Floor - Arcade Games",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "trans-studio-mall-bali",
+   "name": "Trans Studio Mall Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "kuta",
+   "lat": -8.7020875,
+   "lon": 115.1834902,
+   "pageStatus": 200,
+   "pageH1": "Trans Studio Mall Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "trans-studio-theme-park-bali",
+   "name": "Trans Studio Theme Park Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "kuta",
+   "lat": -8.7019925,
+   "lon": 115.1830569,
+   "pageStatus": 200,
+   "pageH1": "Trans Studio Theme Park Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "turtle-conservation-and-education-center",
+   "name": "Turtle Conservation And Education Center",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "sanur",
+   "lat": -8.724098399999999,
+   "lon": 115.23813849999999,
+   "pageStatus": 200,
+   "pageH1": "Turtle Conservation And Education Center",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "ubud",
+   "name": "أوبود",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "ubud",
+   "lat": -8.507,
+   "lon": 115.263,
+   "pageStatus": 200,
+   "pageH1": "أوبود",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/a394a820-a068-5237-9f81-50b62907385f/1280.webp",
+   "images": [
+    {
+     "url": "/media/a394a820-a068-5237-9f81-50b62907385f/1280.webp",
+     "status": 200,
+     "bytes": 185648,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "ubud-horse-stables",
+   "name": "Ubud Horse Stables",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.3892058,
+   "lon": 115.30634819999999,
+   "pageStatus": 200,
+   "pageH1": "Ubud Horse Stables",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "ubud-vw-tour",
+   "name": "Ubud VW Tour",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "central",
+   "lat": -8.414255299999999,
+   "lon": 115.3020404,
+   "pageStatus": 200,
+   "pageH1": "Ubud VW Tour",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "ulu-paragliding-site",
+   "name": "Ulu Paragliding Site",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.8383468,
+   "lon": 115.09724569999999,
+   "pageStatus": 200,
+   "pageH1": "Ulu Paragliding Site",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "uluwatu-beach",
+   "name": "Uluwatu Beach",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "uluwatu",
+   "lat": -8.8149106,
+   "lon": 115.08838899999999,
+   "pageStatus": 200,
+   "pageH1": "Uluwatu Beach",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "uluwatu-temple",
+   "name": "معبد أولواتو",
+   "locked": false,
+   "categoryKey": "sights",
+   "regionKey": "uluwatu",
+   "lat": -8.829,
+   "lon": 115.085,
+   "pageStatus": 200,
+   "pageH1": "معبد أولواتو",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": "/media/4834c692-94bf-5359-a4e5-183edc561f90/1280.webp",
+   "images": [
+    {
+     "url": "/media/4834c692-94bf-5359-a4e5-183edc561f90/1280.webp",
+     "status": 200,
+     "bytes": 206732,
+     "type": "image/webp",
+     "host": "152-42-252-61.sslip.io"
+    }
+   ],
+   "issues": []
+  },
+  {
+   "slug": "uluwatu-temple-2",
+   "name": "Uluwatu Temple",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "uluwatu",
+   "lat": -8.829143199999999,
+   "lon": 115.0849069,
+   "pageStatus": 200,
+   "pageH1": "Uluwatu Temple",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "upside-down-world-bali",
+   "name": "Upside Down World Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "south",
+   "lat": -8.7166743,
+   "lon": 115.2052331,
+   "pageStatus": 200,
+   "pageH1": "Upside Down World Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "virgin-beach-karangasem-bali",
+   "name": "Virgin Beach, Karangasem, Bali",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "islands",
+   "lat": -8.5014083,
+   "lon": 115.61054039999999,
+   "pageStatus": 200,
+   "pageH1": "Virgin Beach, Karangasem, Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "wanagiri-heaven-selfie-pucak",
+   "name": "Wanagiri Heaven Selfie Pucak",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.23691,
+   "lon": 115.1364438,
+   "pageStatus": 200,
+   "pageH1": "Wanagiri Heaven Selfie Pucak",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "wanagiri-hidden-hill-bali",
+   "name": "Wanagiri Hidden Hill Bali",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.2402563,
+   "lon": 115.10750209999999,
+   "pageStatus": 200,
+   "pageH1": "Wanagiri Hidden Hill Bali",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "water-slide-lemukih",
+   "name": "Water Slide Lemukih",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.182163899999999,
+   "lon": 115.179434,
+   "pageStatus": 200,
+   "pageH1": "Water Slide Lemukih",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "waterblow",
+   "name": "Waterblow",
+   "locked": false,
+   "categoryKey": "beaches",
+   "regionKey": "nusa-dua",
+   "lat": -8.803856699999999,
+   "lon": 115.23986389999999,
+   "pageStatus": 200,
+   "pageH1": "Waterblow",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  },
+  {
+   "slug": "yeh-mampeh-waterfall",
+   "name": "شلال Yeh Mampeh",
+   "locked": false,
+   "categoryKey": "activities",
+   "regionKey": "north",
+   "lat": -8.1532932,
+   "lon": 115.3604458,
+   "pageStatus": 200,
+   "pageH1": "شلال Yeh Mampeh",
+   "activitySlug": null,
+   "activityStatus": null,
+   "hero": null,
+   "images": [],
+   "issues": [
+    "no-hero"
+   ]
+  }
+ ]
+}

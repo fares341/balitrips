@@ -1,0 +1,899 @@
+[
+  {
+    "slug": "water-skiing-tanjung-benoa",
+    "h1": "التزلج على الماء (وتر سكي)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-glass-bridge",
+    "h1": "الجسر الزجاجي المعلق في بالي (Bali Glass Bridge)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 5,
+    "galleryUnique": 5,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "water-sports-bali",
+    "h1": "الرياضات المائية",
+    "packages": 4,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "flying-fish-tanjung-benoa",
+    "h1": "السمكة الطائرة المائية",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 3,
+    "galleryUnique": 3,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "snorkeling-tanjung-benoa",
+    "h1": "السنوركلينج واستكشاف المرجان",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 5,
+    "galleryUnique": 5,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "paragliding-uluwatu-cliffs",
+    "h1": "الطيران الشراعي فوق منحدرات أولواتو (باراجلايدنج)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "parasailing-tanjung-benoa",
+    "h1": "الطيران بالمظلة البحرية في تانجونج بينوا",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 5,
+    "galleryUnique": 5,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "sea-walker-tanjung-benoa",
+    "h1": "المشي تحت الماء بالخوذة (سي ووكر)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 4,
+    "galleryUnique": 4,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-safari",
+    "h1": "بالي سفاري",
+    "packages": 7,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-marine-safari",
+    "h1": "بالي مارين سفاري",
+    "packages": 3,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "telaga-waja-rafting",
+    "h1": "تجديف نهر تيلاجا واجا",
+    "packages": 2,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "scuba-diving-nusa-dua",
+    "h1": "تجربة الغوص البحري (سكوبا ديفينج)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "hot-air-balloon-ubud",
+    "h1": "تجربة منطاد بالي الطائر في أوبود",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "jet-ski-tanjung-benoa",
+    "h1": "جت سكي تانجونغ بينوا",
+    "packages": 2,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "mount-batur-black-lava-jeep-tour",
+    "h1": "جولة جيب جبل باتور والحمم البركانية السوداء",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "classic-vw-safari-tour-bali",
+    "h1": "جولة سيارات فولكس فاجن الكلاسيكية المكشوفة (VW Safari)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-helicopter-scenic-flight",
+    "h1": "جولة طيران الهليكوبتر في سماء بالي",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "nusa-penida-tour",
+    "h1": "جولة نوسا بينيدا",
+    "packages": 4,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-zoo-ubud-experience",
+    "h1": "حديقة حيوان بالي أوبود (Bali Zoo)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-bird-park",
+    "h1": "حديقة طيور بالي (Bali Bird Park)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "turtle-island-glass-bottom-boat",
+    "h1": "رحلة جزيرة السلاحف بالقارب الزجاجي",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "horseback-riding-sanur-beach",
+    "h1": "ركوب الخيل على شاطئ سانور",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "devdan-show-treasure-bali",
+    "h1": "عرض ديفدان تريجر الثقافي (Devdan Show)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "flyboard-bali",
+    "h1": "فلاي بورد بالي (اللوح الطائر)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "donut-boat-tanjung-benoa",
+    "h1": "قارب الدونات المائي",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 4,
+    "galleryUnique": 4,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "banana-boat-tanjung-benoa",
+    "h1": "قارب الموز (بنانا بوت)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 4,
+    "galleryUnique": 4,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "trans-studio-bali-theme-park",
+    "h1": "مدينة ألعاب ترانس ستوديو بالي المغلقة",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "tanjung-benoa-watersports-hub",
+    "h1": "مركز الرياضات والأنشطة البحرية في تانجونج بينوا",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "ulun-danu-beratan-lake-temple",
+    "h1": "معبد وبحيرة أولون دانو براتان (معبد الماء الشهير)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 8,
+    "galleryUnique": 8,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "paintball-bali-arena",
+    "h1": "معركة كرات الألوان (بينتبول بالي)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 5,
+    "galleryUnique": 5,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "ayung-river-rafting-ubud",
+    "h1": "مغامرة التجديف في نهر أيونج – أوبود",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 6,
+    "galleryUnique": 6,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "extreme-atv-ride-ubud",
+    "h1": "مغامرة الدبابات الجبلية إكستريم أوبود",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "utv-buggy-adventure-ubud",
+    "h1": "مغامرة دبابات الباجي (UTV Buggy) في أوبود",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 8,
+    "galleryUnique": 8,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "kuber-atv-ubud",
+    "h1": "مغامرة كوبر إكستريم ATV في أوبود (النفق والشلالات)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "ubud-rice-terrace-swing-adventure",
+    "h1": "مغامرة مزارع الأرز وأراجيح أوبود الشهيرة",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "aeroxspace-adventure-park-bali",
+    "h1": "ملاهي أيرو إكس سبيس للأطفال والعائلات (AeroXSpace)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 5,
+    "galleryUnique": 5,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "garuda-wisnu-kencana-cultural-park",
+    "h1": "منتزه جارودا ويسنو كينكانا الثقافي (GWK Park)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 8,
+    "galleryUnique": 8,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-shooting-club",
+    "h1": "نادي بالي للرماية",
+    "packages": 3,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  },
+  {
+    "slug": "bali-national-golf-club",
+    "h1": "نادي بالي ناشيونال للجولف (نوسا دوا)",
+    "packages": 0,
+    "addons": 0,
+    "highlights": 3,
+    "infoCards": [
+      "معلومات إضافية",
+      "الأعمار والشروط",
+      "ماذا تحضر معك؟"
+    ],
+    "quickFacts": 2,
+    "tabs": [
+      "معلومات مهمة",
+      "سياسة الإلغاء والتعديل",
+      "الأسئلة الشائعة"
+    ],
+    "faqItems": 0,
+    "description": true,
+    "galleryImgs": 9,
+    "galleryUnique": 9,
+    "galleryEmpty": false
+  }
+]
