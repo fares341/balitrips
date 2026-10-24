@@ -473,6 +473,13 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 </span>
               )}
             </div>
+            {/* WhatsApp booking updates (proposal §11): explicit consent, unticked. */}
+            <div className="field">
+              <label className="check" htmlFor={id('wa-consent')}>
+                <input id={id('wa-consent')} type="checkbox" name="whatsappConsent" />
+                <span>{t('co_wa_consent')}</span>
+              </label>
+            </div>
             {/* Phase 4: offers by e-mail/WhatsApp — never ticked for the traveller. */}
             <div className="field">
               <label className="check" htmlFor={id('marketing')}>

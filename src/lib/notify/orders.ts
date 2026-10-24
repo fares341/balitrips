@@ -3,19 +3,23 @@
  * (webhook أو reconcile) — إشعار عن دفع تراجعت معاملته أسوأ من عدم الإشعار.
  */
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { entitlements, orderItems, orders, plans, users } from '@/db/schema'
+import { entitlements, orderItems, orders, payments, plans, users } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale, translator } from '@/lib/email'
 import { formatMoney } from '@/lib/money'
 import { logActivity } from '@/lib/security/activity'
+import { triggerOrderAutomation } from '@/lib/whatsapp/dispatch'
 
 import { notifyStaff, notifyUser } from './index'
 import { accessLabel } from './plans'
 
 export async function notifyOrderPaid(orderId: string): Promise<void> {
+  // WhatsApp automations (proposal §04/§05): payment success, ready itinerary bought.
+  await triggerOrderAutomation('payment_success', orderId)
+  await triggerOrderAutomation('itinerary_purchased', orderId)
   try {
     const [order] = await db
       .select({
@@ -102,6 +106,14 @@ export async function notifyPaymentFailed(orderId: string): Promise<void> {
     .from(orders)
     .where(eq(orders.id, orderId))
     .limit(1)
+  // WhatsApp «payment failed» (proposal §04): once per payment attempt.
+  const [attempt] = await db
+    .select({ id: payments.id })
+    .from(payments)
+    .where(eq(payments.orderId, orderId))
+    .orderBy(desc(payments.createdAt))
+    .limit(1)
+  await triggerOrderAutomation('payment_failed', orderId, { suffix: attempt?.id ?? '' })
   if (order)
     await notifyStaff(
       'staff_payment_failed',
@@ -112,6 +124,8 @@ export async function notifyPaymentFailed(orderId: string): Promise<void> {
 
 /** Client, Oct 2026: a booking's card is held — tell staff to confirm and capture. */
 export async function notifyOrderAuthorized(orderId: string): Promise<void> {
+  // The gateway confirmed the payment (card held): WhatsApp «payment success».
+  await triggerOrderAutomation('payment_success', orderId)
   try {
     const [order] = await db
       .select({
@@ -166,6 +180,12 @@ export async function notifyOrderUpdated(
   status: OrderUpdateStatus,
   options: { by?: string | null; item?: string | null; email?: boolean } = {},
 ): Promise<void> {
+  // WhatsApp automations (proposal §03/§05): confirmed by the team, cancelled.
+  if (status === 'confirmed') {
+    await triggerOrderAutomation('booking_confirmed', orderId, { itemId: options.item ?? null })
+  } else if (status === 'cancelled' || status === 'released') {
+    await triggerOrderAutomation('booking_cancelled', orderId, { itemId: options.item ?? null })
+  }
   try {
     const [order] = await db
       .select({

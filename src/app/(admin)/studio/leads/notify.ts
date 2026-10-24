@@ -7,6 +7,7 @@ import { toMailLocale, translator } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
 import { emailGuest } from '@/lib/notify/guest'
 import { logActivity } from '@/lib/security/activity'
+import { triggerCustomItineraryReady } from '@/lib/whatsapp/dispatch'
 
 /** "تحديث الطلبات" (الوثيقة 15.1) في سجل نشاط صاحب الطلب — إن كان له حساب. */
 export async function logRequestActivity(
@@ -70,6 +71,8 @@ export async function notifyRequestStatus(requestId: string, status: string): Pr
     return
   }
   if (status === 'completed') {
+    // WhatsApp automation «custom itinerary ready» (proposal §05).
+    await triggerCustomItineraryReady(requestId)
     // اكتمال الجدول: داخل الموقع + بريد + واتساب (لمن وافق).
     await notifyUser(row.userId, 'custom_completed', { name: row.name ?? '' }, '/account/schedules')
     return

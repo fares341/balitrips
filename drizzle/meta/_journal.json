@@ -232,6 +232,13 @@
       "when": 1793700500000,
       "tag": "0032_activity_v2_fill",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793700600000,
+      "tag": "0033_whatsapp_automation",
+      "breakpoints": true
     }
   ]
 }

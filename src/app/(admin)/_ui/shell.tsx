@@ -49,6 +49,7 @@ const NAV_ICONS: Record<string, IconName> = {
   'nav.activity': 'list',
   'nav.translations': 'globe',
   'nav.config': 'sliders',
+  'nav.whatsapp': 'message',
   'nav.audit': 'clipboard',
   'nav.security': 'lock',
 }

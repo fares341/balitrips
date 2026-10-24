@@ -69,7 +69,7 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
 
   [/^\/protection(\/(alerts|sessions|devices|activity))?$/, ['security.read']],
   [/^\/translations$/, ['translations.write']],
-  [/^\/(config|marketing)$/, ['config.write']],
+  [/^\/(config|marketing|whatsapp)$/, ['config.write']],
   [/^\/audit$/, ['audit.read']],
   [/^\/team$/, ['users.manage']],
   [/^\/integrations(\/.*)?$/, ['integrations.write']],
