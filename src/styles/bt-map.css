@@ -497,7 +497,7 @@
   touch-action: none;
 }
 
-/* pins */
+/* pins: small teardrops (forest, white dot); the selected one bigger, orange */
 .mp-pin {
   position: absolute;
   left: 0;
@@ -510,125 +510,87 @@
   z-index: 9;
 }
 .mp-dot {
+  --pin: 26px;
   position: absolute;
-  left: -17px;
-  top: -17px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  /* the tip of the drop sits on the place */
+  left: calc(var(--pin) / -2);
+  top: calc(var(--pin) * -1.32);
+  width: var(--pin);
+  height: var(--pin);
   border: 0;
+  padding: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  transition: transform var(--d-base) var(--ease);
+  transform-origin: 50% 132%;
+}
+.mp-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--forest, #26552e);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  transition: background var(--d-base);
+}
+.mp-dot > i {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 36%;
+  height: 36%;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  color: #5b6560;
+}
+.mp-dot:hover {
+  transform: scale(1.1);
+}
+.mp-pin.is-on .mp-dot {
+  --pin: 38px;
+  transform: none;
+}
+.mp-pin.is-on .mp-dot::before {
+  background: var(--orange);
+  border-color: #fff;
+}
+/* VIP places in a region: a grey drop with a small lock */
+.mp-pin.is-locked .mp-dot::before {
+  background: #6b7570;
+}
+.mp-pin.is-locked .mp-dot > i {
+  width: 58%;
+  height: 58%;
+  background: #fff;
+  color: #3d4642;
+}
+/* a cluster of overlapping pins: tap to zoom in */
+.mp-cl {
+  position: absolute;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #fff;
   padding: 0;
   display: grid;
   place-items: center;
-  background: #fff;
-  color: var(--forest);
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.35),
-    0 6px 14px rgba(0, 0, 0, 0.45);
-  transition:
-    transform var(--d-base) var(--ease),
-    background var(--d-base);
-  pointer-events: auto;
-  cursor: pointer;
-}
-.mp-dot:hover,
-.mp-pin.is-on .mp-dot {
-  transform: scale(1.18);
-  background: var(--orange);
-  color: var(--forest-ink);
-}
-.mp-pin.is-locked .mp-dot {
-  background: rgba(255, 255, 255, 0.55);
-  color: #24412a;
-}
-.mp-lbl {
-  position: absolute;
-  top: -27px;
-  inset-inline-start: 30px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 6px;
-  padding-inline-end: 13px;
-  width: max-content;
-  max-width: 230px;
-  border-radius: 14px;
-  background: rgba(22, 52, 38, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: var(--forest, #26552e);
   color: #fff;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.6);
-  cursor: pointer;
-  opacity: 0;
-  transform: translateX(var(--lx, -8px));
-  pointer-events: none;
-  transition:
-    opacity var(--d-slow) var(--ease),
-    transform var(--d-slow) var(--ease),
-    border-color var(--d-base);
-  text-align: start;
   font: inherit;
-}
-[dir='rtl'] .mp-lbl {
-  --lx: 8px;
-}
-.mp-lbl::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: -14px;
-  top: 50%;
-  width: 14px;
-  height: 1.5px;
-  background: rgba(255, 255, 255, 0.7);
-}
-.mp-lbl-img {
-  width: 40px;
-  height: 40px;
-  border-radius: 9px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.mp-lbl b {
-  display: block;
-  font-size: 13.5px;
-  line-height: 1.2;
-}
-.mp-lbl small {
-  font-size: 11.5px;
-  opacity: 0.85;
-}
-.mp-view.show-labels .mp-pin:not(.is-locked) .mp-lbl,
-.mp-pin.is-on .mp-lbl,
-.mp-pin:hover .mp-lbl {
-  opacity: 1;
-  transform: none;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow:
+    0 0 0 5px rgba(38, 85, 46, 0.28),
+    0 3px 8px rgba(0, 0, 0, 0.35);
   pointer-events: auto;
-}
-.mp-pin.is-on .mp-lbl {
-  border-color: var(--orange);
-  background: rgba(19, 48, 26, 0.82);
-}
-.mp-pulse {
-  position: absolute;
-  left: -17px;
-  top: -17px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--orange);
-  opacity: 0.45;
-  animation: mp-pulse 2s ease-out infinite;
-  pointer-events: none;
-}
-@keyframes mp-pulse {
-  70% {
-    transform: scale(2.6);
-    opacity: 0;
-  }
-  100% {
-    opacity: 0;
-  }
+  cursor: pointer;
 }
 
 /* region bubbles */
@@ -1375,8 +1337,7 @@
 }
 
 /* ---------- Place photo placeholder (a place with no photo yet) ---------- */
-/* zero specificity: a slot's own size (.mp-lbl-img, .mp-mcard-img…) always wins,
-   otherwise a photo-less pin label stretched its thumb to 100% of the map */
+/* zero specificity: a slot's own size (.mp-lbl-img, .mp-ccard-img, .mp-mcard-img…) always wins */
 :where(.pl-ph) {
   display: grid;
   place-items: center;
@@ -1618,6 +1579,140 @@
   .mp-pin.is-on .mp-lbl,
   .mp-view.show-labels .mp-pin:not(:hover) .mp-lbl {
     display: none;
+  }
+  /* the card carousel: one row, swiped sideways, synced with the pins */
+  .mp-carousel {
+    position: relative;
+    pointer-events: auto;
+    margin-inline: -10px;
+    background: transparent !important;
+    border-radius: 0 !important;
+    transition: transform var(--d-base) var(--ease);
+    animation: mp-in var(--d-slow) var(--ease);
+  }
+  .mp-car-x {
+    position: absolute;
+    top: -40px;
+    inset-inline-end: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 0;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    color: var(--forest);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+  }
+  .mp-car-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 22px;
+    padding: 4px 22px 6px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+  .mp-car-row::-webkit-scrollbar {
+    display: none;
+  }
+  .mp-ccard {
+    position: relative;
+    flex: 0 0 calc(100% - 44px);
+    scroll-snap-align: center;
+    display: flex;
+    min-height: 124px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.45);
+    color: var(--ink, #1d2a22);
+  }
+  .mp-ccard.is-on {
+    border-color: var(--orange);
+  }
+  .mp-ccard-img {
+    width: 34%;
+    flex-shrink: 0;
+    align-self: stretch;
+    min-height: 124px;
+  }
+  .mp-ccard-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+    padding: 12px 14px;
+    padding-inline-end: 44px;
+  }
+  .mp-ccard-name {
+    color: var(--forest);
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.25;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mp-ccard-name::after {
+    /* the whole card opens the place */
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .mp-ccard-desc {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mp-ccard-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .mp-ccard-book {
+    position: relative;
+    z-index: 1;
+    color: var(--orange-ink, #b4530a);
+    font-weight: 700;
+    font-size: 12px;
+    text-decoration: none;
+  }
+  .mp-heart {
+    position: absolute;
+    z-index: 1;
+    top: 6px;
+    inset-inline-end: 6px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--forest);
+    cursor: pointer;
+  }
+  .mp-heart[aria-pressed='true'] {
+    color: #d23a3a;
+  }
+  .mp-heart[aria-pressed='true'] svg {
+    fill: currentColor;
   }
 }
 

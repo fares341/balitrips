@@ -57,7 +57,7 @@ import { useMapFilters } from './map-filters'
 import { MapWatermark, protectionHandlers } from './map-protect'
 import { attributionsFor, MAP_SETTING_DEFAULTS, type MapSettings } from './map-style'
 import { loadMapLibre, type EngineLoader } from './maplibre-loader'
-import { PlaceActions } from './place-actions'
+import { FavoriteHeart, PlaceActions } from './place-actions'
 import { PlaceThumb } from './place-thumb'
 import { buildPins, type MapClientPlace, type MapPin, type OpenMapPlace } from './projection'
 import type { RegionBubble } from './regions'
@@ -68,8 +68,10 @@ const DRIVER_HREF = '/driver'
 const BOUNDS_DEBOUNCE_MS = 180
 /** Zoom past the fitted island (in zoom levels) where pins replace bubbles… */
 const PINS_AT = 0.63
-/** …and where every pin shows its glass label. */
-const LABELS_AT = 1.23
+/** Pins closer than this on screen (px) merge into one numbered cluster. */
+const CLUSTER_PX = 36
+/** Cards in the phone carousel (the visible area's places, nearest first in list order). */
+const CAROUSEL_MAX = 40
 
 /** Phones: the map, or a full-screen list of the results. */
 type MobileView = 'map' | 'list'
@@ -104,9 +106,10 @@ export interface MapAppProps {
 
 interface ScreenState {
   mode: 'regions' | 'places'
-  labels: boolean
   bubbles: { key: string; x: number; y: number; ox: number; oy: number }[]
   pins: { slug: string; x: number; y: number }[]
+  /** Overlapping pins at low zoom: tap to zoom in. */
+  clusters: { id: string; x: number; y: number; slugs: string[]; lon: number; lat: number }[]
   landmarks: { id: string; x: number; y: number }[]
   me: { x: number; y: number } | null
   /** View box size, for keeping the landmark card on screen. */
@@ -116,9 +119,9 @@ interface ScreenState {
 
 const EMPTY_SCREEN: ScreenState = {
   mode: 'regions',
-  labels: false,
   bubbles: [],
   pins: [],
+  clusters: [],
   landmarks: [],
   me: null,
   w: 0,
@@ -172,6 +175,8 @@ export function MapApp(props: MapAppProps) {
   )
 
   const [selectedSlug, setSelectedSlug] = useState<string | null>(props.initialSlug)
+  /** The overlay measure reads the selection without being re-created. */
+  const selectedRef = useRef<string | null>(props.initialSlug)
   const [lockedPick, setLockedPick] = useState<string | null>(null)
   const [landmarkPick, setLandmarkPick] = useState<string | null>(null)
   const [mobileView, setMobileView] = useState<MobileView>('map')
@@ -284,10 +289,45 @@ export function MapApp(props: MapAppProps) {
     const offsets = mode === 'regions' ? declutter(anchors) : anchors.map(() => ({ ox: 0, oy: 0 }))
 
     const placed: ScreenState['pins'] = []
+    const clusters: ScreenState['clusters'] = []
     if (mode === 'places') {
+      // Greedy screen-space clustering: each pin joins the first group whose
+      // seed is within CLUSTER_PX, so overlapping pins never stack.
+      const groups: { x: number; y: number; members: MapPin[]; pts: { x: number; y: number }[] }[] =
+        []
       for (const pin of list) {
         const p = view.project(pin.place.lon, pin.place.lat)
-        if (visible(p, 60)) placed.push({ slug: pin.place.slug, x: p.x, y: p.y })
+        if (!visible(p, 60)) continue
+        const g = groups.find((entry) => Math.hypot(entry.x - p.x, entry.y - p.y) < CLUSTER_PX)
+        if (g === undefined) groups.push({ x: p.x, y: p.y, members: [pin], pts: [p] })
+        else {
+          g.members.push(pin)
+          g.pts.push(p)
+        }
+      }
+      for (const g of groups) {
+        const first = g.members[0]
+        if (first === undefined) continue
+        if (g.members.length === 1) {
+          placed.push({ slug: first.place.slug, x: g.x, y: g.y })
+          continue
+        }
+        const n = g.members.length
+        clusters.push({
+          id: first.place.slug,
+          x: g.pts.reduce((sum, q) => sum + q.x, 0) / n,
+          y: g.pts.reduce((sum, q) => sum + q.y, 0) / n,
+          slugs: g.members.map((m) => m.place.slug),
+          lon: g.members.reduce((sum, m) => sum + m.place.lon, 0) / n,
+          lat: g.members.reduce((sum, m) => sum + m.place.lat, 0) / n,
+        })
+        // The selected place keeps its own pin on top of its cluster.
+        for (const [i, m] of g.members.entries()) {
+          const q = g.pts[i]
+          if (q !== undefined && m.place.slug === selectedRef.current) {
+            placed.push({ slug: m.place.slug, x: q.x, y: q.y })
+          }
+        }
       }
     }
     // The client's landmarks: on the real map only (the artwork has them painted).
@@ -299,6 +339,7 @@ export function MapApp(props: MapAppProps) {
         // A site pin or region bubble wins over a landmark label in the same spot.
         const crowded =
           placed.some((pin) => Math.hypot(pin.x - p.x, pin.y - p.y) < 44) ||
+          clusters.some((c) => Math.hypot(c.x - p.x, c.y - p.y) < 44) ||
           (mode === 'regions' &&
             anchors.some((b, i) => {
               const dx = b.x + (offsets[i]?.ox ?? 0) - p.x
@@ -311,7 +352,6 @@ export function MapApp(props: MapAppProps) {
     const me = here === null ? null : view.project(here.lon, here.lat)
     setScreen({
       mode,
-      labels: levels >= LABELS_AT,
       bubbles: anchors.map((a, i) => ({
         key: a.key,
         x: a.x,
@@ -320,6 +360,7 @@ export function MapApp(props: MapAppProps) {
         oy: offsets[i]?.oy ?? 0,
       })),
       pins: placed,
+      clusters,
       landmarks: marks,
       me: me !== null && visible(me, 20) ? me : null,
       w: W,
@@ -331,6 +372,12 @@ export function MapApp(props: MapAppProps) {
     cancelAnimationFrame(frameRef.current)
     frameRef.current = requestAnimationFrame(measure)
   }, [measure])
+
+  // The selected place leaves its cluster (and goes back) on the next frame.
+  useEffect(() => {
+    selectedRef.current = selectedSlug
+    schedule()
+  }, [selectedSlug, schedule])
 
   const settle = useCallback(() => {
     window.clearTimeout(settleRef.current)
@@ -500,6 +547,12 @@ export function MapApp(props: MapAppProps) {
     bounds === null ? matched : matched.filter((p) => inBounds(bounds, p.place.lat, p.place.lon))
   const useAll = query.length > 0 || bounds === null || inView.length === 0
   const listed = useAll ? matched : inView
+  // The phone carousel: the listed places, always including the selected one.
+  const carousel = (() => {
+    const out = listed.slice(0, CAROUSEL_MAX).map((p) => p.place)
+    if (selected !== null && !out.some((p) => p.slug === selected.slug)) out.unshift(selected)
+    return out
+  })()
   const lockedRegions = regions.filter((r) => r.lockedCount > 0)
   // Locked places have no coordinates here: "in view" is judged by their
   // REGION's centre (server-side region data), never by the place itself.
@@ -794,7 +847,6 @@ export function MapApp(props: MapAppProps) {
               mapShown ? 'is-map' : null,
               !mapShown && !realBroken ? 'is-loading' : null,
               `is-${screen.mode}`,
-              screen.labels ? 'show-labels' : null,
             ]
               .filter(Boolean)
               .join(' ')}
@@ -898,11 +950,35 @@ export function MapApp(props: MapAppProps) {
                           setLockedPick(region.key)
                         }}
                       >
-                        <Icon name="lock" size={15} />
+                        <i aria-hidden="true">
+                          <Icon name="lock" size={11} />
+                        </i>
                       </button>
                     </div>
                   )
                 })}
+              {screen.mode === 'places' &&
+                screen.clusters.map((c) => (
+                  <div
+                    key={`c-${c.id}`}
+                    className="mp-pin is-cluster"
+                    style={{ transform: `translate(${c.x}px, ${c.y}px)` }}
+                  >
+                    <button
+                      type="button"
+                      className="mp-cl"
+                      tabIndex={-1}
+                      aria-label={t('map_results_n', { n: c.slugs.length })}
+                      onClick={() => {
+                        const view = viewRef.current
+                        if (view === null) return
+                        view.flyTo(c.lon, c.lat, view.levels() + 1, view.zoom() + 2)
+                      }}
+                    >
+                      <span dir="ltr">{c.slugs.length}</span>
+                    </button>
+                  </div>
+                ))}
               {screen.mode === 'places' &&
                 screen.pins.map((p) => {
                   const pin = pins.find((entry) => entry.place.slug === p.slug)
@@ -915,36 +991,15 @@ export function MapApp(props: MapAppProps) {
                       className={on ? 'mp-pin is-on' : 'mp-pin'}
                       style={{ transform: `translate(${p.x}px, ${p.y}px)` }}
                     >
-                      {on && <span className="mp-pulse" aria-hidden="true" />}
                       <button
                         type="button"
                         className="mp-dot"
                         tabIndex={-1}
                         aria-label={name}
+                        aria-pressed={on}
                         onClick={() => select(p.slug, false)}
                       >
-                        <Icon name={categoryIcon(pin.place.categoryKey)} size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="mp-lbl"
-                        tabIndex={-1}
-                        aria-hidden="true"
-                        onClick={() => select(p.slug, false)}
-                      >
-                        <PlaceThumb
-                          className="mp-lbl-img"
-                          src={pin.place.heroImageUrl}
-                          icon={categoryIcon(pin.place.categoryKey)}
-                          size={18}
-                        />
-                        <span>
-                          <b>{name}</b>
-                          <small>
-                            {categoryName(pin.place)}
-                            {regionName(pin.place) ? ` · ${regionName(pin.place)}` : ''}
-                          </small>
-                        </span>
+                        <i aria-hidden="true" />
                       </button>
                     </div>
                   )
@@ -1170,12 +1225,11 @@ export function MapApp(props: MapAppProps) {
           {/* Phones: the place card and the Map / List switch, one-hand reach. */}
           <div className="mp-mbar" ref={mbarRef}>
             {mobileView === 'map' && selected !== null && (
-              <MobileCard
-                key={selected.id}
-                place={selected}
-                categoryName={categoryName(selected)}
-                regionName={regionName(selected)}
-                km={near === null ? null : haversineKm(near, selected)}
+              <MobileCarousel
+                places={carousel}
+                selectedSlug={selected.slug}
+                categoryName={categoryName}
+                onPick={(slug) => select(slug, false)}
                 onClose={() => setSelectedSlug(null)}
               />
             )}
@@ -1453,70 +1507,106 @@ function useSwipeDown(onClose: () => void) {
   }
 }
 
-function MobileCard({
-  place,
+/**
+ * Phones: a row of place cards along the bottom, one per visible place,
+ * swiped sideways. The centred card is the selected pin and the other way
+ * round: tapping a pin scrolls its card into the middle.
+ */
+function MobileCarousel({
+  places,
+  selectedSlug,
   categoryName,
-  regionName,
-  km,
+  onPick,
   onClose,
 }: {
-  place: OpenMapPlace
-  categoryName: string
-  regionName: string
-  km: number | null
+  places: OpenMapPlace[]
+  selectedSlug: string
+  categoryName: (place: OpenMapPlace) => string
+  onPick: (slug: string) => void
   onClose: () => void
 }) {
   const t = useTranslations()
   const locale = useLocale() as Locale
-  const name = pick(place.name, locale, place.slug)
+  const rowRef = useRef<HTMLDivElement | null>(null)
+  /** Until this time, scroll events come from our own scrollIntoView. */
+  const quietUntil = useRef(0)
+  const scrollEnd = useRef(0)
   const swipe = useSwipeDown(onClose)
+
+  useEffect(() => {
+    const row = rowRef.current
+    const card = row?.querySelector<HTMLElement>(`[data-slug="${CSS.escape(selectedSlug)}"]`)
+    if (row == null || card == null) return
+    const rowBox = row.getBoundingClientRect()
+    const box = card.getBoundingClientRect()
+    const delta = box.left + box.width / 2 - (rowBox.left + rowBox.width / 2)
+    if (Math.abs(delta) < 4) return
+    quietUntil.current = Date.now() + 700
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    row.scrollBy({ left: delta, behavior: reduce ? 'auto' : 'smooth' })
+  }, [selectedSlug])
+
+  const onScroll = () => {
+    window.clearTimeout(scrollEnd.current)
+    scrollEnd.current = window.setTimeout(() => {
+      const row = rowRef.current
+      if (row === null || Date.now() < quietUntil.current) return
+      const rowBox = row.getBoundingClientRect()
+      const mid = rowBox.left + rowBox.width / 2
+      let best: { slug: string; d: number } | null = null
+      for (const card of row.querySelectorAll<HTMLElement>('[data-slug]')) {
+        const box = card.getBoundingClientRect()
+        const d = Math.abs(box.left + box.width / 2 - mid)
+        if (best === null || d < best.d) best = { slug: card.dataset.slug ?? '', d }
+      }
+      if (best !== null && best.slug !== '' && best.slug !== selectedSlug) onPick(best.slug)
+    }, 140)
+  }
+
   return (
-    <article className="mp-mcard" aria-label={name} style={swipe.style} {...swipe.handlers}>
-      <span className="mp-mcard-grab" aria-hidden="true" />
-      <button type="button" className="mp-mcard-x" aria-label={t('c_close')} onClick={onClose}>
-        <Icon name="cross" size={18} />
+    <div className="mp-carousel" style={swipe.style} {...swipe.handlers}>
+      <button type="button" className="mp-car-x" aria-label={t('c_close')} onClick={onClose}>
+        <Icon name="cross" size={16} />
       </button>
-      <div className="mp-mcard-top">
-        <PlaceThumb
-          className="mp-mcard-img"
-          src={place.heroImageUrl}
-          icon={categoryIcon(place.categoryKey)}
-          size={26}
-        />
-        <div className="mp-mcard-meta">
-          <b>{name}</b>
-          <span>
-            {[categoryName, regionName].filter(Boolean).join(' · ')}
-            {km !== null && (
-              <>
-                {' · '}
-                <span dir="ltr">{km.toFixed(1)} km</span>
-              </>
-            )}
-          </span>
-          <Stars value={place.rating} />
-        </div>
+      <div className="mp-car-row" ref={rowRef} onScroll={onScroll}>
+        {places.map((place) => {
+          const name = pick(place.name, locale, place.slug)
+          const desc = pickOptional(place.description, locale) ?? categoryName(place)
+          const on = place.slug === selectedSlug
+          return (
+            <article
+              key={place.id}
+              data-slug={place.slug}
+              className={on ? 'mp-ccard is-on' : 'mp-ccard'}
+              aria-label={name}
+              aria-current={on ? 'true' : undefined}
+            >
+              <PlaceThumb
+                className="mp-ccard-img"
+                src={place.heroImageUrl}
+                icon={categoryIcon(place.categoryKey)}
+                size={26}
+              />
+              <div className="mp-ccard-body">
+                <Link href={`/places/${place.slug}`} className="mp-ccard-name">
+                  {name}
+                </Link>
+                {desc && <p className="mp-ccard-desc">{desc}</p>}
+                <div className="mp-ccard-foot">
+                  <Stars value={place.rating} />
+                  {place.activitySlug !== null && (
+                    <Link href={`/activities/${place.activitySlug}`} className="mp-ccard-book">
+                      {t('mp3_bookable')}
+                    </Link>
+                  )}
+                </div>
+              </div>
+              {place.canFavorite && <FavoriteHeart placeId={place.id} active={on} />}
+            </article>
+          )
+        })}
       </div>
-      <PlaceActions
-        placeId={place.id}
-        canFavorite={place.canFavorite}
-        canAddToTrip={false}
-        layout="row"
-      >
-        <LinkButton href={`/places/${place.slug}`} variant="forest" size="sm">
-          {t('mp5_details')}
-        </LinkButton>
-        <LinkButton
-          href={`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`}
-          target="_blank"
-          variant="ghost"
-          size="sm"
-          icon="route"
-        >
-          {t('mp3_directions')}
-        </LinkButton>
-      </PlaceActions>
-    </article>
+    </div>
   )
 }
 

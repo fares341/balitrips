@@ -11,6 +11,8 @@ import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Button, LinkButton } from '@/components/bt'
+import { Icon } from '@/components/ui'
+import { useRouter } from '@/i18n/routing'
 
 import {
   addPlaceToTrip,
@@ -128,5 +130,49 @@ export function PlaceActions({
         </p>
       )}
     </div>
+  )
+}
+
+/**
+ * The heart on a phone carousel card. It asks the server for the saved state
+ * only while its card is the active one, so a row of 30 cards is not 30 calls.
+ */
+export function FavoriteHeart({ placeId, active }: { placeId: string; active: boolean }) {
+  const t = useTranslations()
+  const [pending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!active) return
+    let live = true
+    void placeUserState(placeId).then((state) => {
+      if (live && state !== null) setSaved(state.saved)
+    })
+    return () => {
+      live = false
+    }
+  }, [placeId, active])
+
+  return (
+    <button
+      type="button"
+      className="mp-heart"
+      aria-pressed={saved}
+      aria-label={saved ? t('mp_faved') : t('map_save')}
+      disabled={pending}
+      onClick={(event) => {
+        event.stopPropagation()
+        startTransition(async () => {
+          const next = await toggleFavoritePlace(placeId)
+          if (next.ok && next.state === 'saved') setSaved(true)
+          if (next.ok && next.state === 'removed') setSaved(false)
+          if (!next.ok && next.reason === 'signed_out') router.push('/account')
+          if (!next.ok && next.reason === 'upgrade') router.push('/plans')
+        })
+      }}
+    >
+      <Icon name="heart" size={20} />
+    </button>
   )
 }
