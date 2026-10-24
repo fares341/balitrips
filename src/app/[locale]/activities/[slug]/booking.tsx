@@ -1,5 +1,7 @@
 'use client'
 
+import { LocalPrice } from '@/components/currency/currency-context'
+
 /**
  * Activity booking — v3 screen 06 (prototype activity.html, booking.js,
  * handoff "Pricing & add-ons").
@@ -887,7 +889,7 @@ export function PackageBadge({
 /** «US$ 240.00» with the reference price struck through and the saving, when valid. */
 function PackagePrice({ p }: { p: BookingPackage }) {
   const t = useTranslations()
-  const { money } = useBooking()
+  const { money, data } = useBooking()
   const compare = p.compareAtPriceMinor
   const off = compare !== null && compare > p.priceMinor ? compare - p.priceMinor : 0
   return (
@@ -895,6 +897,7 @@ function PackagePrice({ p }: { p: BookingPackage }) {
       <b className="price" dir="ltr">
         {money(p.priceMinor)}
       </b>
+      <LocalPrice minor={p.priceMinor} currency={data.currency} />
       {off > 0 && compare !== null ? (
         <>
           {' '}

@@ -58,6 +58,7 @@ import { pageMetadata } from '../_meta'
 import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
 import { formatPrice } from '../_ui/price'
+import { LocalPrice } from '@/components/currency/currency-context'
 import { currentUserId } from '../_viewer/session'
 import { PLAN_TIERS } from './tiers'
 
@@ -360,6 +361,7 @@ function PlanGrid({
 
               <p className="bt-ptier-price">
                 <strong className="bt-money">{money(plan.priceMinor, plan.currency)}</strong>
+                <LocalPrice minor={plan.priceMinor} currency={plan.currency} />
                 {/* The duration is the first fact above; the price line only
                     says how it is paid. */}
                 <span>/ {t('sub_once')}</span>

@@ -1,5 +1,7 @@
 'use client'
 
+import { LocalPrice } from '@/components/currency/currency-context'
+
 /**
  * Package request sidebar (client, Oct 2026).
  *
@@ -226,6 +228,7 @@ export function PackageBookingBox({
             <span>{t('pk_req_total')}</span>
             <span>{money(estimate.totalMinor)}</span>
           </div>
+          <LocalPrice minor={estimate.totalMinor} currency={estimate.currency} />
           {estimate.incomplete && (
             <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
               {t('pk_req_incomplete')}

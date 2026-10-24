@@ -2620,5 +2620,7 @@
   "pol_ck5_t": "Changing your choice",
   "pol_ck5_b": "You can change your choice at any time with the cookie settings button on this page. You can also delete cookies in your browser settings; the banner will then ask you again.",
   "pol_ck6_t": "Questions",
-  "pol_ck6_b": "Write to {email} or WhatsApp {whatsapp}."
+  "pol_ck6_b": "Write to {email} or WhatsApp {whatsapp}.",
+  "cur_label": "Display currency",
+  "cur_checkout_note": "Your card is charged in US dollars (USD). Amounts in your local currency are approximate and for reference only; your bank sets the final conversion."
 }

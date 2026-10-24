@@ -2620,5 +2620,7 @@
   "pol_ck5_t": "Mengubah pilihan Anda",
   "pol_ck5_b": "Anda dapat mengubah pilihan kapan saja lewat tombol pengaturan cookie di halaman ini. Anda juga dapat menghapus cookie di pengaturan browser; banner akan bertanya lagi.",
   "pol_ck6_t": "Pertanyaan",
-  "pol_ck6_b": "Kirim email ke {email} atau WhatsApp {whatsapp}."
+  "pol_ck6_b": "Kirim email ke {email} atau WhatsApp {whatsapp}.",
+  "cur_label": "Mata uang tampilan",
+  "cur_checkout_note": "Kartu Anda ditagih dalam dolar AS (USD). Jumlah dalam mata uang lokal Anda hanya perkiraan sebagai referensi; bank Anda menentukan kurs akhirnya."
 }

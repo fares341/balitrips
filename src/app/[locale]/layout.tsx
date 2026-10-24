@@ -14,6 +14,7 @@ import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
 import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
+import { CurrencyProvider } from '@/components/currency/currency-context'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
 import { fontVariables } from '@/styles/fonts'
@@ -77,39 +78,41 @@ export default async function LocaleLayout({
       <body>
         <NextIntlClientProvider messages={messages}>
           <ContactProvider value={contact}>
-            {/*
+            <CurrencyProvider>
+              {/*
             The shell is mounted once, above the route slot. Header and Footer
             therefore persist across every navigation — the scroll listener,
             the drawer and the cart badge are not torn down and rebuilt on each
             page, and the toast survives a route change so "Added to your trip"
             is still visible after the user moves on.
           */}
-            <ToastProvider>
-              <SkipLink />
-              <Header />
-              {/*
+              <ToastProvider>
+                <SkipLink />
+                <Header />
+                {/*
               Skip-link target. A wrapper rather than an id on each page's
               <main>: every route renders its own <main>, and the header puts
               a twelve-link nav in front of all of them.
             */}
-              <div id="main" tabIndex={-1} style={{ outline: 'none' }}>
-                {children}
-              </div>
-              <Footer />
-              <WhatsAppFab />
-              <AssistantLauncher />
-              <PageViewBeacon />
-              {/* Phase 5: cookie choice, then first-party analytics and (only
+                <div id="main" tabIndex={-1} style={{ outline: 'none' }}>
+                  {children}
+                </div>
+                <Footer />
+                <WhatsAppFab />
+                <AssistantLauncher />
+                <PageViewBeacon />
+                {/* Phase 5: cookie choice, then first-party analytics and (only
                 with consent) the marketing tags. Both render nothing on the
                 server, so pages stay static. */}
-              <ConsentBanner />
-              <Tracking />
-              <ErrorBeacon />
-              {/* Mobile bottom tab bar. Must stay a direct child of <body>
+                <ConsentBanner />
+                <Tracking />
+                <ErrorBeacon />
+                {/* Mobile bottom tab bar. Must stay a direct child of <body>
                 (providers render no DOM): bt.css reserves its height with
                 `body:has(> .tabbar)`. */}
-              <Tabbar />
-            </ToastProvider>
+                <Tabbar />
+              </ToastProvider>
+            </CurrencyProvider>
           </ContactProvider>
         </NextIntlClientProvider>
       </body>
