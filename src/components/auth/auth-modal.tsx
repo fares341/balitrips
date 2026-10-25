@@ -40,10 +40,19 @@ import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { getPathname, Link, useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
 
+import { withDialCode } from '@/lib/auth/phone'
+
 import { authClient, authErrorAction, authErrorKey } from './client'
 import { countryOptions } from './countries'
 import { prepareDeviceCookie } from './device-fingerprint'
-import { FormError, FormNotice, SelectField, TextField } from './fields'
+import {
+  defaultDial,
+  FormError,
+  FormNotice,
+  IdentifierField,
+  SelectField,
+  TextField,
+} from './fields'
 import {
   fieldErrors,
   forgotPasswordSchema,
@@ -182,6 +191,7 @@ export function AuthModal({
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [rememberMe, setRememberMe] = useState(true)
+  const [dial, setDial] = useState(() => defaultDial(locale))
   /** موافقة واتساب (الوثيقة 19.3/20.1) — اختيارية وغير محددة افتراضياً. */
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(false)
@@ -255,7 +265,7 @@ export function AuthModal({
     if (busy) return
 
     const parsed = signInSchema.safeParse({
-      email: form.email,
+      email: withDialCode(form.email, dial),
       password: form.password,
       rememberMe,
     })
@@ -377,7 +387,7 @@ export function AuthModal({
     event.preventDefault()
     if (busy) return
 
-    const parsed = forgotPasswordSchema.safeParse({ email: form.email })
+    const parsed = forgotPasswordSchema.safeParse({ email: withDialCode(form.email, dial) })
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error))
       setFormError(null)
@@ -482,14 +492,13 @@ export function AuthModal({
       )}
 
       {/* الوثيقة 3.2: الدخول بالبريد أو رقم الجوال. */}
-      <TextField
+      <IdentifierField
         label={t('auth_identifier')}
-        type="text"
-        inputMode="email"
         value={form.email}
         onChange={update('email')}
+        dial={dial}
+        onDialChange={setDial}
         placeholder={t('auth_identifier_ph')}
-        autoComplete="username"
         maxLength={MAX_EMAIL_LENGTH}
         error={errors.email}
         disabled={busy}
@@ -775,14 +784,13 @@ export function AuthModal({
         <FormNotice>{t('auth_sent')}</FormNotice>
       ) : (
         <>
-          <TextField
+          <IdentifierField
             label={t('auth_identifier')}
-            type="text"
-            inputMode="email"
             value={form.email}
             onChange={update('email')}
+            dial={dial}
+            onDialChange={setDial}
             placeholder={t('auth_identifier_ph')}
-            autoComplete="username"
             maxLength={MAX_EMAIL_LENGTH}
             error={errors.email}
             disabled={busy}

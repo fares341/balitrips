@@ -24,6 +24,7 @@ const STATIC_PATHS = [
   ...(FEATURES.driver ? ['/driver'] : []),
   '/custom',
   '/explore',
+  '/shopping',
   '/plans',
   '/reviews',
   '/about',

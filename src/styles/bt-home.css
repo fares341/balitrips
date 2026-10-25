@@ -1363,7 +1363,7 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   }
 }
 
-/* ---------- «Your free Bali guide»: five category cards (owner, Oct 2026) ---------- */
+/* ---------- «Your free Bali guide»: four category cards with a photo cover (owner, Oct 2026) ---------- */
 .home-v3 .guide-grid {
   list-style: none;
   margin: 0;
@@ -1372,33 +1372,27 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   gap: 14px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.home-v3 .guide-grid > li:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-@media (min-width: 760px) {
+@media (min-width: 1000px) {
   .home-v3 .guide-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .home-v3 .guide-grid > li:last-child:nth-child(odd) {
-    grid-column: auto;
-  }
-}
-@media (min-width: 1100px) {
-  .home-v3 .guide-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
   }
 }
+/* The whole card is the photo; title, count and link sit on a dark veil at the bottom. */
 .home-v3 .gcard {
+  position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   height: 100%;
+  min-height: 230px;
+  aspect-ratio: 4 / 5;
   border-radius: 22px;
-  background: var(--white);
-  border: 1px solid rgba(38, 85, 46, 0.1);
+  background: var(--forest);
   box-shadow: var(--sh-1);
-  color: var(--forest);
+  color: #fff;
   overflow: hidden;
+  isolation: isolate;
   transition:
     box-shadow var(--d-base),
     transform var(--d-base);
@@ -1408,10 +1402,16 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   transform: translateY(-2px);
 }
 .home-v3 .gc-ph {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   display: block;
-  aspect-ratio: 4 / 3;
-  background: linear-gradient(140deg, var(--palm-soft), var(--ivory-2));
+}
+.home-v3 .gc-ph::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 30, 15, 0) 35%, rgba(10, 30, 15, 0.82) 100%);
 }
 .home-v3 .gc-ph img {
   width: 100%;
@@ -1423,43 +1423,49 @@ html[dir='ltr'] .home-v3 .rm-track > li {
 .home-v3 .gcard:hover .gc-ph img {
   transform: scale(1.06);
 }
+/* No photo yet (Studio → Taxonomy → category image): a brand cover, not an empty box. */
+.home-v3 .gc-noimg {
+  background:
+    radial-gradient(120% 90% at 85% 10%, rgba(255, 166, 0, 0.35), transparent 55%),
+    linear-gradient(150deg, var(--forest), #12361b);
+}
 .home-v3 .gc-art {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--forest);
-  opacity: 0.35;
+  padding-bottom: 30%;
+  color: #fff;
+  opacity: 0.22;
 }
 .home-v3 .gc-ic {
   position: absolute;
-  bottom: -18px;
-  inset-inline-start: 14px;
+  top: 12px;
+  inset-inline-start: 12px;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  background: var(--forest);
-  color: #fff;
-  box-shadow:
-    0 0 0 3px var(--white),
-    var(--sh-2);
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--forest);
+  box-shadow: var(--sh-2);
 }
 .home-v3 .gc-b {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 26px 14px 14px;
-  flex: 1;
+  padding: 16px 14px 14px;
 }
 .home-v3 .gc-t {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.3;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 .home-v3 .gc-n {
   font-size: 13px;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
 }
 .home-v3 .gc-soon {
@@ -1470,12 +1476,11 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   color: var(--orange-deep, #b45f00);
 }
 .home-v3 .gc-go {
-  margin-top: auto;
-  padding-top: 8px;
+  padding-top: 6px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--forest);
+  color: var(--orange, #ffa600);
 }
