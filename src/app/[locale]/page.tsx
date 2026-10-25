@@ -8,9 +8,10 @@
  *                   name changing with each clip, search → /search?q=,
  *                   "Plan your trip" → /services
  *   planning today  photo + icon cards, one per service page (svc-cards.tsx)
- *   free guide      «Your free Bali guide» (owner, Oct 2026): five free map
- *                   categories (hospitals, pharmacies, mosques, malls,
- *                   popular markets), live counts, each → /map?cat=…
+ *   free guide      «Your free Bali guide» (owner, Oct 2026): four free map
+ *                   categories (hospitals, mosques, malls, popular markets;
+ *                   pharmacies removed by the client), photo-cover cards with
+ *                   live counts, each → /map?cat=…
  *                   (hero info strip: Bali time, weather, visa — bali-info.tsx)
  *   most requested  photo cards of the top activities only (client; events
  *                   excluded); a swipe row on phones/tablets, three per row
@@ -96,17 +97,18 @@ const SERVICES: readonly { href: string; icon: IconName; image: string; key: str
   { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
   // Owner, Oct 2026: the photo is the Studio pick (Configuration → Home) when
   // set; the fallback is a licensed brand photo (the old `.jpg` did not exist).
-  { href: '/map?cat=malls', icon: 'bag', image: '/brand/flatlay-wide.webp', key: 'shop' },
+  { href: '/shopping', icon: 'bag', image: '/brand/flatlay-wide.webp', key: 'shop' },
 ]
 
 /**
- * «Your free Bali guide» (owner, Oct 2026): exactly these five free map
- * categories, in this order, each a card → /map filtered to it.
+ * «Your free Bali guide» (owner, Oct 2026): exactly these four free map
+ * categories, in this order, each a card → /map filtered to it. The cover is
+ * the category photo picked in Studio (Taxonomy), else a photo of one of its
+ * places, else a brand cover.
  */
-const GUIDE_KEYS = ['hospital', 'pharmacies', 'mosques', 'malls', 'markets'] as const
+const GUIDE_KEYS = ['hospital', 'mosques', 'malls', 'markets'] as const
 const GUIDE_ICONS: Record<(typeof GUIDE_KEYS)[number], IconName> = {
   hospital: 'shield',
-  pharmacies: 'drop',
   mosques: 'compass',
   malls: 'bag',
   markets: 'cart',
@@ -500,18 +502,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                       card.count > 0 ? t('hv6_guide_count', { n: card.count }) : t('hv6_guide_soon')
                     }`}
                   >
-                    <span className="gc-ph" aria-hidden="true">
+                    <span
+                      className={card.imageUrl !== null ? 'gc-ph' : 'gc-ph gc-noimg'}
+                      aria-hidden="true"
+                    >
                       {card.imageUrl !== null ? (
                         // eslint-disable-next-line @next/next/no-img-element -- Studio-picked category photo
                         <img src={card.imageUrl} alt="" loading="lazy" decoding="async" />
                       ) : (
                         <span className="gc-art">
-                          <Icon name={card.icon} size={44} stroke={1.3} />
+                          <Icon name={card.icon} size={96} stroke={1} />
                         </span>
                       )}
-                      <span className="gc-ic">
-                        <Icon name={card.icon} size={20} stroke={1.8} />
-                      </span>
+                    </span>
+                    <span className="gc-ic" aria-hidden="true">
+                      <Icon name={card.icon} size={20} stroke={1.8} />
                     </span>
                     <span className="gc-b">
                       <b className="gc-t">{card.label}</b>
