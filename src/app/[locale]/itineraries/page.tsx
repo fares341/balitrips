@@ -35,7 +35,9 @@ import { listItineraries } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { HOME_HREF } from '@/components/layout'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
+import { pricedTiers } from '@/lib/itineraries/tiers'
 import { alternates } from './_meta'
+import { ItineraryHowItWorks } from './_ui/how-it-works'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const HREF = ENTITY_PATHS.itinerary
@@ -108,12 +110,18 @@ export default async function ItinerariesPage({
     minor: itinerary.priceMinor,
     currency: itinerary.currency,
   }))
-  const tiers = itineraries.map((itinerary, index) => ({
-    itinerary,
-    tier: itineraryTiers[index] ?? null,
-  }))
+  // An itinerary sold in levels (economy / mid / luxury) is in each level it
+  // has a price for; otherwise in the band its single price falls in.
+  const tiers = itineraries.map((itinerary, index) => {
+    const levels = pricedTiers(itinerary.tierPrices).map((one) => one.key)
+    const derived = itineraryTiers[index] ?? null
+    return {
+      itinerary,
+      levels: levels.length > 0 ? levels : derived === null ? [] : [derived],
+    }
+  })
   const counts = Object.fromEntries(
-    BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.tier === key).length]),
+    BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.levels.includes(key)).length]),
   ) as Record<BudgetTier, number>
   // Number of days (?days=5): the real lengths in the catalogue.
   const dayOptions = [...new Set(itineraries.map((itinerary) => itinerary.days))].sort(
@@ -133,7 +141,7 @@ export default async function ItinerariesPage({
   const shown = tiers
     .filter(
       (one) =>
-        (tier === null || one.tier === tier) &&
+        (tier === null || one.levels.includes(tier)) &&
         (days === null || one.itinerary.days === days) &&
         (region === null || one.itinerary.regions.some((r) => r.key === region)),
     )
@@ -200,6 +208,9 @@ export default async function ItinerariesPage({
 
       <section className="bg-ivory sec-tight">
         <div className="wrap stack" style={{ gap: 16 }}>
+          <a href="#it-how" className="it-how-link">
+            <Icon name="info" size={16} /> {t('ihw_link')}
+          </a>
           {itineraries.length > 0 && (
             <div className="panel it-filter">
               {dayOptions.length > 1 && (
@@ -280,6 +291,10 @@ export default async function ItinerariesPage({
               ))}
             </div>
           )}
+
+          <div className="it-how-wrap">
+            <ItineraryHowItWorks locale={locale} photo={bannerSrc} />
+          </div>
 
           <div className="panel row between it-custom">
             <span className="stack" style={{ gap: 4 }}>

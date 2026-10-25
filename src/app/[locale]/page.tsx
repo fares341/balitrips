@@ -630,7 +630,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="wrap">
           <div className="ct">
             {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo (CUSTOM_TRIP_PHOTO) */}
-            <img src={CUSTOM_TRIP_PHOTO} alt="" loading="lazy" />
+            <img
+              src={CUSTOM_TRIP_PHOTO}
+              alt={t('hv3_ct_img_alt')}
+              width={1600}
+              height={1366}
+              loading="lazy"
+            />
             <div className="ct-copy">
               <span className="eyebrow">{t('hv3_ct_eyebrow')}</span>
               <h2 className="h2" id="ct-h">

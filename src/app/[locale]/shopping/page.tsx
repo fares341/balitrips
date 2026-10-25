@@ -39,8 +39,11 @@ type PageProps = {
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 
+// Malls and popular markets are separate lists: a place's main category wins.
 const inShop = (place: OpenPlace, key: ShopKey) =>
-  place.categoryKey === key || place.subCategoryKeys.includes(key)
+  place.categoryKey === key ||
+  (!(SHOP_KEYS as readonly string[]).includes(place.categoryKey ?? '') &&
+    place.subCategoryKeys.includes(key))
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale: raw } = await params

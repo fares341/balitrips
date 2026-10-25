@@ -15,6 +15,8 @@ import {
 } from '@/db/schema'
 import { placeAccess } from '@/lib/entitlements/redaction'
 import { MAP_ACCESS, PACKAGE_PRICE_RULES, mapAccessOf } from '@/lib/itineraries/sale'
+import { ITINERARY_TIERS, normaliseTierPrices } from '@/lib/itineraries/tiers'
+import { formatMoneyInput } from '@/lib/money-input'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { locales, localeConfig } from '@/i18n/config'
@@ -30,6 +32,7 @@ import {
   LocalizedListField,
   MoneyField,
   PriceLockNote,
+  priceInputProps,
   TextArea,
   TextInput,
 } from '../../../_ui/field'
@@ -425,6 +428,33 @@ export default async function ItineraryEditorPage({
             options={regions}
             values={selectedRegions.map((row) => row.regionId)}
           />
+        </div>
+
+        <div className="a-card">
+          <h2>{t('itineraries.tiers_t')}</h2>
+          <p className="a-hint">{t('itineraries.tiers_hint')}</p>
+          {pricesLocked && <PriceLockNote />}
+          <div className="a-row">
+            {ITINERARY_TIERS.map((key) => {
+              const minor = normaliseTierPrices(itinerary?.tierPrices)[key]
+              return (
+                <Field key={key} label={t(`itineraries.tier_${key}`)} htmlFor={`tier_${key}`}>
+                  <TextInput
+                    id={`tier_${key}`}
+                    name={`tier_${key}`}
+                    inputMode="decimal"
+                    dir="ltr"
+                    defaultValue={
+                      minor === undefined
+                        ? ''
+                        : formatMoneyInput(minor, itinerary?.currency ?? 'USD')
+                    }
+                    {...priceInputProps(pricesLocked)}
+                  />
+                </Field>
+              )
+            })}
+          </div>
         </div>
 
         <div className="a-actions">

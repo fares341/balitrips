@@ -1981,3 +1981,90 @@
   gap: 12px;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
+
+/* One category on its own (`/map?cat=`): a bar naming it, with «show all» */
+.mp-focus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding-block: 6px;
+  padding-inline: 14px 6px;
+  border-radius: 99px;
+  background: var(--forest, #26552e);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+}
+.mp-focus-t {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mp-focus-t b {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+.mp-focus-x {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--orange);
+  color: var(--forest-ink);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* the place name beside its pin */
+.mp-pin-name {
+  position: absolute;
+  top: -30px;
+  inset-inline-start: 14px;
+  max-width: 170px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 251, 248, 0.96);
+  color: var(--forest-ink, #13301a);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 3px 10px -4px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.mp-pin.is-on .mp-pin-name {
+  background: var(--orange);
+  top: -40px;
+  inset-inline-start: 20px;
+}
+@media (max-width: 1023px) {
+  .mp-mfilters .mp-focus {
+    display: flex;
+    width: 100%;
+  }
+  .mp-focus-t {
+    flex: 1;
+  }
+  .mp-pin-name {
+    max-width: 120px;
+    font-size: 11px;
+  }
+}

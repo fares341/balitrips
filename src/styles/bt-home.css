@@ -975,8 +975,10 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 50%;
+  /* the three faces sit in the upper middle of the client's photo */
+  object-position: 45% 35%;
   min-height: 240px;
+  max-height: 360px;
   display: block;
 }
 .home-v3 .ct-copy {
@@ -996,6 +998,9 @@
 @media (min-width: 900px) {
   .home-v3 .ct {
     grid-template-columns: 1.1fr 1fr;
+  }
+  .home-v3 .ct > img {
+    max-height: none;
   }
   .home-v3 .ct-copy {
     padding: 56px;

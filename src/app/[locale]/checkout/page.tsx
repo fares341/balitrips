@@ -18,6 +18,8 @@
  * a retry can reuse it), and no bank-transfer radio (see the payment step).
  */
 
+import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
+import { isItineraryTier } from '@/lib/itineraries/tiers'
 import { LocalPrice } from '@/components/currency/currency-context'
 import { randomUUID } from 'node:crypto'
 
@@ -317,6 +319,11 @@ export default async function CheckoutPage({
             )}
             {line.audience !== null && (
               <small className="muted">{t('it_aud_line', { audience: line.audience })}</small>
+            )}
+            {isItineraryTier(line.tier) && (
+              <small className="muted">
+                {t('it_tier_line', { tier: t(BUDGET_TIER_LABEL[line.tier]) })}
+              </small>
             )}
             {line.coveredByName !== null && (
               <small className="ck-confirm ok">

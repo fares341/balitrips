@@ -13,6 +13,12 @@ const pages = [
   ['map', '/ar/map', 14000],
   ['map', '/en/map', 14000],
   ['mapdbg', '/en/map?debugmap=1', 14000],
+  // Client, Oct 2026: a category opened on its own (the free guide's hospitals card).
+  ['mapcat', '/ar/map?cat=hospital', 14000],
+  ['mapcat', '/en/map?cat=hospital', 14000],
+  // The CI seed has no hospitals: the same view on a category that has places.
+  ['mapcat2', '/ar/map?cat=beaches', 14000],
+  ['mapcat2', '/en/map?cat=sights', 14000],
 ]
 const sizes = [
   [1440, 900],
@@ -29,7 +35,9 @@ const browser = await chromium.launch({
 })
 const log = []
 process.on('exit', () => writeFileSync(`${OUT}/log.txt`, log.join('\n') + '\n'))
-for (const [name, path, wait] of process.env.SHOTS_ONLY ? [] : pages) {
+// With SHOTS_ONLY, only the listed names of these pages too (e.g. mapcat).
+const only0 = (process.env.SHOTS_ONLY ?? '').split(',').filter(Boolean)
+for (const [name, path, wait] of only0.length ? pages.filter(([n]) => only0.includes(n)) : pages) {
   for (const [w, h] of sizes) {
     const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 })
     try {
@@ -199,6 +207,8 @@ const TABLET = new Set([
 ])
 const EN_KEY = new Set([
   'home',
+  'about',
+  'itineraries',
   'cookies',
   'services',
   'activities',
@@ -434,7 +444,7 @@ for (const [w, h] of [
     )
     log.push(`hero ${w}: ${st.join(' | ')}`)
     // Viewport (not full-page) captures of the animated sections.
-    for (const sel of ['.about-media', '.rmarq', '.svc']) {
+    for (const sel of ['.about-media', '.rmarq', '.svc', '.ct']) {
       await page
         .locator(sel)
         .first()

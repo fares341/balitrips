@@ -589,6 +589,12 @@ export const itineraries = pgTable('itineraries', {
    * لغة؛ إن وُجد يُسلَّم بدل الملف المولّد تلقائياً (بنفس العلامة المائية).
    */
   uploadedPdfKeys: jsonb('uploaded_pdf_keys').$type<Partial<Record<string, string>>>(),
+  /**
+   * Levels (client, Oct 2026; migration 0035): economy / mid / luxury, each
+   * with its own price in minor units. Only priced levels are on sale; none
+   * priced = the single `price_minor` as before (`@/lib/itineraries/tiers`).
+   */
+  tierPrices: jsonb('tier_prices').$type<Partial<Record<string, number>>>(),
 
   // --- Phase 3 (migration 0019): how it is sold, and what it opens on the map ---
 

@@ -80,6 +80,8 @@ export interface QuoteRequestItem {
     infants?: number
     /** Itinerary: the audience chosen (display only, never priced). */
     audience?: string
+    /** Itinerary: the level chosen (economy / mid / luxury), priced from the catalog. */
+    tier?: string
   } | null
 }
 
@@ -156,6 +158,8 @@ export interface CatalogSnapshot {
       version: number
       /** Buying it opens VIP (`map_access = vip_included` with `is_vip`). Phase 3. */
       grantsVip?: boolean
+      /** Priced levels (client, Oct 2026). A chosen level not priced here is refused. */
+      tierPrices?: Partial<Record<string, number>>
     }
   >
   /** الباقات المنشورة (`plans`). سعرها من هنا دائماً، لا من العميل. */
@@ -547,14 +551,26 @@ function priceItinerary(
     issues.push({ itemId: item.id, code: 'unknown_item' })
     return
   }
+  // A level picked by the buyer is priced from the catalog, never the client;
+  // a level that is not (or no longer) on sale cannot be paid for.
+  const tier = item.options?.tier
+  let unitPriceMinor = itinerary.priceMinor
+  if (tier !== undefined) {
+    const priced = itinerary.tierPrices?.[tier]
+    if (typeof priced !== 'number' || priced <= 0) {
+      issues.push({ itemId: item.id, code: 'unknown_item' })
+      return
+    }
+    unitPriceMinor = priced
+  }
   // A downloadable plan is bought once; quantity is meaningless.
   lines.push({
     itemId: item.id,
     kind: 'itinerary',
     refId: item.refId,
-    unitPriceMinor: itinerary.priceMinor,
+    unitPriceMinor,
     quantity: 1,
-    lineTotalMinor: itinerary.priceMinor,
+    lineTotalMinor: unitPriceMinor,
     currency: itinerary.currency,
     refVersion: itinerary.version,
   })

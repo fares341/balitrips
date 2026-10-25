@@ -80,6 +80,8 @@ export class HybridView {
   private o: HybridOptions
   private V = { s: 1, tx: 0, ty: 0, base: 1, w: 0, h: 0 }
   private pad: Pad = NO_PAD
+  /** A category opened on its own (`/map?cat=`): frame just its places. */
+  private focusBox: [[number, number], [number, number]] | null = null
   private modeValue: ViewMode = 'art'
   private shown = false
   /** Real-map zoom of the framed island (the page's "z0" on the real map). */
@@ -297,6 +299,11 @@ export class HybridView {
     map.setMinZoom?.(home.zoom - MIN_ZOOM_SLACK)
     const start = this.o.initial
     const pitch = this.tilted ? this.o.settings.tiltOnEnter : 0
+    if (!start && this.focusBox !== null) {
+      map.jumpTo({ pitch, bearing: HOME_BEARING })
+      this.applyFocus(map, false)
+      return
+    }
     map.jumpTo({
       center: start ? [start.lng, start.lat] : home.center,
       // a tilted view foreshortens the island, so come a little closer
@@ -359,6 +366,61 @@ export class HybridView {
     const a = clampToArt(geoToArt(lng, lat))
     const s = Math.max(1, Math.min(MAX_S, Math.pow(2, artLevels)))
     this.animateTo(s, a, 850)
+  }
+
+  /**
+   * Frame a set of places (a category opened on its own). Kept, so the real
+   * map opens on it when it finishes loading. An empty list frames the island.
+   */
+  fitTo(points: readonly { lon: number; lat: number }[]): void {
+    if (points.length === 0) {
+      this.focusBox = null
+      this.home()
+      return
+    }
+    let w = Infinity
+    let e = -Infinity
+    let s = Infinity
+    let n = -Infinity
+    for (const p of points) {
+      w = Math.min(w, p.lon)
+      e = Math.max(e, p.lon)
+      s = Math.min(s, p.lat)
+      n = Math.max(n, p.lat)
+    }
+    // one place (or a tight group): keep some of the area around it in view
+    const minSpan = 0.03
+    if (e - w < minSpan) {
+      const c = (e + w) / 2
+      w = c - minSpan / 2
+      e = c + minSpan / 2
+    }
+    if (n - s < minSpan) {
+      const c = (n + s) / 2
+      s = c - minSpan / 2
+      n = c + minSpan / 2
+    }
+    this.focusBox = [
+      [w, s],
+      [e, n],
+    ]
+    if (this.modeValue === 'map' && this.map !== null) {
+      this.applyFocus(this.map, !this.o.reducedMotion())
+      return
+    }
+    if (this.modeValue !== 'art') return
+    const a = clampToArt(geoToArt((w + e) / 2, (s + n) / 2))
+    this.animateTo(1.4, a, 850)
+  }
+
+  private applyFocus(map: MapLike, animate: boolean): void {
+    if (this.focusBox === null) return
+    const p = this.pad
+    map.fitBounds(this.focusBox, {
+      padding: { top: p.top + 24, bottom: p.bottom + 24, left: p.left + 24, right: p.right + 24 },
+      duration: animate ? 1000 : 0,
+      maxZoom: 14,
+    })
   }
 
   /** The whole island, framed (either view). */

@@ -1,5 +1,6 @@
 'use server'
 
+import { ITINERARY_TIERS, normaliseTierPrices, type TierPrices } from '@/lib/itineraries/tiers'
 import { randomUUID } from 'node:crypto'
 
 import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
@@ -42,6 +43,7 @@ import {
   fcurrencyOr,
   fenum,
   fmoney,
+  fmoneyOrNull,
   fmulti,
   freq,
   fstr,
@@ -59,6 +61,12 @@ const editor = (id: string) => adminHref(`/itineraries/${id}`)
 
 type Outcome = { ok: string } | { err: string }
 
+/** The priced levels in a fixed order, or null when none is priced. */
+function tierPricesOrNull(raw: unknown): TierPrices | null {
+  const prices = normaliseTierPrices(raw)
+  return Object.keys(prices).length === 0 ? null : prices
+}
+
 // ---------------------------------------------------------------------------
 // Itinerary core
 // ---------------------------------------------------------------------------
@@ -72,6 +80,20 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
 
   try {
     const mapAccess = fenum(form, 'mapAccess', MAP_ACCESS, 'free_only')
+    // Levels (client, Oct 2026): a blank price = that level is not on sale.
+    const tierPrices = tierPricesOrNull(
+      Object.fromEntries(
+        ITINERARY_TIERS.map((key) => [
+          key,
+          fmoneyOrNull(
+            form,
+            `tier_${key}`,
+            fcurrencyOr(form, 'currency'),
+            t(`itineraries.tier_${key}`),
+          ),
+        ]),
+      ),
+    )
     const values = {
       slug: assertSlug(freq(form, 'slug', t('itineraries.f_slug'))),
       legacyId: fstr(form, 'legacyId'),
@@ -82,6 +104,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       audience: flocalizedList(form, 'audience'),
       priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
       currency: fcurrency(form, 'currency'),
+      tierPrices,
       heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
       // الوثيقة 4.2
       detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
@@ -111,9 +134,9 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       // Phase 6: without `prices.write` the price must come back as stored.
       assertPriceChangeAllowed(
         session.role,
-        before,
+        before ? { ...before, tierPrices: tierPricesOrNull(before.tierPrices) } : null,
         values,
-        before ? ['priceMinor', 'currency'] : ['priceMinor'],
+        before ? ['priceMinor', 'currency', 'tierPrices'] : ['priceMinor', 'tierPrices'],
         t('team.err_prices'),
       )
 
