@@ -49,7 +49,7 @@ import { Link } from '@/i18n/routing'
 import { can } from '@/lib/auth/roles'
 import { getUser } from '@/lib/auth/session'
 import { ownsItinerary } from '@/lib/content/extra-queries'
-import { pick, pickAlt, pickList, pickOptional } from '@/lib/content/localize'
+import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listItineraries, packagesForItinerary } from '@/lib/content/queries'
 import { ENTITY_PATHS, type ActivitySummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
@@ -63,6 +63,10 @@ import { mapAccessOf, sellsPlanDirectly, visibleSaleModes } from '@/lib/itinerar
 import { checkSecureAccess } from '@/lib/security/guard'
 import { alternates } from '../_meta'
 import { formatPrice } from '../../_ui/price'
+import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
+import { itineraryAudience, itineraryTitle } from '@/lib/itineraries/display'
+import { fromPrice, ITINERARY_TIERS, pricedTiers } from '@/lib/itineraries/tiers'
+import { ItineraryHowItWorks } from '../_ui/how-it-works'
 import { ItineraryBuyBox } from './buy-box'
 import { LinkedPlaces } from './linked-places'
 import { TripActivities, type BookableDay } from './trip-activities'
@@ -119,7 +123,7 @@ export async function generateMetadata({
   if (!itinerary) return {}
 
   const t = await getTranslations({ locale })
-  const name = pick(itinerary.name, locale, itinerary.slug)
+  const name = itineraryTitle(itinerary.name, itinerary.slug, itinerary.days, locale, t)
   const blurb = pickOptional(itinerary.blurb, locale) ?? t('ih_sub')
   const href = `${INDEX_HREF}/${slug}`
 
@@ -164,10 +168,22 @@ export default async function ItineraryDetailPage({
   ])
   const others = all.filter((other) => other.id !== itinerary.id).slice(0, 3)
 
-  const name = pick(itinerary.name, locale, itinerary.slug)
+  // A clean title; the length and the audiences are chips (client, Oct 2026).
+  const name = itineraryTitle(itinerary.name, itinerary.slug, itinerary.days, locale, t)
   const blurb = pickOptional(itinerary.blurb, locale)
   const details = pickOptional(itinerary.detailedDescription, locale)
-  const audience = pickList(itinerary.audience, locale)
+  const audience = itineraryAudience(itinerary.name, itinerary.audience, locale, t)
+  // Levels: economy / mid / luxury, each priced by the owner; unpriced = soon.
+  const hasTiers = pricedTiers(itinerary.tierPrices).length > 0
+  const tierList = ITINERARY_TIERS.map((key) => {
+    const minor = itinerary.tierPrices[key]
+    return {
+      key,
+      label: t(BUDGET_TIER_LABEL[key]),
+      note: t(`it_tier_${key}_b`),
+      price: minor === undefined ? null : formatPrice(minor, itinerary.currency, locale),
+    }
+  })
 
   /**
    * The day-by-day plan IS the product. Buyers (a settled, unrefunded order
@@ -248,9 +264,9 @@ export default async function ItineraryDetailPage({
   // page never shows the same choice three times.
   // With several audiences the buyer picks one first; that choice lives in
   // the sidebar box only, and the other buy buttons lead to it.
-  const choosesAudience = audience.length > 1
+  const choosesAudience = itinerary.audience.length > 1
   const buy = (className: string, style?: React.CSSProperties, withVip = false) =>
-    sellsPlan && choosesAudience && !withVip ? (
+    sellsPlan && (choosesAudience || hasTiers) && !withVip ? (
       <a href="#it-buy" className={className} style={style}>
         {t('ih_buy')}
       </a>
@@ -259,7 +275,8 @@ export default async function ItineraryDetailPage({
         <ItineraryBuyBox
           itineraryId={itinerary.id}
           vip={withVip ? vipBox : null}
-          audiences={withVip ? audience : []}
+          audiences={withVip && choosesAudience ? audience : []}
+          tiers={withVip && hasTiers ? tierList : []}
           className={className}
         >
           {t('ih_buy')}
@@ -293,7 +310,12 @@ export default async function ItineraryDetailPage({
 
   const regionNames = itinerary.regions.map((region) => pick(region.label, locale, region.key))
   const tripType = pickOptional(itinerary.tripType, locale)
-  const price = formatPrice(itinerary.priceMinor, itinerary.currency, locale)
+  const price = formatPrice(
+    fromPrice(itinerary.priceMinor, itinerary.tierPrices),
+    itinerary.currency,
+    locale,
+  )
+  const priceNote = hasTiers ? t('it_price_from') : t('sub_once')
   const contact = await getContact()
   const wa = whatsappHref(contact.whatsappDigits, `${t('it_wa_prefix')} ${name}`)
 
@@ -353,7 +375,14 @@ export default async function ItineraryDetailPage({
           />
 
           <div className="bt-ihero-chips">
-            <span className="bt-ihero-chip is-brand">{t('c_days_n', { n: itinerary.days })}</span>
+            <span className="bt-ihero-chip is-brand">
+              <Icon name="cal" size={13} /> {t('c_days_n', { n: itinerary.days })}
+            </span>
+            {audience.map((entry) => (
+              <span key={entry} className="bt-ihero-chip">
+                <Icon name="users" size={13} /> {entry}
+              </span>
+            ))}
             {itinerary.isVip && <span className="bt-ihero-chip">VIP</span>}
             {itinerary.includesMap && (
               <span className="bt-ihero-chip">
@@ -368,6 +397,7 @@ export default async function ItineraryDetailPage({
 
           <p className="bt-ihero-line">
             <span>
+              {hasTiers && <>{t('it_price_from')} </>}
               <strong className="bt-money">{price}</strong> / {t('sub_once')}
             </span>
             {itinerary.spots !== null && <span>{t('hi_spots_n', { n: itinerary.spots })}</span>}
@@ -392,7 +422,7 @@ export default async function ItineraryDetailPage({
             <div className="bt-ibar-buy">
               <span className="bt-ibar-price">
                 <strong className="bt-money">{price}</strong>
-                <span>{t('sub_once')}</span>
+                <span>{priceNote}</span>
               </span>
               {buy('btn btn-primary')}
             </div>
@@ -757,12 +787,14 @@ export default async function ItineraryDetailPage({
 
         <aside
           id="it-buy"
-          className={choosesAudience ? 'bt-booking bt-ibook has-audience' : 'bt-booking bt-ibook'}
+          className={
+            choosesAudience || hasTiers ? 'bt-booking bt-ibook has-audience' : 'bt-booking bt-ibook'
+          }
           aria-label={t('ih_buy')}
         >
           <div className="bt-ibook-price">
             <strong className="bt-money">{price}</strong>
-            <span>{t('sub_once')}</span>
+            <span>{priceNote}</span>
           </div>
           <ul className="bt-ibook-facts">
             {DELIVERY_KEYS.slice(0, 2).map((key) => (
@@ -780,12 +812,27 @@ export default async function ItineraryDetailPage({
             navigation, so a second button would be the same link twice.
           */}
           {buy('btn btn-primary btn-block', { marginTop: 16 }, true)}
+          <a href="#it-how" className="bt-ibook-how">
+            <Icon name="info" size={15} /> {t('ihw_link')}
+          </a>
           {modes.includes('custom') && (
             <Link href={customHref} className="btn btn-ghost btn-block" style={{ marginTop: 10 }}>
               {t('p3_custom_cta')}
             </Link>
           )}
         </aside>
+      </div>
+
+      {/* What the buyer receives and how (client, Oct 2026) */}
+      <div className="sec bg-ivory">
+        <div className="wrap">
+          <ItineraryHowItWorks
+            locale={locale}
+            photo={itinerary.hero?.url ?? '/brand/flatlay.webp'}
+            title={name}
+            days={itinerary.days}
+          />
+        </div>
       </div>
 
       {/* Other itineraries (v3 itinerary.html) — real ones, photo cards */}

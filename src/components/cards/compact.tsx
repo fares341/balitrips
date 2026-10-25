@@ -6,6 +6,8 @@
  * shown only when one exists, a price only from the record itself.
  */
 
+import { itineraryTitle } from '@/lib/itineraries/display'
+import { fromPrice, pricedTiers } from '@/lib/itineraries/tiers'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { formatPrice, Stars } from '@/components/bt/card'
@@ -138,7 +140,7 @@ export function ItineraryCompact({
   return (
     <CompactCard
       href={itinerary.href}
-      title={pick(itinerary.name, locale, itinerary.slug)}
+      title={itineraryTitle(itinerary.name, itinerary.slug, itinerary.days, locale, t)}
       description={pickOptional(itinerary.blurb, locale)}
       image={{
         src: itinerary.hero?.url,
@@ -152,8 +154,13 @@ export function ItineraryCompact({
       price={
         itinerary.priceMinor > 0
           ? {
-              label: t('bt_pdf_map'),
-              amount: formatPrice(itinerary.priceMinor, itinerary.currency, locale),
+              label:
+                pricedTiers(itinerary.tierPrices).length > 0 ? t('it_price_from') : t('bt_pdf_map'),
+              amount: formatPrice(
+                fromPrice(itinerary.priceMinor, itinerary.tierPrices),
+                itinerary.currency,
+                locale,
+              ),
             }
           : null
       }

@@ -22,6 +22,7 @@
  * has to de-duplicate.
  */
 
+import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, asc, desc, eq, inArray, isNotNull, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
 import { alias } from 'drizzle-orm/pg-core'
@@ -1093,6 +1094,7 @@ async function toItinerarySummaries(
     currency: itinerary.currency,
     version: itinerary.version,
     hero: toMedia(hero),
+    tierPrices: normaliseTierPrices(itinerary.tierPrices),
   }))
 }
 

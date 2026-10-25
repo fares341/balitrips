@@ -38,6 +38,12 @@
  * Server-only. Nothing here may be imported into a Client Component.
  */
 
+import {
+  isItineraryTier,
+  normaliseTierPrices,
+  tierPrice,
+  type ItineraryTier,
+} from '@/lib/itineraries/tiers'
 import { randomBytes } from 'node:crypto'
 
 import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
@@ -428,6 +434,8 @@ export interface AddItemInput {
    * labels. Checked against the itinerary row; anything else is dropped.
    */
   audience?: string | null
+  /** Itinerary only: the level (economy / mid / luxury); must be priced on the row. */
+  tier?: string | null
 }
 
 export interface MutationResult {
@@ -504,6 +512,21 @@ async function checkedAudience(
   return labels.some((label) => label.trim() === wanted) ? wanted : null
 }
 
+/** The level a buyer picked and its price, if that level is on sale; else null. */
+async function checkedTier(
+  itineraryId: string | null,
+  raw: string | null | undefined,
+): Promise<{ tier: ItineraryTier; priceMinor: number } | null> {
+  if (itineraryId === null || !isItineraryTier(raw)) return null
+  const [row] = await db
+    .select({ tierPrices: itineraries.tierPrices })
+    .from(itineraries)
+    .where(eq(itineraries.id, itineraryId))
+    .limit(1)
+  const priceMinor = tierPrice(normaliseTierPrices(row?.tierPrices), raw)
+  return priceMinor === null ? null : { tier: raw, priceMinor }
+}
+
 export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   // One guard covers addToCartAction, addFavoriteToTripAction and
   // createTripFromFavoritesAction: the latter two import addItem directly and
@@ -558,7 +581,15 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
 
   const existing = rows.find((row) => sameBooking(row, input))
   const audience = input.kind === 'itinerary' ? await checkedAudience(refId, input.audience) : null
-  const lineOptions = audience === null ? null : { audience }
+  const tier = input.kind === 'itinerary' ? await checkedTier(refId, input.tier) : null
+  if (tier !== null) price.priceMinor = tier.priceMinor
+  const lineOptions =
+    audience === null && tier === null
+      ? null
+      : {
+          ...(audience === null ? {} : { audience }),
+          ...(tier === null ? {} : { tier: tier.tier }),
+        }
 
   let itemId: string
   if (existing) {
@@ -1199,6 +1230,8 @@ export interface CartLineView {
   infants: number
   /** Itinerary lines: the audience the buyer picked ("Families"). */
   audience: string | null
+  /** Itinerary lines: the level bought (economy / mid / luxury), or null. */
+  tier: string | null
   /**
    * Phase 3: another line of this trip already pays for this one (an
    * itinerary inside a package, VIP that comes with something) — its name.
@@ -1375,6 +1408,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       children: row.options?.children ?? 0,
       infants: row.options?.infants ?? 0,
       audience: row.options?.audience ?? null,
+      tier: row.options?.tier ?? null,
       coveredByName: (() => {
         if (line?.coveredBy === undefined) return null
         const by = rows.find((other) => other.id === line.coveredBy)

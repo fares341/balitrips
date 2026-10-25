@@ -41,6 +41,12 @@ import {
 import type { MapPin } from './projection'
 
 const DEFAULT_RADIUS_KM = 5
+/**
+ * Malls and popular markets are two separate lists (client, Oct 2026): a
+ * place filed under one never shows under the other, even if an older
+ * migration left the other as its sub-category.
+ */
+const EXCLUSIVE_CATEGORIES = new Set(['malls', 'markets'])
 /** توقف الكتابة قبل تسجيل البحث (`search_map`) — لا نسجّل كل حرف. */
 const SEARCH_LOG_IDLE_MS = 1500
 
@@ -129,7 +135,8 @@ export function useMapFilters(
       if (
         category !== null &&
         place.categoryKey !== category &&
-        !place.subCategoryKeys.includes(category)
+        (!place.subCategoryKeys.includes(category) ||
+          (EXCLUSIVE_CATEGORIES.has(category) && EXCLUSIVE_CATEGORIES.has(place.categoryKey ?? '')))
       )
         continue
       if (gemsOnly && !place.isHiddenGem) continue

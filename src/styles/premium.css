@@ -1380,3 +1380,16 @@ h2.section-title {
 
 /* Phones: glimpse rows become a swipeable strip instead of a long stack.
    The strip scrolls inside itself; the page never scrolls sideways. */
+
+/* «How does the itinerary reach me?» under the buy button */
+.bt-ibook-how {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--forest);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

@@ -19,6 +19,7 @@
  * rather than quietly selling something withdrawn from sale.
  */
 
+import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -197,6 +198,7 @@ export async function loadCartCatalog(
             version: itineraries.version,
             status: itineraries.status,
             heroImageId: itineraries.heroImageId,
+            tierPrices: itineraries.tierPrices,
           })
           .from(itineraries)
           .where(and(inArray(itineraries.id, itineraryIds), isNull(itineraries.deletedAt)))
@@ -421,7 +423,12 @@ export async function loadCartCatalog(
         .filter((row) => row.status === PUBLISHED)
         .map((row) => [
           row.id,
-          { priceMinor: row.priceMinor, currency: row.currency, version: row.version },
+          {
+            priceMinor: row.priceMinor,
+            currency: row.currency,
+            version: row.version,
+            tierPrices: normaliseTierPrices(row.tierPrices),
+          },
         ]),
     ),
     packages: new Map(

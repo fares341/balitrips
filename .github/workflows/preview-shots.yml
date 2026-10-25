@@ -90,6 +90,12 @@ jobs:
       # design (sample prices from the image, CI only — never on live).
       - name: Activity v2 demo fixture
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/ci-activity-v2-fixture.sql
+      # Itinerary levels + a name typed the old way (CI only — sample prices,
+      # never on live): two levels priced, luxury left blank («coming soon»).
+      - name: Itinerary levels demo fixture
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "update itineraries set tier_prices = jsonb_build_object('economy', price_minor, 'mid', price_minor + 3000), audience = '[]'::jsonb, name = name || jsonb_build_object('ar', 'جدول سياحي ' || days || ' أيام (شباب - عوائل - شهر عسل)', 'en', days || '-Day Itinerary (Youth - Families - Honeymoon)') where id = (select id from itineraries where status = 'published' and deleted_at is null order by days, price_minor limit 1)"
+          psql "$DATABASE_URL" -c "select slug, name->>'ar' ar, tier_prices from itineraries order by days, price_minor limit 2"
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site

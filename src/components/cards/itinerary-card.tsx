@@ -27,8 +27,11 @@ import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import type { ItinerarySummary } from '@/lib/content/types'
+import { itineraryAudience, itineraryTitle } from '@/lib/itineraries/display'
+import { fromPrice, pricedTiers } from '@/lib/itineraries/tiers'
 
 const MAX_REGIONS = 3
+const MAX_AUDIENCE = 3
 
 export type ItineraryCardProps = {
   itinerary: ItinerarySummary
@@ -41,7 +44,14 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
   const t = useTranslations()
   const locale = useLocale() as Locale
 
-  const name = pick(itinerary.name, locale, itinerary.slug)
+  // Clean title; the length and the audiences are chips (client, Oct 2026).
+  const name = itineraryTitle(itinerary.name, itinerary.slug, itinerary.days, locale, t)
+  const audience = itineraryAudience(itinerary.name, itinerary.audience, locale, t).slice(
+    0,
+    MAX_AUDIENCE,
+  )
+  const levels = pricedTiers(itinerary.tierPrices).length
+  const priceMinor = fromPrice(itinerary.priceMinor, itinerary.tierPrices)
   const blurb = pickOptional(itinerary.blurb, locale)
   const regions = itinerary.regions
     .slice(0, MAX_REGIONS)
@@ -66,13 +76,27 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
       />
       <CardBody>
         <CardTitle href={itinerary.href}>{name}</CardTitle>
+        {(audience.length > 0 || levels > 1) && (
+          <div className="it-chips">
+            {audience.map((label) => (
+              <Tag key={label} variant="forest" className="it-chip">
+                {label}
+              </Tag>
+            ))}
+            {levels > 1 && (
+              <Tag variant="orange" className="it-chip">
+                {t('it_levels_n', { n: levels })}
+              </Tag>
+            )}
+          </div>
+        )}
         {blurb !== null && <CardText>{blurb}</CardText>}
         <CardMeta items={regions === '' ? [] : [{ icon: 'pin', label: regions }]} />
         <CardFoot>
           <PriceFrom
-            label={t('bt_pdf_map')}
-            amount={formatPrice(itinerary.priceMinor, itinerary.currency, locale)}
-            minor={itinerary.priceMinor}
+            label={levels > 0 ? t('it_price_from') : t('bt_pdf_map')}
+            amount={formatPrice(priceMinor, itinerary.currency, locale)}
+            minor={priceMinor}
             currency={itinerary.currency}
           />
           <CardActions>

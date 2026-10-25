@@ -317,6 +317,8 @@ export interface ItinerarySummary {
   /** Pinned by an order, so a customer redownloads the version they bought. */
   version: number
   hero: MediaDto | null
+  /** Priced levels only (economy / mid / luxury), minor units. */
+  tierPrices: Partial<Record<'economy' | 'mid' | 'luxury', number>>
 }
 
 /**

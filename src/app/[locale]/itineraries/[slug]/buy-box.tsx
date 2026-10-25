@@ -16,14 +16,23 @@ import { useRouter } from '@/i18n/routing'
 
 import { addToCartAction, addVipAction } from '../../my-trip/actions'
 
+/** One level in the box: its price already formatted, or null = not on sale yet. */
+export type BuyTier = { key: string; label: string; note: string; price: string | null }
+
 export function ItineraryBuyBox({
   itineraryId,
   vip,
   audiences = [],
+  tiers = [],
   className,
   children,
 }: {
   itineraryId: string
+  /**
+   * The levels (economy / mid / luxury). Shown when at least one is priced;
+   * the cheapest priced one starts selected, unpriced ones are disabled.
+   */
+  tiers?: readonly BuyTier[]
   /**
    * Who the plan can be for (the itinerary's audience labels). With two or
    * more, the buyer picks one before buying: one product, several audiences.
@@ -44,9 +53,38 @@ export function ItineraryBuyBox({
   const groupId = useId()
   const fieldset = useRef<HTMLFieldSetElement>(null)
   const choose = audiences.length > 1
+  const onSale = tiers.filter((one) => one.price !== null)
+  const [tier, setTier] = useState<string | null>(onSale[0]?.key ?? null)
 
   return (
     <div className="it-buybox">
+      {onSale.length > 0 && (
+        <fieldset className="it-tiers">
+          <legend>{t('it_tier_pick')}</legend>
+          {tiers.map((one) => {
+            const off = one.price === null
+            return (
+              <label key={one.key} className={off ? 'it-tier is-off' : 'it-tier'}>
+                <input
+                  type="radio"
+                  name={`${groupId}-tier`}
+                  value={one.key}
+                  checked={tier === one.key}
+                  disabled={off}
+                  onChange={() => setTier(one.key)}
+                />
+                <span className="it-tier-t">
+                  <b>{one.label}</b>
+                  <small>{one.note}</small>
+                </span>
+                <span className="it-tier-p">
+                  {off ? t('it_tier_soon') : <bdi dir="ltr">{one.price}</bdi>}
+                </span>
+              </label>
+            )
+          })}
+        </fieldset>
+      )}
       {choose && (
         <fieldset
           ref={fieldset}
@@ -118,6 +156,7 @@ export function ItineraryBuyBox({
                 kind: 'itinerary',
                 refId: itineraryId,
                 audience,
+                tier,
               })
               if (!result.ok) {
                 toast(t(result.reason === 'bookings_closed' ? 'bk_closed_t' : 'c_error'))

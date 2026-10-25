@@ -20,6 +20,8 @@
  * Dynamic and unindexed: per-visitor, reads cookies.
  */
 
+import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
+import { isItineraryTier } from '@/lib/itineraries/tiers'
 import type { Metadata } from 'next'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
@@ -472,6 +474,11 @@ async function TripItem({
         {line.kind === 'place' && <small className="muted">{t('trip_place_note')}</small>}
         {line.audience !== null && (
           <small className="muted">{t('it_aud_line', { audience: line.audience })}</small>
+        )}
+        {isItineraryTier(line.tier) && (
+          <small className="muted">
+            {t('it_tier_line', { tier: t(BUDGET_TIER_LABEL[line.tier]) })}
+          </small>
         )}
         {line.coveredByName !== null && (
           <small className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>

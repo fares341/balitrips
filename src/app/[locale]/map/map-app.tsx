@@ -234,12 +234,35 @@ export function MapApp(props: MapAppProps) {
     initialRegion: props.initialRegion,
   })
   const { matched, near } = filters
+  /**
+   * One category on its own (client, Oct 2026 — e.g. the free guide's
+   * hospitals card → `/map?cat=hospital`): only its places, as pins, framed;
+   * no region bubbles, no landmarks, no other category.
+   */
+  const focused = filters.category !== null
+  const [stripOff, setStripOff] = useState(false)
 
   // Everything the camera handlers read lives here, so the view's listeners
   // (registered once) always see the current render's values.
-  const live = useRef({ matched, near, regions, pins, landmarks, initialSlug: props.initialSlug })
+  const live = useRef({
+    matched,
+    near,
+    regions,
+    pins,
+    landmarks,
+    focused,
+    initialSlug: props.initialSlug,
+  })
   useEffect(() => {
-    live.current = { matched, near, regions, pins, landmarks, initialSlug: props.initialSlug }
+    live.current = {
+      matched,
+      near,
+      regions,
+      pins,
+      landmarks,
+      focused,
+      initialSlug: props.initialSlug,
+    }
   })
 
   /** Screen area kept clear of the chips / bottom bar / unlock bar / controls. */
@@ -276,8 +299,9 @@ export function MapApp(props: MapAppProps) {
     const zoom = view.zoom()
     const levels = view.levels()
     const mobile = isMobile()
-    const mode = levels >= PINS_AT ? 'places' : 'regions'
-    const { matched: list, near: here, regions: bubbles } = live.current
+    const { matched: list, near: here, focused: only } = live.current
+    const mode = only || levels >= PINS_AT ? 'places' : 'regions'
+    const bubbles = only ? [] : live.current.regions
     const visible = (p: { x: number; y: number }, m: number) =>
       Number.isFinite(p.x) && p.x > -m && p.y > -m && p.x < W + m && p.y < H + m
 
@@ -298,7 +322,8 @@ export function MapApp(props: MapAppProps) {
       for (const pin of list) {
         const p = view.project(pin.place.lon, pin.place.lat)
         if (!visible(p, 60)) continue
-        const g = groups.find((entry) => Math.hypot(entry.x - p.x, entry.y - p.y) < CLUSTER_PX)
+        const px = only ? CLUSTER_PX / 2 : CLUSTER_PX
+        const g = groups.find((entry) => Math.hypot(entry.x - p.x, entry.y - p.y) < px)
         if (g === undefined) groups.push({ x: p.x, y: p.y, members: [pin], pts: [p] })
         else {
           g.members.push(pin)
@@ -332,7 +357,7 @@ export function MapApp(props: MapAppProps) {
     }
     // The client's landmarks: on the real map only (the artwork has them painted).
     const marks: ScreenState['landmarks'] = []
-    if (onMap) {
+    if (onMap && !only) {
       for (const l of live.current.landmarks) {
         if (zoom < RANK_MINZOOM[l.rank]) continue
         const p = view.project(l.lng, l.lat)
@@ -432,6 +457,7 @@ export function MapApp(props: MapAppProps) {
     viewRef.current = view
     const kick = requestAnimationFrame(() => {
       if (target) flyToPlace(target.place)
+      else if (live.current.focused) view.fitTo(live.current.matched.map((p) => p.place))
       schedule()
       settle()
     })
@@ -460,6 +486,19 @@ export function MapApp(props: MapAppProps) {
     const id = requestAnimationFrame(measure)
     return () => cancelAnimationFrame(id)
   }, [matched, near, mobileView, measure])
+
+  // A category chosen (or cleared): frame its places, or the whole island again.
+  const focusKey = focused ? `${filters.category}|${matched.length}` : null
+  const lastFocus = useRef<string | null>(focusKey)
+  useEffect(() => {
+    if (lastFocus.current === focusKey) return
+    const was = lastFocus.current
+    lastFocus.current = focusKey
+    const view = viewRef.current
+    if (view === null) return
+    if (focusKey !== null) view.fitTo(live.current.matched.map((p) => p.place))
+    else if (was !== null) view.fitTo([])
+  }, [focusKey])
 
   // Near me granted: go there.
   useEffect(() => {
@@ -563,7 +602,37 @@ export function MapApp(props: MapAppProps) {
           .filter((r) => useAll || (bounds !== null && inBounds(bounds, r.lat, r.lon)))
           .filter((r) => filters.region === null || r.key === filters.region)
           .reduce((sum, r) => sum + r.lockedCount, 0)
-  const viewCount = inView.length + (bounds === null ? props.lockedCount : lockedInView)
+  const viewCount = focused
+    ? matched.length
+    : inView.length + (bounds === null ? props.lockedCount : lockedInView)
+  const focusLabel = focused
+    ? pick(
+        props.taxonomy.categories.find((entry) => entry.key === filters.category)?.label,
+        locale,
+        filters.category ?? '',
+      )
+    : ''
+  const focusBar = focused ? (
+    <div className="mp-focus" role="status">
+      <Icon name={categoryIcon(filters.category ?? '')} size={16} />
+      <span className="mp-focus-t">
+        <bdi>{focusLabel}</bdi>
+        <b dir="ltr">{matched.length}</b>
+      </span>
+      <button
+        type="button"
+        className="mp-focus-x"
+        onClick={() => {
+          filters.setCategory(null)
+          setSelectedSlug(null)
+          setStripOff(false)
+        }}
+      >
+        <Icon name="cross" size={14} />
+        {t('mp6_show_all')}
+      </button>
+    </div>
+  ) : null
   const hasFilters =
     filters.category !== null ||
     filters.filterTag !== null ||
@@ -820,7 +889,7 @@ export function MapApp(props: MapAppProps) {
                     )}
                   </div>
                 )}
-                {!unlocked && lockedInView > 0 && (
+                {!unlocked && !focused && lockedInView > 0 && (
                   <div className="mp-lockcard">
                     <Icon name="lock" size={22} />
                     <b>{t('mp3_locked_n', { n: lockedInView })}</b>
@@ -988,7 +1057,9 @@ export function MapApp(props: MapAppProps) {
                   return (
                     <div
                       key={p.slug}
-                      className={on ? 'mp-pin is-on' : 'mp-pin'}
+                      className={['mp-pin', on ? 'is-on' : null, focused ? 'is-named' : null]
+                        .filter(Boolean)
+                        .join(' ')}
                       style={{ transform: `translate(${p.x}px, ${p.y}px)` }}
                     >
                       <button
@@ -1001,6 +1072,17 @@ export function MapApp(props: MapAppProps) {
                       >
                         <i aria-hidden="true" />
                       </button>
+                      {focused && (
+                        <button
+                          type="button"
+                          className="mp-pin-name"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          onClick={() => select(p.slug, false)}
+                        >
+                          <bdi>{name}</bdi>
+                        </button>
+                      )}
                     </div>
                   )
                 })}
@@ -1116,17 +1198,25 @@ export function MapApp(props: MapAppProps) {
           </div>
 
           <div className="mp-mfilters">
-            <div className="chips scroll mp-chips">
-              {typeChips}
-              {tagChips}
-            </div>
+            {focused ? (
+              focusBar
+            ) : (
+              <div className="chips scroll mp-chips">
+                {typeChips}
+                {tagChips}
+              </div>
+            )}
           </div>
 
           <div className="mp-ctrl mp-ctrl-top">
-            <span className="mp-pill">
-              <Icon name="pin" size={15} /> <b dir="ltr">{viewCount}</b>{' '}
-              {t('mp3_places_view_n', { n: viewCount })}
-            </span>
+            {focused ? (
+              <span className="mp-desk-only">{focusBar}</span>
+            ) : (
+              <span className="mp-pill">
+                <Icon name="pin" size={15} /> <b dir="ltr">{viewCount}</b>{' '}
+                {t('mp3_places_view_n', { n: viewCount })}
+              </span>
+            )}
           </div>
 
           <div className="mp-ctrl mp-ctrl-zoom">
@@ -1233,6 +1323,20 @@ export function MapApp(props: MapAppProps) {
                 onClose={() => setSelectedSlug(null)}
               />
             )}
+            {mobileView === 'map' &&
+              focused &&
+              selected === null &&
+              lockedPick === null &&
+              !stripOff &&
+              matched.length > 0 && (
+                <MobileCarousel
+                  places={matched.slice(0, CAROUSEL_MAX).map((p) => p.place)}
+                  selectedSlug=""
+                  categoryName={categoryName}
+                  onPick={(slug) => select(slug, true)}
+                  onClose={() => setStripOff(true)}
+                />
+              )}
             {mobileView === 'map' && selected === null && lockedPick !== null && (
               <MobileLockedCard
                 regionName={pick(

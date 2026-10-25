@@ -39,6 +39,11 @@ export interface BookingOptions {
    * serves several audiences; this is the buyer's choice, shown to staff.
    */
   audience?: string
+  /**
+   * Itinerary line: the level bought — economy | mid | luxury (client, Oct
+   * 2026). Priced from `itineraries.tier_prices`, never from the client.
+   */
+  tier?: string
 }
 
 /** One line between subtotal and total, frozen on the order (phase 4). */

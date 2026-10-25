@@ -391,6 +391,7 @@ export default async function OrderDetailPage({
                     {line.refVersion !== null ? ` · v${line.refVersion}` : ''}
                     {line.vehicleClass ? ` · ${line.vehicleClass}` : ''}
                     {line.options?.audience ? ` · ${line.options.audience}` : ''}
+                    {line.options?.tier ? ` · ${line.options.tier}` : ''}
                   </div>
                 </td>
                 <td className="a-mono">

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
+import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -180,6 +181,7 @@ async function loadCatalog(
             currency: itineraries.currency,
             version: itineraries.version,
             status: itineraries.status,
+            tierPrices: itineraries.tierPrices,
           })
           .from(itineraries)
           .where(and(inArray(itineraries.id, itineraryIds), isNull(itineraries.deletedAt)))
@@ -264,7 +266,15 @@ async function loadCatalog(
     itineraries: new Map(
       itineraryRows
         .filter((r) => r.status === 'published')
-        .map((r) => [r.id, { priceMinor: r.priceMinor, currency: r.currency, version: r.version }]),
+        .map((r) => [
+          r.id,
+          {
+            priceMinor: r.priceMinor,
+            currency: r.currency,
+            version: r.version,
+            tierPrices: normaliseTierPrices(r.tierPrices),
+          },
+        ]),
     ),
     packages: new Map(
       packageRows
@@ -657,9 +667,11 @@ function orderItemOptions(
   if (line.credit !== undefined) return { credit: line.credit }
   if (line.coveredBy !== undefined) return { coveredByCartLine: true }
   const audience = item?.options?.audience
-  if (!line.breakdown) return audience ? { audience } : null
+  const tier = item?.options?.tier
+  const chosen = { ...(audience ? { audience } : {}), ...(tier ? { tier } : {}) }
+  if (!line.breakdown) return audience || tier ? chosen : null
   return {
-    ...(audience ? { audience } : {}),
+    ...chosen,
     addons: item?.options?.addons ?? [],
     ...(item?.options?.included && item.options.included.length > 0
       ? { included: item.options.included }
