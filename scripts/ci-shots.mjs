@@ -16,6 +16,9 @@ const pages = [
   // Client, Oct 2026: a category opened on its own (the free guide's hospitals card).
   ['mapcat', '/ar/map?cat=hospital', 14000],
   ['mapcat', '/en/map?cat=hospital', 14000],
+  // The CI seed has no hospitals: the same view on a category that has places.
+  ['mapcat2', '/ar/map?cat=beaches', 14000],
+  ['mapcat2', '/en/map?cat=sights', 14000],
 ]
 const sizes = [
   [1440, 900],
