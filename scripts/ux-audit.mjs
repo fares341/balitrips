@@ -14,8 +14,8 @@ const ctx = { m: await browser.newContext(ctxOpts.m), d: await browser.newContex
 const results = {}
 const slug = (p) => p.replace(/^\//, '').replace(/[\/?=&]+/g, '_') || 'root'
 async function dismissConsent(page) {
-  const b = page.locator('.bt-consent-btn').first()
-  if (await b.isVisible().catch(() => false)) { await b.click().catch(() => {}); await page.waitForTimeout(500) }
+  const b = page.locator('.bt-consent-btn', { hasText: /الضرورية|Necessary|Hanya/ }).first()
+  if (await b.isVisible().catch(() => false)) { await b.click().catch(() => {}); await page.waitForTimeout(700) }
 }
 async function discover(path, re) {
   const p = await ctx.d.newPage()
@@ -26,8 +26,14 @@ async function discover(path, re) {
 const pkg = await discover('/ar/packages', /\/packages\/[^/?#]+$/)
 const itin = await discover('/ar/itineraries', /\/itineraries\/[^/?#]+$/)
 const art = await discover('/ar/blog', /\/blog\/[^/?#]+$/)
+let sm = ''
+try { const p = await ctx.d.newPage(); const rr = await p.request.get(BASE + '/sitemap.xml'); sm = await rr.text(); await p.close() } catch {}
+const fromSm = (re) => (sm.match(re) || [null])[0]
+results._sitemapHas = { packages: (sm.match(/\/ar\/packages\/[^<]+/g) || []).length, blog: (sm.match(/\/ar\/blog\/[^<]+/g) || []).length }
+const pkg2 = pkg || fromSm(/https?:\/\/[^<]+\/ar\/packages\/[^<\/]+/)
+const art2 = art || fromSm(/https?:\/\/[^<]+\/ar\/blog\/[^<\/]+/)
 const strip = (h) => h && h.replace(/^https?:\/\/[^/]+/, '')
-const arPaths = ['/ar', '/ar/activities', '/ar/activities/water-sports-bali', '/ar/activities/hot-air-balloon-ubud', '/ar/packages', strip(pkg), '/ar/itineraries', strip(itin), '/ar/map', '/ar/map?cat=hospitals', '/ar/shopping', '/ar/explore', '/ar/blog', strip(art), '/ar/about', '/ar/plans', '/ar/checkout', '/ar/login', '/ar/signup', '/ar/privacy', '/ar/terms', '/ar/this-page-does-not-exist-404'].filter(Boolean)
+const arPaths = ['/ar', '/ar/activities', '/ar/activities/water-sports-bali', '/ar/activities/hot-air-balloon-ubud', '/ar/packages', strip(pkg2), '/ar/itineraries', strip(itin), '/ar/map', '/ar/map?cat=hospitals', '/ar/shopping', '/ar/explore', '/ar/blog', strip(art2), '/ar/about', '/ar/plans', '/ar/checkout', '/ar/login', '/ar/signup', '/ar/privacy', '/ar/terms', '/ar/this-page-does-not-exist-404'].filter(Boolean)
 const paths = [...arPaths, '/en']
 results._discovered = { pkg, itin, art }
 let firstConsent = { m: true, d: true }
