@@ -1,5 +1,7 @@
 name: UX audit
 on:
+  push:
+    branches: [ux-audit]
   workflow_dispatch:
     inputs:
       url:
@@ -18,11 +20,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - name: Audit
-        env: { LIVE_URL: '${{ inputs.url }}' }
+        env: { LIVE_URL: '${{ inputs.url || ''https://balitrips.co'' }}' }
         run: node scripts/ux-audit.mjs
       - name: Lighthouse
         continue-on-error: true
-        env: { LIVE_URL: '${{ inputs.url }}' }
+        env: { LIVE_URL: '${{ inputs.url || ''https://balitrips.co'' }}' }
         run: |
           export CHROME_PATH=$(node -e "console.log(require('@playwright/test').chromium.executablePath())")
           for p in ar ar/activities/water-sports-bali; do
