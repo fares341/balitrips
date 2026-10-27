@@ -1,0 +1,3814 @@
+{
+  "_sitemapHas": {
+    "packages": 0,
+    "blog": 0
+  },
+  "_discovered": {
+    "pkg": null,
+    "itin": "/ar/itineraries/bali-4d-youth",
+    "art": null
+  },
+  "m:/ar": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED",
+      "https://balitrips.co/brand/hero/hero-rice.webm net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar",
+    "checks": {
+      "title": "Bali Trips — بالي كما لم تكتشفها من قبل",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.hv-frame L-16 R406",
+        "div.hv-slides L-16 R406",
+        "div.hv-sl L-16 R406",
+        "video. L-29 R419",
+        "div.hv-sl on L-16 R406",
+        "video. L-34 R424",
+        "div.hv-sl L-16 R406",
+        "video. L-29 R419",
+        "div.mr-item L-198 R81",
+        "article.card hoverable L-198 R81",
+        "div.card-media L-197 R80",
+        "img.photo L-197 R80",
+        "div.tl L-82 R68",
+        "span.tag tag-sun L-26 R68",
+        "span.tag tag-glass L-82 R-32"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 36,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a.hv-link \"خطط رحلتك\" 102x28",
+        "button.hv-tab done \"نوسا بينيدا\" 103x28",
+        "button.hv-tab on \"مدرجات الأرز\" 103x28",
+        "button.hv-tab \"أولواتو\" 103x28",
+        "button.hv-pause \"إيقاف الفيديو مؤقتًا\" 30x30",
+        "a.card-link \"الرياضات المائية\" 122x20",
+        "a.card-link \"بالي سفاري\" 90x20",
+        "a.card-link \"بالي مارين سفاري\" 138x20",
+        "a.card-link \"تجديف نهر تيلاجا واجا\" 159x20",
+        "a.link about-more \"المزيد عن Bali Trips\" 161x30",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16"
+      ],
+      "tinyTextCount": 15,
+      "tinyText": [
+        "10.5px small.hv-info-l \"الوقت في بالي\"",
+        "10.5px small.hv-info-l \"الطقس الآن\"",
+        "11.5px span. \"نوسا بينيدا\"",
+        "11.5px span. \"مدرجات الأرز\"",
+        "11.5px span. \"أولواتو\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "بالي\nكما لم تكتشفها من قبل"
+      ],
+      "height": 6430
+    },
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 5,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          "a[aria-label=\"المستشفيات والعيادات — مكانان\"] > .gc-b > .gc-go",
+          "a[aria-label=\"المساجد — قريبًا\"] > .gc-b > .gc-go",
+          "a[aria-label=\"المولات — 17 مكانًا\"] > .gc-b > .gc-go"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=uHqCsj4SQR6vibxi net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=SDmtiWM5AYQMkhhI net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar",
+    "checks": {
+      "title": "Bali Trips — بالي كما لم تكتشفها من قبل",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 39,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a.hv-link \"خطط رحلتك\" 102x28",
+        "button.hv-tab done \"نوسا بينيدا\" 363x31",
+        "button.hv-tab on \"مدرجات الأرز\" 363x31",
+        "button.hv-tab \"أولواتو\" 363x31",
+        "button.hv-pause \"إيقاف الفيديو مؤقتًا\" 30x30",
+        "a.card-link \"الرياضات المائية\" 122x20",
+        "a.card-link \"بالي سفاري\" 90x20",
+        "a.card-link \"تجديف نهر تيلاجا واجا\" 159x20",
+        "a.card-link \"تجربة منطاد بالي الطائر في أوب\" 248x20",
+        "a.link about-more \"المزيد عن Bali Trips\" 161x30",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16"
+      ],
+      "tinyTextCount": 7,
+      "tinyText": [
+        "11px small.hv-info-l \"الوقت في بالي\"",
+        "11px small.hv-info-l \"الطقس الآن\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "بالي\nكما لم تكتشفها من قبل"
+      ],
+      "height": 5604
+    },
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 4,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          "a[aria-label=\"المستشفيات والعيادات — مكانان\"] > .gc-b > .gc-go",
+          "a[aria-label=\"المساجد — قريبًا\"] > .gc-b > .gc-go",
+          "a[aria-label=\"المولات — 17 مكانًا\"] > .gc-b > .gc-go"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/activities": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities",
+    "checks": {
+      "title": "أنشطة بالي، جاهزة للحجز · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "button.chip L-37 R60",
+        "span.ct L-20 R-13",
+        "button.chip L-139 R-45",
+        "span.ct L-122 R-118",
+        "button.chip L-235 R-147",
+        "span.ct L-218 R-214",
+        "button.chip L-323 R-243",
+        "span.ct L-306 R-299",
+        "button.chip L-477 R-331",
+        "span.ct L-460 R-456",
+        "button.chip L-592 R-485",
+        "span.ct L-575 R-568",
+        "button.chip L-755 R-600",
+        "span.ct L-738 R-731",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 43,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a.card-link \"الرياضات المائية\" 122x20",
+        "a.card-link \"بالي سفاري\" 90x20",
+        "a.card-link \"تجديف نهر تيلاجا واجا\" 159x20",
+        "a.card-link \"تجربة منطاد بالي الطائر في أوب\" 248x20",
+        "a.card-link \"جت سكي تانجونغ بينوا\" 164x20",
+        "a.card-link \"جولة طيران الهليكوبتر في سماء \" 275x20",
+        "a.card-link \"جولة نوسا بينيدا\" 122x20",
+        "a.card-link \"حديقة حيوان بالي أوبود (Bali Z\" 257x20",
+        "a.card-link \"حديقة طيور بالي (Bali Bird Par\" 253x20",
+        "a.card-link \"ركوب الخيل على شاطئ سانور\" 230x20",
+        "a.card-link \"مدينة ألعاب ترانس ستوديو بالي \" 309x20",
+        "a.card-link \"معركة كرات الألوان (بينتبول با\" 251x20",
+        "a.card-link \"مغامرة التجديف في نهر أيونج – \" 277x20",
+        "a.card-link \"مغامرة مزارع الأرز وأراجيح أوب\" 309x20",
+        "a.card-link \"نادي بالي للرماية\" 123x20",
+        "a.card-link \"نادي بالي ناشيونال للجولف (نوس\" 286x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16"
+      ],
+      "tinyTextCount": 15,
+      "tinyText": [
+        "11px span.ct \"24\"",
+        "11px span.ct \"8\"",
+        "11px span.ct \"2\"",
+        "11px span.ct \"3\"",
+        "11px span.ct \"1\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "أنشطة بالي، جاهزة للحجز"
+      ],
+      "height": 16353
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/activities": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=PgC-jUAmGSIDuyAq net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=NV4SfNodrVBiCNJU net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities",
+    "checks": {
+      "title": "أنشطة بالي، جاهزة للحجز · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 46,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a.card-link \"الرياضات المائية\" 122x20",
+        "a.card-link \"بالي سفاري\" 90x20",
+        "a.card-link \"تجديف نهر تيلاجا واجا\" 159x20",
+        "a.card-link \"تجربة منطاد بالي الطائر في أوب\" 248x20",
+        "a.card-link \"جت سكي تانجونغ بينوا\" 164x20",
+        "a.card-link \"جولة طيران الهليكوبتر في سماء \" 275x20",
+        "a.card-link \"جولة نوسا بينيدا\" 122x20",
+        "a.card-link \"حديقة حيوان بالي أوبود (Bali Z\" 257x20",
+        "a.card-link \"حديقة طيور بالي (Bali Bird Par\" 253x20",
+        "a.card-link \"ركوب الخيل على شاطئ سانور\" 230x20",
+        "a.card-link \"مدينة ألعاب ترانس ستوديو بالي \" 309x20",
+        "a.card-link \"معركة كرات الألوان (بينتبول با\" 251x20",
+        "a.card-link \"مغامرة التجديف في نهر أيونج – \" 277x20",
+        "a.card-link \"مغامرة مزارع الأرز وأراجيح أوب\" 309x20",
+        "a.card-link \"نادي بالي للرماية\" 123x20",
+        "a.card-link \"نادي بالي ناشيونال للجولف (نوس\" 286x20",
+        "a. \"الرئيسية\" 51x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span.ct \"24\"",
+        "11px span.ct \"8\"",
+        "11px span.ct \"2\"",
+        "11px span.ct \"3\"",
+        "11px span.ct \"1\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "أنشطة بالي، جاهزة للحجز"
+      ],
+      "height": 6287
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/activities/water-sports-bali": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=Dght41Ro83svuy_2 net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=ieHKDd6px-bOlm5z net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities/water-sports-bali",
+    "checks": {
+      "title": "الرياضات المائية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "button. L-18 R54",
+        "img. L-16 R52",
+        "button. L-98 R-26",
+        "img. L-96 R-28",
+        "button. L-178 R-106",
+        "img. L-176 R-108",
+        "button. L-258 R-186",
+        "img. L-256 R-188",
+        "article.pcard L-160 R100",
+        "header.pcard-h L-141 R81",
+        "h3.tname L-141 R53",
+        "p.pprice L-141 R81",
+        "small.punit L-141 R81",
+        "p.ptag L-141 R81",
+        "div.pfoot L-141 R81"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 44,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الأنشطة والفعاليات\" 122x24",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button.icon-btn \"الشهر السابق\" 38x38",
+        "button.icon-btn \"الشهر التالي\" 38x38",
+        "button.icon-btn relcard-fav \"حفظ · جت سكي تانجونغ بينوا\" 30x30",
+        "a.relcard-name \"جت سكي تانجونغ بينوا\" 150x19",
+        "button.icon-btn relcard-fav \"حفظ · جولة نوسا بينيدا\" 30x30",
+        "a.relcard-name \"جولة نوسا بينيدا\" 150x19",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "الرياضات المائية"
+      ],
+      "height": 6680
+    },
+    "axe": [
+      {
+        "id": "aria-allowed-role",
+        "impact": "minor",
+        "nodes": 6,
+        "help": "ARIA role should be appropriate for the element",
+        "sample": [
+          ".on",
+          ".pcard:nth-child(2)",
+          ".pcard:nth-child(3)"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 5,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".on > .pprice > .price",
+          ".pcard:nth-child(2) > .pprice > .price",
+          ".pcard:nth-child(3) > .pprice > .price"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/activities/water-sports-bali": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=Dght41Ro83svuy_2 net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=ieHKDd6px-bOlm5z net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities/water-sports-bali",
+    "checks": {
+      "title": "الرياضات المائية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "img. L-666 R1174",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 47,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الأنشطة والفعاليات\" 122x24",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button.icon-btn \"الشهر السابق\" 38x38",
+        "button.icon-btn \"الشهر التالي\" 38x38",
+        "button.icon-btn relcard-fav \"حفظ · جت سكي تانجونغ بينوا\" 30x30",
+        "a.relcard-name \"جت سكي تانجونغ بينوا\" 150x19",
+        "button.icon-btn relcard-fav \"حفظ · جولة نوسا بينيدا\" 30x30",
+        "a.relcard-name \"جولة نوسا بينيدا\" 150x19"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "الرياضات المائية"
+      ],
+      "height": 4235
+    },
+    "axe": [
+      {
+        "id": "aria-allowed-role",
+        "impact": "minor",
+        "nodes": 6,
+        "help": "ARIA role should be appropriate for the element",
+        "sample": [
+          ".on",
+          ".pcard:nth-child(2)",
+          ".pcard:nth-child(3)"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 7,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".on > .pprice > .price",
+          ".pcard:nth-child(2) > .pprice > .price",
+          ".pcard:nth-child(3) > .pprice > .price"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/activities/hot-air-balloon-ubud": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=sRXQWWeGAlLPo6xw net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=QxJmEGo7OGB0f4a- net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities/hot-air-balloon-ubud",
+    "checks": {
+      "title": "تجربة منطاد بالي الطائر في أوبود · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "button. L-18 R54",
+        "img. L-16 R52",
+        "button. L-125 R22",
+        "img. L-781 R1059",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 36,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الأنشطة والفعاليات\" 122x24",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button.icon-btn \"الشهر السابق\" 38x38",
+        "button.icon-btn \"الشهر التالي\" 38x38",
+        "button.icon-btn relcard-fav \"حفظ · جولة طيران الهليكوبتر في\" 30x30",
+        "a.relcard-name \"جولة طيران الهليكوبتر في سماء \" 150x38",
+        "button.icon-btn relcard-fav \"حفظ · ركوب الخيل على شاطئ سانو\" 30x30",
+        "a.relcard-name \"ركوب الخيل على شاطئ سانور\" 150x38",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "تجربة منطاد بالي الطائر في أوبود"
+      ],
+      "height": 5953
+    },
+    "axe": [
+      {
+        "id": "aria-allowed-role",
+        "impact": "minor",
+        "nodes": 2,
+        "help": "ARIA role should be appropriate for the element",
+        "sample": [
+          "article:nth-child(1)",
+          "article:nth-child(2)"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".pprice > .price",
+          "article:nth-child(1) > .price",
+          "article:nth-child(2) > .price"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#tdetail-h",
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/activities/hot-air-balloon-ubud": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=QxJmEGo7OGB0f4a- net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/activities/hot-air-balloon-ubud",
+    "checks": {
+      "title": "تجربة منطاد بالي الطائر في أوبود · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "img. L-608 R1232",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 39,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الأنشطة والفعاليات\" 122x24",
+        "button. \"إنقاص الكمية\" 38x38",
+        "button. \"زيادة الكمية\" 38x38",
+        "button.icon-btn \"الشهر السابق\" 38x38",
+        "button.icon-btn \"الشهر التالي\" 38x38",
+        "button.icon-btn relcard-fav \"حفظ · جولة طيران الهليكوبتر في\" 30x30",
+        "a.relcard-name \"جولة طيران الهليكوبتر في سماء \" 150x38",
+        "button.icon-btn relcard-fav \"حفظ · ركوب الخيل على شاطئ سانو\" 30x30",
+        "a.relcard-name \"ركوب الخيل على شاطئ سانور\" 150x38",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "تجربة منطاد بالي الطائر في أوبود"
+      ],
+      "height": 3610
+    },
+    "axe": [
+      {
+        "id": "aria-allowed-role",
+        "impact": "minor",
+        "nodes": 2,
+        "help": "ARIA role should be appropriate for the element",
+        "sample": [
+          "article:nth-child(1)",
+          "article:nth-child(2)"
+        ]
+      },
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 3,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".pprice > .price",
+          "article:nth-child(1) > .price",
+          "article:nth-child(2) > .price"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#tdetail-h",
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/packages": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=LUS7dIus73amDNJj net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/packages",
+    "checks": {
+      "title": "البكجات السياحية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 27,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "البكجات السياحية"
+      ],
+      "height": 2223
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/packages": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=LUS7dIus73amDNJj net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/packages",
+    "checks": {
+      "title": "البكجات السياحية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 30,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "البكجات السياحية"
+      ],
+      "height": 1208
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/itineraries": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=iMFWshS_gdSamnEH net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=yzIJ9kt0LCkDWvzi net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/itineraries",
+    "checks": {
+      "title": "الجداول السياحية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "a.chip L-9 R63",
+        "a.chip L-71 R8",
+        "span.ct L-54 R-50",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 33,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a.it-how-link \"كيف يصلك الجدول؟\" 140x25",
+        "a.card-link \"جدول سياحي 4 أيام — شباب\" 214x20",
+        "a.card-link \"جدول سياحي عائلي 4 أيام\" 186x20",
+        "a.card-link \"بالي في 6 أيام\" 100x20",
+        "a.card-link \"بالي في 8 أيام\" 100x20",
+        "a.card-link \"بالي في 10 أيام\" 107x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16"
+      ],
+      "tinyTextCount": 22,
+      "tinyText": [
+        "11px span.ct \"2\"",
+        "11px span.ct \"1\"",
+        "9px small. \"Bali Trips\"",
+        "11.5px b. \"جدولك السياحي في بالي\"",
+        "9.5px span.ihw-day-badge \"اليوم 1\"",
+        "9.5px span.ihw-pin \"1\"",
+        "9.5px span.ihw-pin \"2\"",
+        "9.5px span.ihw-pin \"3\"",
+        "9.5px span.ihw-pin \"4\"",
+        "11.5px span. \"ملف PDF\"",
+        "11.5px span. \"يوم بيوم\"",
+        "11.5px span. \"الخريطة والمسار\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\""
+      ],
+      "h1": [
+        "اختر جدولك السياحي في بالي"
+      ],
+      "height": 6354
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "article:nth-child(1) > .card-body > h3",
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/itineraries": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=yzIJ9kt0LCkDWvzi net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/itineraries",
+    "checks": {
+      "title": "الجداول السياحية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 36,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a.it-how-link \"كيف يصلك الجدول؟\" 140x25",
+        "a.card-link \"جدول سياحي 4 أيام — شباب\" 214x20",
+        "a.card-link \"جدول سياحي عائلي 4 أيام\" 186x20",
+        "a.card-link \"بالي في 6 أيام\" 100x20",
+        "a.card-link \"بالي في 8 أيام\" 100x20",
+        "a.card-link \"بالي في 10 أيام\" 107x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16"
+      ],
+      "tinyTextCount": 14,
+      "tinyText": [
+        "11px span.ct \"2\"",
+        "11px span.ct \"1\"",
+        "9px small. \"Bali Trips\"",
+        "11.5px b. \"جدولك السياحي في بالي\"",
+        "9.5px span.ihw-day-badge \"اليوم 1\"",
+        "9.5px span.ihw-pin \"1\"",
+        "9.5px span.ihw-pin \"2\"",
+        "9.5px span.ihw-pin \"3\"",
+        "9.5px span.ihw-pin \"4\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "اختر جدولك السياحي في بالي"
+      ],
+      "height": 3394
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 2,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "article:nth-child(1) > .card-body > h3",
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/itineraries/bali-4d-youth": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=A6bpo1HY-LWJ1xkL net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=G_8QIOr07czdMypU net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/itineraries/bali-4d-youth",
+    "checks": {
+      "title": "جدول سياحي 4 أيام — شباب · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 31,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الجداول السياحية\" 104x24",
+        "a.card-link \"جدول سياحي عائلي 4 أيام\" 186x20",
+        "a.card-link \"بالي في 6 أيام\" 100x20",
+        "a.card-link \"بالي في 8 أيام\" 100x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16"
+      ],
+      "tinyTextCount": 21,
+      "tinyText": [
+        "9px small. \"Bali Trips\"",
+        "11.5px b. \"جدول سياحي 4 أيام — شباب\"",
+        "9.5px span. \"4 أيام\"",
+        "9.5px span.ihw-day-badge \"اليوم 1\"",
+        "9.5px span.ihw-pin \"1\"",
+        "9.5px span.ihw-pin \"2\"",
+        "9.5px span.ihw-pin \"3\"",
+        "9.5px span.ihw-pin \"4\"",
+        "11.5px span. \"ملف PDF\"",
+        "11.5px span. \"يوم بيوم\"",
+        "11.5px span. \"الخريطة والمسار\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\""
+      ],
+      "h1": [
+        "جدول سياحي 4 أيام — شباب"
+      ],
+      "height": 7829
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/itineraries/bali-4d-youth": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=G_8QIOr07czdMypU net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/itineraries/bali-4d-youth",
+    "checks": {
+      "title": "جدول سياحي 4 أيام — شباب · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 35,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الجداول السياحية\" 104x24",
+        "a.bt-ibook-how \"كيف يصلك الجدول؟\" 127x23",
+        "a.card-link \"جدول سياحي عائلي 4 أيام\" 186x20",
+        "a.card-link \"بالي في 6 أيام\" 100x20",
+        "a.card-link \"بالي في 8 أيام\" 100x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16"
+      ],
+      "tinyTextCount": 13,
+      "tinyText": [
+        "9px small. \"Bali Trips\"",
+        "11.5px b. \"جدول سياحي 4 أيام — شباب\"",
+        "9.5px span. \"4 أيام\"",
+        "9.5px span.ihw-day-badge \"اليوم 1\"",
+        "9.5px span.ihw-pin \"1\"",
+        "9.5px span.ihw-pin \"2\"",
+        "9.5px span.ihw-pin \"3\"",
+        "9.5px span.ihw-pin \"4\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "جدول سياحي 4 أيام — شباب"
+      ],
+      "height": 5071
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/map": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/map",
+    "checks": {
+      "title": "خريطة بالي التفاعلية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc mp-arc L149 R789",
+        "button.chip L-102 R-6",
+        "svg.[object SVGAnimatedString] L-36 R-20",
+        "path.[object SVGAnimatedString] L-33 R-23",
+        "path.[object SVGAnimatedString] L-30 R-26",
+        "bdi. L-88 R-43",
+        "button.chip L-208 R-110",
+        "svg.[object SVGAnimatedString] L-140 R-124",
+        "path.[object SVGAnimatedString] L-137 R-129",
+        "bdi. L-194 R-147",
+        "button.chip L-313 R-216",
+        "svg.[object SVGAnimatedString] L-246 R-230",
+        "path.[object SVGAnimatedString] L-243 R-235",
+        "path.[object SVGAnimatedString] L-241 R-232",
+        "bdi. L-299 R-253"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 41,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"خدماتنا\" 41x24",
+        "button.mp-rb \"كوتا\n52\" 109x28",
+        "button.mp-rb \"سيمنياك\n79\" 137x28",
+        "button.mp-rb \"تشانغو\n107\" 134x28",
+        "button.mp-rb \"أولواتو\n69\" 123x28",
+        "button.mp-rb \"نوسا دوا\n50\" 136x28",
+        "button.mp-rb \"سانور\n22\" 121x28",
+        "button.mp-rb \"أوبود\n99\" 115x28",
+        "button.mp-rb \"شرق بالي\n1\" 114x28",
+        "button.mp-rb \"شمال بالي\n60\" 147x28",
+        "button.mp-rb \"الجزر\n22\" 112x28",
+        "button. \"بحيرة باتور\" 78x17",
+        "button. \"جبل أغونغ\" 80x17",
+        "button.mp-attrib-btn \"i\" 22x22",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16"
+      ],
+      "tinyTextCount": 19,
+      "tinyText": [
+        "10.5px span.mp-n \"52\"",
+        "10.5px span.mp-n \"79\"",
+        "10.5px span.mp-n \"107\"",
+        "10.5px span.mp-n \"69\"",
+        "10.5px span.mp-n \"50\"",
+        "10.5px span.mp-n \"22\"",
+        "10.5px span.mp-n \"99\"",
+        "10.5px span.mp-n \"1\"",
+        "10.5px span.mp-n \"60\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "خريطة Bali Trips التفاعلية"
+      ],
+      "height": 2176
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      }
+    ]
+  },
+  "d:/ar/map": {
+    "console": [],
+    "failed": [
+      "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/10/836/536.png net::ERR_ABORTED",
+      "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/10/836/537.png net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/map",
+    "checks": {
+      "title": "خريطة بالي التفاعلية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc mp-arc L-240 R400",
+        "button.chip L-3 R120",
+        "button.chip L-135 R-11",
+        "svg.[object SVGAnimatedString] L-40 R-24",
+        "path.[object SVGAnimatedString] L-38 R-26",
+        "bdi. L-122 R-47",
+        "button.chip L-338 R-143",
+        "svg.[object SVGAnimatedString] L-172 R-156",
+        "path.[object SVGAnimatedString] L-169 R-159",
+        "path.[object SVGAnimatedString] L-166 R-162",
+        "bdi. L-325 R-179",
+        "button.chip L-456 R-346",
+        "svg.[object SVGAnimatedString] L-375 R-359",
+        "path.[object SVGAnimatedString] L-372 R-362",
+        "circle.[object SVGAnimatedString] L-369 R-365"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 64,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"خدماتنا\" 41x24",
+        "button.chip \"كل الجزيرة\" 89x38",
+        "button.chip \"كوتا\" 49x38",
+        "button.chip \"سيمنياك\" 83x38",
+        "button.chip \"تشانغو\" 70x38",
+        "button.chip \"أولواتو\" 66x38",
+        "button.chip \"نوسا دوا\" 79x38",
+        "button.chip \"سانور\" 63x38",
+        "button.chip \"أوبود\" 57x38",
+        "button.chip \"شرق بالي\" 85x38",
+        "button.chip \"شمال بالي\" 91x38",
+        "button.chip \"الجزر\" 55x38",
+        "button.chip \"الكل\" 54x38",
+        "button.chip \"الأنشطة والفعاليات\" 171x38",
+        "button.chip \"المزارات السياحية\" 156x38",
+        "button.chip \"المولات\" 97x38",
+        "button.chip \"المطاعم\" 100x38"
+      ],
+      "tinyTextCount": 15,
+      "tinyText": [
+        "11px span.mp-n \"52\"",
+        "11px span.mp-n \"79\"",
+        "11px span.mp-n \"107\"",
+        "11px span.mp-n \"69\"",
+        "11px span.mp-n \"50\"",
+        "11px span.mp-n \"22\"",
+        "11px span.mp-n \"99\"",
+        "11px span.mp-n \"1\"",
+        "11px span.mp-n \"60\"",
+        "10.5px p. \"OpenFreeMap © OpenMapTiles © O\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "خريطة Bali Trips التفاعلية"
+      ],
+      "height": 1396
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Document should have one main landmark",
+        "sample": [
+          "html"
+        ]
+      }
+    ]
+  },
+  "m:/ar/map?cat=hospitals": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/map?cat=hospitals",
+    "checks": {
+      "title": "خريطة بالي التفاعلية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc mp-arc L149 R789",
+        "button.chip L-102 R-6",
+        "svg.[object SVGAnimatedString] L-36 R-20",
+        "path.[object SVGAnimatedString] L-33 R-23",
+        "path.[object SVGAnimatedString] L-30 R-26",
+        "bdi. L-88 R-43",
+        "button.chip L-208 R-110",
+        "svg.[object SVGAnimatedString] L-140 R-124",
+        "path.[object SVGAnimatedString] L-137 R-129",
+        "bdi. L-194 R-147",
+        "button.chip L-313 R-216",
+        "svg.[object SVGAnimatedString] L-246 R-230",
+        "path.[object SVGAnimatedString] L-243 R-235",
+        "path.[object SVGAnimatedString] L-241 R-232",
+        "bdi. L-299 R-253"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 41,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"خدماتنا\" 41x24",
+        "button.mp-rb \"كوتا\n52\" 109x28",
+        "button.mp-rb \"سيمنياك\n79\" 137x28",
+        "button.mp-rb \"تشانغو\n107\" 134x28",
+        "button.mp-rb \"أولواتو\n69\" 123x28",
+        "button.mp-rb \"نوسا دوا\n50\" 136x28",
+        "button.mp-rb \"سانور\n22\" 121x28",
+        "button.mp-rb \"أوبود\n99\" 115x28",
+        "button.mp-rb \"شرق بالي\n1\" 114x28",
+        "button.mp-rb \"شمال بالي\n60\" 147x28",
+        "button.mp-rb \"الجزر\n22\" 112x28",
+        "button. \"بحيرة باتور\" 78x17",
+        "button. \"جبل أغونغ\" 80x17",
+        "button.mp-attrib-btn \"i\" 22x22",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16"
+      ],
+      "tinyTextCount": 19,
+      "tinyText": [
+        "10.5px span.mp-n \"52\"",
+        "10.5px span.mp-n \"79\"",
+        "10.5px span.mp-n \"107\"",
+        "10.5px span.mp-n \"69\"",
+        "10.5px span.mp-n \"50\"",
+        "10.5px span.mp-n \"22\"",
+        "10.5px span.mp-n \"99\"",
+        "10.5px span.mp-n \"1\"",
+        "10.5px span.mp-n \"60\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "خريطة Bali Trips التفاعلية"
+      ],
+      "height": 2176
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      }
+    ]
+  },
+  "d:/ar/map?cat=hospitals": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/map?cat=hospitals",
+    "checks": {
+      "title": "خريطة بالي التفاعلية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc mp-arc L-240 R400",
+        "button.chip L-3 R120",
+        "button.chip L-135 R-11",
+        "svg.[object SVGAnimatedString] L-40 R-24",
+        "path.[object SVGAnimatedString] L-38 R-26",
+        "bdi. L-122 R-47",
+        "button.chip L-338 R-143",
+        "svg.[object SVGAnimatedString] L-172 R-156",
+        "path.[object SVGAnimatedString] L-169 R-159",
+        "path.[object SVGAnimatedString] L-166 R-162",
+        "bdi. L-325 R-179",
+        "button.chip L-456 R-346",
+        "svg.[object SVGAnimatedString] L-375 R-359",
+        "path.[object SVGAnimatedString] L-372 R-362",
+        "circle.[object SVGAnimatedString] L-369 R-365"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 64,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"خدماتنا\" 41x24",
+        "button.chip \"كل الجزيرة\" 89x38",
+        "button.chip \"كوتا\" 49x38",
+        "button.chip \"سيمنياك\" 83x38",
+        "button.chip \"تشانغو\" 70x38",
+        "button.chip \"أولواتو\" 66x38",
+        "button.chip \"نوسا دوا\" 79x38",
+        "button.chip \"سانور\" 63x38",
+        "button.chip \"أوبود\" 57x38",
+        "button.chip \"شرق بالي\" 85x38",
+        "button.chip \"شمال بالي\" 91x38",
+        "button.chip \"الجزر\" 55x38",
+        "button.chip \"الكل\" 54x38",
+        "button.chip \"الأنشطة والفعاليات\" 171x38",
+        "button.chip \"المزارات السياحية\" 156x38",
+        "button.chip \"المولات\" 97x38",
+        "button.chip \"المطاعم\" 100x38"
+      ],
+      "tinyTextCount": 15,
+      "tinyText": [
+        "11px span.mp-n \"52\"",
+        "11px span.mp-n \"79\"",
+        "11px span.mp-n \"107\"",
+        "11px span.mp-n \"69\"",
+        "11px span.mp-n \"50\"",
+        "11px span.mp-n \"22\"",
+        "11px span.mp-n \"99\"",
+        "11px span.mp-n \"1\"",
+        "11px span.mp-n \"60\"",
+        "10.5px p. \"OpenFreeMap © OpenMapTiles © O\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "خريطة Bali Trips التفاعلية"
+      ],
+      "height": 1396
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-one-main",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Document should have one main landmark",
+        "sample": [
+          "html"
+        ]
+      }
+    ]
+  },
+  "m:/ar/shopping": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=fso4rCImaUQ3wjkK net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=sFbrSQxy3l1oelvb net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/shopping",
+    "checks": {
+      "title": "التسوق في بالي · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 45,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a.card-link \"Karisma Barber Keluarga\" 212x20",
+        "a.card-link \"Parc Valle Pererenan\" 175x20",
+        "a.card-link \"Easy Day Laundry Pererenan\" 242x20",
+        "a.card-link \"Laundry Projects Seminyak\" 232x20",
+        "a.card-link \"Bliss Barber Jimbaran\" 187x20",
+        "a.card-link \"HQ Cut's ink Barber Tattoo\" 225x20",
+        "a.card-link \"Level 21 Mall\" 102x20",
+        "a.card-link \"Living World Mall Denpasar\" 229x20",
+        "a.card-link \"مول بالي جاليري\" 120x20",
+        "a.card-link \"romat\" 51x20",
+        "a.card-link \"Samasta Lifestyle Village\" 212x20",
+        "a.card-link \"Icon Bali\" 73x20",
+        "a.card-link \"مجمع ديسكفري مول\" 165x20",
+        "a.card-link \"Bali Collection\" 124x20",
+        "a.card-link \"Lippo Mall Kuta\" 130x20",
+        "a.card-link \"Seminyak Village\" 145x20",
+        "a.card-link \"Sira Village Grand Outlet Bali\" 244x20",
+        "a.card-link \"مركز تسوق بيتشوالك\" 169x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "التسوق في بالي"
+      ],
+      "height": 9901
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "article:nth-child(1) > .card-body > h3"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/shopping": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/shopping",
+    "checks": {
+      "title": "التسوق في بالي · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 48,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a.card-link \"Karisma Barber Keluarga\" 212x20",
+        "a.card-link \"Parc Valle Pererenan\" 175x20",
+        "a.card-link \"Easy Day Laundry Pererenan\" 242x20",
+        "a.card-link \"Laundry Projects Seminyak\" 232x20",
+        "a.card-link \"Bliss Barber Jimbaran\" 187x20",
+        "a.card-link \"HQ Cut's ink Barber Tattoo\" 225x20",
+        "a.card-link \"Level 21 Mall\" 102x20",
+        "a.card-link \"Living World Mall Denpasar\" 229x20",
+        "a.card-link \"مول بالي جاليري\" 120x20",
+        "a.card-link \"romat\" 51x20",
+        "a.card-link \"Samasta Lifestyle Village\" 212x20",
+        "a.card-link \"Icon Bali\" 73x20",
+        "a.card-link \"مجمع ديسكفري مول\" 165x20",
+        "a.card-link \"Bali Collection\" 124x20",
+        "a.card-link \"Lippo Mall Kuta\" 130x20",
+        "a.card-link \"Seminyak Village\" 145x20",
+        "a.card-link \"Sira Village Grand Outlet Bali\" 244x20"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "التسوق في بالي"
+      ],
+      "height": 3775
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "article:nth-child(1) > .card-body > h3"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/explore": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=NXb4jvelQ2t0WWbm net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/explore",
+    "checks": {
+      "title": "استكشف بالي · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "table.cmp L-147 R373",
+        "thead. L-147 R373",
+        "tr. L-147 R373",
+        "th. L-26 R90",
+        "th. L-147 R-26",
+        "tbody. L-147 R373",
+        "tr. L-147 R373",
+        "td. L-26 R90",
+        "td. L-147 R-26",
+        "tr. L-147 R373",
+        "td. L-26 R90",
+        "td. L-147 R-26",
+        "tr. L-147 R373",
+        "td. L-26 R90",
+        "td. L-147 R-26"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 40,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a.link \"جنوب بالي\" 61x27",
+        "a.link \"وسط بالي\" 63x27",
+        "a.link \"شرق بالي\" 59x27",
+        "a.link \"شمال بالي\" 65x27",
+        "a.link \"الجزر\" 29x27",
+        "a.card-link \"معبد أولواتو\" 94x20",
+        "a.card-link \"مدرّجات تيغالالانغ\" 135x20",
+        "a.card-link \"جبل باتور\" 69x20",
+        "a.card-link \"معبد ليمبويانغ\" 110x20",
+        "a.card-link \"نوسا بنيدا\" 76x20",
+        "a.card-link \"أوبود\" 41x20",
+        "a.card-link \"تشانغو\" 59x20",
+        "a.card-link \"شلال سيكومبول\" 135x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "أي جزء من بالي يناسبك؟"
+      ],
+      "height": 8644
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/explore": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=NXb4jvelQ2t0WWbm net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=vwssfJg8vOjzGDR- net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/explore",
+    "checks": {
+      "title": "استكشف بالي · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 43,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a.link \"جنوب بالي\" 61x27",
+        "a.link \"وسط بالي\" 63x27",
+        "a.link \"شرق بالي\" 59x27",
+        "a.link \"شمال بالي\" 65x27",
+        "a.link \"الجزر\" 29x27",
+        "a.card-link \"معبد أولواتو\" 94x20",
+        "a.card-link \"مدرّجات تيغالالانغ\" 135x20",
+        "a.card-link \"جبل باتور\" 69x20",
+        "a.card-link \"معبد ليمبويانغ\" 110x20",
+        "a.card-link \"نوسا بنيدا\" 76x20",
+        "a.card-link \"أوبود\" 41x20",
+        "a.card-link \"تشانغو\" 59x20",
+        "a.card-link \"شلال سيكومبول\" 135x20",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "أي جزء من بالي يناسبك؟"
+      ],
+      "height": 4265
+    },
+    "axe": [
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/blog": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=fg9cVoWsIamAWMN_ net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=1_AE7HD0rw0yPLW6 net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/blog",
+    "checks": {
+      "title": "اقرأ قبل أن تسافر. · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 28,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "input. \"ابحث في المقالات…\" 242x28",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "المقالات والأدلة"
+      ],
+      "height": 2310
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/blog": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=1_AE7HD0rw0yPLW6 net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/blog",
+    "checks": {
+      "title": "اقرأ قبل أن تسافر. · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 31,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "input. \"ابحث في المقالات…\" 220x28",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "المقالات والأدلة"
+      ],
+      "height": 1386
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/about": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=CvWJb7Nd5xLpR11G net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/about",
+    "checks": {
+      "title": "من نحن · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-200 R440",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 28,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a.link \"استكشف المناطق\" 131x30",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "رفيقك الموثوق لاكتشاف بالي"
+      ],
+      "height": 5108
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/about": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=CvWJb7Nd5xLpR11G net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=OL2FwMtv2knkJHv1 net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/about",
+    "checks": {
+      "title": "من نحن · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-200 R440",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 31,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a.link \"استكشف المناطق\" 131x30",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "رفيقك الموثوق لاكتشاف بالي"
+      ],
+      "height": 3081
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/plans": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=nrIrvgLSGrBg1CUL net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/plans",
+    "checks": {
+      "title": "اشتراك VIP · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 27,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "اختر الاشتراك المناسب لك."
+      ],
+      "height": 4374
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/plans": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=NO7ylO66rOK_y-gA net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/plans",
+    "checks": {
+      "title": "اشتراك VIP · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 30,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "اختر الاشتراك المناسب لك."
+      ],
+      "height": 2081
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/checkout": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=51QVIrh0n96iwzn9 net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=eEY4SpmrwAcrydc1 net::ERR_ABORTED",
+      "https://balitrips.co/ar/checkout?_rsc=eEY4SpmrwAcrydc1 net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/checkout",
+    "checks": {
+      "title": "إتمام الحجز · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 28,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"رحلتي\" 34x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "إتمام الحجز"
+      ],
+      "height": 1914
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      }
+    ]
+  },
+  "d:/ar/checkout": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=51QVIrh0n96iwzn9 net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/checkout",
+    "checks": {
+      "title": "إتمام الحجز · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 31,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"رحلتي\" 34x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "إتمام الحجز"
+      ],
+      "height": 1128
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      }
+    ]
+  },
+  "m:/ar/login": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=PnEg5rN2VEPl-rei net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=8wfHSfN3rvy-0jKH net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/login",
+    "checks": {
+      "title": "تسجيل الدخول · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 30,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "button.bt-pw-eye \"إظهار كلمة المرور\" 36x36",
+        "input. \"\" 16x16",
+        "a. \"نسيت كلمة المرور؟\" 118x24",
+        "a. \"حساب جديد\" 72x15",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "مرحبًا بعودتك"
+      ],
+      "height": 2264
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/login": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=PnEg5rN2VEPl-rei net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=8wfHSfN3rvy-0jKH net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/login",
+    "checks": {
+      "title": "تسجيل الدخول · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 33,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "button.bt-pw-eye \"إظهار كلمة المرور\" 36x36",
+        "input. \"\" 16x16",
+        "a. \"نسيت كلمة المرور؟\" 118x24",
+        "a. \"حساب جديد\" 72x15",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "مرحبًا بعودتك"
+      ],
+      "height": 1446
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/signup": {
+    "console": [
+      "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=qsNta2tMneZi8N1s net::ERR_ABORTED"
+    ],
+    "status": 404,
+    "finalUrl": "https://balitrips.co/ar/signup",
+    "checks": {
+      "title": "Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-170 R390",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 26,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15",
+        "a. \"+966 54 881 6380\" 358x25"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "هذا الطريق لا يوصل إلى أي مكان في بالي"
+      ],
+      "height": 2051
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/signup": {
+    "console": [
+      "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=qsNta2tMneZi8N1s net::ERR_ABORTED"
+    ],
+    "status": 404,
+    "finalUrl": "https://balitrips.co/ar/signup",
+    "checks": {
+      "title": "Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 29,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "هذا الطريق لا يوصل إلى أي مكان في بالي"
+      ],
+      "height": 1216
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/privacy": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=XggDAY4i-U7OoNxM net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/privacy",
+    "checks": {
+      "title": "سياسة الخصوصية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "a. L-97 R87",
+        "a. L-216 R-103",
+        "a. L-401 R-222",
+        "a. L-591 R-407",
+        "a. L-726 R-597",
+        "a. L-834 R-732",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 27,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "سياسة الخصوصية"
+      ],
+      "height": 4167
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "sample": [
+          ".pol-nav"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/privacy": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=XggDAY4i-U7OoNxM net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/privacy",
+    "checks": {
+      "title": "سياسة الخصوصية · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 30,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "سياسة الخصوصية"
+      ],
+      "height": 2409
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "sample": [
+          ".pol-nav"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/terms": {
+    "console": [],
+    "failed": [],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/terms",
+    "checks": {
+      "title": "الشروط والأحكام · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "a. L-97 R87",
+        "a. L-216 R-103",
+        "a. L-401 R-222",
+        "a. L-591 R-407",
+        "a. L-726 R-597",
+        "a. L-834 R-732",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 27,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "الشروط والأحكام"
+      ],
+      "height": 4431
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "sample": [
+          ".pol-nav"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/terms": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=JsOOzqlvuOO3eFLA net::ERR_ABORTED",
+      "https://balitrips.co/ar/map?_rsc=aUJY8NYdnijdDW2L net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/ar/terms",
+    "checks": {
+      "title": "الشروط والأحكام · Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 30,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 52x24",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "الشروط والأحكام"
+      ],
+      "height": 2589
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "landmark-unique",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+        "sample": [
+          ".pol-nav"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/ar/this-page-does-not-exist-404": {
+    "console": [
+      "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "failed": [
+      "https://balitrips.co/ar/map?_rsc=tfJFK01Bp-2dpGzz net::ERR_ABORTED"
+    ],
+    "status": 404,
+    "finalUrl": "https://balitrips.co/ar/this-page-does-not-exist-404",
+    "checks": {
+      "title": "Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-170 R390",
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 26,
+      "smallTap": [
+        "button.icon-btn menu-btn \"القائمة\" 38x38",
+        "button.lang-btn \"عربي\" 67x34",
+        "a.icon-btn \"المفضلة\" 38x38",
+        "a.icon-btn \"رحلتي\" 38x38",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16",
+        "a. \"مركز المساعدة\" 92x16",
+        "a.ftr-pay-label \"طرق الدفع\" 58x15",
+        "a. \"+966 54 881 6380\" 358x25"
+      ],
+      "tinyTextCount": 10,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"الرئيسية\"",
+        "11.5px span. \"الخريطة\"",
+        "11.5px span. \"الأنشطة\"",
+        "11.5px span. \"رحلتي\"",
+        "11.5px span. \"حسابي\""
+      ],
+      "h1": [
+        "هذا الطريق لا يوصل إلى أي مكان في بالي"
+      ],
+      "height": 2051
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/ar/this-page-does-not-exist-404": {
+    "console": [
+      "Failed to load resource: the server responded with a status of 404 ()"
+    ],
+    "failed": [],
+    "status": 404,
+    "finalUrl": "https://balitrips.co/ar/this-page-does-not-exist-404",
+    "checks": {
+      "title": "Bali Trips",
+      "lang": "ar",
+      "dir": "rtl",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L-260 R260"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 29,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 68x27",
+        "a. \"الرئيسية\" 84x36",
+        "a. \"خدماتنا\" 73x36",
+        "a. \"الخريطة التفاعلية\" 139x36",
+        "a. \"الأنشطة والفعاليات\" 161x36",
+        "a. \"من نحن\" 80x36",
+        "a. \"المقالات\" 85x36",
+        "a. \"الرئيسية\" 51x16",
+        "a. \"خدماتنا\" 42x16",
+        "a. \"الخريطة التفاعلية\" 105x16",
+        "a. \"الأنشطة والفعاليات\" 123x16",
+        "a. \"الجداول السياحية\" 103x16",
+        "a. \"البكجات السياحية\" 103x16",
+        "a. \"المقالات\" 53x16",
+        "a. \"من نحن\" 49x16",
+        "a. \"سياسة الخصوصية\" 115x16",
+        "a. \"الشروط والأحكام\" 105x16",
+        "a. \"سياسة الإلغاء والاسترداد\" 155x16",
+        "a. \"سياسة الدفع\" 82x16",
+        "a. \"سياسة استخدام المنصة\" 147x16",
+        "a. \"سياسة استخدام الخريطة\" 153x16",
+        "a. \"تفضيلات الكوكيز\" 104x16",
+        "a. \"حقوق الصور\" 76x16",
+        "a. \"الأسئلة الشائعة\" 98x16",
+        "a. \"تواصل معنا\" 72x16"
+      ],
+      "tinyTextCount": 5,
+      "tinyText": [
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "هذا الطريق لا يوصل إلى أي مكان في بالي"
+      ],
+      "height": 1216
+    },
+    "axe": [
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "m:/en": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/en/map?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/en",
+    "checks": {
+      "title": "Bali Trips — Bali, as you've never explored it",
+      "lang": "en",
+      "dir": "ltr",
+      "scrollWidth": 390,
+      "innerWidth": 390,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.hv-frame L-16 R406",
+        "div.hv-slides L-16 R406",
+        "div.hv-sl L-16 R406",
+        "video. L-29 R419",
+        "div.hv-sl on L-16 R406",
+        "video. L-30 R420",
+        "div.hv-sl L-16 R406",
+        "video. L-29 R419",
+        "div.mr-item L309 R588",
+        "article.card hoverable L309 R588",
+        "div.card-media L310 R587",
+        "img.photo L310 R587",
+        "div.tl L322 R542",
+        "span.tag tag-sun L322 R443",
+        "span.tag tag-glass L449 R542"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 33,
+      "smallTap": [
+        "button.icon-btn menu-btn \"Menu\" 38x38",
+        "button.lang-btn \"English\" 81x34",
+        "a.icon-btn \"Favorites\" 38x38",
+        "a.icon-btn \"My Trip\" 38x38",
+        "a.hv-link \"Plan your trip\" 117x26",
+        "button.hv-tab done \"Nusa Penida\" 103x31",
+        "button.hv-tab on \"Rice terraces\" 103x31",
+        "button.hv-tab \"Uluwatu\" 103x31",
+        "button.hv-pause \"Pause video\" 30x30",
+        "a.card-link \"Bali Glass Bridge Gianyar\" 210x23",
+        "a.link about-more \"More about Bali Trips\" 182x28",
+        "a. \"Home\" 43x18",
+        "a. \"Services\" 59x18",
+        "a. \"Interactive Map\" 107x18",
+        "a. \"Activities\" 63x18",
+        "a. \"Itineraries\" 67x18",
+        "a. \"Tour packages\" 100x18",
+        "a. \"Articles\" 51x18",
+        "a. \"About\" 43x18",
+        "a. \"Privacy policy\" 95x18",
+        "a. \"Terms & conditions\" 129x18",
+        "a. \"Cancellation & refund policy\" 192x18",
+        "a. \"Payment policy\" 105x18",
+        "a. \"Platform use policy\" 131x18",
+        "a. \"Map use policy\" 101x18"
+      ],
+      "tinyTextCount": 15,
+      "tinyText": [
+        "10.5px small.hv-info-l \"Time in Bali\"",
+        "10.5px small.hv-info-l \"Weather now\"",
+        "11.5px span. \"Nusa Penida\"",
+        "11.5px span. \"Rice terraces\"",
+        "11.5px span. \"Uluwatu\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\"",
+        "11.5px span. \"Home\"",
+        "11.5px span. \"Map\"",
+        "11.5px span. \"Activities\"",
+        "11.5px span. \"My Trip\"",
+        "11.5px span. \"Account\""
+      ],
+      "h1": [
+        "Bali\nlike you've never seen it before"
+      ],
+      "height": 6645
+    },
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 8,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".svc-head > .eyebrow",
+          ".guide-sec > .wrap > .sec-head > div > .eyebrow",
+          "a[aria-label=\"Hospitals & clinics — 2 places\"] > .gc-b > .gc-go"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  },
+  "d:/en": {
+    "console": [],
+    "failed": [
+      "https://balitrips.co/en/map?_rsc=ry-B8umWgNEV4JR9 net::ERR_ABORTED",
+      "https://balitrips.co/en/map?_rsc=1vwYfVB7_E9t4fEj net::ERR_ABORTED"
+    ],
+    "status": 200,
+    "finalUrl": "https://balitrips.co/en",
+    "checks": {
+      "title": "Bali Trips — Bali, as you've never explored it",
+      "lang": "en",
+      "dir": "ltr",
+      "scrollWidth": 1440,
+      "innerWidth": 1440,
+      "hOverflow": false,
+      "overflowEls": [
+        "div.arc L1180 R1700"
+      ],
+      "brokenImgs": [],
+      "smallTapCount": 41,
+      "smallTap": [
+        "select. \"USD\nSAR\nAED\nKWD\nQAR\nBHD\nOMR\nEG\" 70x28",
+        "a. \"Home\" 72x36",
+        "a. \"Services\" 90x36",
+        "a. \"Interactive Map\" 141x36",
+        "a. \"Activities\" 96x36",
+        "a. \"About\" 73x36",
+        "a. \"Articles\" 83x36",
+        "a.hv-link \"Plan your trip\" 117x26",
+        "button.hv-tab on \"Nusa Penida\" 363x32",
+        "button.hv-tab \"Rice terraces\" 363x32",
+        "button.hv-tab \"Uluwatu\" 363x32",
+        "button.hv-pause \"Pause video\" 30x30",
+        "a.card-link \"AeroXSpace Adventure Park Bali\" 277x23",
+        "a.card-link \"Ayung River White Water Raftin\" 329x23",
+        "a.card-link \"Bali Bird Park Tropical Sanctu\" 274x23",
+        "a.card-link \"Bali Glass Bridge Gianyar\" 210x23",
+        "a.card-link \"Bali Helicopter Scenic Flight\" 240x23",
+        "a.card-link \"Bali National Golf Club Nusa D\" 271x23",
+        "a.link about-more \"More about Bali Trips\" 182x28",
+        "a. \"Home\" 43x18",
+        "a. \"Services\" 59x18",
+        "a. \"Interactive Map\" 107x18",
+        "a. \"Activities\" 63x18",
+        "a. \"Itineraries\" 67x18",
+        "a. \"Tour packages\" 100x18"
+      ],
+      "tinyTextCount": 7,
+      "tinyText": [
+        "11px small.hv-info-l \"Time in Bali\"",
+        "11px small.hv-info-l \"Weather now\"",
+        "11px span. \"VISA\"",
+        "11px span. \"Mastercard\"",
+        "11px span. \"Amex\"",
+        "11px span. \"Apple Pay\"",
+        "11px span. \"Google Pay\""
+      ],
+      "h1": [
+        "Bali\nlike you've never seen it before"
+      ],
+      "height": 5462
+    },
+    "axe": [
+      {
+        "id": "color-contrast",
+        "impact": "serious",
+        "nodes": 8,
+        "help": "Elements must meet minimum color contrast ratio thresholds",
+        "sample": [
+          ".guide-sec > .wrap > .sec-head > div > .eyebrow",
+          "a[aria-label=\"Hospitals & clinics — 2 places\"] > .gc-b > .gc-go",
+          ".gc-soon"
+        ]
+      },
+      {
+        "id": "heading-order",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "Heading levels should only increase by one",
+        "sample": [
+          "#ftr-quick"
+        ]
+      },
+      {
+        "id": "region",
+        "impact": "moderate",
+        "nodes": 1,
+        "help": "All page content should be contained by landmarks",
+        "sample": [
+          ".wa-fab"
+        ]
+      }
+    ]
+  }
+}
