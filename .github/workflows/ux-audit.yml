@@ -1,0 +1,40 @@
+name: UX audit
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        default: https://balitrips.co
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Audit
+        env: { LIVE_URL: '${{ inputs.url }}' }
+        run: node scripts/ux-audit.mjs
+      - name: Lighthouse
+        continue-on-error: true
+        env: { LIVE_URL: '${{ inputs.url }}' }
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('@playwright/test').chromium.executablePath())")
+          for p in ar ar/activities/water-sports-bali; do
+            n=$(echo $p | tr '/' '_')
+            npx -y lighthouse@12.6.1 "$LIVE_URL/$p" --form-factor=mobile --only-categories=performance,accessibility,seo,best-practices --output=json --output-path=ux/lh_$n.json --chrome-flags="--headless=new --no-sandbox" --quiet || true
+            node -e "const r=require('./ux/lh_$n.json');const a=r.audits,c=r.categories;console.log(JSON.stringify({url:r.finalDisplayedUrl,perf:c.performance?.score,a11y:c.accessibility?.score,seo:c.seo?.score,bp:c['best-practices']?.score,LCP:a['largest-contentful-paint'].displayValue,FCP:a['first-contentful-paint'].displayValue,CLS:a['cumulative-layout-shift'].displayValue,TBT:a['total-blocking-time'].displayValue,SI:a['speed-index'].displayValue,TTFB:a['server-response-time']?.displayValue}))" > ux/lh_${n}_summary.json || true
+            rm -f ux/lh_$n.json
+          done
+      - name: Push results
+        if: always()
+        run: |
+          cd ux
+          git init -q && git config user.name ux-audit && git config user.email ux-audit@users.noreply.github.com
+          git checkout -q -b ux-audit-results && git add -A && git commit -q -m "UX audit ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" ux-audit-results
