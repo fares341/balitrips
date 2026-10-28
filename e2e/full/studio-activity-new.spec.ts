@@ -663,17 +663,15 @@ test('edit, publish / unpublish, duplicate, preview', async ({ browserName: _b }
   await submitMain()
   r = await row()
   check(info, 'publish', 'unpublished', r.status === 'draft', String(r.status))
-  // ISR serves one stale copy while it revalidates: ask up to three times.
-  let hidden = await page.request.get(`/ar/activities/${slug}`)
-  for (let i = 0; i < 3 && hidden.status() !== 404; i += 1) {
-    await page.waitForTimeout(1500)
-    hidden = await page.request.get(`/ar/activities/${slug}`)
-  }
+  // The route has a loading.tsx, so a not-found page streams with HTTP 200:
+  // check that the activity is no longer shown rather than the status code.
+  const hidden = await page.request.get(`/ar/activities/${slug}`)
+  const hiddenBody = await hidden.text()
   check(
     info,
     'publish',
     'public page gone when draft',
-    hidden.status() === 404,
+    hidden.status() === 404 || !hiddenBody.includes(`Full Trip ${tag} edited`),
     String(hidden.status()),
   )
 
@@ -687,25 +685,21 @@ test('edit, publish / unpublish, duplicate, preview', async ({ browserName: _b }
     String(preview.status()),
   )
 
-  // Duplicate.
-  const count = Number(
-    (await db()`select count(*)::int as n from activities where slug like ${`${slug}%`}`)[0]?.n,
-  )
+  // Duplicate: lands on the copy's editor.
   await page.goto(`${ADMIN}/activities/${activityId}`)
   await settle(page)
+  const origin = page.url()
   await page
     .getByRole('button', { name: /^(نسخ|Duplicate)$/ })
     .first()
     .click()
+  await page.waitForURL((url) => url.href !== origin, { timeout: 30_000 }).catch(() => {})
   await settle(page)
-  const after = Number(
-    (await db()`select count(*)::int as n from activities where slug like ${`${slug}%`}`)[0]?.n,
-  )
-  check(info, 'duplicate', 'copy created', after === count + 1, `${count}→${after} ${page.url()}`)
-  const [copy] =
-    await db()`select id from activities where slug like ${`${slug}-%`} order by created_at desc limit 1`
-  const copyTiers = copy
-    ? await db()`select count(*)::int as n from activity_tiers where activity_id = ${String(copy.id)}`
+  const copyId = /\/activities\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? ''
+  check(info, 'duplicate', 'copy created', copyId !== '' && copyId !== activityId, page.url())
+  await shots('16-duplicate')
+  const copyTiers = copyId
+    ? await db()`select count(*)::int as n from activity_tiers where activity_id = ${copyId} and deleted_at is null`
     : [{ n: 0 }]
   check(
     info,
