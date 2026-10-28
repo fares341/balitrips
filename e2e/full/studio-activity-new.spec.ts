@@ -332,13 +332,11 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   await page.goto(`${ADMIN}/media`)
   await settle(page)
   for (const shade of [0x40, 0x90]) {
-    await page
-      .locator('input[type="file"][name="file"]')
-      .setInputFiles({
-        name: `act-${tag}-${shade}.png`,
-        mimeType: 'image/png',
-        buffer: makePng(1600, 1000, shade),
-      })
+    await page.locator('input[type="file"][name="file"]').setInputFiles({
+      name: `act-${tag}-${shade}.png`,
+      mimeType: 'image/png',
+      buffer: makePng(1600, 1000, shade),
+    })
     await page.locator('form:has(input[name="file"]) button[type="submit"]').first().click()
     await settle(page, 30_000)
   }
@@ -524,8 +522,14 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   ]) {
     await page.getByRole('button', { name: /إضافة سؤال جديد|Add a new question/ }).click()
     const last = page.locator('li:has(textarea[lang="ar"])').last()
-    await last.locator('input[lang="ar"]').first().fill(q)
-    await last.locator('textarea[lang="ar"]').first().fill(a)
+    await last
+      .locator('input[lang="ar"]')
+      .first()
+      .fill(q ?? '')
+    await last
+      .locator('textarea[lang="ar"]')
+      .first()
+      .fill(a ?? '')
   }
   await shots('13-faq-filled')
   await submitMain()

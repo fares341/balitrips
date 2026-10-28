@@ -856,9 +856,10 @@ async function applyActivity(
     const [inserted] = await tx
       .insert(activities)
       .values({
+        ...patch,
         slug: item.slug,
         name: patch.name ?? EMPTY,
-        ...patch,
+        priceMinor: patch.priceMinor ?? 0,
         currency,
         timeSlots: patch.timeSlots ?? [],
         status: 'draft',
@@ -913,15 +914,13 @@ async function applyActivity(
       )
     await tx.delete(activityImages).where(eq(activityImages.activityId, row.id))
     if (ids.length > 0) {
-      await tx
-        .insert(activityImages)
-        .values(
-          [...new Set(ids)].map((mediaId, index) => ({
-            activityId: row.id,
-            mediaId,
-            sortOrder: index,
-          })),
-        )
+      await tx.insert(activityImages).values(
+        [...new Set(ids)].map((mediaId, index) => ({
+          activityId: row.id,
+          mediaId,
+          sortOrder: index,
+        })),
+      )
     }
   }
 
@@ -969,10 +968,11 @@ async function applyActivity(
       const [inserted] = await tx
         .insert(activityTiers)
         .values({
+          ...values,
           activityId: row.id,
           key: pkg.match,
           name: values.name ?? { ar: '', en: pkg.match, id: '' },
-          ...values,
+          priceMinor: values.priceMinor ?? 0,
           currency: row.currency,
           sortOrder: tierOrder,
           status: 'published',
@@ -1015,9 +1015,10 @@ async function applyActivity(
         .where(eq(activityAddons.id, old.row.id))
     } else {
       await tx.insert(activityAddons).values({
+        ...values,
         activityId: row.id,
         name: values.name ?? EMPTY,
-        ...values,
+        priceMinor: values.priceMinor ?? 0,
         currency: row.currency,
         sortOrder: addonOrder,
       })
