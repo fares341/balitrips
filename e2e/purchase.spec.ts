@@ -68,10 +68,16 @@ async function payTrip(page: Page): Promise<string> {
   return orderNumber
 }
 
-/** Pick the first open day in the second month the calendar shows. */
+/**
+ * Pick an open day well ahead. Near the end of a month the months on screen
+ * (one on mobile) can hold fewer than four open days, so the calendar is
+ * moved one month forward first: that month is always entirely ahead.
+ */
 async function pickDate(scope: ReturnType<Page['locator']>): Promise<void> {
-  const month = scope.locator('.cal-m').last()
-  await expect(month, 'no calendar').toBeVisible()
+  const calendar = scope.locator('.cal').first()
+  await expect(calendar, 'no calendar').toBeVisible()
+  await calendar.locator('.cal-nav button').last().click()
+  const month = calendar.locator('.cal-m').last()
   await month.locator('button.cd:not([disabled]):not(.un)').nth(3).click()
 }
 
