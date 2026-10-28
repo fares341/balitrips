@@ -313,6 +313,11 @@ test.describe('custom trip request', () => {
     await page.goto('/en/custom')
     await settle(page)
     const days = page.locator('button.cd:not([disabled]):not(.un)')
+    // Late in a month the first calendar page has too few days left: go on one.
+    if ((await days.count()) <= 6) {
+      await page.locator('.cal-nav button').last().click()
+      await page.waitForTimeout(300)
+    }
     if ((await days.count()) > 6) {
       await days.nth(3).click()
       await days.nth(6).click()
