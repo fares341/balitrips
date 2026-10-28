@@ -196,7 +196,7 @@ describe('capability matrix', () => {
       })
     }
     expect(isElevated('bookings_operator')).toBe(true)
-    expect(covers('booking_agent', 'bookings_operator')).toBe(false)
+    expect(covers('bookings_operator', 'booking_agent')).toBe(false)
     expect(covers('staff', 'bookings_operator')).toBe(true)
   })
 

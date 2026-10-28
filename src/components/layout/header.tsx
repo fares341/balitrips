@@ -138,7 +138,10 @@ function AccountMenu({ signedIn }: { signedIn: boolean }) {
  * `hidden`: paths of sections that are empty right now (owner, Oct 2026 —
  * no published package or article), left out of the nav and the drawer.
  */
-export function Header({ hidden = [] }: { hidden?: readonly string[] } = {}) {
+const NONE: readonly string[] = []
+
+export function Header(props: { hidden?: readonly string[] }) {
+  const hidden = props.hidden ?? NONE
   const t = useTranslations()
   const pathname = usePathname()
   const favorites = useFavorites()

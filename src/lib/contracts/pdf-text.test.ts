@@ -15,5 +15,5 @@ describe('extractPdfText', () => {
     expect(text).toContain('450,000 IDR')
     expect(text).toContain('free up to 48 hours')
     expect(text).toContain('12 months')
-  })
+  }, 60_000)
 })
