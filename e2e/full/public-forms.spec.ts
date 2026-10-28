@@ -91,7 +91,7 @@ test.describe('contact form', () => {
         .getByText(required)
         .first()
         .waitFor({ state: 'visible', timeout: 15_000 })
-        .then(() => true)
+      .then(() => true)
         .catch(() => false)
       check(info, `contact/${locale}`, 'empty submit → required errors', req)
 
@@ -104,7 +104,7 @@ test.describe('contact form', () => {
         .getByText(bad)
         .first()
         .waitFor({ state: 'visible', timeout: 15_000 })
-        .then(() => true)
+      .then(() => true)
         .catch(() => false)
       check(info, `contact/${locale}`, 'bad email → email error', badShown)
     }
@@ -148,9 +148,7 @@ test.describe('auth forms', () => {
     await page.goto('/en/register')
     await settle(page)
     // Skip the browser's own checks so the form's translated messages show.
-    await page.evaluate(() =>
-      document.querySelectorAll('form').forEach((f) => (f.noValidate = true)),
-    )
+    await page.evaluate(() => document.querySelectorAll('form').forEach((f) => (f.noValidate = true)))
     const form = page.locator('form:has(input[autocomplete="new-password"])').first()
     const submit = form.locator('button[type="submit"]').first()
     await submit.click()
