@@ -367,8 +367,8 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   const fieldset = page
     .locator('fieldset:has(input[name="galleryIds"]), fieldset:has(button[aria-expanded])')
     .first()
-  await page.locator('button[aria-expanded]').first().click()
-  const pick = page.locator('button[aria-pressed="false"]')
+  await page.getByRole('button', { name: /إضافة صور من المكتبة|Add photos from the library/ }).click()
+  const pick = page.locator('fieldset button[aria-pressed="false"]')
   if ((await pick.count()) > 0) await pick.first().click()
   if ((await pick.count()) > 0) await pick.first().click()
   void fieldset
