@@ -682,16 +682,42 @@ export function planRows(
   return { activities: [...bySlug.values()], issues }
 }
 
+/**
+ * What an empty cell means for a column that always has a stored value
+ * (the database default): an empty «max_guests» is 20, not a change.
+ */
+export const SHEET_DEFAULTS: Record<SheetKey, Record_> = {
+  activities: {
+    status: 'draft',
+    price: '0.00',
+    currency: 'USD',
+    min_guests: '1',
+    max_guests: '20',
+    lead_time_hours: '24',
+    instant_confirmation: 'no',
+    featured: 'no',
+  },
+  packages: { pricing: 'per_person', price: '0.00', popular: 'no', available: 'yes' },
+  addons: { pricing: 'per_booking', price: '0.00', available: 'yes' },
+  faq: {},
+}
+
 /** Columns whose canonical value differs (only columns the file has). */
 export function changedColumns(
   values: Record_,
   columns: readonly string[],
   stored: Record_ | null,
+  defaults: Record_ = {},
   skip: readonly string[] = ['activity_slug', 'package_key'],
 ): string[] {
-  if (stored === null)
+  if (stored === null) {
     return columns.filter((key) => !skip.includes(key) && (values[key] ?? '') !== '')
-  return columns.filter((key) => !skip.includes(key) && (values[key] ?? '') !== (stored[key] ?? ''))
+  }
+  const value = (key: string) => {
+    const v = values[key] ?? ''
+    return v === '' ? (defaults[key] ?? '') : v
+  }
+  return columns.filter((key) => !skip.includes(key) && value(key) !== (stored[key] ?? ''))
 }
 
 /** Rows (in column order) for a sheet, from canonical records. */

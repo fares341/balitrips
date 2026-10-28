@@ -29,6 +29,7 @@ import {
   listCells,
   mergeList,
   planRows,
+  SHEET_DEFAULTS,
   SHEET_EXAMPLES,
   SHEET_KEYS,
   SHEET_TITLES,
@@ -600,11 +601,16 @@ export function previewPlan(
     }
     const changes: string[] = []
     const warnings: string[] = []
-    const own = changedColumns(item.values, item.columns, before?.record ?? null)
+    const own = changedColumns(
+      item.values,
+      item.columns,
+      before?.record ?? null,
+      SHEET_DEFAULTS.activities,
+    )
     changes.push(...own)
     for (const pkg of item.packages) {
       const old = before?.tiers.get(pkg.match)?.record ?? null
-      const diff = changedColumns(pkg.values, pkg.columns, old)
+      const diff = changedColumns(pkg.values, pkg.columns, old, SHEET_DEFAULTS.packages)
       if (!old) changes.push(t('sh.new_package', { key: pkg.match }))
       else if (diff.length > 0)
         changes.push(`${t('sh.package', { key: pkg.match })}: ${diff.join(', ')}`)
@@ -614,7 +620,7 @@ export function previewPlan(
     }
     for (const addon of item.addons) {
       const old = before?.addons.get(addon.match)?.record ?? null
-      const diff = changedColumns(addon.values, addon.columns, old)
+      const diff = changedColumns(addon.values, addon.columns, old, SHEET_DEFAULTS.addons)
       if (!old) changes.push(t('sh.new_addon', { name: addon.match }))
       else if (diff.length > 0)
         changes.push(`${t('sh.addon', { name: addon.match })}: ${diff.join(', ')}`)
@@ -763,7 +769,12 @@ export async function applyPlan(
 
     for (const item of plan.activities) {
       const before = stored.get(item.slug) ?? null
-      const own = changedColumns(item.values, item.columns, before?.record ?? null)
+      const own = changedColumns(
+        item.values,
+        item.columns,
+        before?.record ?? null,
+        SHEET_DEFAULTS.activities,
+      )
       const childChanges = item.packages.length + item.addons.length + item.faq.length > 0
       if (before && own.length === 0 && !childChanges) continue
       const result = await applyActivity(tx, item, before, own, ctx, session, t, images, sortOrder)
@@ -931,7 +942,12 @@ async function applyActivity(
   let tierOrder = before ? before.tiers.size : 0
   for (const pkg of item.packages) {
     const old = before?.tiers.get(pkg.match) ?? null
-    const diff = changedColumns(pkg.values, pkg.columns, old?.record ?? null)
+    const diff = changedColumns(
+      pkg.values,
+      pkg.columns,
+      old?.record ?? null,
+      SHEET_DEFAULTS.packages,
+    )
     if (old && diff.length === 0) continue
     const p = pkg.values
     const has = (key: string) =>
@@ -998,7 +1014,12 @@ async function applyActivity(
   let addonOrder = before ? before.addons.size : 0
   for (const addon of item.addons) {
     const old = before?.addons.get(addon.match) ?? null
-    const diff = changedColumns(addon.values, addon.columns, old?.record ?? null)
+    const diff = changedColumns(
+      addon.values,
+      addon.columns,
+      old?.record ?? null,
+      SHEET_DEFAULTS.addons,
+    )
     if (old && diff.length === 0) continue
     const a = addon.values
     const has = (key: string) =>

@@ -361,7 +361,9 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   const heroId = String(media[0]?.id ?? '')
   await page
     .locator(`input[type="radio"][name="heroImageId"][value="${heroId}"]`)
-    .check({ force: true })
+    .evaluate((el: HTMLInputElement) => {
+      el.checked = true
+    })
   const fieldset = page
     .locator('fieldset:has(input[name="galleryIds"]), fieldset:has(button[aria-expanded])')
     .first()
