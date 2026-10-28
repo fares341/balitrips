@@ -84,6 +84,9 @@ export class Watch {
 
 export async function settle(page: Page, ms = 10_000): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
+  // The cookie banner covers the lower-left of the page (and buttons on phones).
+  const necessary = page.getByRole('button', { name: /^(Necessary only|الضروري فقط)$/ })
+  if (await necessary.isVisible().catch(() => false)) await necessary.click({ timeout: 3000 }).catch(() => {})
 }
 
 /** Unique, valid contact details per call. */
@@ -232,7 +235,9 @@ async function fillForm(page: Page, formIndex: number, mode: FillMode): Promise<
       let filled = 0
       const setter = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
         const proto =
-          el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+          el instanceof HTMLTextAreaElement
+            ? HTMLTextAreaElement.prototype
+            : HTMLInputElement.prototype
         Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, value)
         el.dispatchEvent(new Event('input', { bubbles: true }))
         el.dispatchEvent(new Event('change', { bubbles: true }))
@@ -242,7 +247,11 @@ async function fillForm(page: Page, formIndex: number, mode: FillMode): Promise<
       )) {
         if (el.disabled || el.readOnly) continue
         const type = (el.getAttribute('type') ?? 'text').toLowerCase()
-        if (['hidden', 'submit', 'button', 'checkbox', 'radio', 'file', 'image', 'reset'].includes(type))
+        if (
+          ['hidden', 'submit', 'button', 'checkbox', 'radio', 'file', 'image', 'reset'].includes(
+            type,
+          )
+        )
           continue
         const box = el.getBoundingClientRect()
         if (box.width === 0 && box.height === 0) continue
@@ -283,7 +292,13 @@ export async function fuzzPage(
   await page.goto(path, { waitUntil: 'domcontentloaded' })
   await settle(page)
   const loadProblems = await watch.collect()
-  check(info, label, 'page loads without errors', loadProblems.length === 0, loadProblems.join(' | '))
+  check(
+    info,
+    label,
+    'page loads without errors',
+    loadProblems.length === 0,
+    loadProblems.join(' | '),
+  )
 
   const count = await page.locator('form').count()
   const max = Math.min(count, options.max ?? 6)

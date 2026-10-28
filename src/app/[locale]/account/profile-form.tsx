@@ -27,7 +27,7 @@
 import { useActionState, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { FormError, FormNotice, SelectField, TextField, countryOptions } from '@/components/auth'
+import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
 import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
 import { Button } from '@/components/shared'
 import { locales, localeConfig, type Locale } from '@/i18n/config'
@@ -45,11 +45,16 @@ export type ProfileFormProps = {
     country: string
     locale: Locale
   }
-  /** Locale to build the country list's labels in. */
-  displayLocale: Locale
+  /**
+   * The country list, labelled on the server. Building it here with
+   * `Intl.DisplayNames` gave the browser's ICU labels ("Türkiye", "Myanmar
+   * (Burma)"…) where the server rendered Node's, and React threw a hydration
+   * error (#418) on every account page load.
+   */
+  countries: CountryOption[]
 }
 
-export function ProfileForm({ initial, displayLocale }: ProfileFormProps) {
+export function ProfileForm({ initial, countries }: ProfileFormProps) {
   const t = useTranslations()
   const [state, formAction, pending] = useActionState(updateProfileAction, IDLE_PROFILE_STATE)
 
@@ -75,8 +80,6 @@ export function ProfileForm({ initial, displayLocale }: ProfileFormProps) {
       setter(value)
       setDismissed((current) => (current[field] === true ? current : { ...current, [field]: true }))
     }
-
-  const countries = countryOptions(displayLocale)
 
   return (
     <>

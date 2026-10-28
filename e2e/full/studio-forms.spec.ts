@@ -26,7 +26,16 @@ const NAV = [
   .map((m) => m[1] ?? '')
   .filter((p) => p !== '/security' && p !== '/assistant')
 
-const ACTIVITY_TABS = ['content', 'media', 'packages', 'included', 'addons', 'booking', 'availability', 'faq']
+const ACTIVITY_TABS = [
+  'content',
+  'media',
+  'packages',
+  'included',
+  'addons',
+  'booking',
+  'availability',
+  'faq',
+]
 
 let page: Page
 
@@ -59,7 +68,13 @@ async function firstDetail(listPath: string): Promise<string | null> {
 }
 
 test('admin signed in to the Studio', async ({ browserName: _browserName }, info) => {
-  check(info, 'studio sign-in', 'admin reached dashboard (TOTP)', new URL(page.url()).pathname.startsWith(ADMIN), page.url())
+  check(
+    info,
+    'studio sign-in',
+    'admin reached dashboard (TOTP)',
+    new URL(page.url()).pathname.startsWith(ADMIN),
+    page.url(),
+  )
 })
 
 for (const path of NAV) {
@@ -69,14 +84,17 @@ for (const path of NAV) {
     const detail = await firstDetail(path)
     if (detail === null) return
     if (path === '/activities') {
-      for (const tab of ACTIVITY_TABS) await fuzzPage(page, info, `${detail}?tab=${tab}`, `studio activity ?tab=${tab}`)
+      for (const tab of ACTIVITY_TABS)
+        await fuzzPage(page, info, `${detail}?tab=${tab}`, `studio activity ?tab=${tab}`)
     } else {
       await fuzzPage(page, info, detail, `studio ${path} detail`)
     }
   })
 }
 
-test('taxonomy: XSS category name is stored as text and never runs', async ({ browserName: _browserName }, info) => {
+test('taxonomy: XSS category name is stored as text and never runs', async ({
+  browserName: _browserName,
+}, info) => {
   const watch = new Watch(page)
   await page.goto(`${ADMIN}/taxonomy`)
   await settle(page)
@@ -85,17 +103,34 @@ test('taxonomy: XSS category name is stored as text and never runs', async ({ br
   const textInputs = form.locator('input[type="text"]:visible, input:not([type]):visible')
   const n = await textInputs.count()
   for (let i = 0; i < n; i += 1) await textInputs.nth(i).fill(`${XSS}-${i}-${Date.now()}`)
-  await form.locator('button[type="submit"]').first().click().catch(() => {})
+  await form
+    .locator('button[type="submit"]')
+    .first()
+    .click()
+    .catch(() => {})
   await settle(page)
   await page.reload()
   await settle(page)
   const after = await db()<{ n: number }[]>`select count(*)::int n from categories`
   const problems = await watch.collect()
-  check(info, 'studio taxonomy', 'submit with XSS handled (no script ran)', problems.length === 0, problems.join(' | '))
-  check(info, 'studio taxonomy', 'category count did not decrease', (after[0]?.n ?? 0) >= (before[0]?.n ?? 0))
+  check(
+    info,
+    'studio taxonomy',
+    'submit with XSS handled (no script ran)',
+    problems.length === 0,
+    problems.join(' | '),
+  )
+  check(
+    info,
+    'studio taxonomy',
+    'category count did not decrease',
+    (after[0]?.n ?? 0) >= (before[0]?.n ?? 0),
+  )
 })
 
-test('whatsapp: test send without a provider fails gracefully', async ({ browserName: _browserName }, info) => {
+test('whatsapp: test send without a provider fails gracefully', async ({
+  browserName: _browserName,
+}, info) => {
   const watch = new Watch(page)
   await page.goto(`${ADMIN}/whatsapp`)
   await settle(page)
@@ -109,7 +144,13 @@ test('whatsapp: test send without a provider fails gracefully', async ({ browser
   await sendTest.click()
   await settle(page, 20_000)
   const problems = await watch.collect()
-  check(info, 'studio whatsapp', 'test send handled (no provider in CI)', problems.length === 0, problems.join(' | '))
+  check(
+    info,
+    'studio whatsapp',
+    'test send handled (no provider in CI)',
+    problems.length === 0,
+    problems.join(' | '),
+  )
 })
 
 test('media: upload a small image', async ({ browserName: _browserName }, info) => {
@@ -134,7 +175,13 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
   await page.waitForTimeout(2000)
   const after = await db()<{ n: number }[]>`select count(*)::int n from media`
   const problems = await watch.collect()
-  check(info, 'studio media', 'upload stored a media row', (after[0]?.n ?? 0) > (before[0]?.n ?? 0), `${before[0]?.n} → ${after[0]?.n}`)
+  check(
+    info,
+    'studio media',
+    'upload stored a media row',
+    (after[0]?.n ?? 0) > (before[0]?.n ?? 0),
+    `${before[0]?.n} → ${after[0]?.n}`,
+  )
   check(info, 'studio media', 'upload no crash', problems.length === 0, problems.join(' | '))
   // A non-image disguised as one must be refused without a crash.
   watch.reset()
@@ -143,7 +190,11 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
   await page
     .locator('input[type="file"]')
     .first()
-    .setInputFiles({ name: 'evil.png', mimeType: 'image/png', buffer: Buffer.from('<svg onload=alert(1)>') })
+    .setInputFiles({
+      name: 'evil.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('<svg onload=alert(1)>'),
+    })
   if (await submit.isVisible().catch(() => false)) await submit.click()
   await settle(page, 20_000)
   const evil = await watch.collect()
@@ -168,7 +219,19 @@ test('activity CSV import: junk file handled', async ({ browserName: _browserNam
   if (await submit.isVisible().catch(() => false)) await submit.click()
   await settle(page, 20_000)
   const problems = await watch.collect()
-  check(info, 'studio activity-import', 'junk CSV handled', problems.length === 0, problems.join(' | '))
+  check(
+    info,
+    'studio activity-import',
+    'junk CSV handled',
+    problems.length === 0,
+    problems.join(' | '),
+  )
   const template = await page.request.get(`${ADMIN}/activity-import/template`)
-  check(info, 'studio activity-import', 'template downloads', template.status() === 200, `${template.status()}`)
+  check(
+    info,
+    'studio activity-import',
+    'template downloads',
+    template.status() === 200,
+    `${template.status()}`,
+  )
 })

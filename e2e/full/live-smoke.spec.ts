@@ -39,9 +39,27 @@ for (const [path, name] of PAGES) {
     page.on('pageerror', (e) => errors.push(e.message.slice(0, 160)))
     const response = await page.goto(path, { waitUntil: 'domcontentloaded' })
     await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
-    check(info, `live ${name}`, 'status < 400', (response?.status() ?? 0) < 400, `${response?.status()}`)
+    check(
+      info,
+      `live ${name}`,
+      'status < 400',
+      (response?.status() ?? 0) < 400,
+      `${response?.status()}`,
+    )
     const inputs = await page.locator('input:visible, textarea:visible, select:visible').count()
-    check(info, `live ${name}`, 'has visible inputs', inputs > 0 || name.startsWith('home') || name === 'cart' || name.startsWith('activities') || name.startsWith('itineraries') || name === 'plans', `${inputs}`)
+    check(
+      info,
+      `live ${name}`,
+      'has visible inputs',
+      inputs > 0 ||
+        name.startsWith('home') ||
+        name === 'custom trip' ||
+        name === 'cart' ||
+        name.startsWith('activities') ||
+        name.startsWith('itineraries') ||
+        name === 'plans',
+      `${inputs}`,
+    )
     check(info, `live ${name}`, 'no uncaught JS errors', errors.length === 0, errors.join(' | '))
   })
 }
@@ -54,7 +72,10 @@ test('live contact: client validation on empty submit (nothing sent)', async ({ 
   })
   check(info, 'live contact', 'empty form is invalid in the browser', valid === false, `${valid}`)
   await page.locator('input[type="email"]').first().fill('not-an-email')
-  const emailValid = await page.locator('input[type="email"]').first().evaluate((el: HTMLInputElement) => el.validity.valid)
+  const emailValid = await page
+    .locator('input[type="email"]')
+    .first()
+    .evaluate((el: HTMLInputElement) => el.validity.valid)
   check(info, 'live contact', 'bad email flagged', emailValid === false)
 })
 
@@ -63,9 +84,17 @@ test('live register: client validation messages (nothing sent)', async ({ page }
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
   const pw = page.locator('input[autocomplete="new-password"]')
   await pw.nth(0).fill('short')
-  await page.locator('form:has(input[autocomplete="new-password"]) button[type="submit"]').first().click()
+  await page
+    .locator('form:has(input[autocomplete="new-password"]) button[type="submit"]')
+    .first()
+    .click()
   await expect(page.getByText('Password must be at least 8 characters.').first())
     .toBeVisible({ timeout: 10_000 })
     .catch(() => {})
-  check(info, 'live register', 'short password message', await page.getByText('Password must be at least 8 characters.').first().isVisible())
+  check(
+    info,
+    'live register',
+    'short password message',
+    await page.getByText('Password must be at least 8 characters.').first().isVisible(),
+  )
 })

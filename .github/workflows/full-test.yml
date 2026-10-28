@@ -60,7 +60,7 @@ jobs:
       - name: Static checks of the branch (format patch, typecheck, lint)
         continue-on-error: true
         run: |
-          pnpm exec prettier --write e2e/full scripts/full-test-summary.mjs playwright.config.ts src > /dev/null 2>&1 || true
+          pnpm exec prettier --write e2e/full scripts/full-test-summary.mjs playwright.config.ts "src/app/[locale]/account" > /dev/null 2>&1 || true
           git diff > full-test-out/format.patch
           git checkout -- .
           pnpm typecheck > full-test-out/typecheck.txt 2>&1; echo "typecheck exit $?" >> full-test-out/typecheck.txt

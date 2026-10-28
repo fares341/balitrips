@@ -21,14 +21,32 @@ test('profile: name with XSS + Arabic/emoji saves and survives reload', async ({
   await page.reload()
   await settle(page)
   const rows = await db()<{ name: string }[]>`select name from users where email = ${email}`
-  check(info, 'account profile', 'name persisted verbatim', rows[0]?.name === `${ARABIC_EMOJI} ${XSS}`.slice(0, 120), rows[0]?.name ?? '')
+  check(
+    info,
+    'account profile',
+    'name persisted verbatim',
+    rows[0]?.name === `${ARABIC_EMOJI} ${XSS}`.slice(0, 120),
+    rows[0]?.name ?? '',
+  )
   await name.fill('')
   await page.getByRole('button', { name: /^Save/ }).first().click()
   await settle(page)
   const after = await db()<{ name: string }[]>`select name from users where email = ${email}`
-  check(info, 'account profile', 'empty name refused', (after[0]?.name ?? '') !== '', after[0]?.name ?? '')
+  check(
+    info,
+    'account profile',
+    'empty name refused',
+    (after[0]?.name ?? '') !== '',
+    after[0]?.name ?? '',
+  )
   const problems = await watch.collect()
-  check(info, 'account profile', 'no crash / no script ran', problems.length === 0, problems.join(' | '))
+  check(
+    info,
+    'account profile',
+    'no crash / no script ran',
+    problems.length === 0,
+    problems.join(' | '),
+  )
 })
 
 test('support ticket: valid ticket stored, empty refused', async ({ page }, info) => {

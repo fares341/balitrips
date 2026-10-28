@@ -35,7 +35,9 @@ if (existsSync(`${dir}/report.json`)) {
           })
           for (const a of last?.attachments ?? []) {
             if (a.path && a.contentType === 'image/png' && existsSync(a.path)) {
-              const name = `${t.projectName}-${spec.title}`.replace(/[^a-z0-9]+/gi, '_').slice(0, 90)
+              const name = `${t.projectName}-${spec.title}`
+                .replace(/[^a-z0-9]+/gi, '_')
+                .slice(0, 90)
               copyFileSync(a.path, `${dir}/failures/${name}-${basename(a.path)}`)
             }
           }

@@ -35,10 +35,22 @@ function denied(status: number, url: string): boolean {
 test('anonymous visitor is denied every Studio page and handler', async ({ page }, info) => {
   for (const path of [...NAV, ...HANDLERS]) {
     const response = await page.request.get(`${ADMIN}${path}`, { maxRedirects: 5 })
-    check(info, 'studio permissions/anon', `GET ${path || '/'}`, denied(response.status(), response.url()), `${response.status()} ${response.url()}`)
+    check(
+      info,
+      'studio permissions/anon',
+      `GET ${path || '/'}`,
+      denied(response.status(), response.url()),
+      `${response.status()} ${response.url()}`,
+    )
   }
   const api = await page.request.post('/api/studio-assistant', { data: { message: 'hi' } })
-  check(info, 'studio permissions/anon', 'POST /api/studio-assistant', api.status() >= 400 && api.status() < 500, `${api.status()}`)
+  check(
+    info,
+    'studio permissions/anon',
+    'POST /api/studio-assistant',
+    api.status() >= 400 && api.status() < 500,
+    `${api.status()}`,
+  )
 })
 
 test('customer is denied every Studio page and handler', async ({ page }, info) => {
@@ -46,10 +58,22 @@ test('customer is denied every Studio page and handler', async ({ page }, info) 
   await signInAs(page, 'customer')
   for (const path of [...NAV, ...HANDLERS]) {
     const response = await page.request.get(`${ADMIN}${path}`, { maxRedirects: 5 })
-    check(info, 'studio permissions/customer', `GET ${path || '/'}`, denied(response.status(), response.url()), `${response.status()} ${response.url()}`)
+    check(
+      info,
+      'studio permissions/customer',
+      `GET ${path || '/'}`,
+      denied(response.status(), response.url()),
+      `${response.status()} ${response.url()}`,
+    )
   }
   const api = await page.request.post('/api/studio-assistant', { data: { message: 'hi' } })
-  check(info, 'studio permissions/customer', 'POST /api/studio-assistant', api.status() >= 400 && api.status() < 500, `${api.status()}`)
+  check(
+    info,
+    'studio permissions/customer',
+    'POST /api/studio-assistant',
+    api.status() >= 400 && api.status() < 500,
+    `${api.status()}`,
+  )
 })
 
 test('content editor cannot open team or money pages', async ({ page }, info) => {
@@ -57,6 +81,12 @@ test('content editor cannot open team or money pages', async ({ page }, info) =>
   await signInAs(page, 'content_editor')
   for (const path of ['/team', '/payments', '/profit', '/config', '/whatsapp']) {
     const response = await page.request.get(`${ADMIN}${path}`, { maxRedirects: 5 })
-    check(info, 'studio permissions/content_editor', `GET ${path}`, response.status() === 404 || response.status() === 403, `${response.status()}`)
+    check(
+      info,
+      'studio permissions/content_editor',
+      `GET ${path}`,
+      response.status() === 404 || response.status() === 403,
+      `${response.status()}`,
+    )
   }
 })

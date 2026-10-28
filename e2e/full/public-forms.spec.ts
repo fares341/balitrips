@@ -35,7 +35,8 @@ test.describe('contact form', () => {
     const sent = await page
       .getByText("Message sent — we'll be in touch shortly.")
       .first()
-      .isVisible({ timeout: 20_000 })
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .then(() => true)
       .catch(() => false)
     await expect(page.getByText("Message sent — we'll be in touch shortly.").first())
       .toBeVisible({ timeout: 20_000 })
@@ -63,14 +64,35 @@ test.describe('contact form', () => {
       await page.goto(`/${locale}/contact`)
       await settle(page)
       const dir = await page.locator('html').getAttribute('dir')
-      check(info, `contact/${locale}`, 'html dir', dir === (locale === 'ar' ? 'rtl' : 'ltr'), `${dir}`)
-      const requiredInputs = await page.locator('form input[required], form textarea[required]').count()
-      check(info, `contact/${locale}`, 'required markers present', requiredInputs >= 3, `${requiredInputs}`)
+      check(
+        info,
+        `contact/${locale}`,
+        'html dir',
+        dir === (locale === 'ar' ? 'rtl' : 'ltr'),
+        `${dir}`,
+      )
+      const requiredInputs = await page
+        .locator('form input[required], form textarea[required]')
+        .count()
+      check(
+        info,
+        `contact/${locale}`,
+        'required markers present',
+        requiredInputs >= 3,
+        `${requiredInputs}`,
+      )
       // Bypass the browser's own required check so the server validation runs.
-      await page.evaluate(() => document.querySelectorAll('form').forEach((f) => (f.noValidate = true)))
+      await page.evaluate(() =>
+        document.querySelectorAll('form').forEach((f) => (f.noValidate = true)),
+      )
       await page.waitForTimeout(3200)
       await page.getByRole('button', { name: send }).click()
-      const req = await page.getByText(required).first().isVisible({ timeout: 15_000 }).catch(() => false)
+      const req = await page
+        .getByText(required)
+        .first()
+        .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+        .catch(() => false)
       check(info, `contact/${locale}`, 'empty submit → required errors', req)
 
       await page.locator('input[type="email"]').first().fill('not-an-email')
@@ -78,7 +100,12 @@ test.describe('contact form', () => {
       await page.locator('textarea').first().fill('hi')
       await page.waitForTimeout(3200)
       await page.getByRole('button', { name: send }).click()
-      const badShown = await page.getByText(bad).first().isVisible({ timeout: 15_000 }).catch(() => false)
+      const badShown = await page
+        .getByText(bad)
+        .first()
+        .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+        .catch(() => false)
       check(info, `contact/${locale}`, 'bad email → email error', badShown)
     }
   })
@@ -97,10 +124,18 @@ test.describe('contact form', () => {
     await page.waitForTimeout(3200)
     await page.getByLabel('Email address').press('Enter')
     // A second press while pending must not create a second row.
-    await page.getByLabel('Email address').press('Enter').catch(() => {})
-    await page.getByRole('button', { name: /Send message|Sending/ }).click({ timeout: 1000 }).catch(() => {})
+    await page
+      .getByLabel('Email address')
+      .press('Enter')
+      .catch(() => {})
+    await page
+      .getByRole('button', { name: /Send message|Sending/ })
+      .click({ timeout: 1000 })
+      .catch(() => {})
     await page.waitForTimeout(4000)
-    const rows = await db()<{ id: string }[]>`select id from contact_messages where email = ${email}`
+    const rows = await db()<
+      { id: string }[]
+    >`select id from contact_messages where email = ${email}`
     check(info, 'contact', 'Enter submits the form', rows.length >= 1, `${rows.length}`)
     check(info, 'contact', 'double submit stores one row', rows.length <= 1, `${rows.length}`)
   })
@@ -112,6 +147,8 @@ test.describe('auth forms', () => {
   }, info) => {
     await page.goto('/en/register')
     await settle(page)
+    // Skip the browser's own checks so the form's translated messages show.
+    await page.evaluate(() => document.querySelectorAll('form').forEach((f) => (f.noValidate = true)))
     const form = page.locator('form:has(input[autocomplete="new-password"])').first()
     const submit = form.locator('button[type="submit"]').first()
     await submit.click()
@@ -130,19 +167,35 @@ test.describe('auth forms', () => {
     await pw.nth(1).fill('different')
     await submit.click()
     const text = await form.innerText()
-    check(info, 'sign-up', 'short password message', text.includes('Password must be at least 8 characters.'))
+    check(
+      info,
+      'sign-up',
+      'short password message',
+      text.includes('Password must be at least 8 characters.'),
+    )
     check(info, 'sign-up', 'phone needs country code message', /country code/i.test(text))
     await pw.nth(0).fill('Long-Enough-123')
     await pw.nth(1).fill('Long-Enough-124')
     await submit.click()
-    check(info, 'sign-up', 'mismatch message', (await form.innerText()).includes("The two passwords don't match."))
+    check(
+      info,
+      'sign-up',
+      'mismatch message',
+      (await form.innerText()).includes("The two passwords don't match."),
+    )
     check(info, 'sign-up', 'no account created on invalid input', page.url().includes('/register'))
   })
 
   test('sign-up with Arabic+emoji name persists; ar errors translated', async ({ page }, info) => {
     const email = await signUp(page, 'arname', ARABIC_EMOJI)
     const rows = await db()<{ name: string }[]>`select name from users where email = ${email}`
-    check(info, 'sign-up', 'account persisted with exact name', rows[0]?.name === ARABIC_EMOJI, rows[0]?.name ?? 'none')
+    check(
+      info,
+      'sign-up',
+      'account persisted with exact name',
+      rows[0]?.name === ARABIC_EMOJI,
+      rows[0]?.name ?? 'none',
+    )
 
     const fresh = await page.context().browser()?.newContext({ locale: 'ar' })
     if (fresh) {
@@ -151,9 +204,17 @@ test.describe('auth forms', () => {
       await settle(p)
       const pw = p.locator('input[autocomplete="new-password"]')
       await pw.nth(0).fill('short')
-      await p.locator('form:has(input[autocomplete="new-password"]) button[type="submit"]').first().click()
+      await p
+        .locator('form:has(input[autocomplete="new-password"]) button[type="submit"]')
+        .first()
+        .click()
       const t = await p.locator('form:has(input[autocomplete="new-password"])').first().innerText()
-      check(info, 'sign-up/ar', 'short password error in Arabic', t.includes('يجب ألا تقل كلمة المرور عن 8 أحرف.'))
+      check(
+        info,
+        'sign-up/ar',
+        'short password error in Arabic',
+        t.includes('يجب ألا تقل كلمة المرور عن 8 أحرف.'),
+      )
       await fresh.close()
     }
   })
@@ -170,7 +231,12 @@ test.describe('auth forms', () => {
     await password.press('Enter')
     await page.waitForTimeout(3000)
     check(info, 'sign-in', 'wrong credentials refused (dialog stays)', await password.isVisible())
-    check(info, 'sign-in', 'error shown', (await form.locator('[role="alert"], .bt-errmsg').count()) > 0)
+    check(
+      info,
+      'sign-in',
+      'error shown',
+      (await form.locator('[role="alert"], .bt-errmsg').count()) > 0,
+    )
   })
 
   test('forgot password gives the neutral notice', async ({ page }, info) => {
@@ -183,11 +249,19 @@ test.describe('auth forms', () => {
       info,
       'forgot-password',
       'invalid identifier refused',
-      !(await page.getByText(/reset link is on its way/).isVisible().catch(() => false)),
+      !(await page
+        .getByText(/reset link is on its way/)
+        .isVisible()
+        .catch(() => false)),
     )
     await field.fill(uniqueEmail('forgot'))
     await page.getByRole('button', { name: 'Send reset link' }).click()
-    const notice = await page.getByText(/reset link is on its way/).first().isVisible({ timeout: 15_000 }).catch(() => false)
+    const notice = await page
+      .getByText(/reset link is on its way/)
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false)
     check(info, 'forgot-password', 'neutral notice for unknown address', notice)
   })
 })
@@ -261,10 +335,18 @@ test.describe('custom trip request', () => {
     await submit.click()
     await settle(page, 20_000)
     await page.waitForTimeout(2000)
-    const rows = await db()<{ id: string }[]>`select id from custom_trip_requests where email = ${email}`
+    const rows = await db()<
+      { id: string }[]
+    >`select id from custom_trip_requests where email = ${email}`
     check(info, 'custom-trip', 'valid request persisted', rows.length === 1, `${rows.length}`)
     const problems = await watch.collect()
-    check(info, 'custom-trip', 'no crash / no script ran', problems.length === 0, problems.join(' | '))
+    check(
+      info,
+      'custom-trip',
+      'no crash / no script ran',
+      problems.length === 0,
+      problems.join(' | '),
+    )
   })
 })
 
@@ -280,14 +362,25 @@ test.describe('booking and checkout', () => {
     await settle(page)
     const numbers = page.locator('aside input[type="number"], form input[type="number"]')
     for (let i = 0; i < (await numbers.count()); i += 1) {
-      await numbers.nth(i).fill('-3').catch(() => {})
+      await numbers
+        .nth(i)
+        .fill('-3')
+        .catch(() => {})
     }
     const add = page.getByRole('button', { name: /Add to My Trip|Choose package|Book/ }).first()
     await add.click().catch(() => {})
     await settle(page)
-    const cart = await db()<{ n: number }[]>`select count(*)::int n from cart_items`.catch(() => [{ n: -1 }])
+    const cart = await db()<{ n: number }[]>`select count(*)::int n from cart_items`.catch(() => [
+      { n: -1 },
+    ])
     const problems = await watch.collect()
-    check(info, 'activity booking', 'invalid/empty booking does not crash', problems.length === 0, problems.join(' | '))
+    check(
+      info,
+      'activity booking',
+      'invalid/empty booking does not crash',
+      problems.length === 0,
+      problems.join(' | '),
+    )
     check(info, 'activity booking', 'cart query works', (cart[0]?.n ?? -1) >= 0)
   })
 
@@ -296,9 +389,17 @@ test.describe('booking and checkout', () => {
     const watch = new Watch(page)
     await page.goto('/en/checkout')
     await settle(page)
-    const coupon = page.locator('form:has(input[name="code"]) input[name="code"], input[name="coupon"]').first()
+    const coupon = page
+      .locator('form:has(input[name="code"]) input[name="code"], input[name="coupon"]')
+      .first()
     if (!(await coupon.isVisible().catch(() => false))) {
-      check(info, 'checkout coupon', 'coupon field shown only with items (empty trip)', true, 'no coupon field on empty trip')
+      check(
+        info,
+        'checkout coupon',
+        'coupon field shown only with items (empty trip)',
+        true,
+        'no coupon field on empty trip',
+      )
       return
     }
     for (const code of ['NOPE-123', XSS, '']) {
@@ -307,7 +408,13 @@ test.describe('booking and checkout', () => {
       await settle(page)
     }
     const problems = await watch.collect()
-    check(info, 'checkout coupon', 'invalid codes handled', problems.length === 0, problems.join(' | '))
+    check(
+      info,
+      'checkout coupon',
+      'invalid codes handled',
+      problems.length === 0,
+      problems.join(' | '),
+    )
   })
 })
 

@@ -23,6 +23,8 @@ export default defineConfig({
   outputDir: '../../full-test-out/test-results',
   use: {
     baseURL: live ? 'https://balitrips.co' : (process.env.E2E_BASE_URL ?? 'http://localhost:3000'),
+    actionTimeout: 15_000,
+    navigationTimeout: 60_000,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     locale: 'en-GB',
