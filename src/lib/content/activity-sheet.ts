@@ -626,10 +626,7 @@ export function planRows(
         (min !== null && min < 1) ||
         (max !== null && max < 1) ||
         (persons !== null && persons < 1) ||
-        (min !== null && max !== null && min > max) ||
-        (values.pricing === 'per_group' &&
-          persons === null &&
-          row.columns.includes('included_persons'))
+        (min !== null && max !== null && min > max)
       ) {
         issues.push({
           sheet: 'packages',

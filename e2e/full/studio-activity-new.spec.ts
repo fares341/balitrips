@@ -335,17 +335,27 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   await page.goto(`${ADMIN}/media`)
   await settle(page)
   for (const shade of [0x40, 0x90]) {
+    await page.goto(`${ADMIN}/media`)
+    await settle(page)
+    const mediaUrl = page.url()
     await page.locator('input[type="file"][name="file"]').setInputFiles({
       name: `act-${tag}-${shade}.png`,
       mimeType: 'image/png',
       buffer: makePng(1600, 1000, shade),
     })
     await page.locator('form:has(input[name="file"]) button[type="submit"]').first().click()
+    await page.waitForURL((url) => url.href !== mediaUrl, { timeout: 60_000 }).catch(() => {})
     await settle(page, 30_000)
   }
   const media =
-    await db()`select id from media where deleted_at is null order by created_at desc limit 2`
-  check(info, 'media', 'two photos uploaded', media.length === 2)
+    await db()`select id from media where deleted_at is null and created_at > now() - interval '5 minutes' order by created_at desc limit 2`
+  check(
+    info,
+    'media',
+    'two photos uploaded',
+    media.length === 2,
+    `${media.length} ${await flash()}`,
+  )
   await page.goto(`${ADMIN}/activities/${activityId}?tab=media`)
   await settle(page)
   const heroId = String(media[0]?.id ?? '')

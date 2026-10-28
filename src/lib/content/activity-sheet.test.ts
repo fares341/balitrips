@@ -46,7 +46,7 @@ describe('normalizeCell', () => {
 
   it('reads owner input', () => {
     expect(norm('price', '١٢٥٫٥')).toEqual({ value: '125.50' })
-    expect(norm('price', '1500', 'IDR')).toEqual({ value: '1500' })
+    expect(norm('price', '1500')).toEqual({ value: '1500.00' })
     expect(norm('time_slots', '8:00, 14.30 | 08:00')).toEqual({ value: '08:00 | 14:30' })
     expect(norm('status', 'منشور')).toEqual({ value: 'published' })
     expect(norm('instant_confirmation', 'لا')).toEqual({ value: 'no' })
