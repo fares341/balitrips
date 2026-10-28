@@ -367,7 +367,9 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   const fieldset = page
     .locator('fieldset:has(input[name="galleryIds"]), fieldset:has(button[aria-expanded])')
     .first()
-  await page.getByRole('button', { name: /إضافة صور من المكتبة|Add photos from the library/ }).click()
+  await page
+    .getByRole('button', { name: /إضافة صور من المكتبة|Add photos from the library/ })
+    .click()
   const pick = page.locator('fieldset button[aria-pressed="false"]')
   if ((await pick.count()) > 0) await pick.first().click()
   if ((await pick.count()) > 0) await pick.first().click()
@@ -661,7 +663,12 @@ test('edit, publish / unpublish, duplicate, preview', async ({ browserName: _b }
   await submitMain()
   r = await row()
   check(info, 'publish', 'unpublished', r.status === 'draft', String(r.status))
-  const hidden = await page.request.get(`/ar/activities/${slug}`)
+  // ISR serves one stale copy while it revalidates: ask up to three times.
+  let hidden = await page.request.get(`/ar/activities/${slug}`)
+  for (let i = 0; i < 3 && hidden.status() !== 404; i += 1) {
+    await page.waitForTimeout(1500)
+    hidden = await page.request.get(`/ar/activities/${slug}`)
+  }
   check(
     info,
     'publish',
