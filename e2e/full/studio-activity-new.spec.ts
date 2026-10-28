@@ -80,7 +80,10 @@ async function row(): Promise<Record<string, unknown>> {
 }
 
 async function submitMain(): Promise<void> {
+  const before = page.url()
   await page.locator('form.a-form > .a-actions button[type="submit"]').first().click()
+  // The action redirects on the client: wait for the new URL (?ok= / ?err=).
+  await page.waitForURL((url) => url.href !== before, { timeout: 30_000 }).catch(() => {})
   await page.waitForLoadState('domcontentloaded')
   await settle(page)
 }

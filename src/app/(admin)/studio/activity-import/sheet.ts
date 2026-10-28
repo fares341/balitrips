@@ -46,6 +46,7 @@ import {
 } from '@/lib/content/activity-sheet'
 import { parseCsv } from '@/lib/content/activity-import'
 import { mediaUrl } from '@/lib/content/queries'
+import { addonPricing, tierPricing } from '@/lib/booking/price'
 import { formatMoneyInput, parseMoneyInput } from '@/lib/money-input'
 
 import type { Translate } from '../../_i18n'
@@ -191,7 +192,8 @@ function tierRecord(row: TierRow, slug: string, currency: string): Record_ {
     package_key: row.key,
     name_ar: (row.name?.ar ?? '').trim(),
     name_en: (row.name?.en ?? '').trim(),
-    pricing: row.pricingMode,
+    // Old spellings (before migration 0013) read as `tierPricing()` does.
+    pricing: tierPricing(row.pricingMode),
     price: money(row.priceMinor, currency),
     compare_at: money(row.compareAtPriceMinor, currency),
     child_price: money(row.childPriceMinor, currency),
@@ -214,7 +216,7 @@ function addonRecord(row: AddonRow, slug: string, currency: string): Record_ {
     activity_slug: slug,
     name_ar: (row.name?.ar ?? '').trim(),
     name_en: (row.name?.en ?? '').trim(),
-    pricing: row.pricing,
+    pricing: addonPricing(row.pricing),
     price: money(row.priceMinor, currency),
     max_qty: num(row.maxQty),
     available: yesNo(row.available),

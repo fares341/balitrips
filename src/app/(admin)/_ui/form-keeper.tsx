@@ -58,7 +58,7 @@ export function FormKeeper({ storageKey }: { storageKey: string }) {
             field.value = values[0] ?? ''
           }
         }
-        setRestored(true)
+        window.setTimeout(() => setRestored(true), 0)
       }
     } catch {
       // Storage blocked: the form still works, it just starts empty.

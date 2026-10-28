@@ -86,7 +86,8 @@ export async function settle(page: Page, ms = 10_000): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
   // The cookie banner covers the lower-left of the page (and buttons on phones).
   const necessary = page.getByRole('button', { name: /^(Necessary only|الضروري فقط)$/ })
-  if (await necessary.isVisible().catch(() => false)) await necessary.click({ timeout: 3000 }).catch(() => {})
+  if (await necessary.isVisible().catch(() => false))
+    await necessary.click({ timeout: 3000 }).catch(() => {})
 }
 
 /** Unique, valid contact details per call. */

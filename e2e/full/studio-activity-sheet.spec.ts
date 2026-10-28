@@ -160,7 +160,11 @@ test('export → import unchanged = zero changes (xlsx and csv)', async ({
 }, info) => {
   const exported = await download('/activity-import/export', 'activities-export.xlsx')
   const wb = await workbook(exported)
-  const rows = (wb.getWorksheet('Activities')?.rowCount ?? 0) - 2
+  let rows = 0
+  const sheet = wb.getWorksheet('Activities')
+  sheet?.eachRow((r, n) => {
+    if (n > 2 && String(r.getCell(1).value ?? '').trim() !== '') rows += 1
+  })
   const stored = Number(
     (await db()`select count(*)::int as n from activities where deleted_at is null`)[0]?.n,
   )
