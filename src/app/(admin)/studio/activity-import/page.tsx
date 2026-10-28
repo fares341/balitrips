@@ -8,19 +8,25 @@ import { ImportForm } from './import-form'
 
 export const dynamic = 'force-dynamic'
 
-/** Bulk import of activities from the CSV template (client spec §15). */
+/** Activities ⇄ spreadsheet: template, export, upload with a preview. */
 export default async function ActivityImportPage() {
   await requireCapability('content.write')
   const { t } = await getAdminI18n()
   return (
     <>
       <PageHead
-        title={t('av2.imp_title')}
-        description={t('av2.imp_description')}
+        title={t('sh.title')}
+        description={t('sh.description')}
         actions={
           <>
             <a className="a-btn ghost" href={adminHref('/activity-import/template')}>
-              {t('av2.imp_template')}
+              {t('sh.download_template')}
+            </a>
+            <a className="a-btn ghost" href={adminHref('/activity-import/template?format=csv')}>
+              {t('sh.download_template_csv')}
+            </a>
+            <a className="a-btn ghost" href={adminHref('/activity-import/export')}>
+              {t('sh.export')}
             </a>
             <Link className="a-btn ghost" href={adminHref('/activities')}>
               {t('activities.back_to_list')}
@@ -31,11 +37,11 @@ export default async function ActivityImportPage() {
       <div className="a-card">
         <h2>{t('av2.imp_how')}</h2>
         <ol>
-          <li>{t('av2.imp_step1')}</li>
-          <li>{t('av2.imp_step2')}</li>
-          <li>{t('av2.imp_step3')}</li>
+          <li>{t('sh.step1')}</li>
+          <li>{t('sh.step2')}</li>
+          <li>{t('sh.step3')}</li>
         </ol>
-        <p className="a-hint">{t('av2.imp_rules')}</p>
+        <p className="a-hint">{t('sh.rules')}</p>
       </div>
       <ImportForm />
     </>

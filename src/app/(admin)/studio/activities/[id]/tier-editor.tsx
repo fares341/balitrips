@@ -160,6 +160,7 @@ export async function TierEditor({
               label={t('activities.tier_name')}
               value={tier.name}
               required
+              anyLanguage
             />
             <LocalizedField
               name="tagline"
@@ -404,7 +405,7 @@ export async function TierEditor({
               <TextInput id="new_tier_key" name="key" placeholder="premium" required />
             </Field>
 
-            <LocalizedField name="name" label={t('activities.tier_name')} required />
+            <LocalizedField name="name" label={t('activities.tier_name')} required anyLanguage />
             <LocalizedField name="tagline" label={t('activities.tier_tagline')} />
 
             <MoneyField currency={currency} />

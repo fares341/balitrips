@@ -20,7 +20,7 @@ const section: Section = {
     'activities.edit_description':
       'Page address: {path}. Fill in each text in all three languages.',
     'activities.new_description':
-      'Write in English first. Arabic and Indonesian can be added later — until then, visitors see the English text.',
+      'Write the name in Arabic or English (the other languages can be added later). Save the basics, then continue with content, photos, packages and the other steps.',
     'activities.section_identity': 'Basic details',
     'activities.slug_required': 'Web address *',
     'activities.f_slug': 'Web address',
@@ -406,7 +406,7 @@ const section: Section = {
     'activities.back_to_list': 'العودة إلى القائمة',
     'activities.edit_description': 'رابط الصفحة: {path}. اكتب كل نص باللغات الثلاث.',
     'activities.new_description':
-      'اكتب بالإنجليزية أولاً. يمكن إضافة العربية والإندونيسية لاحقاً — وحتى ذلك الحين يرى الزوار النص الإنجليزي.',
+      'اكتب الاسم بالعربية أو بالإنجليزية (يمكن إضافة اللغات الأخرى لاحقًا). احفظ البيانات الأساسية ثم أكمل المحتوى والصور والباقات وبقية الخطوات.',
     'activities.section_identity': 'البيانات الأساسية',
     'activities.slug_required': 'رابط الصفحة *',
     'activities.f_slug': 'رابط الصفحة',

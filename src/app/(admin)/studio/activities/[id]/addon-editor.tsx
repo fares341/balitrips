@@ -144,6 +144,7 @@ export async function AddonEditor({
               label={t('activities.addon_name')}
               value={addon.name}
               required
+              anyLanguage
             />
             <LocalizedField
               name="description"
@@ -214,7 +215,7 @@ export async function AddonEditor({
               </button>
             </div>
           </div>
-          <LocalizedField name="name" label={t('activities.addon_name')} required />
+          <LocalizedField name="name" label={t('activities.addon_name')} required anyLanguage />
           <LocalizedField name="description" label={t('activities.addon_description')} />
           <MoneyField currency={currency} locked={locked} />
           <div className="a-row">

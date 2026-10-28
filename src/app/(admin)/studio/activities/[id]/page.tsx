@@ -41,6 +41,7 @@ import {
 } from '../../../_ui/field'
 import { FaqRepeater, type FaqRepeaterEntry } from '../../../_ui/faq-repeater'
 import { Flash } from '../../../_ui/flash'
+import { FormKeeper } from '../../../_ui/form-keeper'
 import { MarkdownEditor } from '../../../_ui/markdown-editor'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
@@ -620,6 +621,7 @@ async function BasicsTab({
 
   return (
     <form className="a-form" action={save}>
+      <FormKeeper storageKey={`activity-basics:${activity?.id ?? 'new'}`} />
       <div className="a-card">
         <h2>{t('activities.section_identity')}</h2>
         <LocalizedField
@@ -627,20 +629,27 @@ async function BasicsTab({
           label={t('activities.f_name')}
           value={activity?.name}
           required
+          anyLanguage
+          hint={t('an.err_name')}
         />
         <div className="a-row">
           <Field
             label={t('activities.slug_required')}
             htmlFor="slug"
-            hint={t('activities.slug_hint')}
+            hint={
+              activity
+                ? t('activities.slug_hint')
+                : `${t('activities.slug_hint')} ${t('an.slug_auto')}`
+            }
           >
             <TextInput
               id="slug"
               name="slug"
               dir="ltr"
               defaultValue={activity?.slug ?? ''}
-              required
+              required={activity !== null}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
+              title={t('activities.slug_hint')}
             />
           </Field>
           <Field label={t('ae.status')} htmlFor="status" hint={t('ae.status_hint')}>

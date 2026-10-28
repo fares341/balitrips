@@ -171,8 +171,19 @@ export default async function ActivitiesPage({
               <Link className="a-btn ghost" href={adminHref('/activities/images')}>
                 {t('sr.img_title')}
               </Link>
+              <a className="a-btn ghost" href={adminHref('/activity-import/template')}>
+                {t('sh.download_template')}
+              </a>
+              <a
+                className="a-btn ghost"
+                href={adminHref(
+                  `/activity-import/export${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+                )}
+              >
+                {t('sh.export')}
+              </a>
               <Link className="a-btn ghost" href={adminHref('/activity-import')}>
-                {t('av2.import')}
+                {t('sh.upload')}
               </Link>
               <Link className="a-btn" href={adminHref('/activities/new')}>
                 {t('activities.new')}
