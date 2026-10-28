@@ -43,6 +43,8 @@ const isCI = process.env.CI !== undefined && process.env.CI !== ''
 
 export default defineConfig({
   testDir: './e2e',
+  /** The full forms suite has its own config (e2e/full/playwright.full.config.ts). */
+  testIgnore: ['**/full/**'],
 
   /**
    * Fully parallel across files, but see `workers` — these specs share one

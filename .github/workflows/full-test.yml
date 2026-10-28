@@ -1,0 +1,152 @@
+# Full forms test: every public form and every Studio form, on a CI copy of
+# the site (seeded Postgres, sandbox payments, test accounts with TOTP), plus a
+# READ-ONLY smoke of the live site (non-GET requests are blocked in the
+# browser). Results go to the `full-test-results` branch.
+name: Full forms test
+
+on:
+  push:
+    branches: [test/full-forms]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: full-test
+  cancel-in-progress: true
+
+jobs:
+  ci-copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bali
+          POSTGRES_PASSWORD: bali
+          POSTGRES_DB: bali
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U bali"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://bali:bali@localhost:5433/bali
+      BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ALLOW_BOOKINGS: 'true'
+      PAYMENT_PROVIDER: sandbox
+      ALLOW_SANDBOX_PAYMENTS: 'true'
+      PAYMENT_WEBHOOK_SECRET: ci-webhook-secret
+      PRIVATE_STORAGE_DIR: ${{ github.workspace }}/private-files
+      ADMIN_BASE_PATH: /studio-ci7
+      TEST_ACCOUNT_DOMAIN: test.balitrips.local
+      TEST_ACCOUNT_PASSWORD: Ci-Studio-Check-2026
+      E2E_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: mkdir -p full-test-out "$PRIVATE_STORAGE_DIR"
+      - name: Static checks of the branch (format patch, typecheck, lint)
+        continue-on-error: true
+        run: |
+          pnpm exec prettier --write e2e/full scripts/full-test-summary.mjs playwright.config.ts src > /dev/null 2>&1 || true
+          git diff > full-test-out/format.patch
+          git checkout -- .
+          pnpm typecheck > full-test-out/typecheck.txt 2>&1; echo "typecheck exit $?" >> full-test-out/typecheck.txt
+          pnpm lint > full-test-out/lint.txt 2>&1; echo "lint exit $?" >> full-test-out/lint.txt
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm exec tsx scripts/seed-tiers.ts
+      - name: Build
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tail -60 > full-test-out/build-tail.txt
+      - name: Create test accounts
+        # Holds the TOTP secrets: kept out of the results folder.
+        run: pnpm exec tsx scripts/create-test-accounts.ts > "$RUNNER_TEMP/accounts.txt" 2>&1 || (tail -5 "$RUNNER_TEMP/accounts.txt" | sed 's/^/::error::/'; exit 1)
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Start the site
+        run: |
+          cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
+          (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
+          for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
+      - name: Full forms suite
+        env:
+          ACCOUNTS_FILE: ${{ runner.temp }}/accounts.txt
+        run: |
+          set -o pipefail
+          pnpm exec playwright test -c e2e/full/playwright.full.config.ts 2>&1 | tee full-test-out/playwright.log
+      - name: Summary
+        if: always()
+        run: |
+          node scripts/full-test-summary.mjs full-test-out || true
+          tail -400 server.log > full-test-out/server-tail.log 2>/dev/null || true
+          grep -v "secret\|otpauth\|recovery" full-test-out/playwright.log > full-test-out/p.log || true
+          mv full-test-out/p.log full-test-out/playwright.log || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-copy
+          path: full-test-out
+          retention-days: 7
+
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Live read-only smoke
+        env:
+          FULL_LIVE: '1'
+        run: |
+          mkdir -p full-test-out
+          set -o pipefail
+          pnpm exec playwright test -c e2e/full/playwright.full.config.ts 2>&1 | tee full-test-out/playwright.log
+      - name: Summary
+        if: always()
+        run: node scripts/full-test-summary.mjs full-test-out || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-smoke
+          path: full-test-out
+          retention-days: 7
+
+  publish:
+    needs: [ci-copy, live-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: results
+      - name: Push to full-test-results
+        run: |
+          cd results
+          for d in ci-copy live-smoke; do rm -rf "$d/html" "$d/test-results"; done
+          echo "{\"sha\":\"${GITHUB_SHA}\",\"run\":\"${GITHUB_RUN_ID}\",\"ci\":\"${{ needs.ci-copy.result }}\",\"live\":\"${{ needs.live-smoke.result }}\"}" > run.json
+          git init -q
+          git config user.name "full-test"
+          git config user.email "full-test@users.noreply.github.com"
+          git checkout -q -b full-test-results
+          git add -A
+          git commit -q -m "Full forms test for ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" full-test-results
