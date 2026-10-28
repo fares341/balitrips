@@ -273,6 +273,15 @@ export function flocalizedOrNull(form: FormData, name: string): Localized | null
 }
 
 /** Required localized field: English is the authoring locale and must exist. */
+/** Required, in any one language (the owner writes Arabic first). */
+export function flocalizedAny(form: FormData, name: string, label = name): Localized {
+  const value = flocalized(form, name)
+  if (locales.every((locale) => value[locale] === '')) {
+    throw invalid(`${label} is required`, 'form.required_any', { label })
+  }
+  return value
+}
+
 export function flocalizedRequired(form: FormData, name: string, label = name): Localized {
   const value = flocalized(form, name)
   if (value.en === '')
@@ -282,23 +291,21 @@ export function flocalizedRequired(form: FormData, name: string, label = name): 
 
 /**
  * A list of localized strings, authored as three parallel textareas and
- * zipped by line index. Lines whose English is blank are dropped, so the
- * list length is driven by the authoring locale rather than by whichever
- * translator typed the most lines.
+ * zipped by line index. A line is kept when ANY language has text on it
+ * (it used to need English, so an Arabic-only list saved as nothing — owner
+ * report, Oct 2026); lines blank in every language are dropped.
  */
 export function flocalizedList(form: FormData, name: string): Localized[] {
   const byLocale = {} as Record<Locale, string[]>
   for (const locale of locales) byLocale[locale] = splitLines(form, localeFieldName(name, locale))
 
-  const length = byLocale.en.length
+  const length = Math.max(...locales.map((locale) => byLocale[locale].length))
   const out: Localized[] = []
 
   for (let index = 0; index < length; index++) {
-    const english = byLocale.en[index]?.trim() ?? ''
-    if (english === '') continue
     const entry = {} as Record<Locale, string>
     for (const locale of locales) entry[locale] = byLocale[locale][index]?.trim() ?? ''
-    entry.en = english
+    if (locales.every((locale) => entry[locale] === '')) continue
     out.push(entry)
   }
 

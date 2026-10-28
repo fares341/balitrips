@@ -37,7 +37,8 @@ import {
   ffloatOrNull,
   flocalizedList,
   flocalizedOrNull,
-  flocalizedRequired,
+  flocalized,
+  flocalizedAny,
   fcurrencyOr,
   ffaqRows,
   fpriceTiers,
@@ -54,7 +55,7 @@ import {
 import type { Translate } from '../../_i18n'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
-import { assertSlug } from '../../_lib/slug'
+import { assertSlug, slugify } from '../../_lib/slug'
 import { requireCapability } from '../../_lib/session'
 
 const LIST = adminHref('/activities')
@@ -99,10 +100,19 @@ async function sectionValues(
       // Publishing (and the link-only / unavailable states, which are public
       // too) is a separate capability from editing.
       if (isPublicStatus(status)) await requireCapability('content.publish')
+      // The owner writes in Arabic: a name in ANY language is enough (it was
+      // English-only, so an Arabic-only name never saved), and an empty slug
+      // on a new activity is made from the name (see `uniqueSlug`).
+      const name = flocalized(form, 'name')
+      if (name.ar === '' && name.en === '' && name.id === '') throw new Error(t('an.err_name'))
+      const typedSlug = fstr(form, 'slug')
+      if (typedSlug === null && activityId !== 'new') {
+        throw new Error(t('form.required', { label: t('activities.f_slug') }))
+      }
       return {
-        slug: assertSlug(freq(form, 'slug', t('activities.f_slug'))),
+        slug: typedSlug === null ? '' : assertSlug(typedSlug),
         legacyId: fstr(form, 'legacyId'),
-        name: flocalizedRequired(form, 'name', t('activities.f_name')),
+        name,
         area: flocalizedOrNull(form, 'area'),
         duration: flocalizedOrNull(form, 'duration'),
         regionId: fuuidOrNull(form, 'regionId', t('activities.region')),
@@ -202,6 +212,35 @@ async function sectionValues(
   }
 }
 
+/** A free slug made from `base` («ubud-tour», «ubud-tour-2»…), archived rows included. */
+async function uniqueSlug(base: string): Promise<string> {
+  const stem = base.slice(0, 100) || 'activity'
+  const rows = await db
+    .select({ slug: activities.slug })
+    .from(activities)
+    .where(sql`${activities.slug} = ${stem} or ${activities.slug} like ${`${stem}-%`}`)
+  const taken = new Set(rows.map((row) => row.slug))
+  if (!taken.has(stem)) return stem
+  for (let n = 2; ; n += 1) if (!taken.has(`${stem}-${n}`)) return `${stem}-${n}`
+}
+
+/** A typed slug already used by another activity: say which, instead of a bare «duplicate». */
+async function assertSlugFree(slug: string, id: string, t: Translate): Promise<void> {
+  const [other] = await db
+    .select({ id: activities.id, name: activities.name, deletedAt: activities.deletedAt })
+    .from(activities)
+    .where(eq(activities.slug, slug))
+    .limit(1)
+  if (other && other.id !== id) {
+    throw new Error(
+      t('an.err_slug_taken', {
+        slug,
+        name: other.deletedAt ? t('an.archived') : other.name?.ar || other.name?.en || slug,
+      }),
+    )
+  }
+}
+
 /**
  * Save one section of the activity editor. A new activity starts with the
  * basic details; every other section updates only its own columns, so the
@@ -236,6 +275,12 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
     const galleryIds = section === 'media' ? [...new Set(fmulti(form, 'galleryIds'))] : null
 
     let republished: string | null = null
+    let savedAsDraft = false
+    if (section === 'basics' && id === 'new' && values.slug === '') {
+      values.slug = await uniqueSlug(slugify(values.name?.en ?? '') || 'activity')
+    } else if (section === 'basics' && values.slug) {
+      await assertSlugFree(values.slug, id, t)
+    }
     const savedId = await db.transaction(async (tx) => {
       const before =
         id === 'new'
@@ -250,12 +295,17 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
         isPublicStatus(values.status) &&
         !(before !== null && isPublicStatus(before.status))
       ) {
-        if (id === 'new') throw new Error(t('av2.err_new_public'))
-        await assertPublishable(tx, id, t, {
-          regionId: values.regionId ?? null,
-          name: values.name ?? null,
-          categoryCount: (categoryIds ?? []).length,
-        })
+        if (id === 'new') {
+          // A new page cannot pass the checklist yet (no photos, no
+          // packages): keep the work as a draft instead of refusing it.
+          values.status = 'draft'
+          savedAsDraft = true
+        } else
+          await assertPublishable(tx, id, t, {
+            regionId: values.regionId ?? null,
+            name: values.name ?? null,
+            categoryCount: (categoryIds ?? []).length,
+          })
       }
       // The "from" price lives on the basics tab: without `prices.write` it
       // must come back as stored (a new activity: no price).
@@ -359,8 +409,15 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
     // «أبلغني عند التوفر»: back on sale → alert everyone waiting, once each.
     if (republished) await queueAvailabilityAlerts(republished)
 
-    target = sectionHref(savedId, section)
-    outcome = { ok: t('activities.ok_saved') }
+    // A new activity continues to the next step (content); the other tabs open.
+    target = sectionHref(savedId, id === 'new' ? 'content' : section)
+    outcome = {
+      ok: savedAsDraft
+        ? t('an.saved_draft')
+        : id === 'new'
+          ? t('an.created')
+          : t('activities.ok_saved'),
+    }
     refreshPublic()
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -620,7 +677,7 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
   )
 
   return {
-    name: flocalizedRequired(form, 'name', t('activities.tier_name')),
+    name: flocalizedAny(form, 'name', t('activities.tier_name')),
     tagline: flocalizedOrNull(form, 'tagline'),
     priceMinor,
     childPriceMinor,
@@ -918,7 +975,7 @@ async function addonValuesFrom(
   ).filter((id) => id !== selfId)
 
   return {
-    name: flocalizedRequired(form, 'name', t('activities.addon_name')),
+    name: flocalizedAny(form, 'name', t('activities.addon_name')),
     description: flocalizedOrNull(form, 'description'),
     priceMinor,
     currency: fcurrency(form, 'currency'),

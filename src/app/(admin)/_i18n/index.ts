@@ -1,5 +1,6 @@
 import activityEditor from './activity-editor'
 import activityV2 from './activity-v2'
+import activitySheet from './activity-sheet'
 import ownerRequests from './owner-requests'
 import assistant from './assistant'
 import catalog from './catalog'
@@ -39,6 +40,7 @@ const SECTIONS = [
   ops,
   clientAnswers,
   activityV2,
+  activitySheet,
   ownerRequests,
   whatsapp,
 ]

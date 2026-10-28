@@ -94,6 +94,7 @@ export function LocalizedField({
   hint,
   rows,
   required,
+  anyLanguage = false,
 }: {
   name: string
   label: string
@@ -102,6 +103,11 @@ export function LocalizedField({
   /** Renders textareas instead of inputs. */
   rows?: number
   required?: boolean
+  /**
+   * Required, but any one language will do (the server checks): no browser
+   * `required` on the English box, which blocked Arabic-only names.
+   */
+  anyLanguage?: boolean
 }) {
   return (
     <fieldset className="a-fieldset">
@@ -129,7 +135,7 @@ export function LocalizedField({
                   defaultValue={defaultValue}
                   lang={locale}
                   dir={localeConfig[locale].dir}
-                  required={required && locale === 'en'}
+                  required={required && !anyLanguage && locale === 'en'}
                 />
               ) : (
                 <TextInput
@@ -138,7 +144,7 @@ export function LocalizedField({
                   defaultValue={defaultValue}
                   lang={locale}
                   dir={localeConfig[locale].dir}
-                  required={required && locale === 'en'}
+                  required={required && !anyLanguage && locale === 'en'}
                 />
               )}
             </div>

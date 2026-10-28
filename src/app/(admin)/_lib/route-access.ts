@@ -54,7 +54,7 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   [/^\/(profit|reconciliation)(\/export)?$/, ['finance.read']],
 
   // v2: bulk import of activities (CSV) and its template.
-  [/^\/activity-import(\/template)?$/, ['content.write']],
+  [/^\/activity-import(\/template|\/export)?$/, ['content.write']],
   // Catalogue: lists read, editors write.
   [
     /^\/(places|map|itineraries|activities|addons|packages|articles|landmarks|reviews|files)$/,
