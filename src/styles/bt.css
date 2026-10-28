@@ -3970,3 +3970,36 @@ html {
 .bt-banner-sub {
   max-width: 60ch;
 }
+
+/* Owner, Oct 2026: a section with nothing published yet (packages, blog). */
+.section-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  max-inline-size: 620px;
+  margin: 24px auto;
+  padding: 36px 20px;
+  border-radius: 20px;
+  background: var(--paper, #fff);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+.section-empty-ic {
+  display: grid;
+  place-items: center;
+  inline-size: 68px;
+  block-size: 68px;
+  border-radius: 50%;
+  background: rgba(38, 85, 46, 0.1);
+  color: var(--forest, #26552e);
+}
+.section-empty p {
+  line-height: 1.8;
+}
+.section-empty-go {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-block-start: 6px;
+}

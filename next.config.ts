@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   // traced dependencies rather than all of node_modules.
   output: 'standalone',
 
+  // Contract summaries read PDF text on the server with pdfjs (legacy build);
+  // kept as a plain Node package rather than bundled into the server code.
+  serverExternalPackages: ['pdfjs-dist'],
+
   experimental: {
     serverActions: {
       /**

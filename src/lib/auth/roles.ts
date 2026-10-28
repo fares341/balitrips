@@ -28,6 +28,7 @@ export const ROLES = [
   'content_editor',
   'marketing_manager',
   'accountant',
+  'bookings_operator',
   'supplier_portal',
 ] as const
 export type Role = (typeof ROLES)[number]
@@ -211,6 +212,18 @@ const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'customers.read',
     'audit.read',
     'reports.read',
+  ],
+
+  // Owner, Oct 2026 («مشغّل حجوزات»): someone the owner can hand the bookings
+  // to while travelling. Sees orders and leads, confirms with the operator,
+  // charges or releases a card hold, marks lines done or cancelled. No
+  // content, prices, settings, team, customers list or money pages.
+  bookings_operator: [
+    'admin.access',
+    'orders.read',
+    'orders.fulfil',
+    'bookings.confirm',
+    'leads.read',
   ],
 
   // Reserved for the future supplier portal: no Studio access at all.

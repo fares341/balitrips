@@ -23,6 +23,8 @@ import { Link } from '@/i18n/routing'
 
 import { whatsappHref } from './contact-config'
 import { getContact } from './contact-server'
+import { withoutHidden } from '@/lib/content/public-sections'
+
 import { FOOTER_QUICK_ROUTES, INFO_ROUTES, POLICY_ROUTES } from './routes'
 
 /** What Stripe Checkout accepts on this account — see /payment-methods. */
@@ -34,7 +36,7 @@ const SOCIAL_LINKS: { label: string; icon: IconName; href: string | undefined }[
   { label: 'YouTube', icon: 'youtube', href: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE },
 ]
 
-export async function Footer() {
+export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = await getTranslations()
   const year = new Date().getFullYear()
   const contact = await getContact()
@@ -78,7 +80,7 @@ export async function Footer() {
           <nav aria-labelledby="ftr-quick">
             <h4 id="ftr-quick">{t('ft_nav')}</h4>
             <ul>
-              {FOOTER_QUICK_ROUTES.map((route) => (
+              {withoutHidden(FOOTER_QUICK_ROUTES, hidden).map((route) => (
                 <li key={route.href}>
                   <Link href={route.href}>{t(route.key)}</Link>
                 </li>

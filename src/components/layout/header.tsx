@@ -45,6 +45,7 @@ import {
   isActivePath,
   START_PLANNING_HREF,
 } from './routes'
+import { withoutHidden } from '@/lib/content/public-sections'
 import { useCartCount } from './use-cart-count'
 
 const FOCUSABLE =
@@ -133,7 +134,11 @@ function AccountMenu({ signedIn }: { signedIn: boolean }) {
   )
 }
 
-export function Header() {
+/**
+ * `hidden`: paths of sections that are empty right now (owner, Oct 2026 —
+ * no published package or article), left out of the nav and the drawer.
+ */
+export function Header({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = useTranslations()
   const pathname = usePathname()
   const favorites = useFavorites()
@@ -261,7 +266,7 @@ export function Header() {
         <nav className="hdr-nav" aria-label={t('bt_main_nav')}>
           <div className="wrap">
             <ul>
-              {HEADER_ROUTES.map((route) => (
+              {withoutHidden(HEADER_ROUTES, hidden).map((route) => (
                 <li key={route.href}>
                   <Link
                     href={route.href}
@@ -305,7 +310,7 @@ export function Header() {
           </button>
         </div>
         <nav aria-label={t('bt_main_nav')}>
-          {[...HEADER_ROUTES, ...DRAWER_EXTRA].map((route) => (
+          {withoutHidden([...HEADER_ROUTES, ...DRAWER_EXTRA], hidden).map((route) => (
             <Link
               key={route.href}
               href={route.href}

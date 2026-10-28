@@ -23,7 +23,9 @@ import { accessLabel } from '@/lib/notify/plans'
 import { isNotificationType } from '@/lib/notify/types'
 import { sendWhatsappTemplate, toWhatsappNumber } from '@/lib/notify/whatsapp'
 
-import { readWhatsappSettings } from '@/lib/whatsapp/settings'
+import { isTeamWhatsappType, teamWhatsappText } from '@/lib/notify/staff-alerts'
+import { sendWithSettings } from '@/lib/whatsapp/dispatch'
+import { readWhatsappSettings, resolveCredentials } from '@/lib/whatsapp/settings'
 
 import type { NotifySweepJob, WhatsappJob } from '../queues'
 
@@ -158,6 +160,34 @@ export async function handleWhatsappJob(job: WhatsappJob): Promise<void> {
   const params = notification.params ?? {}
 
   if (notification.audience === 'staff') {
+    // Owner, Oct 2026: the team number in Studio → WhatsApp, through Mazbot.
+    if (isTeamWhatsappType(notification.type)) {
+      const settings = await readWhatsappSettings()
+      const teamTo = toWhatsappNumber(settings.staffAlertNumber)
+      if (teamTo !== null && settings.provider === 'mazbot') {
+        const creds = await resolveCredentials(settings)
+        if (creds.apiKey) {
+          const href = notification.href ? `${origin()}${adminBase()}${notification.href}` : null
+          const { result } = await sendWithSettings(settings, {
+            to: teamTo,
+            text: teamWhatsappText(notification.type, params, href),
+            locale: 'ar',
+            template: null,
+            params: [],
+          })
+          if (result.ok) {
+            await recordDelivery(job.notificationId, 'whatsapp', teamTo)
+            return
+          }
+          if (result.retryable) throw new Error(`team WhatsApp alert failed: ${result.error}`)
+          console.warn('[whatsapp] team alert refused', {
+            type: notification.type,
+            error: result.error,
+          })
+          return
+        }
+      }
+    }
     const to = toWhatsappNumber(process.env.STAFF_WHATSAPP_NUMBER)
     const result = await sendWhatsappTemplate(to, notification.type, params, 'en')
     if (result.sent) await recordDelivery(job.notificationId, 'whatsapp', to ?? '')

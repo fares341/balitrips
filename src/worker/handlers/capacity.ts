@@ -31,6 +31,7 @@ import { orders } from '@/db/schema'
 import { cancelUnpaidOrder } from '@/lib/orders/expire'
 import { expiredAuthorizations, releaseAuthorizedOrder } from '@/lib/orders/authorization'
 import { AUTHORIZATION_DAYS } from '@/lib/orders/capture'
+import { remindAwaitingSupplier } from '@/lib/orders/staff-reminders'
 import { notifyOrderUpdated } from '@/lib/notify/orders'
 
 import type { CapacityJob } from '../queues'
@@ -57,6 +58,8 @@ export interface CapacitySummary {
   daysReleased: number
   /** Card holds released after waiting too long for the supplier. */
   released?: number
+  /** Staff reminders sent for bookings still waiting (24 hours, 4 days). */
+  reminded?: number
 }
 
 export async function handleCapacityJob(job: CapacityJob): Promise<CapacitySummary> {
@@ -107,6 +110,13 @@ export async function handleCapacityJob(job: CapacityJob): Promise<CapacitySumma
     } catch (error) {
       console.error('[capacity] could not release an authorisation', { orderId: held.id, error })
     }
+  }
+
+  // Owner, Oct 2026: remind the team about bookings still waiting.
+  try {
+    summary.reminded = await remindAwaitingSupplier()
+  } catch (error) {
+    console.error('[capacity] staff reminders failed', { error })
   }
 
   console.info('[capacity] expiry sweep complete', { olderThanMinutes: minutes, ...summary })

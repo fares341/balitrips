@@ -53,6 +53,13 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   [/^\/discounts(\/[^/]+)?$/, ['discounts.write']],
   [/^\/(profit|reconciliation)(\/export)?$/, ['finance.read']],
 
+  // Owner, Oct 2026: the operator contract (staff with prices only).
+  [/^\/activities\/[^/]+\/contract$/, ['content.write', 'prices.write']],
+  // Owner, Oct 2026: launch readiness and its photo-trip CSV.
+  [/^\/readiness(\/export)?$/, ['content.read']],
+  // Owner, Oct 2026: how bookings and custom trips run, step by step.
+  [/^\/guide$/, ['orders.read']],
+
   // v2: bulk import of activities (CSV) and its template.
   [/^\/activity-import(\/template)?$/, ['content.write']],
   // Catalogue: lists read, editors write.

@@ -91,7 +91,13 @@ export const STAFF_NOTIFICATION_TYPES = {
   staff_security_alert: { email: true, whatsapp: true },
   staff_payment_failed: { email: true, whatsapp: false },
   /** Client, Oct 2026: a booking's card is held; confirm with the supplier and capture. */
-  staff_order_authorized: { email: true, whatsapp: false },
+  staff_order_authorized: { email: true, whatsapp: true },
+  /**
+   * Owner, Oct 2026: the same booking is still waiting for the operator after
+   * 24 hours, then after 4 days (src/lib/orders/staff-reminders.ts, once per
+   * stage). WhatsApp goes to «رقم تنبيهات الفريق» (Studio → WhatsApp).
+   */
+  staff_authorization_reminder: { email: true, whatsapp: true },
   /** Client, Oct 2026: a customer asks for a package (request, not a payment). */
   staff_package_request: { email: true, whatsapp: false },
   /** الوثيقة 4.3: "دخول من جهاز جديد لمستخدم مدفوع". */

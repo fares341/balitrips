@@ -67,6 +67,8 @@ export default async function LeadDetailPage({
   const { request } = row
 
   const mayCrm = can(session.role, 'crm.write')
+  // The bookings operator reads leads but not the customers list.
+  const mayCustomers = can(session.role, 'customers.read')
   const [staff, leadTasks] = mayCrm
     ? await Promise.all([loadStaff(), tasksFor({ leadId: id })])
     : [[], []]
@@ -178,7 +180,11 @@ export default async function LeadDetailPage({
         {row.account ? (
           <p>
             {t('leads.linked_to')} <strong>{row.account}</strong>.{' '}
-            <Link href={adminHref(`/customers/${request.userId}`)}>{t('leads.customer_page')}</Link>
+            {mayCustomers ? (
+              <Link href={adminHref(`/customers/${request.userId}`)}>
+                {t('leads.customer_page')}
+              </Link>
+            ) : null}
           </p>
         ) : (
           <form action={linkRequestToUser.bind(null, id)} className="a-row">
@@ -386,7 +392,7 @@ export default async function LeadDetailPage({
             </div>
           </form>
           <p className="a-hint">{t('crm.convert_hint')}</p>
-          {request.userId !== null ? (
+          {request.userId !== null && mayCustomers ? (
             <p>
               <Link href={adminHref(`/customers/${request.userId}`)}>{t('crm.open_customer')}</Link>
             </p>

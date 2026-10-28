@@ -80,8 +80,20 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
   const locale = toLocale(raw)
   const query = await searchParams
 
-  const [t, views] = await Promise.all([getTranslations({ locale }), regionViews(locale)])
-  const regions = views.map((view) => view.region)
+  const [t, allViews] = await Promise.all([getTranslations({ locale }), regionViews(locale)])
+  // Owner, Oct 2026: an area with nothing to show yet gets no card (no «0 · 0»).
+  const views = allViews.filter(
+    (view) => view.activities.length > 0 || view.placeCount > 0 || view.itineraries.length > 0,
+  )
+  const countLine = (a: number, p: number) =>
+    a > 0 && p > 0
+      ? t('ex4_counts', { a, p })
+      : a > 0
+        ? t('ex4_count_a', { a })
+        : p > 0
+          ? t('ex4_count_p', { p })
+          : ''
+  const regions = allViews.map((view) => view.region)
 
   const requested = firstValue(query['region'])
   const activeRegion =
@@ -109,10 +121,7 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
                     href={regionHref(view.region.key)}
                     image={view.image}
                     name={pick(view.region.label, locale, view.region.key)}
-                    tagline={t('ex4_counts', {
-                      a: view.activities.length,
-                      p: view.placeCount,
-                    })}
+                    tagline={countLine(view.activities.length, view.placeCount)}
                     cta={t('ex4_cta')}
                     tall
                     priority={index < 3}
@@ -143,9 +152,9 @@ export default async function ExplorePage({ params, searchParams }: PageProps) {
                             {pick(view.region.label, locale, view.region.key)}
                           </Link>
                         </th>
-                        <td dir="ltr">{view.activities.length}</td>
-                        <td dir="ltr">{view.placeCount}</td>
-                        <td dir="ltr">{view.itineraries.length}</td>
+                        <td dir="ltr">{view.activities.length || '—'}</td>
+                        <td dir="ltr">{view.placeCount || '—'}</td>
+                        <td dir="ltr">{view.itineraries.length || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

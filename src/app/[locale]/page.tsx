@@ -70,6 +70,8 @@ import { CUSTOM_HREF } from './_ui/routes-extra'
 import { JsonLd } from '@/components/seo/json-ld'
 import { getContact } from '@/components/layout/contact-server'
 import { SHARE_ORIGIN, shareUrl } from '@/lib/seo/site-origin'
+import { hiddenHrefs, withoutHidden } from '@/lib/content/public-sections'
+import { loadPublicSections } from '@/lib/content/public-sections-server'
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 
@@ -190,6 +192,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     weather,
     homeSettings,
     guideCategories,
+    sections,
   ] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
     listMapPlaces(),
@@ -206,7 +209,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     getBaliWeather(),
     readSetting('home').catch(() => SETTING_DEFAULTS.home),
     listGuideCategories(GUIDE_KEYS).catch(() => []),
+    loadPublicSections(),
   ])
+  // Owner, Oct 2026: no card for an empty section (no published package yet).
+  const hidden = hiddenHrefs(sections)
+  const services = withoutHidden(SERVICES, hidden)
 
   // --- hero info strip: visa only once the owner has set an amount ----------
   const visa: VisaInfo | null =
@@ -259,20 +266,24 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const openPlaces = buildMapPayload(mapPlaces, emptyEntitlements()).places.filter(isOpen)
 
   // --- free Bali guide: five categories, live counts --------------------------
-  const guideCards = guideCategories.map((category) => {
-    const places = openPlaces.filter((place) => place.categoryKey === category.key)
-    // The owner's photo first; else a real photo of one of its places.
-    const fallback =
-      places.find((place) => place.heroImageUrl !== null && !place.heroImageUrl.endsWith('.svg'))
-        ?.heroImageUrl ?? null
-    return {
-      key: category.key,
-      label: pick(category.label, locale, category.key),
-      icon: GUIDE_ICONS[category.key as (typeof GUIDE_KEYS)[number]],
-      count: places.length,
-      imageUrl: category.imageUrl ?? fallback,
-    }
-  })
+  // Owner, Oct 2026: a category with no open place yet is left out (no «0» or
+  // «coming soon» card); it appears once it has places.
+  const guideCards = guideCategories
+    .map((category) => {
+      const places = openPlaces.filter((place) => place.categoryKey === category.key)
+      // The owner's photo first; else a real photo of one of its places.
+      const fallback =
+        places.find((place) => place.heroImageUrl !== null && !place.heroImageUrl.endsWith('.svg'))
+          ?.heroImageUrl ?? null
+      return {
+        key: category.key,
+        label: pick(category.label, locale, category.key),
+        icon: GUIDE_ICONS[category.key as (typeof GUIDE_KEYS)[number]],
+        count: places.length,
+        imageUrl: category.imageUrl ?? fallback,
+      }
+    })
+    .filter((card) => card.count > 0)
 
   const searchAction = getPathname({ href: '/search', locale })
 
@@ -443,7 +454,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </h2>
           </div>
           <SvcCards labelledBy="qd-h">
-            {SERVICES.map((service, index) => (
+            {services.map((service, index) => (
               <Link
                 key={service.key}
                 href={service.href}

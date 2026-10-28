@@ -13,6 +13,7 @@ import {
   suppliers,
   users,
 } from '@/db/schema'
+import { isUrgent, timeLeftParts } from '@/lib/orders/supplier-wait'
 import { isActivityKind } from '@/lib/orders/booking-status'
 import { loadOffers } from '@/lib/suppliers/offers'
 import { can } from '@/lib/auth/roles'
@@ -184,6 +185,9 @@ export default async function OrderDetailPage({
   const mayRefund = can(session.role, 'orders.refund')
   const mayFulfil = can(session.role, 'orders.fulfil')
   const mayConfirm = can(session.role, 'bookings.confirm')
+  const now = new Date()
+  const holdSince = row.authorizedAt ?? row.createdAt
+  const holdLeft = timeLeftParts(holdSince, now)
 
   return (
     <>
@@ -300,22 +304,31 @@ export default async function OrderDetailPage({
       </div>
 
       {mayConfirm && status === 'authorized' ? (
-        <div className="a-card a-row">
-          <h2 style={{ width: '100%', margin: 0 }}>{t('ca.heading')}</h2>
-          <p className="a-hint" style={{ width: '100%' }}>
-            {t('ca.hint')}
+        <section className="a-card a-decide" aria-labelledby="decide-title">
+          <h2 id="decide-title">{t('ca.heading')}</h2>
+          <p className={`a-decide-left${isUrgent(holdSince, now) ? ' urgent' : ''}`}>
+            {t('oo.o_release_in', {
+              left: t('oo.left', { d: holdLeft.days, h: holdLeft.hours }),
+            })}
           </p>
-          <form action={captureAuthorized.bind(null, row.id)}>
-            <button className="a-btn accent" type="submit">
-              {t('ca.capture')}
-            </button>
-          </form>
-          <form action={releaseAuthorized.bind(null, row.id)}>
-            <button className="a-btn danger" type="submit">
-              {t('ca.release')}
-            </button>
-          </form>
-        </div>
+          <p className="a-hint">{t('ca.hint')}</p>
+          <div className="a-decide-btns">
+            <form action={captureAuthorized.bind(null, row.id)}>
+              <button className="a-btn accent" type="submit">
+                {t('ca.capture')}
+              </button>
+            </form>
+            <form action={releaseAuthorized.bind(null, row.id)}>
+              <button className="a-btn danger" type="submit">
+                {t('ca.release')}
+              </button>
+            </form>
+          </div>
+          <p className="a-hint">
+            {t('oo.o_after_capture')}{' '}
+            <Link href={adminHref('/guide#booking')}>{t('oo.guide_link')}</Link>
+          </p>
+        </section>
       ) : null}
 
       {mayRefund && status === 'pending' ? (
