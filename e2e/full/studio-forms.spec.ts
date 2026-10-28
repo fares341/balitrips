@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { deflateSync } from 'node:zlib'
 
 import { type Page } from '@playwright/test'
 
@@ -38,6 +39,41 @@ const ACTIVITY_TABS = [
 ]
 
 let page: Page
+
+/** A solid-colour RGB PNG of the given size. */
+function makePng(width: number, height: number): Buffer {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n
+    for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    return c >>> 0
+  })
+  const crc = (buf: Buffer) => {
+    let c = 0xffffffff
+    for (const b of buf) c = (crcTable[(c ^ b) & 0xff] ?? 0) ^ (c >>> 8)
+    return (c ^ 0xffffffff) >>> 0
+  }
+  const chunk = (type: string, data: Buffer) => {
+    const len = Buffer.alloc(4)
+    len.writeUInt32BE(data.length)
+    const body = Buffer.concat([Buffer.from(type), data])
+    const sum = Buffer.alloc(4)
+    sum.writeUInt32BE(crc(body))
+    return Buffer.concat([len, body, sum])
+  }
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(width, 0)
+  header.writeUInt32BE(height, 4)
+  header[8] = 8
+  header[9] = 2
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(width * 3, 0x5a)])
+  const raw = Buffer.concat(Array.from({ length: height }, () => row))
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ])
+}
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext({ extraHTTPHeaders: { 'x-forwarded-for': '10.77.0.1' } })
@@ -164,11 +200,19 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
   }
   const before = await db()<{ n: number }[]>`select count(*)::int n from media`
   // 1x1 PNG.
-  const png = Buffer.from(
+  // Too small first: the pipeline refuses anything under 320px wide.
+  const tiny = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     'base64',
   )
-  await file.setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: png })
+  await file.setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: tiny })
+  await page.locator('form:has(input[type="file"]) button[type="submit"]').first().click()
+  await settle(page, 20_000)
+  check(info, 'studio media', 'tiny image refused with a message', (await page.getByText(/only 1px wide/).count()) > 0)
+  await page.goto(`${ADMIN}/media`)
+  await settle(page)
+  await page.locator('input[type="file"]').first().setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: makePng(640, 400) })
+  await page.locator('input[name^="alt"]').first().fill(`${XSS} 🌴`).catch(() => {})
   const submit = page.locator('form:has(input[type="file"]) button[type="submit"]').first()
   if (await submit.isVisible().catch(() => false)) await submit.click()
   await settle(page, 20_000)

@@ -299,7 +299,7 @@ test.describe('custom trip request', () => {
     const watch = new Watch(page)
     await page.goto('/en/custom')
     await settle(page)
-    const next = page.getByRole('button', { name: 'Next' })
+    const next = page.getByRole('button', { name: 'Next', exact: true })
     for (let i = 0; i < 10 && (await next.isVisible().catch(() => false)); i += 1) {
       await next.click()
     }
