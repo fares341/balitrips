@@ -21,6 +21,7 @@ Every check runs on the server, in each page and each server action
 | `content_editor` | yes | Activities, places, articles, media, translations. **No prices.** |
 | `marketing_manager` | yes | Content, discount codes, leads, reports. No customer export. |
 | `accountant` | yes | Payments, profit, payment checks, supplier payables. No refunds. |
+| `bookings_operator` | yes | «مشغّل حجوزات» (owner, Oct 2026): runs bookings while the owner travels. Holds only `admin.access`, `orders.read`, `orders.fulfil`, `bookings.confirm`, `leads.read` — sees orders and custom-trip requests, confirms with the operator, charges or releases a card hold, marks lines done or cancelled. No content, prices, settings, team, customers list, payments or money pages. |
 | `supplier_portal` | **no** | Reserved for a future supplier portal. Zero capabilities: signs in like a customer and gets a 404 on any Studio URL. |
 | `customer` | no | Site visitors with an account. |
 

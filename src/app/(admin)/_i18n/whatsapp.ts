@@ -30,6 +30,10 @@ const section: Section = {
     'wa.password': 'Mazbot staff password',
     'wa.password_hint': 'Write-only, stored encrypted. Leave empty to keep it.',
     'wa.sender': 'Sender number',
+    'wa.staff_number': 'Team alerts number',
+    'wa.staff_number_hint':
+      'A team WhatsApp number with the country code (+62…). It gets a message when a booking waits for the operator, and reminders after 24 hours and 4 days. Needs Mazbot connected. Empty = email alerts only.',
+    'wa.err_staff_number': 'The team alerts number needs the country code, e.g. +62 812…',
     'wa.sender_hint':
       'The business WhatsApp number (for reference; with Meta, the phone number ID).',
     'wa.incomplete_minutes': '«Payment incomplete» after (minutes)',
@@ -120,6 +124,10 @@ const section: Section = {
     'wa.password': 'كلمة مرور موظف Mazbot',
     'wa.password_hint': 'للكتابة فقط، تُحفظ مشفّرة. اتركها فارغة للإبقاء عليها.',
     'wa.sender': 'رقم المرسل',
+    'wa.staff_number': 'رقم تنبيهات الفريق',
+    'wa.staff_number_hint':
+      'رقم واتساب للفريق مع رمز الدولة (+62…). تصله رسالة عند وصول حجز بانتظار تأكيد المشغّل، وتذكير بعد 24 ساعة وبعد 4 أيام. يحتاج ربط Mazbot. فارغ = تنبيهات البريد فقط.',
+    'wa.err_staff_number': 'رقم تنبيهات الفريق يحتاج رمز الدولة، مثل ‎+62 812…',
     'wa.sender_hint': 'رقم واتساب للأعمال (للمرجعية؛ ومع Meta: معرّف رقم الهاتف).',
     'wa.incomplete_minutes': '«عدم إكمال الدفع» بعد (دقائق)',
     'wa.save': 'حفظ',

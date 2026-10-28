@@ -54,6 +54,13 @@ export const whatsappSettingsSchema = z.object({
   /** Mazbot staff login (the API needs a JWT besides the API key). */
   loginEmail: z.string().trim().max(200).default(''),
   senderNumber: z.string().trim().max(32).default(''),
+  /**
+   * «رقم تنبيهات الفريق» (owner, Oct 2026): a team WhatsApp number (with the
+   * country code) that gets the booking alerts — a booking waiting for the
+   * operator and the 24-hour / 4-day reminders. Sent through Mazbot as plain
+   * text; empty = no WhatsApp alert (email still goes).
+   */
+  staffAlertNumber: z.string().trim().max(32).default(''),
   /** Minutes an order may stay unpaid before «payment incomplete». */
   incompleteAfterMinutes: z
     .number()

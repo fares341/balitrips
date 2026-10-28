@@ -51,6 +51,7 @@ import { Pill } from '../../../_ui/table'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { AddonEditor } from './addon-editor'
 import { AvailabilityTab } from './availability-tab'
+import { OperatorTab } from './operator-tab'
 import { ChildAgesCard, SeasonEditor } from './season-editor'
 import { IncludedEditor } from './included-editor'
 import { LibraryLinks } from './library-links'
@@ -72,6 +73,7 @@ const TABS = [
   'availability',
   'faq',
   'seo',
+  'operator',
 ] as const
 type Tab = (typeof TABS)[number]
 
@@ -90,9 +92,12 @@ export default async function ActivityEditorPage({
   const isNew = id === 'new'
   // Phase 6: without `prices.write` every price on this editor is read-only.
   const lockPrices = !can(session.role, 'prices.write')
+  // Owner, Oct 2026: the operator and its contract — staff with prices only.
+  const mayOperator = can(session.role, 'prices.write')
+  const shownTabs = TABS.filter((key) => key !== 'operator' || mayOperator)
   const requested = param(query, 'tab')
   const tab: Tab =
-    !isNew && requested !== null && (TABS as readonly string[]).includes(requested)
+    !isNew && requested !== null && (shownTabs as readonly string[]).includes(requested)
       ? (requested as Tab)
       : 'basics'
 
@@ -178,7 +183,7 @@ export default async function ActivityEditorPage({
       <Flash searchParams={query} />
 
       <nav className="a-tabs" aria-label={t('ae.tabs_label')}>
-        {TABS.map((key) =>
+        {shownTabs.map((key) =>
           isNew && key !== 'basics' ? (
             <span key={key} className="a-tab is-off" aria-disabled="true">
               {t(`ae.tab_${key}`)}
@@ -496,6 +501,7 @@ export default async function ActivityEditorPage({
         <AddonsTab activity={activity} intl={intl} locked={lockPrices} />
       ) : null}
 
+      {activity && tab === 'operator' ? <OperatorTab activityId={activity.id} /> : null}
       {activity && tab === 'seo' ? (
         <SeoTab activity={activity} save={save('seo')} actions={actions} />
       ) : null}

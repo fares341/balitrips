@@ -53,6 +53,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     titleKey: 'nav.group_commerce',
     items: [
       { path: '/orders', labelKey: 'nav.orders', capability: 'orders.read' },
+      { path: '/guide', labelKey: 'nav.guide', capability: 'orders.read' },
       { path: '/payments', labelKey: 'nav.payments', capability: 'payments.read' },
       { path: '/plans', labelKey: 'nav.plans', capability: 'content.read' },
       { path: '/plans/vip', labelKey: 'nav.vip', capability: 'vip.manage' },
@@ -68,6 +69,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   {
     titleKey: 'nav.group_catalog',
     items: [
+      { path: '/readiness', labelKey: 'nav.readiness', capability: 'content.read' },
       { path: '/places', labelKey: 'nav.places', capability: 'content.read' },
       { path: '/map', labelKey: 'nav.map', capability: 'content.read' },
       { path: '/itineraries', labelKey: 'nav.itineraries', capability: 'content.read' },

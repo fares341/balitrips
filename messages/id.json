@@ -2664,5 +2664,16 @@
   "ihw_l_map": "Peta dan rute",
   "ihw_note": "Ilustrasi tampilan rencana",
   "ihw_link": "Bagaimana itinerari sampai?",
-  "hv3_ct_img_alt": "Wisatawan berbusana Saudi, pemandu Bali, dan wisatawan Eropa merencanakan perjalanan di depan tablet"
+  "hv3_ct_img_alt": "Wisatawan berbusana Saudi, pemandu Bali, dan wisatawan Eropa merencanakan perjalanan di depan tablet",
+  "notif_staff_authorization_reminder_t": "Pengingat: pemesanan masih menunggu pemasok",
+  "notif_staff_authorization_reminder_b": "Pesanan {orderNumber} ({total}) belum dikonfirmasi dengan operator. Sisa {hoursLeft} jam sebelum dana yang ditahan dilepas otomatis.",
+  "es_packages_t": "Paket segera hadir",
+  "es_packages_b": "Kami sedang menyiapkan paket Bali pertama kami. Sementara itu, pilih itinerary harian, pesan aktivitas, atau minta kami merencanakan seluruh perjalanan Anda.",
+  "es_blog_t": "Artikel perjalanan kami segera hadir",
+  "es_blog_b": "Kami sedang menulis panduan praktis tentang Bali. Sampai saat itu, peta, itinerary, dan aktivitas sudah memuat semua yang Anda perlukan.",
+  "es_go_itin": "Lihat itinerary",
+  "es_go_act": "Jelajahi aktivitas",
+  "es_go_custom": "Rencanakan perjalanan saya",
+  "ex4_count_a": "{a} aktivitas",
+  "ex4_count_p": "{p} tempat"
 }

@@ -12,6 +12,8 @@ import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
+import { hiddenHrefs } from '@/lib/content/public-sections'
+import { loadPublicSections } from '@/lib/content/public-sections-server'
 import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
 import { CurrencyProvider } from '@/components/currency/currency-context'
@@ -70,7 +72,13 @@ export default async function LocaleLayout({
   // and send every Riyadh/London/NY visitor on a round trip to Singapore.
   setRequestLocale(locale)
 
-  const [messages, contact] = await Promise.all([getMessages(), getContact()])
+  const [messages, contact, sections] = await Promise.all([
+    getMessages(),
+    getContact(),
+    loadPublicSections(),
+  ])
+  // Owner, Oct 2026: empty sections (no package / article yet) leave the nav.
+  const hidden = hiddenHrefs(sections)
   const { dir } = localeConfig[locale as Locale]
 
   return (
@@ -88,7 +96,7 @@ export default async function LocaleLayout({
           */}
               <ToastProvider>
                 <SkipLink />
-                <Header />
+                <Header hidden={hidden} />
                 {/*
               Skip-link target. A wrapper rather than an id on each page's
               <main>: every route renders its own <main>, and the header puts
@@ -97,7 +105,7 @@ export default async function LocaleLayout({
                 <div id="main" tabIndex={-1} style={{ outline: 'none' }}>
                   {children}
                 </div>
-                <Footer />
+                <Footer hidden={hidden} />
                 <WhatsAppFab />
                 <AssistantLauncher />
                 <PageViewBeacon />

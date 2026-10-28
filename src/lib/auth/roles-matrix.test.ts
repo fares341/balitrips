@@ -99,6 +99,13 @@ const MATRIX: Record<Exclude<Role, 'admin'>, readonly Capability[]> = {
     'audit.read',
     'reports.read',
   ],
+  bookings_operator: [
+    'admin.access',
+    'orders.read',
+    'orders.fulfil',
+    'bookings.confirm',
+    'leads.read',
+  ],
   supplier_portal: [],
 }
 
@@ -151,6 +158,46 @@ describe('capability matrix', () => {
     expect(can('support_agent', 'orders.fulfil')).toBe(false)
     expect(can('booking_agent', 'finance.read')).toBe(false)
     expect(can('accountant', 'orders.refund')).toBe(false)
+  })
+
+  it('lets the bookings operator run bookings and nothing else', () => {
+    for (const capability of [
+      'orders.read',
+      'orders.fulfil',
+      'bookings.confirm',
+      'leads.read',
+    ] as const) {
+      expect(can('bookings_operator', capability)).toBe(true)
+    }
+    for (const capability of [
+      'content.read',
+      'content.write',
+      'content.publish',
+      'media.upload',
+      'translations.write',
+      'prices.write',
+      'config.write',
+      'users.manage',
+      'roles.write',
+      'orders.refund',
+      'payments.read',
+      'finance.read',
+      'suppliers.write',
+      'discounts.write',
+      'customers.read',
+      'customers.export',
+      'reports.read',
+      'integrations.write',
+      'system.read',
+    ] as const) {
+      expect({ capability, granted: can('bookings_operator', capability) }).toEqual({
+        capability,
+        granted: false,
+      })
+    }
+    expect(isElevated('bookings_operator')).toBe(true)
+    expect(covers('bookings_operator', 'booking_agent')).toBe(false)
+    expect(covers('staff', 'bookings_operator')).toBe(true)
   })
 
   it('gives the supplier portal role no Studio access at all', () => {

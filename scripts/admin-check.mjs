@@ -793,6 +793,7 @@ for (const role of ROLE_ORDER) {
           'booking',
           'availability',
           'faq',
+          'operator',
         ]) {
           await visit(page, role, `${detail}?tab=${tab}`, 1440)
         }

@@ -20,6 +20,8 @@ import { liveModeIssues } from '@/lib/live-mode'
 import { can } from '@/lib/auth/roles'
 import { formatMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
+import { AUTHORIZATION_DAYS } from '@/lib/orders/capture'
+import { isUrgent, timeLeftParts } from '@/lib/orders/supplier-wait'
 
 import { buildOverview } from '@/lib/reports/builders/overview'
 import { currencyOptions, staffOptions, supplierOptions } from '@/lib/reports/data'
@@ -327,6 +329,26 @@ export default async function DashboardPage({
     timeZone: 'Asia/Makassar',
   }).format(now)
 
+  // --- Owner, Oct 2026: bookings waiting for the operator --------------------
+  // The card hold is released automatically AUTHORIZATION_DAYS after it was
+  // taken; the oldest first, so the one closest to release is on top.
+  const supplierWait = mayReadOrders
+    ? await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          authorizedAt: orders.authorizedAt,
+          createdAt: orders.createdAt,
+          totalMinor: orders.totalMinor,
+          currency: orders.presentmentCurrency,
+          customer: orders.customerSnapshot,
+        })
+        .from(orders)
+        .where(eq(orders.status, 'authorized'))
+        .orderBy(sql`coalesce(${orders.authorizedAt}, ${orders.createdAt}) asc`)
+        .limit(50)
+    : []
+
   // --- Needs your attention ------------------------------------------------
   interface Attention {
     key: string
@@ -362,6 +384,16 @@ export default async function DashboardPage({
     })
   }
   if (mayReadOrders) {
+    attention.push({
+      key: 'supplier',
+      icon: 'alert',
+      count: supplierWait.length,
+      label: t('oo.d_att_supplier'),
+      hint: t('oo.d_att_supplier_hint', { days: AUTHORIZATION_DAYS }),
+      href: adminHref('/orders?status=authorized'),
+      cta: t('dashboard.confirm'),
+      tone: 'bad',
+    })
     attention.push({
       key: 'orders',
       icon: 'bag',
@@ -493,6 +525,41 @@ export default async function DashboardPage({
             </Advanced>
           </div>
         </div>
+      ) : null}
+
+      {supplierWait.length > 0 ? (
+        <section className="a-card a-wait" aria-labelledby="wait-title">
+          <div className="a-card-head">
+            <h2 id="wait-title">{t('oo.d_wait_title')}</h2>
+            <span className="a-count-badge">{supplierWait.length}</span>
+          </div>
+          <p className="a-hint">{t('oo.d_wait_hint', { days: AUTHORIZATION_DAYS })}</p>
+          <ul className="a-wait-list">
+            {supplierWait.slice(0, 6).map((row) => {
+              const since = row.authorizedAt ?? row.createdAt
+              const left = timeLeftParts(since, now)
+              return (
+                <li key={row.id} className={isUrgent(since, now) ? 'urgent' : undefined}>
+                  <Link href={adminHref(`/orders/${row.id}`)}>
+                    <span className="a-wait-no a-mono">{row.orderNumber}</span>
+                    <span className="a-wait-who">
+                      {row.customer?.name ?? t('orders.guest')} ·{' '}
+                      {formatMoney(row.totalMinor, row.currency, intl)}
+                    </span>
+                    <span className="a-wait-left">
+                      {t('oo.left', { d: left.days, h: left.hours })}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+          {supplierWait.length > 6 ? (
+            <Link className="a-btn ghost small" href={adminHref('/orders?status=authorized')}>
+              {t('oo.d_wait_all', { n: supplierWait.length })}
+            </Link>
+          ) : null}
+        </section>
       ) : null}
 
       {attention.length > 0 ? (

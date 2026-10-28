@@ -31,6 +31,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ArticleCard } from '@/components/cards'
 import { Breadcrumbs } from '@/components/shared'
+import { SectionEmpty } from '@/components/shared/section-empty'
 import { Icon, Photo } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import type { Locale } from '@/i18n/config'
@@ -270,6 +271,11 @@ async function BlogResults({
       ...(q === null ? {} : { q }),
     },
   })
+
+  // Owner, Oct 2026: nothing published at all — say so, not «no results».
+  if (articles.length === 0 && q === null && activeKey === null) {
+    return <SectionEmpty kind="blog" />
+  }
 
   // The newest article leads the unfiltered hub as the featured story (v3 articles.html).
   const featured = q === null && activeKey === null ? articles[0] : undefined

@@ -38,10 +38,14 @@ export async function saveWhatsappConnection(form: FormData): Promise<void> {
       apiUrl: (fstr(form, 'apiUrl') ?? '').slice(0, 300),
       loginEmail: (fstr(form, 'loginEmail') ?? '').slice(0, 200),
       senderNumber: (fstr(form, 'senderNumber') ?? '').slice(0, 32),
+      staffAlertNumber: (fstr(form, 'staffAlertNumber') ?? '').slice(0, 32),
       incompleteAfterMinutes: Math.min(
         24 * 60,
         Math.max(15, fint(form, 'incompleteAfterMinutes', 60)),
       ),
+    }
+    if (next.staffAlertNumber !== '' && toWhatsappNumber(next.staffAlertNumber) === null) {
+      throw new Error(t('wa.err_staff_number'))
     }
     if (next.apiUrl !== '' && !/^https:\/\/[^\s]+$/.test(next.apiUrl)) {
       throw new Error('API endpoint must start with https://')
@@ -65,6 +69,7 @@ export async function saveWhatsappConnection(form: FormData): Promise<void> {
         apiUrl: current.apiUrl,
         loginEmail: current.loginEmail,
         senderNumber: current.senderNumber,
+        staffAlertNumber: current.staffAlertNumber,
       },
       after: {
         enabled: next.enabled,
@@ -72,6 +77,7 @@ export async function saveWhatsappConnection(form: FormData): Promise<void> {
         apiUrl: next.apiUrl,
         loginEmail: next.loginEmail,
         senderNumber: next.senderNumber,
+        staffAlertNumber: next.staffAlertNumber,
         apiKeyChanged: Boolean(apiKey) || fbool(form, 'clearKey'),
         passwordChanged: Boolean(password),
       },

@@ -18,6 +18,7 @@ import { formatPrice } from '@/components/bt/card'
 import { PackageCard } from '@/components/cards'
 import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs, LinkButton } from '@/components/shared'
+import { SectionEmpty } from '@/components/shared/section-empty'
 import { Photo } from '@/components/ui'
 import { isLocale, locales } from '@/i18n/config'
 import { BUDGET_TIERS, parseBudgetTier, tiersFromPrices, type BudgetTier } from '@/lib/budget-tier'
@@ -149,7 +150,9 @@ export default async function PackagesPage({
           {packages.length > 0 && (
             <TierFilter basePath={HREF} active={tier} counts={counts} total={packages.length} />
           )}
-          {shown.length === 0 ? (
+          {packages.length === 0 ? (
+            <SectionEmpty kind="packages" />
+          ) : shown.length === 0 ? (
             <p className="muted center">{t('ah_none')}</p>
           ) : (
             <div className="grid pk-grid">

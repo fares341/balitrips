@@ -18,6 +18,7 @@ const section: Section = {
     'ae.tab_addons': 'Extras',
     'ae.tab_booking': 'Booking & policies',
     'ae.tab_faq': 'Questions',
+    'ae.tab_operator': 'Operator',
     'ae.save_section': 'Save this section',
     'ae.alerts_title': 'Notify me when available',
     'ae.alerts_hint':
@@ -240,6 +241,7 @@ const section: Section = {
     'ae.tab_addons': 'الخدمات الإضافية',
     'ae.tab_booking': 'الحجز والسياسات',
     'ae.tab_faq': 'الأسئلة الشائعة',
+    'ae.tab_operator': 'المشغّل',
     'ae.save_section': 'حفظ هذا القسم',
     'ae.alerts_title': 'أبلغني عند التوفر',
     'ae.alerts_hint':

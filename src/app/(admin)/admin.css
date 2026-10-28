@@ -2676,3 +2676,366 @@ details > summary.a-btn::-webkit-details-marker {
 .a-import-table td.bad {
   color: var(--a-bad);
 }
+
+/* --- Owner, Oct 2026: operations guide, readiness, supplier wait, mobile
+       orders, operator contract ------------------------------------------ */
+
+.a-steps {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.a-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 14px;
+  position: relative;
+  padding-block-end: 18px;
+}
+
+.a-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  inset-block: 36px 0;
+  inset-inline-start: 16px;
+  border-inline-start: 2px solid var(--a-line);
+}
+
+.a-step-no {
+  inline-size: 34px;
+  block-size: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: var(--a-primary-soft);
+  color: var(--a-primary-deep);
+}
+
+.a-step.auto .a-step-no {
+  background: var(--a-info-bg);
+  color: var(--a-info);
+}
+
+.a-step.customer .a-step-no {
+  background: var(--a-warn-bg);
+  color: var(--a-warn);
+}
+
+.a-step-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  min-block-size: 34px;
+}
+
+.a-step-head b {
+  font-size: 15.5px;
+  color: var(--a-primary-deep);
+}
+
+.a-step-who {
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--a-primary-soft);
+  color: var(--a-primary-deep);
+}
+
+.a-step-who.auto {
+  background: var(--a-info-bg);
+  color: var(--a-info);
+}
+
+.a-step-who.customer {
+  background: var(--a-warn-bg);
+  color: var(--a-warn);
+}
+
+.a-step-body p {
+  color: var(--a-ink-2);
+  line-height: 1.75;
+  margin-block-start: 4px;
+}
+
+.a-step-link {
+  display: inline-block;
+  margin-block-start: 6px;
+  font-weight: 700;
+}
+
+.a-guide-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding-block: 14px;
+  font-weight: 700;
+}
+
+.a-guide-dl {
+  display: grid;
+  gap: 14px;
+}
+
+.a-guide-dl dt {
+  font-weight: 700;
+  color: var(--a-primary-deep);
+}
+
+.a-guide-dl dd {
+  margin: 2px 0 0;
+  color: var(--a-ink-2);
+  line-height: 1.7;
+}
+
+.a-ready-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.a-ready-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius-sm);
+  background: var(--a-surface-2);
+}
+
+.a-ready-list li > span:nth-child(2) {
+  flex: 1 1 220px;
+}
+
+.a-ready-go {
+  font-weight: 700;
+}
+
+.a-ready-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.a-ready-items li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 9px 4px;
+  border-block-end: 1px solid var(--a-line);
+}
+
+.a-ready-gaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.a-wait {
+  border-color: var(--a-bad);
+  border-inline-start-width: 4px;
+}
+
+.a-wait-list {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.a-wait-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--a-line);
+  border-radius: var(--a-radius-sm);
+  color: var(--a-ink);
+  text-decoration: none;
+  min-block-size: 48px;
+}
+
+.a-wait-who {
+  color: var(--a-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.a-wait-left,
+.a-ocard-left,
+.a-decide-left {
+  font-weight: 700;
+  color: var(--a-warn);
+  font-size: 14px;
+}
+
+.a-wait-list li.urgent .a-wait-left,
+.a-ocard-left.urgent,
+.a-decide-left.urgent {
+  color: var(--a-bad);
+}
+
+.a-quickfilter {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-block-end: 2px;
+}
+
+.a-qf {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  min-block-size: 40px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--a-line-strong);
+  background: var(--a-surface);
+  color: var(--a-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.a-qf.is-on {
+  background: var(--a-primary-deep);
+  border-color: var(--a-primary-deep);
+  color: #ffffff;
+}
+
+.a-qf-n {
+  min-inline-size: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 13px;
+  background: var(--a-sunken);
+  color: var(--a-ink);
+}
+
+.a-qf.has-work .a-qf-n {
+  background: var(--a-bad);
+  color: #ffffff;
+}
+
+.a-ocards {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+}
+
+.a-ocard {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--a-surface);
+  border: 1px solid var(--a-line);
+  border-radius: 14px;
+  color: var(--a-ink);
+  text-decoration: none;
+}
+
+.a-ocard-top,
+.a-ocard-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.a-ocard-top .a-mono {
+  font-weight: 700;
+  color: var(--a-primary-deep);
+}
+
+.a-ocard-who {
+  font-weight: 600;
+}
+
+.a-ocard-meta {
+  color: var(--a-muted);
+  font-size: 14px;
+}
+
+.a-decide {
+  border-color: var(--a-accent);
+  border-inline-start-width: 4px;
+  display: grid;
+  gap: 10px;
+}
+
+.a-decide > h2 {
+  margin: 0;
+}
+
+.a-decide-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.a-flags {
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--a-bad);
+}
+
+.a-summary th {
+  inline-size: 30%;
+  vertical-align: top;
+}
+
+@media (max-width: 640px) {
+  .a-ocards {
+    display: grid;
+  }
+
+  .a-only-wide {
+    display: none;
+  }
+
+  .a-decide-btns {
+    display: grid;
+  }
+
+  .a-decide-btns form,
+  .a-decide-btns .a-btn {
+    inline-size: 100%;
+  }
+
+  .a-decide-btns .a-btn {
+    min-block-size: 52px;
+    justify-content: center;
+  }
+
+  .a-wait-list a {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .a-wait-who {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .a-summary th {
+    inline-size: 38%;
+  }
+}

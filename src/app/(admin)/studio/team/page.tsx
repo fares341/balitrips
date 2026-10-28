@@ -27,6 +27,7 @@ const ROLE_ORDER: readonly Role[] = [
   'staff',
   'operations_manager',
   'booking_agent',
+  'bookings_operator',
   'support_agent',
   'content_editor',
   'marketing_manager',

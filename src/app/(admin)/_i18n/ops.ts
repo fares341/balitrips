@@ -13,6 +13,7 @@ const section: Section = {
 
     'shell.role_operations_manager': 'Operations manager',
     'shell.role_booking_agent': 'Booking agent',
+    'shell.role_bookings_operator': 'Bookings operator',
     'shell.role_support_agent': 'Customer support',
     'shell.role_content_editor': 'Content editor',
     'shell.role_marketing_manager': 'Marketing manager',
@@ -20,6 +21,7 @@ const section: Section = {
     'shell.role_supplier_portal': 'Supplier (portal)',
     'customers.role_operations_manager': 'operations manager',
     'customers.role_booking_agent': 'booking agent',
+    'customers.role_bookings_operator': 'bookings operator',
     'customers.role_support_agent': 'customer support',
     'customers.role_content_editor': 'content editor',
     'customers.role_marketing_manager': 'marketing manager',
@@ -68,6 +70,8 @@ const section: Section = {
       'Runs bookings and day-to-day operations: orders, confirming bookings, availability, prices, VIP settings, customers and reports.',
     'team.about_booking_agent':
       'Prepares and confirms bookings, keeps availability right, follows up with customers.',
+    'team.about_bookings_operator':
+      'Handles bookings while the owner is away: sees orders and custom-trip requests, confirms with the operator, charges or releases the card hold. Cannot edit content, prices, settings, the team or money pages.',
     'team.about_support_agent':
       'Answers customers: support requests, notes and tasks. Can read orders but not change them.',
     'team.about_content_editor':
@@ -444,6 +448,7 @@ const section: Section = {
 
     'shell.role_operations_manager': 'مدير العمليات',
     'shell.role_booking_agent': 'موظف حجوزات',
+    'shell.role_bookings_operator': 'مشغّل حجوزات',
     'shell.role_support_agent': 'خدمة العملاء',
     'shell.role_content_editor': 'محرر المحتوى',
     'shell.role_marketing_manager': 'مدير التسويق',
@@ -451,6 +456,7 @@ const section: Section = {
     'shell.role_supplier_portal': 'مورد (البوابة)',
     'customers.role_operations_manager': 'مدير العمليات',
     'customers.role_booking_agent': 'موظف حجوزات',
+    'customers.role_bookings_operator': 'مشغّل حجوزات',
     'customers.role_support_agent': 'خدمة العملاء',
     'customers.role_content_editor': 'محرر المحتوى',
     'customers.role_marketing_manager': 'مدير التسويق',
@@ -497,6 +503,8 @@ const section: Section = {
     'team.about_operations_manager':
       'يدير الحجوزات والعمل اليومي: الطلبات وتأكيد الحجوزات والتوفر والأسعار وإعدادات VIP والعملاء والتقارير.',
     'team.about_booking_agent': 'يجهّز الحجوزات ويؤكدها، ويضبط التوفر، ويتابع العملاء.',
+    'team.about_bookings_operator':
+      'يتولى الحجوزات أثناء غياب المالك: يرى الطلبات وطلبات الرحلات المخصصة، ويؤكد مع المشغّل، ويسحب المبلغ المحجوز أو يفك الحجز. لا يعدّل المحتوى ولا الأسعار ولا الإعدادات ولا الفريق ولا صفحات المال.',
     'team.about_support_agent':
       'يرد على العملاء: طلبات الدعم والملاحظات والمهام. يقرأ الطلبات ولا يغيّرها.',
     'team.about_content_editor': 'الأنشطة والأماكن والمقالات والصور والترجمات. لا يغيّر الأسعار.',

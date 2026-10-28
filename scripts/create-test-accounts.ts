@@ -132,6 +132,7 @@ const SPECS: Spec[] = [
       ['content_editor', 'Test Content', '+628100000024'],
       ['marketing_manager', 'Test Marketing', '+628100000025'],
       ['accountant', 'Test Accountant', '+628100000026'],
+      ['bookings_operator', 'Test Bookings Operator', '+628100000029'],
       ['supplier_portal', 'Test Supplier Portal', '+628100000027'],
     ] as const
   ).map(([role, name, phone]) => ({ local: role, name, role, phone, twoFactor: true })),
@@ -457,6 +458,11 @@ async function main(): Promise<void> {
     ['Staff (2FA)', `staff@${DOMAIN}`, 'Studio without refunds, plans, roles, bans, exports'],
     ['Operations (2FA)', `operations_manager@${DOMAIN}`, 'Bookings, availability, prices, VIP'],
     ['Bookings (2FA)', `booking_agent@${DOMAIN}`, 'Prepare and confirm bookings'],
+    [
+      'Bookings operator (2FA)',
+      `bookings_operator@${DOMAIN}`,
+      'Orders and leads: confirm, charge, release',
+    ],
     ['Support (2FA)', `support_agent@${DOMAIN}`, 'Tickets, notes, tasks; reads orders'],
     ['Content (2FA)', `content_editor@${DOMAIN}`, 'Content and translations, no prices'],
     ['Marketing (2FA)', `marketing_manager@${DOMAIN}`, 'Content, discount codes, reports'],

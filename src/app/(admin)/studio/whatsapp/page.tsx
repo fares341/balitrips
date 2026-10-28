@@ -182,6 +182,21 @@ export default async function WhatsappPage({
               defaultValue={settings.senderNumber}
             />
           </Field>
+          <Field
+            label={t('wa.staff_number')}
+            htmlFor="staffAlertNumber"
+            hint={t('wa.staff_number_hint')}
+          >
+            <input
+              className="a-input"
+              id="staffAlertNumber"
+              name="staffAlertNumber"
+              dir="ltr"
+              inputMode="tel"
+              placeholder="+62…"
+              defaultValue={settings.staffAlertNumber}
+            />
+          </Field>
           <Field label={t('wa.incomplete_minutes')} htmlFor="incompleteAfterMinutes">
             <input
               className="a-input"

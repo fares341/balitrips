@@ -2,6 +2,7 @@ import activityEditor from './activity-editor'
 import activityV2 from './activity-v2'
 import activitySheet from './activity-sheet'
 import ownerRequests from './owner-requests'
+import ownerOps from './owner-ops'
 import assistant from './assistant'
 import catalog from './catalog'
 import clientAnswers from './client-answers'
@@ -43,6 +44,7 @@ const SECTIONS = [
   activitySheet,
   ownerRequests,
   whatsapp,
+  ownerOps,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

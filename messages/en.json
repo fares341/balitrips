@@ -2664,5 +2664,16 @@
   "ihw_l_map": "Map and route",
   "ihw_note": "An illustration of what the plan looks like",
   "ihw_link": "How does the itinerary reach you?",
-  "hv3_ct_img_alt": "A traveller in Saudi dress, a Balinese guide and a European traveller planning a trip around a tablet"
+  "hv3_ct_img_alt": "A traveller in Saudi dress, a Balinese guide and a European traveller planning a trip around a tablet",
+  "notif_staff_authorization_reminder_t": "Reminder: booking still awaiting supplier",
+  "notif_staff_authorization_reminder_b": "Order {orderNumber} ({total}) is still not confirmed with the operator. {hoursLeft} hours left before the card hold is released automatically.",
+  "es_packages_t": "Packages are on their way",
+  "es_packages_b": "We are putting together our first ready-made Bali packages. Meanwhile, pick a day-by-day itinerary, book activities, or ask us to plan the whole trip for you.",
+  "es_blog_t": "Our travel articles are coming",
+  "es_blog_b": "We are writing practical guides to Bali. Until then, the map, the itineraries and the activities have everything you need to plan.",
+  "es_go_itin": "See itineraries",
+  "es_go_act": "Browse activities",
+  "es_go_custom": "Plan my trip",
+  "ex4_count_a": "{a, plural, one {# activity} other {# activities}}",
+  "ex4_count_p": "{p, plural, one {# place} other {# places}}"
 }
