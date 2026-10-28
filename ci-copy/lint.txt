@@ -1,0 +1,31 @@
+
+> bali-travels@0.1.0 lint /home/runner/work/balitrips/balitrips
+> eslint .
+
+
+/home/runner/work/balitrips/balitrips/src/app/(admin)/_ui/reports/line-chart.tsx
+  42:5  warning  React Hook useMemo has a missing dependency: 'block'. Either include it or remove the dependency array. Mutable values like 'block.current' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/home/runner/work/balitrips/balitrips/src/app/[locale]/activities/[slug]/detail-client.tsx
+  76:8  warning  Unused eslint-disable directive (no problems were reported from '@next/next/no-img-element')
+
+/home/runner/work/balitrips/balitrips/src/app/[locale]/itineraries/[slug]/page.tsx
+  612:19  warning  The attribute aria-disabled is not supported by the role listitem. This role is implicit on the element li  jsx-a11y/role-supports-aria-props
+
+/home/runner/work/balitrips/balitrips/src/app/[locale]/map/map-app.tsx
+  946:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  987:51  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/runner/work/balitrips/balitrips/src/lib/assistant/limits.ts
+  135:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/home/runner/work/balitrips/balitrips/src/lib/assistant/links.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/home/runner/work/balitrips/balitrips/src/lib/security/ip.ts
+  91:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+✖ 8 problems (0 errors, 8 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+lint exit 0

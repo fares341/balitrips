@@ -1,0 +1,113 @@
+diff --git a/e2e/full/_support.ts b/e2e/full/_support.ts
+index 94c847b..016b1e1 100644
+--- a/e2e/full/_support.ts
++++ b/e2e/full/_support.ts
+@@ -86,7 +86,8 @@ export async function settle(page: Page, ms = 10_000): Promise<void> {
+   await page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
+   // The cookie banner covers the lower-left of the page (and buttons on phones).
+   const necessary = page.getByRole('button', { name: /^(Necessary only|الضروري فقط)$/ })
+-  if (await necessary.isVisible().catch(() => false)) await necessary.click({ timeout: 3000 }).catch(() => {})
++  if (await necessary.isVisible().catch(() => false))
++    await necessary.click({ timeout: 3000 }).catch(() => {})
+ }
+ 
+ /** Unique, valid contact details per call. */
+diff --git a/e2e/full/public-forms.spec.ts b/e2e/full/public-forms.spec.ts
+index 8c19296..6d7a465 100644
+--- a/e2e/full/public-forms.spec.ts
++++ b/e2e/full/public-forms.spec.ts
+@@ -91,7 +91,7 @@ test.describe('contact form', () => {
+         .getByText(required)
+         .first()
+         .waitFor({ state: 'visible', timeout: 15_000 })
+-      .then(() => true)
++        .then(() => true)
+         .catch(() => false)
+       check(info, `contact/${locale}`, 'empty submit → required errors', req)
+ 
+@@ -104,7 +104,7 @@ test.describe('contact form', () => {
+         .getByText(bad)
+         .first()
+         .waitFor({ state: 'visible', timeout: 15_000 })
+-      .then(() => true)
++        .then(() => true)
+         .catch(() => false)
+       check(info, `contact/${locale}`, 'bad email → email error', badShown)
+     }
+@@ -148,7 +148,9 @@ test.describe('auth forms', () => {
+     await page.goto('/en/register')
+     await settle(page)
+     // Skip the browser's own checks so the form's translated messages show.
+-    await page.evaluate(() => document.querySelectorAll('form').forEach((f) => (f.noValidate = true)))
++    await page.evaluate(() =>
++      document.querySelectorAll('form').forEach((f) => (f.noValidate = true)),
++    )
+     const form = page.locator('form:has(input[autocomplete="new-password"])').first()
+     const submit = form.locator('button[type="submit"]').first()
+     await submit.click()
+diff --git a/e2e/full/studio-forms.spec.ts b/e2e/full/studio-forms.spec.ts
+index bfc71df..1b5a806 100644
+--- a/e2e/full/studio-forms.spec.ts
++++ b/e2e/full/studio-forms.spec.ts
+@@ -209,11 +209,24 @@ test('media: upload a small image', async ({ browserName: _browserName }, info)
+   await page.locator('form:has(input[type="file"]) button[type="submit"]').first().click()
+   await settle(page, 20_000)
+   const afterTiny = await db()<{ n: number }[]>`select count(*)::int n from media`
+-  check(info, 'studio media', 'tiny (1x1) image refused, no row', afterTiny[0]?.n === before[0]?.n, `${before[0]?.n} → ${afterTiny[0]?.n}`)
++  check(
++    info,
++    'studio media',
++    'tiny (1x1) image refused, no row',
++    afterTiny[0]?.n === before[0]?.n,
++    `${before[0]?.n} → ${afterTiny[0]?.n}`,
++  )
+   await page.goto(`${ADMIN}/media`)
+   await settle(page)
+-  await page.locator('input[type="file"]').first().setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: makePng(640, 400) })
+-  await page.locator('input[name^="alt"]').first().fill(`${XSS} 🌴`).catch(() => {})
++  await page
++    .locator('input[type="file"]')
++    .first()
++    .setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: makePng(640, 400) })
++  await page
++    .locator('input[name^="alt"]')
++    .first()
++    .fill(`${XSS} 🌴`)
++    .catch(() => {})
+   const submit = page.locator('form:has(input[type="file"]) button[type="submit"]').first()
+   if (await submit.isVisible().catch(() => false)) await submit.click()
+   await settle(page, 20_000)
+diff --git a/src/app/[locale]/account/phone-actions.ts b/src/app/[locale]/account/phone-actions.ts
+index 2fa3506..484fd88 100644
+--- a/src/app/[locale]/account/phone-actions.ts
++++ b/src/app/[locale]/account/phone-actions.ts
+@@ -279,9 +279,7 @@ export async function verifyPhoneCodeAction(
+   // Locked check-and-count: parallel guesses (and resends) queue on the lock,
+   // so the five-attempt cap holds however many requests arrive at once.
+   type Outcome =
+-    | { kind: 'expired' }
+-    | { kind: 'wrong' }
+-    | { kind: 'ok'; phone: string; claim: boolean }
++    { kind: 'expired' } | { kind: 'wrong' } | { kind: 'ok'; phone: string; claim: boolean }
+   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+     await lockUser(tx, user.id)
+     const [row] = await tx
+diff --git a/src/app/[locale]/account/profile-form.tsx b/src/app/[locale]/account/profile-form.tsx
+index 96eb911..339be2d 100644
+--- a/src/app/[locale]/account/profile-form.tsx
++++ b/src/app/[locale]/account/profile-form.tsx
+@@ -27,7 +27,13 @@
+ import { useActionState, useState } from 'react'
+ import { useTranslations } from 'next-intl'
+ 
+-import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
++import {
++  FormError,
++  FormNotice,
++  SelectField,
++  TextField,
++  type CountryOption,
++} from '@/components/auth'
+ import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
+ import { Button } from '@/components/shared'
+ import { locales, localeConfig, type Locale } from '@/i18n/config'

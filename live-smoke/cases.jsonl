@@ -1,0 +1,90 @@
+{"form":"live home","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live home loads and its inputs render"}
+{"form":"live home","case":"has visible inputs","ok":true,"detail":"2","project":"desktop","test":"live home loads and its inputs render"}
+{"form":"live home","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live home loads and its inputs render"}
+{"form":"live home ar","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live home ar loads and its inputs render"}
+{"form":"live home ar","case":"has visible inputs","ok":true,"detail":"2","project":"desktop","test":"live home ar loads and its inputs render"}
+{"form":"live home ar","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live home ar loads and its inputs render"}
+{"form":"live contact","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live contact loads and its inputs render"}
+{"form":"live contact","case":"has visible inputs","ok":true,"detail":"6","project":"desktop","test":"live contact loads and its inputs render"}
+{"form":"live contact","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live contact loads and its inputs render"}
+{"form":"live contact ar","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live contact ar loads and its inputs render"}
+{"form":"live contact ar","case":"has visible inputs","ok":true,"detail":"6","project":"desktop","test":"live contact ar loads and its inputs render"}
+{"form":"live contact ar","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live contact ar loads and its inputs render"}
+{"form":"live custom trip","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live custom trip loads and its inputs render"}
+{"form":"live custom trip","case":"has visible inputs","ok":true,"detail":"1","project":"desktop","test":"live custom trip loads and its inputs render"}
+{"form":"live custom trip","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live custom trip loads and its inputs render"}
+{"form":"live search","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live search loads and its inputs render"}
+{"form":"live search","case":"has visible inputs","ok":true,"detail":"2","project":"desktop","test":"live search loads and its inputs render"}
+{"form":"live search","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live search loads and its inputs render"}
+{"form":"live blog","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live blog loads and its inputs render"}
+{"form":"live blog","case":"has visible inputs","ok":true,"detail":"2","project":"desktop","test":"live blog loads and its inputs render"}
+{"form":"live blog","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live blog loads and its inputs render"}
+{"form":"live help","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live help loads and its inputs render"}
+{"form":"live help","case":"has visible inputs","ok":true,"detail":"2","project":"desktop","test":"live help loads and its inputs render"}
+{"form":"live help","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live help loads and its inputs render"}
+{"form":"live activities","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live activities loads and its inputs render"}
+{"form":"live activities","case":"has visible inputs","ok":true,"detail":"3","project":"desktop","test":"live activities loads and its inputs render"}
+{"form":"live activities","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live activities loads and its inputs render"}
+{"form":"live itineraries","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live itineraries loads and its inputs render"}
+{"form":"live itineraries","case":"has visible inputs","ok":true,"detail":"1","project":"desktop","test":"live itineraries loads and its inputs render"}
+{"form":"live itineraries","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live itineraries loads and its inputs render"}
+{"form":"live plans","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live plans loads and its inputs render"}
+{"form":"live plans","case":"has visible inputs","ok":true,"detail":"1","project":"desktop","test":"live plans loads and its inputs render"}
+{"form":"live plans","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live plans loads and its inputs render"}
+{"form":"live register","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live register loads and its inputs render"}
+{"form":"live register","case":"has visible inputs","ok":true,"detail":"10","project":"desktop","test":"live register loads and its inputs render"}
+{"form":"live register","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live register loads and its inputs render"}
+{"form":"live sign-in","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live sign-in loads and its inputs render"}
+{"form":"live sign-in","case":"has visible inputs","ok":true,"detail":"4","project":"desktop","test":"live sign-in loads and its inputs render"}
+{"form":"live sign-in","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live sign-in loads and its inputs render"}
+{"form":"live cart","case":"status < 400","ok":true,"detail":"200","project":"desktop","test":"live cart loads and its inputs render"}
+{"form":"live cart","case":"has visible inputs","ok":true,"detail":"1","project":"desktop","test":"live cart loads and its inputs render"}
+{"form":"live cart","case":"no uncaught JS errors","ok":true,"detail":"","project":"desktop","test":"live cart loads and its inputs render"}
+{"form":"live contact","case":"empty form is invalid in the browser","ok":true,"detail":"false","project":"desktop","test":"live contact: client validation on empty submit (nothing sent)"}
+{"form":"live contact","case":"bad email flagged","ok":true,"detail":"","project":"desktop","test":"live contact: client validation on empty submit (nothing sent)"}
+{"form":"live register","case":"short password message","ok":true,"detail":"","project":"desktop","test":"live register: client validation messages (nothing sent)"}
+{"form":"live home","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live home loads and its inputs render"}
+{"form":"live home","case":"has visible inputs","ok":true,"detail":"1","project":"mobile","test":"live home loads and its inputs render"}
+{"form":"live home","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live home loads and its inputs render"}
+{"form":"live home ar","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live home ar loads and its inputs render"}
+{"form":"live home ar","case":"has visible inputs","ok":true,"detail":"1","project":"mobile","test":"live home ar loads and its inputs render"}
+{"form":"live home ar","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live home ar loads and its inputs render"}
+{"form":"live contact","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live contact loads and its inputs render"}
+{"form":"live contact","case":"has visible inputs","ok":true,"detail":"5","project":"mobile","test":"live contact loads and its inputs render"}
+{"form":"live contact","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live contact loads and its inputs render"}
+{"form":"live contact ar","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live contact ar loads and its inputs render"}
+{"form":"live contact ar","case":"has visible inputs","ok":true,"detail":"5","project":"mobile","test":"live contact ar loads and its inputs render"}
+{"form":"live contact ar","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live contact ar loads and its inputs render"}
+{"form":"live custom trip","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live custom trip loads and its inputs render"}
+{"form":"live custom trip","case":"has visible inputs","ok":true,"detail":"0","project":"mobile","test":"live custom trip loads and its inputs render"}
+{"form":"live custom trip","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live custom trip loads and its inputs render"}
+{"form":"live search","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live search loads and its inputs render"}
+{"form":"live search","case":"has visible inputs","ok":true,"detail":"1","project":"mobile","test":"live search loads and its inputs render"}
+{"form":"live search","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live search loads and its inputs render"}
+{"form":"live blog","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live blog loads and its inputs render"}
+{"form":"live blog","case":"has visible inputs","ok":true,"detail":"1","project":"mobile","test":"live blog loads and its inputs render"}
+{"form":"live blog","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live blog loads and its inputs render"}
+{"form":"live help","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live help loads and its inputs render"}
+{"form":"live help","case":"has visible inputs","ok":true,"detail":"1","project":"mobile","test":"live help loads and its inputs render"}
+{"form":"live help","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live help loads and its inputs render"}
+{"form":"live activities","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live activities loads and its inputs render"}
+{"form":"live activities","case":"has visible inputs","ok":true,"detail":"2","project":"mobile","test":"live activities loads and its inputs render"}
+{"form":"live activities","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live activities loads and its inputs render"}
+{"form":"live itineraries","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live itineraries loads and its inputs render"}
+{"form":"live itineraries","case":"has visible inputs","ok":true,"detail":"0","project":"mobile","test":"live itineraries loads and its inputs render"}
+{"form":"live itineraries","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live itineraries loads and its inputs render"}
+{"form":"live plans","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live plans loads and its inputs render"}
+{"form":"live plans","case":"has visible inputs","ok":true,"detail":"0","project":"mobile","test":"live plans loads and its inputs render"}
+{"form":"live plans","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live plans loads and its inputs render"}
+{"form":"live register","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live register loads and its inputs render"}
+{"form":"live register","case":"has visible inputs","ok":true,"detail":"9","project":"mobile","test":"live register loads and its inputs render"}
+{"form":"live register","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live register loads and its inputs render"}
+{"form":"live sign-in","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live sign-in loads and its inputs render"}
+{"form":"live sign-in","case":"has visible inputs","ok":true,"detail":"3","project":"mobile","test":"live sign-in loads and its inputs render"}
+{"form":"live sign-in","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live sign-in loads and its inputs render"}
+{"form":"live cart","case":"status < 400","ok":true,"detail":"200","project":"mobile","test":"live cart loads and its inputs render"}
+{"form":"live cart","case":"has visible inputs","ok":true,"detail":"0","project":"mobile","test":"live cart loads and its inputs render"}
+{"form":"live cart","case":"no uncaught JS errors","ok":true,"detail":"","project":"mobile","test":"live cart loads and its inputs render"}
+{"form":"live contact","case":"empty form is invalid in the browser","ok":true,"detail":"false","project":"mobile","test":"live contact: client validation on empty submit (nothing sent)"}
+{"form":"live contact","case":"bad email flagged","ok":true,"detail":"","project":"mobile","test":"live contact: client validation on empty submit (nothing sent)"}
+{"form":"live register","case":"short password message","ok":true,"detail":"","project":"mobile","test":"live register: client validation messages (nothing sent)"}

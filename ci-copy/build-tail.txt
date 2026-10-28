@@ -1,0 +1,60 @@
+├ ƒ /studio/map-analytics
+├ ƒ /studio/marketing
+├ ƒ /studio/media
+├ ƒ /studio/notify
+├ ƒ /studio/orders
+├ ƒ /studio/orders/[id]
+├ ƒ /studio/orders/[id]/invoice
+├ ƒ /studio/orders/[id]/receipt
+├ ƒ /studio/orders/export
+├ ƒ /studio/packages
+├ ƒ /studio/packages/[id]
+├ ƒ /studio/packages/vehicles
+├ ƒ /studio/payables
+├ ƒ /studio/payables/[id]/export
+├ ƒ /studio/payments
+├ ƒ /studio/payments/export
+├ ƒ /studio/places
+├ ƒ /studio/places/[id]
+├ ƒ /studio/plans
+├ ƒ /studio/plans/[id]
+├ ƒ /studio/plans/vip
+├ ƒ /studio/profit
+├ ƒ /studio/profit/export
+├ ƒ /studio/protection
+├ ƒ /studio/protection/activity
+├ ƒ /studio/protection/activity/export
+├ ƒ /studio/protection/alerts
+├ ƒ /studio/protection/devices
+├ ƒ /studio/protection/sessions
+├ ƒ /studio/reconciliation
+├ ƒ /studio/reports
+├ ƒ /studio/reports/[report]
+├ ƒ /studio/reports/[report]/export
+├ ƒ /studio/reports/exports
+├ ƒ /studio/reports/exports/[id]
+├ ƒ /studio/reports/records
+├ ƒ /studio/reports/records/export
+├ ƒ /studio/reports/schedules
+├ ƒ /studio/reviews
+├ ƒ /studio/reviews/[id]
+├ ƒ /studio/security
+├ ƒ /studio/suppliers
+├ ƒ /studio/suppliers/[id]
+├ ƒ /studio/support
+├ ƒ /studio/support/[id]
+├ ƒ /studio/support/[id]/file
+├ ƒ /studio/system
+├ ƒ /studio/tasks
+├ ƒ /studio/taxonomy
+├ ƒ /studio/team
+├ ƒ /studio/translations
+└ ƒ /studio/whatsapp
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
