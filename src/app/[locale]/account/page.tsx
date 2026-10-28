@@ -18,6 +18,7 @@ import { users } from '@/db/schema'
 import { enabledSocialProviders } from '@/lib/auth/server'
 import { isPlaceholderEmail } from '@/lib/auth/phone'
 import { getUser } from '@/lib/auth/session'
+import { countryOptions } from '@/components/auth/countries'
 import { Icon, type IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { BLOCKED_MESSAGE_KEYS, type BlockedReason } from '@/lib/security/require'
@@ -208,7 +209,7 @@ export default async function AccountProfilePage({
           country: user.country ?? '',
           locale: user.locale,
         }}
-        displayLocale={locale}
+        countries={countryOptions(locale)}
       />
     </section>
   )
