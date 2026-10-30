@@ -120,6 +120,8 @@ test('Studio: set the earliest booking day to «after 2 days»', async () => {
   await page.goto(`${ADMIN}/activities/${activityId}?tab=booking`)
   await settle(page)
   await page.locator('#advanceMode').selectOption('days')
+  // Bypass the browser's own min=1 check so the server's validation is what answers.
+  await page.locator('#advanceDays').evaluate((el) => el.removeAttribute('min'))
   await page.locator('#advanceDays').fill('0')
   const again = page.url()
   await page.locator('form.a-form > .a-actions button[type="submit"]').first().click()
