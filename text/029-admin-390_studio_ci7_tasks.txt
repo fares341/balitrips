@@ -1,0 +1,35 @@
+/studio-ci7/tasks
+
+تخطَّ إلى المحتوى
+القائمة
+B
+بالي تريبس
+المهام
+
+أمور تحتاج متابعة. يصل لصاحب المهمة تذكير في تاريخها.
+
+مهامي
+كل المفتوحة
+المتأخرة
+المنتهية
+لا مهام هنا.
+مهمة جديدة
+
+اربطها بعميل (بريده) أو بطلب (رقمه) إن كانت تخصّه.
+
+المهمة*
+التاريخ
+لمن
+Test Accountant
+Test Admin
+Test Bookings
+Test Bookings Operator
+Test Content
+Test Marketing
+Test Operations
+Test Staff
+Test Support
+بريد العميل
+رقم الطلب
+التفاصيل
+إضافة مهمة

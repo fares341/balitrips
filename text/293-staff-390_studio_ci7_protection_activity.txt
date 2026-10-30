@@ -1,0 +1,88 @@
+/studio-ci7/protection/activity
+
+تخطَّ إلى المحتوى
+القائمة
+B
+بالي تريبس
+سجل النشاط
+
+ما قام به العملاء: تسجيلات الدخول والمحاولات الفاشلة والأجهزة الجديدة وتنزيلات PDF والوصول المحجوب. التغييرات التي أجراها فريقك موجودة في سجل التغييرات.
+
+بحث
+الإجراء
+الكل
+تسجيل دخول
+تسجيل خروج
+دخول فاشل
+دخول محظور
+جهاز جديد
+خروج جهاز (تجاوز الحد)
+رفض بسبب حد الأجهزة
+جهاز بانتظار الموافقة
+إزالة جهاز
+فتح الخريطة
+بحث في الخريطة
+عرض مكان
+حفظ مكان
+إضافة إلى الرحلة
+عرض PDF
+تنزيل PDF
+محاولة فتح محتوى مدفوع
+تغيير كلمة المرور
+شراء
+طلب تحديث
+حظر
+رفع الحظر
+تعليق
+رفع التعليق
+تحديث طلب
+زيارة صفحة
+تحرير رقم الجوال لحساب آخر
+من
+إلى
+تصفية
+إعادة تعيين
+الوقت	المستخدم	الإجراء	الجهاز	التفاصيل
+31‏/10‏/2026، 3:14 ص
+10.66.0.2
+	staff@test.balitrips.local	تسجيل دخول	Chrome · Linux	
+Via: /sign-in/email
+City: —
+Country: —
+
+31‏/10‏/2026، 3:14 ص
+10.66.0.2
+	staff@test.balitrips.local	جهاز جديد	Chrome · Linux	
+Os: Linux
+Weak: لا
+Limit: —
+Active: 0
+Browser: Chrome
+Decision: allow
+Evicted id: —
+Device type: desktop
+
+31‏/10‏/2026، 3:13 ص
+10.66.0.1
+	admin@test.balitrips.local	زيارة صفحة	—	
+Path: /en/activities/mount-batur-sunrise-hike
+
+31‏/10‏/2026، 3:08 ص
+10.66.0.1
+	admin@test.balitrips.local	تسجيل دخول	Chrome · Linux	
+Via: /sign-in/email
+City: —
+Country: —
+
+31‏/10‏/2026، 3:08 ص
+10.66.0.1
+	admin@test.balitrips.local	جهاز جديد	Chrome · Linux	
+Os: Linux
+Weak: لا
+Limit: —
+Active: 0
+Browser: Chrome
+Decision: allow
+Evicted id: —
+Device type: desktop
+1–5 من 5
