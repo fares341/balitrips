@@ -1,0 +1,27 @@
+▲ Next.js 16.3.0
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+✓ Ready in 0ms
+✓ Running next.config took 3ms
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. { to: 'ci-554782@example.com', subject: 'أهلًا بك في Bali Trips' }
+
+──────────────────────────────────────────────────────────────
+  to:      ci-554782@example.com
+  subject: أهلًا بك في Bali Trips
+──────────────────────────────────────────────────────────────
+حسابك جاهز
+
+مرحبًا Sara CI،
+
+أكّد بريدك الإلكتروني حتى نتمكن من إرسال تأكيدات الحجز ومستندات السفر إليك.
+
+تأكيد بريدي الإلكتروني: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImNpLTU1NDc4MkBleGFtcGxlLmNvbSIsImlhdCI6MTc5MzM4OTU1NiwiZXhwIjoxNzkzNDc1OTU2fQ.sIlZR1fVdkI6zGSXfhJSMK0cEdKG6QeOK7skAEIK8b0&callbackURL=%2Far%2Faccount%3Fverified%3D1
+
+إذا لم تنشئ هذا الحساب، يمكنك تجاهل هذه الرسالة.
+
+---
+
+هل لديك سؤال عن رحلتك؟ ردّ على هذه الرسالة وسيجيبك فريقنا في بالي.
+
+تصلك هذه الرسالة لأن لديك حسابًا في Bali Trips.
+──────────────────────────────────────────────────────────────
