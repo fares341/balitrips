@@ -1,0 +1,533 @@
+{
+  "config": {
+    "argv": [
+      "/opt/hostedtoolcache/node/22.23.4/x64/bin/node",
+      "/home/runner/work/balitrips/balitrips/node_modules/@playwright/test/cli.js",
+      "test",
+      "-c",
+      "e2e/full/playwright.full.config.ts",
+      "e2e/full/studio-activity"
+    ],
+    "configFile": "/home/runner/work/balitrips/balitrips/e2e/full/playwright.full.config.ts",
+    "rootDir": "/home/runner/work/balitrips/balitrips/e2e/full",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "ci": {
+        "commitHref": "https://github.com/fares341/balitrips/commit/49cb655bf246751ff993cb4454d506639e96abf8",
+        "commitHash": "49cb655bf246751ff993cb4454d506639e96abf8",
+        "buildHref": "https://github.com/fares341/balitrips/actions/runs/41113604420"
+      },
+      "gitCommit": {
+        "shortHash": "49cb655",
+        "hash": "49cb655bf246751ff993cb4454d506639e96abf8",
+        "subject": "test(e2e): reach the server check for invalid days",
+        "body": "test(e2e): reach the server check for invalid days\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Rhcg1nc6tRTvhEFMLi883G\n",
+        "author": {
+          "name": "Claude",
+          "email": "noreply@anthropic.com",
+          "time": 1793387661000
+        },
+        "committer": {
+          "name": "Claude",
+          "email": "noreply@anthropic.com",
+          "time": 1793387661000
+        },
+        "branch": "feat/earliest-booking-day"
+      },
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/home/runner/work/balitrips/balitrips/full-test-out/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/fares341/balitrips/commit/49cb655bf246751ff993cb4454d506639e96abf8",
+            "commitHash": "49cb655bf246751ff993cb4454d506639e96abf8",
+            "buildHref": "https://github.com/fares341/balitrips/actions/runs/41113604420"
+          },
+          "gitCommit": {
+            "shortHash": "49cb655",
+            "hash": "49cb655bf246751ff993cb4454d506639e96abf8",
+            "subject": "test(e2e): reach the server check for invalid days",
+            "body": "test(e2e): reach the server check for invalid days\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Rhcg1nc6tRTvhEFMLi883G\n",
+            "author": {
+              "name": "Claude",
+              "email": "noreply@anthropic.com",
+              "time": 1793387661000
+            },
+            "committer": {
+              "name": "Claude",
+              "email": "noreply@anthropic.com",
+              "time": 1793387661000
+            },
+            "branch": "feat/earliest-booking-day"
+          },
+          "actualWorkers": 1
+        },
+        "id": "desktop",
+        "name": "desktop",
+        "testDir": "/home/runner/work/balitrips/balitrips/e2e/full",
+        "testIgnore": [],
+        "testMatch": [
+          "/(public|studio)-.*\\.spec\\.ts/"
+        ],
+        "timeout": 180000
+      },
+      {
+        "outputDir": "/home/runner/work/balitrips/balitrips/full-test-out/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "ci": {
+            "commitHref": "https://github.com/fares341/balitrips/commit/49cb655bf246751ff993cb4454d506639e96abf8",
+            "commitHash": "49cb655bf246751ff993cb4454d506639e96abf8",
+            "buildHref": "https://github.com/fares341/balitrips/actions/runs/41113604420"
+          },
+          "gitCommit": {
+            "shortHash": "49cb655",
+            "hash": "49cb655bf246751ff993cb4454d506639e96abf8",
+            "subject": "test(e2e): reach the server check for invalid days",
+            "body": "test(e2e): reach the server check for invalid days\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01Rhcg1nc6tRTvhEFMLi883G\n",
+            "author": {
+              "name": "Claude",
+              "email": "noreply@anthropic.com",
+              "time": 1793387661000
+            },
+            "committer": {
+              "name": "Claude",
+              "email": "noreply@anthropic.com",
+              "time": 1793387661000
+            },
+            "branch": "feat/earliest-booking-day"
+          },
+          "actualWorkers": 1
+        },
+        "id": "mobile",
+        "name": "mobile",
+        "testDir": "/home/runner/work/balitrips/balitrips/e2e/full",
+        "testIgnore": [],
+        "testMatch": [
+          "/public-.*\\.spec\\.ts/"
+        ],
+        "timeout": 180000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "../../full-test-out/report.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "../../full-test-out/html",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "studio-activity-lead.spec.ts",
+      "file": "studio-activity-lead.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Studio: set the earliest booking day to «after 2 days»",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3071,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:16:58.423Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ca777b99b937da33e7f3-c30d1146b633c7580f5b",
+          "file": "studio-activity-lead.spec.ts",
+          "line": 96,
+          "column": 5
+        },
+        {
+          "title": "calendar disables today and tomorrow, and names the earliest day",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8119,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:17:05.624Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ca777b99b937da33e7f3-f1e3540c0ee529556d2e",
+          "file": "studio-activity-lead.spec.ts",
+          "line": 135,
+          "column": 5
+        },
+        {
+          "title": "the server refuses a forged date before the earliest day",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10482,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:17:13.755Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ca777b99b937da33e7f3-8f7be8703c918f5c3c5d",
+          "file": "studio-activity-lead.spec.ts",
+          "line": 158,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "studio-activity-new.spec.ts",
+      "file": "studio-activity-new.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "new activity: basic fields valid / empty / invalid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5878,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:17:24.293Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3f9f049c3256e7de2028-7f4fb6051e1dbccc7632",
+          "file": "studio-activity-new.spec.ts",
+          "line": 127,
+          "column": 5
+        },
+        {
+          "title": "new activity: every tab filled, saved, reloaded, persisted",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 34661,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:17:36.650Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3f9f049c3256e7de2028-4d7fb20555f86a3fc678",
+          "file": "studio-activity-new.spec.ts",
+          "line": 213,
+          "column": 5
+        },
+        {
+          "title": "edit, publish / unpublish, duplicate, preview",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 37676,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:18:11.321Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3f9f049c3256e7de2028-4ea6c146cbb7eedd3793",
+          "file": "studio-activity-new.spec.ts",
+          "line": 615,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "studio-activity-sheet.spec.ts",
+      "file": "studio-activity-sheet.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "template downloads (.xlsx and .csv) with sheets, key row and dropdowns",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4392,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:18:49.247Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6fdbac2bb1174f0d4ec7-16c0e8754c215b93c397",
+          "file": "studio-activity-sheet.spec.ts",
+          "line": 95,
+          "column": 5
+        },
+        {
+          "title": "export → import unchanged = zero changes (xlsx and csv)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3791,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:18:57.457Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6fdbac2bb1174f0d4ec7-ccb214e22010543665a1",
+          "file": "studio-activity-sheet.spec.ts",
+          "line": 158,
+          "column": 5
+        },
+        {
+          "title": "edited export → expected updates, applied, idempotent",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4973,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:19:01.259Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6fdbac2bb1174f0d4ec7-5b0adda40a82b49aba60",
+          "file": "studio-activity-sheet.spec.ts",
+          "line": 214,
+          "column": 5
+        },
+        {
+          "title": "bad rows → clear errors per row, nothing applied",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 180000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "desktop",
+              "projectName": "desktop",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2127,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-30T19:19:06.242Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "6fdbac2bb1174f0d4ec7-a65082034172cb98e7a6",
+          "file": "studio-activity-sheet.spec.ts",
+          "line": 334,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-30T19:16:57.798Z",
+    "duration": 130801.078,
+    "expected": 10,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,0 +1,15 @@
+
+Running 10 tests using 1 worker
+
+  ✓   1 [desktop] › e2e/full/studio-activity-lead.spec.ts:96:5 › Studio: set the earliest booking day to «after 2 days» (3.1s)
+  ✓   2 [desktop] › e2e/full/studio-activity-lead.spec.ts:135:5 › calendar disables today and tomorrow, and names the earliest day (8.1s)
+  ✓   3 [desktop] › e2e/full/studio-activity-lead.spec.ts:158:5 › the server refuses a forged date before the earliest day (10.5s)
+  ✓   4 [desktop] › e2e/full/studio-activity-new.spec.ts:127:5 › new activity: basic fields valid / empty / invalid (5.9s)
+  ✓   5 [desktop] › e2e/full/studio-activity-new.spec.ts:213:5 › new activity: every tab filled, saved, reloaded, persisted (34.7s)
+  ✓   6 [desktop] › e2e/full/studio-activity-new.spec.ts:615:5 › edit, publish / unpublish, duplicate, preview (37.7s)
+  ✓   7 [desktop] › e2e/full/studio-activity-sheet.spec.ts:95:5 › template downloads (.xlsx and .csv) with sheets, key row and dropdowns (4.4s)
+  ✓   8 [desktop] › e2e/full/studio-activity-sheet.spec.ts:158:5 › export → import unchanged = zero changes (xlsx and csv) (3.8s)
+  ✓   9 [desktop] › e2e/full/studio-activity-sheet.spec.ts:214:5 › edited export → expected updates, applied, idempotent (5.0s)
+  ✓  10 [desktop] › e2e/full/studio-activity-sheet.spec.ts:334:5 › bad rows → clear errors per row, nothing applied (2.1s)
+
+  10 passed (2.2m)
