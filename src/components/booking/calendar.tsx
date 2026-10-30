@@ -139,6 +139,7 @@ export function Calendar(props: CalendarProps) {
           key={day}
           type="button"
           className={cls}
+          data-date={day}
           disabled={disabled(day)}
           aria-pressed={day === a || day === b}
           aria-label={`${longFmt.format(new Date(Date.UTC(yy, mm, dd)))}${un ? ` — ${t('act_cal_unavailable')}` : ''}`}

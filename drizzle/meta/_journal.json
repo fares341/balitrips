@@ -260,6 +260,13 @@
       "when": 1793700900000,
       "tag": "0036_owner_ops_operators",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793701000000,
+      "tag": "0037_activity_booking_window",
+      "breakpoints": true
     }
   ]
 }
