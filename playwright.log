@@ -1,0 +1,12 @@
+
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/purchase.spec.ts:88:5 › itinerary: choose audience, buy, pay, download the PDF (7.8s)
+  ✓  2 [chromium] › e2e/purchase.spec.ts:131:5 › activity package: choose, date, time, pay, confirmation (7.1s)
+  ✓  3 [chromium] › e2e/purchase.spec.ts:154:5 › package: request with date, travellers and vehicle (4.2s)
+  ✓  4 [mobile-chrome] › e2e/purchase.spec.ts:88:5 › itinerary: choose audience, buy, pay, download the PDF (13.0s)
+  ✓  5 [mobile-chrome] › e2e/purchase.spec.ts:131:5 › activity package: choose, date, time, pay, confirmation (17.4s)
+  ✓  6 [mobile-chrome] › e2e/purchase.spec.ts:154:5 › package: request with date, travellers and vehicle (6.2s)
+::notice title=🎭 Playwright Run Summary::  6 passed (56.6s)
+
+  6 passed (56.6s)
