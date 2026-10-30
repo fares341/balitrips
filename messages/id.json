@@ -348,6 +348,7 @@
   "act_err_date": "Pilih tanggal untuk melanjutkan.",
   "act_err_driver_full": "Tidak ada sopir tersedia pada tanggal ini. Matikan sopir atau pilih tanggal lain.",
   "act_err_included": "Pilih waktu untuk setiap aktivitas dalam paket.",
+  "act_earliest": "Tanggal tersedia paling awal: {date}",
   "act_err_lead": "Waktu mulai ini terlalu dekat untuk dipesan. Pilih waktu atau tanggal lain.",
   "act_err_package": "Paket ini tidak dapat dipesan saat ini. Pilih yang lain.",
   "act_err_past": "Tanggal itu sudah lewat. Pilih yang lain.",

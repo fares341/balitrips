@@ -813,6 +813,8 @@ export async function getActivityBySlug(
     cancellationPolicy: row.activity.cancellationPolicy,
     timeSlots: Array.isArray(row.activity.timeSlots) ? row.activity.timeSlots : [],
     leadTimeHours: row.activity.leadTimeHours,
+    minAdvanceDays: row.activity.minAdvanceDays,
+    bookingCutoff: row.activity.bookingCutoff,
     maxGuests: row.activity.maxGuests,
     multiDay: row.activity.multiDay,
     location: await regionCenter(row.region),

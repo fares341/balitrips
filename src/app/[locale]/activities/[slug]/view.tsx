@@ -104,6 +104,8 @@ export async function ActivityView({
     maxGuests: activity.maxGuests,
     minGuests: activity.minGuests,
     leadTimeHours: activity.leadTimeHours,
+    minAdvanceDays: activity.minAdvanceDays,
+    bookingCutoff: activity.bookingCutoff,
     timeSlots,
     multiDay: activity.multiDay,
     packages: activity.tiers.map((tier) => ({

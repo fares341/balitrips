@@ -104,6 +104,102 @@ export function isWithinLeadTime(
   return slotMs - now.getTime() >= leadTimeHours * 3_600_000
 }
 
+/**
+ * «أقرب موعد للحجز» — how far ahead an activity must be booked, on Bali's
+ * calendar (owner request, migration 0037).
+ *
+ * - `minAdvanceDays` null: the legacy rule — only `leadTimeHours` before the
+ *   slot. 0 = same day, 1 = from tomorrow, 2 = from the day after, N = N days.
+ * - `bookingCutoff` 'HH:MM' Bali time: once it has passed today, the earliest
+ *   day moves one day later ("bookings for tomorrow close at 18:00").
+ * - `leadTimeHours` is still applied on top (hours before the slot).
+ * - `supplierLeadTimeHours`, when given, is the stricter of the two hour rules.
+ */
+export interface BookingWindow {
+  leadTimeHours: number
+  minAdvanceDays?: number | null
+  bookingCutoff?: string | null
+  supplierLeadTimeHours?: number | null
+}
+
+/** Bali wall-clock 'HH:MM' for an instant. */
+export function timeInBali(now: Date = new Date()): string {
+  const shifted = new Date(now.getTime() + BALI_UTC_OFFSET_HOURS * 3_600_000)
+  return shifted.toISOString().slice(11, 16)
+}
+
+/** A plain date plus N calendar days (month and year ends handled by UTC). */
+export function addDays(date: string, days: number): string {
+  const [y, m, d] = splitDate(date)
+  return new Date(Date.UTC(y, m, d + days)).toISOString().slice(0, 10)
+}
+
+export function isValidCutoff(value: string | null | undefined): value is string {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+}
+
+/** The first Bali calendar date the day rule allows (ignores the hour rule). */
+export function earliestBookableDate(window: BookingWindow, now: Date = new Date()): string {
+  const today = todayInBali(now)
+  const days =
+    typeof window.minAdvanceDays === 'number' && window.minAdvanceDays > 0
+      ? Math.floor(window.minAdvanceDays)
+      : 0
+  let earliest = addDays(today, days)
+  if (window.minAdvanceDays != null && isValidCutoff(window.bookingCutoff)) {
+    if (timeInBali(now) >= window.bookingCutoff) earliest = addDays(earliest, 1)
+  }
+  return earliest
+}
+
+/** The hours-before-slot rule actually in force: the stricter of activity and supplier. */
+export function effectiveLeadHours(window: BookingWindow): number {
+  return Math.max(0, window.leadTimeHours ?? 0, window.supplierLeadTimeHours ?? 0)
+}
+
+/**
+ * Whether a date (and slot, '00:00' when none) is bookable now: on or after
+ * the earliest day AND outside the hours notice. Used by the calendar and
+ * re-checked on the server by the quote, so a forged earlier date is refused.
+ */
+export function isBookableAt(
+  travelDate: string,
+  travelTime: string | null | undefined,
+  window: BookingWindow,
+  now: Date = new Date(),
+): boolean {
+  if (!isPlainDate(travelDate)) return false
+  if (travelDate < earliestBookableDate(window, now)) return false
+  return isWithinLeadTime(travelDate, travelTime ?? '00:00', effectiveLeadHours(window), now)
+}
+
+/** The Studio's «أقرب موعد للحجز» choices, mapped to `min_advance_days`. */
+export type AdvanceMode = 'same_day' | 'tomorrow' | 'day_after' | 'days'
+export const ADVANCE_MODES: readonly AdvanceMode[] = ['same_day', 'tomorrow', 'day_after', 'days']
+
+export function advanceModeOf(minAdvanceDays: number | null | undefined): AdvanceMode {
+  if (minAdvanceDays == null || minAdvanceDays <= 0) return 'same_day'
+  if (minAdvanceDays === 1) return 'tomorrow'
+  if (minAdvanceDays === 2) return 'day_after'
+  return 'days'
+}
+
+/** Days for a mode; `days` takes the owner's number (1..365). Null = invalid. */
+export function advanceDaysFor(mode: string, days: number | null): number | null {
+  switch (mode) {
+    case 'same_day':
+      return 0
+    case 'tomorrow':
+      return 1
+    case 'day_after':
+      return 2
+    case 'days':
+      return days !== null && Number.isInteger(days) && days >= 1 && days <= 365 ? days : null
+    default:
+      return null
+  }
+}
+
 function isPlainDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value)
 }
