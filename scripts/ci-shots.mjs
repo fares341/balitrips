@@ -564,6 +564,12 @@ if (onlyFlow.length === 0 || onlyFlow.includes('mapv2')) {
         await page.waitForTimeout(12000)
         await shot('3-results')
         log.push(
+          `${tag}: zoom ${await page
+            .locator('.mx-canvas')
+            .getAttribute('data-zoom')
+            .catch(() => null)}`,
+        )
+        log.push(
           `${tag}: url ${page.url()} pins ${await page.locator('.mx-pin').count()} clusters ${await page.locator('.mx-cluster').count()} card ${await page.locator('.mx-card').count()} overflow ${await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)}`,
         )
         const pin = page.locator('.mx-pin:not(.is-on)').first()

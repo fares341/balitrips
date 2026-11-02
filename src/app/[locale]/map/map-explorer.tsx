@@ -975,9 +975,19 @@ function Paywall({
 }
 
 function Thumb({ src, icon, color }: { src: string | null; icon: IconName; color?: string }) {
-  if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className="mx-thumb" src={src} alt="" loading="lazy" decoding="async" />
+  const [broken, setBroken] = useState(false)
+  if (src && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className="mx-thumb"
+        src={src}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(true)}
+      />
+    )
   }
   return (
     <span className="mx-thumb is-ph" style={{ '--c': color ?? '#2E5E4E' } as CSSProperties}>
@@ -1036,6 +1046,9 @@ function PlaceCard({
               alt={index === 0 ? place.name : ''}
               loading={index === 0 ? 'eager' : 'lazy'}
               decoding="async"
+              onError={(event) => {
+                event.currentTarget.style.visibility = 'hidden'
+              }}
             />
           ))
         )}
@@ -1183,6 +1196,7 @@ function ResultsMap({
   const mapRef = useRef<MapLike | null>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [loads, setLoads] = useState(0)
   const [pins, setPins] = useState<PinPos[]>([])
   const [me, setMe] = useState<{ x: number; y: number } | null>(null)
   const frame = useRef(0)
@@ -1208,6 +1222,7 @@ function ResultsMap({
         : clusterPoints(points, radius, sel)
     setPins(clusters.map((c) => ({ ...c, key: c.ids.join('-') })))
     setMe(pos ? map.project([pos.lon, pos.lat]) : null)
+    box.current?.setAttribute('data-zoom', map.getZoom().toFixed(2))
   }, [])
 
   const schedule = useCallback(() => {
@@ -1228,6 +1243,10 @@ function ResultsMap({
         // Camera moves need no loaded style: frame the results right away.
         map.resize()
         setReady(true)
+        // …and once more when the style is in (the canvas has its final size).
+        map.once('load', () => {
+          if (live) setLoads((n) => n + 1)
+        })
       })
       .catch(() => {
         if (live) setFailed(true)
@@ -1247,6 +1266,7 @@ function ResultsMap({
     if (!ready || !map) return
     const bounds = boundsOf(places)
     if (bounds) {
+      map.resize()
       map.fitBounds(bounds, {
         padding: desk
           ? { top: 90, bottom: 60, left: 60, right: 60 }
@@ -1257,7 +1277,7 @@ function ResultsMap({
     }
     schedule()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, placesKey, desk])
+  }, [ready, loads, placesKey, desk])
 
   useEffect(() => {
     schedule()

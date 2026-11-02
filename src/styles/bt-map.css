@@ -1789,6 +1789,9 @@
   text-align: center;
   font-weight: 700;
 }
+.mx-col > * {
+  flex-shrink: 0;
+}
 .mx-col {
   grid-column: 3;
   overflow-y: auto;
