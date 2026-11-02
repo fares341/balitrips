@@ -1,0 +1,404 @@
+/*
+ * Policies centre — the owner's policies-ar.html stylesheet, scoped.
+ * Colours, radii, cards, TOC and tables as in the source; the file's own
+ * header, language link and footer are dropped (the site layout has them).
+ */
+
+.page {
+  --green: #0e5b47;
+  --green-2: #13785e;
+  --green-soft: #e7f2ee;
+  --orange: #e8833a;
+  --orange-soft: #fdf0e6;
+  --ink: #14211d;
+  --muted: #5e6b67;
+  --line: #e3e8e6;
+  --bg: #fafaf7;
+  --card: #fff;
+  --r: 16px;
+  --toc-top: calc(var(--sticky-top, 86px) + 8px);
+
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    16px/1.85 var(--font-arabic),
+    var(--font-latin),
+    system-ui,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page * {
+  box-sizing: border-box;
+}
+
+.page a {
+  color: var(--green-2);
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--green) 0%, #0a4334 100%);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: auto auto -60% -10%;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 131, 58, 0.35), transparent 65%);
+}
+
+.in {
+  max-width: 1200px;
+  margin: auto;
+  padding: 56px 20px 64px;
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd7b8;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+.hero h1 {
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.25;
+  margin: 14px 0 12px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.hero p {
+  max-width: 720px;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+}
+
+.meta {
+  margin-top: 18px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.wrap {
+  max-width: 1200px;
+  margin: auto;
+  padding: 32px 20px 80px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 40px;
+  align-items: start;
+}
+
+.toc {
+  position: sticky;
+  top: var(--toc-top);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 14px;
+}
+
+.toc h2 {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 10px 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.85;
+}
+
+.toc a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.toc a:hover {
+  background: var(--green-soft);
+}
+
+.toc a[data-on] {
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 700;
+}
+
+.toc svg,
+.sec-h svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toc svg {
+  color: var(--green-2);
+}
+
+.content {
+  min-width: 0;
+}
+
+.content section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 36px 40px;
+  margin-bottom: 24px;
+  scroll-margin-top: calc(var(--toc-top) + 4px);
+}
+
+.sec-h {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.ic {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--orange-soft);
+  color: var(--orange);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.ic svg {
+  width: 24px;
+  height: 24px;
+}
+
+.content h2 {
+  font-size: clamp(22px, 3vw, 28px);
+  margin: 0;
+  line-height: 1.35;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.content h3 {
+  font-size: 18px;
+  margin: 30px 0 8px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.content p {
+  margin: 0 0 12px;
+}
+
+.content ul,
+.content ol {
+  padding-inline-start: 22px;
+  margin: 0 0 14px;
+}
+
+.content ul {
+  list-style: disc;
+}
+
+.content ol {
+  list-style: arabic-indic;
+}
+
+.content li {
+  margin: 4px 0;
+}
+
+.content li::marker {
+  color: var(--green-2);
+  font-weight: 700;
+}
+
+.content strong {
+  font-weight: 800;
+}
+
+.tbl {
+  overflow-x: auto;
+  margin: 10px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.tbl table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.tbl th,
+.tbl td {
+  padding: 12px 16px;
+  text-align: start;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.tbl th {
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 800;
+}
+
+.tbl tr:last-child td {
+  border-bottom: 0;
+}
+
+.totop {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted) !important;
+  text-decoration: none;
+}
+
+.cookieBtn {
+  display: inline-block;
+  margin-top: 4px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid #cfe5dc;
+  border-radius: 999px;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+
+.cta {
+  background: var(--green-soft);
+  border: 1px solid #cfe5dc;
+  border-radius: var(--r);
+  padding: 26px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cta strong {
+  font-size: 18px;
+  color: var(--green);
+}
+
+.cta a {
+  background: var(--orange);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 12px 24px;
+  border-radius: 999px;
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding-top: 0;
+  }
+
+  .toc {
+    top: var(--sticky-top, 61px);
+    z-index: 10;
+    border-radius: 0;
+    border-inline: 0;
+    margin: 0 -20px;
+    padding: 10px 14px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .toc::-webkit-scrollbar {
+    display: none;
+  }
+
+  .toc h2 {
+    display: none;
+  }
+
+  .toc a {
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13.5px;
+  }
+
+  .toc a svg {
+    display: none;
+  }
+
+  .content section {
+    padding: 26px 20px;
+    scroll-margin-top: calc(var(--sticky-top, 61px) + 64px);
+  }
+
+  .in {
+    padding: 40px 20px 46px;
+  }
+}
+
+@media print {
+  .toc,
+  .totop,
+  .cta,
+  .cookieBtn {
+    display: none;
+  }
+
+  .wrap {
+    display: block;
+  }
+
+  .content section {
+    border: 0;
+    padding: 0;
+    break-inside: auto;
+  }
+
+  .hero {
+    background: none;
+    color: #000;
+  }
+
+  .hero h1 {
+    color: #000;
+  }
+
+  .hero p,
+  .meta {
+    color: #333;
+  }
+}

@@ -11,6 +11,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Breadcrumbs, LinkButton } from '@/components/bt'
+import { policyLink } from '@/components/layout/routes'
 import { Icon, type IconName } from '@/components/ui'
 import { locales } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
@@ -87,7 +88,7 @@ export default async function HelpPage({ params }: PageProps) {
           <ul className="hp-topics" role="list">
             {TOPICS.map((topic) => (
               <li key={topic.key}>
-                <Link href={topic.href}>
+                <Link href={policyLink(topic.href, locale)}>
                   <span className="ic" aria-hidden="true">
                     <Icon name={topic.icon} size={22} />
                   </span>

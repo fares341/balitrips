@@ -168,3 +168,28 @@ export const CART_COUNT_COOKIE = 'bt_cart_count'
 
 /** Dispatch on `window` after a cart mutation to refresh the badge. */
 export const CART_CHANGED_EVENT = 'bt:cart-changed'
+
+// ---------------------------------------------------------------------------
+// Policies centre
+// ---------------------------------------------------------------------------
+
+/** The consolidated policies page (owner's document, Nov 2026; Arabic only). */
+export const POLICIES_HREF = '/policies'
+
+/** Old per-policy routes → their section in the policies centre. */
+export const POLICY_ANCHORS: Readonly<Record<string, string>> = {
+  '/terms': '/policies#terms',
+  '/privacy': '/policies#privacy',
+  '/refund': '/policies#cancellation',
+  '/payment-policy': '/policies#payment',
+  '/cookies': '/policies#cookies',
+}
+
+/**
+ * Where a policy link should point for `locale`. Arabic uses the policies
+ * centre's anchors; en/id keep their translated per-policy pages until the
+ * centre is translated. Keep in step with the redirects in next.config.ts.
+ */
+export function policyLink(href: string, locale: string): string {
+  return locale === 'ar' ? (POLICY_ANCHORS[href] ?? href) : href
+}

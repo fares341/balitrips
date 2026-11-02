@@ -16,7 +16,7 @@
  * No 'use client'.
  */
 
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { Icon, Logo, type IconName } from '@/components/ui'
 import { Link } from '@/i18n/routing'
@@ -25,7 +25,13 @@ import { whatsappHref } from './contact-config'
 import { getContact } from './contact-server'
 import { withoutHidden } from '@/lib/content/public-sections'
 
-import { FOOTER_QUICK_ROUTES, INFO_ROUTES, POLICY_ROUTES } from './routes'
+import {
+  FOOTER_QUICK_ROUTES,
+  INFO_ROUTES,
+  POLICIES_HREF,
+  POLICY_ROUTES,
+  policyLink,
+} from './routes'
 
 /** What Stripe Checkout accepts on this account — see /payment-methods. */
 const PAYMENT_METHODS = ['VISA', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay']
@@ -38,6 +44,7 @@ const SOCIAL_LINKS: { label: string; icon: IconName; href: string | undefined }[
 
 export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = await getTranslations()
+  const locale = await getLocale()
   const year = new Date().getFullYear()
   const contact = await getContact()
   const wa = whatsappHref(contact.whatsappDigits)
@@ -93,9 +100,12 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
             <ul>
               {/* L14: one cookie entry — "Cookie preferences" opens /cookies,
                   whose button reopens the consent panel. */}
+              <li>
+                <Link href={POLICIES_HREF}>{t('ft_p_center')}</Link>
+              </li>
               {POLICY_ROUTES.map((route) => (
                 <li key={route.href}>
-                  <Link href={route.href}>{t(route.key)}</Link>
+                  <Link href={policyLink(route.href, locale)}>{t(route.key)}</Link>
                 </li>
               ))}
             </ul>
