@@ -414,15 +414,15 @@ test.describe('booking and checkout', () => {
     const [act] = await db()<{ id: string }[]>`
       insert into activities
       select (jsonb_populate_record(null::activities, to_jsonb(a)
-        || jsonb_build_object('id', gen_random_uuid(), 'slug', ${slug}))).*
-      from activities a where a.id = ${src.id} returning id`
+        || jsonb_build_object('id', gen_random_uuid(), 'slug', ${slug}::text))).*
+      from activities a where a.id = ${src.id}::uuid returning id`
     const tiers = await db()<{ id: string; sort_order: number }[]>`
       insert into activity_tiers
       select (jsonb_populate_record(null::activity_tiers, to_jsonb(t)
         || jsonb_build_object('id', gen_random_uuid(), 'activity_id', ${act!.id}::uuid,
           'includes_addons', '[]'::jsonb))).*
       from activity_tiers t
-      where t.activity_id = ${src.id} and t.deleted_at is null and t.available
+      where t.activity_id = ${src.id}::uuid and t.deleted_at is null and t.available
       order by t.sort_order limit 2 returning id, sort_order`
     const [t0, t1] = [...tiers].sort((x, y) => x.sort_order - y.sort_order)
     const name = `E2E banana boat ${Date.now()}`
