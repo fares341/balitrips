@@ -1114,7 +1114,7 @@ function MapTools({
 }) {
   const t = useTranslations()
   return (
-    <div className="mx-tools">
+    <div className={view === 'list' ? 'mx-tools is-list' : 'mx-tools'}>
       {view !== null && (
         <button
           type="button"
@@ -1125,9 +1125,11 @@ function MapTools({
           {view === 'map' ? t('mx_list') : t('mx_map')}
         </button>
       )}
-      <button type="button" className="mx-tool" aria-label={t('mx_locate')} onClick={onLocate}>
-        <Icon name="locate" size={20} />
-      </button>
+      {view !== 'list' && (
+        <button type="button" className="mx-tool" aria-label={t('mx_locate')} onClick={onLocate}>
+          <Icon name="locate" size={20} />
+        </button>
+      )}
       {locateError && (
         <p className="mx-toast" role="alert">
           {t('mx_locate_err')}
@@ -1223,9 +1225,9 @@ function ResultsMap({
         mapRef.current = map
         map.on('move', schedule)
         map.on('resize', schedule)
-        map.once('load', () => {
-          if (live) setReady(true)
-        })
+        // Camera moves need no loaded style: frame the results right away.
+        map.resize()
+        setReady(true)
       })
       .catch(() => {
         if (live) setFailed(true)
