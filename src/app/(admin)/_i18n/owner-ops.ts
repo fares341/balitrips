@@ -126,6 +126,10 @@ const section: Section = {
     'oo.r_public_note':
       'Empty sections hide themselves on the site (packages, blog, empty guide cards and areas) and come back on their own once content is published.',
     'oo.r_places_title': 'Places without photos ({n})',
+    'oo.r_photos3':
+      '{n} of {total} published places have fewer than 3 photos (the map card shows 3)',
+    'oo.r_places3_title': 'Places with fewer than 3 photos ({n})',
+    'oo.r_photo_n': '{n, plural, one {# photo} other {# photos}}',
     'oo.r_act_title': 'Activities with gaps ({n})',
     'oo.r_it_title': 'Itineraries without level prices ({n})',
     'oo.r_it_gap': 'Economy / mid / luxury prices empty',
@@ -314,6 +318,9 @@ const section: Section = {
     'oo.r_public_note':
       'الأقسام الفارغة تختفي من الموقع تلقائيًا (الباقات والمدونة وبطاقات الدليل والمناطق الفارغة) وتعود وحدها عند نشر المحتوى.',
     'oo.r_places_title': 'أماكن بلا صور ({n})',
+    'oo.r_photos3': '{n} من {total} مكانًا منشورًا فيه أقل من 3 صور (بطاقة الخريطة تعرض 3)',
+    'oo.r_places3_title': 'أماكن فيها أقل من 3 صور ({n})',
+    'oo.r_photo_n': '{n} صورة',
     'oo.r_act_title': 'أنشطة ينقصها شيء ({n})',
     'oo.r_it_title': 'جداول بلا أسعار المستويات ({n})',
     'oo.r_it_gap': 'أسعار الاقتصادي/المتوسط/الفاخر فارغة',

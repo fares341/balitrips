@@ -30,6 +30,12 @@ export default async function ReadinessPage() {
       href: '#places',
     },
     {
+      key: 'photos3',
+      ok: data.placesFewPhotos.length === 0,
+      text: t('oo.r_photos3', { n: data.placesFewPhotos.length, total: data.placesTotal }),
+      href: '#places3',
+    },
+    {
       key: 'activities',
       ok: data.activityGaps.length === 0,
       text: t('oo.r_activities', { n: data.activityGaps.length, total: data.activitiesTotal }),
@@ -138,6 +144,30 @@ export default async function ReadinessPage() {
         )}
         {data.placesNoPhoto.length > SHOW ? (
           <p className="a-hint">{t('oo.r_more', { n: data.placesNoPhoto.length - SHOW })}</p>
+        ) : null}
+      </section>
+
+      <section className="a-card" id="places3" aria-labelledby="r-places3">
+        <h2 id="r-places3">{t('oo.r_places3_title', { n: data.placesFewPhotos.length })}</h2>
+        {data.placesFewPhotos.length === 0 ? (
+          <p className="a-hint">{t('oo.r_none_left')}</p>
+        ) : (
+          <ul className="a-ready-items">
+            {data.placesFewPhotos.slice(0, SHOW).map((place) => {
+              const href = link(`/places/${place.id}`)
+              return (
+                <li key={place.id}>
+                  {href ? <Link href={href}>{place.name}</Link> : <span>{place.name}</span>}
+                  <span className="a-muted">
+                    {place.area} · {t('oo.r_photo_n', { n: place.photos })}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {data.placesFewPhotos.length > SHOW ? (
+          <p className="a-hint">{t('oo.r_more', { n: data.placesFewPhotos.length - SHOW })}</p>
         ) : null}
       </section>
 

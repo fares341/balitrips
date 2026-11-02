@@ -1,5 +1,6 @@
 import { asc } from 'drizzle-orm'
 
+import { defaultCategoryStyle } from '@/lib/map/explore'
 import { db } from '@/db'
 import { articleCategories, categories, regions, tags } from '@/db/schema'
 
@@ -43,6 +44,7 @@ interface TaxonomyRow {
   radiusKm?: number | null
   mapTier?: string | null
   mapOrder?: number
+  mapColor?: string | null
   imageId?: string | null
 }
 
@@ -72,6 +74,7 @@ export default async function TaxonomyPage({
         status: categories.status,
         mapTier: categories.mapTier,
         mapOrder: categories.mapOrder,
+        mapColor: categories.mapColor,
         imageId: categories.imageId,
       })
       .from(categories)
@@ -212,6 +215,23 @@ function ExtraFields({
                 inputMode="numeric"
                 defaultValue={String(row?.mapOrder ?? 0)}
               />
+            </div>
+            <div className="a-field">
+              <label htmlFor={`${idPrefix}-mcolor`}>{t('taxonomy.map_color')}</label>
+              <input
+                className="a-input"
+                id={`${idPrefix}-mcolor`}
+                name="mapColor"
+                type="color"
+                defaultValue={
+                  row?.mapColor ?? (row?.key ? defaultCategoryStyle(row.key).color : '#2e5e4e')
+                }
+                aria-describedby={`${idPrefix}-mcolor-hint`}
+                style={{ maxWidth: 120, minHeight: 44 }}
+              />
+              <p className="a-hint" id={`${idPrefix}-mcolor-hint`}>
+                {t('taxonomy.map_color_hint')}
+              </p>
             </div>
             <div className="a-field">
               <label htmlFor={`${idPrefix}-image`}>{t('sr.category_image')}</label>

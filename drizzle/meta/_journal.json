@@ -267,6 +267,13 @@
       "when": 1793701000000,
       "tag": "0037_activity_booking_window",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1793701100000,
+      "tag": "0038_map_category_style",
+      "breakpoints": true
     }
   ]
 }

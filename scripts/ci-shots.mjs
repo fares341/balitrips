@@ -10,15 +10,12 @@ mkdirSync(OUT, { recursive: true })
 const pages = [
   ['home', '/ar', 0],
   ['home', '/en', 0],
-  ['map', '/ar/map', 14000],
-  ['map', '/en/map', 14000],
-  ['mapdbg', '/en/map?debugmap=1', 14000],
-  // Client, Oct 2026: a category opened on its own (the free guide's hospitals card).
-  ['mapcat', '/ar/map?cat=hospital', 14000],
-  ['mapcat', '/en/map?cat=hospital', 14000],
-  // The CI seed has no hospitals: the same view on a category that has places.
-  ['mapcat2', '/ar/map?cat=beaches', 14000],
-  ['mapcat2', '/en/map?cat=sights', 14000],
+  // Map v2: step 1, and the free guide's deep link (area = all of Bali).
+  ['map', '/ar/map', 4000],
+  ['map', '/en/map', 4000],
+  ['mapcat', '/ar/map?cat=hospitals', 12000],
+  ['mapcat2', '/ar/map?cat=sights', 12000],
+  ['mapcat2', '/en/map?cat=sights', 12000],
 ]
 const sizes = [
   [1440, 900],
@@ -498,101 +495,106 @@ for (const [w, h] of [
   }
 }
 
-// Phone flow on the real map: region bubble → pin → card → details → list.
-for (const lang of ['ar', 'en']) {
-  const ctx = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-    hasTouch: true,
-  })
-  const page = await ctx.newPage()
-  const shot = (tag) =>
-    page.screenshot({ path: `${OUT}/phone-${lang}-${tag}.png`, timeout: 120000 })
-  page.on('pageerror', (e) => log.push(`phone ${lang}: pageerror ${e.message}`))
-  try {
-    await page.goto(`${BASE}/${lang}/map`, { waitUntil: 'networkidle', timeout: 60000 })
-    await page.waitForSelector('.mp-view.is-map', { timeout: 30000 }).catch(() => {})
-    // the cookie banner would hide the bottom carousel
-    await page
-      .locator('.bt-consent .bt-consent-btn.primary')
-      .last()
-      .click({ timeout: 5000 })
-      .catch(() => {})
-    await page.waitForTimeout(6000)
-    await shot('1-map')
-    const bubble = page.locator('.mp-rb').filter({ hasText: lang === 'ar' ? 'أوبود' : 'Ubud' })
-    if (await bubble.count()) {
-      await bubble.first().tap()
-      await page.waitForTimeout(5000)
-      await shot('2-region')
-    } else log.push(`phone ${lang}: no Ubud bubble`)
-    const pin = page.locator('.mp-pin:not(.is-locked) .mp-dot')
-    const n = await pin.count()
-    let tapped = false
-    for (let i = 0; i < n && !tapped; i += 1) {
-      const box = await pin.nth(i).boundingBox()
-      if (box && box.y > 160 && box.y < 600 && box.x > 20 && box.x < 330) {
-        await pin.nth(i).tap()
-        tapped = true
-      }
-    }
-    log.push(`phone ${lang}: pins ${n}, tapped ${tapped}`)
-    await page.waitForTimeout(2500)
-    await shot('3-card')
-    log.push(
-      `phone ${lang}: carousel cards ${await page.locator('.mp-ccard').count()} on=${await page
-        .locator('.mp-ccard.is-on .mp-ccard-name')
-        .textContent()
-        .catch(
-          () => null,
-        )} pinOn=${await page.locator('.mp-pin.is-on').count()} clusters=${await page.locator('.mp-cl').count()}`,
-    )
-    // swipe the carousel one card sideways: the next pin becomes the selected one
-    await page
-      .locator('.mp-car-row')
-      .evaluate((row) =>
-        row.scrollBy({ left: (row.clientWidth - 40) * (document.dir === 'rtl' ? -1 : 1) }),
-      )
-      .catch(() => {})
-    await page.waitForTimeout(2000)
-    await shot('3b-swipe')
-    log.push(
-      `phone ${lang}: after swipe on=${await page
-        .locator('.mp-ccard.is-on .mp-ccard-name')
-        .textContent()
-        .catch(() => null)}`,
-    )
-    const details = page.locator('.mp-ccard.is-on .mp-ccard-name')
-    if (await details.count()) {
-      await Promise.all([page.waitForURL(/\/places\//, { timeout: 30000 }), details.first().tap()])
-      await page.waitForTimeout(3000)
-      await page
-        .locator('.pl-mini')
-        .scrollIntoViewIfNeeded()
-        .catch(() => {})
-      await page.waitForTimeout(7000)
-      await page.screenshot({
-        path: `${OUT}/phone-${lang}-4-details.png`,
-        fullPage: true,
-        timeout: 120000,
+// Map v2 flow (owner concept, Nov 2026): step 1 → step 2 → paywall → results →
+// sheet → list, at 390 (phone) and 1440 (desktop).
+const onlyFlow = (process.env.SHOTS_ONLY ?? '').split(',').filter(Boolean)
+if (onlyFlow.length === 0 || onlyFlow.includes('mapv2')) {
+  for (const lang of ['ar', 'en']) {
+    for (const [w, h, phone] of [
+      [390, 844, true],
+      [1440, 900, false],
+    ]) {
+      const ctx = await browser.newContext({
+        viewport: { width: w, height: h },
+        deviceScaleFactor: phone ? 2 : 1,
+        isMobile: phone,
+        hasTouch: phone,
       })
-      log.push(
-        `phone ${lang}: details ${page.url()} mini=${await page.locator('.pl-mini').getAttribute('class')}`,
-      )
-      await page.goBack({ waitUntil: 'networkidle' }).catch(() => {})
-      await page.waitForTimeout(6000)
-    } else log.push(`phone ${lang}: no card / Details button`)
-    await page.locator('.mp-mtoggle button').nth(1).tap()
-    await page.waitForTimeout(1500)
-    await shot('5-list')
-    log.push(
-      `phone ${lang}: list rows ${await page.locator('.mp-side.is-list .mp-res').count()} overflow ${await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)}`,
-    )
-  } catch (e) {
-    log.push(`phone ${lang}: SCRIPT ERROR ${e.message}`)
+      const page = await ctx.newPage()
+      const tag = `mx-${lang}-${w}`
+      const shot = (name) =>
+        page.screenshot({ path: `${OUT}/${tag}-${name}.png`, timeout: 120000 }).catch((e) => {
+          log.push(`${tag} ${name}: ${e.message}`)
+        })
+      page.on('pageerror', (e) => log.push(`${tag}: pageerror ${e.message}`))
+      try {
+        await page.goto(`${BASE}/${lang}/map`, { waitUntil: 'networkidle', timeout: 60000 })
+        await page
+          .locator('.bt-consent .bt-consent-btn.primary')
+          .last()
+          .click({ timeout: 5000 })
+          .catch(() => {})
+        await page.waitForTimeout(phone ? 1500 : 6000)
+        await shot('1-area')
+        if (phone) {
+          // pick a direction, then its first area if any
+          const dirs = page.locator('.mx-achips.is-grid .mx-achip')
+          log.push(`${tag}: directions ${await dirs.count()}`)
+          if ((await dirs.count()) > 1) await dirs.nth(1).click()
+          await page.waitForTimeout(400)
+          await shot('1b-area-picked')
+          const area = page.locator('.mx-acard').first()
+          if (await area.count()) await area.click()
+          await page.locator('.mx-foot .mx-cta').click()
+          await page.waitForTimeout(800)
+        } else {
+          await page.locator('.mx-achip').first().click()
+          await page.waitForTimeout(800)
+        }
+        const free = page.locator('.mx-cat:not(.is-locked)')
+        const locked = page.locator('.mx-cat.is-locked')
+        log.push(`${tag}: free cats ${await free.count()}, locked ${await locked.count()}`)
+        for (let i = 0; i < Math.min(2, await free.count()); i += 1) await free.nth(i).click()
+        await page.waitForTimeout(phone ? 400 : 6000)
+        await shot('2-types')
+        if (await locked.count()) {
+          await locked.first().click()
+          await page.waitForTimeout(600)
+          await shot('2b-paywall')
+          await page.keyboard.press('Escape')
+          await page.waitForTimeout(300)
+        } else log.push(`${tag}: no locked category`)
+        // a fourth selection shows the inline hint
+        for (let i = 2; i < Math.min(4, await free.count()); i += 1) await free.nth(i).click()
+        await page.waitForTimeout(phone ? 400 : 4000)
+        if (await page.locator('.mx-full').count()) await shot('2c-max')
+        if (phone) {
+          await page.locator('.mx-foot .mx-cta').click()
+        }
+        await page.waitForTimeout(12000)
+        await shot('3-results')
+        log.push(
+          `${tag}: url ${page.url()} pins ${await page.locator('.mx-pin').count()} clusters ${await page.locator('.mx-cluster').count()} card ${await page.locator('.mx-card').count()} overflow ${await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)}`,
+        )
+        const pin = page.locator('.mx-pin:not(.is-on)').first()
+        if (await pin.count()) {
+          await pin.click({ force: true }).catch(() => {})
+          await page.waitForTimeout(1500)
+          await shot('3b-selected')
+        }
+        if (phone) {
+          await page.locator('.mx-pill').click()
+          await page.waitForTimeout(600)
+          await shot('4-sheet')
+          await page.keyboard.press('Escape')
+          await page.waitForTimeout(300)
+          await page.locator('.mx-tool.is-wide').click()
+          await page.waitForTimeout(800)
+          await shot('5-list')
+          await page.goBack({ waitUntil: 'networkidle' }).catch(() => {})
+          await page.waitForTimeout(1500)
+          log.push(
+            `${tag}: after back ${page.url()} h1=${await page.locator('h1').first().textContent()}`,
+          )
+          await shot('6-back')
+        }
+      } catch (e) {
+        log.push(`${tag}: SCRIPT ERROR ${e.message}`)
+        await shot('error')
+      }
+      await ctx.close()
+    }
   }
-  await ctx.close()
 }
 
 // Control: a bare MapLibre page with OpenFreeMap's own style (is WebGL rendering at all?)
