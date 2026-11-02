@@ -118,6 +118,8 @@ export const COLUMNS: Record<SheetKey, readonly ColumnSpec[]> = {
     c('min_guests', 'int', 'أقل عدد أشخاص'),
     c('max_guests', 'int', 'أكبر عدد أشخاص'),
     c('lead_time_hours', 'int', 'الحجز قبل (ساعات)'),
+    c('min_advance_days', 'int', 'أقرب موعد للحجز: بعد كم يوم (0 نفس اليوم، 1 الغد، 2 بعد الغد)'),
+    c('booking_cutoff', 'times', 'آخر وقت للحجز يومياً بتوقيت بالي مثل 18:00'),
     c('time_slots', 'times', 'الأوقات المتاحة (|) مثل 08:00'),
     c('meeting_ar', 'text', 'نقطة اللقاء بالعربية'),
     c('meeting_en', 'text', 'نقطة اللقاء بالإنجليزية'),

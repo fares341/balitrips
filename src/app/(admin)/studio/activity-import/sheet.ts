@@ -161,6 +161,8 @@ function activityRecord(
     min_guests: num(row.minGuests),
     max_guests: num(row.maxGuests),
     lead_time_hours: num(row.leadTimeHours),
+    min_advance_days: num(row.minAdvanceDays),
+    booking_cutoff: row.bookingCutoff ?? '',
     time_slots: joinList([...(row.timeSlots ?? [])].sort()),
     map_url: row.meetingMapUrl ?? '',
     lat: num(row.meetingLat),
@@ -846,6 +848,13 @@ async function applyActivity(
   if (touched('min_guests')) patch.minGuests = intOr(v.min_guests, 1) ?? 1
   if (touched('max_guests')) patch.maxGuests = intOr(v.max_guests, 20) ?? 20
   if (touched('lead_time_hours')) patch.leadTimeHours = intOr(v.lead_time_hours, 24) ?? 24
+  // «أقرب موعد للحجز»: empty = the hours rule only (as before), capped at a year.
+  if (touched('min_advance_days')) {
+    const days = intOr(v.min_advance_days, null)
+    patch.minAdvanceDays = days === null ? null : Math.min(days, 365)
+  }
+  // One cutoff time; a list keeps the earliest (the stricter close).
+  if (touched('booking_cutoff')) patch.bookingCutoff = splitList(v.booking_cutoff ?? '')[0] || null
   if (touched('time_slots')) patch.timeSlots = splitList(v.time_slots ?? '').filter(Boolean)
   if (touched('map_url')) patch.meetingMapUrl = v.map_url || null
   if (touched('lat') || touched('lng')) {

@@ -145,6 +145,13 @@ export const activities = pgTable(
      * 09:00 tour can be booked at 03:00 the same morning.
      */
     leadTimeHours: integer('lead_time_hours').notNull().default(24),
+    /**
+     * «أقرب موعد للحجز» (migration 0037): days ahead on Bali's calendar.
+     * NULL = legacy (hours rule only), 0 = same day, 1 = tomorrow, N = N days.
+     */
+    minAdvanceDays: integer('min_advance_days'),
+    /** 'HH:MM' Bali: after it today, the earliest day moves one later. */
+    bookingCutoff: varchar('booking_cutoff', { length: 5 }),
     maxGuests: integer('max_guests').notNull().default(20),
 
     /**

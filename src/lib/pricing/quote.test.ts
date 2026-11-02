@@ -114,6 +114,18 @@ describe('activity pricing', () => {
     expect(q.issues[0]?.code).toBe('invalid_time_slot')
   })
 
+  it('rejects a forged date before the earliest booking day (server-side)', () => {
+    const cat = catalog()
+    const batur = cat.activities.get('batur')
+    if (!batur) throw new Error('fixture')
+    cat.activities.set('batur', { ...batur, leadTimeHours: 0, minAdvanceDays: 2 })
+    // NOW is 08:00 on 1 Aug in Bali: "after 2 days" opens on 3 Aug; 2 Aug is forged.
+    const forged = buildQuote([item({ travelDate: '2026-08-02', travelTime: '16:30' })], cat, NOW)
+    expect(forged.issues[0]?.code).toBe('lead_time_passed')
+    const ok = buildQuote([item({ travelDate: '2026-08-03', travelTime: '09:00' })], cat, NOW)
+    expect(ok.issues).toEqual([])
+  })
+
   it('rejects a booking inside the lead time', () => {
     // 09:00 Bali on 12 Aug is 01:00Z; 22:00Z on the 11th is 3h before.
     const late = new Date('2026-08-11T22:00:00Z')

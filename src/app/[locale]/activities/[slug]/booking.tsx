@@ -31,7 +31,14 @@ import { Icon, type IconName } from '@/components/ui/icon'
 import { useContact, useWhatsappLink } from '@/components/layout/contact-context'
 import type { Locale } from '@/i18n/config'
 import { Link, useRouter } from '@/i18n/routing'
-import { isWithinLeadTime, todayInBali, type VehicleClass } from '@/lib/booking-rules'
+import {
+  addDays,
+  isBookableAt,
+  isWithinLeadTime,
+  todayInBali,
+  type BookingWindow,
+  type VehicleClass,
+} from '@/lib/booking-rules'
 import { FEATURES } from '@/lib/features'
 import { showsGroupSize } from '@/lib/content/activity-status'
 import {
@@ -143,6 +150,10 @@ export type BookingData = {
   basePriceMinor: number
   maxGuests: number
   leadTimeHours: number
+  /** «أقرب موعد للحجز» (Bali days ahead). Null = hours rule only. */
+  minAdvanceDays?: number | null
+  /** 'HH:MM' Bali; after it today, the earliest day moves one later. */
+  bookingCutoff?: string | null
   timeSlots: string[]
   multiDay: boolean
   /** Smallest party for the activity (a package may ask for more). */
@@ -269,6 +280,15 @@ function promiseFor(
     return { instant: false, hours: Math.max(1, ...facts.offers.map((o) => o.confirmWithinHours)) }
   }
   return chosen.instant ? { instant: true } : { instant: false, hours: chosen.confirmWithinHours }
+}
+
+/** The notice rules of the activity, as the server's quote applies them. */
+function bookingWindow(data: BookingData): BookingWindow {
+  return {
+    leadTimeHours: data.leadTimeHours,
+    minAdvanceDays: data.minAdvanceDays ?? null,
+    bookingCutoff: data.bookingCutoff ?? null,
+  }
 }
 
 const BookingContext = createContext<Ctx | null>(null)
@@ -708,7 +728,7 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     setDate: (value) => {
       // A slot that the lead time closes on the new day is dropped.
       const keep =
-        state.time !== null && isWithinLeadTime(value, state.time, data.leadTimeHours)
+        state.time !== null && isBookableAt(value, state.time, bookingWindow(data))
           ? state.time
           : data.timeSlots.length === 1
             ? state.time
@@ -1537,16 +1557,29 @@ export function BookingBox() {
   const fromMinor = from?.priceMinor ?? data.basePriceMinor
 
   const rules = b.rules
-  const slotOpen = (slot: string) =>
-    !state.date || isWithinLeadTime(state.date, slot, data.leadTimeHours)
+  const win = bookingWindow(data)
+  const slotOpen = (slot: string) => !state.date || isBookableAt(state.date, slot, win)
   /** Places for this departure on the chosen date (phase 2). */
   const slotPlaces = (slot: string) =>
     rules && state.date ? checkAvailability(rules, state.date, slot, state.people) : null
   const dayUnavailable = (day: string) =>
     (data.timeSlots.length > 0
-      ? data.timeSlots.every((slot) => !isWithinLeadTime(day, slot, data.leadTimeHours))
-      : !isWithinLeadTime(day, '00:00', data.leadTimeHours)) ||
+      ? data.timeSlots.every((slot) => !isBookableAt(day, slot, win))
+      : !isBookableAt(day, '00:00', win)) ||
     (rules !== null && isDayUnavailable(rules, day, data.timeSlots))
+
+  // «أقرب موعد متاح»: the first day the notice rules leave open (Bali calendar).
+  const firstOpen = (() => {
+    for (let i = 0; i < 400; i++) {
+      const day = addDays(b.today, i)
+      const open =
+        data.timeSlots.length > 0
+          ? data.timeSlots.some((slot) => isBookableAt(day, slot, win))
+          : isBookableAt(day, '00:00', win)
+      if (open) return day
+    }
+    return null
+  })()
 
   const vehicle = data.vehicles.find(
     (v) => v.vehicleClass === price.vehicleClass && v.currency === data.currency,
@@ -1670,6 +1703,11 @@ export function BookingBox() {
               invalid={Boolean(errors.date)}
             />
           )}
+          {firstOpen && firstOpen > b.today ? (
+            <p className="muted earliest-note" data-testid="earliest-note" suppressHydrationWarning>
+              {t('act_earliest', { date: fmtDate(firstOpen) })}
+            </p>
+          ) : null}
           <StepError id={`${uid}-date-err`} message={errors.date} />
         </div>
 

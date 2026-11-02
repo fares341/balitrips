@@ -3,7 +3,7 @@ import {
   daysBetweenInclusive,
   isPastInBali,
   isValidDateRange,
-  isWithinLeadTime,
+  isBookableAt,
   vehicleForPassengers,
   type VehicleClass,
 } from '@/lib/booking-rules'
@@ -94,6 +94,10 @@ export interface CatalogSnapshot {
       currency: string
       maxGuests: number
       leadTimeHours: number
+      /** «أقرب موعد للحجز» (migration 0037). Absent/null = hours rule only. */
+      minAdvanceDays?: number | null
+      /** 'HH:MM' Bali: after it, the earliest day moves one later. */
+      bookingCutoff?: string | null
       timeSlots: string[]
       /** Booked as a date range (`activities.multi_day`). Absent = single day. */
       multiDay?: boolean
@@ -777,7 +781,9 @@ function priceActivityBooking(
   }
   // No slot: the lead time counts from the start of the day, the earliest
   // the operator could be asked to turn up.
-  if (!isWithinLeadTime(item.travelDate, item.travelTime ?? '00:00', activity.leadTimeHours, now)) {
+  // The day rule («أقرب موعد للحجز», Bali calendar + cutoff) and the hours
+  // rule are both enforced here, so a date forged past the calendar is refused.
+  if (!isBookableAt(item.travelDate, item.travelTime ?? '00:00', activity, now)) {
     issues.push({ itemId: item.id, code: 'lead_time_passed' })
     return
   }
@@ -835,7 +841,7 @@ function priceActivityBooking(
     const time = toHourMinute(picked)
     if (
       !facts.timeSlots.map(toHourMinute).includes(time) ||
-      !isWithinLeadTime(travelDate, time, facts.leadTimeHours, now)
+      !isBookableAt(travelDate, time, facts, now)
     ) {
       issues.push({
         itemId: item.id,

@@ -262,6 +262,9 @@ export interface ActivityDetail extends ActivitySummary {
   /** Bookable start times as `HH:mm`. Empty means "no fixed slots". */
   timeSlots: string[]
   leadTimeHours: number
+  /** «أقرب موعد للحجز»: null = hours rule only. */
+  minAdvanceDays: number | null
+  bookingCutoff: string | null
   maxGuests: number
   gallery: MediaDto[]
   /** Published service levels in the owner's order. Empty when none are defined. */

@@ -348,6 +348,7 @@
   "act_err_date": "Choose a date to continue.",
   "act_err_driver_full": "No driver is available for these dates. Turn the driver off or pick another date.",
   "act_err_included": "Pick a time for each activity included in the package.",
+  "act_earliest": "Earliest available date: {date}",
   "act_err_lead": "This start time is too soon to book. Choose a later time or date.",
   "act_err_package": "This package can't be booked right now. Choose another.",
   "act_err_past": "That date has passed. Choose another.",

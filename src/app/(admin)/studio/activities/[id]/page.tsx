@@ -19,6 +19,7 @@ import {
 } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { activityStatus, ACTIVITY_STATUSES, isPublicStatus } from '@/lib/content/activity-status'
+import { ADVANCE_MODES, advanceModeOf } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
 import { mediaUrl } from '@/lib/content/queries'
 import { formatMoney } from '@/lib/money'
@@ -294,13 +295,44 @@ export default async function ActivityEditorPage({
 
       {activity && tab === 'booking' ? (
         <form className="a-form" action={save('booking')}>
-          <div className="a-card">
-            <h2>{t('activities.section_booking')}</h2>
+          <div className="a-card" data-testid="earliest-booking">
+            <h2>{t('lead.title')}</h2>
+            <p className="a-hint">{t('lead.intro')}</p>
+            <div className="a-row">
+              <Field label={t('lead.mode')} htmlFor="advanceMode">
+                <Select
+                  id="advanceMode"
+                  name="advanceMode"
+                  defaultValue={advanceModeOf(activity.minAdvanceDays)}
+                >
+                  {ADVANCE_MODES.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {t(`lead.mode_${mode}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('lead.days')} htmlFor="advanceDays" hint={t('lead.days_hint')}>
+                <TextInput
+                  id="advanceDays"
+                  name="advanceDays"
+                  type="number"
+                  min={1}
+                  max={365}
+                  inputMode="numeric"
+                  defaultValue={
+                    activity.minAdvanceDays != null && activity.minAdvanceDays >= 3
+                      ? String(activity.minAdvanceDays)
+                      : ''
+                  }
+                />
+              </Field>
+            </div>
             <div className="a-row">
               <Field
                 label={t('activities.f_lead_time')}
                 htmlFor="leadTimeHours"
-                hint={t('activities.f_lead_time_hint')}
+                hint={t('lead.hours_hint')}
               >
                 <TextInput
                   id="leadTimeHours"
@@ -309,6 +341,19 @@ export default async function ActivityEditorPage({
                   defaultValue={String(activity.leadTimeHours)}
                 />
               </Field>
+              <Field label={t('lead.cutoff')} htmlFor="bookingCutoff" hint={t('lead.cutoff_hint')}>
+                <TextInput
+                  id="bookingCutoff"
+                  name="bookingCutoff"
+                  type="time"
+                  defaultValue={activity.bookingCutoff ?? ''}
+                />
+              </Field>
+            </div>
+          </div>
+          <div className="a-card">
+            <h2>{t('activities.section_booking')}</h2>
+            <div className="a-row">
               <Field label={t('ae.min_guests')} htmlFor="minGuests">
                 <TextInput
                   id="minGuests"

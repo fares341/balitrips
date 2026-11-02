@@ -19,6 +19,7 @@ import {
 import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 import { can } from '@/lib/auth/roles'
 import { activityStatus, isPublicStatus } from '@/lib/content/activity-status'
+import { advanceDaysFor, isValidCutoff } from '@/lib/booking-rules'
 
 import { assertPublishable } from './checklist'
 import { parseVideoUrl } from '@/lib/content/video'
@@ -155,6 +156,16 @@ async function sectionValues(
       const minGuests = fint(form, 'minGuests', 1, t('ae.min_guests'))
       const leadTimeHours = fint(form, 'leadTimeHours', 24, t('activities.lead_time'))
       if (leadTimeHours < 0) throw new Error(t('activities.err_lead_time_negative'))
+      const advanceMode = fstr(form, 'advanceMode') ?? 'same_day'
+      const minAdvanceDays = advanceDaysFor(
+        advanceMode,
+        fintOrNull(form, 'advanceDays', t('lead.days')),
+      )
+      if (minAdvanceDays === null) throw new Error(t('lead.err_days'))
+      const bookingCutoff = fstr(form, 'bookingCutoff')
+      if (bookingCutoff !== null && !isValidCutoff(bookingCutoff)) {
+        throw new Error(t('lead.err_cutoff'))
+      }
       if (maxGuests < 1) throw new Error(t('activities.err_max_guests_min'))
       if (minGuests < 1 || minGuests > maxGuests) throw new Error(t('ae.err_min_guests'))
       const lat = ffloatOrNull(form, 'meetingLat', t('ae.meeting_lat'))
@@ -170,7 +181,10 @@ async function sectionValues(
       }
       return {
         timeSlots: normaliseTimeSlots(flines(form, 'timeSlots'), t),
+        // Day modes keep the hours as an extra notice; 0 = the day rule alone.
         leadTimeHours,
+        minAdvanceDays,
+        bookingCutoff,
         maxGuests,
         minGuests,
         multiDay: fbool(form, 'multiDay'),
