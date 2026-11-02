@@ -55,6 +55,13 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0038_map_category_style.sql
           psql "$DATABASE_URL" -c "select key, map_tier, icon, map_color from categories where map_tier is not null order by map_order"
       - run: pnpm exec tsx scripts/seed-tiers.ts
+      # The seed's free places sit in two or three types; move three of them
+      # into other free types so the «fourth type» hint can be exercised.
+      - name: Fixture (free places in more free types)
+        run: |
+          for key in malls hospital markets; do
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "update map_places set category_id = (select id from categories where key = '$key') where id = (select mp.id from map_places mp join categories c on c.id = mp.category_id where mp.is_free and c.key not in ('malls','hospital','markets') and mp.deleted_at is null order by mp.slug limit 1)"
+          done
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site
