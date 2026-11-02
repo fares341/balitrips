@@ -398,38 +398,52 @@ test.describe('booking and checkout', () => {
   test('package switch hides an add-on the package includes and drops it from the price', async ({
     page,
   }, info) => {
-    // A published activity with two packages; give it an add-on that the
-    // second package includes (CI copy only — removed again at the end).
-    const [act] = await db()<{ id: string; slug: string; t0: string; t1: string; inc: unknown }[]>`
-      select a.id, a.slug, t0.id t0, t1.id t1, t1.includes_addons inc
-      from activities a
-      join lateral (select id from activity_tiers where activity_id = a.id and deleted_at is null
-        and available order by sort_order limit 1) t0 on true
-      join lateral (select id, includes_addons from activity_tiers where activity_id = a.id
-        and deleted_at is null and available order by sort_order offset 1 limit 1) t1 on true
+    // Activity pages are prerendered at build time, so the test works on a
+    // fresh copy (new slug → rendered on demand) of a published activity with
+    // two packages, plus an add-on that the second package includes. CI copy
+    // only; deleted again at the end (tiers and add-ons cascade).
+    const [src] = await db()<{ id: string }[]>`
+      select a.id from activities a
       where a.status = 'published' and a.deleted_at is null
+        and (select count(*) from activity_tiers t where t.activity_id = a.id
+          and t.deleted_at is null and t.available) >= 2
       order by a.sort_order limit 1`
-    test.skip(!act, 'no published activity with two packages')
-    if (!act) return
+    test.skip(!src, 'no published activity with two packages')
+    if (!src) return
+    const slug = `e2e-included-addon-${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+    const [act] = await db()<{ id: string }[]>`
+      insert into activities
+      select (jsonb_populate_record(null::activities, to_jsonb(a)
+        || jsonb_build_object('id', gen_random_uuid(), 'slug', ${slug}))).*
+      from activities a where a.id = ${src.id} returning id`
+    const tiers = await db()<{ id: string; sort_order: number }[]>`
+      insert into activity_tiers
+      select (jsonb_populate_record(null::activity_tiers, to_jsonb(t)
+        || jsonb_build_object('id', gen_random_uuid(), 'activity_id', ${act!.id}::uuid,
+          'includes_addons', '[]'::jsonb))).*
+      from activity_tiers t
+      where t.activity_id = ${src.id} and t.deleted_at is null and t.available
+      order by t.sort_order limit 2 returning id, sort_order`
+    const [t0, t1] = [...tiers].sort((x, y) => x.sort_order - y.sort_order)
     const name = `E2E banana boat ${Date.now()}`
     const [addon] = await db()<{ id: string }[]>`
       insert into activity_addons (activity_id, name, price_minor, currency, pricing, sort_order)
       select id, ${db().json({ ar: name, en: name, id: name })}, 1500, currency, 'per_person', 999
-      from activities where id = ${act.id} returning id`
+      from activities where id = ${act!.id} returning id`
     await db()`update activity_tiers set includes_addons = ${db().json([addon!.id])}
-      where id = ${act.t1}`
+      where id = ${t1!.id}`
     try {
       const watch = new Watch(page)
-      await page.goto(`/ar/activities/${act.slug}`)
+      await page.goto(`/ar/activities/${slug}`)
       await settle(page)
       const box = page.locator('.bk-body').first()
-      await box.locator('select.select').first().selectOption(act.t0)
+      await box.locator('select.select').first().selectOption(t0!.id)
       const row = box.locator('label.addon-row', { hasText: name })
       await expect(row).toBeVisible()
       await row.locator('input[type="checkbox"]').check()
       check(info, 'package add-ons', 'add-on offered with a package that does not include it', true)
 
-      await box.locator('select.select').first().selectOption(act.t1)
+      await box.locator('select.select').first().selectOption(t1!.id)
       await expect(row).toHaveCount(0)
       const note = box.getByTestId('addon-in-pkg')
       check(
@@ -450,9 +464,7 @@ test.describe('booking and checkout', () => {
       const problems = await watch.collect()
       check(info, 'package add-ons', 'no page errors', problems.length === 0, problems.join(' | '))
     } finally {
-      await db()`update activity_tiers set includes_addons = ${db().json((act.inc ?? null) as never)}
-        where id = ${act.t1}`
-      await db()`delete from activity_addons where id = ${addon!.id}`
+      await db()`delete from activities where id = ${act!.id}`
     }
   })
 

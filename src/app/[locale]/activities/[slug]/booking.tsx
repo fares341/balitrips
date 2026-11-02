@@ -1836,7 +1836,7 @@ export function BookingBox() {
           <StepError id={`${uid}-ppl-err`} message={errors.people} />
         </div>
 
-        {offered.length > 0 ? (
+        {offered.length > 0 || inPackage.length > 0 ? (
           <div className={`bstep${errors.addons ? ' has-error' : ''}`} id={STEP_ID.addons}>
             <span className="lbl">
               <span className="n">{step()}</span>
