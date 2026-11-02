@@ -4,12 +4,11 @@
  * REQUEST-RENDERED, ON PURPOSE: the payload differs for an entitled visitor
  * and an anonymous one, so a cached page cannot serve both.
  *
- * The redaction chain is `listMapPlaces()` → `buildMapPayload(places, held)`,
- * and only `payload` is passed to the Client Component. `places` — names,
- * coordinates, images of every gated place — stays a server-local value.
- * Region bubbles (`./regions.ts`) are computed here from
- * REGION data (centres from the `regions` table + a locked COUNT per region);
- * no locked place's id, name or coordinate is in them.
+ * Map v2 (owner, Nov 2026): area → 1–3 categories → results. This page sends
+ * only public, aggregate data (areas, counts per region and category, the
+ * category look, plan prices). `places` — names, coordinates, images of every
+ * gated place — stays a server-local value; results are fetched per
+ * selection from `/api/map/places`, which redacts per request.
  *
  * Studio edits show up on the next request: the page is dynamic and reads the
  * places table directly (Studio's place actions also revalidate this path).
@@ -29,7 +28,7 @@ import { getUser } from '@/lib/auth/session'
 import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { getItineraryBySlug, listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
-import { buildMapPayload, loadEntitlements } from '@/lib/entitlements'
+import { loadEntitlements } from '@/lib/entitlements'
 import { listPublishedPlans } from '@/lib/entitlements/plans'
 import { buildDayRoute, openDayNumbers } from '@/lib/itineraries/day-route'
 import { loadDayStops } from '@/lib/itineraries/queries'
@@ -38,12 +37,12 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
-import { LANDMARKS, localizeLandmarks, visibleLandmarks } from './landmarks'
+import { ALL_AREA, areaOptions, countRows, parseSelection } from '@/lib/map/explore'
+import { listMapCategories } from '@/lib/map/queries'
+
 import { mapViewSettings } from './map-style'
 import { DayRouteMap } from './day-route-map'
-import { MapApp } from './map-app'
-import type { MapClientPlace } from './projection'
-import { buildRegionBubbles } from './regions'
+import { MapExplorer } from './map-explorer'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 const MAP_PATH = '/map'
@@ -107,7 +106,6 @@ export default async function MapPage({ params, searchParams }: PageProps) {
 
   const query = await searchParams
   const initialSlug = firstValue(query.place)
-  const initialQuery = (firstValue(query.q) ?? '').slice(0, 120)
   const initialCategory = firstValue(query.cat)
   const initialRegion = firstValue(query.region)
 
@@ -134,51 +132,60 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     )
   }
 
-  const [places, held, taxonomy, plans, settings] = await Promise.all([
+  const [places, held, taxonomy, categories, plans, settings] = await Promise.all([
     listMapPlaces(),
     loadEntitlements(userId),
     listMapTaxonomy(),
+    listMapCategories(),
     listPublishedPlans(),
     readSetting('map'),
   ])
 
-  // Everything sent to the client derives from `payload` (places), from
-  // region-level aggregates (bubbles), or is public data FILTERED by the
-  // locked places (landmarks). No field of a locked place is sent.
-  const payload = buildMapPayload(places, held)
-  // Free or VIP is decided per CATEGORY (client, Oct 2026); no area is free.
-  const regions = buildRegionBubbles(places, taxonomy.regions, held)
-
-  // The client's landmarks, minus any that would name or pinpoint a place this
-  // viewer cannot see (several share a name and spot with a gated place).
-  const lockedIds = new Set(payload.places.filter((p) => p.locked).map((p) => p.id))
-  const landmarks = localizeLandmarks(
-    visibleLandmarks(
-      LANDMARKS,
-      places.filter((place) => lockedIds.has(place.id)),
-    ),
-    lang,
+  // Public, aggregate data only: counts per (region, category). The places
+  // themselves stay on the server; the results come from /api/map/places,
+  // redacted per request.
+  const rows = countRows(places)
+  const areas = areaOptions(
+    taxonomy.regions,
+    rows,
+    categories.map((one) => one.key),
   )
+  const unlocked = held.has('map_access')
 
-  // حقلا الترتيب (الوثيقة 8.6) يُضافان للمفتوح وحده؛ المقفل يبقى
-  // `{ id, locked, requiredEntitlement }`.
-  const rank = new Map(places.map((place) => [place.id, place]))
-  const clientPlaces: MapClientPlace[] = payload.places.map((place) =>
-    place.locked
-      ? place
-      : {
-          ...place,
-          sortOrder: rank.get(place.id)?.sortOrder ?? 0,
-          popularity: rank.get(place.id)?.popularity ?? 0,
-        },
+  const selection = parseSelection(
+    { area: firstValue(query.area), region: initialRegion, cat: initialCategory },
+    new Set(areas.map((one) => one.key)),
+    new Set(categories.map((one) => one.key)),
   )
+  // A locked type in a link is never applied for a visitor: the step screen
+  // shows it with its lock instead.
+  const lockedKeys = new Set(
+    categories.filter((one) => one.tier === 'vip' && !unlocked).map((one) => one.key),
+  )
+  selection.categories = selection.categories.filter((key) => !lockedKeys.has(key))
+  // `?place=slug` (place page → map): open that place, if this viewer may.
+  let initialPlace: string | null = null
+  if (initialSlug !== null) {
+    const hit = places.find((one) => one.slug === initialSlug)
+    if (hit && hit.categoryKey && (hit.isFree || held.has(hit.requiredEntitlement))) {
+      initialPlace = hit.slug
+      selection.area = ALL_AREA
+      selection.categories = [hit.categoryKey]
+    }
+  }
 
-  // The real price of the cheapest published plan that opens the map.
-  const mapPlan = plans
-    .filter((plan) => plan.entitlementKind === 'map_access')
-    .sort((a, b) => a.priceMinor - b.priceMinor)[0]
-  const price =
-    mapPlan === undefined ? null : formatPrice(mapPlan.priceMinor, mapPlan.currency, lang)
+  // The plans that open the locked categories, cheapest first (paywall sheet).
+  const paywallPlans = plans
+    .filter((plan) => plan.entitlementKind === 'map_access' || plan.entitlementKind === 'vip')
+    .sort((a, b) => a.priceMinor - b.priceMinor)
+    .slice(0, 3)
+    .map((plan) => ({
+      id: plan.id,
+      name: pick(plan.name, lang, plan.slug),
+      price: formatPrice(plan.priceMinor, plan.currency, lang),
+      durationDays: plan.durationDays,
+      href: getPathname({ href: `/plans/buy/${encodeURIComponent(plan.id)}`, locale: lang }),
+    }))
 
   // العلامة المائية والحماية من النسخ للمسجّل فقط (الوثيقة 17).
   const viewerLabel = access.ok
@@ -186,21 +193,30 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     : null
 
   return (
-    <MapApp
-      places={clientPlaces}
-      lockedCount={payload.lockedCount}
-      unlocked={payload.unlocked}
-      initialSlug={initialSlug}
-      initialQuery={initialQuery}
-      initialCategory={initialCategory}
-      initialRegion={initialRegion}
-      taxonomy={taxonomy}
-      vipFirst={held.has('vip')}
+    <MapExplorer
+      locale={lang}
+      areas={areas.map((one) => ({
+        key: one.key,
+        label: pick(one.label, lang, one.key),
+        parentKey: one.parentKey,
+        count: one.count,
+        top: one.top,
+      }))}
+      counts={rows}
+      categories={categories.map((one) => ({
+        key: one.key,
+        label: pick(one.label, lang, one.key),
+        tier: one.tier,
+        locked: one.tier === 'vip' && !unlocked,
+        color: one.color,
+        icon: one.icon,
+      }))}
+      initial={selection}
+      initialPlace={initialPlace}
+      plans={paywallPlans}
+      unlocked={unlocked}
       viewerLabel={viewerLabel}
-      regions={regions}
-      price={price}
       settings={mapViewSettings(settings)}
-      landmarks={landmarks}
     />
   )
 }

@@ -546,6 +546,11 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     'الأماكن التي تصنيفها الرئيسي هذا تتبعه عند الحفظ. تصنيفات الخريطة هي فلاتر الخريطة.',
   ],
   'taxonomy.map_order': ['Order on the map', 'الترتيب في الخريطة'],
+  'taxonomy.map_color': ['Pin colour on the map', 'لون الدبوس في الخريطة'],
+  'taxonomy.map_color_hint': [
+    'The pin, filter dot and card tag use this colour; the icon field sets the pin glyph. Pre-filled with this type’s default.',
+    'يظهر هذا اللون في الدبوس ونقطة الفلتر وعلامة البطاقة، وحقل الأيقونة يحدد رمز الدبوس. يبدأ باللون الافتراضي لهذا النوع.',
+  ],
   'taxonomy.sort_order': ['Sort order', 'ترتيب العرض'],
   'taxonomy.parent_area': ['Parent area', 'المنطقة الأم'],
   'taxonomy.add_new': ['Add new', 'إضافة جديد'],

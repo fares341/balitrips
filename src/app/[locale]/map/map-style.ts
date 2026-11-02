@@ -584,17 +584,7 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
       filter: [
         'in',
         ['get', 'class'],
-        [
-          'literal',
-          [
-            'city',
-            'town',
-            'village',
-            'suburb',
-            'island',
-            'islet',
-          ],
-        ],
+        ['literal', ['city', 'town', 'village', 'suburb', 'island', 'islet']],
       ],
       layout: {
         'text-field': NAME,
@@ -681,4 +671,68 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
     },
     layers,
   }
+}
+
+/**
+ * Map v2 (owner, Nov 2026): the public map is a clean, light 2D base — the
+ * same tile source and layers as `buildStyle`, recoloured to a pale palette,
+ * with relief, 3D buildings, POI/peak labels and the satellite layer dropped
+ * so only the chosen places stand out.
+ */
+const LIGHT_DROP = new Set([
+  'hillshade',
+  'buildings-3d',
+  'water-texture',
+  'beach-grain',
+  'osm-poi',
+  'osm-peaks',
+  'satellite',
+  'outside-free',
+  'free-zone-line',
+])
+
+const LIGHT_SWAP: Record<string, string> = {
+  [C.land]: '#f1efe6',
+  [C.forest]: '#dce8cf',
+  [C.grass]: '#e3edd6',
+  [C.farm]: '#eaf0dc',
+  [C.wetland]: '#dcebe1',
+  [C.sand]: '#f6ebcc',
+  [C.sandEdge]: '#eadbb4',
+  [C.town]: '#ebe6dc',
+  [C.park]: '#d4e6c6',
+  [C.ocean]: '#a8d5ec',
+  '#16658f': '#a8d5ec',
+  '#2386b5': '#aad7ed',
+  '#2f9bc9': '#acd8ee',
+  [C.shallow]: '#b6dff0',
+  [C.surf]: '#c3e6f2',
+  [C.river]: '#9fcfe6',
+  [C.inland]: '#a6d4ea',
+  [C.shore]: '#93c6df',
+  [C.building]: '#e6e1d8',
+  '#fff7e8': '#3f4a44',
+  '#bff1f8': '#3d6f86',
+  '#d9f6ff': '#3d6f86',
+  '#ffe9c7': '#6b6458',
+  '#ffd6c2': '#6b6458',
+  '#ffffff': '#2f3a34',
+  [HALO]: 'rgba(255,255,255,0.9)',
+  'rgba(255,248,235,': 'rgba(255,255,255,',
+}
+
+export function lightStyle(style: Layer): Layer {
+  const layers = ((style.layers as Layer[] | undefined) ?? []).filter(
+    (layer) => !LIGHT_DROP.has(String(layer.id)),
+  )
+  let json = JSON.stringify(layers)
+  for (const [from, to] of Object.entries(LIGHT_SWAP)) json = json.split(from).join(to)
+  const sources = { ...(style.sources as Record<string, unknown>) }
+  delete sources.terrain
+  delete sources.satellite
+  delete sources.hillshade
+  const { terrain: _terrain, sky: _sky, ...rest } = style
+  void _terrain
+  void _sky
+  return { ...rest, sources, layers: JSON.parse(json) as Layer[] }
 }

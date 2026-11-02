@@ -11,7 +11,6 @@ import {
   makeWarp,
   zoomFor,
 } from './art-warp'
-import { LANDMARKS, landmarkById } from './landmarks'
 
 /**
  * The registration is the single source of where a site place lands on the
@@ -19,17 +18,6 @@ import { LANDMARKS, landmarkById } from './landmarks'
  * every pin off its painted label while the page still renders perfectly.
  */
 describe('art ↔ geo registration', () => {
-  it('registers each painted dot near its (verified) landmark', () => {
-    // Frozen client registration vs the corrected landmark list: same place
-    // within the 3.1 km Denpasar correction.
-    for (const [, , id, lng, lat] of CONTROL) {
-      const l = landmarkById(id)
-      expect(l).toBeDefined()
-      const km = Math.hypot(((l?.lng ?? 0) - lng) * 109.9, ((l?.lat ?? 0) - lat) * 110.6)
-      expect(km).toBeLessThan(3.5)
-    }
-  })
-
   it('lands every painted dot on its registered coordinate (art → geo, 1e-6°)', () => {
     for (const [x, y, , lng, lat] of CONTROL) {
       const [glng, glat] = artToGeo(x, y)
@@ -56,16 +44,6 @@ describe('art ↔ geo registration', () => {
       const [lng, lat] = artToGeo(x, y)
       const [bx, by] = geoToArt(lng, lat)
       expect(Math.hypot(bx - x, by - y)).toBeLessThan(1)
-    }
-  })
-
-  it('keeps every landmark on the artwork', () => {
-    for (const l of LANDMARKS) {
-      const [x, y] = geoToArt(l.lng, l.lat)
-      expect(x).toBeGreaterThan(0)
-      expect(x).toBeLessThan(ART_W)
-      expect(y).toBeGreaterThan(0)
-      expect(y).toBeLessThan(ART_H)
     }
   })
 

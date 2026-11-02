@@ -1,6 +1,6 @@
 /**
  * One way to build the real (3D) map, shared by the public map
- * (`hybrid-view.ts`) and Studio (coordinate picker, places overview), so the
+ * (`map-explorer.tsx`) and Studio (coordinate picker, places overview), so the
  * dashboard shows exactly the map visitors get.
  */
 
@@ -14,6 +14,7 @@ import {
   REAL_MIN_ZOOM,
   RTL_TEXT_PLUGIN_URL,
   buildStyle,
+  lightStyle,
   type MapSettings,
 } from './map-style'
 import { ensureRtlTextPlugin, type MapEngine, type MapLike } from './maplibre-loader'
@@ -33,6 +34,8 @@ export interface RealMapOptions {
   flat?: boolean
   /** false: a static preview that ignores pointer input (place page). */
   interactive?: boolean
+  /** The clean, light 2D base of the public map (v2). */
+  light?: boolean
 }
 
 /** Throws when the engine refuses (e.g. no WebGL) — callers fall back. */
@@ -45,7 +48,9 @@ export function createRealMap(
   if (options.locale === 'ar') ensureRtlTextPlugin(engine, RTL_TEXT_PLUGIN_URL)
   const map = new engine.Map({
     container,
-    style: buildStyle(settings, { freeZone: options.freeZone ?? null, locale: options.locale }),
+    style: options.light
+      ? lightStyle(buildStyle(settings, { locale: options.locale }))
+      : buildStyle(settings, { freeZone: options.freeZone ?? null, locale: options.locale }),
     ...(options.center
       ? {
           center: options.center,

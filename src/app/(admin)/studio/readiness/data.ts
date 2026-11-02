@@ -47,6 +47,8 @@ export interface ItineraryRow {
 export interface Readiness {
   placesTotal: number
   placesNoPhoto: PlaceRow[]
+  /** Map v2: the place card shows three photos; places with fewer (but at least one). */
+  placesFewPhotos: (PlaceRow & { photos: number })[]
   activitiesTotal: number
   activityGaps: ActivityRow[]
   itinerariesTotal: number
@@ -140,6 +142,20 @@ export async function loadReadiness(locale: Locale): Promise<Readiness> {
     }))
     .sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name))
 
+  const photoCount = (p: { heroImageId: string | null; gallery: string[] | null }) =>
+    new Set([p.heroImageId, ...(p.gallery ?? [])].filter((id): id is string => !!id)).size
+  const placesFewPhotos = placeRows
+    .map((p) => ({ p, n: photoCount(p) }))
+    .filter(({ n }) => n > 0 && n < 3)
+    .map(({ p, n }) => ({
+      id: p.id,
+      name: pick(p.name, locale, p.slug),
+      area: area(p.regionId),
+      hasVideo: (p.videos ?? []).length > 0,
+      photos: n,
+    }))
+    .sort((a, b) => a.photos - b.photos || a.area.localeCompare(b.area))
+
   const activityGaps = activityRows
     .map((a) => {
       const gaps: ActivityGap[] = []
@@ -192,6 +208,7 @@ export async function loadReadiness(locale: Locale): Promise<Readiness> {
   return {
     placesTotal: placeRows.length,
     placesNoPhoto,
+    placesFewPhotos,
     activitiesTotal: activityRows.length,
     activityGaps,
     itinerariesTotal: itineraryRows.length,
