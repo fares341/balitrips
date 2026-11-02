@@ -94,6 +94,8 @@ const section: Section = {
     'sh.err_duplicate_package': 'package «{value}» appears twice for this activity',
     'sh.err_compare_at': 'the price before discount must be higher than the price «{value}»',
     'sh.err_duplicate_addon': 'extra «{value}» appears twice for this activity',
+    'sh.err_unknown_addon':
+      'included_addons names an extra this activity does not have: «{value}» (use the names from the AddOns sheet)',
     'sh.err_question': 'the question is empty',
     'sh.err_duplicate_question': 'the same question appears twice',
     'sh.err_archived_slug': 'the id «{value}» belongs to a deleted activity: choose another',
@@ -196,6 +198,8 @@ const section: Section = {
     'sh.err_duplicate_package': 'الباقة «{value}» مكررة لهذا النشاط',
     'sh.err_compare_at': 'السعر قبل الخصم يجب أن يكون أعلى من السعر «{value}»',
     'sh.err_duplicate_addon': 'الإضافة «{value}» مكررة لهذا النشاط',
+    'sh.err_unknown_addon':
+      'عمود included_addons فيه إضافة غير موجودة لهذا النشاط: «{value}» (استخدم الأسماء كما في تبويب الإضافات)',
     'sh.err_question': 'السؤال فارغ',
     'sh.err_duplicate_question': 'السؤال نفسه مكرر',
     'sh.err_archived_slug': 'المعرّف «{value}» لنشاط محذوف: اختر معرّفًا آخر',
