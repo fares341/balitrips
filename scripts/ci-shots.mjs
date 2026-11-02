@@ -16,6 +16,8 @@ const pages = [
   ['mapcat', '/ar/map?cat=hospitals', 12000],
   ['mapcat2', '/ar/map?cat=sights', 12000],
   ['mapcat2', '/en/map?cat=sights', 12000],
+  // Policies centre (owner's Arabic document).
+  ['policies', '/ar/policies', 0],
 ]
 const sizes = [
   [1440, 900],

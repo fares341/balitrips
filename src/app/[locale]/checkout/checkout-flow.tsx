@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Field, Input, Select, Textarea, fieldDescribedBy } from '@/components/bt/field'
-import { CART_CHANGED_EVENT, CART_HREF } from '@/components/layout/routes'
+import { CART_CHANGED_EVENT, CART_HREF, policyLink } from '@/components/layout/routes'
 import { Modal } from '@/components/shared/modal'
 import { useToast } from '@/components/shared/toast'
 import { Icon } from '@/components/ui/icon'
@@ -411,7 +411,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
               <span>
                 <b>{t('co_policies_t')}</b>
                 {t('co_policies_b')}{' '}
-                <Link className="link" href="/refund">
+                <Link className="link" href={policyLink('/refund', locale)}>
                   {t('co_policy_read')}
                 </Link>
               </span>
@@ -443,11 +443,11 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 />
                 <span>
                   {t('co_agree')}{' '}
-                  <Link className="link" href="/terms">
+                  <Link className="link" href={policyLink('/terms', locale)}>
                     {t('ft_p_terms')}
                   </Link>{' '}
                   {t('co_and')}{' '}
-                  <Link className="link" href="/refund">
+                  <Link className="link" href={policyLink('/refund', locale)}>
                     {t('ft_p_refund')}
                   </Link>
                 </span>
@@ -459,11 +459,11 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                   {t('ft_p_payment')}
                 </Link>
                 {' · '}
-                <Link className="link" href="/privacy">
+                <Link className="link" href={policyLink('/privacy', locale)}>
                   {t('ft_p_privacy')}
                 </Link>
                 {' · '}
-                <Link className="link" href="/cookies">
+                <Link className="link" href={policyLink('/cookies', locale)}>
                   {t('ft_p_cookies')}
                 </Link>
               </small>

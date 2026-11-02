@@ -15,6 +15,7 @@
 import { useEffect, useId, useState, useSyncExternalStore } from 'react'
 import { useLocale } from 'next-intl'
 
+import { policyLink } from '@/components/layout/routes'
 import { Link } from '@/i18n/routing'
 import { CONSENT_OPEN_EVENT, parseConsent } from '@/lib/analytics/consent'
 
@@ -73,7 +74,7 @@ export function ConsentBanner() {
         </h2>
         <p className="bt-consent-body">
           {s.body}{' '}
-          <Link href="/cookies" className="bt-consent-link">
+          <Link href={policyLink('/cookies', locale)} className="bt-consent-link">
             {s.policy}
           </Link>
         </p>

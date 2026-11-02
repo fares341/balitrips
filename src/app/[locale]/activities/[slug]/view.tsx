@@ -9,6 +9,7 @@ import { getTranslations } from 'next-intl/server'
 import { Breadcrumbs, LinkButton, Tag } from '@/components/bt'
 import { formatPrice } from '@/components/bt/card'
 import { Icon } from '@/components/ui'
+import { policyLink } from '@/components/layout/routes'
 import type { IconName } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
@@ -334,7 +335,11 @@ export async function ActivityView({
             </p>
           ) : null}
           <p className="pre">{cancellation}</p>
-          <Link className="link" href="/refund" style={{ alignSelf: 'flex-start' }}>
+          <Link
+            className="link"
+            href={policyLink('/refund', lang)}
+            style={{ alignSelf: 'flex-start' }}
+          >
             {t('act_cancel_general')}
           </Link>
         </div>

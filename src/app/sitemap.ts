@@ -33,6 +33,7 @@ const STATIC_PATHS = [
   '/faq',
   '/help',
   '/credits',
+  '/policies',
   '/privacy',
   '/terms',
   '/refund',

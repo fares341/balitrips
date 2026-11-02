@@ -10,6 +10,7 @@
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { policyLink } from '@/components/layout/routes'
 import { Icon, type IconName } from '@/components/ui'
 import { locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
@@ -83,7 +84,7 @@ export default async function PaymentMethodsPage({ params }: PageProps) {
           </ul>
 
           <p className="bt-pm-refund">
-            {t('pm_refund_b')} <Link href="/refund">{t('ft_p_refund')}</Link>
+            {t('pm_refund_b')} <Link href={policyLink('/refund', locale)}>{t('ft_p_refund')}</Link>
           </p>
         </div>
       </div>
