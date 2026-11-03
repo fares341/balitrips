@@ -129,7 +129,7 @@ const section: Section = {
     'activities.pkg_excludes': 'Not included (package card)',
     'activities.pkg_includes_addons': 'Add-ons included in this package',
     'activities.pkg_includes_addons_hint':
-      'Shown as “included in your package”, locked and never charged.',
+      'Hidden from the extras when this package is chosen and never charged (shown as “included in the package ✓”).',
     'activities.f_multi_day': 'Multi-day activity',
     'activities.f_multi_day_hint':
       'Booked as a date range; a driver added to it is hired for every day.',
@@ -514,8 +514,9 @@ const section: Section = {
     'activities.pkg_includes': 'يشمل (بطاقة الباقة)',
     'activities.pkg_includes_hint': 'البنود المؤشَّرة في بطاقة الباقة وجدول المقارنة.',
     'activities.pkg_excludes': 'لا يشمل (بطاقة الباقة)',
-    'activities.pkg_includes_addons': 'إضافات مشمولة في هذه الباقة',
-    'activities.pkg_includes_addons_hint': 'تظهر «مشمولة في باقتك» مقفلة ولا تُحسب في السعر.',
+    'activities.pkg_includes_addons': 'خدمات إضافية مشمولة في هذه الباقة',
+    'activities.pkg_includes_addons_hint':
+      'لا تُعرض للعميل كإضافة عند اختيار هذه الباقة ولا تُحسب في السعر (تظهر «مشمول في الباقة ✓»).',
     'activities.f_multi_day': 'فعالية لعدة أيام',
     'activities.f_multi_day_hint':
       'تُحجز بفترة من تاريخ إلى تاريخ، والسائق المضاف يُحجز لكل أيامها.',

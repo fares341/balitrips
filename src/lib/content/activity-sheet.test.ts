@@ -15,7 +15,7 @@ import {
 
 const lookups = { regions: new Set(['ubud']), categories: new Set(['nature', 'water']) }
 const spec = (key: string, sheet: 'activities' | 'packages' = 'activities') => {
-  const found = columnSpec(sheet, key)
+  const found = columnSpec(sheet, key) ?? columnSpec('packages', key)
   if (!found) throw new Error(key)
   return found
 }
@@ -36,6 +36,7 @@ describe('normalizeCell', () => {
       ['region', 'UBUD'],
       ['extra_categories', 'water | nature'],
       ['currency', 'usd'],
+      ['included_addons', 'Photo |  banana Boat | photo'],
     ]
     for (const [key, raw] of samples) {
       const first = norm(key, raw)
@@ -139,6 +140,63 @@ describe('gridToRows + planRows', () => {
     expect(plan.issues).toEqual([])
     expect(plan.activities[0]?.packages.length).toBe(1)
     expect(plan.activities[0]?.faq.length).toBe(1)
+  })
+})
+
+describe('included_addons on the Packages sheet', () => {
+  const sheetGrid = (
+    sheet: 'activities' | 'packages' | 'addons',
+    rows: Record<string, string>[],
+  ) => {
+    const keys = COLUMNS[sheet].map((c) => c.key)
+    return gridToRows([keys, ...rows.map((r) => keys.map((k) => r[k] ?? ''))], sheet).rows
+  }
+  const rows = (included: string) => [
+    ...sheetGrid('activities', [{ activity_slug: 'water', name_en: 'Water sports' }]),
+    ...sheetGrid('addons', [
+      { activity_slug: 'water', name_ar: 'بنانا بوت', name_en: 'Banana boat', price: '15' },
+      { activity_slug: 'water', name_ar: 'باراسيلنج', name_en: 'Parasailing', price: '25' },
+    ]),
+    ...sheetGrid('packages', [
+      { activity_slug: 'water', package_key: 'b', name_en: 'B', included_addons: included },
+    ]),
+  ]
+
+  it('reads names in either language into the add-on match keys, sorted', () => {
+    expect(norm('included_addons', 'Photo |  banana Boat | photo')).toEqual({
+      value: 'banana boat | photo',
+    })
+    const plan = planRows(rows('Parasailing | بنانا بوت'), lookups, new Map())
+    expect(plan.issues).toEqual([])
+    expect(plan.activities[0]?.packages[0]?.values.included_addons).toBe(
+      'banana boat | parasailing',
+    )
+  })
+
+  it('accepts add-ons already stored for the activity', () => {
+    const only = sheetGrid('packages', [
+      { activity_slug: 'water', package_key: 'b', included_addons: 'جت سكي' },
+    ])
+    const existing = new Map([
+      ['water', { currency: 'USD', addons: [{ match: 'jet ski', names: ['جت سكي', 'jet ski'] }] }],
+    ])
+    const plan = planRows(only, lookups, existing)
+    expect(plan.issues).toEqual([])
+    expect(plan.activities[0]?.packages[0]?.values.included_addons).toBe('jet ski')
+  })
+
+  it('refuses a name the activity has no add-on for', () => {
+    const plan = planRows(rows('Banana boat | Flyboard'), lookups, new Map())
+    expect(plan.issues.map((i) => [i.sheet, i.column, i.code, i.value])).toEqual([
+      ['packages', 'included_addons', 'unknown_addon', 'flyboard'],
+    ])
+    expect(plan.activities[0]?.packages).toEqual([])
+  })
+
+  it('an empty cell clears, and is not an error', () => {
+    const plan = planRows(rows(''), lookups, new Map())
+    expect(plan.issues).toEqual([])
+    expect(plan.activities[0]?.packages[0]?.values.included_addons).toBe('')
   })
 })
 

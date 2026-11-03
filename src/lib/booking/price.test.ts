@@ -6,6 +6,8 @@ import {
   driverDays,
   packageCostMinor,
   hasChildPricing,
+  includedAddons,
+  offeredAddons,
   isValidParty,
   priceBooking,
   resolveAddons,
@@ -453,5 +455,34 @@ describe('seasonal prices in priceBooking (phase 2)', () => {
 
   it('without a travel date the base price applies', () => {
     expect(priceBooking({ pkg: seasonal, addons: [], picks: [], people: 1 }).totalMinor).toBe(4500)
+  })
+})
+
+describe('add-ons a package already includes', () => {
+  it('are not offered with that package, and are offered with the others', () => {
+    expect(offeredAddons(ADDONS, plus).map((a) => a.id)).toEqual([
+      'photo',
+      'extra-ride',
+      'video',
+      'edit',
+    ])
+    expect(offeredAddons(ADDONS, basic)).toEqual(ADDONS)
+    expect(offeredAddons(ADDONS, null)).toEqual(ADDONS)
+    expect(includedAddons(ADDONS, family).map((a) => a.id)).toEqual(['banana'])
+    expect(includedAddons(ADDONS, basic)).toEqual([])
+  })
+  it('switching to a package that includes a picked add-on drops it from the price', () => {
+    const picks = [
+      { id: 'banana', qty: 1 },
+      { id: 'photo', qty: 1 },
+    ]
+    const before = resolveAddons(ADDONS, basic, picks)
+    expect(before.accepted.map((p) => p.id)).toEqual(['banana', 'photo'])
+    const after = resolveAddons(ADDONS, plus, picks)
+    expect(after.accepted).toEqual([{ id: 'photo', qty: 1 }])
+    const price = priceBooking({ pkg: plus, people: 2, addons: ADDONS, picks })
+    const charged = price.lines.filter((l) => l.kind === 'addon' && !l.included)
+    expect(charged.map((l) => l.refId)).toEqual(['photo'])
+    expect(price.lines.some((l) => l.refId === 'banana' && l.totalMinor > 0)).toBe(false)
   })
 })

@@ -71,6 +71,7 @@ export type CellKind =
   | 'addon_pricing'
   | 'region'
   | 'category'
+  | 'addon_refs'
 
 export interface ColumnSpec {
   key: string
@@ -162,6 +163,11 @@ export const COLUMNS: Record<SheetKey, readonly ColumnSpec[]> = {
     c('excludes_en', 'list', 'لا تشمل بالإنجليزية (|)'),
     c('features_ar', 'list', 'مزايا بالعربية (|)'),
     c('features_en', 'list', 'مزايا بالإنجليزية (|)'),
+    c(
+      'included_addons',
+      'addon_refs',
+      'خدمات إضافية مشمولة في الباقة: أسماء الإضافات كما في تبويب الإضافات (|)',
+    ),
   ],
   addons: [
     c('activity_slug', 'slug', 'معرّف النشاط', true),
@@ -342,7 +348,22 @@ export function normalizeCell(
       const value = text.toLowerCase()
       return lookups.categories.has(value) ? { value } : { error: 'category' }
     }
+    case 'addon_refs':
+      // Add-on names, matched like the AddOns sheet (case-insensitive). Which
+      // names exist is checked per activity in `planRows`.
+      return { value: addonRefs(text) }
   }
+}
+
+/**
+ * Canonical form of an `included_addons` cell: names lower-cased, de-duplicated
+ * and sorted, so the order the owner types them in is not a change.
+ */
+export function addonRefs(text: string): string {
+  const items = splitList(text)
+    .map((item) => item.replace(/\s+/g, ' ').trim().toLowerCase())
+    .filter((item) => item !== '')
+  return joinList([...new Set(items)].sort())
 }
 
 /** Arabic words an owner may type instead of the keys. */
@@ -477,11 +498,21 @@ function lower(text: string): string {
   return text.trim().toLowerCase()
 }
 
+/** What `planRows` needs to know about an activity already stored. */
+export interface ExistingActivity {
+  currency: string
+  /**
+   * Its add-ons: the match key (as on the AddOns sheet) and every name it may
+   * be referred to by (Arabic, English), lower-cased.
+   */
+  addons?: readonly { match: string; names: readonly string[] }[]
+}
+
 /** Normalizes every cell, checks each row, groups children under their activity. */
 export function planRows(
   rows: readonly SheetRow[],
   lookups: Lookups,
-  existing: ReadonlyMap<string, { currency: string }>,
+  existing: ReadonlyMap<string, ExistingActivity>,
 ): Plan {
   const issues: RowIssue[] = []
   const bySlug = new Map<string, PlannedActivity>()
@@ -678,6 +709,44 @@ export function planRows(
       }
       target.faq.push({ line: row.line, match, values, columns: row.columns })
     }
+  }
+
+  // Packages: «included_addons» must name add-ons of the same activity (in
+  // this file or already stored). Names are rewritten to the add-on's match
+  // key, so «Banana boat» and «بنانا بوت» both mean the same add-on.
+  for (const target of bySlug.values()) {
+    const byName = new Map<string, string>()
+    for (const stored of existing.get(target.slug)?.addons ?? []) {
+      byName.set(stored.match, stored.match)
+      for (const name of stored.names)
+        if (name !== '' && !byName.has(name)) byName.set(name, stored.match)
+    }
+    for (const addon of target.addons) {
+      byName.set(addon.match, addon.match)
+      for (const key of ['name_ar', 'name_en']) {
+        const name = lower(addon.values[key] ?? '')
+        if (name !== '') byName.set(name, addon.match)
+      }
+    }
+    target.packages = target.packages.filter((pkg) => {
+      const cell = pkg.values.included_addons ?? ''
+      if (!pkg.columns.includes('included_addons') || cell === '') return true
+      const unknown = splitList(cell).filter((name) => !byName.has(name))
+      if (unknown.length > 0) {
+        issues.push({
+          sheet: 'packages',
+          line: pkg.line,
+          column: 'included_addons',
+          code: 'unknown_addon',
+          value: unknown.join(' | '),
+        })
+        return false
+      }
+      pkg.values.included_addons = addonRefs(
+        joinList(splitList(cell).map((name) => byName.get(name) ?? name)),
+      )
+      return true
+    })
   }
 
   issues.sort((a, b) => a.sheet.localeCompare(b.sheet) || a.line - b.line)

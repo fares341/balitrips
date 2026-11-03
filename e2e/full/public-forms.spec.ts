@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { closeDb, db } from '../support/db'
 import { expect, test } from '../support/fixtures'
 
@@ -6,6 +9,7 @@ import {
   check,
   fuzzPage,
   HUGE,
+  OUT_DIR,
   settle,
   signUp,
   uniqueEmail,
@@ -91,7 +95,7 @@ test.describe('contact form', () => {
         .getByText(required)
         .first()
         .waitFor({ state: 'visible', timeout: 15_000 })
-      .then(() => true)
+        .then(() => true)
         .catch(() => false)
       check(info, `contact/${locale}`, 'empty submit → required errors', req)
 
@@ -104,7 +108,7 @@ test.describe('contact form', () => {
         .getByText(bad)
         .first()
         .waitFor({ state: 'visible', timeout: 15_000 })
-      .then(() => true)
+        .then(() => true)
         .catch(() => false)
       check(info, `contact/${locale}`, 'bad email → email error', badShown)
     }
@@ -148,7 +152,9 @@ test.describe('auth forms', () => {
     await page.goto('/en/register')
     await settle(page)
     // Skip the browser's own checks so the form's translated messages show.
-    await page.evaluate(() => document.querySelectorAll('form').forEach((f) => (f.noValidate = true)))
+    await page.evaluate(() =>
+      document.querySelectorAll('form').forEach((f) => (f.noValidate = true)),
+    )
     const form = page.locator('form:has(input[autocomplete="new-password"])').first()
     const submit = form.locator('button[type="submit"]').first()
     await submit.click()
@@ -387,6 +393,79 @@ test.describe('booking and checkout', () => {
       problems.join(' | '),
     )
     check(info, 'activity booking', 'cart query works', (cart[0]?.n ?? -1) >= 0)
+  })
+
+  test('package switch hides an add-on the package includes and drops it from the price', async ({
+    page,
+  }, info) => {
+    // Activity pages are prerendered at build time, so the test works on a
+    // fresh copy (new slug → rendered on demand) of a published activity with
+    // two packages, plus an add-on that the second package includes. CI copy
+    // only; deleted again at the end (tiers and add-ons cascade).
+    const [src] = await db()<{ id: string }[]>`
+      select a.id from activities a
+      where a.status = 'published' and a.deleted_at is null
+        and (select count(*) from activity_tiers t where t.activity_id = a.id
+          and t.deleted_at is null and t.available) >= 2
+      order by a.sort_order limit 1`
+    test.skip(!src, 'no published activity with two packages')
+    if (!src) return
+    const slug = `e2e-included-addon-${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+    const [act] = await db()<{ id: string }[]>`
+      insert into activities
+      select (jsonb_populate_record(null::activities, to_jsonb(a)
+        || jsonb_build_object('id', gen_random_uuid(), 'slug', ${slug}::text))).*
+      from activities a where a.id = ${src.id}::uuid returning id`
+    const tiers = await db()<{ id: string; sort_order: number }[]>`
+      insert into activity_tiers
+      select (jsonb_populate_record(null::activity_tiers, to_jsonb(t)
+        || jsonb_build_object('id', gen_random_uuid(), 'activity_id', ${act!.id}::uuid,
+          'includes_addons', '[]'::jsonb))).*
+      from activity_tiers t
+      where t.activity_id = ${src.id}::uuid and t.deleted_at is null and t.available
+      order by t.sort_order limit 2 returning id, sort_order`
+    const [t0, t1] = [...tiers].sort((x, y) => x.sort_order - y.sort_order)
+    const name = `E2E banana boat ${Date.now()}`
+    const [addon] = await db()<{ id: string }[]>`
+      insert into activity_addons (activity_id, name, price_minor, currency, pricing, sort_order)
+      select id, ${db().json({ ar: name, en: name, id: name })}, 1500, currency, 'per_person', 999
+      from activities where id = ${act!.id} returning id`
+    await db()`update activity_tiers set includes_addons = ${db().json([addon!.id])}
+      where id = ${t1!.id}`
+    try {
+      const watch = new Watch(page)
+      await page.goto(`/ar/activities/${slug}`)
+      await settle(page)
+      const box = page.locator('.bk-body').first()
+      await box.locator('select.select').first().selectOption(t0!.id)
+      const row = box.locator('label.addon-row', { hasText: name })
+      await expect(row).toBeVisible()
+      await row.locator('input[type="checkbox"]').check()
+      check(info, 'package add-ons', 'add-on offered with a package that does not include it', true)
+
+      await box.locator('select.select').first().selectOption(t1!.id)
+      await expect(row).toHaveCount(0)
+      const note = box.getByTestId('addon-in-pkg')
+      check(
+        info,
+        'package add-ons',
+        'included add-on hidden; «included in the package» note shown',
+        (await note.textContent())?.includes(name) === true,
+      )
+      mkdirSync(resolve(OUT_DIR, 'shots'), { recursive: true })
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 })
+        await box.scrollIntoViewIfNeeded()
+        await page.screenshot({
+          path: resolve(OUT_DIR, 'shots', `package-included-addon-ar-${width}.png`),
+          fullPage: false,
+        })
+      }
+      const problems = await watch.collect()
+      check(info, 'package add-ons', 'no page errors', problems.length === 0, problems.join(' | '))
+    } finally {
+      await db()`delete from activities where id = ${act!.id}`
+    }
   })
 
   test('checkout: invalid coupon is refused politely', async ({ page }, info) => {

@@ -304,6 +304,28 @@ export function addonState(
   return { kind: 'selectable' }
 }
 
+/**
+ * Add-ons a customer may still be offered with this package: those the
+ * package already includes are left out (owner request, Nov 2026 — no
+ * duplicate purchase of e.g. a banana boat that comes with Package B).
+ */
+export function offeredAddons<T extends { id: string }>(
+  catalog: readonly T[],
+  pkg: Pick<PackageRule, 'includesAddons'> | null,
+): T[] {
+  const included = new Set(pkg?.includesAddons ?? [])
+  return catalog.filter((addon) => !included.has(addon.id))
+}
+
+/** The add-ons of `catalog` that come with this package, in catalog order. */
+export function includedAddons<T extends { id: string }>(
+  catalog: readonly T[],
+  pkg: Pick<PackageRule, 'includesAddons'> | null,
+): T[] {
+  const included = new Set(pkg?.includesAddons ?? [])
+  return catalog.filter((addon) => included.has(addon.id))
+}
+
 export interface AddonResolution {
   /** Charged add-ons, quantities normalised (1 unless per_qty, clamped to max). */
   accepted: AddonPick[]

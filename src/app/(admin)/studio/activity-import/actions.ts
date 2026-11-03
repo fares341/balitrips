@@ -67,7 +67,18 @@ export async function sheetImport(
     ]
     const [stored, archived] = await Promise.all([loadStored(ctx, { slugs }), archivedSlugs(slugs)])
     const existing = new Map(
-      [...stored].map(([slug, item]) => [slug, { currency: item.row.currency }]),
+      [...stored].map(([slug, item]) => [
+        slug,
+        {
+          currency: item.row.currency,
+          addons: [...item.addons].map(([match, addon]) => ({
+            match,
+            names: [addon.record.name_ar ?? '', addon.record.name_en ?? ''].map((name) =>
+              name.trim().toLowerCase(),
+            ),
+          })),
+        },
+      ]),
     )
     const plan = planRows(rows, ctx.lookups, existing)
     plan.issues.unshift(...issues)

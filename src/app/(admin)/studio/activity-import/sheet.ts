@@ -20,6 +20,7 @@ import type { Localized } from '@/db/schema/_shared'
 import { can } from '@/lib/auth/roles'
 import { isPublicStatus } from '@/lib/content/activity-status'
 import {
+  addonRefs,
   changedColumns,
   COLUMNS,
   csvColumns,
@@ -186,7 +187,24 @@ function activityRecord(
   return record
 }
 
-function tierRecord(row: TierRow, slug: string, currency: string): Record_ {
+/**
+ * `included_addons` of a package: the match keys of its activity's own add-ons
+ * it includes. Library add-ons (not on the AddOns sheet) are left out here and
+ * kept untouched on import.
+ */
+function includedCell(row: TierRow, addonKeys: ReadonlyMap<string, string>): string {
+  const keys = (row.includesAddons ?? [])
+    .map((id) => addonKeys.get(id))
+    .filter((key): key is string => key !== undefined)
+  return addonRefs(joinList(keys))
+}
+
+function tierRecord(
+  row: TierRow,
+  slug: string,
+  currency: string,
+  addonKeys: ReadonlyMap<string, string> = new Map(),
+): Record_ {
   const includes = listCells(row.includes)
   const excludes = listCells(row.excludes)
   const features = listCells(row.features)
@@ -211,6 +229,7 @@ function tierRecord(row: TierRow, slug: string, currency: string): Record_ {
     excludes_en: excludes.en,
     features_ar: features.ar,
     features_en: features.en,
+    included_addons: includedCell(row, addonKeys),
   }
 }
 
@@ -313,13 +332,18 @@ export async function loadStored(
       addons: new Map(),
       faq: new Map(),
     }
-    for (const tier of tierRows.filter((t) => t.activityId === row.id)) {
-      stored.tiers.set(tier.key, { row: tier, record: tierRecord(tier, row.slug, row.currency) })
-    }
+    const addonKeys = new Map<string, string>()
     for (const addon of addonRows.filter((a) => a.activityId === row.id)) {
       const record = addonRecord(addon, row.slug, row.currency)
       const key = addonMatch(record)
+      addonKeys.set(addon.id, key)
       if (!stored.addons.has(key)) stored.addons.set(key, { row: addon, record })
+    }
+    for (const tier of tierRows.filter((t) => t.activityId === row.id)) {
+      stored.tiers.set(tier.key, {
+        row: tier,
+        record: tierRecord(tier, row.slug, row.currency, addonKeys),
+      })
     }
     ;((row.faq ?? []) as FaqEntry[]).forEach((entry, index) => {
       const record = faqRecord(entry, row.slug)
@@ -947,7 +971,9 @@ async function applyActivity(
   }
 
   let childChanged = false
-  // Packages.
+  // Packages. Their «included_addons» are written after the add-ons below, so
+  // a package may include an add-on created by this same file.
+  const includesToWrite: { tierId: string; keys: string[]; before: string[] }[] = []
   let tierOrder = before ? before.tiers.size : 0
   for (const pkg of item.packages) {
     const old = before?.tiers.get(pkg.match) ?? null
@@ -1010,6 +1036,13 @@ async function applyActivity(
       if (!inserted) continue
       tierId = inserted.id
     }
+    if (has('included_addons')) {
+      includesToWrite.push({
+        tierId,
+        keys: splitList(p.included_addons ?? '').filter(Boolean),
+        before: old?.row.includesAddons ?? [],
+      })
+    }
     if (values.isPopular) {
       await tx
         .update(activityTiers)
@@ -1055,6 +1088,34 @@ async function applyActivity(
         sortOrder: addonOrder,
       })
       addonOrder += 1
+    }
+    childChanged = true
+  }
+
+  // Packages' included add-ons: match keys → this activity's add-on ids.
+  // Ids that are not this activity's own add-ons (library add-ons, set in
+  // the Studio) are kept as they were.
+  if (includesToWrite.length > 0) {
+    const own = await tx
+      .select({ id: activityAddons.id, name: activityAddons.name })
+      .from(activityAddons)
+      .where(and(eq(activityAddons.activityId, row.id), isNull(activityAddons.deletedAt)))
+      .orderBy(asc(activityAddons.sortOrder))
+    const idByKey = new Map<string, string>()
+    for (const addon of own) {
+      const key = addonMatch({ name_ar: addon.name?.ar ?? '', name_en: addon.name?.en ?? '' })
+      if (!idByKey.has(key)) idByKey.set(key, addon.id)
+    }
+    const ownIds = new Set(own.map((addon) => addon.id))
+    for (const entry of includesToWrite) {
+      const ids = entry.keys
+        .map((key) => idByKey.get(key))
+        .filter((id): id is string => id !== undefined)
+      const kept = entry.before.filter((id) => !ownIds.has(id))
+      await tx
+        .update(activityTiers)
+        .set({ includesAddons: [...new Set([...kept, ...ids])], updatedAt: new Date() })
+        .where(eq(activityTiers.id, entry.tierId))
     }
     childChanged = true
   }

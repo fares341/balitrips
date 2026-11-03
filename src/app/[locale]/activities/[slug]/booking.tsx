@@ -50,6 +50,8 @@ import {
   addonHasQty,
   addonMaxQty,
   addonUnitPriceMinor,
+  includedAddons,
+  offeredAddons,
   type AddonPriceTier,
   type AddonPricing,
   type AddonRule,
@@ -669,13 +671,18 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   function notifyDropped(nextPkg: string) {
     if (nextPkg === state.pkg) return
     const kept = prune({ ...state, pkg: nextPkg }, data).addons
-    const dropped = Object.keys(state.addons).filter((id) => kept[id] === undefined)
-    if (dropped.length === 0) return
-    const names = dropped
-      .map((id) => data.addons.find((a) => a.id === id)?.name)
-      .filter((name): name is string => !!name)
-      .join(locale === 'ar' ? '، ' : ', ')
-    toast(t('act_addon_dropped', { names }))
+    const nextIncludes = data.packages.find((p) => p.id === nextPkg)?.includesAddons ?? []
+    const gone = Object.keys(state.addons).filter((id) => kept[id] === undefined)
+    const label = (ids: string[]) =>
+      ids
+        .map((id) => data.addons.find((a) => a.id === id)?.name)
+        .filter((name): name is string => !!name)
+        .join(locale === 'ar' ? '، ' : ', ')
+    // Now part of the package: dropped from the selection and the price.
+    const nowIncluded = gone.filter((id) => nextIncludes.includes(id))
+    const dropped = gone.filter((id) => !nextIncludes.includes(id))
+    if (nowIncluded.length > 0) toast(t('act_addon_now_included', { names: label(nowIncluded) }))
+    if (dropped.length > 0) toast(t('act_addon_dropped', { names: label(dropped) }))
   }
 
   const ctx: Ctx = {
@@ -1349,7 +1356,13 @@ export function InfoBoxes() {
     lines.filter((l) => l.pkg === null).map((l) => l.text)
   const own = pkgInfo ? cardChecks(pkgInfo) : []
   const includes = [
-    ...new Set([...(own.length > 0 ? own : general(info.included)), ...only(info.included)]),
+    ...new Set([
+      ...(own.length > 0 ? own : general(info.included)),
+      ...only(info.included),
+      ...includedAddons(data.addons, pkgInfo).map((a) =>
+        t('act_addon_in_pkg_line', { name: a.name }),
+      ),
+    ]),
   ]
   const excludes = [
     ...new Set([
@@ -1418,7 +1431,10 @@ export function AddonStrip() {
       const st = rule ? addonState(rule, b.pkg, selected) : ({ kind: 'unavailable' } as const)
       return { a, st }
     })
-    .filter(({ st }) => st.kind !== 'not_for_package' && st.kind !== 'unavailable')
+    .filter(
+      ({ st }) =>
+        st.kind !== 'not_for_package' && st.kind !== 'unavailable' && st.kind !== 'included',
+    )
   if (rows.length === 0) return null
   return (
     <section className="panel addsec" aria-labelledby="addsec-h">
@@ -1618,6 +1634,9 @@ export function BookingBox() {
   }
 
   const selected = new Set(Object.keys(state.addons))
+  // Add-ons the chosen package already includes are not offered again.
+  const offered = offeredAddons(data.addons, pkgInfo)
+  const inPackage = includedAddons(data.addons, pkgInfo)
   const ownSlots = ownSlotIncluded(pkgInfo)
 
   if (!data.bookable) return <UnavailableBox />
@@ -1817,14 +1836,14 @@ export function BookingBox() {
           <StepError id={`${uid}-ppl-err`} message={errors.people} />
         </div>
 
-        {data.addons.length > 0 ? (
+        {offered.length > 0 || inPackage.length > 0 ? (
           <div className={`bstep${errors.addons ? ' has-error' : ''}`} id={STEP_ID.addons}>
             <span className="lbl">
               <span className="n">{step()}</span>
               {t('act_s_addons')}
             </span>
             <div className="stack" style={{ gap: 8 }}>
-              {data.addons.map((a) => {
+              {offered.map((a) => {
                 const rule = addonRules({ ...data, addons: [a] })[0]
                 const st = rule
                   ? addonState(rule, b.pkg, selected)
@@ -1891,6 +1910,17 @@ export function BookingBox() {
                 )
               })}
             </div>
+            {inPackage.length > 0 ? (
+              <small
+                className="muted addon-in-pkg"
+                data-testid="addon-in-pkg"
+                style={{ display: 'block', marginTop: 8 }}
+              >
+                {t('act_addon_in_pkg', {
+                  names: inPackage.map((a) => a.name).join(locale === 'ar' ? '، ' : ', '),
+                })}
+              </small>
+            ) : null}
             <StepError id={`${uid}-add-err`} message={errors.addons} />
           </div>
         ) : null}
