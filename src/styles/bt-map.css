@@ -1268,6 +1268,12 @@
   top: 0;
   pointer-events: auto;
 }
+/* Pans shift this one layer; zooms re-place each pin (both in the map's move event). */
+.mx-pin-layer {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
 .mx-pin {
   width: 44px;
   height: 52px;
