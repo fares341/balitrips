@@ -992,6 +992,9 @@
 .home-v3 .ct-copy .eyebrow {
   color: var(--palm);
 }
+.home-v3 .ct-copy .eyebrow::before {
+  background: currentColor;
+}
 .home-v3 .ct-copy h2 {
   color: #fff;
 }

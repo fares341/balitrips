@@ -193,3 +193,11 @@ export const POLICY_ANCHORS: Readonly<Record<string, string>> = {
 export function policyLink(href: string, locale: string): string {
   return locale === 'ar' ? (POLICY_ANCHORS[href] ?? href) : href
 }
+
+/**
+ * The indexable page behind `href` in `locale` (no fragment): an Arabic
+ * per-policy URL only redirects, so search engines get /ar/policies instead.
+ */
+export function canonicalPolicyHref(href: string, locale: string): string {
+  return locale === 'ar' && POLICY_ANCHORS[href] !== undefined ? '/policies' : href
+}

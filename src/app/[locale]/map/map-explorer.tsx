@@ -284,7 +284,11 @@ export function MapExplorer(props: Props) {
     return () => controller.abort()
   }, [resultKey, props.locale])
 
-  const places = results.key === resultKey ? results.places : []
+  // Stable while the results are: the map's pins and memos key off this array.
+  const places = useMemo(
+    () => (results.key === resultKey ? results.places : NO_PLACES),
+    [results, resultKey],
+  )
   const placeById = useMemo(() => new Map(places.map((one) => [one.id, one])), [places])
 
   // Deep link `?place=` selects that place once it arrives.
@@ -1059,7 +1063,7 @@ function PlaceCard({
         )}
       </div>
       <div className="mx-card-body">
-        <h3 className="mx-card-name">{place.name}</h3>
+        <h2 className="mx-card-name">{place.name}</h2>
         <p className="mx-card-meta">
           {category && (
             <span className="mx-tag" style={{ '--c': category.color } as CSSProperties}>
@@ -1166,8 +1170,20 @@ function Attribution({ settings }: { settings: MapSettings }) {
 // The map itself (lazy: MapLibre is fetched only when this mounts)
 // ---------------------------------------------------------------------------
 
+const NO_PLACES: ResultPlace[] = []
+
 interface PinPos extends Cluster {
   key: string
+  /** Geographic anchor: the place itself, or the members' centroid for a cluster. */
+  lon: number
+  lat: number
+}
+
+/** Re-fold clusters only after the zoom has moved this far (pins slide in between). */
+const RECLUSTER_ZOOM_STEP = 0.4
+
+function pinTransform(x: number, y: number): string {
+  return `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
 }
 
 function ResultsMap({
@@ -1198,7 +1214,12 @@ function ResultsMap({
   const [failed, setFailed] = useState(false)
   const [loads, setLoads] = useState(0)
   const [pins, setPins] = useState<PinPos[]>([])
-  const [me, setMe] = useState<{ x: number; y: number } | null>(null)
+  const [hasMe, setHasMe] = useState(false)
+  const meEl = useRef<HTMLSpanElement>(null)
+  /** Rendered pin elements by key; moved imperatively, never through React state. */
+  const pinEls = useRef(new Map<string, HTMLElement>())
+  const pinsRef = useRef<PinPos[]>([])
+  const clusterZoom = useRef<number | null>(null)
   const frame = useRef(0)
 
   const latest = useRef({ places, selectedId, userPos })
@@ -1206,29 +1227,111 @@ function ResultsMap({
     latest.current = { places, selectedId, userPos }
   })
 
-  const layout = useCallback(() => {
+  /**
+   * Move every pin to its projected spot. Runs inside MapLibre's own `move`
+   * event, i.e. in the same frame the canvas is drawn, so the pins never trail
+   * the map (the old version re-rendered React state one frame later).
+   */
+  const layer = useRef<HTMLDivElement>(null)
+  /** Camera of the last full re-position; a pure pan since then is one layer shift. */
+  const placed = useRef<{
+    zoom: number
+    pitch: number
+    bearing: number
+    lon: number
+    lat: number
+  } | null>(null)
+
+  const position = useCallback(() => {
+    const map = mapRef.current
+    if (!map) return
+    const zoom = map.getZoom()
+    const pitch = map.getPitch()
+    const bearing = map.getBearing()
+    const last = placed.current
+    if (last && last.zoom === zoom && last.pitch === pitch && last.bearing === bearing) {
+      // Pure pan: every pin shifts by the same amount — move the layer only.
+      const p = map.project([last.lon, last.lat])
+      if (layer.current) layer.current.style.transform = pinTransform(p.x, p.y)
+      return
+    }
+    for (const pin of pinsRef.current) {
+      const el = pinEls.current.get(pin.key)
+      if (!el) continue
+      const p = map.project([pin.lon, pin.lat])
+      el.style.transform = pinTransform(p.x, p.y)
+    }
+    const pos = latest.current.userPos
+    if (meEl.current && pos) {
+      const p = map.project([pos.lon, pos.lat])
+      meEl.current.style.transform = pinTransform(p.x, p.y)
+    }
+    // Remember which spot sits at the layer origin, so pans can follow it.
+    const origin = map.unproject([0, 0])
+    placed.current = { zoom, pitch, bearing, lon: origin.lng, lat: origin.lat }
+    if (layer.current) layer.current.style.transform = ''
+  }, [])
+
+  /** Force the next position() to place every pin (new pins, new user dot). */
+  const replace = useCallback(() => {
+    placed.current = null
+    position()
+  }, [position])
+
+  /** Decide which pins fold together. Only on settle, data change or a real zoom step. */
+  const recluster = useCallback(() => {
     const map = mapRef.current
     if (!map) return
     const { places: list, selectedId: sel, userPos: pos } = latest.current
+    const zoom = map.getZoom()
+    clusterZoom.current = zoom
+    const geo = new Map(list.map((one) => [one.id, one]))
     const points = list.map((one) => {
       const p = map.project([one.lon, one.lat])
       return { id: one.id, x: p.x, y: p.y }
     })
     // Only truly overlapping pins fold together, and never when zoomed in.
-    const radius = map.getZoom() >= 15 ? 0 : 30
+    const radius = zoom >= 15 ? 0 : 30
     const clusters =
       radius === 0
         ? points.map((p) => ({ ids: [p.id], x: p.x, y: p.y }))
         : clusterPoints(points, radius, sel)
-    setPins(clusters.map((c) => ({ ...c, key: c.ids.join('-') })))
-    setMe(pos ? map.project([pos.lon, pos.lat]) : null)
-    box.current?.setAttribute('data-zoom', map.getZoom().toFixed(2))
-  }, [])
+    const next = clusters.map((c) => {
+      let lon = 0
+      let lat = 0
+      for (const id of c.ids) {
+        const one = geo.get(id)
+        lon += one?.lon ?? 0
+        lat += one?.lat ?? 0
+      }
+      return { ...c, key: c.ids.join('-'), lon: lon / c.ids.length, lat: lat / c.ids.length }
+    })
+    const prev = pinsRef.current
+    const same = prev.length === next.length && prev.every((one, i) => one.key === next[i]?.key)
+    pinsRef.current = next
+    if (!same) setPins(next)
+    setHasMe(pos !== null)
+    replace()
+    box.current?.setAttribute('data-zoom', zoom.toFixed(2))
+  }, [replace])
 
   const schedule = useCallback(() => {
     cancelAnimationFrame(frame.current)
-    frame.current = requestAnimationFrame(layout)
-  }, [layout])
+    frame.current = requestAnimationFrame(recluster)
+  }, [recluster])
+
+  const onMove = useCallback(() => {
+    const map = mapRef.current
+    if (!map) return
+    position()
+    const last = clusterZoom.current
+    if (last === null || Math.abs(map.getZoom() - last) >= RECLUSTER_ZOOM_STEP) schedule()
+  }, [position, schedule])
+
+  // New pin elements (after a re-cluster) start where they belong.
+  useLayoutEffect(() => {
+    replace()
+  }, [pins, hasMe, replace])
 
   useEffect(() => {
     let live = true
@@ -1238,7 +1341,8 @@ function ResultsMap({
         if (!live || !box.current) return
         map = createRealMap(engine, box.current, settings, { locale, flat: true, light: true })
         mapRef.current = map
-        map.on('move', schedule)
+        map.on('move', onMove)
+        map.on('moveend', schedule)
         map.on('resize', schedule)
         // Camera moves need no loaded style: frame the results right away.
         map.resize()
@@ -1257,7 +1361,7 @@ function ResultsMap({
       map?.remove()
       mapRef.current = null
     }
-  }, [locale, settings, schedule])
+  }, [locale, settings, schedule, onMove])
 
   // Frame the results whenever they change.
   const placesKey = places.map((one) => one.id).join(',')
@@ -1326,64 +1430,66 @@ function ResultsMap({
       <div ref={box} className="mx-canvas" />
       {failed && <p className="mx-status is-map">{t('c_error')}</p>}
       <div className="mx-pins">
-        {me && (
-          <span
-            className="mx-me"
-            style={{ transform: `translate(${me.x}px, ${me.y}px)` }}
-            aria-hidden="true"
-          />
-        )}
-        {pins.map((pin) => {
-          if (pin.ids.length > 1) {
+        <div ref={layer} className="mx-pin-layer">
+          {hasMe && <span ref={meEl} className="mx-me" aria-hidden="true" />}
+          {pins.map((pin) => {
+            if (pin.ids.length > 1) {
+              return (
+                <button
+                  key={pin.key}
+                  ref={(el) => {
+                    if (el) pinEls.current.set(pin.key, el)
+                    else pinEls.current.delete(pin.key)
+                  }}
+                  type="button"
+                  className="mx-cluster"
+                  aria-label={t('mx_cluster', { n: pin.ids.length })}
+                  onClick={() => {
+                    const bounds = boundsOf(
+                      pin.ids.map((id) => byId.get(id)).filter((p): p is ResultPlace => !!p),
+                    )
+                    if (bounds)
+                      mapRef.current?.fitBounds(bounds, {
+                        padding: { top: 160, bottom: 340, left: 60, right: 60 },
+                        maxZoom: 17,
+                        duration: 500,
+                      })
+                  }}
+                >
+                  {pin.ids.length}
+                </button>
+              )
+            }
+            const place = byId.get(pin.ids[0] ?? '')
+            if (!place) return null
+            const cat = categories.get(place.categoryKey)
+            const on = place.id === selectedId
             return (
               <button
                 key={pin.key}
-                type="button"
-                className="mx-cluster"
-                style={{ transform: `translate(${pin.x}px, ${pin.y}px)` }}
-                aria-label={t('mx_cluster', { n: pin.ids.length })}
-                onClick={() => {
-                  const bounds = boundsOf(
-                    pin.ids.map((id) => byId.get(id)).filter((p): p is ResultPlace => !!p),
-                  )
-                  if (bounds)
-                    mapRef.current?.fitBounds(bounds, {
-                      padding: { top: 160, bottom: 340, left: 60, right: 60 },
-                      maxZoom: 17,
-                      duration: 500,
-                    })
+                ref={(el) => {
+                  if (el) pinEls.current.set(pin.key, el)
+                  else pinEls.current.delete(pin.key)
                 }}
+                type="button"
+                className={on ? 'mx-pin is-on' : 'mx-pin'}
+                style={
+                  {
+                    '--c': cat?.color ?? '#2E5E4E',
+                    zIndex: on ? 3 : 1,
+                  } as CSSProperties
+                }
+                aria-label={place.name}
+                aria-pressed={on}
+                onClick={() => onSelect(place.id)}
               >
-                {pin.ids.length}
+                <span className="mx-drop" aria-hidden="true">
+                  <Icon name={cat?.icon ?? 'pin'} size={on ? 20 : 16} color="#fff" stroke={2.2} />
+                </span>
               </button>
             )
-          }
-          const place = byId.get(pin.ids[0] ?? '')
-          if (!place) return null
-          const cat = categories.get(place.categoryKey)
-          const on = place.id === selectedId
-          return (
-            <button
-              key={pin.key}
-              type="button"
-              className={on ? 'mx-pin is-on' : 'mx-pin'}
-              style={
-                {
-                  transform: `translate(${pin.x}px, ${pin.y}px)`,
-                  '--c': cat?.color ?? '#2E5E4E',
-                  zIndex: on ? 3 : 1,
-                } as CSSProperties
-              }
-              aria-label={place.name}
-              aria-pressed={on}
-              onClick={() => onSelect(place.id)}
-            >
-              <span className="mx-drop" aria-hidden="true">
-                <Icon name={cat?.icon ?? 'pin'} size={on ? 20 : 16} color="#fff" stroke={2.2} />
-              </span>
-            </button>
-          )
-        })}
+          })}
+        </div>
       </div>
     </div>
   )

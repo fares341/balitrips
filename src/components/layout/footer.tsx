@@ -85,7 +85,7 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
           </div>
 
           <nav aria-labelledby="ftr-quick">
-            <h4 id="ftr-quick">{t('ft_nav')}</h4>
+            <h2 id="ftr-quick">{t('ft_nav')}</h2>
             <ul>
               {withoutHidden(FOOTER_QUICK_ROUTES, hidden).map((route) => (
                 <li key={route.href}>
@@ -96,7 +96,7 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
           </nav>
 
           <nav aria-labelledby="ftr-policies">
-            <h4 id="ftr-policies">{t('ft_policies')}</h4>
+            <h2 id="ftr-policies">{t('ft_policies')}</h2>
             <ul>
               {/* L14: one cookie entry — "Cookie preferences" opens /cookies,
                   whose button reopens the consent panel. */}
@@ -112,7 +112,7 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
           </nav>
 
           <div>
-            <h4 id="ftr-general">{t('foot_info')}</h4>
+            <h2 id="ftr-general">{t('foot_info')}</h2>
             <ul aria-labelledby="ftr-general">
               {INFO_ROUTES.map((route) => (
                 <li key={route.href}>

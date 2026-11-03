@@ -1019,7 +1019,7 @@ export function PackageCards() {
           const expanded = open[p.id] === true
           const panelId = `tier-more-${p.id}`
           return (
-            <article
+            <div
               key={p.id}
               role="listitem"
               className={`pcard${on ? ' on' : ''}${p.available ? '' : ' off'}`}
@@ -1080,7 +1080,7 @@ export function PackageCards() {
                 </button>
               </div>
               {!p.available ? <span className="why">{t('act_pkg_unavailable')}</span> : null}
-            </article>
+            </div>
           )
         })}
       </div>
@@ -1465,7 +1465,7 @@ export function AddonStrip() {
                   ? t('act_addon_required')
                   : null
           return (
-            <article key={a.id} role="listitem" className={`acard2${on ? ' on' : ''}`}>
+            <div key={a.id} role="listitem" className={`acard2${on ? ' on' : ''}`}>
               {a.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- CMS media, already-sized derivative
                 <img src={a.imageUrl} alt="" loading="lazy" decoding="async" />
@@ -1508,7 +1508,7 @@ export function AddonStrip() {
               >
                 <Icon name={on ? 'check' : 'plus'} size={18} stroke={2.4} />
               </button>
-            </article>
+            </div>
           )
         })}
       </div>

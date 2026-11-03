@@ -43,6 +43,7 @@ export interface MapLike {
   getBounds(): LngLatBoundsLike
   getZoom(): number
   getPitch(): number
+  getBearing(): number
   flyTo(options: CameraOptions): unknown
   easeTo(options: CameraOptions): unknown
   jumpTo(options: CameraOptions): unknown
