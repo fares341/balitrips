@@ -359,7 +359,7 @@ export async function duplicateActivityTier(activityId: string, tierId: string):
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  revalidatePath('/[locale]/activities/[slug]', 'page')
+  revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
   redirect(withOutcome(target, outcome))
 }
 

@@ -38,7 +38,7 @@ const tab = (activityId: string, name: string, month?: string | null) =>
   )
 
 function refreshPublic(): void {
-  revalidatePath('/[locale]/activities/[slug]', 'page')
+  revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
 }
 
 /** Longest range one "close dates" action may touch. */

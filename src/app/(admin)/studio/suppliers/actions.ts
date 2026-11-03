@@ -36,7 +36,7 @@ const page = (id: string) => adminHref(`/suppliers/${id}`)
 
 /** The customer page shows "confirmed within N hours" from the offers. */
 function refreshPublic(): void {
-  revalidatePath('/[locale]/activities/[slug]', 'page')
+  revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
 }
 
 function text(form: FormData, name: string, max: number): string | null {

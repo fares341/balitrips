@@ -108,8 +108,8 @@ export async function sheetImport(
     }
     const images = await fetchImages(plan, stored, session)
     const result = await applyPlan(plan, ctx, session, t, images.ids)
-    revalidatePath('/[locale]/activities', 'page')
-    revalidatePath('/[locale]/activities/[slug]', 'page')
+    revalidatePath('/[locale]/activities/(list)', 'page')
+    revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
     return {
       ...base,
       stage: 'done',
