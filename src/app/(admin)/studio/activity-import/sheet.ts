@@ -1,6 +1,5 @@
 import 'server-only'
 
-import { DEFAULT_FREE_CANCEL_HOURS } from '@/lib/content/cancellation'
 import { randomUUID } from 'node:crypto'
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
@@ -903,9 +902,6 @@ async function applyActivity(
     const [inserted] = await tx
       .insert(activities)
       .values({
-        // Sheet without the column: the site default (1 hour). An existing
-        // activity is never touched by this default.
-        freeCancellationHours: DEFAULT_FREE_CANCEL_HOURS,
         ...patch,
         slug: item.slug,
         name: patch.name ?? EMPTY,
