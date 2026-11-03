@@ -1063,7 +1063,7 @@ function PlaceCard({
         )}
       </div>
       <div className="mx-card-body">
-        <h3 className="mx-card-name">{place.name}</h3>
+        <h2 className="mx-card-name">{place.name}</h2>
         <p className="mx-card-meta">
           {category && (
             <span className="mx-tag" style={{ '--c': category.color } as CSSProperties}>
