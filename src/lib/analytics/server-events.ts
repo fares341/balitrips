@@ -67,6 +67,8 @@ async function paidOrderRows(
       userId: orders.userId,
       totalMinor: orders.totalMinor,
       currency: orders.presentmentCurrency,
+      settlementTotalMinor: orders.settlementTotalMinor,
+      settlementCurrency: orders.settlementCurrency,
       utmSource: orders.utmSource,
       utmMedium: orders.utmMedium,
       utmCampaign: orders.utmCampaign,
@@ -132,8 +134,9 @@ async function paidOrderRows(
       ...base,
       eventId: serverEventId('purchase', order.id),
       name: 'purchase',
-      valueMinor: order.totalMinor,
-      currency: order.currency,
+      // The charged amount (SAR since the switch), matching payment_success.
+      valueMinor: order.settlementTotalMinor ?? order.totalMinor,
+      currency: order.settlementCurrency ?? order.currency,
     })
     for (const payment of paidPayments) {
       rows.push({

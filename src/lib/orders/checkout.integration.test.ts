@@ -187,7 +187,9 @@ describe('the happy path', () => {
     expect(payment?.provider).toBe('sandbox')
     expect(payment?.providerPaymentId).toBe(result.payment.providerPaymentId)
     expect(payment?.status).toBe('requires_action')
-    expect(payment?.amountMinor).toBe(25_000)
+    // Charged in SAR at the default 3.75 rate.
+    expect(payment?.amountMinor).toBe(93_750)
+    expect(payment?.currency).toBe('SAR')
   })
 
   it('keeps the line snapshot after the product is renamed and withdrawn', async () => {

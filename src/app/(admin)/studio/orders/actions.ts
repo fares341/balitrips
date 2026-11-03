@@ -1,5 +1,6 @@
 'use server'
 
+import { chargedOf, refundChargeMinor } from '@/lib/currency/charge'
 import { randomUUID } from 'node:crypto'
 
 import { and, asc, eq, inArray, isNull, ne } from 'drizzle-orm'
@@ -144,6 +145,20 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         throw new Error(t('orders.err_no_settled_payment'))
       }
 
+      // المبلغ يُدخَل بعملة الطلب (سعر الكتالوج) ويُسترد بعملة الدفعة (ريال
+      // سعودي منذ التحويل) بسعر الصرف المجمّد على الطلب.
+      const charged = chargedOf(order)
+      const providerAmountMinor =
+        payment.currency === order.presentmentCurrency
+          ? amountMinor
+          : refundChargeMinor({
+              alreadyRefundedMinor: alreadyRefunded,
+              amountMinor,
+              orderTotalMinor: order.totalMinor,
+              chargedTotalMinor:
+                charged.currency === payment.currency ? charged.amountMinor : payment.amountMinor,
+            })
+
       let result: { providerRefundId: string | null; status: string }
       if (payment.provider === 'manual') {
         // دُفع بتحويل بنكي: لا مزوّد يُستدعى. المبلغ يُعاد يدوياً بالطريقة نفسها،
@@ -162,7 +177,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         const idempotencyKey = `refund:${orderItemId}:${line.refundedMinor}:${amountMinor}`
         result = await provider.refund({
           providerPaymentId: payment.providerPaymentId,
-          amountMinor,
+          amountMinor: providerAmountMinor,
           currency: payment.currency,
           reason: reason ?? undefined,
           idempotencyKey,
@@ -174,7 +189,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
         .values({
           paymentId: payment.id,
           orderItemId,
-          amountMinor,
+          amountMinor: providerAmountMinor,
           currency: payment.currency,
           reason,
           actorId: session.userId,

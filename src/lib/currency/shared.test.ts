@@ -6,8 +6,12 @@ describe('display currency', () => {
   it('maps countries', () => {
     expect(currencyForCountry('SA')).toBe('SAR')
     expect(currencyForCountry('de')).toBe('EUR')
-    expect(currencyForCountry('ZZ')).toBe('USD')
-    expect(currencyForCountry(null)).toBe('USD')
+    expect(currencyForCountry('US')).toBe('USD')
+    expect(currencyForCountry('ID')).toBe('IDR')
+    // Unknown or unmapped visitors see the charge currency.
+    expect(currencyForCountry('ZZ')).toBe('SAR')
+    expect(currencyForCountry(null)).toBe('SAR')
+    expect(currencyForCountry('')).toBe('SAR')
   })
   it('converts USD minor units', () => {
     expect(convertUsdMinor(10000, 'SAR', FALLBACK_RATES)).toBe(375)

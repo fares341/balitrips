@@ -20,6 +20,7 @@
  * migration this slice does not own.
  */
 
+import { chargedOf } from '@/lib/currency/charge'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -198,6 +199,8 @@ async function sendOrderConfirmation(orderId: string): Promise<void> {
       currency: orders.presentmentCurrency,
       subtotalMinor: orders.subtotalMinor,
       totalMinor: orders.totalMinor,
+      settlementTotalMinor: orders.settlementTotalMinor,
+      settlementCurrency: orders.settlementCurrency,
       placedAt: orders.placedAt,
       createdAt: orders.createdAt,
       customer: orders.customerSnapshot,
@@ -257,6 +260,10 @@ async function sendOrderConfirmation(orderId: string): Promise<void> {
     currency: order.currency,
     subtotalMinor: order.subtotalMinor,
     totalMinor: order.totalMinor,
+    charged:
+      order.settlementTotalMinor !== null && order.settlementCurrency
+        ? { amountMinor: order.settlementTotalMinor, currency: order.settlementCurrency }
+        : null,
     lines,
     orderUrl: absoluteUrl(locale, '/account/invoices'),
   })
@@ -276,6 +283,8 @@ async function sendRefundNotice(orderId: string, refundId: string | undefined): 
       orderNumber: orders.orderNumber,
       currency: orders.presentmentCurrency,
       totalMinor: orders.totalMinor,
+      settlementTotalMinor: orders.settlementTotalMinor,
+      settlementCurrency: orders.settlementCurrency,
       customer: orders.customerSnapshot,
       userId: orders.userId,
     })
@@ -284,6 +293,8 @@ async function sendRefundNotice(orderId: string, refundId: string | undefined): 
     .limit(1)
 
   if (!order) throw new Error(`No such order: ${orderId}`)
+  // Refund rows are in the currency that was charged (SAR since the switch).
+  const charged = chargedOf({ ...order, presentmentCurrency: order.currency })
 
   const kind = refundId === undefined ? 'refund_notice' : `refund_notice:${refundId}`
   if (await alreadySent('order', orderId, kind)) return
@@ -293,11 +304,18 @@ async function sendRefundNotice(orderId: string, refundId: string | undefined): 
     .select({
       id: refunds.id,
       amountMinor: refunds.amountMinor,
+      currency: refunds.currency,
       createdAt: refunds.createdAt,
     })
     .from(refunds)
     .innerJoin(payments, eq(refunds.paymentId, payments.id))
-    .where(and(eq(payments.orderId, orderId), eq(refunds.status, 'succeeded')))
+    .where(
+      and(
+        eq(payments.orderId, orderId),
+        eq(refunds.status, 'succeeded'),
+        eq(refunds.currency, charged.currency),
+      ),
+    )
 
   if (settled.length === 0) {
     console.info('[email] no settled refund on this order yet; nothing to announce', { orderId })
@@ -324,9 +342,9 @@ async function sendRefundNotice(orderId: string, refundId: string | undefined): 
     locale,
     name: order.customer?.name ?? null,
     orderNumber: order.orderNumber,
-    currency: order.currency,
+    currency: charged.currency,
     refundedMinor: amount,
-    isFull: totalRefunded >= order.totalMinor,
+    isFull: totalRefunded >= charged.amountMinor,
     issuedAt,
     orderUrl: absoluteUrl(locale, '/account/invoices'),
   })

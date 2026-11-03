@@ -134,6 +134,15 @@ export async function generateOrderInvoice(orderId: string): Promise<GeneratedIn
       amount: `${adjustmentSign(line)}${money(line.amountMinor)}`,
     })),
     total: { label: t('c_total'), amount: money(order.totalMinor) },
+    charged:
+      order.settlementTotalMinor !== null &&
+      order.settlementCurrency &&
+      order.settlementCurrency !== currency
+        ? {
+            label: t('charged_label'),
+            amount: formatMoney(order.settlementTotalMinor, order.settlementCurrency, locale),
+          }
+        : null,
     labels: {
       brand: seller.businessName || BRAND,
       title: t('pdf_invoice_t'),

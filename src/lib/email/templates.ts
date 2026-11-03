@@ -138,6 +138,8 @@ export interface OrderConfirmationEmailInput {
   currency: string
   subtotalMinor: number
   totalMinor: number
+  /** What the card was debited, when it differs from `currency` (SAR). */
+  charged?: { amountMinor: number; currency: string } | null
   lines: readonly OrderEmailLine[]
   /** Deep link to the booking in the customer's account. */
   orderUrl: string
@@ -165,13 +167,24 @@ export function renderOrderConfirmationEmail(input: OrderConfirmationEmailInput)
   })
 
   // A subtotal identical to the total is noise, not information.
-  const totals =
-    input.subtotalMinor === input.totalMinor
+  const chargedRow =
+    input.charged && input.charged.currency !== currency
+      ? [
+          {
+            label: t('charged_label'),
+            value: formatMoney(input.charged.amountMinor, input.charged.currency, locale),
+          },
+        ]
+      : []
+  const totals = [
+    ...(input.subtotalMinor === input.totalMinor
       ? [{ label: t('c_total'), value: formatMoney(input.totalMinor, currency, locale) }]
       : [
           { label: t('cart_total'), value: formatMoney(input.subtotalMinor, currency, locale) },
           { label: t('c_total'), value: formatMoney(input.totalMinor, currency, locale) },
-        ]
+        ]),
+    ...chargedRow,
+  ]
 
   const { html, text } = renderDocument({
     locale,

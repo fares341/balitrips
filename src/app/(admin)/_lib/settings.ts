@@ -350,8 +350,10 @@ function placeholderPolicy(title: string): PolicySetting {
 export const SETTING_DEFAULTS: SettingsShape = {
   currencies: {
     baseCurrency: 'USD',
-    presentmentCurrencies: ['USD', 'IDR', 'SAR', 'AED', 'EUR'],
-    defaultPresentment: 'USD',
+    presentmentCurrencies: ['SAR', 'USD', 'IDR', 'AED', 'EUR'],
+    // Cards are always charged in SAR (lib/currency/charge.ts); visitors from a
+    // known country still see an approximate price in their own currency.
+    defaultPresentment: 'SAR',
   },
   fees: {
     serviceFeeBps: 0,

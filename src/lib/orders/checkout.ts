@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
+import { readSetting } from '@/app/(admin)/_lib/settings'
+import { toChargeMinor, type Charge } from '@/lib/currency/charge'
 import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
@@ -103,6 +105,8 @@ export interface CheckoutResult {
   orderId: string
   orderNumber: string
   quote: Quote
+  /** What the card is charged: SAR, converted from the quote at the Studio rate. */
+  charge: Charge
   payment: { providerPaymentId: string; nextAction: unknown }
 }
 
@@ -387,6 +391,14 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
   // الطلب مرتين. نغلق جلسات طلباته المعلّقة السابقة أولاً.
   await closeOpenCheckouts({ userId: input.userId, guestTokenHash }, input.idempotencyKey)
 
+  // The gateway settles in SAR only: convert the agreed total once, here, and
+  // freeze the amount and rate on the order (refunds reuse them).
+  const charge = toChargeMinor(
+    quote.totalMinor,
+    quote.currency,
+    (await readSetting('vehicles')).sarPerUsd,
+  )
+
   const orderNumber = await nextOrderNumber()
   const provider = getPaymentProvider()
 
@@ -418,6 +430,9 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         presentmentCurrency: quote.currency,
         subtotalMinor: quote.subtotalMinor,
         totalMinor: quote.totalMinor,
+        settlementCurrency: charge.currency,
+        settlementTotalMinor: charge.amountMinor,
+        exchangeRate: charge.rate,
         couponId: adjusted.coupon?.id ?? null,
         couponCode: adjusted.coupon?.code ?? null,
         discountMinor: adjusted.totals.discountMinor,
@@ -485,8 +500,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
         provider: provider.name,
         providerPaymentId: null,
         status: 'requires_action',
-        amountMinor: quote.totalMinor,
-        currency: quote.currency,
+        amountMinor: charge.amountMinor,
+        currency: charge.currency,
         idempotencyKey: input.idempotencyKey,
       })
     } catch (error) {
@@ -507,8 +522,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     intent = await provider.createIntent({
       orderId,
       orderNumber,
-      amountMinor: quote.totalMinor,
-      currency: quote.currency,
+      amountMinor: charge.amountMinor,
+      currency: charge.currency,
       // مفتاح المزوّد لكل طلب: إعادة المحاولة بعد فشل تُنشئ طلباً جديداً، ولو
       // أُعيد مفتاح النموذج نفسه مع جسم مختلف لرفضه Stripe.
       idempotencyKey: `order:${orderId}`,
@@ -541,6 +556,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     orderId,
     orderNumber,
     quote,
+    charge,
     payment: { providerPaymentId: intent.providerPaymentId, nextAction: intent.nextAction },
   }
 }

@@ -35,6 +35,10 @@ export default async function ReconciliationPage({
   const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
+  // What the order was charged: the SAR settlement since the switch, else its total.
+  const chargedTotal = sql<number>`coalesce(${orders.settlementTotalMinor}, ${orders.totalMinor})::int`
+  const chargedCurrency = sql<string>`coalesce(${orders.settlementCurrency}, ${orders.presentmentCurrency})`
+
   const paymentColumns = {
     paymentId: payments.id,
     provider: payments.provider,
@@ -46,8 +50,8 @@ export default async function ReconciliationPage({
     orderId: orders.id,
     orderNumber: orders.orderNumber,
     orderStatus: orders.status,
-    totalMinor: orders.totalMinor,
-    orderCurrency: orders.presentmentCurrency,
+    totalMinor: chargedTotal,
+    orderCurrency: chargedCurrency,
   }
 
   const [paidNoOrder, orderNoPayment, duplicates, mismatched, sweeps] = await Promise.all([
@@ -65,8 +69,8 @@ export default async function ReconciliationPage({
         orderId: orders.id,
         orderNumber: orders.orderNumber,
         orderStatus: orders.status,
-        totalMinor: orders.totalMinor,
-        orderCurrency: orders.presentmentCurrency,
+        totalMinor: chargedTotal,
+        orderCurrency: chargedCurrency,
         placedAt: orders.placedAt,
       })
       .from(orders)
@@ -84,8 +88,8 @@ export default async function ReconciliationPage({
         orderId: orders.id,
         orderNumber: orders.orderNumber,
         orderStatus: orders.status,
-        totalMinor: orders.totalMinor,
-        orderCurrency: orders.presentmentCurrency,
+        totalMinor: chargedTotal,
+        orderCurrency: chargedCurrency,
         settledCount: sql<number>`count(${payments.id})::int`,
         settledMinor: sql<string>`sum(${payments.amountMinor})::text`,
       })
@@ -103,7 +107,7 @@ export default async function ReconciliationPage({
       .where(
         and(
           inArray(payments.status, SETTLED),
-          sql`(${payments.amountMinor} <> ${orders.totalMinor} or ${payments.currency} <> ${orders.presentmentCurrency})`,
+          sql`(${payments.amountMinor} <> ${chargedTotal} or ${payments.currency} <> ${chargedCurrency})`,
           // A second payment is already listed as a duplicate.
           sql`(select count(*) from payments p where p.order_id = ${orders.id} and p.status in ('succeeded', 'refunded', 'partially_refunded')) = 1`,
         ),

@@ -16,6 +16,7 @@
  *    replay the first, failed session.
  */
 
+import { chargedOf } from '@/lib/currency/charge'
 import { eq } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -85,8 +86,7 @@ export async function retryOrderPayment(input: {
         provider: provider.name,
         providerPaymentId: null,
         status: 'requires_action',
-        amountMinor: order.totalMinor,
-        currency: order.presentmentCurrency,
+        ...chargedOf(order),
         idempotencyKey: key,
       })
     } catch (error) {
@@ -103,8 +103,7 @@ export async function retryOrderPayment(input: {
     intent = await provider.createIntent({
       orderId: order.id,
       orderNumber: order.orderNumber,
-      amountMinor: order.totalMinor,
-      currency: order.presentmentCurrency,
+      ...chargedOf(order),
       idempotencyKey: `order:${order.id}:${attempt}`,
       customer: {
         email: customer?.email ?? '',
