@@ -32,7 +32,7 @@ import { requireCapability } from '../../_lib/session'
 const LIST = adminHref('/addons')
 
 function refreshPublic(): void {
-  revalidatePath('/[locale]/activities/[slug]', 'page')
+  revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
 }
 
 /** Create (`id = 'new'`) or update one extra of the library. */

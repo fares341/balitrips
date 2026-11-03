@@ -79,8 +79,8 @@ async function tierIdsOf(activityId: string): Promise<string[]> {
 
 /** Public pages that show activities, refreshed after an edit. */
 function refreshPublic(): void {
-  revalidatePath('/[locale]/activities/[slug]', 'page')
-  revalidatePath('/[locale]/activities', 'page')
+  revalidatePath('/[locale]/activities/[slug]/(page)', 'page')
+  revalidatePath('/[locale]/activities/(list)', 'page')
   revalidatePath('/[locale]', 'page')
 }
 

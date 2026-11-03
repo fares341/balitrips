@@ -25,9 +25,9 @@ import { listActivities, listCategories } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
 
-import { ActivitiesExplorer, type ExplorerFilters } from './activities-explorer'
-import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
-import { CUSTOM_HREF } from '../_ui/routes-extra'
+import { ActivitiesExplorer, type ExplorerFilters } from '../activities-explorer'
+import { ACTIVITY_SORTS, type ExplorerSort } from '../explorer-contract'
+import { CUSTOM_HREF } from '../../_ui/routes-extra'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'

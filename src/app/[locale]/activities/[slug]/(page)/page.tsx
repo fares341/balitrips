@@ -29,11 +29,12 @@ import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { markdownToPlain } from '@/lib/content/markdown'
-import { getActivityBySlug, listActivityPageSlugs, mergedActivitySlug } from '@/lib/content/queries'
+import { listActivityPageSlugs } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
-import { ActivityView } from './view'
+import { findMergedSlug, findPageActivity } from '../lookup'
+import { ActivityView } from '../view'
 
 import '@/styles/bt-activity.css'
 
@@ -51,7 +52,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
-  const activity = await getActivityBySlug(slug)
+  const activity = await findPageActivity(slug)
   if (!activity) return {}
 
   const name = pick(activity.name, lang, activity.slug)
@@ -107,12 +108,13 @@ export default async function ActivityDetailPage({ params }: PageProps) {
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
 
   // An activity folded into another one as a package: its old link lands there.
-  const mergedInto = await mergedActivitySlug(slug)
+  // (layout.tsx already did this before streaming; these calls are cached.)
+  const mergedInto = await findMergedSlug(slug)
   if (mergedInto !== null) {
     permanentRedirect(getPathname({ href: `${HUB_PATH}/${mergedInto}`, locale: lang }))
   }
 
-  const activity = await getActivityBySlug(slug)
+  const activity = await findPageActivity(slug)
   if (!activity) notFound()
 
   return <ActivityView activity={activity} lang={lang} />

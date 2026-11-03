@@ -24,6 +24,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -116,7 +117,6 @@ export function CoordPicker({
   const [latText, setLatText] = useState(lat)
   const [lonText, setLonText] = useState(lon)
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
-  const [pin, setPin] = useState<{ x: number; y: number } | null>(null)
   const [inWater, setInWater] = useState(false)
   const [paste, setPaste] = useState('')
   const [pasteResult, setPasteResult] = useState<ParsedCoords | 'none' | null>(null)
@@ -126,7 +126,7 @@ export function CoordPicker({
   const boxRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLike | null>(null)
   const dragRef = useRef(false)
-  const frameRef = useRef(0)
+  const pinRef = useRef<HTMLSpanElement>(null)
   const cache = useRef(new Map<string, SearchHit[]>())
 
   const point = useMemo(() => {
@@ -140,24 +140,32 @@ export function CoordPicker({
     live.current = point
   })
 
-  /** Pin position + "is it in water" — read from what the map actually draws. */
+  /**
+   * Pin position, set imperatively inside the map's own `move` event (same
+   * frame as the canvas draw, no React re-render per frame).
+   */
   const reproject = useCallback(() => {
-    cancelAnimationFrame(frameRef.current)
-    frameRef.current = requestAnimationFrame(() => {
-      const map = mapRef.current
-      const p = live.current
-      if (map === null || p === null) {
-        setPin(null)
-        setInWater(false)
-        return
-      }
-      const at = map.project([p.lon, p.lat])
-      setPin(at)
-      const layers = WATER_LAYERS.filter((id) => !!map.getLayer?.(id))
-      const found =
-        layers.length > 0 ? (map.queryRenderedFeatures?.([at.x, at.y], { layers }) ?? []) : []
-      setInWater(found.length > 0)
-    })
+    const map = mapRef.current
+    const el = pinRef.current
+    const p = live.current
+    if (map === null || el === null || p === null) return
+    const at = map.project([p.lon, p.lat])
+    el.style.transform = `translate3d(${at.x.toFixed(1)}px, ${at.y.toFixed(1)}px, 0)`
+  }, [])
+
+  /** "Is the pin in water" — read from what the map actually draws, once it settles. */
+  const checkWater = useCallback(() => {
+    const map = mapRef.current
+    const p = live.current
+    if (map === null || p === null) {
+      setInWater(false)
+      return
+    }
+    const at = map.project([p.lon, p.lat])
+    const layers = WATER_LAYERS.filter((id) => !!map.getLayer?.(id))
+    const found =
+      layers.length > 0 ? (map.queryRenderedFeatures?.([at.x, at.y], { layers }) ?? []) : []
+    setInWater(found.length > 0)
   }, [])
 
   const setFrom = useCallback((lng: number, latitude: number) => {
@@ -212,10 +220,11 @@ export function CoordPicker({
         m.on('load', () => {
           if (!cancelled) setState('ready')
           reproject()
+          checkWater()
         })
         m.on('move', reproject)
-        m.on('idle', reproject)
         m.on('resize', reproject)
+        m.on('idle', checkWater)
         m.on('data', (event) => {
           const e = event as { dataType?: string; tile?: unknown } | undefined
           if (e?.dataType === 'source' && e.tile !== undefined) tileOk = true
@@ -236,16 +245,18 @@ export function CoordPicker({
       })
     return () => {
       cancelled = true
-      cancelAnimationFrame(frameRef.current)
       map?.remove()
       mapRef.current = null
     }
-  }, [settings, reproject, setFrom, locale])
+  }, [settings, reproject, checkWater, setFrom, locale])
 
-  // Typed coordinates move the pin.
+  // Typed coordinates (or a drag) move the pin — placed before paint.
+  useLayoutEffect(() => {
+    if (state === 'ready') reproject()
+  }, [point, state, reproject])
   useEffect(() => {
-    reproject()
-  }, [point, reproject])
+    if (state === 'ready') checkWater()
+  }, [point, state, checkWater])
 
   // Place search: one request per pause in typing, the previous one cancelled.
   useEffect(() => {
@@ -454,10 +465,10 @@ export function CoordPicker({
           role="img"
           aria-label={t('places.pick_label')}
         />
-        {pin !== null && state === 'ready' && (
+        {point !== null && state === 'ready' && (
           <span
+            ref={pinRef}
             className="a-coord-pin"
-            style={{ transform: `translate(${pin.x}px, ${pin.y}px)` }}
             aria-hidden="true"
             onPointerDown={onPinDown}
             onPointerMove={onPinMove}

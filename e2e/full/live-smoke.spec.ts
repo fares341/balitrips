@@ -47,18 +47,22 @@ for (const [path, name] of PAGES) {
       `${response?.status()}`,
     )
     const inputs = await page.locator('input:visible, textarea:visible, select:visible').count()
+    // A hub with nothing published shows the owner's empty state (SectionEmpty)
+    // instead of its search/filter controls — that is correct, not a broken page.
+    const emptyState = await page.locator('.section-empty:visible').count()
     check(
       info,
       `live ${name}`,
       'has visible inputs',
       inputs > 0 ||
+        emptyState > 0 ||
         name.startsWith('home') ||
         name === 'custom trip' ||
         name === 'cart' ||
         name.startsWith('activities') ||
         name.startsWith('itineraries') ||
         name === 'plans',
-      `${inputs}`,
+      emptyState > 0 ? `${inputs} (empty state shown)` : `${inputs}`,
     )
     check(info, `live ${name}`, 'no uncaught JS errors', errors.length === 0, errors.join(' | '))
   })
