@@ -14,6 +14,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import {
   convertUsdMinor,
   CURRENCY_COOKIE,
+  DEFAULT_DISPLAY_CURRENCY,
   DISPLAY_CURRENCIES,
   FALLBACK_RATES,
   formatApprox,
@@ -29,14 +30,14 @@ type State = {
 }
 
 const CurrencyContext = createContext<State>({
-  currency: 'USD',
+  currency: DEFAULT_DISPLAY_CURRENCY,
   rates: FALLBACK_RATES,
   ready: false,
   setCurrency: () => {},
 })
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<DisplayCurrency>('USD')
+  const [currency, setCurrencyState] = useState<DisplayCurrency>(DEFAULT_DISPLAY_CURRENCY)
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES)
   const [ready, setReady] = useState(false)
 
@@ -86,14 +87,18 @@ export function LocalPrice({
   minor,
   currency,
   className,
+  except,
 }: {
   minor: number
   currency: string
   className?: string
+  /** Also render nothing when the visitor's currency is this one (e.g. SAR next to the SAR charge). */
+  except?: string
 }) {
   const locale = useLocale()
   const { currency: target, rates, ready } = useDisplayCurrency()
   if (!ready || target === 'USD' || currency.toUpperCase() !== 'USD' || minor <= 0) return null
+  if (except !== undefined && target === except.toUpperCase()) return null
   const amount = convertUsdMinor(minor, target, rates)
   if (amount === null) return null
   return (

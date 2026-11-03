@@ -1,5 +1,6 @@
 'use server'
 
+import { DEFAULT_FREE_CANCEL_HOURS } from '@/lib/content/cancellation'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -345,6 +346,9 @@ export async function saveActivity(id: string, sectionRaw: string, form: FormDat
         ;[row] = await tx
           .insert(activities)
           .values({
+            // A new activity starts with the site default (free cancellation up
+            // to 1 hour before) unless the form set it; existing ones keep theirs.
+            freeCancellationHours: DEFAULT_FREE_CANCEL_HOURS,
             ...(values as typeof activities.$inferInsert),
             sortOrder: (last?.sortOrder ?? -1) + 1,
             timeSlots: [],

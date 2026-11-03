@@ -52,8 +52,10 @@ export type CheckoutFlowProps = {
   guestAllowed: boolean
   defaults: { name: string; email: string; dialCode: string; phone: string }
   expectedTotalMinor: number
-  /** The pay button's amount, formatted by the server. */
+  /** The pay button's amount, formatted by the server (the SAR charge). */
   totalLabel: string
+  /** "Charged in SAR: X" + the visitor's approximate amount, server-rendered. */
+  chargeNote?: ReactNode
   idempotencyKey: string
   /** Server-rendered review of the lines (step 2). */
   review: ReactNode
@@ -545,6 +547,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 </span>
               </li>
             </ul>
+            {props.chargeNote}
             <p className="ck-secure">
               <Icon name="shield" size={16} /> {t('co_secure')}
             </p>
@@ -558,7 +561,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 aria-busy={busy || undefined}
                 disabled={busy}
               >
-                {t('co_pay')} <span dir="ltr">{props.totalLabel}</span>
+                {t('co_pay')} <bdi dir="auto">{props.totalLabel}</bdi>
               </button>
             </div>
           </section>

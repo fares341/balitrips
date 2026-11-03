@@ -1,8 +1,8 @@
 /**
  * Display currencies — client-safe helpers.
  *
- * Purely informational: every charge stays in the order's own currency
- * (USD, Stripe, manual capture). Nothing here touches the pricing path.
+ * Purely informational: every charge is made in SAR (see ./charge.ts), at
+ * the Studio rate frozen on the order. Nothing here touches the pricing path.
  */
 
 export const DISPLAY_CURRENCIES = [
@@ -106,10 +106,16 @@ const COUNTRY_CURRENCY: Record<string, DisplayCurrency> = {
   ...Object.fromEntries(EURO_COUNTRIES.map((c) => [c, 'EUR' as const])),
 }
 
-/** ISO 3166-1 alpha-2 → display currency; USD for anything unmapped. */
+/**
+ * Shown when the visitor's country is unknown or unmapped: the riyal, which
+ * is also the currency every card is charged in.
+ */
+export const DEFAULT_DISPLAY_CURRENCY: DisplayCurrency = 'SAR'
+
+/** ISO 3166-1 alpha-2 → display currency; SAR for anything unknown or unmapped. */
 export function currencyForCountry(country: string | null | undefined): DisplayCurrency {
-  if (!country) return 'USD'
-  return COUNTRY_CURRENCY[country.trim().toUpperCase()] ?? 'USD'
+  if (!country) return DEFAULT_DISPLAY_CURRENCY
+  return COUNTRY_CURRENCY[country.trim().toUpperCase()] ?? DEFAULT_DISPLAY_CURRENCY
 }
 
 /** Approximate amount in `currency` for a USD amount in minor units. */

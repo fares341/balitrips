@@ -46,6 +46,12 @@ async function payTrip(page: Page): Promise<string> {
   await toReview.click()
   await page.locator('input[name="terms"]').check()
   await page.getByRole('button', { name: 'Continue to payment' }).click()
+  // The gateway only takes SAR: the payment step says so, with the amount.
+  const chargeNote = page.locator('[data-testid="charge-note"]')
+  await expect(chargeNote.first(), 'no SAR charge note on the payment step').toContainText(
+    /charged in Saudi riyals: SAR\s?[\d,.]+/,
+  )
+  await expect(page.getByRole('button', { name: /^Pay/ })).toContainText('SAR')
   await page.getByRole('button', { name: /^Pay/ }).click()
 
   await expect(page, 'no payment was started').toHaveURL(/\/api\/payments\/sandbox\/challenge/, {

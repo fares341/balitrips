@@ -21,6 +21,7 @@
 import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
 import { isItineraryTier } from '@/lib/itineraries/tiers'
 import { LocalPrice } from '@/components/currency/currency-context'
+import { toChargeMinor } from '@/lib/currency/charge'
 import { randomUUID } from 'node:crypto'
 
 import type { Metadata } from 'next'
@@ -180,6 +181,29 @@ export default async function CheckoutPage({
   }
 
   const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
+
+  // The card is always debited in SAR, at the Studio rate (same conversion as
+  // lib/orders/checkout.ts). Say so plainly, with the visitor's approximation.
+  const chargeLabel = await (async () => {
+    try {
+      const sarPerUsd = (await readSetting('vehicles')).sarPerUsd
+      const charge = toChargeMinor(cart.totalMinor, cart.currency, sarPerUsd)
+      if (locale === 'ar') {
+        const sar = charge.amountMinor / 100
+        const digits = Number.isInteger(sar) ? 0 : 2
+        return `${new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(sar)} ر.س`
+      }
+      return money(charge.amountMinor, charge.currency)
+    } catch {
+      return money(cart.totalMinor, cart.currency)
+    }
+  })()
+  const chargeNote = (
+    <div className="ck-charge-note" data-testid="charge-note" role="note">
+      <b>{t('pay_charge_sar', { amount: chargeLabel })}</b>
+      <LocalPrice minor={cart.totalMinor} currency={cart.currency} except="SAR" />
+    </div>
+  )
   const titleOf = (line: CartLineView) => {
     const name = pick(line.name, locale, '')
     return name === '' ? t(`ct2_grp_${line.kind}`) : name
@@ -412,6 +436,7 @@ export default async function CheckoutPage({
         </b>
       </div>
       <LocalPrice minor={cart.totalMinor} currency={cart.currency} />
+      {chargeNote}
       <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
       <small className="muted">{t('cur_checkout_note')}</small>
       <form action={applyCouponAction} className="ck-coupon stack" style={{ gap: 8 }}>
@@ -464,7 +489,8 @@ export default async function CheckoutPage({
       guestAllowed={guestAllowed}
       defaults={defaults}
       expectedTotalMinor={cart.totalMinor}
-      totalLabel={money(cart.totalMinor, cart.currency)}
+      totalLabel={chargeLabel}
+      chargeNote={chargeNote}
       // New per render, so a double-click submits the same key and cannot
       // buy the trip twice, while a fresh visit gets a fresh one.
       idempotencyKey={randomUUID()}

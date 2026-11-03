@@ -377,6 +377,8 @@ export interface InvoicePdfInput {
   subtotal: { label: string; amount: string }
   adjustments: readonly { label: string; amount: string }[]
   total: { label: string; amount: string }
+  /** What the card was actually debited (SAR), when it differs from the total's currency. */
+  charged?: { label: string; amount: string } | null
   labels: {
     brand: string
     title: string
@@ -442,7 +444,15 @@ ${adjustmentRows(input.adjustments)}
         <tr class="total">
           <td colspan="2">${escapeHtml(input.total.label)}</td>
           <td class="numeric">${escapeHtml(input.total.amount)}</td>
-        </tr>
+        </tr>${
+          input.charged
+            ? `
+        <tr>
+          <td colspan="2">${escapeHtml(input.charged.label)}</td>
+          <td class="numeric">${escapeHtml(input.charged.amount)}</td>
+        </tr>`
+            : ''
+        }
       </tbody>
     </table>
     <p class="fine">${escapeHtml(labels.paidNote)}</p>`

@@ -433,6 +433,17 @@
   flex-direction: column;
   gap: 2px;
 }
+.ck-charge-note {
+  display: grid;
+  gap: 2px;
+  margin-block: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--palm, #2f6b3a) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--palm, #2f6b3a) 28%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .ck-secure {
   display: flex;
   gap: 8px;
