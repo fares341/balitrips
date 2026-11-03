@@ -28,6 +28,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react'
+import { preload } from 'react-dom'
 
 import { HERO_STEP_MS } from './hero-media'
 
@@ -78,6 +79,9 @@ export function HeroVideo({
   /** Bumped on every change so the progress bar animation restarts. */
   const [cycle, setCycle] = useState(0)
   const reduce = useSyncExternalStore(subscribeReduced, readReduced, readReducedOnServer)
+  // The first poster is the page's LCP; a <video poster> is discovered late.
+  const firstPoster = clips[0]?.poster
+  if (firstPoster) preload(firstPoster, { as: 'image', fetchPriority: 'high' })
 
   const rootRef = useRef<HTMLElement>(null)
   const videosRef = useRef<(HTMLVideoElement | null)[]>([])
