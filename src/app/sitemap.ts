@@ -5,7 +5,7 @@
  */
 import type { MetadataRoute } from 'next'
 
-import { locales, type Locale } from '@/i18n/config'
+import { defaultLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { listActivities, listArticles, listItineraries, listPackages } from '@/lib/content/queries'
 import { FEATURES } from '@/lib/features'
@@ -47,7 +47,11 @@ function url(href: string, locale: Locale): string {
 }
 
 function entries(href: string, lastModified?: Date): MetadataRoute.Sitemap {
-  const languages = Object.fromEntries(locales.map((one) => [one, url(href, one)]))
+  // Same set as each page's <head> (_seo-hreflang.ts), x-default included.
+  const languages: Record<string, string> = Object.fromEntries(
+    locales.map((one) => [one, url(href, one)]),
+  )
+  languages['x-default'] = url(href, defaultLocale)
   return locales.map((locale) => ({
     url: url(href, locale),
     ...(lastModified ? { lastModified } : {}),
