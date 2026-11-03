@@ -6,7 +6,7 @@
  * pin is a link to the place's edit page.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { attributionsFor, type MapSettings } from '@/app/[locale]/map/map-style'
 import { loadMapLibre, type MapLike } from '@/app/[locale]/map/maplibre-loader'
@@ -46,10 +46,10 @@ export function PlacesMap({
     hidden: true,
   })
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
-  const [screen, setScreen] = useState<{ id: string; x: number; y: number }[]>([])
   const boxRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLike | null>(null)
-  const frameRef = useRef(0)
+  /** Pin elements by id, moved inside the map's move event so they never trail the canvas. */
+  const pinEls = useRef(new Map<string, HTMLAnchorElement>())
 
   const visible = useMemo(() => pins.filter((pin) => shown[pin.kind]), [pins, shown])
   const live = useRef(visible)
@@ -63,21 +63,22 @@ export function PlacesMap({
     return out
   }, [pins])
 
+  // Positions every visible pin imperatively, in the same frame as the map's
+  // own draw: no React state, no re-render per `move` event.
   const measure = useCallback(() => {
-    cancelAnimationFrame(frameRef.current)
-    frameRef.current = requestAnimationFrame(() => {
-      const map = mapRef.current
-      const box = boxRef.current
-      if (map === null || box === null) return
-      const W = box.clientWidth
-      const H = box.clientHeight
-      const out: { id: string; x: number; y: number }[] = []
-      for (const pin of live.current) {
-        const p = map.project([pin.lon, pin.lat])
-        if (p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30) out.push({ id: pin.id, ...p })
-      }
-      setScreen(out)
-    })
+    const map = mapRef.current
+    const box = boxRef.current
+    if (map === null || box === null) return
+    const W = box.clientWidth
+    const H = box.clientHeight
+    for (const pin of live.current) {
+      const el = pinEls.current.get(pin.id)
+      if (!el) continue
+      const p = map.project([pin.lon, pin.lat])
+      const onScreen = p.x > -30 && p.y > -30 && p.x < W + 30 && p.y < H + 30
+      el.style.display = onScreen ? '' : 'none'
+      if (onScreen) el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`
+    }
   }, [])
 
   const focus = useMemo(() => pins.find((pin) => pin.id === focusId) ?? null, [pins, focusId])
@@ -124,18 +125,15 @@ export function PlacesMap({
       })
     return () => {
       cancelled = true
-      cancelAnimationFrame(frameRef.current)
       map?.remove()
       mapRef.current = null
     }
   }, [settings, focus, measure, locale])
 
-  // Legend toggles: re-place the pins.
-  useEffect(() => {
-    measure()
-  }, [visible, measure])
-
-  const byId = useMemo(() => new Map(pins.map((pin) => [pin.id, pin])), [pins])
+  // Pins mount when the map is ready or the legend changes: place them before paint.
+  useLayoutEffect(() => {
+    if (state === 'ready') measure()
+  }, [state, visible, measure])
 
   return (
     <div className="a-card a-pmap">
@@ -158,28 +156,28 @@ export function PlacesMap({
       <div className="a-pmap-box" dir="ltr">
         <div ref={boxRef} className="a-pmap-canvas" />
         {state === 'ready' &&
-          screen.map((s) => {
-            const pin = byId.get(s.id)
-            if (pin === undefined) return null
-            return (
-              <a
-                key={s.id}
-                href={pin.href}
-                className={`a-pmap-pin is-${pin.kind}${pin.id === focusId ? ' is-focus' : ''}`}
-                style={{ transform: `translate(${s.x}px, ${s.y}px)` }}
-                aria-label={`${pin.name} — ${t(`map.legend_${pin.kind}`)} — ${t('map.edit')}`}
-              >
-                <i aria-hidden="true" />
-                <span>
-                  <b>{pin.name}</b>
-                  <small>
-                    {t(`map.legend_${pin.kind}`)}
-                    {pin.note ? ` · ${pin.note}` : ''}
-                  </small>
-                </span>
-              </a>
-            )
-          })}
+          visible.map((pin) => (
+            <a
+              key={pin.id}
+              ref={(el) => {
+                if (el) pinEls.current.set(pin.id, el)
+                else pinEls.current.delete(pin.id)
+              }}
+              href={pin.href}
+              className={`a-pmap-pin is-${pin.kind}${pin.id === focusId ? ' is-focus' : ''}`}
+              style={{ display: 'none' }}
+              aria-label={`${pin.name} — ${t(`map.legend_${pin.kind}`)} — ${t('map.edit')}`}
+            >
+              <i aria-hidden="true" />
+              <span>
+                <b>{pin.name}</b>
+                <small>
+                  {t(`map.legend_${pin.kind}`)}
+                  {pin.note ? ` · ${pin.note}` : ''}
+                </small>
+              </span>
+            </a>
+          ))}
         {state === 'loading' && <p className="a-coord-state">{t('map.loading')}</p>}
         {state === 'failed' && <p className="a-coord-state">{t('map.failed')}</p>}
         {state === 'ready' && (
