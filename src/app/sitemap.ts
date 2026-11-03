@@ -5,6 +5,7 @@
  */
 import type { MetadataRoute } from 'next'
 
+import { canonicalPolicyHref } from '@/components/layout/routes'
 import { defaultLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { listActivities, listArticles, listItineraries, listPackages } from '@/lib/content/queries'
@@ -49,10 +50,12 @@ function url(href: string, locale: Locale): string {
 function entries(href: string, lastModified?: Date): MetadataRoute.Sitemap {
   // Same set as each page's <head> (_seo-hreflang.ts), x-default included.
   const languages: Record<string, string> = Object.fromEntries(
-    locales.map((one) => [one, url(href, one)]),
+    locales.map((one) => [one, url(canonicalPolicyHref(href, one), one)]),
   )
   languages['x-default'] = url(href, defaultLocale)
-  return locales.map((locale) => ({
+  // Arabic per-policy URLs only redirect to /ar/policies (listed on its own).
+  const listed = locales.filter((one) => canonicalPolicyHref(href, one) === href)
+  return listed.map((locale) => ({
     url: url(href, locale),
     ...(lastModified ? { lastModified } : {}),
     alternates: { languages },

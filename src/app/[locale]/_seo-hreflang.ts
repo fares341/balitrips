@@ -24,6 +24,7 @@
 import type { Metadata } from 'next'
 
 import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
+import { canonicalPolicyHref } from '@/components/layout/routes'
 import { getPathname } from '@/i18n/routing'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/+$/, '')
@@ -42,10 +43,11 @@ export function localeUrl(href: string, locale: Locale): string {
  */
 export function alternatesFor(href: string, locale: Locale): Metadata['alternates'] {
   const languages: Record<string, string> = {}
-  for (const candidate of locales) languages[candidate] = localeUrl(href, candidate)
+  for (const candidate of locales)
+    languages[candidate] = localeUrl(canonicalPolicyHref(href, candidate), candidate)
   languages['x-default'] = localeUrl(href, defaultLocale)
 
-  return { canonical: localeUrl(href, locale), languages }
+  return { canonical: localeUrl(canonicalPolicyHref(href, locale), locale), languages }
 }
 
 /**
