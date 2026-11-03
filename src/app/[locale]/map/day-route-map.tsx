@@ -13,7 +13,7 @@
  * blocked — the illustrated island stands in, with the same pins and line.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -70,7 +70,14 @@ export function DayRouteMap({
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>(
     pins.length === 0 ? 'failed' : 'loading',
   )
-  const [screen, setScreen] = useState<{ x: number; y: number }[]>([])
+  /** Pin elements, moved inside the map's move event so they never trail the canvas. */
+  const pinEls = useRef<(HTMLSpanElement | null)[]>([])
+  const placeRef = useRef<() => void>(() => {})
+
+  // The pins mount once the map is ready: place them before that first paint.
+  useLayoutEffect(() => {
+    if (state === 'ready') placeRef.current()
+  }, [state])
 
   useEffect(() => {
     const box = boxRef.current
@@ -82,8 +89,14 @@ export function DayRouteMap({
     const place = () => {
       if (map === null) return
       const m = map
-      setScreen(pins.map((pin) => m.project([pin.lon, pin.lat])))
+      pins.forEach((pin, index) => {
+        const el = pinEls.current[index]
+        if (!el) return
+        const p = m.project([pin.lon, pin.lat])
+        el.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`
+      })
     }
+    placeRef.current = place
     loadMapLibre()
       .then((engine) => {
         if (cancelled) return
@@ -184,19 +197,17 @@ export function DayRouteMap({
           <div ref={boxRef} className="mp-day-canvas" dir="ltr" aria-hidden="true" />
           {state === 'ready' && (
             <div className="mp-day-pins" aria-hidden="true">
-              {pins.map((pin, index) => {
-                const point = screen[index]
-                if (!point) return null
-                return (
-                  <span
-                    key={pin.number}
-                    className="mp-day-pin"
-                    style={{ transform: `translate(${point.x}px, ${point.y}px)` }}
-                  >
-                    {pin.number}
-                  </span>
-                )
-              })}
+              {pins.map((pin, index) => (
+                <span
+                  key={pin.number}
+                  ref={(el) => {
+                    pinEls.current[index] = el
+                  }}
+                  className="mp-day-pin"
+                >
+                  {pin.number}
+                </span>
+              ))}
             </div>
           )}
           {state === 'failed' && pins.length > 0 && (
