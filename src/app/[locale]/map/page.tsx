@@ -4,7 +4,8 @@
  * REQUEST-RENDERED, ON PURPOSE: the payload differs for an entitled visitor
  * and an anonymous one, so a cached page cannot serve both.
  *
- * Map v2 (owner, Nov 2026): area → 1–3 categories → results. This page sends
+ * Map v3 (owner, Nov 2026 — reference UX): the map is the landing; area,
+ * categories, traveler type and duration are filter chips. This page sends
  * only public, aggregate data (areas, counts per region and category, the
  * category look, plan prices). `places` — names, coordinates, images of every
  * gated place — stays a server-local value; results are fetched per
@@ -16,6 +17,7 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { preconnect, preload } from 'react-dom'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
@@ -27,7 +29,7 @@ import { can } from '@/lib/auth/roles'
 import { getUser } from '@/lib/auth/session'
 import { ownsItinerary } from '@/lib/content/extra-queries'
 import { pick, pickOptional } from '@/lib/content/localize'
-import { getItineraryBySlug, listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
+import { getItineraryBySlug, listMapTaxonomy } from '@/lib/content/queries'
 import { loadEntitlements } from '@/lib/entitlements'
 import { listPublishedPlans } from '@/lib/entitlements/plans'
 import { buildDayRoute, openDayNumbers } from '@/lib/itineraries/day-route'
@@ -37,10 +39,18 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
-import { ALL_AREA, areaOptions, countRows, parseSelection } from '@/lib/map/explore'
-import { listMapCategories } from '@/lib/map/queries'
+import { listMapCategoriesCached, listMapPlacesCached } from '@/lib/map/cached'
+import {
+  ALL_AREA,
+  areaOptions,
+  countRows,
+  facetOptions,
+  parseFactFilter,
+  parseSelection,
+} from '@/lib/map/explore'
 
 import { mapViewSettings } from './map-style'
+import { MAPLIBRE_CSS, MAPLIBRE_JS } from './maplibre-loader'
 import { DayRouteMap } from './day-route-map'
 import { MapExplorer } from './map-explorer'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
@@ -132,11 +142,17 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     )
   }
 
+  // Start the map engine and the tiles while the server works (hoisted to <head>).
+  preconnect('https://unpkg.com', { crossOrigin: 'anonymous' })
+  preconnect('https://tiles.openfreemap.org', { crossOrigin: 'anonymous' })
+  preload(MAPLIBRE_JS, { as: 'script', crossOrigin: 'anonymous' })
+  preload(MAPLIBRE_CSS, { as: 'style', crossOrigin: 'anonymous' })
+
   const [places, held, taxonomy, categories, plans, settings] = await Promise.all([
-    listMapPlaces(),
+    listMapPlacesCached(),
     loadEntitlements(userId),
     listMapTaxonomy(),
-    listMapCategories(),
+    listMapCategoriesCached(),
     listPublishedPlans(),
     readSetting('map'),
   ])
@@ -163,6 +179,15 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     categories.filter((one) => one.tier === 'vip' && !unlocked).map((one) => one.key),
   )
   selection.categories = selection.categories.filter((key) => !lockedKeys.has(key))
+  // Map v3: the map is the landing — no area means the whole island, no
+  // category means every type.
+  if (selection.area === null) selection.area = ALL_AREA
+  // Filters offered only for values some place really has (aggregate only).
+  const facets = facetOptions(places)
+  const facts = parseFactFilter({
+    traveler: firstValue(query.traveler),
+    dur: firstValue(query.dur),
+  })
   // `?place=slug` (place page → map): open that place, if this viewer may.
   let initialPlace: string | null = null
   if (initialSlug !== null) {
@@ -170,7 +195,11 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     if (hit && hit.categoryKey && (hit.isFree || held.has(hit.requiredEntitlement))) {
       initialPlace = hit.slug
       selection.area = ALL_AREA
-      selection.categories = [hit.categoryKey]
+      if (selection.categories.length > 0 && !selection.categories.includes(hit.categoryKey)) {
+        selection.categories = []
+      }
+      facts.travelers = []
+      facts.durations = []
     }
   }
 
@@ -212,6 +241,9 @@ export default async function MapPage({ params, searchParams }: PageProps) {
         icon: one.icon,
       }))}
       initial={selection}
+      initialFacts={{ travelers: [...facts.travelers], durations: [...facts.durations] }}
+      travelerOptions={facets.travelers}
+      durationOptions={facets.durations}
       initialPlace={initialPlace}
       plans={paywallPlans}
       unlocked={unlocked}

@@ -684,8 +684,6 @@ const LIGHT_DROP = new Set([
   'buildings-3d',
   'water-texture',
   'beach-grain',
-  'osm-poi',
-  'osm-peaks',
   'satellite',
   'outside-free',
   'free-zone-line',
@@ -711,20 +709,59 @@ const LIGHT_SWAP: Record<string, string> = {
   [C.inland]: '#a6d4ea',
   [C.shore]: '#93c6df',
   [C.building]: '#e6e1d8',
-  '#fff7e8': '#3f4a44',
-  '#bff1f8': '#3d6f86',
-  '#d9f6ff': '#3d6f86',
-  '#ffe9c7': '#6b6458',
-  '#ffd6c2': '#6b6458',
-  '#ffffff': '#2f3a34',
-  [HALO]: 'rgba(255,255,255,0.9)',
+  // Labels (map v3, reference UX): dark ink on a solid white halo, so town,
+  // road and water names read at a glance on phones.
+  '#fff7e8': '#2b332e',
+  '#bff1f8': '#245a74',
+  '#d9f6ff': '#245a74',
+  '#ffe9c7': '#4a453c',
+  '#ffd6c2': '#5a4636',
+  '#ffffff': '#18201b',
+  [HALO]: 'rgba(255,255,255,0.95)',
   'rgba(255,248,235,': 'rgba(255,255,255,',
 }
 
+/** Points of interest and peaks come back later than on the 3D map (calm, but useful). */
+const LIGHT_MINZOOM: Record<string, number> = { 'osm-poi': 15, 'osm-peaks': 11 }
+
+/** How much larger every label is on the light map (px). */
+export const LIGHT_LABEL_BUMP = 2
+
+/**
+ * Adds `by` px to a `text-size`: a number, or the outputs of a zoom
+ * `interpolate` / a `match` (a zoom expression cannot be wrapped in `+`).
+ */
+export function bumpSize(size: unknown, by: number): unknown {
+  if (typeof size === 'number') return size + by
+  if (!Array.isArray(size)) return size
+  const [op] = size as unknown[]
+  if (op === 'interpolate') {
+    // ['interpolate', kind, input, z0, v0, z1, v1, …]
+    return size.map((part, i) => (i >= 4 && i % 2 === 0 ? bumpSize(part, by) : part))
+  }
+  if (op === 'match') {
+    // ['match', input, label, out, label, out, …, fallback]
+    return size.map((part, i) =>
+      i >= 2 && (i % 2 === 1 || i === size.length - 1) ? bumpSize(part, by) : part,
+    )
+  }
+  return size
+}
+
 export function lightStyle(style: Layer): Layer {
-  const layers = ((style.layers as Layer[] | undefined) ?? []).filter(
-    (layer) => !LIGHT_DROP.has(String(layer.id)),
-  )
+  const layers = ((style.layers as Layer[] | undefined) ?? [])
+    .filter((layer) => !LIGHT_DROP.has(String(layer.id)))
+    .map((layer) => {
+      if (layer.type !== 'symbol') return layer
+      const layout = { ...(layer.layout as Layer | undefined) }
+      if (layout['text-size'] !== undefined) {
+        layout['text-size'] = bumpSize(layout['text-size'], LIGHT_LABEL_BUMP)
+      }
+      const paint = { ...(layer.paint as Layer | undefined) }
+      if (paint['text-halo-width'] !== undefined) paint['text-halo-width'] = 1.8
+      const minzoom = LIGHT_MINZOOM[String(layer.id)]
+      return { ...layer, layout, paint, ...(minzoom !== undefined ? { minzoom } : {}) }
+    })
   let json = JSON.stringify(layers)
   for (const [from, to] of Object.entries(LIGHT_SWAP)) json = json.split(from).join(to)
   const sources = { ...(style.sources as Record<string, unknown>) }

@@ -1,11 +1,11 @@
-# Map v2 end-to-end check: the three-step flow, paywall, deep links and the
-# back button on desktop and phone (e2e/full/public-map.spec.ts) against a
+# Map end-to-end check (v3, reference UX): map-first landing, filters without
+# map re-init, paywall, deep links and redaction on desktop and phone (e2e/full/public-map.spec.ts) against a
 # seeded CI copy. Results go to the `map-check` branch.
 name: Map check
 
 on:
   push:
-    branches: [feat/map-v2]
+    branches: [feat/map-v2, feat/map-reference-ux]
   workflow_dispatch:
 
 permissions:
@@ -55,13 +55,14 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0038_map_category_style.sql
           psql "$DATABASE_URL" -c "select key, map_tier, icon, map_color from categories where map_tier is not null order by map_order"
       - run: pnpm exec tsx scripts/seed-tiers.ts
-      # The seed's free places sit in two or three types; move three of them
-      # into other free types so the «fourth type» hint can be exercised.
-      - name: Fixture (free places in more free types)
+      - name: Migration 0039 is idempotent
         run: |
-          for key in malls hospital markets; do
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "update map_places set category_id = (select id from categories where key = '$key') where id = (select mp.id from map_places mp join categories c on c.id = mp.category_id where mp.is_free and c.key not in ('malls','hospital','markets') and mp.deleted_at is null order by mp.slug limit 1)"
-          done
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0039_map_place_traveler_duration.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0039_map_place_traveler_duration.sql
+      # Traveler type / duration on two free places, so those chips appear.
+      - name: Fixture (traveler type + duration)
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "update map_places set traveler_types = '{couples,families}', duration_minutes = 90 where id in (select id from map_places where is_free and deleted_at is null order by slug limit 2)"
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Start the site

@@ -86,7 +86,13 @@ import type {
 import { entityHref } from './types'
 import { placeAccess, type FullMapPlace } from '@/lib/entitlements/redaction'
 import type { MapTaxonomy } from '@/lib/search/query'
-import { buildSrcSet, derivativeKey, fallbackRung, isUnoptimised } from '@/lib/media/ladder'
+import {
+  buildSrcSet,
+  derivativeKey,
+  fallbackRung,
+  isUnoptimised,
+  rungsFor,
+} from '@/lib/media/ladder'
 import { loadActivityAddons } from '@/lib/booking/addons'
 import { loadTierIncluded } from '@/lib/booking/included'
 import { loadSeasons } from '@/lib/booking/extras'
@@ -221,6 +227,15 @@ export function toMedia(row: MediaRow | null | undefined): MediaDto | null {
     blurhash: row.blurhash,
     credit: row.credit,
   }
+}
+
+/** The smallest ladder rung at least 320px wide: a card thumbnail, not a hero. */
+export function thumbUrl(row: MediaRow | null | undefined): string | null {
+  if (!row || row.deletedAt !== null) return null
+  if (isUnoptimised(row.objectKey)) return mediaUrl(row.objectKey)
+  const rungs = rungsFor(row.width)
+  const rung = rungs.find((w) => w >= 320) ?? rungs[rungs.length - 1] ?? fallbackRung(row.width)
+  return mediaUrl(derivativeKey(row.id, rung, 'webp'))
 }
 
 function toRegionRef(row: RegionRow | null | undefined): RegionRef | null {
@@ -1545,6 +1560,9 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       place: mapPlaces,
       hero: media,
       activitySlug: activities.slug,
+      activityPriceMinor: activities.priceMinor,
+      activityCurrency: activities.currency,
+      activityReviewCount: activities.reviewCount,
       regionKey: regions.key,
       regionLabel: regions.label,
       parentRegionKey: parentRegion.key,
@@ -1607,6 +1625,9 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       place,
       hero,
       activitySlug,
+      activityPriceMinor,
+      activityCurrency,
+      activityReviewCount,
       regionKey,
       regionLabel,
       parentRegionKey,
@@ -1625,7 +1646,16 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       openingHours: place.openingHours,
       tags: place.tags,
       heroImageUrl: toMedia(hero)?.url ?? null,
+      heroThumbUrl: thumbUrl(hero),
       activitySlug,
+      // A live linked activity only (the join filters the rest out).
+      fromPriceMinor:
+        activitySlug !== null && (activityPriceMinor ?? 0) > 0 ? activityPriceMinor : null,
+      fromCurrency: activitySlug !== null ? activityCurrency : null,
+      reviewCount:
+        activitySlug !== null && (activityReviewCount ?? 0) > 0 ? activityReviewCount : null,
+      travelerTypes: place.travelerTypes ?? [],
+      durationMinutes: place.durationMinutes ?? null,
       ...placeAccess(place),
       isHiddenGem: place.isHiddenGem,
       regionKey,
@@ -1660,6 +1690,16 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
  * `{ id, locked, requiredEntitlement }`.
  */
 export type MapPlaceRecord = FullMapPlace & {
+  /** A small rung (~320px WebP) for map cards; the original when unoptimised. */
+  heroThumbUrl: string | null
+  /** The linked live activity's price («From»), when it has one. */
+  fromPriceMinor: number | null
+  fromCurrency: string | null
+  /** The linked activity's review count, when it has reviews. */
+  reviewCount: number | null
+  /** Map filters (migration 0039). */
+  travelerTypes: string[]
+  durationMinutes: number | null
   /** الترتيب اليدوي من لوحة التحكم (الأقل أولاً). */
   sortOrder: number
   /** "الأكثر مشاهدة أو حفظاً": مفضلة + رحلتي + مشاهدات (آخر سنة). */

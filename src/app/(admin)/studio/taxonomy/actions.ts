@@ -2,6 +2,7 @@
 
 import { isHexColor } from '@/lib/map/explore'
 import { count, eq, sql } from 'drizzle-orm'
+import { revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -19,6 +20,7 @@ import {
   tags,
 } from '@/db/schema'
 import { isIconName } from '@/components/ui/icon'
+import { MAP_PLACES_TAG } from '@/lib/map/cached'
 import { isMapTier, syncPlaceAccess, type MapTier } from '@/lib/content/map-access'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -67,6 +69,8 @@ type Outcome = { ok: string } | { err: string }
 // ---------------------------------------------------------------------------
 
 export async function saveCategory(id: string, form: FormData): Promise<void> {
+  // The map's cached place list carries category / region keys.
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
   let outcome: Outcome
@@ -135,6 +139,8 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
 }
 
 export async function deleteCategory(id: string): Promise<void> {
+  // The map's cached place list carries category / region keys.
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
   let outcome: Outcome
@@ -184,6 +190,8 @@ export async function deleteCategory(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function saveRegion(id: string, form: FormData): Promise<void> {
+  // The map's cached place list carries category / region keys.
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
   let outcome: Outcome
@@ -255,6 +263,8 @@ export async function saveRegion(id: string, form: FormData): Promise<void> {
 }
 
 export async function deleteRegion(id: string): Promise<void> {
+  // The map's cached place list carries category / region keys.
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
   let outcome: Outcome

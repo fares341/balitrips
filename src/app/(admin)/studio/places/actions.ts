@@ -3,7 +3,10 @@
 import { randomUUID } from 'node:crypto'
 
 import { eq, inArray } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+
+import { MAP_PLACES_TAG } from '@/lib/map/cached'
+import { cleanTravelerTypes } from '@/lib/map/explore'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
@@ -48,6 +51,8 @@ type Outcome = { ok: string } | { err: string }
  * edit shows up on the very next visit.
  */
 function refreshPublicMap(): void {
+  // The map's place list is cached across requests (map v3): drop it now.
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
   revalidatePath('/[locale]/map', 'page')
   revalidatePath('/[locale]/places/[slug]', 'page')
 }
@@ -77,6 +82,11 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       start: t('places.event_starts'),
       end: t('places.event_ends'),
     })
+
+    const durationMinutes = fintOrNull(form, 'durationMinutes', t('places.duration_minutes'))
+    if (durationMinutes !== null && (durationMinutes < 1 || durationMinutes > 24 * 60 * 7)) {
+      throw new Error(t('places.err_duration_range'))
+    }
 
     const values = {
       slug: assertSlug(freq(form, 'slug', t('common.slug'))),
@@ -112,6 +122,8 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
       subCategoryIds: fmulti(form, 'subCategoryIds').filter(isUuid).slice(0, 10),
       internalNotes: fstr(form, 'internalNotes'),
       openingHours: fstr(form, 'openingHours'),
+      travelerTypes: cleanTravelerTypes(fmulti(form, 'travelerTypes')),
+      durationMinutes,
       rating: ratingTenths === null ? null : ratingTenths / 10,
       heroImageId: fuuidOrNull(form, 'heroImageId', t('places.hero_image')),
       eventStartsAt,

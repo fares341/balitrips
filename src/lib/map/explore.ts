@@ -10,8 +10,12 @@
 
 import type { IconName } from '@/components/ui/icon'
 
-/** How many categories one search may hold (concept: «من نوع إلى ٣»). */
-export const MAX_CATEGORIES = 3
+/**
+ * How many categories one search may hold. Map v3 (reference UX, Nov 2026):
+ * the map opens on every open type and the Categories sheet is a plain
+ * multi-select, so this is only a sanity bound for URLs.
+ */
+export const MAX_CATEGORIES = 24
 
 /** The "whole island" area. */
 export const ALL_AREA = 'all'
@@ -263,7 +267,7 @@ export function areaOptions(
 // Results
 // ---------------------------------------------------------------------------
 
-/** What the results map and card receive for one (open) place. */
+/** What the results map and card receive for one (open) place. Compact on purpose. */
 export interface ResultPlace {
   id: string
   slug: string
@@ -272,10 +276,173 @@ export interface ResultPlace {
   lat: number
   lon: number
   rating: number | null
-  /** Up to three real image URLs, hero first, no duplicates. */
+  /** Review count of the linked activity (the place itself keeps none). */
+  reviews: number | null
+  /** One short line (two at most on the card). */
+  desc: string | null
+  /** A small image rung (~320px) for the card thumbnail. */
+  thumb: string | null
+  /** Up to three real image URLs, hero first, no duplicates (desktop card). */
   images: string[]
+  /** «From» price: the linked live activity's price. Null = no real price. */
+  priceMinor: number | null
+  currency: string | null
   activitySlug: string | null
   canFavorite: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Traveler type + duration (migration 0039)
+// ---------------------------------------------------------------------------
+
+/** The traveler types Studio offers, in display order. */
+export const TRAVELER_TYPES = ['families', 'couples', 'friends', 'solo', 'kids'] as const
+export type TravelerType = (typeof TRAVELER_TYPES)[number]
+
+export function isTravelerType(value: unknown): value is TravelerType {
+  return typeof value === 'string' && (TRAVELER_TYPES as readonly string[]).includes(value)
+}
+
+/** Duration buckets: up to 2 h, 2–4 h, more than 4 h. */
+export const DURATION_BUCKETS = ['short', 'half', 'full'] as const
+export type DurationBucket = (typeof DURATION_BUCKETS)[number]
+
+export function isDurationBucket(value: unknown): value is DurationBucket {
+  return typeof value === 'string' && (DURATION_BUCKETS as readonly string[]).includes(value)
+}
+
+export function durationBucket(minutes: number | null | undefined): DurationBucket | null {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes) || minutes <= 0) {
+    return null
+  }
+  if (minutes <= 120) return 'short'
+  if (minutes <= 240) return 'half'
+  return 'full'
+}
+
+/** Clean a stored/typed traveler list: known values, unique, display order. */
+export function cleanTravelerTypes(values: readonly unknown[] | null | undefined): TravelerType[] {
+  if (!values) return []
+  const set = new Set(values.filter(isTravelerType))
+  return TRAVELER_TYPES.filter((one) => set.has(one))
+}
+
+export interface PlaceFacts {
+  travelerTypes: readonly string[] | null
+  durationMinutes: number | null
+}
+
+/**
+ * Which traveler types and duration buckets exist in the data at all. The
+ * map shows a filter chip only for values some place really has.
+ */
+export function facetOptions(places: readonly PlaceFacts[]): {
+  travelers: TravelerType[]
+  durations: DurationBucket[]
+} {
+  const travelers = new Set<string>()
+  const durations = new Set<string>()
+  for (const place of places) {
+    for (const one of cleanTravelerTypes(place.travelerTypes)) travelers.add(one)
+    const bucket = durationBucket(place.durationMinutes)
+    if (bucket) durations.add(bucket)
+  }
+  return {
+    travelers: TRAVELER_TYPES.filter((one) => travelers.has(one)),
+    durations: DURATION_BUCKETS.filter((one) => durations.has(one)),
+  }
+}
+
+export interface FactFilter {
+  travelers: readonly TravelerType[]
+  durations: readonly DurationBucket[]
+}
+
+/** Reads `?traveler=a,b&dur=short,half` to known values. */
+export function parseFactFilter(params: {
+  traveler?: string | null
+  dur?: string | null
+}): FactFilter {
+  const split = (raw: string | null | undefined) =>
+    (raw ?? '')
+      .split(',')
+      .map((one) => one.trim().toLowerCase())
+      .filter(Boolean)
+  return {
+    travelers: TRAVELER_TYPES.filter((one) => split(params.traveler).includes(one)),
+    durations: DURATION_BUCKETS.filter((one) => split(params.dur).includes(one)),
+  }
+}
+
+/** A place passes when it matches ANY chosen value of each active filter. */
+export function matchesFacts(place: PlaceFacts, filter: FactFilter): boolean {
+  if (filter.travelers.length > 0) {
+    const mine = cleanTravelerTypes(place.travelerTypes)
+    if (!mine.some((one) => filter.travelers.includes(one))) return false
+  }
+  if (filter.durations.length > 0) {
+    const bucket = durationBucket(place.durationMinutes)
+    if (bucket === null || !filter.durations.includes(bucket)) return false
+  }
+  return true
+}
+
+/** A short card line: whitespace collapsed, cut at a word near `max`. */
+export function shortText(text: string | null | undefined, max = 140): string | null {
+  if (!text) return null
+  const flat = text.replace(/\s+/g, ' ').trim()
+  if (flat === '') return null
+  if (flat.length <= max) return flat
+  const cut = flat.slice(0, max)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:،]+$/, '')}…`
+}
+
+/** Places ordered by distance from a point (stable for ties). */
+export function byDistance<T extends { lat: number; lon: number }>(
+  places: readonly T[],
+  from: { lat: number; lon: number },
+): T[] {
+  return places
+    .map((place, index) => ({ place, index, d: distanceMeters(from, place) }))
+    .sort((a, b) => a.d - b.d || a.index - b.index)
+    .map((one) => one.place)
+}
+
+/** The window of indexes to render around `center` (carousel virtualisation). */
+export function windowRange(total: number, center: number, radius = 10): [number, number] {
+  if (total <= 0) return [0, 0]
+  const c = Math.max(0, Math.min(total - 1, center))
+  let start = Math.max(0, c - radius)
+  let end = Math.min(total, c + radius + 1)
+  const want = Math.min(total, radius * 2 + 1)
+  if (end - start < want) {
+    if (start === 0) end = Math.min(total, want)
+    else start = Math.max(0, total - want)
+  }
+  return [start, end]
+}
+
+/** GeoJSON for the clustered marker source (open places only). */
+export function toFeatureCollection(places: readonly ResultPlace[]): {
+  type: 'FeatureCollection'
+  features: {
+    type: 'Feature'
+    id: number
+    /** `s`: draw order — southern pins over northern ones. */
+    properties: { id: string; i: number; s: number }
+    geometry: { type: 'Point'; coordinates: [number, number] }
+  }[]
+} {
+  return {
+    type: 'FeatureCollection',
+    features: places.map((place, i) => ({
+      type: 'Feature',
+      id: i,
+      properties: { id: place.id, i, s: -place.lat },
+      geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
+    })),
+  }
 }
 
 export function cardImages(hero: string | null, gallery: readonly string[]): string[] {
@@ -418,3 +585,45 @@ export function directionsUrl(place: { lat: number; lon: number }): string {
 
 /** The remembered selection (localStorage), validated like a URL. */
 export const STORAGE_KEY = 'bt-map-v2'
+
+/**
+ * Carousel order (map v3): start at the first place (the server's priority
+ * order) and always step to the nearest unvisited one, so swiping to the
+ * next card moves the map a short way instead of across the island.
+ * O(n²); n is a few hundred at most.
+ */
+export function nearestChain<T extends { lat: number; lon: number }>(places: readonly T[]): T[] {
+  if (places.length < 3) return [...places]
+  const left = places.slice(1)
+  const out: T[] = [places[0]!]
+  let here = places[0]!
+  while (left.length > 0) {
+    let best = 0
+    let bestD = Infinity
+    const cos = Math.cos((here.lat * Math.PI) / 180)
+    for (let i = 0; i < left.length; i += 1) {
+      const p = left[i]!
+      const dx = (p.lon - here.lon) * cos
+      const dy = p.lat - here.lat
+      const d = dx * dx + dy * dy
+      if (d < bestD) {
+        bestD = d
+        best = i
+      }
+    }
+    here = left.splice(best, 1)[0]!
+    out.push(here)
+  }
+  return out
+}
+
+/** `?area=&cat=&traveler=&dur=` for the map v3 URL (defaults left out). */
+export function mapQuery(selection: Selection, facts: FactFilter): string {
+  const params = new URLSearchParams()
+  if (selection.area !== null && selection.area !== ALL_AREA) params.set('area', selection.area)
+  if (selection.categories.length > 0) params.set('cat', selection.categories.join(','))
+  if (facts.travelers.length > 0) params.set('traveler', facts.travelers.join(','))
+  if (facts.durations.length > 0) params.set('dur', facts.durations.join(','))
+  const query = params.toString().replace(/%2C/g, ',')
+  return query === '' ? '' : `?${query}`
+}

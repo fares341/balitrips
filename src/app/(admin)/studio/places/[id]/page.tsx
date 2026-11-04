@@ -33,6 +33,7 @@ import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { baliInputValue } from '../../../_lib/bali-time'
 import { PageHead } from '../../../_ui/shell'
 import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
+import { TRAVELER_TYPES } from '@/lib/map/explore'
 import { VisitorPreview } from './preview'
 
 export const dynamic = 'force-dynamic'
@@ -301,6 +302,41 @@ export default async function PlaceEditorPage({
                 }
               />
             </Field>
+          </div>
+          <div className="a-row">
+            <Field
+              label={t('places.duration_minutes')}
+              htmlFor="durationMinutes"
+              hint={t('places.duration_minutes_hint')}
+            >
+              <TextInput
+                id="durationMinutes"
+                name="durationMinutes"
+                inputMode="numeric"
+                defaultValue={
+                  place?.durationMinutes === null || place?.durationMinutes === undefined
+                    ? ''
+                    : String(place.durationMinutes)
+                }
+              />
+            </Field>
+          </div>
+          <div className="a-field">
+            <label>{t('places.traveler_types')}</label>
+            <div className="a-row" style={{ gap: 12 }}>
+              {TRAVELER_TYPES.map((key) => (
+                <label key={key} className="a-check">
+                  <input
+                    type="checkbox"
+                    name="travelerTypes"
+                    value={key}
+                    defaultChecked={(place?.travelerTypes ?? []).includes(key)}
+                  />
+                  {t(`places.traveler_${key}`)}
+                </label>
+              ))}
+            </div>
+            <span className="a-hint">{t('places.traveler_types_hint')}</span>
           </div>
           <div className="a-row">
             <OptionField
