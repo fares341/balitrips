@@ -63,6 +63,7 @@ import { mapAccessOf, sellsPlanDirectly, visibleSaleModes } from '@/lib/itinerar
 import { checkSecureAccess } from '@/lib/security/guard'
 import { alternates } from '../_meta'
 import { formatPrice } from '../../_ui/price'
+import { Money } from '@/components/currency/currency-context'
 import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
 import { itineraryAudience, itineraryTitle } from '@/lib/itineraries/display'
 import { fromPrice, ITINERARY_TIERS, pricedTiers } from '@/lib/itineraries/tiers'
@@ -181,7 +182,7 @@ export default async function ItineraryDetailPage({
       key,
       label: t(BUDGET_TIER_LABEL[key]),
       note: t(`it_tier_${key}_b`),
-      price: minor === undefined ? null : formatPrice(minor, itinerary.currency, locale),
+      price: minor === undefined ? null : <Money minor={minor} currency={itinerary.currency} />,
     }
   })
 
@@ -310,10 +311,11 @@ export default async function ItineraryDetailPage({
 
   const regionNames = itinerary.regions.map((region) => pick(region.label, locale, region.key))
   const tripType = pickOptional(itinerary.tripType, locale)
-  const price = formatPrice(
-    fromPrice(itinerary.priceMinor, itinerary.tierPrices),
-    itinerary.currency,
-    locale,
+  const price = (
+    <Money
+      minor={fromPrice(itinerary.priceMinor, itinerary.tierPrices)}
+      currency={itinerary.currency}
+    />
   )
   const priceNote = hasTiers ? t('it_price_from') : t('sub_once')
   const contact = await getContact()

@@ -10,7 +10,8 @@ import { itineraryTitle } from '@/lib/itineraries/display'
 import { fromPrice, pricedTiers } from '@/lib/itineraries/tiers'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { formatPrice, Stars } from '@/components/bt/card'
+import { Stars } from '@/components/bt/card'
+import { Money } from '@/components/currency/currency-context'
 import { CompactCard, type CompactCardLayout } from '@/components/bt/compact-card'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
@@ -60,7 +61,7 @@ export function ActivityCompact({
         activity.priceMinor > 0
           ? {
               label: t('bt_from'),
-              amount: formatPrice(activity.priceMinor, activity.currency, locale),
+              amount: <Money minor={activity.priceMinor} currency={activity.currency} />,
               unit: t('bt_per_person'),
             }
           : null
@@ -108,7 +109,7 @@ export function PackageCompact({
         pkg.priceMinor > 0
           ? {
               label: t('bt_from'),
-              amount: formatPrice(pkg.priceMinor, pkg.currency, locale),
+              amount: <Money minor={pkg.priceMinor} currency={pkg.currency} />,
               unit: pkg.pricingMode === 'per_guest' ? t('bt_per_person') : null,
             }
           : null
@@ -156,10 +157,11 @@ export function ItineraryCompact({
           ? {
               label:
                 pricedTiers(itinerary.tierPrices).length > 0 ? t('it_price_from') : t('bt_pdf_map'),
-              amount: formatPrice(
-                fromPrice(itinerary.priceMinor, itinerary.tierPrices),
-                itinerary.currency,
-                locale,
+              amount: (
+                <Money
+                  minor={fromPrice(itinerary.priceMinor, itinerary.tierPrices)}
+                  currency={itinerary.currency}
+                />
               ),
             }
           : null

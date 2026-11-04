@@ -23,13 +23,13 @@
  * No 'use client'.
  */
 
-import { LocalPrice } from '@/components/currency/currency-context'
+import { Money } from '@/components/currency/currency-context'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { Icon, type IconName } from '@/components/ui/icon'
 import { Photo } from '@/components/ui/photo'
 import { Link } from '@/i18n/routing'
-import { minorUnitExponent, moneyLocale } from '@/lib/money'
+import { formatInCurrency } from '@/lib/currency/shared'
 
 export type CardProps = {
   children: ReactNode
@@ -167,8 +167,8 @@ export function CardActions({ children }: { children: ReactNode }) {
 export type PriceFromProps = {
   /** Small line above the amount: "From", "PDF + map". */
   label?: ReactNode
-  /** Already formatted, e.g. from `formatPrice`. */
-  amount: string
+  /** Already formatted; ignored when `minor` + `currency` are given (shown in the visitor's currency). */
+  amount: ReactNode
   /** Unit after a slash: "person" → "$65 / person". */
   unit?: ReactNode
   /** Raw amount, to show an approximate local-currency line under it. */
@@ -182,13 +182,14 @@ export function PriceFrom({ label, amount, unit, minor, currency }: PriceFromPro
       {label !== undefined && label !== null && <small>{label}</small>}
       <b>
         <bdi className="price" dir="ltr">
-          {amount}
+          {minor !== undefined && currency !== undefined ? (
+            <Money minor={minor} currency={currency} />
+          ) : (
+            amount
+          )}
         </bdi>
         {unit !== undefined && unit !== null && <em> / {unit}</em>}
       </b>
-      {minor !== undefined && currency !== undefined && (
-        <LocalPrice minor={minor} currency={currency} />
-      )}
     </div>
   )
 }
@@ -226,13 +227,8 @@ export function Stars({ value, count }: StarsProps) {
  * "$65" in Arabic too), and no ".00" on whole amounts.
  */
 export function formatPrice(minor: number, currency: string, locale: string): string {
-  const exponent = minorUnitExponent(currency)
-  const value = minor / 10 ** exponent
-  const whole = Number.isInteger(value)
-  return new Intl.NumberFormat(locale === 'ar' ? 'en-US' : moneyLocale(locale, currency), {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: whole ? 0 : exponent,
-    maximumFractionDigits: whole ? 0 : exponent,
-  }).format(value)
+  // Server-rendered price strings are in SAR — the site's default display
+  // currency and the charge currency. JSX should prefer <Money>, which then
+  // swaps to the visitor's own currency on the client.
+  return formatInCurrency(minor, currency, 'SAR', locale)
 }

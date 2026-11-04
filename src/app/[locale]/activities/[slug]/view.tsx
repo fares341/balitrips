@@ -38,8 +38,9 @@ import {
 } from './booking'
 import { Gallery, InfoTabs, RelatedRow, SaveButton, SectionNav, ShareButton } from './detail-client'
 import { dedupeImages } from '@/lib/content/image-dedupe'
+import { Money } from '@/components/currency/currency-context'
+import { convertMinor, FALLBACK_RATES } from '@/lib/currency/shared'
 import { JsonLd } from '@/components/seo/json-ld'
-import { toMajor } from '@/lib/analytics/pixels'
 import { shareUrl } from '@/lib/seo/site-origin'
 
 import '@/styles/bt-activity.css'
@@ -404,8 +405,12 @@ export async function ActivityView({
     brand: { '@type': 'Brand', name: 'Bali Trips' },
     offers: {
       '@type': 'Offer',
-      price: toMajor(activity.priceMinor, activity.currency),
-      priceCurrency: activity.currency,
+      // SAR: the site's default display currency and the charge currency.
+      price:
+        Math.round(
+          (convertMinor(activity.priceMinor, activity.currency, 'SAR', FALLBACK_RATES) ?? 0) * 100,
+        ) / 100,
+      priceCurrency: 'SAR',
       availability: activity.bookable
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
@@ -656,7 +661,7 @@ export async function ActivityView({
                         <small className="muted">
                           {t('act_rel_days', { n: pkg.days })} · {t('act_from_lc')}{' '}
                           <span className="num" dir="ltr">
-                            {money(pkg.priceMinor, pkg.currency)}
+                            <Money minor={pkg.priceMinor} currency={pkg.currency} />
                           </span>
                         </small>
                       </span>
@@ -683,7 +688,7 @@ export async function ActivityView({
                         <small className="muted">
                           PDF ·{' '}
                           <span className="num" dir="ltr">
-                            {money(itinerary.priceMinor, itinerary.currency)}
+                            <Money minor={itinerary.priceMinor} currency={itinerary.currency} />
                           </span>
                         </small>
                       </span>

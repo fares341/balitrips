@@ -435,7 +435,7 @@ export default async function CheckoutPage({
           {money(cart.totalMinor, cart.currency)}
         </b>
       </div>
-      <LocalPrice minor={cart.totalMinor} currency={cart.currency} />
+      <LocalPrice minor={cart.totalMinor} currency={cart.currency} except="SAR" />
       {chargeNote}
       <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
       <small className="muted">{t('cur_checkout_note')}</small>

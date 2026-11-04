@@ -18,6 +18,7 @@ import {
   DISPLAY_CURRENCIES,
   FALLBACK_RATES,
   formatApprox,
+  formatInCurrency,
   isDisplayCurrency,
   type DisplayCurrency,
 } from '@/lib/currency/shared'
@@ -108,6 +109,31 @@ export function LocalPrice({
     >
       <bdi>≈ {formatApprox(amount, target, locale)}</bdi>
     </small>
+  )
+}
+
+/**
+ * A catalogue price in the visitor's display currency — the primary price
+ * everywhere public. Server HTML (and the first client render) shows SAR at
+ * the fallback rate, so static pages stay identical for everyone and hydrate
+ * cleanly; it swaps to the detected/chosen currency once /api/currency
+ * answers. Zero/negative amounts are formatted as-is (callers decide "free").
+ */
+export function Money({
+  minor,
+  currency,
+  className,
+}: {
+  minor: number
+  currency: string
+  className?: string
+}) {
+  const locale = useLocale()
+  const { currency: target, rates } = useDisplayCurrency()
+  return (
+    <bdi className={className} data-money="" suppressHydrationWarning>
+      {formatInCurrency(minor, currency, target, locale, rates)}
+    </bdi>
   )
 }
 

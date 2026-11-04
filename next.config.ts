@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
   // kept as a plain Node package rather than bundled into the server code.
   serverExternalPackages: ['pdfjs-dist'],
 
+  // Offline IP → country data for the display currency (src/lib/currency/
+  // geoip.ts reads it from disk at runtime, so the tracer cannot see it).
+  outputFileTracingIncludes: {
+    '/api/currency': [
+      './node_modules/@ip-location-db/geo-whois-asn-country/*-num.csv',
+      './node_modules/.pnpm/@ip-location-db+geo-whois-asn-country@*/node_modules/@ip-location-db/geo-whois-asn-country/*-num.csv',
+    ],
+  },
+
   experimental: {
     serverActions: {
       /**

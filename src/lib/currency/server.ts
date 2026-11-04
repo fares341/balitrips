@@ -6,6 +6,9 @@ import {
   FALLBACK_RATES,
   type DisplayCurrency,
 } from './shared'
+import { clientIp } from '@/lib/security/ip'
+
+import { countryForIp } from './geoip'
 
 /**
  * Exchange rates for display, refreshed at most every 12 hours from a free,
@@ -69,6 +72,10 @@ export function detectCountry(headers: Headers): string | null {
     // Cloudflare uses XX (unknown) and T1 (Tor).
     if (value && /^[A-Z]{2}$/.test(value) && value !== 'XX' && value !== 'T1') return value
   }
+  // No CDN geo header (Caddy terminates TLS directly and writes the TCP peer
+  // into X-Forwarded-For / X-Real-IP): resolve the client IP offline.
+  const fromIp = countryForIp(clientIp(headers))
+  if (fromIp !== null) return fromIp
   // Fallback: region subtag of the first Accept-Language entry ("ar-SA").
   const lang = headers.get('accept-language') ?? ''
   for (const part of lang.split(',')) {
