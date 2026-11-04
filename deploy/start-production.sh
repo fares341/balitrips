@@ -149,6 +149,14 @@ fi
 # Report where every one of the 52 photos stands (read-only, never fails the run).
 "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx scripts/verify-media.ts 2>/dev/null | tail -n 3 || true
 
+# One-time data jobs. Each writes a marker row in site_settings when done and
+# is a logged no-op afterwards; a failure is logged and never stops the deploy.
+# Runs before the app build so prerendered pages already show the result.
+say "One-time data jobs"
+"${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx \
+  --require ./scripts/data-jobs/server-only-shim.cjs scripts/data-jobs/replace-activities.ts ||
+  echo "  ! replace-activities data job failed — see the log above; it retries on the next deploy"
+
 # --- App image --------------------------------------------------------------
 # `next build` reads the database (prerendered pages). The build container
 # reaches the loopback-published Postgres through the host network.
