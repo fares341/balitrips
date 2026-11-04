@@ -32,7 +32,7 @@ import {
 } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { Icon, type IconName } from '@/components/ui'
+import { Icon, SafeImg, type IconName } from '@/components/ui'
 import { Money } from '@/components/currency/currency-context'
 import { Link, useRouter } from '@/i18n/routing'
 import {
@@ -789,28 +789,39 @@ function Paywall({
   )
 }
 
-function Thumb({ src, category }: { src: string | null; category: CategoryItem | undefined }) {
-  const [broken, setBroken] = useState(false)
-  if (src && !broken) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        className="mx3-thumb"
-        src={src}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        onError={() => setBroken(true)}
-      />
-    )
-  }
-  return (
+function Thumb({
+  src,
+  category,
+  eager = false,
+}: {
+  src: string | null
+  category: CategoryItem | undefined
+  /**
+   * Carousel cards load eagerly: they are 320px thumbs inside a horizontal
+   * scroll-snap strip that is windowed to ~21 cards, and `loading="lazy"`
+   * inside a horizontal overflow container is unreliable (WebKit can leave
+   * them unloaded until the page itself scrolls).
+   */
+  eager?: boolean
+}) {
+  const placeholder = (
     <span
       className="mx3-thumb is-ph"
+      data-testid="place-ph"
       style={{ '--c': category?.color ?? '#2E5E4E' } as CSSProperties}
     >
       <Icon name={category?.icon ?? 'pin'} size={22} />
     </span>
+  )
+  return (
+    <SafeImg
+      className="mx3-thumb"
+      src={src}
+      alt=""
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      fallback={placeholder}
+    />
   )
 }
 
@@ -1031,7 +1042,7 @@ const Card = memo(function Card({
       aria-label={`${place.name} — ${t('mx3_card_n', { i: position, n: total })}`}
       data-id={place.id}
     >
-      <Thumb src={place.thumb} category={category} />
+      <Thumb src={place.thumb} category={category} eager />
       <div className="mx3-card-body">
         <h2 className="mx3-card-name">
           <Link href={`/places/${place.slug}`} className="mx3-card-link">
