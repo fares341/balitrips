@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /**
- * Map v2 (owner concept, Nov 2026): area → 1–3 types → results, on phone and
- * desktop (both projects run this file). Runs against the seeded CI copy.
+ * Map v3 (owner, Nov 2026 — reference UX): the map is the landing page.
+ * Header (back · title · list), filter chips, clustered pins drawn by
+ * MapLibre, and a snap carousel of cards synced with the selected pin.
+ * Runs on phone and desktop (both projects) against the seeded CI copy.
  */
-
-const isDesk = (page: Page) => (page.viewportSize()?.width ?? 0) >= 1024
 
 async function dismissConsent(page: Page) {
   await page
@@ -15,110 +15,112 @@ async function dismissConsent(page: Page) {
     .catch(() => {})
 }
 
-test.describe('map v2', () => {
-  test('three-step flow, URL state and the back button', async ({ page }) => {
-    await page.goto('/en/map')
-    await dismissConsent(page)
+async function openMap(page: Page, path = '/en/map') {
+  await page.goto(path)
+  await dismissConsent(page)
+  await expect(page.locator('.mx3-head')).toBeVisible()
+}
 
-    if (isDesk(page)) {
-      // One screen: filters beside the map.
-      await expect(page.getByRole('heading', { name: 'Where will you be in Bali?' })).toBeVisible()
-      await page.getByRole('button', { name: 'All of Bali' }).click()
-      await expect(page).toHaveURL(/area=all/)
-      const free = page.locator('.mx-cat:not(.is-locked)')
-      await expect(free.first()).toBeVisible()
-      await free.first().click()
-      await expect(page).toHaveURL(/area=all&cat=[a-z-]+$/)
-      await expect(page.locator('.mx-card')).toBeVisible({ timeout: 20_000 })
-      await page.goBack()
-      await expect(page).toHaveURL(/area=all$/)
-      await expect(page.locator('.mx-card')).toHaveCount(0)
-      return
-    }
+/** Tag the live MapLibre instance so a later check can tell if it was re-created. */
+async function tagMap(page: Page) {
+  await page.waitForSelector('[data-map-ready]', { timeout: 60_000 })
+  await page.evaluate(() => {
+    const el = document.querySelector('.mx-canvas') as HTMLElement & { __map?: { __tag?: string } }
+    if (el.__map) el.__map.__tag = 'first'
+  })
+}
 
-    // Step 1
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Where will you be in Bali?' }),
-    ).toBeVisible()
-    const next = page.getByRole('button', { name: 'Next: choose what to see' })
-    await page.getByRole('button', { name: 'All of Bali' }).click()
-    await next.click()
-    await expect(page).toHaveURL(/\?area=all$/)
+async function mapTag(page: Page) {
+  return page.evaluate(() => {
+    const el = document.querySelector('.mx-canvas') as HTMLElement & { __map?: { __tag?: string } }
+    return el.__map?.__tag ?? null
+  })
+}
 
-    // Step 2
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'What do you want to see?' }),
-    ).toBeVisible()
-    const free = page.locator('.mx-cat:not(.is-locked)')
-    await free.first().click()
-    await expect(free.first()).toHaveAttribute('aria-checked', 'true')
-    await expect(free.first().locator('.mx-badge')).toHaveText(/^Free · \d+ places?$/)
-    await page.getByRole('button', { name: 'Show the map' }).click()
+test.describe('map v3', () => {
+  test('map-first landing: header, chips, cards, list toggle', async ({ page }) => {
+    await openMap(page)
+    await expect(page.getByRole('heading', { level: 1, name: 'Bali' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Back' })).toBeVisible()
+    await expect(page.locator('[data-chip=cats]')).toHaveText(/Categories/)
+    const card = page.locator('.mx3-card').first()
+    await expect(card).toBeVisible({ timeout: 30_000 })
+    await expect(page.locator('.mx3-card.is-on')).toHaveCount(1)
+    await expect(card.locator('a[href*="/places/"]')).toBeVisible()
 
-    // Step 3
-    await expect(page).toHaveURL(/\?area=all&cat=[a-z-]+$/)
-    await expect(page.locator('.mx-pill')).toBeVisible()
-    await expect(page.locator('.mx-card')).toBeVisible({ timeout: 20_000 })
-    await expect(
-      page.locator('.mx-card').getByRole('link', { name: 'Directions' }),
-    ).toHaveAttribute('href', /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=-?\d/)
-
-    // In-map change sheet, then the list toggle.
-    await page.locator('.mx-pill').click()
-    await expect(page.getByRole('dialog', { name: 'Change area and types' })).toBeVisible()
-    await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'List' }).click()
-    await expect(page.locator('.mx-listview .mx-row').first()).toBeVisible()
-
-    // Back → step 2, back again → step 1.
-    await page.goBack()
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'What do you want to see?' }),
-    ).toBeVisible()
-    await page.goBack()
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Where will you be in Bali?' }),
-    ).toBeVisible()
+    // List view shows the same places; a row selects and returns to the map.
+    await page.getByRole('button', { name: 'List view' }).click()
+    const rows = page.locator('.mx3-row')
+    await expect(rows.first()).toBeVisible()
+    const row = rows.nth(Math.min(1, (await rows.count()) - 1))
+    const name = (await row.locator('strong').textContent()) ?? ''
+    await row.click()
+    await expect(page.locator('.mx3-list')).toHaveCount(0)
+    await expect(page.locator('.mx3-card.is-on')).toContainText(name.trim())
   })
 
-  test('a fourth type shows the inline hint and greys nothing out', async ({ page }) => {
-    await page.goto('/en/map?area=all')
-    await dismissConsent(page)
-    const free = page.locator('.mx-cat:not(.is-locked)')
+  test('filters change data without re-creating the map', async ({ page }) => {
+    await openMap(page)
+    await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
+    await tagMap(page)
+
+    await page.locator('[data-chip=cats]').click()
+    const dialog = page.getByRole('dialog', { name: 'Categories' })
+    await expect(dialog).toBeVisible()
+    const free = dialog.locator('.mx-cat:not(.is-locked)')
     await expect(free.first()).toBeVisible()
-    const n = await free.count()
-    test.skip(n < 4, `the seed has only ${n} free types with places`)
-    for (let i = 0; i < 4; i += 1) await free.nth(i).click()
-    await expect(page.locator('.mx-full')).toHaveText(/up to 3 types/)
-    await expect(free.nth(3)).toHaveAttribute('aria-checked', 'false')
-    await expect(free.nth(3)).toBeEnabled()
+    await Promise.all([
+      page.waitForResponse((r) => r.url().includes('/api/map/places') && r.ok()),
+      free.first().click(),
+    ])
+    await expect(free.first()).toHaveAttribute('aria-checked', 'true')
+    await expect(page).toHaveURL(/cat=[a-z-]+/)
+    await dialog.getByRole('button', { name: 'Done' }).click()
+    await expect(page.locator('.mx3-card').first()).toBeVisible()
+    expect(await mapTag(page)).toBe('first')
+
+    // Traveler type / Duration chips exist only when some place has the data.
+    for (const kind of ['traveler', 'dur'] as const) {
+      const chip = page.locator(`[data-chip=${kind}]`)
+      if ((await chip.count()) === 0) continue
+      await chip.click()
+      await page.getByRole('dialog').getByRole('checkbox').first().click()
+      await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click()
+      expect(await mapTag(page)).toBe('first')
+    }
   })
 
   test('a locked VIP type opens the paywall for a visitor', async ({ page }) => {
-    await page.goto('/en/map?area=all')
-    await dismissConsent(page)
-    const locked = page.locator('.mx-cat.is-locked')
+    await openMap(page)
+    await page.locator('[data-chip=cats]').click()
+    const locked = page.locator('.mx-sheet .mx-cat.is-locked')
     test.skip((await locked.count()) === 0, 'no VIP type has places in the seed')
     await expect(locked.first().locator('.mx-badge')).toHaveText(/^VIP · \d+/)
     await locked.first().click()
-    const dialog = page.getByRole('dialog')
-    await expect(dialog).toBeVisible()
-    await expect(dialog.locator('a[href*="/plans/buy/"]').first()).toBeVisible()
-    await dialog.getByRole('button', { name: 'Not now' }).click()
-    await expect(dialog).toHaveCount(0)
+    const paywall = page.locator('.mx-sheet.is-paywall')
+    await expect(paywall).toBeVisible()
+    await expect(paywall.locator('a[href*="/plans/buy/"]').first()).toBeVisible()
+    await paywall.getByRole('button', { name: 'Not now' }).click()
+    await expect(paywall).toHaveCount(0)
     // Nothing was selected.
-    await expect(page).toHaveURL(/\?area=all$/)
+    expect(new URL(page.url()).searchParams.get('cat')).toBeNull()
   })
 
-  test('deep links skip the steps (old free-guide cards too)', async ({ page }) => {
-    await page.goto('/en/map?area=all')
-    const cat = await page.locator('.mx-cat:not(.is-locked)').first().getAttribute('data-cat')
-    expect(cat).toBeTruthy()
+  test('deep links: old category links and ?place=', async ({ page, request }) => {
+    const api = await request.get('/api/map/places?locale=en')
+    expect(api.ok()).toBe(true)
+    const body = (await api.json()) as {
+      places: { slug: string; name: string; categoryKey: string }[]
+    }
+    const first = body.places[0]
+    test.skip(!first, 'no open place in the seed')
 
-    await page.goto(`/en/map?cat=${cat}`)
-    await dismissConsent(page)
-    await expect(page.locator('.mx-card')).toBeVisible({ timeout: 20_000 })
-    if (!isDesk(page)) await expect(page.locator('.mx-pill')).toContainText('All of Bali')
+    await openMap(page, `/en/map?cat=${first!.categoryKey}`)
+    await expect(page.locator('[data-chip=cats].is-on')).toBeVisible()
+    await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
+
+    await openMap(page, `/en/map?place=${first!.slug}`)
+    await expect(page.locator('.mx3-card.is-on')).toContainText(first!.name, { timeout: 30_000 })
 
     // The home page's hospitals card: plural key still resolves.
     const response = await page.goto('/ar/map?cat=hospitals')
@@ -126,8 +128,9 @@ test.describe('map v2', () => {
   })
 
   test('locked places never leave the server', async ({ page, request }) => {
-    await page.goto('/en/map?area=all')
-    const locked = page.locator('.mx-cat.is-locked')
+    await openMap(page)
+    await page.locator('[data-chip=cats]').click()
+    const locked = page.locator('.mx-sheet .mx-cat.is-locked')
     test.skip((await locked.count()) === 0, 'no VIP type has places in the seed')
     const key = await locked.first().getAttribute('data-cat')
     const api = await request.get(`/api/map/places?area=all&cat=${key}&locale=en`)
@@ -136,8 +139,16 @@ test.describe('map v2', () => {
     expect(body.places).toEqual([])
     expect(body.lockedCount).toBeGreaterThan(0)
 
-    // The step pages carry counts only: no coordinates at all.
-    const html = await (await request.get(`/en/map?area=all&cat=${key}`)).text()
+    // «Everything» still redacts: no VIP-only category in the open results.
+    const all = (await (await request.get('/api/map/places?locale=en')).json()) as {
+      places: { categoryKey: string }[]
+      lockedCount: number
+    }
+    expect(all.places.some((one) => one.categoryKey === key)).toBe(false)
+    expect(all.lockedCount).toBeGreaterThanOrEqual(body.lockedCount)
+
+    // The page itself carries counts only: no coordinates at all.
+    const html = await (await request.get(`/en/map?cat=${key}`)).text()
     expect(html).not.toMatch(/-8\.\d{3,},\s*11[45]\.\d{3,}|"lat":-8\.\d/)
   })
 })

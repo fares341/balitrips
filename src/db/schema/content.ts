@@ -919,6 +919,14 @@ export const mapPlaces = pgTable(
     rating: real('rating'),
 
     /**
+     * Map filters (migration 0039): who the place suits (`families`,
+     * `couples`, `friends`, `solo`, `kids`) and a typical visit length.
+     * Null/empty = unknown; the map hides a filter no place has data for.
+     */
+    travelerTypes: text('traveler_types').array(),
+    durationMinutes: integer('duration_minutes'),
+
+    /**
      * فعالية بتاريخ (تصنيف `events`): البداية والنهاية. NULL = مكان دائم.
      * صفحة الفعاليات تعرض القادمة أولاً وتخفي المنتهية.
      */

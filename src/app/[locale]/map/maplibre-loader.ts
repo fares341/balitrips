@@ -27,6 +27,7 @@ export interface CameraOptions {
   duration?: number
   easing?: (t: number) => number
   essential?: boolean
+  offset?: [number, number]
   padding?: { top: number; bottom: number; left: number; right: number }
 }
 
@@ -40,6 +41,7 @@ export interface MapLike {
   getCenter(): { lng: number; lat: number }
   stop(): unknown
   loaded?(): boolean
+  isStyleLoaded?(): boolean
   getBounds(): LngLatBoundsLike
   getZoom(): number
   getPitch(): number
@@ -56,7 +58,13 @@ export interface MapLike {
     options?: { padding?: CameraOptions['padding'] },
   ): { zoom?: number; center?: LngLatLike | { lng: number; lat: number } } | undefined
   setMinZoom?(zoom: number): unknown
-  queryRenderedFeatures?(point: [number, number], options?: { layers?: string[] }): unknown[]
+  queryRenderedFeatures?(
+    geometry: [number, number] | [[number, number], [number, number]],
+    options?: { layers?: string[] },
+  ): unknown[]
+  setPadding?(padding: { top: number; bottom: number; left: number; right: number }): unknown
+  setLayoutProperty?(layer: string, name: string, value: unknown): unknown
+  getContainer?(): HTMLElement
   zoomIn(options?: { duration?: number }): unknown
   zoomOut(options?: { duration?: number }): unknown
   panBy(offset: [number, number], options?: { duration?: number }): unknown

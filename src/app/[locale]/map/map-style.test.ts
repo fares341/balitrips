@@ -94,3 +94,41 @@ describe('attributionsFor', () => {
     expect(mapbox.join(' ')).toContain('© Mapbox')
   })
 })
+
+describe('light style labels (map v3)', () => {
+  it('bumps numbers, interpolate outputs and match outputs only', async () => {
+    const { bumpSize } = await import('./map-style')
+    expect(bumpSize(11, 2)).toBe(13)
+    expect(bumpSize(['interpolate', ['linear'], ['zoom'], 14, 10, 18, 13], 2)).toEqual([
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      14,
+      12,
+      18,
+      15,
+    ])
+    expect(
+      bumpSize(['match', ['get', 'class'], ['city', 'town'], 13, ['village'], 12, 11], 2),
+    ).toEqual(['match', ['get', 'class'], ['city', 'town'], 15, ['village'], 14, 13])
+  })
+  it('keeps peaks / POIs, labels larger with a halo', async () => {
+    const { lightStyle } = await import('./map-style')
+    const style = lightStyle(
+      buildStyle(mapViewSettings(STORED_MAP_DEFAULTS), { locale: 'ar' }),
+    ) as {
+      layers: {
+        id: string
+        minzoom?: number
+        layout?: Record<string, unknown>
+        paint?: Record<string, unknown>
+      }[]
+    }
+    const peaks = style.layers.find((l) => l.id === 'osm-peaks')
+    expect(peaks?.minzoom).toBe(11)
+    expect(style.layers.find((l) => l.id === 'osm-poi')?.minzoom).toBe(15)
+    const places = style.layers.find((l) => l.id === 'osm-places')
+    expect(places?.paint?.['text-halo-width']).toBe(1.8)
+    expect(places?.paint?.['text-color']).toBe('#18201b')
+  })
+})
