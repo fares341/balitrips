@@ -55,6 +55,8 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
 
   // Owner, Oct 2026: the operator contract (staff with prices only).
   [/^\/activities\/[^/]+\/contract$/, ['content.write', 'prices.write']],
+  // Owner, Nov 2026: read-only places audit and its CSV (before /places/[id]).
+  [/^\/places\/audit(\/export)?$/, ['content.read']],
   // Owner, Oct 2026: launch readiness and its photo-trip CSV.
   [/^\/readiness(\/export)?$/, ['content.read']],
   // Owner, Oct 2026: how bookings and custom trips run, step by step.

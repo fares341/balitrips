@@ -10,6 +10,7 @@ const section: Section = {
   en: {
     'nav.guide': 'Operations guide',
     'nav.readiness': 'Content readiness',
+    'nav.places_audit': 'Places audit',
 
     'oo.left': '{d}d {h}h',
     'oo.guide_link': 'Operations guide',
@@ -207,6 +208,7 @@ const section: Section = {
   ar: {
     'nav.guide': 'دليل التشغيل',
     'nav.readiness': 'جاهزية المحتوى',
+    'nav.places_audit': 'تدقيق الأماكن',
 
     'oo.left': '{d} يوم {h} ساعة',
     'oo.guide_link': 'دليل التشغيل',
