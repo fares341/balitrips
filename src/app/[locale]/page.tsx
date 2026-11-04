@@ -36,6 +36,7 @@ import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
 
 import { LinkButton, SectionHead } from '@/components/bt'
+import { FEATURES } from '@/lib/features'
 import { ActivityCard } from '@/components/cards'
 import { Icon, Photo, type IconName } from '@/components/ui'
 import { isLocale, type Locale } from '@/i18n/config'
@@ -99,7 +100,9 @@ const SERVICES: readonly { href: string; icon: IconName; image: string; key: str
   { href: CUSTOM_HREF, icon: 'wand', image: '/brand/polaroids.webp', key: 'cust' },
   // Owner, Oct 2026: the photo is the Studio pick (Configuration → Home) when
   // set; the fallback is a licensed brand photo (the old `.jpg` did not exist).
-  { href: '/shopping', icon: 'bag', image: '/brand/flatlay-wide.webp', key: 'shop' },
+  ...(FEATURES.shopping
+    ? [{ href: '/shopping', icon: 'bag' as IconName, image: '/brand/flatlay-wide.webp', key: 'shop' }]
+    : []),
 ]
 
 /**
