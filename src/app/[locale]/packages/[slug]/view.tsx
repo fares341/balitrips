@@ -18,8 +18,8 @@ import { readSetting } from '@/app/(admin)/_lib/settings'
 import { packageDayPlan } from '@/lib/packages/estimate'
 import { itinerariesForPackage, listPackages } from '@/lib/content/queries'
 import { ENTITY_PATHS, type PackageDetail } from '@/lib/content/types'
+import { Money } from '@/components/currency/currency-context'
 
-import { formatPrice } from '../../_ui/price'
 import { BuyItineraryButton } from '../../itineraries/[slug]/buy-button'
 import { PackageBookingBox } from './booking-box'
 
@@ -294,11 +294,10 @@ export async function PackageDetailView({
                         <b>{pick(entry.itinerary.name, locale, entry.itinerary.slug)}</b>
                         <small className="muted">
                           +
-                          {formatPrice(
-                            entry.itinerary.priceMinor,
-                            entry.itinerary.currency,
-                            locale,
-                          )}
+                          <Money
+                            minor={entry.itinerary.priceMinor}
+                            currency={entry.itinerary.currency}
+                          />
                         </small>
                       </span>
                     </Link>

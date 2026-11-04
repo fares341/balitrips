@@ -45,7 +45,8 @@ import {
 } from '@/lib/booking-rules'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { DriverVehicleDto } from '@/lib/content/types'
-import { formatMoney } from '@/lib/money'
+import { useDisplayCurrency } from '@/components/currency/currency-context'
+import { formatInCurrency } from '@/lib/currency/shared'
 
 import { VEHICLE_BLURB, VEHICLE_ICON, VEHICLE_LABEL } from './vehicles'
 
@@ -147,8 +148,11 @@ function DriverBookingForm({ vehicles }: DriverBookingProps) {
   const currency = vehicle?.currency ?? null
   const totalMinor = rateMinor !== null && days !== null ? rateMinor * days : null
 
+  const display = useDisplayCurrency()
   const money = (minor: number) =>
-    currency === null ? EMPTY : formatMoney(minor, currency, locale)
+    currency === null
+      ? EMPTY
+      : formatInCurrency(minor, currency, display.currency, locale, display.rates)
 
   const vehicleName =
     vehicle === null

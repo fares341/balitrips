@@ -6,12 +6,7 @@
  * drop them only when they are zero, so "$29.50" still shows its cents.
  */
 
-import { minorUnitExponent, moneyLocale } from '@/lib/money'
-
-/** Arabic is the only right-to-left locale; mirrors the private check in money.ts. */
-function isRtlLocale(locale: string): boolean {
-  return locale === 'ar' || locale.startsWith('ar-')
-}
+import { formatInCurrency } from '@/lib/currency/shared'
 
 export interface PricePoint {
   priceMinor: number
@@ -19,16 +14,10 @@ export interface PricePoint {
 }
 
 export function formatPrice(minor: number, currency: string, locale: string): string {
-  const exponent = minorUnitExponent(currency)
-  const whole = minor % 10 ** exponent === 0
-  const text = new Intl.NumberFormat(moneyLocale(locale, currency), {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: whole ? 0 : exponent,
-    maximumFractionDigits: whole ? 0 : exponent,
-  }).format(minor / 10 ** exponent)
-  // Same bidi isolation as formatMoney: keeps "US$ 29" in one piece in Arabic.
-  return isRtlLocale(locale) ? `⁦${text}⁩` : text
+  // Server-rendered price strings are in SAR — the site's default display
+  // currency and the charge currency. JSX should prefer <Money>, which then
+  // swaps to the visitor's own currency on the client.
+  return formatInCurrency(minor, currency, 'SAR', locale)
 }
 
 /**

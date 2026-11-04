@@ -36,8 +36,8 @@ export type CompactCardImage = {
 export type CompactCardPrice = {
   /** "From" — small text before the amount. */
   label: string
-  /** Already formatted (formatPrice). Rendered LTR. */
-  amount: string
+  /** Usually `<Money>` (visitor's currency). Rendered LTR. */
+  amount: ReactNode
   /** "person", "day"… after a slash. */
   unit?: string | null
 }

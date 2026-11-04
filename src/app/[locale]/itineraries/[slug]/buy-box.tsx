@@ -17,7 +17,7 @@ import { useRouter } from '@/i18n/routing'
 import { addToCartAction, addVipAction } from '../../my-trip/actions'
 
 /** One level in the box: its price already formatted, or null = not on sale yet. */
-export type BuyTier = { key: string; label: string; note: string; price: string | null }
+export type BuyTier = { key: string; label: string; note: string; price: ReactNode | null }
 
 export function ItineraryBuyBox({
   itineraryId,

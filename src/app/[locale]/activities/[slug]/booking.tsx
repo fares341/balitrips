@@ -1,6 +1,7 @@
 'use client'
 
-import { LocalPrice } from '@/components/currency/currency-context'
+import { useDisplayCurrency } from '@/components/currency/currency-context'
+import { formatInCurrency } from '@/lib/currency/shared'
 
 /**
  * Activity booking — v3 screen 06 (prototype activity.html, booking.js,
@@ -22,7 +23,6 @@ import type { FormEvent, ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Calendar, type CalendarRange } from '@/components/booking/calendar'
-import { formatPrice } from '@/components/bt/card'
 import { Stepper } from '@/components/shared/stepper'
 import { Modal } from '@/components/shared/modal'
 import { useToast } from '@/components/shared/toast'
@@ -525,7 +525,10 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const rules: AvailabilityRules | null = facts?.availability ?? null
   const promise = promiseFor(facts, state.pkg, state.date, state.time)
 
-  const money = (minor: number) => formatPrice(minor, data.currency, locale)
+  // Primary prices in the visitor's display currency (SAR until detected).
+  const display = useDisplayCurrency()
+  const money = (minor: number) =>
+    formatInCurrency(minor, data.currency, display.currency, locale, display.rates)
 
   /** Every change goes through here: prune add-ons, clamp people, bump the total. */
   function update(patch: Partial<State>, clear?: BookingField) {
@@ -916,7 +919,7 @@ export function PackageBadge({
 /** «US$ 240.00» with the reference price struck through and the saving, when valid. */
 function PackagePrice({ p }: { p: BookingPackage }) {
   const t = useTranslations()
-  const { money, data } = useBooking()
+  const { money } = useBooking()
   const compare = p.compareAtPriceMinor
   const off = compare !== null && compare > p.priceMinor ? compare - p.priceMinor : 0
   return (
@@ -924,7 +927,6 @@ function PackagePrice({ p }: { p: BookingPackage }) {
       <b className="price" dir="ltr">
         {money(p.priceMinor)}
       </b>
-      <LocalPrice minor={p.priceMinor} currency={data.currency} />
       {off > 0 && compare !== null ? (
         <>
           {' '}

@@ -21,7 +21,7 @@ import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import type { CartLineView } from '@/lib/cart'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { Money } from '@/components/currency/currency-context'
 import type { CartItemKind } from '@/lib/pricing/quote'
 
 import { PriceBreakdown } from './price-breakdown'
@@ -228,7 +228,7 @@ export async function TripLine({ line, locale, controls, size = 72 }: TripLinePr
           whiteSpace: 'nowrap',
         }}
       >
-        {priced ? formatMoney(lineTotal, currency, locale) : NO_PRICE}
+        {priced ? <Money minor={lineTotal} currency={currency} /> : NO_PRICE}
       </div>
     </article>
   )

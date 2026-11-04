@@ -1,6 +1,7 @@
 'use client'
 
-import { LocalPrice } from '@/components/currency/currency-context'
+import { useDisplayCurrency } from '@/components/currency/currency-context'
+import { formatInCurrency } from '@/lib/currency/shared'
 
 /**
  * Package request sidebar (client, Oct 2026).
@@ -21,7 +22,6 @@ import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { BALI_TIME_ZONE, todayInBali } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
 import { Calendar } from '@/components/booking/calendar'
 import { estimatePackage, type EstimateDay } from '@/lib/packages/estimate'
 import { isLuxury, type Vehicle } from '@/lib/packages/vehicles'
@@ -78,7 +78,9 @@ export function PackageBookingBox({
         : estimatePackage({ days: dayPlan, travellers: guests, vehicle, sarPerUsd }),
     [vehicle, dayPlan, guests, sarPerUsd],
   )
-  const money = (minor: number) => formatMoney(minor, estimate?.currency ?? 'USD', locale)
+  const display = useDisplayCurrency()
+  const money = (minor: number) =>
+    formatInCurrency(minor, estimate?.currency ?? 'USD', display.currency, locale, display.rates)
 
   const dateLabel =
     date === ''
@@ -228,7 +230,6 @@ export function PackageBookingBox({
             <span>{t('pk_req_total')}</span>
             <span>{money(estimate.totalMinor)}</span>
           </div>
-          <LocalPrice minor={estimate.totalMinor} currency={estimate.currency} />
           {estimate.incomplete && (
             <p className="muted" style={{ fontSize: 12.5, margin: '6px 0 0' }}>
               {t('pk_req_incomplete')}

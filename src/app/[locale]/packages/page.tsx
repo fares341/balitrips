@@ -14,7 +14,7 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { TierFilter } from '@/components/bt/tier-filter'
-import { formatPrice } from '@/components/bt/card'
+import { Money } from '@/components/currency/currency-context'
 import { PackageCard } from '@/components/cards'
 import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs, LinkButton } from '@/components/shared'
@@ -185,7 +185,9 @@ export default async function PackagesPage({
                       <th scope="row">{t('pk_cmp_from')}</th>
                       {shown.map((pkg) => (
                         <td key={pkg.id}>
-                          <b dir="ltr">{formatPrice(pkg.priceMinor, pkg.currency, locale)}</b>{' '}
+                          <b dir="ltr">
+                            <Money minor={pkg.priceMinor} currency={pkg.currency} />
+                          </b>{' '}
                           <small className="muted">
                             {pkg.pricingMode === 'per_guest'
                               ? t('c_pp')
