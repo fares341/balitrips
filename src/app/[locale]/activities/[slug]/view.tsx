@@ -27,7 +27,6 @@ import { ENTITY_PATHS, type ActivityDetail, type ScopedText } from '@/lib/conten
 
 import { ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from '../../map/art-warp'
 import {
-  AddonStrip,
   BookingBox,
   BookingProvider,
   InfoBoxes,
@@ -541,7 +540,6 @@ export async function ActivityView({
           <section className="blk3" id="overview">
             <TierDetail schedule={schedule} />
             <InfoBoxes />
-            <AddonStrip />
           </section>
 
           <section className="blk3 booksec" id="book" aria-label={t('act_book_label')}>
