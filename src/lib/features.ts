@@ -13,12 +13,18 @@
  * still shows and manages the fleet. To bring the service back, set it to
  * `true` (nothing else to change).
  */
-export type FeatureName = 'driver'
+/**
+ * `shopping`: the «Shopping in Bali» page and its home card, hidden by the
+ * owner (Nov 2026). While `false` the home card and sitemap entry are gone and
+ * `/shopping` answers 404. Set to `true` to bring it back.
+ */
+export type FeatureName = 'driver' | 'shopping'
 
 // Typed as plain booleans (not literals) so flipping a value never changes
 // how TypeScript narrows the code behind it.
 export const FEATURES: Readonly<Record<FeatureName, boolean>> = {
   driver: false,
+  shopping: false,
 }
 
 export function isFeatureOn(name: FeatureName): boolean {

@@ -9,6 +9,7 @@
  */
 
 import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { PlaceCard } from '@/components/cards'
@@ -19,6 +20,7 @@ import { listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
 import { buildMapPayload, loadEntitlements } from '@/lib/entitlements'
 import type { MapPlaceForClient } from '@/lib/entitlements/redaction'
 import { getUser } from '@/lib/auth/session'
+import { FEATURES } from '@/lib/features'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { PageBanner } from '../_ui/page-banner'
@@ -57,6 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ShoppingPage({ params, searchParams }: PageProps) {
+  if (!FEATURES.shopping) notFound()
   const { locale: raw } = await params
   setRequestLocale(raw)
   const locale = toLocale(raw)
