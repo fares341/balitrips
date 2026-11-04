@@ -1,7 +1,8 @@
 /**
- * A place's own photo, or — when it truly has none — a neutral placeholder
- * (the category glyph on a soft background). Never a stock photo standing in
- * for the place: a visitor would take it for the real thing.
+ * A place's own photo, or — when it has none, or every fallback URL failed —
+ * a neutral placeholder (the category glyph on a soft background). Never a
+ * stock photo standing in for the place: a visitor would take it for the
+ * real thing.
  */
 
 import { Icon, Photo, type IconName } from '@/components/ui'
@@ -25,7 +26,16 @@ export function PlaceThumb({
   if (src) {
     return (
       <span className={className}>
-        <Photo src={src} alt={alt} priority={priority} />
+        <Photo
+          src={src}
+          alt={alt}
+          priority={priority}
+          placeholder={
+            <span className="pl-ph" data-testid="place-ph">
+              <Icon name={icon} size={size} />
+            </span>
+          }
+        />
       </span>
     )
   }
@@ -34,6 +44,7 @@ export function PlaceThumb({
       className={className ? `${className} pl-ph` : 'pl-ph'}
       role={alt ? 'img' : undefined}
       aria-label={alt || undefined}
+      data-testid="place-ph"
     >
       <Icon name={icon} size={size} />
     </span>
