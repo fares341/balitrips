@@ -55,7 +55,15 @@ export function formatMoney(minor: number, currency: string, locale: string): st
     currency: currency.toUpperCase(),
     minimumFractionDigits: exponent,
     maximumFractionDigits: exponent,
-  }).format(minor / 10 ** exponent)
+  })
+    .format(minor / 10 ** exponent)
+    // Intl's Arabic output carries RLM/ALM marks and a trailing dot on the
+    // symbol ("ر.س.‏"); the marks are drawn by the Latin face and split the
+    // symbol, so drop them and the dot ("ر.س"). Direction comes from LRI…PDI.
+    .replace(/[\u200e\u200f\u061c]/g, '')
+    .replace(/[\u00a0\u202f]/g, ' ')
+    .replace(/([\u0600-\u06ff]+(?:\.[\u0600-\u06ff]+)*)\./g, '$1')
+    .trim()
   // Inside Arabic text the bidi algorithm splits "US$ 59.00" and moves the
   // symbol ("$US 59.00"). LRI…PDI isolates the amount as one left-to-right
   // run wherever the string lands — JSX, attributes, emails, PDFs.

@@ -20,7 +20,7 @@
 
 import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
 import { isItineraryTier } from '@/lib/itineraries/tiers'
-import { LocalPrice } from '@/components/currency/currency-context'
+import { LocalPrice, MoneyText } from '@/components/currency/currency-context'
 import { toChargeMinor } from '@/lib/currency/charge'
 import { randomUUID } from 'node:crypto'
 
@@ -312,9 +312,13 @@ export default async function CheckoutPage({
             <div className="ck-line-top">
               <b className="ck-line-name">{titleOf(line)}</b>
               <b className="price" dir="ltr">
-                {line.lineTotalMinor === 0
-                  ? t('trip_no_cost')
-                  : money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+                {line.lineTotalMinor === 0 ? (
+                  t('trip_no_cost')
+                ) : (
+                  <MoneyText
+                    text={money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+                  />
+                )}
               </b>
             </div>
             <div className="card-meta">
@@ -398,7 +402,7 @@ export default async function CheckoutPage({
               <small className="muted">{when(line)}</small>
             </span>
             <b className="price" dir="ltr">
-              {money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+              <MoneyText text={money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)} />
             </b>
           </div>
         ))}
@@ -406,7 +410,7 @@ export default async function CheckoutPage({
       <div className="sum-row">
         <span>{t('co_subtotal')}</span>
         <span className="price" dir="ltr">
-          {money(cart.subtotalMinor, cart.currency)}
+          <MoneyText text={money(cart.subtotalMinor, cart.currency)} />
         </span>
       </div>
       {cart.adjustments.map((line, index) => (
@@ -417,7 +421,7 @@ export default async function CheckoutPage({
           <span>{adjustmentLabel(line, locale, words)}</span>
           <span className="price" dir="ltr">
             {adjustmentSign(line)}
-            {money(line.amountMinor, cart.currency)}
+            <MoneyText text={money(line.amountMinor, cart.currency)} />
           </span>
         </div>
       ))}
@@ -425,14 +429,14 @@ export default async function CheckoutPage({
         <div className="sum-row">
           <span>{t('co_fees')}</span>
           <span className="price" dir="ltr">
-            {money(0, cart.currency)}
+            <MoneyText text={money(0, cart.currency)} />
           </span>
         </div>
       )}
       <div className="sum-total">
         <span>{t('co_final_total')}</span>
         <b className="price" dir="ltr">
-          {money(cart.totalMinor, cart.currency)}
+          <MoneyText text={money(cart.totalMinor, cart.currency)} />
         </b>
       </div>
       <LocalPrice minor={cart.totalMinor} currency={cart.currency} except="SAR" />

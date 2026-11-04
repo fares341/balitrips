@@ -19,6 +19,7 @@ import {
   FALLBACK_RATES,
   formatApprox,
   formatInCurrency,
+  moneyRuns,
   isDisplayCurrency,
   type DisplayCurrency,
 } from '@/lib/currency/shared'
@@ -132,7 +133,15 @@ export function Money({
   const { currency: target, rates } = useDisplayCurrency()
   return (
     <bdi className={className} data-money="" suppressHydrationWarning>
-      {formatInCurrency(minor, currency, target, locale, rates)}
+      {moneyRuns(formatInCurrency(minor, currency, target, locale, rates)).map((r, i) =>
+        r.arabic ? (
+          <span key={i} className="money-sym" lang="ar">
+            {r.text}
+          </span>
+        ) : (
+          r.text
+        ),
+      )}
     </bdi>
   )
 }
@@ -168,5 +177,25 @@ export function CurrencySwitcher({ className }: { className?: string }) {
         ))}
       </select>
     </label>
+  )
+}
+
+/**
+ * An already-formatted price string, with any Arabic currency symbol set in
+ * the Arabic brand face (.money-sym), the same way <Money> renders it.
+ */
+export function MoneyText({ text }: { text: string }) {
+  return (
+    <>
+      {moneyRuns(text).map((r, i) =>
+        r.arabic ? (
+          <span key={i} className="money-sym" lang="ar">
+            {r.text}
+          </span>
+        ) : (
+          r.text
+        ),
+      )}
+    </>
   )
 }

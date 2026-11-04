@@ -1,6 +1,6 @@
 'use client'
 
-import { useDisplayCurrency } from '@/components/currency/currency-context'
+import { MoneyText, useDisplayCurrency } from '@/components/currency/currency-context'
 import { formatInCurrency } from '@/lib/currency/shared'
 
 /**
@@ -925,7 +925,7 @@ function PackagePrice({ p }: { p: BookingPackage }) {
   return (
     <p className="pprice">
       <b className="price" dir="ltr">
-        {money(p.priceMinor)}
+        <MoneyText text={money(p.priceMinor)} />
       </b>
       {off > 0 && compare !== null ? (
         <>
@@ -1098,7 +1098,7 @@ export function PackageCards() {
                       {p.name}
                       <br />
                       <span className="num" dir="ltr">
-                        {money(p.priceMinor)}
+                        <MoneyText text={money(p.priceMinor)} />
                       </span>
                     </th>
                   ))}
@@ -1297,7 +1297,7 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
           ) : (
             <p className="pprice">
               <b className="price" dir="ltr">
-                {money(data.basePriceMinor)}
+                <MoneyText text={money(data.basePriceMinor)} />
               </b>
             </p>
           )}
@@ -1479,7 +1479,7 @@ export function AddonStrip() {
               <span className="acard-txt">
                 <b>{a.name}</b>
                 <span className="price" dir="ltr">
-                  {included ? t('act_included') : money(a.priceMinor)}
+                  {included ? t('act_included') : <MoneyText text={money(a.priceMinor)} />}
                 </span>
                 <small className="muted">{a.unitLabel ?? perAddon(t, a)}</small>
                 {why ? <small className="why">{why}</small> : null}
@@ -1659,7 +1659,7 @@ export function BookingBox() {
         {/* L8: price before its unit, so the text reads "From US$22 per person". */}
         <span className="bk-price">
           <b className="price" dir="ltr">
-            {money(fromMinor)}
+            <MoneyText text={money(fromMinor)} />
           </b>
           <small>{from ? perLabel(t, from) : t('act_per_person')}</small>
         </span>
@@ -1680,7 +1680,7 @@ export function BookingBox() {
             >
               {data.packages.map((p) => (
                 <option key={p.id} value={p.id} disabled={!p.available}>
-                  {`${p.name} — ${money(p.priceMinor)} ${perLabel(t, p)}`}
+                  {`${p.name} — $<MoneyText text={money(p.priceMinor)} /> ${perLabel(t, p)}`}
                 </option>
               ))}
             </select>
@@ -1981,14 +1981,14 @@ export function BookingBox() {
             <div className="sum-row" key={`${line.kind}-${line.refId ?? ''}`}>
               <span>{lineLabel(line)}</span>
               <span className="price" dir="ltr">
-                {money(line.totalMinor)}
+                <MoneyText text={money(line.totalMinor)} />
               </span>
             </div>
           ))}
           <div className="sum-total">
             <span>{t('act_sum_total')}</span>
             <b key={b.bump} className={b.bump > 0 ? 'price bump' : 'price'} dir="ltr">
-              {money(price.totalMinor)}
+              <MoneyText text={money(price.totalMinor)} />
             </b>
           </div>
           {price.seasonLabel ? (
@@ -2073,7 +2073,7 @@ function DriverModal() {
           {vehicle.label} · {t('act_days_n', { n: days })}
         </span>
         <b className="price" dir="ltr">
-          +{b.money(vehicle.dayRateMinor * days)}
+          +<MoneyText text={b.money(vehicle.dayRateMinor * days)} />
         </b>
       </div>
       <div className="row">
@@ -2119,7 +2119,7 @@ export function MobileBookBar() {
       <div className="from">
         <small>{t('act_sum_total')}</small>
         <b className="price" dir="ltr">
-          {money(price.totalMinor)}
+          <MoneyText text={money(price.totalMinor)} />
         </b>
       </div>
       <a

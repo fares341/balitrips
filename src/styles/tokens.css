@@ -195,3 +195,11 @@ html[lang='en'],
 html[lang='id'] {
   --f: var(--f-en);
 }
+
+/* Arabic currency symbols ("ر.س", "ج.م", "د.إ") inside a price: the whole
+   symbol, dots included, is set in the Arabic brand face so it never mixes
+   Jakarta punctuation with Almarai letters. <Money> wraps it in .money-sym. */
+.money-sym {
+  font-family: var(--f-ar);
+  font-weight: inherit;
+}

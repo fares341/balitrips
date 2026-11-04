@@ -7,6 +7,7 @@
  * tabs, and the Share / Save buttons beside the title.
  */
 
+import { MoneyText } from '@/components/currency/currency-context'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -581,7 +582,7 @@ export function RelatedRow({ title, items }: { title: string; items: RelatedItem
               <small className="why">{t('act_unavailable_tag')}</small>
             ) : item.price ? (
               <b className="price" dir="ltr">
-                {item.price}
+                <MoneyText text={item.price} />
               </b>
             ) : null}
             {item.area ? (

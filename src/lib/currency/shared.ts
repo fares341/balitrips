@@ -129,15 +129,42 @@ export function convertUsdMinor(
   return (usdMinor / 100) * rate
 }
 
+const BIDI_MARKS = /[\u200e\u200f\u061c]/g
+const ARABIC_SYMBOL = /([\u0600-\u06ff]+(?:\.[\u0600-\u06ff]+)*)\.?/g
+
+/**
+ * Tidy Intl output for display: drop the invisible bidi marks Intl adds in
+ * Arabic (they are drawn by the Latin face and break the symbol apart), use
+ * a plain space, and drop the trailing dot on Arabic symbols ("ر.س." →
+ * "ر.س", "ج.م." → "ج.م"). Direction is handled by the <bdi> around prices.
+ */
+export function cleanMoney(text: string): string {
+  return text
+    .replace(BIDI_MARKS, '')
+    .replace(/[\u00a0\u202f]/g, ' ')
+    .replace(ARABIC_SYMBOL, '$1')
+    .trim()
+}
+
+/** Split a formatted price into Latin and Arabic runs, for per-script fonts. */
+export function moneyRuns(text: string): { text: string; arabic: boolean }[] {
+  return text
+    .split(/([\u0600-\u06ff]+(?:\.[\u0600-\u06ff]+)*)/)
+    .filter(Boolean)
+    .map((t) => ({ text: t, arabic: /[\u0600-\u06ff]/.test(t) }))
+}
+
 /** "≈ 375 ر.س" style: rounded, no decimals for amounts ≥ 100. */
 export function formatApprox(amount: number, currency: DisplayCurrency, locale: string): string {
   const digits = amount >= 100 ? 0 : 2
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: digits,
-  }).format(amount)
+  return cleanMoney(
+    new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: digits,
+    }).format(amount),
+  )
 }
 
 /** Minor-unit exponent of a stored (catalogue) currency. */
@@ -194,13 +221,15 @@ export function displayLocale(locale: string): string {
 export function formatDisplay(amount: number, currency: DisplayCurrency, locale: string): string {
   const value = roundDisplay(amount, currency)
   const whole = Number.isInteger(value)
-  return new Intl.NumberFormat(displayLocale(locale), {
-    style: 'currency',
-    currency,
-    currencyDisplay: currency === 'USD' && !locale.startsWith('en') ? 'symbol' : 'narrowSymbol',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: whole ? 0 : 2,
-  }).format(value)
+  return cleanMoney(
+    new Intl.NumberFormat(displayLocale(locale), {
+      style: 'currency',
+      currency,
+      currencyDisplay: currency === 'USD' && !locale.startsWith('en') ? 'symbol' : 'narrowSymbol',
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: whole ? 0 : 2,
+    }).format(value),
+  )
 }
 
 /** Stored amount → display string in `to` (SAR on the server, before detection). */
