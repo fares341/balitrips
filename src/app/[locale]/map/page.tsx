@@ -39,7 +39,9 @@ import { checkSecureAccess } from '@/lib/security/guard'
 
 import '@/styles/bt-map.css'
 
+import { areaLabelPoints } from '@/lib/map/area-labels'
 import { listMapCategoriesCached, listMapPlacesCached } from '@/lib/map/cached'
+import { centroid } from '@/lib/map/distance'
 import {
   ALL_AREA,
   areaOptions,
@@ -167,6 +169,18 @@ export default async function MapPage({ params, searchParams }: PageProps) {
     categories.map((one) => one.key),
   )
   const unlocked = held.has('map_access')
+  // Area centres (distance fallback): the region's own, else its sub-areas'.
+  const centreOf = (key: string) => {
+    const own = taxonomy.regions.find((one) => one.key === key)
+    if (own && own.centerLat !== null && own.centerLon !== null) {
+      return { lat: own.centerLat, lon: own.centerLon }
+    }
+    return centroid(
+      taxonomy.regions
+        .filter((one) => one.parentKey === key && one.centerLat !== null && one.centerLon !== null)
+        .map((one) => ({ lat: one.centerLat!, lon: one.centerLon! })),
+    )
+  }
 
   const selection = parseSelection(
     { area: firstValue(query.area), region: initialRegion, cat: initialCategory },
@@ -230,7 +244,9 @@ export default async function MapPage({ params, searchParams }: PageProps) {
         parentKey: one.parentKey,
         count: one.count,
         top: one.top,
+        center: centreOf(one.key),
       }))}
+      areaLabels={areaLabelPoints(lang, taxonomy.regions)}
       counts={rows}
       categories={categories.map((one) => ({
         key: one.key,

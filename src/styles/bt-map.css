@@ -2388,3 +2388,404 @@
 .mx3 .mx3-fav .mp-heart[aria-pressed='true'] svg {
   fill: currentColor;
 }
+
+/* ==========================================================================
+   Map v3 sheet (owner, Nov 2026): category pins as chips, distance, the
+   place sheet (bottom sheet on phones, side panel from 1024px).
+   ========================================================================== */
+
+.mx4-glyph {
+  flex: none;
+  width: var(--s, 20px);
+  height: var(--s, 20px);
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--c);
+  box-shadow: 0 0 0 1.5px #fff;
+  vertical-align: middle;
+}
+.mx4-glyph svg {
+  width: 64%;
+  height: 64%;
+  display: block;
+}
+.mx-caticon.mx4-glyph {
+  box-shadow: none;
+}
+.mx4-chip-dots {
+  display: inline-flex;
+  margin-inline-end: 2px;
+}
+.mx4-chip-dots .mx4-glyph + .mx4-glyph {
+  margin-inline-start: -5px;
+}
+.mx3-chip.mx4-near {
+  gap: 6px;
+}
+.mx3-chip.mx4-near.is-on {
+  background: #1a73e8;
+  border-color: #1a73e8;
+  color: #fff;
+}
+.mx3 .mx-tool.is-on {
+  color: #1a73e8;
+}
+.mx3-row-text small .mx4-glyph {
+  margin-inline-end: 4px;
+}
+
+/* Card: a button opens the sheet (the whole card is the target). */
+.mx3 button.mx3-card-link {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mx4-card-glyph {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index: 2;
+  pointer-events: none;
+}
+.mx4-card-dist {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a5fbf;
+  white-space: nowrap;
+}
+.mx3-bottom[data-hidden] {
+  visibility: hidden;
+}
+
+/* ---- the sheet -------------------------------------------------------- */
+
+.mx4-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  /* Over the tab bar, under the site header and dialogs. */
+  z-index: calc(var(--z-tabbar, 55) + 1);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: var(--mx3-ink, #18201b);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+}
+.mx4-sheet.is-dragging {
+  transition: none;
+}
+.mx4-sheet[data-stop='closed'] {
+  box-shadow: none;
+}
+.mx4-grab {
+  flex: none;
+  padding: 10px 0 6px;
+  cursor: grab;
+}
+.mx4-grab i {
+  display: block;
+  width: 42px;
+  height: 5px;
+  margin: auto;
+  border-radius: 3px;
+  background: #cfd6cc;
+}
+.mx4-x {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 14px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f5f0;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.mx4-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  padding: 0 16px calc(32px + env(safe-area-inset-bottom, 0px));
+}
+.mx4-body[data-scroll] {
+  overflow-y: auto;
+  touch-action: pan-y;
+  user-select: text;
+}
+.mx4-peek {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 12px;
+  padding-inline-end: 40px;
+  min-height: 104px;
+}
+.mx4-peek-img {
+  flex: none;
+  width: 92px;
+  height: 92px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #dfe7da;
+  display: grid;
+  place-items: center;
+}
+.mx4-peek-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.mx4-peek-text {
+  min-width: 0;
+}
+.mx4-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.mx4-meta {
+  margin: 6px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 14px;
+  color: #5d6b61;
+}
+.mx4-dist {
+  margin: 6px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a5fbf;
+}
+.mx4-gallery {
+  display: flex;
+  gap: 8px;
+  margin: 4px -16px 14px;
+  padding: 0 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+.mx4-gallery::-webkit-scrollbar {
+  display: none;
+}
+.mx4-shot {
+  flex: none;
+  width: 78%;
+  height: 200px;
+  margin: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  scroll-snap-align: center;
+  background: #dfe7da;
+}
+.mx4-shot:only-child {
+  width: 100%;
+}
+.mx4-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mx4-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.mx4-btn {
+  flex: 1;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid #e6ebe4;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.mx4-btn.is-primary {
+  background: #1b3f22;
+  border-color: #1b3f22;
+  color: #fff;
+}
+.mx4-btn.is-heart {
+  flex: 0 0 52px;
+  padding: 0;
+}
+.mx4-btn.is-heart .mp-heart {
+  position: static;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.mx4-btn.is-heart .mp-heart[aria-pressed='true'] {
+  color: #d23a3a;
+}
+.mx4-btn.is-heart .mp-heart[aria-pressed='true'] svg {
+  fill: currentColor;
+}
+.mx4-sec {
+  border-top: 1px solid #e6ebe4;
+  padding: 14px 0;
+}
+.mx4-sec h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 800;
+}
+.mx4-sec p {
+  margin: 0;
+  color: #3b463e;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.mx4-desc {
+  white-space: pre-line;
+}
+.mx4-near {
+  list-style: none;
+  margin: 0 -16px;
+  padding: 0 16px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+.mx4-near::-webkit-scrollbar {
+  display: none;
+}
+.mx4-near button {
+  width: 140px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.mx4-near-img {
+  width: 140px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #dfe7da;
+  display: grid;
+  place-items: center;
+}
+.mx4-near-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mx4-near b {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mx4-near small {
+  font-size: 12px;
+  color: #5d6b61;
+}
+.mx4-full {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f2f5f0;
+  color: #1b3f22;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 1024px) {
+  .mx3 {
+    position: relative;
+  }
+  .mx4-sheet {
+    position: relative;
+    grid-row: 2;
+    grid-column: 1;
+    justify-self: start;
+    align-self: stretch;
+    width: 400px;
+    margin: 12px;
+    margin-inline-end: 0;
+    z-index: 9;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+    touch-action: auto;
+    user-select: text;
+    transition:
+      opacity 0.2s,
+      transform 0.25s;
+  }
+  .mx4-sheet[data-stop='closed'] {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-24px);
+  }
+  [dir='rtl'] .mx4-sheet[data-stop='closed'] {
+    transform: translateX(24px);
+  }
+  .mx4-grab {
+    display: none;
+  }
+  .mx4-body {
+    padding-top: 16px;
+    overflow-y: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mx4-sheet {
+    transition: none;
+  }
+}
