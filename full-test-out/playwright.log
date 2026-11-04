@@ -1,0 +1,15 @@
+
+Running 10 tests using 1 worker
+
+  ✓   1 [desktop] › e2e/full/public-map.spec.ts:41:7 › map v3 › map-first landing: header, chips, cards, list toggle (2.3s)
+  ✓   2 [desktop] › e2e/full/public-map.spec.ts:62:7 › map v3 › filters change data without re-creating the map (3.7s)
+  ✓   3 [desktop] › e2e/full/public-map.spec.ts:93:7 › map v3 › a locked VIP type opens the paywall for a visitor (1.4s)
+  ✓   4 [desktop] › e2e/full/public-map.spec.ts:109:7 › map v3 › deep links: old category links and ?place= (5.2s)
+  ✓   5 [desktop] › e2e/full/public-map.spec.ts:130:7 › map v3 › locked places never leave the server (1.9s)
+  ✓   6 [mobile] › e2e/full/public-map.spec.ts:41:7 › map v3 › map-first landing: header, chips, cards, list toggle (2.1s)
+  ✓   7 [mobile] › e2e/full/public-map.spec.ts:62:7 › map v3 › filters change data without re-creating the map (3.7s)
+  ✓   8 [mobile] › e2e/full/public-map.spec.ts:93:7 › map v3 › a locked VIP type opens the paywall for a visitor (1.8s)
+  ✓   9 [mobile] › e2e/full/public-map.spec.ts:109:7 › map v3 › deep links: old category links and ?place= (5.5s)
+  ✓  10 [mobile] › e2e/full/public-map.spec.ts:130:7 › map v3 › locked places never leave the server (1.6s)
+
+  10 passed (30.5s)
