@@ -39,12 +39,7 @@ export interface FamilyPlanView {
 }
 
 export type FamilyError =
-  | 'not_found'
-  | 'full'
-  | 'self'
-  | 'duplicate'
-  | 'invalid_email'
-  | 'not_shareable'
+  'not_found' | 'full' | 'self' | 'duplicate' | 'invalid_email' | 'not_shareable'
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

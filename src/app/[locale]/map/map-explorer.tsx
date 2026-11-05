@@ -1006,6 +1006,7 @@ function Thumb({
     <SafeImg
       className="mx3-thumb"
       src={src}
+      deferGoogle
       alt=""
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"

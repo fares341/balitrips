@@ -56,14 +56,12 @@ export async function GET(
       },
     })
   } catch (error) {
-    // Over the daily cap or Google failing: the image slot falls back to the
-    // placeholder (useImageFallback), the page itself is unaffected.
-    const capped = error instanceof GoogleCapError
-    if (!capped)
+    // Over the daily cap or Google failing: 404, so the slot falls back
+    // silently to the category glyph (useImageFallback). Once the cap is
+    // reached, pages pick the free-photo fallback themselves.
+    if (!(error instanceof GoogleCapError)) {
       console.warn('[gphoto] google error', error instanceof Error ? error.message : 'unknown')
-    return NextResponse.json(
-      { error: capped ? 'daily_cap' : 'unavailable' },
-      { status: 503, headers: { ...NO_STORE, 'Retry-After': '300' } },
-    )
+    }
+    return notFound()
   }
 }

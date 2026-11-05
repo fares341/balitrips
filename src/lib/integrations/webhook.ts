@@ -24,8 +24,7 @@ export const EVENT_ID_HEADER = 'x-bali-event-id'
 export const TOLERANCE_SECONDS = 5 * 60
 
 export type WebhookCheck =
-  | { ok: true }
-  | { ok: false; reason: 'missing_signature' | 'bad_timestamp' | 'stale' | 'mismatch' }
+  { ok: true } | { ok: false; reason: 'missing_signature' | 'bad_timestamp' | 'stale' | 'mismatch' }
 
 export function signWebhook(secret: string, timestamp: number, body: string): string {
   const mac = createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex')

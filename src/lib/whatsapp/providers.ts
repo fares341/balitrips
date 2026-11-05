@@ -23,8 +23,7 @@ export interface OutgoingMessage {
 }
 
 export type SendResult =
-  | { ok: true; messageId: string | null }
-  | { ok: false; retryable: boolean; error: string }
+  { ok: true; messageId: string | null } | { ok: false; retryable: boolean; error: string }
 
 export interface WhatsappProvider {
   readonly name: string

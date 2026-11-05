@@ -18,7 +18,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { Icon, Photo } from '@/components/ui'
+import { Icon, Photo, SafeImg } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import type { ResultPlace } from '@/lib/map/explore'
 import { scrollsInside, snapAfterDrag, stopOffsets, type SheetStop } from '@/lib/map/sheet-state'
@@ -283,12 +283,14 @@ export function PlaceSheet({
       >
         <header className="mx4-peek">
           <span className="mx4-peek-img">
-            {p.thumb ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.thumb} alt="" loading="lazy" decoding="async" />
-            ) : (
-              <PinGlyph categoryKey={p.categoryKey} size={40} />
-            )}
+            <SafeImg
+              src={p.thumb}
+              deferGoogle
+              alt=""
+              loading="lazy"
+              decoding="async"
+              fallback={<PinGlyph categoryKey={p.categoryKey} size={40} />}
+            />
           </span>
           <div className="mx4-peek-text">
             <h2 className="mx4-name">{p.name}</h2>
@@ -375,12 +377,14 @@ export function PlaceSheet({
                 <li key={one.id}>
                   <button type="button" onClick={() => onOpen(one.id)} data-near={one.slug}>
                     <span className="mx4-near-img">
-                      {one.thumb ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={one.thumb} alt="" loading="lazy" decoding="async" />
-                      ) : (
-                        <PinGlyph categoryKey={one.categoryKey} size={32} />
-                      )}
+                      <SafeImg
+                        src={one.thumb}
+                        deferGoogle
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        fallback={<PinGlyph categoryKey={one.categoryKey} size={32} />}
+                      />
                     </span>
                     <b>{one.name}</b>
                     <small>{d}</small>
