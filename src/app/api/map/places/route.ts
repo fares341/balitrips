@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     slug: place.slug,
     name: pick(place.name, locale, place.slug),
     categoryKey: place.categoryKey ?? '',
+    area: place.regionLabel ? pick(place.regionLabel, locale, place.regionKey ?? '') : null,
     lat: place.lat,
     lon: place.lon,
     rating: place.rating,

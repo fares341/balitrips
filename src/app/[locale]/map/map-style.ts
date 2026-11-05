@@ -674,55 +674,72 @@ export function buildStyle(settings: MapSettings, options: StyleOptions = {}): L
 }
 
 /**
- * Map v2 (owner, Nov 2026): the public map is a clean, light 2D base — the
- * same tile source and layers as `buildStyle`, recoloured to a pale palette,
- * with relief, 3D buildings, POI/peak labels and the satellite layer dropped
- * so only the chosen places stand out.
+ * The public map's base (map v3 sheet, owner Nov 2026): the same tile source
+ * and layers as `buildStyle`, recoloured to natural greens — green land,
+ * lighter green landuse and parks, a clear blue sea, soft white roads — with
+ * relief, buildings, satellite, every OSM POI and every OSM place / waterway
+ * label dropped. Area names come from a curated label layer instead
+ * (`@/lib/map/area-labels`, added by the explorer).
  */
 const LIGHT_DROP = new Set([
   'hillshade',
   'buildings-3d',
   'water-texture',
   'beach-grain',
+  'beach-edge',
   'satellite',
   'outside-free',
   'free-zone-line',
+  'osm-poi',
+  'osm-places',
+  'osm-waterway-names',
 ])
 
+/** The light base's colours (exported for tests and the page background). */
+export const LIGHT = {
+  land: '#c9e3ad',
+  green: '#bcdca4',
+  landuse: '#c2dea5',
+  sea: '#86cdea',
+  areaText: '#173a20',
+} as const
+
 const LIGHT_SWAP: Record<string, string> = {
-  [C.land]: '#f1efe6',
-  [C.forest]: '#dce8cf',
-  [C.grass]: '#e3edd6',
-  [C.farm]: '#eaf0dc',
-  [C.wetland]: '#dcebe1',
-  [C.sand]: '#f6ebcc',
-  [C.sandEdge]: '#eadbb4',
-  [C.town]: '#ebe6dc',
-  [C.park]: '#d4e6c6',
-  [C.ocean]: '#a8d5ec',
-  '#16658f': '#a8d5ec',
-  '#2386b5': '#aad7ed',
-  '#2f9bc9': '#acd8ee',
-  [C.shallow]: '#b6dff0',
-  [C.surf]: '#c3e6f2',
-  [C.river]: '#9fcfe6',
-  [C.inland]: '#a6d4ea',
-  [C.shore]: '#93c6df',
-  [C.building]: '#e6e1d8',
-  // Labels (map v3, reference UX): dark ink on a solid white halo, so town,
-  // road and water names read at a glance on phones.
+  [C.land]: LIGHT.land,
+  [C.forest]: '#b2d698',
+  [C.grass]: LIGHT.green,
+  [C.farm]: LIGHT.landuse,
+  [C.wetland]: '#b8dcac',
+  [C.sand]: '#efe8c4',
+  [C.town]: LIGHT.landuse,
+  [C.park]: LIGHT.green,
+  [C.ocean]: LIGHT.sea,
+  '#16658f': LIGHT.sea,
+  '#2386b5': LIGHT.sea,
+  '#2f9bc9': LIGHT.sea,
+  [C.shallow]: '#9ad6ee',
+  [C.surf]: '#a9ddf1',
+  [C.river]: LIGHT.sea,
+  [C.inland]: LIGHT.sea,
+  [C.shore]: '#74bfdf',
+  // Labels that stay (roads up close, seas, peaks): dark ink, white halo.
   '#fff7e8': '#2b332e',
-  '#bff1f8': '#245a74',
-  '#d9f6ff': '#245a74',
-  '#ffe9c7': '#4a453c',
-  '#ffd6c2': '#5a4636',
-  '#ffffff': '#18201b',
+  '#bff1f8': '#1d6b8f',
+  '#ffd6c2': '#3f5236',
   [HALO]: 'rgba(255,255,255,0.95)',
   'rgba(255,248,235,': 'rgba(255,255,255,',
 }
 
-/** Points of interest and peaks come back later than on the 3D map (calm, but useful). */
-const LIGHT_MINZOOM: Record<string, number> = { 'osm-poi': 15, 'osm-peaks': 11 }
+/**
+ * Minor, secondary and tertiary roads only from zoom 13; peaks later than on
+ * the 3D map.
+ */
+const LIGHT_MINZOOM: Record<string, number> = {
+  'osm-peaks': 11,
+  'road-minor': 13,
+  'road-tertiary': 13,
+  'road-secondary': 13,
+}
 
 /** How much larger every label is on the light map (px). */
 export const LIGHT_LABEL_BUMP = 2
@@ -752,14 +769,14 @@ export function lightStyle(style: Layer): Layer {
   const layers = ((style.layers as Layer[] | undefined) ?? [])
     .filter((layer) => !LIGHT_DROP.has(String(layer.id)))
     .map((layer) => {
-      if (layer.type !== 'symbol') return layer
+      const minzoom = LIGHT_MINZOOM[String(layer.id)]
+      if (layer.type !== 'symbol') return minzoom !== undefined ? { ...layer, minzoom } : layer
       const layout = { ...(layer.layout as Layer | undefined) }
       if (layout['text-size'] !== undefined) {
         layout['text-size'] = bumpSize(layout['text-size'], LIGHT_LABEL_BUMP)
       }
       const paint = { ...(layer.paint as Layer | undefined) }
       if (paint['text-halo-width'] !== undefined) paint['text-halo-width'] = 1.8
-      const minzoom = LIGHT_MINZOOM[String(layer.id)]
       return { ...layer, layout, paint, ...(minzoom !== undefined ? { minzoom } : {}) }
     })
   let json = JSON.stringify(layers)

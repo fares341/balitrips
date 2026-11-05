@@ -24,6 +24,7 @@ import {
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type CSSProperties,
@@ -38,6 +39,7 @@ import { Link, useRouter } from '@/i18n/routing'
 import {
   ALL_AREA,
   boundsOf,
+  byDistance,
   categoryCounts,
   mapQuery,
   nearestChain,
@@ -53,10 +55,17 @@ import {
   type TravelerType,
 } from '@/lib/map/explore'
 
+import type { AreaLabelPoint } from '@/lib/map/area-labels'
+import { formatDistance, haversineMeters, type LatLon } from '@/lib/map/distance'
+import { PIN_KINDS, PIN_LOOK, pinImageId, pinKindFor } from '@/lib/map/pins'
+import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
+
 import { MapWatermark, protectionHandlers } from './map-protect'
-import { attributionsFor, type MapSettings } from './map-style'
+import { attributionsFor, LIGHT, type MapSettings } from './map-style'
 import { loadMapLibre, type MapLike } from './maplibre-loader'
 import { FavoriteHeart } from './place-actions'
+import { drawPin, PinGlyph } from './pin-glyph'
+import { PlaceSheet, type NearbyItem } from './place-sheet'
 import { createRealMap } from './real-map'
 
 export interface AreaItem {
@@ -65,6 +74,8 @@ export interface AreaItem {
   parentKey: string | null
   count: number
   top: string[]
+  /** Centre for «distance from the area» (DB centre, or its sub-areas'). */
+  center: LatLon | null
 }
 
 export interface CategoryItem {
@@ -99,6 +110,8 @@ interface Props {
   unlocked: boolean
   viewerLabel: string | null
   settings: MapSettings
+  /** Curated area names drawn on the map (OSM place labels are hidden). */
+  areaLabels: AreaLabelPoint[]
 }
 
 type SheetKind = 'cats' | 'traveler' | 'dur' | 'area'
@@ -113,7 +126,38 @@ const NO_PLACES: ResultPlace[] = []
 
 /** Brand forest-deep: the selected pin and clusters (navy clashed with the palette). */
 const PIN_ON = '#1b3f22'
-const PIN_OFF = '#69736d'
+/** Desktop side panel width (px), mirrored in bt-map.css. */
+const PANEL_W = 400
+const GEO_KEY = 'mx-geo'
+
+type GeoState = 'off' | 'asking' | 'on' | 'denied'
+
+function readGeo(): string | null {
+  try {
+    return window.sessionStorage.getItem(GEO_KEY)
+  } catch {
+    return null
+  }
+}
+function writeGeo(value: 'granted' | 'denied') {
+  try {
+    window.sessionStorage.setItem(GEO_KEY, value)
+  } catch {
+    // private mode: the choice just isn't remembered
+  }
+}
+
+function useDesktop(): boolean {
+  const [desktop, setDesktop] = useState(false)
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)')
+    const update = () => setDesktop(query.matches)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return desktop
+}
 
 export function MapExplorer(props: Props) {
   const t = useTranslations()
@@ -131,8 +175,15 @@ export function MapExplorer(props: Props) {
   const [paywall, setPaywall] = useState<CategoryItem | null>(null)
   const [view, setView] = useState<'map' | 'list'>('map')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [userPos, setUserPos] = useState<{ lat: number; lon: number } | null>(null)
-  const [locateError, setLocateError] = useState(false)
+  const [userPos, setUserPos] = useState<LatLon | null>(null)
+  const [geo, setGeo] = useState<GeoState>('off')
+  const [sheetState, dispatchSheet] = useReducer(sheetReducer, SHEET_CLOSED)
+  const sheetOpen = sheetState.stop !== 'closed'
+  const sheetOpenRef = useRef(sheetOpen)
+  useLayoutEffect(() => {
+    sheetOpenRef.current = sheetOpen
+  })
+  const desktop = useDesktop()
 
   // ---- URL ------------------------------------------------------------------
 
@@ -156,6 +207,11 @@ export function MapExplorer(props: Props) {
       setFacts(parseFactFilter({ traveler: params.get('traveler'), dur: params.get('dur') }))
       setSheet(null)
       setPaywall(null)
+      // Back closes the place sheet before it leaves the page.
+      if (sheetOpenRef.current) {
+        sheetOpenRef.current = false
+        dispatchSheet({ type: 'close' })
+      }
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
@@ -209,7 +265,10 @@ export function MapExplorer(props: Props) {
     return () => controller.abort()
   }, [resultKey, props.locale, attempt])
 
-  const places = results.places
+  const places = useMemo(
+    () => (userPos ? byDistance(results.places, userPos) : results.places),
+    [results.places, userPos],
+  )
   const placeById = useMemo(() => new Map(places.map((one) => [one.id, one])), [places])
   const fresh = results.key === resultKey
 
@@ -221,11 +280,16 @@ export function MapExplorer(props: Props) {
     if (hit) {
       setSelectedId(hit.id)
       wantedSlug.current = null
+      // The deep link opens the sheet (no extra history entry: Back leaves).
+      sheetOpenRef.current = true
+      dispatchSheet({ type: 'open', id: hit.id, stop: 'half' })
     }
   }, [places])
 
+  const sheetPlace =
+    sheetState.placeId === null ? null : (placeById.get(sheetState.placeId) ?? null)
   const selected = selectedId === null ? null : (placeById.get(selectedId) ?? null)
-  const current = selected ?? places[0] ?? null
+  const current = (sheetOpen ? sheetPlace : null) ?? selected ?? places[0] ?? null
   const currentIndex = current === null ? 0 : Math.max(0, places.indexOf(current))
 
   // ---- Map ⇄ carousel sync ----------------------------------------------------
@@ -233,12 +297,37 @@ export function MapExplorer(props: Props) {
   const mapApi = useRef<ResultsMapHandle>(null)
   const carouselApi = useRef<CarouselHandle>(null)
 
-  /** A pin was tapped: select it and bring its card into view. */
-  const onPin = useCallback((id: string) => {
+  /** Opens (or swaps) the place sheet. One history entry per opening. */
+  const openSheet = useCallback((id: string, stop: 'peek' | 'half') => {
+    if (!sheetOpenRef.current) {
+      window.history.pushState({ ...window.history.state, mxSheet: true }, '', window.location.href)
+      sheetOpenRef.current = true
+    }
     setSelectedId(id)
-    carouselApi.current?.scrollToId(id)
-    mapApi.current?.reveal(id)
+    carouselApi.current?.scrollToId(id, 'instant')
+    dispatchSheet({ type: 'open', id, stop })
   }, [])
+
+  /** ✕, drag down, empty map: through history so Back stays in step. */
+  const closeSheet = useCallback(() => {
+    if (!sheetOpenRef.current) return
+    const state = window.history.state as { mxSheet?: boolean } | null
+    if (state?.mxSheet) {
+      window.history.back()
+      return
+    }
+    sheetOpenRef.current = false
+    dispatchSheet({ type: 'close' })
+  }, [])
+
+  /** A pin was tapped: the sheet opens at peek (or swaps its place). */
+  const onPin = useCallback(
+    (id: string) => {
+      openSheet(id, 'peek')
+      mapApi.current?.reveal(id)
+    },
+    [openSheet],
+  )
 
   /** The carousel settled on a card: select it and ease the map to its pin. */
   const onCard = useCallback((id: string) => {
@@ -247,6 +336,23 @@ export function MapExplorer(props: Props) {
       return id
     })
   }, [])
+
+  /** A card was tapped: the sheet opens at half. */
+  const onCardOpen = useCallback((id: string) => openSheet(id, 'half'), [openSheet])
+
+  // Keep the place in the visible part of the map as the sheet moves.
+  useEffect(() => {
+    if (!sheetOpen || sheetState.placeId === null) return
+    const rtl = document.documentElement.dir === 'rtl'
+    const pad = desktop
+      ? { bottom: 40, [rtl ? 'right' : 'left']: PANEL_W + 24 }
+      : sheetState.stop === 'peek'
+        ? { bottom: PEEK_PX + 24 }
+        : sheetState.stop === 'half'
+          ? { bottom: Math.round(window.innerHeight * 0.55) + 16 }
+          : null
+    if (pad) mapApi.current?.focus(sheetState.placeId, pad)
+  }, [sheetOpen, sheetState.placeId, sheetState.stop, desktop])
 
   // ---- Actions ----------------------------------------------------------------
 
@@ -277,18 +383,37 @@ export function MapExplorer(props: Props) {
     apply({ area: ALL_AREA, categories: [] }, { travelers: [], durations: [] })
   }
 
-  const locate = () => {
-    setLocateError(false)
+  /** Asks for the position — only ever from a tap (or a grant this session). */
+  const locate = useCallback(() => {
     if (!('geolocation' in navigator)) {
-      setLocateError(true)
+      setGeo('denied')
       return
     }
+    setGeo('asking')
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => setLocateError(true),
+      (pos) => {
+        writeGeo('granted')
+        setGeo('on')
+        setUserPos({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+      },
+      () => {
+        writeGeo('denied')
+        setGeo('denied')
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
     )
-  }
+  }, [])
+
+  // Granted earlier in this session (and still granted): no prompt, no tap.
+  useEffect(() => {
+    if (readGeo() !== 'granted' || !navigator.permissions?.query) return
+    void navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (status.state === 'granted') locate()
+      })
+      .catch(() => undefined)
+  }, [locate])
 
   const goBack = () => {
     const sameOrigin = document.referrer.startsWith(window.location.origin)
@@ -299,6 +424,30 @@ export function MapExplorer(props: Props) {
   const area = applied.area ?? ALL_AREA
   const title = area === ALL_AREA ? t('mx3_bali') : (areaByKey.get(area)?.label ?? t('mx3_bali'))
   const countsHere = useMemo(() => categoryCounts(counts, area), [counts, area])
+
+  // Distance: from the viewer (opted in), else from the chosen area's centre,
+  // else none. Never a made-up origin.
+  const areaCenter = area === ALL_AREA ? null : (areaByKey.get(area)?.center ?? null)
+  const distanceOf = useCallback(
+    (place: ResultPlace): string | null => {
+      const origin = userPos ?? areaCenter
+      if (origin === null) return null
+      const d = formatDistance(haversineMeters(origin, place), props.locale)
+      if (d === '') return null
+      return userPos ? t('mx4_away', { d }) : t('mx4_from_area', { d, area: title })
+    },
+    [userPos, areaCenter, props.locale, title, t],
+  )
+
+  const nearby: NearbyItem[] = useMemo(() => {
+    if (sheetPlace === null) return []
+    return places
+      .filter((one) => one.id !== sheetPlace.id)
+      .map((one) => ({ one, d: haversineMeters(sheetPlace, one) }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 8)
+      .map(({ one, d }) => ({ place: one, distance: formatDistance(d, props.locale) }))
+  }, [places, sheetPlace, props.locale])
   const protectedProps = protectionHandlers(props.viewerLabel !== null)
 
   const catLabel =
@@ -320,7 +469,7 @@ export function MapExplorer(props: Props) {
     facts.durations.length > 0 ||
     area !== ALL_AREA
 
-  const chip = (kind: SheetKind, label: string, on: boolean) => (
+  const chip = (kind: SheetKind, label: string, on: boolean, lead?: ReactNode) => (
     <button
       type="button"
       className={on ? 'mx3-chip is-on' : 'mx3-chip'}
@@ -329,6 +478,7 @@ export function MapExplorer(props: Props) {
       onClick={() => setSheet(kind)}
       data-chip={kind}
     >
+      {lead}
       <span>{label}</span>
       <span className="mx3-caret" aria-hidden="true" />
     </button>
@@ -366,7 +516,18 @@ export function MapExplorer(props: Props) {
           </button>
         </div>
         <div className="mx3-chips" role="toolbar" aria-label={t('mx3_filters')}>
-          {chip('cats', catLabel, applied.categories.length > 0)}
+          {chip(
+            'cats',
+            catLabel,
+            applied.categories.length > 0,
+            applied.categories.length > 0 ? (
+              <span className="mx4-chip-dots">
+                {applied.categories.slice(0, 3).map((key) => (
+                  <PinGlyph key={key} categoryKey={key} size={18} />
+                ))}
+              </span>
+            ) : undefined,
+          )}
           {props.travelerOptions.length > 0 &&
             chip(
               'traveler',
@@ -394,6 +555,16 @@ export function MapExplorer(props: Props) {
               <span>{t('mx3_locked_n', { n: results.lockedCount })}</span>
             </button>
           )}
+          <button
+            type="button"
+            className={geo === 'on' ? 'mx3-chip mx4-near is-on' : 'mx3-chip mx4-near'}
+            aria-pressed={geo === 'on'}
+            onClick={locate}
+            data-chip="near"
+          >
+            <Icon name="locate" size={15} />
+            <span>{geo === 'asking' ? t('mx4_locating') : t('mx4_near_me')}</span>
+          </button>
         </div>
         <div className="mx3-progress" aria-hidden="true" />
       </header>
@@ -407,14 +578,20 @@ export function MapExplorer(props: Props) {
         initialSlug={props.initialPlace}
         selectedId={current?.id ?? null}
         userPos={userPos}
+        labels={props.areaLabels}
         onPin={onPin}
+        onEmpty={closeSheet}
       />
 
-      <MapTools onLocate={locate} locateError={locateError} />
+      <MapTools onLocate={locate} geo={geo} />
       {props.viewerLabel !== null && <MapWatermark label={props.viewerLabel} />}
       <Attribution settings={props.settings} />
 
-      <div className="mx3-bottom" aria-live="polite">
+      <div
+        className="mx3-bottom"
+        aria-live="polite"
+        data-hidden={(sheetOpen && !desktop) || undefined}
+      >
         {error ? (
           <div className="mx3-state" role="alert">
             <p>{t('mx3_load_error')}</p>
@@ -443,6 +620,8 @@ export function MapExplorer(props: Props) {
             index={currentIndex}
             categories={catByKey}
             onSettle={onCard}
+            onOpen={onCardOpen}
+            distanceOf={distanceOf}
           />
         )}
       </div>
@@ -459,6 +638,7 @@ export function MapExplorer(props: Props) {
                   onClick={() => {
                     setSelectedId(place.id)
                     setView('map')
+                    openSheet(place.id, 'half')
                     // After the list closes: the carousel and the map follow.
                     requestAnimationFrame(() => {
                       carouselApi.current?.scrollToId(place.id, 'instant')
@@ -470,8 +650,10 @@ export function MapExplorer(props: Props) {
                   <span className="mx3-row-text">
                     <strong>{place.name}</strong>
                     <small>
+                      <PinGlyph categoryKey={place.categoryKey} size={16} />
                       {catByKey.get(place.categoryKey)?.label}
                       {place.rating !== null ? ` · ★ ${place.rating.toFixed(1)}` : ''}
+                      {distanceOf(place) ? ` · ${distanceOf(place)}` : ''}
                     </small>
                   </span>
                 </button>
@@ -507,13 +689,7 @@ export function MapExplorer(props: Props) {
                           <Icon name="check" size={16} stroke={2.6} />
                         ) : null}
                       </span>
-                      <span
-                        className="mx-caticon"
-                        style={{ '--c': cat.color } as CSSProperties}
-                        aria-hidden="true"
-                      >
-                        <Icon name={cat.icon} size={18} />
-                      </span>
+                      <PinGlyph categoryKey={cat.key} size={30} className="mx-caticon" />
                       <span className="mx-catname">{cat.label}</span>
                       <span className={cat.tier === 'vip' ? 'mx-badge is-vip' : 'mx-badge'}>
                         {cat.tier === 'vip' ? t('mx_vip_n', { n }) : t('mx_free_n', { n })}
@@ -599,6 +775,19 @@ export function MapExplorer(props: Props) {
           <SheetFoot onClear={null} onDone={() => setSheet(null)} />
         </Sheet>
       )}
+
+      <PlaceSheet
+        place={sheetPlace}
+        stop={sheetPlace === null ? 'closed' : sheetState.stop}
+        desktop={desktop}
+        locale={props.locale}
+        categoryLabel={sheetPlace ? (catByKey.get(sheetPlace.categoryKey)?.label ?? '') : ''}
+        distance={sheetPlace ? distanceOf(sheetPlace) : null}
+        nearby={nearby}
+        onSnap={(stop: SheetStop) => dispatchSheet({ type: 'snap', stop })}
+        onClose={closeSheet}
+        onOpen={(id) => openSheet(id, 'half')}
+      />
 
       {paywall !== null && (
         <Paywall category={paywall} plans={props.plans} onClose={() => setPaywall(null)} />
@@ -814,16 +1003,21 @@ function Thumb({ src, category }: { src: string | null; category: CategoryItem |
   )
 }
 
-function MapTools({ onLocate, locateError }: { onLocate: () => void; locateError: boolean }) {
+function MapTools({ onLocate, geo }: { onLocate: () => void; geo: GeoState }) {
   const t = useTranslations()
   return (
     <div className="mx3-tools">
-      <button type="button" className="mx-tool" aria-label={t('mx_locate')} onClick={onLocate}>
+      <button
+        type="button"
+        className={geo === 'on' ? 'mx-tool is-on' : 'mx-tool'}
+        aria-label={t('mx_locate')}
+        onClick={onLocate}
+      >
         <Icon name="locate" size={20} />
       </button>
-      {locateError && (
+      {geo === 'denied' && (
         <p className="mx-toast" role="alert">
-          {t('mx_locate_err')}
+          {t('mx4_geo_denied')}
         </p>
       )}
     </div>
@@ -858,12 +1052,16 @@ function Carousel({
   index,
   categories,
   onSettle,
+  onOpen,
+  distanceOf,
 }: {
   ref: Ref<CarouselHandle>
   places: ResultPlace[]
   index: number
   categories: Map<string, CategoryItem>
   onSettle: (id: string) => void
+  onOpen: (id: string) => void
+  distanceOf: (place: ResultPlace) => string | null
 }) {
   const t = useTranslations()
   const box = useRef<HTMLDivElement>(null)
@@ -990,6 +1188,8 @@ function Carousel({
             position={start + k + 1}
             total={places.length}
             category={categories.get(place.categoryKey)}
+            distance={distanceOf(place)}
+            onOpen={onOpen}
           />
         ))}
         {end < places.length && (
@@ -1015,12 +1215,16 @@ const Card = memo(function Card({
   position,
   total,
   category,
+  distance,
+  onOpen,
 }: {
   place: ResultPlace
   on: boolean
   position: number
   total: number
   category: CategoryItem | undefined
+  distance: string | null
+  onOpen: (id: string) => void
 }) {
   const t = useTranslations()
   return (
@@ -1032,11 +1236,18 @@ const Card = memo(function Card({
       data-id={place.id}
     >
       <Thumb src={place.thumb} category={category} />
+      <PinGlyph categoryKey={place.categoryKey} size={22} className="mx4-card-glyph" />
       <div className="mx3-card-body">
         <h2 className="mx3-card-name">
-          <Link href={`/places/${place.slug}`} className="mx3-card-link">
+          <button
+            type="button"
+            className="mx3-card-link"
+            onClick={() => onOpen(place.id)}
+            aria-haspopup="dialog"
+            data-open={place.slug}
+          >
             {place.name}
-          </Link>
+          </button>
         </h2>
         {place.desc ? (
           <p className="mx3-card-desc">{place.desc}</p>
@@ -1062,6 +1273,11 @@ const Card = memo(function Card({
           ) : (
             <span />
           )}
+          {distance && (
+            <span className="mx4-card-dist" data-distance>
+              {distance}
+            </span>
+          )}
           {place.priceMinor !== null && place.currency !== null && (
             <span className="mx3-price">
               <small>{t('mx3_from')}</small>
@@ -1085,9 +1301,11 @@ const Card = memo(function Card({
 // The map (MapLibre draws the pins: GeoJSON source, clustered)
 // ---------------------------------------------------------------------------
 
+type Pad = Partial<Record<'top' | 'bottom' | 'left' | 'right', number>>
+
 interface ResultsMapHandle {
-  /** Ease the map so the pin sits in the open area above the cards. */
-  focus(id: string): void
+  /** Ease the map so the pin sits in the open area (above the cards, or beside the sheet). */
+  focus(id: string, pad?: Pad): void
   /** Only move when the pin is hidden under the chrome. */
   reveal(id: string): void
   /** The MapLibre instance (tests assert it survives filter changes). */
@@ -1102,49 +1320,9 @@ const L_COUNT = 'mx-cluster-count'
 const L_PIN = 'mx-pins'
 const L_ON = 'mx-pin-on'
 const L_ME = 'mx-me'
-const IMG_PIN = 'mx-pin'
-const IMG_ON = 'mx-pin-on'
-
-/** Teardrop pin drawn on a canvas (no sprite file): fill + white centre dot. */
-function pinImage(
-  fill: string,
-  cssW: number,
-  ratio: number,
-): { width: number; height: number; data: Uint8ClampedArray } | null {
-  const cssH = Math.round(cssW * 1.32)
-  const W = Math.round(cssW * ratio)
-  const H = Math.round(cssH * ratio)
-  const c = document.createElement('canvas')
-  c.width = W
-  c.height = H
-  const g = c.getContext('2d')
-  if (!g) return null
-  g.scale(ratio, ratio)
-  const r = cssW / 2 - 1.5
-  const cx = cssW / 2
-  const cy = r + 1.5
-  const tipY = cssH - 1
-  g.shadowColor = 'rgba(0,0,0,0.28)'
-  g.shadowBlur = 3
-  g.shadowOffsetY = 1
-  g.beginPath()
-  // Circle top, two tangents meeting at the tip.
-  const a = Math.asin(r / (tipY - cy))
-  g.arc(cx, cy, r, Math.PI / 2 + a, Math.PI / 2 - a)
-  g.lineTo(cx, tipY)
-  g.closePath()
-  g.fillStyle = fill
-  g.fill()
-  g.shadowColor = 'transparent'
-  g.lineWidth = 1.5
-  g.strokeStyle = '#ffffff'
-  g.stroke()
-  g.beginPath()
-  g.arc(cx, cy, r * 0.38, 0, Math.PI * 2)
-  g.fillStyle = '#ffffff'
-  g.fill()
-  return { width: W, height: H, data: g.getImageData(0, 0, W, H).data }
-}
+const L_ME_HALO = 'mx-me-halo'
+const SRC_AREAS = 'mx-areas'
+const L_AREAS = 'mx-area-labels'
 
 type GeoSource = {
   setData(data: unknown): void
@@ -1157,13 +1335,65 @@ interface Feature {
   geometry?: { type?: string; coordinates?: [number, number] }
 }
 
-function addLayers(map: MapLike, places: readonly ResultPlace[]) {
+/** Normal pins: everything but the selected one (its larger copy is drawn on top). */
+function pinFilter(selectedId: string | null): unknown[] {
+  const point = ['!', ['has', 'point_count']]
+  return selectedId === null ? point : ['all', point, ['!=', ['get', 'id'], selectedId]]
+}
+
+function addLayers(
+  map: MapLike,
+  places: readonly ResultPlace[],
+  labels: readonly AreaLabelPoint[],
+) {
   const ratio = Math.min(window.devicePixelRatio || 1, 2)
-  const off = pinImage(PIN_OFF, 22, ratio)
-  const on = pinImage(PIN_ON, 32, ratio)
-  if (off && !map.hasImage?.(IMG_PIN)) map.addImage?.(IMG_PIN, off, { pixelRatio: ratio })
-  if (on && !map.hasImage?.(IMG_ON)) map.addImage?.(IMG_ON, on, { pixelRatio: ratio })
+  for (const kind of PIN_KINDS) {
+    const look = PIN_LOOK[kind]
+    for (const selected of [false, true]) {
+      const id = pinImageId(kind, selected)
+      if (map.hasImage?.(id)) continue
+      const image = drawPin(look.color, look.path, selected ? 40 : 28, ratio)
+      if (image) map.addImage?.(id, image, { pixelRatio: ratio })
+    }
+  }
   const empty = { type: 'FeatureCollection', features: [] }
+  // Curated area names under the pins, anchored at the top (below the point)
+  // so a pin on the town centre doesn't hide its name.
+  map.addSource(SRC_AREAS, {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: labels.map((one) => ({
+        type: 'Feature',
+        properties: { n: one.name, z: one.minZoom },
+        geometry: { type: 'Point', coordinates: [one.lon, one.lat] },
+      })),
+    },
+  })
+  // One layer per minimum zoom (a layer minzoom, not a zoom filter).
+  for (const z of [...new Set(labels.map((one) => one.minZoom))].sort((x, y) => x - y)) {
+    map.addLayer({
+      id: `${L_AREAS}-${z}`,
+      type: 'symbol',
+      source: SRC_AREAS,
+      minzoom: z,
+      filter: ['==', ['get', 'z'], z],
+      layout: {
+        'text-field': ['get', 'n'],
+        'text-font': ['Noto Sans Bold'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 12, 12, 16],
+        'text-letter-spacing': 0.03,
+        'text-anchor': 'top',
+        'text-offset': [0, 0.5],
+        'text-padding': 2,
+      },
+      paint: {
+        'text-color': LIGHT.areaText,
+        'text-halo-color': 'rgba(255,255,255,0.95)',
+        'text-halo-width': 1.8,
+      },
+    })
+  }
   map.addSource(SRC, {
     type: 'geojson',
     data: toFeatureCollection(places),
@@ -1204,9 +1434,9 @@ function addLayers(map: MapLike, places: readonly ResultPlace[]) {
     id: L_PIN,
     type: 'symbol',
     source: SRC,
-    filter: ['!', ['has', 'point_count']],
+    filter: pinFilter(null),
     layout: {
-      'icon-image': IMG_PIN,
+      'icon-image': ['concat', 'mx-pin-', ['get', 'k']],
       'icon-anchor': 'bottom',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
@@ -1215,12 +1445,18 @@ function addLayers(map: MapLike, places: readonly ResultPlace[]) {
     },
   })
   map.addLayer({
+    id: L_ME_HALO,
+    type: 'circle',
+    source: SRC_ME,
+    paint: { 'circle-radius': 16, 'circle-color': '#1a73e8', 'circle-opacity': 0.18 },
+  })
+  map.addLayer({
     id: L_ME,
     type: 'circle',
     source: SRC_ME,
     paint: {
       'circle-radius': 7,
-      'circle-color': '#2f7bf6',
+      'circle-color': '#1a73e8',
       'circle-stroke-width': 3,
       'circle-stroke-color': '#ffffff',
     },
@@ -1230,7 +1466,7 @@ function addLayers(map: MapLike, places: readonly ResultPlace[]) {
     type: 'symbol',
     source: SRC_ON,
     layout: {
-      'icon-image': IMG_ON,
+      'icon-image': ['concat', 'mx-on-', ['get', 'k']],
       'icon-anchor': 'bottom',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
@@ -1239,7 +1475,12 @@ function addLayers(map: MapLike, places: readonly ResultPlace[]) {
 }
 
 /** Taps within ~22px of a pin or cluster count (44px target), nearest wins. */
-function onMapClick(map: MapLike, event: unknown, onPin: (id: string) => void) {
+function onMapClick(
+  map: MapLike,
+  event: unknown,
+  onPin: (id: string) => void,
+  onEmpty: () => void,
+) {
   const point = (event as { point?: { x: number; y: number } } | undefined)?.point
   if (!point || !map.queryRenderedFeatures) return
   const hits = map.queryRenderedFeatures(
@@ -1249,7 +1490,10 @@ function onMapClick(map: MapLike, event: unknown, onPin: (id: string) => void) {
     ],
     { layers: [L_ON, L_PIN, L_CLUSTER] },
   ) as Feature[]
-  if (hits.length === 0) return
+  if (hits.length === 0) {
+    onEmpty()
+    return
+  }
   let best: Feature | null = null
   let bestD = Infinity
   for (const hit of hits) {
@@ -1290,7 +1534,9 @@ function ResultsMap({
   initialSlug,
   selectedId,
   userPos,
+  labels,
   onPin,
+  onEmpty,
 }: {
   ref: Ref<ResultsMapHandle>
   locale: string
@@ -1300,17 +1546,19 @@ function ResultsMap({
   /** `?place=` deep link: open close on that place instead of framing all. */
   initialSlug: string | null
   selectedId: string | null
-  userPos: { lat: number; lon: number } | null
+  userPos: LatLon | null
+  labels: AreaLabelPoint[]
   onPin: (id: string) => void
+  onEmpty: () => void
 }) {
   const t = useTranslations()
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLike | null>(null)
   const [styled, setStyled] = useState(false)
   const [failed, setFailed] = useState(false)
-  const latest = useRef({ places, selectedId, onPin })
+  const latest = useRef({ places, selectedId, onPin, onEmpty, labels })
   useLayoutEffect(() => {
-    latest.current = { places, selectedId, onPin }
+    latest.current = { places, selectedId, onPin, onEmpty, labels }
   })
 
   /** Room the floating chrome takes (header + chips on top, cards at the bottom). */
@@ -1334,14 +1582,14 @@ function ResultsMap({
   useImperativeHandle(
     ref,
     () => ({
-      focus(id) {
+      focus(id, pad) {
         const map = mapRef.current
         const place = placeById(id)
         if (!map || !place) return
         map.easeTo({
           center: [place.lon, place.lat],
           zoom: Math.max(map.getZoom(), 11),
-          padding: padding(),
+          padding: pad ? { ...padding(), left: 40, right: 40, ...pad } : padding(),
           duration: 500,
         })
       },
@@ -1379,7 +1627,7 @@ function ResultsMap({
         const init = () => {
           if (!live || added) return
           added = true
-          addLayers(m, latest.current.places)
+          addLayers(m, latest.current.places, latest.current.labels)
           setStyled(true)
         }
         if (m.isStyleLoaded?.()) init()
@@ -1387,7 +1635,14 @@ function ResultsMap({
           m.once('style.load', init)
           m.once('load', init)
         }
-        m.on('click', (event) => onMapClick(m, event, (id) => latest.current.onPin(id)))
+        m.on('click', (event) =>
+          onMapClick(
+            m,
+            event,
+            (id) => latest.current.onPin(id),
+            () => latest.current.onEmpty(),
+          ),
+        )
         for (const id of [L_PIN, L_ON, L_CLUSTER]) {
           m.on('mouseenter', id, () => {
             const c = m.getCanvas?.()
@@ -1445,13 +1700,15 @@ function ResultsMap({
             features: [
               {
                 type: 'Feature',
-                properties: { id: place.id },
+                properties: { id: place.id, k: pinKindFor(place.categoryKey) },
                 geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
               },
             ],
           }
         : { type: 'FeatureCollection', features: [] },
     )
+    // The normal copy hides while its larger selected copy shows.
+    map.setFilter?.(L_PIN, pinFilter(place ? place.id : null))
   }, [styled, selectedId, places, placeById])
 
   // Locate-me dot, and centre on it once.

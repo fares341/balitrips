@@ -46,7 +46,7 @@ test.describe('map v3', () => {
     const card = page.locator('.mx3-card').first()
     await expect(card).toBeVisible({ timeout: 30_000 })
     await expect(page.locator('.mx3-card.is-on')).toHaveCount(1)
-    await expect(card.locator('a[href*="/places/"]')).toBeVisible()
+    await expect(card.locator('button.mx3-card-link')).toBeVisible()
 
     // List view shows the same places; a row selects and returns to the map.
     await page.getByRole('button', { name: 'List view' }).click()
@@ -56,7 +56,7 @@ test.describe('map v3', () => {
     const name = (await row.locator('strong').textContent()) ?? ''
     await row.click()
     await expect(page.locator('.mx3-list')).toHaveCount(0)
-    await expect(page.locator('.mx3-card.is-on')).toContainText(name.trim())
+    await expect(page.locator('.mx4-sheet .mx4-name')).toHaveText(name.trim())
   })
 
   test('filters change data without re-creating the map', async ({ page }) => {
@@ -119,8 +119,12 @@ test.describe('map v3', () => {
     await expect(page.locator('[data-chip=cats].is-on')).toBeVisible()
     await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
 
+    // ?place= opens the sheet on that place.
     await openMap(page, `/en/map?place=${first!.slug}`)
-    await expect(page.locator('.mx3-card.is-on')).toContainText(first!.name, { timeout: 30_000 })
+    await expect(page.locator('.mx4-sheet:not([data-stop=closed]) .mx4-name')).toHaveText(
+      first!.name,
+      { timeout: 30_000 },
+    )
 
     // The home page's hospitals card: plural key still resolves.
     const response = await page.goto('/ar/map?cat=hospitals')
@@ -150,5 +154,86 @@ test.describe('map v3', () => {
     // The page itself carries counts only: no coordinates at all.
     const html = await (await request.get(`/en/map?cat=${key}`)).text()
     expect(html).not.toMatch(/-8\.\d{3,},\s*11[45]\.\d{3,}|"lat":-8\.\d/)
+  })
+
+  test('a card opens the sheet on the map; Back closes it', async ({ page }) => {
+    await openMap(page)
+    const card = page.locator('.mx3-card.is-on')
+    await expect(card).toBeVisible({ timeout: 30_000 })
+    const name = ((await card.locator('.mx3-card-link').textContent()) ?? '').trim()
+    await card.locator('.mx3-card-link').click()
+    const sheet = page.locator('.mx4-sheet:not([data-stop=closed])')
+    await expect(sheet).toBeVisible()
+    await expect(sheet.locator('.mx4-name')).toHaveText(name)
+    await expect(page).toHaveURL(/\/en\/map/)
+    await expect(sheet.locator('a[href*="/places/"]')).toBeVisible()
+    await expect(sheet.locator('a[href^="https://www.google.com/maps/dir/"]')).toBeVisible()
+
+    await page.goBack()
+    await expect(page.locator('.mx4-sheet[data-stop=closed]')).toHaveCount(1)
+    await expect(page).toHaveURL(/\/en\/map/)
+
+    // ✕ closes too.
+    await page.locator('.mx3-card.is-on .mx3-card-link').click()
+    await expect(sheet).toBeVisible()
+    await page.locator('.mx4-x').click()
+    await expect(page.locator('.mx4-sheet[data-stop=closed]')).toHaveCount(1)
+    await expect(page).toHaveURL(/\/en\/map/)
+  })
+
+  test('a pin tap opens the sheet and stays on /map', async ({ page }) => {
+    await openMap(page)
+    await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
+    await page.waitForSelector('[data-map-ready]', { timeout: 60_000 })
+    // Zoom onto the selected pin, then tap where MapLibre draws it.
+    const point = await page.evaluate(async () => {
+      type M = {
+        getSource(id: string): { _data?: unknown } | undefined
+        querySourceFeatures(id: string): { properties: { id: string } }[]
+        jumpTo(o: unknown): void
+        project(c: [number, number]): { x: number; y: number }
+        once(t: string, f: () => void): void
+        queryRenderedFeatures(o: { layers: string[] }): {
+          geometry: { coordinates: [number, number] }
+          properties: { id: string }
+        }[]
+      }
+      const el = document.querySelector('.mx-canvas') as HTMLElement & { __map?: M }
+      const map = el.__map!
+      const wait = () => new Promise<void>((r) => map.once('idle', () => r()))
+      const sel = map.queryRenderedFeatures({ layers: ['mx-pin-on'] })[0]
+      if (!sel) return null
+      map.jumpTo({ center: sel.geometry.coordinates, zoom: 17 })
+      await wait()
+      const hit = map.queryRenderedFeatures({ layers: ['mx-pin-on', 'mx-pins'] })[0]
+      if (!hit) return null
+      const p = map.project(hit.geometry.coordinates)
+      const box = el.getBoundingClientRect()
+      return { x: box.left + p.x, y: box.top + p.y - 14 }
+    })
+    test.skip(point === null, 'no pin rendered')
+    await page.mouse.click(point!.x, point!.y)
+    const sheet = page.locator('.mx4-sheet:not([data-stop=closed])')
+    await expect(sheet).toBeVisible()
+    await expect(page).toHaveURL(/\/en\/map/)
+    await page.goBack()
+    await expect(page.locator('.mx4-sheet[data-stop=closed]')).toHaveCount(1)
+  })
+
+  test('near me: distance only after the tap, from the mocked position', async ({
+    page,
+    context,
+  }) => {
+    await openMap(page)
+    await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
+    // Nothing asked on load, no distance without an origin.
+    await expect(page.locator('[data-distance]')).toHaveCount(0)
+
+    await context.grantPermissions(['geolocation'])
+    await context.setGeolocation({ latitude: -8.718, longitude: 115.1686 })
+    await page.locator('[data-chip=near]').click()
+    await expect(page.locator('[data-chip=near]')).toHaveAttribute('aria-pressed', 'true')
+    const dist = page.locator('.mx3-card.is-on [data-distance]')
+    await expect(dist).toHaveText(/^[\d.,]+ (m|km) away$/)
   })
 })

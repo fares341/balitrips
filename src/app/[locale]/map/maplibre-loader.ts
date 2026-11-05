@@ -64,6 +64,7 @@ export interface MapLike {
   ): unknown[]
   setPadding?(padding: { top: number; bottom: number; left: number; right: number }): unknown
   setLayoutProperty?(layer: string, name: string, value: unknown): unknown
+  setFilter?(layer: string, filter: unknown): unknown
   getContainer?(): HTMLElement
   zoomIn(options?: { duration?: number }): unknown
   zoomOut(options?: { duration?: number }): unknown

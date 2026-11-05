@@ -243,13 +243,14 @@ describe('map v3 helpers', () => {
     expect(windowRange(100, 50, 10)).toEqual([40, 61])
     expect(windowRange(100, 99, 10)).toEqual([79, 100])
   })
-  it('feature collection carries ids and draw order only', () => {
+  it('feature collection carries ids, draw order and pin kind only', () => {
     const fc = toFeatureCollection([
       {
         id: 'p1',
         slug: 's',
         name: 'n',
-        categoryKey: 'c',
+        categoryKey: 'beaches',
+        area: null,
         lat: -8.4,
         lon: 115.1,
         rating: null,
@@ -266,7 +267,7 @@ describe('map v3 helpers', () => {
     expect(fc.features[0]).toEqual({
       type: 'Feature',
       id: 0,
-      properties: { id: 'p1', i: 0, s: 8.4 },
+      properties: { id: 'p1', i: 0, s: 8.4, k: 'beaches' },
       geometry: { type: 'Point', coordinates: [115.1, -8.4] },
     })
   })

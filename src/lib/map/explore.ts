@@ -8,6 +8,7 @@
  * is only ever called for places the viewer may open.
  */
 
+import { pinKindFor, type PinKind } from './pins'
 import type { IconName } from '@/components/ui/icon'
 
 /**
@@ -273,6 +274,8 @@ export interface ResultPlace {
   slug: string
   name: string
   categoryKey: string
+  /** The place's area (region) name in the page language. */
+  area: string | null
   lat: number
   lon: number
   rating: number | null
@@ -430,7 +433,7 @@ export function toFeatureCollection(places: readonly ResultPlace[]): {
     type: 'Feature'
     id: number
     /** `s`: draw order — southern pins over northern ones. */
-    properties: { id: string; i: number; s: number }
+    properties: { id: string; i: number; s: number; k: PinKind }
     geometry: { type: 'Point'; coordinates: [number, number] }
   }[]
 } {
@@ -439,7 +442,7 @@ export function toFeatureCollection(places: readonly ResultPlace[]): {
     features: places.map((place, i) => ({
       type: 'Feature',
       id: i,
-      properties: { id: place.id, i, s: -place.lat },
+      properties: { id: place.id, i, s: -place.lat, k: pinKindFor(place.categoryKey) },
       geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
     })),
   }

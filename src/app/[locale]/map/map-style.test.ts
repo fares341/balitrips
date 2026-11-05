@@ -112,23 +112,43 @@ describe('light style labels (map v3)', () => {
       bumpSize(['match', ['get', 'class'], ['city', 'town'], 13, ['village'], 12, 11], 2),
     ).toEqual(['match', ['get', 'class'], ['city', 'town'], 15, ['village'], 14, 13])
   })
-  it('keeps peaks / POIs, labels larger with a halo', async () => {
-    const { lightStyle } = await import('./map-style')
+  it('green base: no OSM POIs or place labels, roads from 13, curated colours', async () => {
+    const { lightStyle, LIGHT } = await import('./map-style')
     const style = lightStyle(
       buildStyle(mapViewSettings(STORED_MAP_DEFAULTS), { locale: 'ar' }),
     ) as {
       layers: {
         id: string
+        type: string
         minzoom?: number
+        'source-layer'?: string
         layout?: Record<string, unknown>
         paint?: Record<string, unknown>
       }[]
     }
+    const ids = style.layers.map((l) => l.id)
+    for (const gone of [
+      'osm-poi',
+      'osm-places',
+      'osm-waterway-names',
+      'buildings-3d',
+      'hillshade',
+    ]) {
+      expect(ids).not.toContain(gone)
+    }
+    for (const sl of ['poi', 'place', 'building', 'housenumber', 'aerodrome_label']) {
+      expect(style.layers.some((l) => l['source-layer'] === sl)).toBe(false)
+    }
+    for (const id of ['road-minor', 'road-tertiary', 'road-secondary']) {
+      expect(style.layers.find((l) => l.id === id)?.minzoom).toBe(13)
+    }
+    expect(style.layers.find((l) => l.id === 'land')?.paint?.['background-color']).toBe(LIGHT.land)
+    expect(JSON.stringify(style.layers.find((l) => l.id === 'water')?.paint)).toContain(LIGHT.sea)
+    expect(
+      String(style.layers.find((l) => l.id === 'road-primary')?.paint?.['line-color']),
+    ).toMatch(/^rgba\(255,255,255,/)
     const peaks = style.layers.find((l) => l.id === 'osm-peaks')
     expect(peaks?.minzoom).toBe(11)
-    expect(style.layers.find((l) => l.id === 'osm-poi')?.minzoom).toBe(15)
-    const places = style.layers.find((l) => l.id === 'osm-places')
-    expect(places?.paint?.['text-halo-width']).toBe(1.8)
-    expect(places?.paint?.['text-color']).toBe('#18201b')
+    expect(peaks?.paint?.['text-halo-width']).toBe(1.8)
   })
 })
