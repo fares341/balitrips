@@ -22,6 +22,8 @@
  * a Client Component.
  */
 
+import { widelySharedMediaIds } from '@/lib/map/shared-media'
+import { unlessShared } from '@/lib/map/shared-media-rule'
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { PAGE_STATUSES } from '@/lib/content/activity-status'
@@ -225,9 +227,11 @@ export async function listFavorites(userId: string): Promise<FavoriteView[]> {
     })
   }
 
+  // A photo on 3+ places is a placeholder: treated as missing.
+  const sharedMedia = placeRows.length === 0 ? new Set<string>() : await widelySharedMediaIds()
   for (const { row, hero, categoryLabel, regionLabel } of placeRows) {
     const visible = canSeePlace(row, held)
-    const image = imageOf(hero)
+    const image = imageOf(unlessShared(hero, sharedMedia))
     resolved.set(`place:${row.id}`, {
       title: visible ? row.name : null,
       // الوثيقة 11.2: التصنيف + المنطقة لكل مكان محفوظ.

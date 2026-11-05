@@ -15,7 +15,9 @@ import { listMapPlaces } from '@/lib/content/queries'
 
 import { listMapCategories } from './queries'
 
-export const MAP_PLACES_TAG = 'map-places'
+import { MAP_PLACES_TAG } from './tags'
+
+export { MAP_PLACES_TAG }
 
 export const listMapPlacesCached = unstable_cache(listMapPlaces, ['map-places-v3'], {
   tags: [MAP_PLACES_TAG],

@@ -60,6 +60,7 @@ import { formatDistance, haversineMeters, type LatLon } from '@/lib/map/distance
 import { PIN_KINDS, PIN_LOOK, pinImageId, pinKindFor } from '@/lib/map/pins'
 import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
 
+import { CategoryGlyph } from './category-glyph'
 import { MapWatermark, protectionHandlers } from './map-protect'
 import { attributionsFor, LIGHT, type MapSettings } from './map-style'
 import { loadMapLibre, type MapLike } from './maplibre-loader'
@@ -994,13 +995,11 @@ function Thumb({
   eager?: boolean
 }) {
   const placeholder = (
-    <span
+    <CategoryGlyph
       className="mx3-thumb is-ph"
-      data-testid="place-ph"
-      style={{ '--c': category?.color ?? '#2E5E4E' } as CSSProperties}
-    >
-      <Icon name={category?.icon ?? 'pin'} size={22} />
-    </span>
+      categoryKey={category?.key}
+      color={category?.color}
+    />
   )
   return (
     <SafeImg

@@ -1,22 +1,24 @@
 /**
- * A place's own photo, or — when it has none, or every fallback URL failed —
- * a neutral placeholder (the category glyph on a soft background). Never a
- * stock photo standing in for the place: a visitor would take it for the
- * real thing.
+ * A place's own photo, or — when it has none, its photo is a placeholder
+ * shared by many places, or every fallback URL failed — its category glyph
+ * on the category colour. Never a stock photo standing in for the place: a
+ * visitor would take it for the real thing.
  */
 
-import { Icon, Photo, type IconName } from '@/components/ui'
+import { Photo } from '@/components/ui'
+
+import { CategoryGlyph } from './category-glyph'
 
 export function PlaceThumb({
   src,
-  icon,
+  categoryKey,
   alt = '',
   className,
   priority = false,
   size = 22,
 }: {
   src: string | null | undefined
-  icon: IconName
+  categoryKey: string | null | undefined
   alt?: string
   className?: string
   priority?: boolean
@@ -30,23 +32,17 @@ export function PlaceThumb({
           src={src}
           alt={alt}
           priority={priority}
-          placeholder={
-            <span className="pl-ph" data-testid="place-ph">
-              <Icon name={icon} size={size} />
-            </span>
-          }
+          placeholder={<CategoryGlyph categoryKey={categoryKey} size={size} />}
         />
       </span>
     )
   }
   return (
-    <span
+    <CategoryGlyph
       className={className ? `${className} pl-ph` : 'pl-ph'}
-      role={alt ? 'img' : undefined}
-      aria-label={alt || undefined}
-      data-testid="place-ph"
-    >
-      <Icon name={icon} size={size} />
-    </span>
+      categoryKey={categoryKey}
+      size={size}
+      label={alt || undefined}
+    />
   )
 }

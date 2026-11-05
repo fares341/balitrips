@@ -36,6 +36,8 @@ import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
 import { googlePhotosEnabled } from '@/lib/google-places/config'
 import { isUsableMatch, teaserHeroUrl } from '@/lib/google-places/photo-urls'
 import { heroSharedSql } from '@/lib/google-places/sql'
+import { widelySharedMediaIds } from '@/lib/map/shared-media'
+import { unlessShared } from '@/lib/map/shared-media-rule'
 
 import { normalizeSearch } from './normalize'
 import {
@@ -202,6 +204,7 @@ export async function searchPlaces(
     )
   }
 
+  const sharedMedia = await widelySharedMediaIds()
   const rows = await db
     .select({
       place: mapPlaces,
@@ -307,7 +310,8 @@ export async function searchPlaces(
       // Ours, or the first Google photo where ours is missing / shared (0040).
       heroImageUrl: teaserHeroUrl({
         slug: row.place.slug,
-        ownUrl: toMedia(row.hero)?.url ?? null,
+        // A photo on 3+ places is a placeholder: treated as missing.
+        ownUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
         ownShared: row.heroShared,
         google:
           googlePhotosEnabled() &&

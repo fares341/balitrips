@@ -109,6 +109,8 @@ import { parseVideoUrl } from './video'
 import { imageFileKey } from './image-dedupe'
 import { googlePhotosEnabled } from '@/lib/google-places/config'
 import { isUsableMatch, resolvePlaceImages, type OwnImage } from '@/lib/google-places/photo-urls'
+import { widelySharedMediaIds } from '@/lib/map/shared-media'
+import { unlessShared } from '@/lib/map/shared-media-rule'
 
 // ---------------------------------------------------------------------------
 // Shared predicates
@@ -1636,14 +1638,18 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
     set.add(placeId)
     users.set(key, set)
   }
-  for (const { place, hero } of rows) {
+  // Media on 3+ places (one picture on every mosque) counts as missing in
+  // public views: those places show their category illustration instead.
+  const sharedMedia = await widelySharedMediaIds()
+  for (const { place, hero: rawHero } of rows) {
+    const hero = unlessShared(rawHero, sharedMedia)
     const heroDto = toMedia(hero)
     const heroImage: OwnImage | null = heroDto
       ? { id: heroDto.id, url: heroDto.url, thumb: thumbUrl(hero) }
       : null
     const gallery: OwnImage[] = []
     for (const id of place.galleryImageIds ?? []) {
-      const dto = toMedia(galleryById.get(id))
+      const dto = toMedia(unlessShared(galleryById.get(id), sharedMedia))
       if (dto) gallery.push({ id: dto.id, url: dto.url })
     }
     ownImages.set(place.id, { hero: heroImage, gallery })
@@ -1972,6 +1978,7 @@ export async function search(
       .limit(perType),
   ])
 
+  const sharedMedia = placeRows.length === 0 ? new Set<string>() : await widelySharedMediaIds()
   const hits: SearchHit[] = [
     ...activityRows.map(({ activity, hero }) => ({
       type: 'activity' as const,
@@ -1991,7 +1998,7 @@ export async function search(
       title: place.name,
       subtitle: place.category,
       days: null,
-      hero: toMedia(hero),
+      hero: toMedia(unlessShared(hero, sharedMedia)),
     })),
     ...itineraryRows.map(({ itinerary, hero }) => ({
       type: 'itinerary' as const,

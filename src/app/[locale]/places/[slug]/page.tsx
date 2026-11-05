@@ -175,7 +175,7 @@ export default async function PlacePage({ params }: PageProps) {
             className="pl-hero"
             src={photos[0]}
             alt={photos[0] ? name : t('mp5_no_photo')}
-            icon={categoryIcon(place.categoryKey)}
+            categoryKey={place.categoryKey}
             size={56}
             priority
           />
@@ -246,7 +246,7 @@ export default async function PlacePage({ params }: PageProps) {
                         <PlaceThumb
                           className="mp-res-img"
                           src={entry.heroImageUrl}
-                          icon={categoryIcon(entry.categoryKey)}
+                          categoryKey={entry.categoryKey}
                         />
                         <span className="mp-res-meta">
                           <span className="mp-res-name">{pick(entry.name, lang, entry.slug)}</span>
