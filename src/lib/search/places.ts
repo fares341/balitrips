@@ -33,9 +33,6 @@ import {
 } from '@/lib/entitlements'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
 
-import { googlePhotosEnabled } from '@/lib/google-places/config'
-import { isUsableMatch, teaserHeroUrl } from '@/lib/google-places/photo-urls'
-import { heroSharedSql } from '@/lib/google-places/sql'
 import { widelySharedMediaIds } from '@/lib/map/shared-media'
 import { unlessShared } from '@/lib/map/shared-media-rule'
 
@@ -209,7 +206,6 @@ export async function searchPlaces(
     .select({
       place: mapPlaces,
       hero: media,
-      heroShared: heroSharedSql,
       regionKey: regions.key,
       parentKey: parentRegion.key,
       regionLabel: regions.label,
@@ -307,16 +303,8 @@ export async function searchPlaces(
           : null,
       region: row.regionLabel ? pick(row.regionLabel, locale) : null,
       // نسخة مصغّرة (لا الأصل 1-1.6MB)، والصورة المحذوفة لا تُعرض.
-      // Ours, or the first Google photo where ours is missing / shared (0040).
-      heroImageUrl: teaserHeroUrl({
-        slug: row.place.slug,
-        // A photo on 3+ places is a placeholder: treated as missing.
-        ownUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
-        ownShared: row.heroShared,
-        google:
-          googlePhotosEnabled() &&
-          isUsableMatch(row.place.googleMatchStatus, row.place.googlePlaceId),
-      }),
+      // A photo on 3+ places is a placeholder: treated as missing.
+      heroImageUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
       isHiddenGem: row.place.isHiddenGem,
       isVip: access.requiredEntitlement === 'vip' && !access.isFree,
       isFree: access.isFree,

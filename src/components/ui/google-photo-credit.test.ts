@@ -35,6 +35,39 @@ describe('Google photo attribution', () => {
     expect(html).toContain('Google Maps')
   })
 
+  it('compact credit on map cards: «© <author> · Google Maps»', () => {
+    const html = renderToStaticMarkup(
+      createElement(GooglePhotoCreditView, {
+        photo: {
+          authors: [{ name: 'Made W.', uri: null }],
+          mapsUri: 'https://www.google.com/maps/photo/1',
+        },
+        compact: true,
+      }),
+    )
+    expect(html).toContain('class="gp-credit is-compact"')
+    expect(html.replace(/<[^>]+>/g, '')).toBe('© Made W. · Google Maps')
+    expect(html).toContain('>Google Maps</a>')
+    expect(html).not.toContain('Photo:')
+  })
+
+  it('a deferred card photo renders no src until it is near the viewport', () => {
+    const html = renderToStaticMarkup(
+      createElement(SafeImg, {
+        src: gphotoUrl('kuta', 0),
+        deferGoogle: true,
+        className: 'mx3-thumb',
+      }),
+    )
+    expect(html).toContain('<img')
+    expect(html).not.toContain('src=')
+    // Our own photos are never deferred.
+    const own = renderToStaticMarkup(
+      createElement(SafeImg, { src: '/media/a/320.webp', deferGoogle: true }),
+    )
+    expect(own).toContain('src="/media/a/320.webp"')
+  })
+
   it('labels per language', () => {
     expect(creditLabel('id')).toBe('Foto')
     expect(creditLabel('ar')).toBe('صورة')
@@ -54,7 +87,7 @@ describe('Google photo attribution', () => {
     )
     expect(own).toContain('<img')
     expect(google).toContain('src="/api/places/kuta/gphoto/0"')
-    const safe = renderToStaticMarkup(createElement(SafeImg, { src: gphotoUrl('kuta', 1) }))
-    expect(safe).toContain('/api/places/kuta/gphoto/1')
+    const safe = renderToStaticMarkup(createElement(SafeImg, { src: gphotoUrl('kuta', 0) }))
+    expect(safe).toContain('/api/places/kuta/gphoto/0')
   })
 })

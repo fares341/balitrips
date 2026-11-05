@@ -39,9 +39,6 @@ import {
 
 import type { LocalizedText } from './localize'
 import { toMedia } from './queries'
-import { googlePhotosEnabled } from '@/lib/google-places/config'
-import { isUsableMatch, teaserHeroUrl } from '@/lib/google-places/photo-urls'
-import { heroSharedSql } from '@/lib/google-places/sql'
 import { widelySharedMediaIds } from '@/lib/map/shared-media'
 import { unlessShared } from '@/lib/map/shared-media-rule'
 import { entityHref, type ArticleSummary } from './types'
@@ -98,9 +95,6 @@ const teaserColumns = {
     isFree: mapPlaces.isFree,
     requiredEntitlement: mapPlaces.requiredEntitlement,
     isHiddenGem: mapPlaces.isHiddenGem,
-    googlePlaceId: mapPlaces.googlePlaceId,
-    googleMatchStatus: mapPlaces.googleMatchStatus,
-    heroShared: heroSharedSql,
   },
   hero: media,
   regionLabel: regions.label,
@@ -117,9 +111,6 @@ type TeaserRow = {
     isFree: boolean
     requiredEntitlement: string
     isHiddenGem: boolean
-    googlePlaceId: string | null
-    googleMatchStatus: string
-    heroShared: boolean
   }
   hero: typeof media.$inferSelect | null
   regionLabel: LocalizedText | null
@@ -142,16 +133,8 @@ function toTeaser(
     slug: row.place.slug,
     href: entityHref('place', row.place.slug),
     name: row.place.name,
-    // Ours, or the first Google photo where ours is missing / shared (0040).
-    heroImageUrl: teaserHeroUrl({
-      slug: row.place.slug,
-      // A photo on 3+ places is a placeholder: treated as missing.
-      ownUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
-      ownShared: row.place.heroShared,
-      google:
-        googlePhotosEnabled() &&
-        isUsableMatch(row.place.googleMatchStatus, row.place.googlePlaceId),
-    }),
+    // A photo on 3+ places is a placeholder: treated as missing.
+    heroImageUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
     regionLabel: row.regionLabel,
     categoryLabel: row.categoryLabel,
     lat: row.place.lat,

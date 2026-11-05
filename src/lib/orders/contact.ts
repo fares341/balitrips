@@ -54,8 +54,7 @@ export function nationalDigits(phone: string): string {
 export function validateContact(
   input: ContactInput,
 ):
-  | { ok: true; value: CleanContact }
-  | { ok: false; errors: Partial<Record<ContactField, string>> } {
+  { ok: true; value: CleanContact } | { ok: false; errors: Partial<Record<ContactField, string>> } {
   const errors: Partial<Record<ContactField, string>> = {}
   const name = input.name.trim().replace(/\s+/g, ' ')
   const email = input.email.trim().toLowerCase()

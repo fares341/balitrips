@@ -15,13 +15,7 @@ export const TICKET_STATUSES = ['open', 'pending_customer', 'resolved', 'closed'
 export type TicketStatus = (typeof TICKET_STATUSES)[number]
 
 export type TicketEvent =
-  | 'staff_reply'
-  | 'customer_reply'
-  | 'internal_note'
-  | 'resolve'
-  | 'close'
-  | 'reopen'
-  | 'rate'
+  'staff_reply' | 'customer_reply' | 'internal_note' | 'resolve' | 'close' | 'reopen' | 'rate'
 
 export function isTicketStatus(value: unknown): value is TicketStatus {
   return typeof value === 'string' && (TICKET_STATUSES as readonly string[]).includes(value)

@@ -79,7 +79,7 @@ jobs:
       - name: Link one free place to a mocked Google place
         # Google is mocked (scripts/mock-google-places.mjs): no key, no network.
         run: |
-          slug=$(psql "$DATABASE_URL" -qtAc "update map_places set google_place_id='ChIJmockPlace000001', google_match_status='confirmed' where id = (select id from map_places where is_free and status='published' and deleted_at is null and not is_hidden and not is_hidden_gem order by slug limit 1) returning slug" | head -1)
+          slug=$(psql "$DATABASE_URL" -qtAc "update map_places set google_place_id='ChIJmockPlace000001', google_match_status='confirmed', hero_image_id=null, gallery_image_ids=null where id = (select id from map_places where is_free and status='published' and deleted_at is null and not is_hidden and not is_hidden_gem order by slug limit 1) returning slug" | head -1)
           echo "E2E_GOOGLE_SLUG=$slug" >> "$GITHUB_ENV"
           locked=$(psql "$DATABASE_URL" -qtAc "update map_places set google_place_id='ChIJmockPlace000002', google_match_status='confirmed' where id = (select id from map_places where not is_free and status='published' and deleted_at is null and not is_hidden order by slug limit 1) returning slug" | head -1)
           echo "E2E_GOOGLE_LOCKED_SLUG=$locked" >> "$GITHUB_ENV"
