@@ -95,15 +95,17 @@ export function GooglePhotoCredit({ src }: { src: string | null | undefined }) {
   const parsed = parseGphotoUrl(src)
   const slug = parsed?.slug ?? null
   const index = parsed?.index ?? 0
-  const [state, setState] = useState<{ slug: string; photos: CreditPhoto[] } | null>(null)
-  const [lang, setLang] = useState('en')
+  const [state, setState] = useState<{
+    slug: string
+    photos: CreditPhoto[]
+    lang: string
+  } | null>(null)
 
   useEffect(() => {
     if (slug === null) return
     let live = true
-    setLang(document.documentElement.lang || 'en')
     void loadCredits(slug).then((photos) => {
-      if (live) setState({ slug, photos })
+      if (live) setState({ slug, photos, lang: document.documentElement.lang || 'en' })
     })
     return () => {
       live = false
@@ -111,5 +113,5 @@ export function GooglePhotoCredit({ src }: { src: string | null | undefined }) {
   }, [slug])
 
   if (slug === null || state === null || state.slug !== slug) return null
-  return <GooglePhotoCreditView photo={state.photos[index] ?? null} lang={lang} />
+  return <GooglePhotoCreditView photo={state.photos[index] ?? null} lang={state.lang} />
 }
