@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -6,6 +6,7 @@ import { db } from '@/db'
 import {
   itineraries,
   itineraryDayPlaces,
+  itineraryDocuments,
   itineraryDays,
   itineraryPackageLinks,
   itineraryRegions,
@@ -19,7 +20,7 @@ import { ITINERARY_TIERS, normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { formatMoneyInput } from '@/lib/money-input'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { locales, localeConfig } from '@/i18n/config'
+import { locales } from '@/i18n/config'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { activityOptions, mediaOptions, placeOptions, regionOptions } from '../../../_lib/lookups'
@@ -48,13 +49,14 @@ import {
   reorderItineraryPackageLinks,
   saveItineraryPackageLink,
   publishItinerary,
-  removeItineraryPdf,
   saveItinerary,
   unpublishItinerary,
-  uploadItineraryPdf,
 } from '../actions'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { DayPlan } from './day-plan'
+import { DayTeasersCard, PdfCard, PdfStatusPill, PreviewCard, type PdfDocRow } from './phase1-cards'
+import { pdfStatus, publishBlock, type PdfStatus } from '@/lib/itineraries/publish-gate'
+import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import type { DayStopDraft, PlaceChoice } from './day-places-editor'
 
 export const dynamic = 'force-dynamic'
@@ -100,6 +102,8 @@ export default async function ItineraryEditorPage({
             title: itineraryDays.title,
             description: itineraryDays.description,
             bookable: itineraryDays.bookable,
+            teaserImageId: itineraryDays.teaserImageId,
+            teaserMood: itineraryDays.teaserMood,
           })
           .from(itineraryDays)
           .where(eq(itineraryDays.itineraryId, itinerary.id))
@@ -200,6 +204,44 @@ export default async function ItineraryEditorPage({
   )
   const linkedIds = new Set(links.map((link) => link.packageId))
   const mapAccess = itinerary ? mapAccessOf(itinerary) : 'free_only'
+
+  // Phase 1: PDF versions, status per locale, and the publish gate.
+  const [pdfDocs, sales] = await Promise.all([
+    itinerary
+      ? db
+          .select({
+            id: itineraryDocuments.id,
+            locale: itineraryDocuments.locale,
+            source: itineraryDocuments.source,
+            fileVersion: itineraryDocuments.fileVersion,
+            version: itineraryDocuments.version,
+            isCurrent: itineraryDocuments.isCurrent,
+            bytes: itineraryDocuments.bytes,
+            downloadFilename: itineraryDocuments.downloadFilename,
+            notifyBuyers: itineraryDocuments.notifyBuyers,
+            createdAt: itineraryDocuments.createdAt,
+          })
+          .from(itineraryDocuments)
+          .where(eq(itineraryDocuments.itineraryId, itinerary.id))
+          .orderBy(asc(itineraryDocuments.locale), desc(itineraryDocuments.fileVersion))
+      : Promise.resolve([] as PdfDocRow[]),
+    readItinerarySales(),
+  ])
+  const unresolvedDays = days.filter((day) => !day.activityId && !day.isFreeDay).length
+  const factsFor = (locale: string) => {
+    const docs = pdfDocs.filter((doc) => doc.locale === locale)
+    const current = docs.find((doc) => doc.source === 'uploaded' && doc.isCurrent)
+    return {
+      uploadedVersion: current?.fileVersion ?? (itinerary?.uploadedPdfKeys?.[locale] ? 1 : null),
+      generatedExists: docs.some((doc) => doc.source === 'generated'),
+      dayCount: days.length,
+      unresolvedDays,
+    }
+  }
+  const statusByLocale: Record<string, PdfStatus> = Object.fromEntries(
+    locales.map((locale) => [locale, pdfStatus(factsFor(locale))]),
+  )
+  const block = publishBlock(factsFor('ar'))
 
   const title = itinerary ? pick(itinerary.name, uiLocale, itinerary.slug) : t('itineraries.new')
   const mayPublish = can(session.role, 'content.publish')
@@ -474,6 +516,16 @@ export default async function ItineraryEditorPage({
             placeChoices={placeChoices}
           />
 
+          <DayTeasersCard
+            itineraryId={itinerary.id}
+            days={days}
+            teaserDaysVisible={itinerary.teaserDaysVisible}
+            mediaList={mediaList}
+            t={t}
+          />
+
+          <PreviewCard itinerary={itinerary} mediaList={mediaList} t={t} />
+
           <div className="a-card">
             <h2>{t('p3.section_packages')}</h2>
             <p className="a-hint">{t('p3.packages_hint')}</p>
@@ -603,6 +655,11 @@ export default async function ItineraryEditorPage({
                 to: itinerary.version + 1,
               })}
             </p>
+            <p>
+              {t('ip1.pdf_ar_status')}:{' '}
+              <PdfStatusPill status={statusByLocale.ar ?? { kind: 'none' }} t={t} />
+            </p>
+            {block === 'no_pdf' ? <p className="a-hint">{t('ip1.publish_blocked_pdf')}</p> : null}
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
               {mayPublish ? (
                 <>
@@ -610,7 +667,7 @@ export default async function ItineraryEditorPage({
                     className="a-inline-form"
                     action={publishItinerary.bind(null, itinerary.id)}
                   >
-                    <button className="a-btn accent" type="submit">
+                    <button className="a-btn accent" type="submit" disabled={block === 'no_pdf'}>
                       {t('itineraries.publish_version', { version: itinerary.version + 1 })}
                     </button>
                   </form>
@@ -631,61 +688,14 @@ export default async function ItineraryEditorPage({
             </div>
           </div>
 
-          <div className="a-card">
-            <h2>{t('itineraries.section_pdf')}</h2>
-            <p className="a-hint">{t('itineraries.pdf_hint')}</p>
-            <ul>
-              {locales.map((locale) => (
-                <li key={locale}>
-                  {localeConfig[locale].label}:{' '}
-                  {itinerary.uploadedPdfKeys?.[locale] ? (
-                    <form
-                      className="a-inline-form"
-                      action={removeItineraryPdf.bind(null, itinerary.id)}
-                    >
-                      <input type="hidden" name="locale" value={locale} />
-                      <strong>{t('itineraries.pdf_uploaded')}</strong>{' '}
-                      <button className="a-btn ghost small" type="submit">
-                        {t('common.remove')}
-                      </button>
-                    </form>
-                  ) : (
-                    <span className="a-muted">{t('itineraries.pdf_generated')}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            <form
-              className="a-row"
-              action={uploadItineraryPdf.bind(null, itinerary.id)}
-              style={{ marginBlockStart: 12 }}
-            >
-              <Field label={t('itineraries.pdf_language')} htmlFor="pdf-locale">
-                <select className="a-select" id="pdf-locale" name="locale" defaultValue="ar">
-                  {locales.map((locale) => (
-                    <option key={locale} value={locale}>
-                      {localeConfig[locale].label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label={t('itineraries.pdf_file')} htmlFor="pdf-file">
-                <input
-                  className="a-input"
-                  id="pdf-file"
-                  name="file"
-                  type="file"
-                  accept="application/pdf"
-                  required
-                />
-              </Field>
-              <div className="a-actions">
-                <button className="a-btn accent" type="submit">
-                  {t('itineraries.pdf_upload')}
-                </button>
-              </div>
-            </form>
-          </div>
+          <PdfCard
+            itinerary={itinerary}
+            docs={pdfDocs}
+            statusByLocale={statusByLocale}
+            maxUploadMb={sales.maxUploadMb}
+            t={t}
+            uiLocale={uiLocale}
+          />
 
           <form className="a-card" action={deleteItinerary.bind(null, itinerary.id)}>
             <h2>{t('itineraries.section_archive')}</h2>

@@ -523,6 +523,11 @@ export const driverVehicles = pgTable('driver_vehicles', {
   /** How many exist. This is what makes overbooking possible. */
   fleetSize: integer('fleet_size').notNull().default(0),
 
+  /** Phase 1 (0042): this vehicle's own notice days; null = the `driver` setting. */
+  noticeDaysOverride: integer('notice_days_override'),
+  /** Phase 1 (0042): driver hours included in one day. */
+  hoursPerDay: integer('hours_per_day').notNull().default(10),
+
   sortOrder: integer('sort_order').notNull().default(0),
   ...timestamps,
 })
@@ -737,4 +742,28 @@ export const planMembers = pgTable(
     index('plan_members_email_idx').on(t.inviteEmail),
     uniqueIndex('plan_members_token_unique').on(t.tokenHash),
   ],
+)
+
+/**
+ * E-mail download links (phase 1 table, used from phase 4). Only the SHA-256
+ * of the token is stored; the link expires and has a use limit, both from
+ * the `itinerarySales` settings, and a new link revokes the old one.
+ */
+export const downloadTokens = pgTable(
+  'download_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull().unique('download_tokens_hash_uq'),
+    orderItemId: uuid('order_item_id')
+      .notNull()
+      .references(() => orderItems.id, { onDelete: 'cascade' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    maxUses: integer('max_uses').notNull().default(5),
+    uses: integer('uses').notNull().default(0),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [index('download_tokens_item_idx').on(t.orderItemId)],
 )

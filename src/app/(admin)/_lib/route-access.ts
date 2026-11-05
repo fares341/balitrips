@@ -62,6 +62,11 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   // Owner, Oct 2026: how bookings and custom trips run, step by step.
   [/^\/guide$/, ['orders.read']],
 
+  // Itineraries phase 1 (owner, Nov 2026): pricing and driver settings
+  // (before /itineraries/[id]).
+  [/^\/itineraries\/pricing$/, ['content.read']],
+  [/^\/itineraries\/driver$/, ['capacity.write']],
+
   // v2: bulk import of activities (CSV) and its template.
   [/^\/activity-import(\/template|\/export)?$/, ['content.write']],
   // Catalogue: lists read, editors write.

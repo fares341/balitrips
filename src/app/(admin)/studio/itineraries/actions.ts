@@ -1,23 +1,22 @@
 'use server'
 
 import { ITINERARY_TIERS, normaliseTierPrices, type TierPrices } from '@/lib/itineraries/tiers'
-import { randomUUID } from 'node:crypto'
 
-import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { arabicPdfFacts } from './pdf-facts'
+import { publishBlock } from '@/lib/itineraries/publish-gate'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import {
   itineraries,
   itineraryDayPlaces,
+  itineraryDocuments,
   itineraryDays,
   itineraryPackageLinks,
   itineraryRegions,
   mapPlaces,
-  orderItems,
-  orders,
   packages,
-  users,
 } from '@/db/schema'
 import {
   MAP_ACCESS,
@@ -25,10 +24,7 @@ import {
   legacyFlagsFor,
   normaliseVisitTime,
 } from '@/lib/itineraries/sale'
-import { defaultLocale, locales, isLocale, type Locale } from '@/i18n/config'
-import { pick } from '@/lib/content/localize'
-import { notifyUsers } from '@/lib/notify'
-import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
+import { locales, type Locale } from '@/i18n/config'
 import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -224,6 +220,10 @@ export async function publishItinerary(id: string): Promise<void> {
       if (unresolved.length > 0) {
         throw new Error(t('itineraries.err_publish_unresolved', { count: unresolved.length }))
       }
+
+      // Phase 1 (spec §3.1/§9): no ready Arabic PDF — uploaded or generated — no publish.
+      const arabic = await arabicPdfFacts(tx, before, days)
+      if (publishBlock(arabic) === 'no_pdf') throw new Error(t('ip1.err_publish_no_pdf'))
 
       const [after] = await tx
         .update(itineraries)
@@ -647,125 +647,6 @@ async function syncDayCount(tx: Tx, itineraryId: string): Promise<void> {
 // PDF مرفوع للجدول (الوثيقة 4.2: "ملف PDF مرتبط بالجدول"، لوحة التحكم: "رفع PDF")
 // ---------------------------------------------------------------------------
 
-// أقل من حد جسم Server Action (25mb في next.config) مع هامش لترميز multipart.
-const MAX_ITINERARY_PDF_BYTES = 24 * 1024 * 1024
-
-function looksLikePdf(bytes: Uint8Array): boolean {
-  return bytes.length > 5 && new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-'
-}
-
-/**
- * يرفع PDF جاهزاً لهذا الجدول بلغة معيّنة إلى التخزين الخاص. يُسلَّم للعملاء
- * بدل الملف المولّد تلقائياً، وبنفس الحماية (علامة مائية، عارض، سجل).
- */
-export async function uploadItineraryPdf(id: string, form: FormData): Promise<void> {
-  const session = await requireCapability('content.write')
-  const { t } = await getAdminI18n()
-  let outcome: Outcome
-  try {
-    const rawLocale = freq(form, 'locale', t('itineraries.pdf_language'))
-    if (!isLocale(rawLocale)) throw new Error(t('itineraries.err_pdf_language'))
-    const file = form.get('file')
-    if (!(file instanceof File) || file.size === 0)
-      throw new Error(t('itineraries.err_pdf_missing'))
-    if (file.size > MAX_ITINERARY_PDF_BYTES) throw new Error(t('itineraries.err_pdf_too_large'))
-    if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
-      throw new Error(t('itineraries.err_pdf_storage'))
-    }
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    if (!looksLikePdf(bytes)) throw new Error(t('itineraries.err_pdf_not_pdf'))
-
-    const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-    if (!before) throw new Error(t('itineraries.err_gone'))
-
-    // مفتاح لا يُخمَّن: الملف الأصلي لا يُكشف أبداً (يُسلَّم مختوماً عبر الحساب).
-    const objectKey = `itineraries/${id}/uploaded/${rawLocale}-${randomUUID()}.pdf`
-    if (isPrivateStorageAvailable()) {
-      await uploadPrivate({ key: objectKey, body: bytes, contentType: 'application/pdf' })
-    } else {
-      // تطوير محلي فقط (الإنتاج بلا تخزين مرفوض أعلاه)، كما في الجداول المخصصة.
-      const { mkdir, writeFile } = await import('node:fs/promises')
-      const path = await import('node:path')
-      const target = path.join(process.cwd(), 'public', objectKey)
-      await mkdir(path.dirname(target), { recursive: true })
-      await writeFile(target, bytes)
-    }
-
-    const keys = { ...(before.uploadedPdfKeys ?? {}), [rawLocale]: objectKey }
-    await db.update(itineraries).set({ uploadedPdfKeys: keys }).where(eq(itineraries.id, id))
-    await writeAudit({
-      actor: session,
-      action: 'itinerary.pdf_upload',
-      entityType: 'itinerary',
-      entityId: id,
-      before: { uploadedPdfKeys: before.uploadedPdfKeys },
-      after: { uploadedPdfKeys: keys, bytes: bytes.byteLength },
-    })
-    const notified = await notifyItineraryHolders(before, rawLocale, keys)
-    outcome = {
-      ok:
-        t('itineraries.ok_pdf_uploaded', { locale: t(`translations.lang_${rawLocale}`) }) +
-        (notified > 0 ? ` ${t('itineraries.ok_pdf_notified', { count: notified })}` : ''),
-    }
-  } catch (error) {
-    if (isRedirectError(error)) throw error
-    outcome = { err: errorMessage(error) }
-  }
-  redirect(withOutcome(editor(id), outcome))
-}
-
-/**
- * بعد رفع ملف جديد: إشعار `itinerary_pdf_updated` (داخل الموقع + بريد) لكل من
- * يملك هذا الجدول (بند مسدَّد غير مسترد/ملغى) ويستلم ملف هذه اللغة — لغته هي
- * لغة الملف، أو ملف اللغة الافتراضية ولا ملف مرفوع للغته. إدراج جماعي بلغة كل
- * مجموعة. لا يرمي: فشل الإشعار لا يُفشل الرفع.
- */
-async function notifyItineraryHolders(
-  itinerary: typeof itineraries.$inferSelect,
-  uploadedLocale: Locale,
-  keys: Partial<Record<string, string>>,
-): Promise<number> {
-  try {
-    const receives = locales.filter(
-      (locale) => locale === uploadedLocale || (uploadedLocale === defaultLocale && !keys[locale]),
-    )
-    const holders = await db
-      .selectDistinct({ userId: orders.userId, locale: users.locale })
-      .from(orderItems)
-      .innerJoin(orders, eq(orders.id, orderItems.orderId))
-      .innerJoin(users, eq(users.id, orders.userId))
-      .where(
-        and(
-          eq(orderItems.refId, itinerary.id),
-          eq(orderItems.kind, 'itinerary'),
-          inArray(orders.status, ['paid', 'confirmed', 'partially_refunded']),
-          notInArray(orderItems.fulfilmentStatus, ['refunded', 'cancelled']),
-          isNull(users.deletedAt),
-        ),
-      )
-    const byLocale = new Map<Locale, string[]>()
-    for (const holder of holders) {
-      if (!holder.userId) continue
-      const locale = isLocale(holder.locale) ? holder.locale : defaultLocale
-      if (!receives.includes(locale)) continue
-      byLocale.set(locale, [...(byLocale.get(locale) ?? []), holder.userId])
-    }
-    let total = 0
-    for (const [locale, userIds] of byLocale) {
-      total += await notifyUsers(
-        userIds,
-        'itinerary_pdf_updated',
-        { name: pick(itinerary.name, locale, itinerary.slug) },
-        '/account/schedules',
-      )
-    }
-    return total
-  } catch (error) {
-    console.error('[itineraries] holder notification failed', { id: itinerary.id, error })
-    return 0
-  }
-}
-
 /** يزيل الملف المرفوع للغة — يعود التسليم إلى الملف المولّد تلقائياً. */
 export async function removeItineraryPdf(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
@@ -779,10 +660,23 @@ export async function removeItineraryPdf(id: string, form: FormData): Promise<vo
     if (!before) throw new Error(t('itineraries.err_gone'))
     const keys = { ...(before.uploadedPdfKeys ?? {}) }
     delete keys[rawLocale]
-    await db
-      .update(itineraries)
-      .set({ uploadedPdfKeys: Object.keys(keys).length > 0 ? keys : null })
-      .where(eq(itineraries.id, id))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(itineraries)
+        .set({ uploadedPdfKeys: Object.keys(keys).length > 0 ? keys : null })
+        .where(eq(itineraries.id, id))
+      // Phase 1: the versions stay archived; none is current any more.
+      await tx
+        .update(itineraryDocuments)
+        .set({ isCurrent: false })
+        .where(
+          and(
+            eq(itineraryDocuments.itineraryId, id),
+            eq(itineraryDocuments.locale, rawLocale),
+            eq(itineraryDocuments.source, 'uploaded'),
+          ),
+        )
+    })
     await writeAudit({
       actor: session,
       action: 'itinerary.pdf_remove',

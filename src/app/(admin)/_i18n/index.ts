@@ -14,6 +14,7 @@ import dashboard from './dashboard'
 import financeCrm from './finance-crm'
 import freePhotos from './free-photos'
 import googlePlaces from './google-places'
+import itinerariesP1 from './itineraries-p1'
 import ops from './ops'
 import people from './people'
 import phase3 from './phase3'
@@ -51,6 +52,7 @@ const SECTIONS = [
   leadTime,
   googlePlaces,
   freePhotos,
+  itinerariesP1,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
