@@ -7,7 +7,6 @@ import {
   parseGphotoUrl,
   resolvePlaceImages,
   snapWidth,
-  teaserHeroUrl,
   trimGooglePhotos,
   type OwnImage,
 } from './photo-urls'
@@ -146,13 +145,25 @@ describe('resolvePlaceImages precedence', () => {
   })
 })
 
-describe('teaserHeroUrl', () => {
-  it('follows the same precedence for a single slot', () => {
-    const base = { slug: 'p', ownUrl: '/own.webp', ownShared: false }
-    expect(teaserHeroUrl({ ...base, google: false })).toBe('/own.webp')
-    expect(teaserHeroUrl({ ...base, google: true })).toBe('/own.webp')
-    expect(teaserHeroUrl({ ...base, ownShared: true, google: true })).toBe(gphotoUrl('p', 0, 640))
-    expect(teaserHeroUrl({ ...base, ownUrl: null, google: true })).toBe(gphotoUrl('p', 0, 640))
-    expect(teaserHeroUrl({ ...base, ownUrl: null, google: false })).toBeNull()
+describe('Google photos are for place details only (owner, Nov 2026)', () => {
+  it('cards, lists and thumbs keep our media and the glyph fallback; details get Google', () => {
+    const own = { hero: null, gallery: [] as OwnImage[], isShared: never }
+    const surfaces = resolvePlaceImages({ slug: 'p', ...own, google: false })
+    const details = resolvePlaceImages({ slug: 'p', ...own, google: true })
+    // No hero on cards → the category-glyph placeholder, never a Google URL.
+    expect(surfaces.heroImageUrl).toBeNull()
+    expect(surfaces.heroThumbUrl).toBeNull()
+    expect(surfaces.gallery).toEqual([])
+    expect(details.heroImageUrl).toBe(gphotoUrl('p', 0))
+  })
+
+  it('shared photos stay on cards but give way to Google in details', () => {
+    const own = { hero: img('h'), gallery: [] as OwnImage[], isShared: () => true }
+    expect(resolvePlaceImages({ slug: 'p', ...own, google: false }).heroImageUrl).toBe(
+      '/media/h/1280.webp',
+    )
+    expect(resolvePlaceImages({ slug: 'p', ...own, google: true }).heroImageUrl).toBe(
+      gphotoUrl('p', 0),
+    )
   })
 })

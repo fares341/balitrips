@@ -27,13 +27,18 @@ photos, fetched live from **Places API (New)**.
   Details (`photos` only) → Place Photos (New) `media?skipHttpRedirect=true`
   → `302` to Google's `photoUri`. `/api/places/<slug>/gphotos` gives the live
   author attributions for the credit line.
-- **Precedence** (`resolvePlaceImages`): with an `auto`/`confirmed` match, our
-  own photos that no other place uses come first; photos that are missing or
-  shared with another place (duplicates) are replaced by up to 10 Google
-  photos. Without a match, or without a key, nothing changes.
-- **Attribution**: every Google photo rendered through `Photo`/`SafeImg`
-  (map cards, the map sheet gallery, `/places` pages, listings, search) shows
-  «Photo: <author, linked> · Google Maps (linked to the photo on Google Maps)».
+- **Where**: place details only (owner, Nov 2026) — the map sheet gallery and
+  the `/places/<slug>` hero and gallery (`MapPlaceRecord.detailImages`). Map
+  carousel cards, list rows, peek / near-me thumbnails, search, teasers and
+  listings keep our own media with the category-glyph fallback.
+- **Precedence** (`resolvePlaceImages`, details only): with an
+  `auto`/`confirmed` match, our own photos that no other place uses come
+  first; photos that are missing or shared with another place (duplicates)
+  are replaced by up to 10 Google photos. Without a match, or without a key,
+  nothing changes.
+- **Attribution**: every Google photo (rendered through `Photo`/`SafeImg`)
+  shows «Photo: <author, linked> · Google Maps (linked to the photo on Google
+  Maps)».
 
 ## Terms that shaped the design
 
@@ -96,12 +101,14 @@ per 1,000 requests at the 0–100k tier, with monthly free usage per SKU:
 
 - **One-off matching of ~600 places**: ~600 Text Search + a few hundred review
   lookups → inside the free caps → **$0** (even running it 5–8 times).
-- **Photos** are the only real cost: one billable request each time a browser
-  loads a Google photo (minus repeats within 5 minutes in the same browser).
-  - Light (≈300 photo loads/day ≈ 9k/month): (9,000 − 1,000) × $7/1,000 ≈ **$56/month**.
-  - Typical (≈1,000/day ≈ 30k/month): ≈ **$203/month**.
-  - Busy (≈2,500/day ≈ 75k/month): ≈ **$518/month**.
+- **Photos** are the only real cost, and they load only when someone opens a
+  place (map sheet or place page): one billable request per Google photo the
+  browser actually loads (the hero, then gallery photos; repeats within 5
+  minutes in the same browser are free). Only places whose own photos are
+  missing or shared use Google photos at all.
+  - Light (≈100 place opens/day × ~3 photos ≈ 9k/month): (9,000 − 1,000) × $7/1,000 ≈ **$56/month**.
+  - Typical (≈300 opens/day × ~3 photos ≈ 27k/month): ≈ **$182/month**.
+  - Busy (≈800 opens/day × ~3 photos ≈ 72k/month): ≈ **$497/month**.
   - Hard ceiling with the default cap (1,000 billable/day): ≈ **$210/month**.
     Lower `GOOGLE_PLACES_DAILY_CAP` to lower the ceiling (300 ≈ $56/month).
-- Biggest drivers: the map carousel (cards load eagerly) and galleries. Places
-  with our own unique photo use Google photos only after ours.
+  - Map browsing, listings and search cost nothing: they never show Google photos.

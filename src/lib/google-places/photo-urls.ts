@@ -124,19 +124,3 @@ export function snapWidth(raw: string | null | undefined): number {
   if (!Number.isFinite(asked) || asked <= 0) return 1280
   return WIDTHS.find((w) => w >= asked) ?? 1600
 }
-
-/**
- * The one photo of a list teaser / search hit (no gallery there): our hero,
- * or the first Google photo when ours is missing or another place uses the
- * same hero. Same precedence as `resolvePlaceImages`, for a single slot.
- */
-export function teaserHeroUrl(input: {
-  slug: string
-  ownUrl: string | null
-  ownShared: boolean
-  google: boolean
-}): string | null {
-  if (!input.google) return input.ownUrl
-  if (input.ownUrl && !input.ownShared) return input.ownUrl
-  return gphotoUrl(input.slug, 0, 640)
-}

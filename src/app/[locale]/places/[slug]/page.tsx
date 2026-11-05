@@ -151,9 +151,8 @@ export default async function PlacePage({ params }: PageProps) {
     .slice(0, 4)
 
   // The place's own photos only; a neutral placeholder when it has none.
-  let photos = [place.heroImageUrl, ...place.gallery].filter(
-    (src, index, all): src is string => !!src && all.indexOf(src) === index,
-  )
+  // Place details: our photos, or Google's where ours are missing / shared.
+  let photos = full.detailImages
   // Google photo slots (migration 0040): keep only the ones the place has.
   if (photos.some(isGooglePhotoUrl)) {
     photos = trimGooglePhotos(photos, await liveGooglePhotoCount(place.id))

@@ -1669,10 +1669,13 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       categoryLabel,
     }) => {
       const own = ownImages.get(place.id) ?? { hero: null, gallery: [] }
-      const images = resolvePlaceImages({
+      // Cards, lists, thumbs, search: our own media only (owner, Nov 2026).
+      const images = resolvePlaceImages({ slug: place.slug, ...own, isShared, google: false })
+      // Place details (map sheet gallery, /places/[slug]): Google photos where
+      // ours are missing or shared, when the place has a usable match.
+      const details = resolvePlaceImages({
         slug: place.slug,
-        hero: own.hero,
-        gallery: own.gallery,
+        ...own,
         isShared,
         google: googleOn && isUsableMatch(place.googleMatchStatus, place.googlePlaceId),
       })
@@ -1687,7 +1690,6 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         rating: place.rating,
         openingHours: place.openingHours,
         tags: place.tags,
-        // Our photos, or Google's where ours are missing / shared (migration 0040).
         heroImageUrl: images.heroImageUrl,
         heroThumbUrl: images.heroThumbUrl,
         activitySlug,
@@ -1712,6 +1714,9 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         detailedDescription: place.detailedDescription,
         videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
         gallery: images.gallery,
+        detailImages: [details.heroImageUrl, ...details.gallery].filter(
+          (url, i, all): url is string => !!url && all.indexOf(url) === i,
+        ),
         subCategoryKeys: (place.subCategoryIds ?? [])
           .map((id) => subKeyById.get(id))
           .filter((key): key is string => key !== undefined),
@@ -1731,6 +1736,12 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
  * `{ id, locked, requiredEntitlement }`.
  */
 export type MapPlaceRecord = FullMapPlace & {
+  /**
+   * Place-details photos only (map sheet gallery, /places/[slug] hero and
+   * gallery): ours, plus Google photo slots where ours are missing or shared
+   * (migration 0040). Every other surface uses `heroImageUrl` / `gallery`.
+   */
+  detailImages: string[]
   /** A small rung (~320px WebP) for map cards; the original when unoptimised. */
   heroThumbUrl: string | null
   /** The linked live activity's price («From»), when it has one. */

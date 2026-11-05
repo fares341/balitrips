@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE })
   }
 
-  let candidates = [place.heroImageUrl, ...place.gallery].filter((url): url is string => !!url)
+  let candidates = place.detailImages
   // Google photo slots (migration 0040): keep only the ones the place has.
   if (candidates.some(isGooglePhotoUrl)) {
     candidates = trimGooglePhotos(candidates, await liveGooglePhotoCount(place.id))
