@@ -15,7 +15,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { LinkButton } from '@/components/bt'
-import { Icon, type IconName } from '@/components/ui'
+import { Icon, SafeImg, type IconName } from '@/components/ui'
 import { getPathname, Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { search } from '@/lib/content/queries'
@@ -213,14 +213,16 @@ export default async function SearchPage({
                         return (
                           <li key={hit.id}>
                             <Link href={hit.href} className="sr-row">
-                              {hit.hero?.url ? (
-                                // eslint-disable-next-line @next/next/no-img-element -- small catalogue thumbnail
-                                <img src={hit.hero.url} alt="" loading="lazy" />
-                              ) : (
-                                <span className="sr-ph" aria-hidden="true">
-                                  <Icon name={group.icon} size={22} />
-                                </span>
-                              )}
+                              <SafeImg
+                                src={hit.hero?.url}
+                                alt=""
+                                loading="lazy"
+                                fallback={
+                                  <span className="sr-ph" aria-hidden="true">
+                                    <Icon name={group.icon} size={22} />
+                                  </span>
+                                }
+                              />
                               <span className="sr-b">
                                 <b>{pick(hit.title, locale, hit.slug)}</b>
                                 {(subtitle !== null || hit.days !== null) && (

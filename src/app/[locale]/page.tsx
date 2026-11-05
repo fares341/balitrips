@@ -38,7 +38,7 @@ import type { CSSProperties } from 'react'
 import { LinkButton, SectionHead } from '@/components/bt'
 import { FEATURES } from '@/lib/features'
 import { ActivityCard } from '@/components/cards'
-import { Icon, Photo, type IconName } from '@/components/ui'
+import { Icon, Photo, SafeImg, type IconName } from '@/components/ui'
 import { isLocale, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { EVENTS_CATEGORY_KEY } from '@/lib/content/extra-queries'
@@ -101,7 +101,14 @@ const SERVICES: readonly { href: string; icon: IconName; image: string; key: str
   // Owner, Oct 2026: the photo is the Studio pick (Configuration → Home) when
   // set; the fallback is a licensed brand photo (the old `.jpg` did not exist).
   ...(FEATURES.shopping
-    ? [{ href: '/shopping', icon: 'bag' as IconName, image: '/brand/flatlay-wide.webp', key: 'shop' }]
+    ? [
+        {
+          href: '/shopping',
+          icon: 'bag' as IconName,
+          image: '/brand/flatlay-wide.webp',
+          key: 'shop',
+        },
+      ]
     : []),
 ]
 
@@ -520,14 +527,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                       className={card.imageUrl !== null ? 'gc-ph' : 'gc-ph gc-noimg'}
                       aria-hidden="true"
                     >
-                      {card.imageUrl !== null ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- Studio-picked category photo
-                        <img src={card.imageUrl} alt="" loading="lazy" decoding="async" />
-                      ) : (
-                        <span className="gc-art">
-                          <Icon name={card.icon} size={96} stroke={1} />
-                        </span>
-                      )}
+                      <SafeImg
+                        src={card.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        fallback={
+                          <span className="gc-art">
+                            <Icon name={card.icon} size={96} stroke={1} />
+                          </span>
+                        }
+                      />
                     </span>
                     <span className="gc-ic" aria-hidden="true">
                       <Icon name={card.icon} size={20} stroke={1.8} />
