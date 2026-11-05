@@ -24,8 +24,10 @@
 import Image from 'next/image'
 import type { CSSProperties, ReactNode } from 'react'
 
+import { mediaIdFromUrl } from '@/lib/free-photos/attribution'
 import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
 
+import { FreePhotoCredit } from './free-photo-credit'
 import { GooglePhotoCredit } from './google-photo-credit'
 import { useImageFallback } from './use-image-fallback'
 
@@ -136,7 +138,13 @@ export function Photo({
 
   const photoClass = ['photo', className].filter(Boolean).join(' ')
   // A Google place photo carries its attribution (Places API policy).
-  const credit = isGooglePhotoUrl(src) ? <GooglePhotoCredit src={src} /> : null
+  // Free photos (Commons / Openverse / Unsplash) carry theirs (licence terms);
+  // it renders nothing for our own uploads.
+  const credit = isGooglePhotoUrl(src) ? (
+    <GooglePhotoCredit src={src} />
+  ) : mediaIdFromUrl(src) ? (
+    <FreePhotoCredit src={src} />
+  ) : null
 
   if (hasIntrinsicSize) {
     const image = (
@@ -181,7 +189,7 @@ export function Photo({
   )
 
   // Once the first URL failed, the srcset candidates are suspect too.
-  if (credit) {
+  if (credit && (degraded || (!srcSetAvif && !srcSetWebp))) {
     return (
       <>
         {img}
@@ -201,7 +209,7 @@ export function Photo({
    * every caller's layout targets the img, and an extra element in the flow
    * would break the absolutely-positioned banner cases.
    */
-  return (
+  const picture = (
     <picture style={{ display: 'contents' }}>
       {srcSetAvif ? (
         <source type="image/avif" srcSet={srcSetAvif} {...(sizes ? { sizes } : {})} />
@@ -211,6 +219,14 @@ export function Photo({
       ) : null}
       {img}
     </picture>
+  )
+  return credit ? (
+    <>
+      {picture}
+      {credit}
+    </>
+  ) : (
+    picture
   )
 }
 

@@ -12,6 +12,7 @@ import common from './common'
 import content from './content'
 import dashboard from './dashboard'
 import financeCrm from './finance-crm'
+import freePhotos from './free-photos'
 import googlePlaces from './google-places'
 import ops from './ops'
 import people from './people'
@@ -49,6 +50,7 @@ const SECTIONS = [
   ownerOps,
   leadTime,
   googlePlaces,
+  freePhotos,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

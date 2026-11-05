@@ -90,6 +90,7 @@ import {
   buildSrcSet,
   derivativeKey,
   fallbackRung,
+  isExternalKey,
   isUnoptimised,
   rungsFor,
 } from '@/lib/media/ladder'
@@ -186,6 +187,8 @@ type ActivityRow = typeof activities.$inferSelect
 const CDN_BASE = (process.env.NEXT_PUBLIC_CDN_URL ?? '').replace(/\/+$/, '')
 
 export function mediaUrl(objectKey: string): string {
+  // Hotlinked photo (Unsplash): the URL itself, never through our CDN.
+  if (isExternalKey(objectKey)) return objectKey
   const key = objectKey.replace(/^\/+/, '')
   return CDN_BASE === '' ? `/${key}` : `${CDN_BASE}/${key}`
 }

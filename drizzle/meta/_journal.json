@@ -288,6 +288,13 @@
       "when": 1793701300000,
       "tag": "0040_google_place_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793701400000,
+      "tag": "0041_free_place_photos",
+      "breakpoints": true
     }
   ]
 }
