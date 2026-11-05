@@ -12,6 +12,7 @@ import {
   real,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
@@ -98,6 +99,19 @@ export const media = pgTable('media', {
   /** Alt text is per-locale — it is content, not metadata. */
   alt: localized('alt'),
   credit: text('credit'),
+  /**
+   * Provenance of a free photo (migration 0041). NULL source = an upload.
+   * `externalUrl` is set for hotlinked photos only (Unsplash: never re-hosted).
+   */
+  source: varchar('source', { length: 16 }),
+  author: text('author'),
+  authorUrl: text('author_url'),
+  license: varchar('license', { length: 64 }),
+  licenseUrl: text('license_url'),
+  sourceUrl: text('source_url'),
+  externalUrl: text('external_url'),
+  sha256: varchar('sha256', { length: 64 }),
+  dhash: varchar('dhash', { length: 16 }),
   ...timestamps,
   ...softDelete,
 })
@@ -947,6 +961,8 @@ export const mapPlaces = pgTable(
     googleMatchStatus: varchar('google_match_status', { length: 16 }).notNull().default('none'),
     googleMatchScore: real('google_match_score'),
     googleCheckedAt: timestamp('google_checked_at', { withTimezone: true }),
+    /** When «Find free photos» last looked at this place (migration 0041). */
+    freePhotosCheckedAt: timestamp('free_photos_checked_at', { withTimezone: true }),
 
     ...publishing,
     ...timestamps,
@@ -1126,4 +1142,50 @@ export const googleApiUsage = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ name: 'google_api_usage_pk', columns: [t.day, t.kind] })],
+)
+
+/**
+ * Free photo candidates per map place (migration 0041): found by
+ * «Find free photos» (`@/lib/free-photos`), reviewed in Studio.
+ *   status: new | applied | rejected | duplicate
+ */
+export const placePhotoCandidates = pgTable(
+  'place_photo_candidates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    placeId: uuid('place_id')
+      .notNull()
+      .references(() => mapPlaces.id, { onDelete: 'cascade' }),
+    source: varchar('source', { length: 16 }).notNull(),
+    externalId: text('external_id').notNull(),
+    foundVia: varchar('found_via', { length: 16 }).notNull(),
+    title: text('title'),
+    thumbUrl: text('thumb_url').notNull(),
+    imageUrl: text('image_url').notNull(),
+    width: integer('width').notNull(),
+    height: integer('height').notNull(),
+    distanceM: integer('distance_m'),
+    nameScore: real('name_score').notNull().default(0),
+    score: real('score').notNull().default(0),
+    tier: varchar('tier', { length: 8 }).notNull(),
+    author: text('author'),
+    authorUrl: text('author_url'),
+    license: varchar('license', { length: 64 }).notNull(),
+    licenseUrl: text('license_url'),
+    sourceUrl: text('source_url').notNull(),
+    downloadLocation: text('download_location'),
+    sha256: varchar('sha256', { length: 64 }),
+    dhash: varchar('dhash', { length: 16 }),
+    status: varchar('status', { length: 16 }).notNull().default('new'),
+    duplicateOf: uuid('duplicate_of'),
+    mediaId: uuid('media_id').references(() => media.id),
+    autoApplied: boolean('auto_applied').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('place_photo_candidates_uq').on(t.placeId, t.source, t.externalId),
+    index('place_photo_candidates_place_idx').on(t.placeId),
+    index('place_photo_candidates_sha_idx').on(t.sha256),
+  ],
 )

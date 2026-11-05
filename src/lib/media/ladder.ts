@@ -55,7 +55,14 @@ export function rungsFor(width: number): number[] {
 export const UNOPTIMISED_SEGMENT = 'unoptimised'
 
 export function isUnoptimised(objectKey: string): boolean {
-  return objectKey.includes(`/${UNOPTIMISED_SEGMENT}/`)
+  // A hotlinked photo (Unsplash: an absolute URL, never re-hosted) has no
+  // ladder either; it is served as-is.
+  return objectKey.includes(`/${UNOPTIMISED_SEGMENT}/`) || isExternalKey(objectKey)
+}
+
+/** An absolute URL stored as the object key: a hotlinked photo. */
+export function isExternalKey(objectKey: string): boolean {
+  return /^https:\/\//i.test(objectKey)
 }
 
 /** Object key of one derivative. Must match what the pipeline writes. */

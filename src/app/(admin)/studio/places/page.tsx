@@ -80,6 +80,9 @@ export default async function PlacesPage({
         actions={
           can(session.role, 'content.write') ? (
             <>
+              <Link className="a-btn ghost" href={adminHref('/places/free-photos')}>
+                {t('fp.link')}
+              </Link>
               <Link className="a-btn ghost" href={adminHref('/places/google')}>
                 {t('gp.start')}
               </Link>

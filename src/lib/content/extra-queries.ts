@@ -39,6 +39,8 @@ import {
 
 import type { LocalizedText } from './localize'
 import { toMedia } from './queries'
+import { widelySharedMediaIds } from '@/lib/map/shared-media'
+import { unlessShared } from '@/lib/map/shared-media-rule'
 import { entityHref, type ArticleSummary } from './types'
 
 const PUBLISHED = 'published'
@@ -116,7 +118,11 @@ type TeaserRow = {
 }
 
 /** The single redaction point for every teaser this module returns. */
-function toTeaser(row: TeaserRow, held: EntitlementSet): PlaceTeaser {
+function toTeaser(
+  row: TeaserRow,
+  held: EntitlementSet,
+  sharedMedia: ReadonlySet<string>,
+): PlaceTeaser {
   const access = placeAccess(row.place)
   if (!canSeePlace(row.place, held)) {
     return { locked: true, requiredEntitlement: access.requiredEntitlement }
@@ -127,7 +133,8 @@ function toTeaser(row: TeaserRow, held: EntitlementSet): PlaceTeaser {
     slug: row.place.slug,
     href: entityHref('place', row.place.slug),
     name: row.place.name,
-    heroImageUrl: toMedia(row.hero)?.url ?? null,
+    // A photo on 3+ places is a placeholder: treated as missing.
+    heroImageUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
     regionLabel: row.regionLabel,
     categoryLabel: row.categoryLabel,
     lat: row.place.lat,
@@ -155,6 +162,7 @@ export async function placeTeasersByIds(
   ids: readonly string[],
   held: EntitlementSet,
 ): Promise<PlaceTeaser[]> {
+  const sharedMedia = await widelySharedMediaIds()
   const wanted = [...new Set(ids.filter((id) => typeof id === 'string' && UUID.test(id)))]
   if (wanted.length === 0) return []
 
@@ -163,7 +171,7 @@ export async function placeTeasersByIds(
 
   return wanted.flatMap((id) => {
     const row = byId.get(id)
-    return row === undefined ? [] : [toTeaser(row, held)]
+    return row === undefined ? [] : [toTeaser(row, held, sharedMedia)]
   })
 }
 
@@ -181,8 +189,9 @@ export async function placeTeasersById(
 ): Promise<Map<string, PlaceTeaser>> {
   const wanted = [...new Set(ids.filter((id) => typeof id === 'string' && UUID.test(id)))]
   if (wanted.length === 0) return new Map()
+  const sharedMedia = await widelySharedMediaIds()
   const rows = await teaserQuery().where(and(LIVE_PLACE, inArray(mapPlaces.id, wanted)))
-  return new Map(rows.map((row) => [row.place.id, toTeaser(row, held)]))
+  return new Map(rows.map((row) => [row.place.id, toTeaser(row, held, sharedMedia)]))
 }
 
 /**
@@ -255,6 +264,7 @@ export function compareEventDates(
 export async function eventPlacesForViewer(
   held: EntitlementSet,
 ): Promise<{ visible: VisibleEventPlace[]; lockedCount: number }> {
+  const sharedMedia = await widelySharedMediaIds()
   const [events] = await db
     .select({ id: categories.id })
     .from(categories)
@@ -288,7 +298,7 @@ export async function eventPlacesForViewer(
   const visible: VisibleEventPlace[] = []
   let lockedCount = 0
   for (const row of rows) {
-    const teaser = toTeaser(row, held)
+    const teaser = toTeaser(row, held, sharedMedia)
     if (teaser.locked) lockedCount += 1
     else visible.push({ ...teaser, startsAt: row.event.startsAt, endsAt: row.event.endsAt })
   }
@@ -336,6 +346,7 @@ export async function tripItemsForViewer(
   ownerId: string,
   held: EntitlementSet,
 ): Promise<TripItemForViewer[]> {
+  const sharedMedia = await widelySharedMediaIds()
   const rows = await db
     .select({ itemId: tripItems.id, dayNumber: tripItems.dayNumber, ...teaserColumns })
     .from(tripItems)
@@ -353,7 +364,7 @@ export async function tripItemsForViewer(
   return rows.map((row) => ({
     itemId: row.itemId,
     dayNumber: row.dayNumber,
-    place: toTeaser(row, held),
+    place: toTeaser(row, held, sharedMedia),
   }))
 }
 

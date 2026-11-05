@@ -33,6 +33,9 @@ import {
 } from '@/lib/entitlements'
 import { haversineKm, isInBali, type LatLon } from '@/lib/geo'
 
+import { widelySharedMediaIds } from '@/lib/map/shared-media'
+import { unlessShared } from '@/lib/map/shared-media-rule'
+
 import { normalizeSearch } from './normalize'
 import {
   buildVocabulary,
@@ -198,6 +201,7 @@ export async function searchPlaces(
     )
   }
 
+  const sharedMedia = await widelySharedMediaIds()
   const rows = await db
     .select({
       place: mapPlaces,
@@ -299,7 +303,8 @@ export async function searchPlaces(
           : null,
       region: row.regionLabel ? pick(row.regionLabel, locale) : null,
       // نسخة مصغّرة (لا الأصل 1-1.6MB)، والصورة المحذوفة لا تُعرض.
-      heroImageUrl: toMedia(row.hero)?.url ?? null,
+      // A photo on 3+ places is a placeholder: treated as missing.
+      heroImageUrl: toMedia(unlessShared(row.hero, sharedMedia))?.url ?? null,
       isHiddenGem: row.place.isHiddenGem,
       isVip: access.requiredEntitlement === 'vip' && !access.isFree,
       isFree: access.isFree,

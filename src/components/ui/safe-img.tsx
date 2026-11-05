@@ -11,6 +11,7 @@ import { useCallback, type ImgHTMLAttributes, type ReactNode } from 'react'
 
 import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
 
+import { FreePhotoCredit } from './free-photo-credit'
 import { GooglePhotoCredit } from './google-photo-credit'
 import { useImageFallback } from './use-image-fallback'
 import { useNearViewport } from './use-near-viewport'
@@ -57,7 +58,14 @@ export function SafeImg({
     />
   )
   // A Google place photo carries its attribution (Places API policy).
-  if (!google) return img
+  // Free photos (Commons / Openverse / Unsplash) carry theirs (licence terms).
+  if (!google)
+    return (
+      <>
+        {img}
+        <FreePhotoCredit src={src} />
+      </>
+    )
   return (
     <>
       {img}
