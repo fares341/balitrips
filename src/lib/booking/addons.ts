@@ -139,23 +139,21 @@ export function addonRules(map: ReadonlyMap<string, ActivityAddonRow[]>): Map<st
   return new Map(
     [...map].map(([activityId, rows]) => [
       activityId,
-      rows.map(
-        (row): AddonRule => ({
-          id: row.id,
-          priceMinor: row.priceMinor,
-          currency: row.currency,
-          pricing: row.pricing,
-          maxQty: row.maxQty,
-          onlyPackages: row.onlyPackages,
-          requiresAddonId: row.requiresAddonId,
-          available: row.available,
-          ...(row.required === true ? { required: true } : {}),
-          ...(row.priceTiers && row.priceTiers.length > 0 ? { priceTiers: row.priceTiers } : {}),
-          ...(row.incompatibleWith && row.incompatibleWith.length > 0
-            ? { incompatibleWith: row.incompatibleWith }
-            : {}),
-        }),
-      ),
+      rows.map((row): AddonRule => ({
+        id: row.id,
+        priceMinor: row.priceMinor,
+        currency: row.currency,
+        pricing: row.pricing,
+        maxQty: row.maxQty,
+        onlyPackages: row.onlyPackages,
+        requiresAddonId: row.requiresAddonId,
+        available: row.available,
+        ...(row.required === true ? { required: true } : {}),
+        ...(row.priceTiers && row.priceTiers.length > 0 ? { priceTiers: row.priceTiers } : {}),
+        ...(row.incompatibleWith && row.incompatibleWith.length > 0
+          ? { incompatibleWith: row.incompatibleWith }
+          : {}),
+      })),
     ]),
   )
 }

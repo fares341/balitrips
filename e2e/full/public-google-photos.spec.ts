@@ -27,8 +27,9 @@ test.describe('google place photos (mocked)', () => {
       'href',
       /^https:\/\/www\.google\.com\/maps\//,
     )
-    // Slots beyond the place's 3 Google photos are trimmed server-side.
-    expect(await page.locator(`img[src*="/gphoto/3"]`).count()).toBe(0)
+    // At most ONE Google photo per place (GOOGLE_PLACES_MAX_PHOTOS default 1).
+    expect(await page.locator(`img[src*="/api/places/${slug}/gphoto/"]`).count()).toBe(1)
+    expect(await page.locator(`img[src*="/gphoto/1"]`).count()).toBe(0)
   })
 
   test('the photo route redirects, sets private cache headers and keeps the lock', async ({
@@ -37,7 +38,7 @@ test.describe('google place photos (mocked)', () => {
     const ok = await request.get(`/api/places/${slug}/gphoto/0?w=400`, { maxRedirects: 0 })
     expect(ok.status()).toBe(302)
     expect(ok.headers()['cache-control']).toMatch(/^private/)
-    expect((await request.get(`/api/places/${slug}/gphoto/7`, { maxRedirects: 0 })).status()).toBe(
+    expect((await request.get(`/api/places/${slug}/gphoto/1`, { maxRedirects: 0 })).status()).toBe(
       404,
     )
     expect(
@@ -61,7 +62,7 @@ test.describe('google place photos (mocked)', () => {
     expect(res.status()).toBe(200)
     expect(res.headers()['cache-control']).toContain('no-store')
     const body = (await res.json()) as { photos: { authors: { name: string }[] }[] }
-    expect(body.photos).toHaveLength(3)
+    expect(body.photos).toHaveLength(1)
     expect(body.photos[0]!.authors[0]!.name).toBe('Mock Author 1')
   })
 

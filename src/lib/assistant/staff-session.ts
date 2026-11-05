@@ -10,8 +10,7 @@ import { getAdminSession, twoFactorGate, type AdminSession } from '@/app/(admin)
 import { can, isElevated } from '@/lib/auth/roles'
 
 export type StaffGate =
-  | { ok: true; session: AdminSession }
-  | { ok: false; status: 401 | 403 | 404; code: string }
+  { ok: true; session: AdminSession } | { ok: false; status: 401 | 403 | 404; code: string }
 
 export async function staffGate(): Promise<StaffGate> {
   const session = await getAdminSession()

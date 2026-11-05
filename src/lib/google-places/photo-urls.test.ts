@@ -81,7 +81,7 @@ describe('resolvePlaceImages precedence', () => {
     ).toBeNull()
   })
 
-  it('keeps our unique photos first, then Google photos', () => {
+  it('a place with its own unique upload gets no Google photo at all', () => {
     const out = resolvePlaceImages({
       slug: 'p',
       hero: img('h', '/t.webp'),
@@ -91,12 +91,34 @@ describe('resolvePlaceImages precedence', () => {
     })
     expect(out.heroImageUrl).toBe('/media/h/1280.webp')
     expect(out.heroThumbUrl).toBe('/t.webp')
-    expect(out.gallery[0]).toBe('/media/g1/1280.webp')
-    expect(out.gallery[1]).toBe(gphotoUrl('p', 0))
-    expect(out.googleSlots).toBe(GOOGLE_PHOTO_MAX)
+    expect(out.gallery).toEqual(['/media/g1/1280.webp'])
+    expect(out.googleSlots).toBe(0)
   })
 
-  it('uses Google photos when ours are missing', () => {
+  it('uploads rank before free photos (#51), and free photos block Google', () => {
+    const free = { ...img('f1'), free: true }
+    const out = resolvePlaceImages({
+      slug: 'p',
+      hero: free,
+      gallery: [img('u1')],
+      isShared: never,
+      google: true,
+    })
+    expect(out.heroImageUrl).toBe('/media/u1/1280.webp')
+    expect(out.gallery).toEqual(['/media/f1/1280.webp'])
+    expect(out.googleSlots).toBe(0)
+    const onlyFree = resolvePlaceImages({
+      slug: 'p',
+      hero: free,
+      gallery: [],
+      isShared: never,
+      google: true,
+    })
+    expect(onlyFree.heroImageUrl).toBe('/media/f1/1280.webp')
+    expect(onlyFree.googleSlots).toBe(0)
+  })
+
+  it('uses ONE Google photo by default when the place has nothing of its own', () => {
     const out = resolvePlaceImages({
       slug: 'p',
       hero: null,
@@ -106,23 +128,48 @@ describe('resolvePlaceImages precedence', () => {
     })
     expect(out.heroImageUrl).toBe(gphotoUrl('p', 0))
     expect(out.heroThumbUrl).toBe(gphotoUrl('p', 0, 400))
-    expect(out.gallery).toEqual(
-      Array.from({ length: GOOGLE_PHOTO_MAX - 1 }, (_, i) => gphotoUrl('p', i + 1)),
-    )
+    expect(out.gallery).toEqual([])
+    expect(out.googleSlots).toBe(1)
   })
 
-  it('replaces photos shared with another place (duplicates) by Google photos', () => {
-    const shared = new Set(['h'])
+  it('GOOGLE_PLACES_MAX_PHOTOS: more slots when configured, none at 0, capped at 10', () => {
+    const base = { slug: 'p', hero: null, gallery: [], isShared: never, google: true }
+    expect(resolvePlaceImages({ ...base, googleMax: 3 }).gallery).toEqual([
+      gphotoUrl('p', 1),
+      gphotoUrl('p', 2),
+    ])
+    expect(resolvePlaceImages({ ...base, googleMax: 0 })).toEqual({
+      heroImageUrl: null,
+      heroThumbUrl: null,
+      gallery: [],
+      googleSlots: 0,
+    })
+    expect(resolvePlaceImages({ ...base, googleMax: 99 }).googleSlots).toBe(GOOGLE_PHOTO_MAX)
+  })
+
+  it('photos shared with another place count as missing: one Google photo instead', () => {
+    const shared = new Set(['h', 'g1'])
     const out = resolvePlaceImages({
       slug: 'p',
       hero: img('h'),
-      gallery: [img('g1'), img('h')],
+      gallery: [img('g1'), { ...img('h') }],
       isShared: (image) => shared.has(image.id),
       google: true,
     })
+    expect(out.heroImageUrl).toBe(gphotoUrl('p', 0))
+    expect(out.gallery).toEqual([])
+  })
+
+  it('a unique photo next to shared ones still wins over Google', () => {
+    const out = resolvePlaceImages({
+      slug: 'p',
+      hero: img('h'),
+      gallery: [img('g1')],
+      isShared: (image) => image.id === 'h',
+      google: true,
+    })
     expect(out.heroImageUrl).toBe('/media/g1/1280.webp')
-    expect(out.gallery).not.toContain('/media/h/1280.webp')
-    expect(out.gallery[0]).toBe(gphotoUrl('p', 0))
+    expect(out.googleSlots).toBe(0)
   })
 
   it('keeps shared photos when there is no Google match', () => {

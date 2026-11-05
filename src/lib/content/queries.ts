@@ -106,7 +106,7 @@ import {
 import { resolveChildAges } from './child-ages'
 import { parseVideoUrl } from './video'
 import { imageFileKey } from './image-dedupe'
-import { googlePhotosEnabled } from '@/lib/google-places/config'
+import { googleMaxPhotos, googlePhotosEnabled } from '@/lib/google-places/config'
 import { isUsableMatch, resolvePlaceImages, type OwnImage } from '@/lib/google-places/photo-urls'
 
 // ---------------------------------------------------------------------------
@@ -184,6 +184,15 @@ type ActivityRow = typeof activities.$inferSelect
  * same-origin paths so `next dev` can serve them out of `public/`.
  */
 const CDN_BASE = (process.env.NEXT_PUBLIC_CDN_URL ?? '').replace(/\/+$/, '')
+
+/**
+ * A free photo (#51 «Find free photos»: `media.source` is set) rather than our
+ * own upload. Read defensively so this works before and after migration 0041.
+ */
+function isFreePhoto(row: MediaRow | null | undefined): boolean {
+  const source = (row as { source?: unknown } | null | undefined)?.source
+  return typeof source === 'string' && source !== ''
+}
 
 export function mediaUrl(objectKey: string): string {
   const key = objectKey.replace(/^\/+/, '')
@@ -1636,12 +1645,13 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
   for (const { place, hero } of rows) {
     const heroDto = toMedia(hero)
     const heroImage: OwnImage | null = heroDto
-      ? { id: heroDto.id, url: heroDto.url, thumb: thumbUrl(hero) }
+      ? { id: heroDto.id, url: heroDto.url, thumb: thumbUrl(hero), free: isFreePhoto(hero) }
       : null
     const gallery: OwnImage[] = []
     for (const id of place.galleryImageIds ?? []) {
       const dto = toMedia(galleryById.get(id))
-      if (dto) gallery.push({ id: dto.id, url: dto.url })
+      const row = galleryById.get(id)
+      if (dto) gallery.push({ id: dto.id, url: dto.url, free: isFreePhoto(row) })
     }
     ownImages.set(place.id, { hero: heroImage, gallery })
     for (const image of heroImage ? [heroImage, ...gallery] : gallery) {
@@ -1653,6 +1663,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
     (users.get(`id:${image.id}`)?.size ?? 0) > 1 ||
     (users.get(`file:${imageFileKey(image.url)}`)?.size ?? 0) > 1
   const googleOn = googlePhotosEnabled()
+  const googleMax = googleMaxPhotos()
 
   return rows.map(
     ({
@@ -1677,6 +1688,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         slug: place.slug,
         ...own,
         isShared,
+        googleMax,
         google: googleOn && isUsableMatch(place.googleMatchStatus, place.googlePlaceId),
       })
       return {

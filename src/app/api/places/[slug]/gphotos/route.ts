@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server'
 
 import { googlePlaceForViewer } from '@/lib/google-places/place-access'
+import { googleMaxPhotos } from '@/lib/google-places/config'
 import { GOOGLE_PHOTO_MAX } from '@/lib/google-places/photo-urls'
 import { livePlacePhotos } from '@/lib/google-places/server'
 
@@ -22,7 +23,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE })
   }
   try {
-    const photos = (await livePlacePhotos(placeId)).slice(0, GOOGLE_PHOTO_MAX)
+    const photos = (await livePlacePhotos(placeId)).slice(
+      0,
+      Math.min(GOOGLE_PHOTO_MAX, googleMaxPhotos()),
+    )
     return NextResponse.json(
       {
         photos: photos.map((photo) => ({

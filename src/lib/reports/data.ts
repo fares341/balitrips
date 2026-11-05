@@ -309,14 +309,7 @@ export async function paymentOutcomes(
 }
 
 export type SalesGroup =
-  | 'itinerary'
-  | 'activity'
-  | 'package'
-  | 'vip'
-  | 'map'
-  | 'driver'
-  | 'custom'
-  | 'other'
+  'itinerary' | 'activity' | 'package' | 'vip' | 'map' | 'driver' | 'custom' | 'other'
 
 const salesGroupSql = sql<string>`case
   when ${orderItems.kind} in ('activity', 'activity_tier') then 'activity'

@@ -15,7 +15,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 
-import { photoRedirectMaxAge } from '@/lib/google-places/config'
+import { googleMaxPhotos, photoRedirectMaxAge } from '@/lib/google-places/config'
 import { GoogleCapError } from '@/lib/google-places/client'
 import { googlePlaceForViewer } from '@/lib/google-places/place-access'
 import { GOOGLE_PHOTO_MAX, snapWidth } from '@/lib/google-places/photo-urls'
@@ -34,7 +34,7 @@ export async function GET(
 ) {
   const { slug, i } = await params
   const index = Number(i)
-  if (!/^\d+$/.test(i) || index >= GOOGLE_PHOTO_MAX) return notFound()
+  if (!/^\d+$/.test(i) || index >= Math.min(GOOGLE_PHOTO_MAX, googleMaxPhotos())) return notFound()
 
   const placeId = await googlePlaceForViewer(slug)
   const client = googleClient()

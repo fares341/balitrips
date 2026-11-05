@@ -76,9 +76,7 @@ interface StripeWalletDetails {
 interface StripeExpandedIntent {
   id: string
   payment_method?:
-    | string
-    | { id?: string; type?: string | null; card?: StripeWalletDetails | null }
-    | null
+    string | { id?: string; type?: string | null; card?: StripeWalletDetails | null } | null
   latest_charge?:
     | string
     | {

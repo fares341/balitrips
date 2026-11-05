@@ -17,11 +17,7 @@ export function isLiveMode(): boolean {
 
 /** رموز مشاكل الإعداد في الوضع الحقيقي — Studio يعرضها بلغة صاحب العمل. */
 export type LiveModeIssue =
-  | 'sandbox_payments'
-  | 'admin_2fa_off'
-  | 'no_payments'
-  | 'no_email'
-  | 'no_storage'
+  'sandbox_payments' | 'admin_2fa_off' | 'no_payments' | 'no_email' | 'no_storage'
 
 export interface LiveModeWarning {
   code: LiveModeIssue

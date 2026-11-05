@@ -97,18 +97,16 @@ export async function problemJobs(limit = 50): Promise<{ failed: JobRow[]; dead:
       order by created_on desc
       limit ${limit})
   `)
-  const mapped = rows.map(
-    (row): JobRow => ({
-      id: row.id,
-      name: row.name,
-      state: row.state,
-      retryCount: Number(row.retry_count),
-      createdOn: new Date(row.created_on),
-      completedOn: row.completed_on ? new Date(row.completed_on) : null,
-      sourceName: row.source_name,
-      error: errorOf(row.output),
-    }),
-  )
+  const mapped = rows.map((row): JobRow => ({
+    id: row.id,
+    name: row.name,
+    state: row.state,
+    retryCount: Number(row.retry_count),
+    createdOn: new Date(row.created_on),
+    completedOn: row.completed_on ? new Date(row.completed_on) : null,
+    sourceName: row.source_name,
+    error: errorOf(row.output),
+  }))
   return {
     failed: mapped.filter((row) => !row.name.endsWith('.dlq')),
     dead: mapped.filter((row) => row.name.endsWith('.dlq')),

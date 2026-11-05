@@ -59,6 +59,11 @@ export interface OwnImage {
   url: string
   /** Small rung for cards, when known. */
   thumb?: string | null
+  /**
+   * A free photo found by «Find free photos» (#51: `media.source` set), as
+   * opposed to our own upload. Uploads rank first, then free photos.
+   */
+  free?: boolean
 }
 
 export interface ResolvedImages {
@@ -72,13 +77,17 @@ export interface ResolvedImages {
 /**
  * Which photos a place shows.
  *
- * Without a usable Google match (or with the feature off) it is exactly the
- * old behaviour: our hero and gallery.
+ * Without a usable Google match (or with the feature off, or on any surface
+ * other than place details) it is exactly the old behaviour: our hero and
+ * gallery.
  *
- * With one: our own photos that no other place uses come first (hero first),
- * then up to `GOOGLE_PHOTO_MAX` Google photos. Our photos that are missing,
- * or shared with another place (the duplicates the audit flags), are
- * replaced by Google's.
+ * Place details with a usable match (owner, Nov 2026 — at most one Google
+ * photo per place):
+ *   1. our own uploads that no other place uses,
+ *   2. then free photos (#51) that no other place uses,
+ *   3. and ONLY when 1 and 2 are both empty: Google photos #0..googleMax-1
+ *      (`GOOGLE_PLACES_MAX_PHOTOS`, default 1).
+ * Photos shared with another place (duplicates) count as missing.
  */
 export function resolvePlaceImages(input: {
   slug: string
@@ -87,6 +96,8 @@ export function resolvePlaceImages(input: {
   /** Media ids (and file keys) used by more than one place. */
   isShared: (image: OwnImage) => boolean
   google: boolean
+  /** Google photos offered when the place has nothing of its own. Default 1. */
+  googleMax?: number
   galleryMax?: number
 }): ResolvedImages {
   const galleryMax = input.galleryMax ?? 12
@@ -99,20 +110,31 @@ export function resolvePlaceImages(input: {
     }
   }
 
-  const own: OwnImage[] = []
+  const unique: OwnImage[] = []
   for (const image of [input.hero, ...input.gallery]) {
     if (!image || image.url === '' || input.isShared(image)) continue
-    if (own.some((one) => one.id === image.id || one.url === image.url)) continue
-    own.push(image)
+    if (unique.some((one) => one.id === image.id || one.url === image.url)) continue
+    unique.push(image)
   }
-  const google = Array.from({ length: GOOGLE_PHOTO_MAX }, (_, i) => gphotoUrl(input.slug, i))
-  const all = [...own.map((image) => image.url), ...google]
-  const first = own[0]
+  // Uploads first, then free photos; stable within each group.
+  const own = [...unique.filter((image) => !image.free), ...unique.filter((image) => image.free)]
+  if (own.length > 0) {
+    const first = own[0]!
+    return {
+      heroImageUrl: first.url,
+      heroThumbUrl: first.thumb ?? first.url,
+      gallery: own.slice(1, 1 + galleryMax).map((image) => image.url),
+      googleSlots: 0,
+    }
+  }
+  const slots = Math.min(Math.max(Math.round(input.googleMax ?? 1), 0), GOOGLE_PHOTO_MAX)
+  if (slots === 0) return { heroImageUrl: null, heroThumbUrl: null, gallery: [], googleSlots: 0 }
+  const google = Array.from({ length: slots }, (_, i) => gphotoUrl(input.slug, i))
   return {
-    heroImageUrl: all[0] ?? null,
-    heroThumbUrl: first ? (first.thumb ?? first.url) : gphotoUrl(input.slug, 0, 400),
-    gallery: all.slice(1, 1 + galleryMax),
-    googleSlots: GOOGLE_PHOTO_MAX,
+    heroImageUrl: google[0]!,
+    heroThumbUrl: gphotoUrl(input.slug, 0, 400),
+    gallery: google.slice(1, 1 + galleryMax),
+    googleSlots: slots,
   }
 }
 
