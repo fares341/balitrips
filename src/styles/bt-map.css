@@ -1849,6 +1849,9 @@
     display: none;
   }
   .mx3 {
+    /* svh first (always the visible area, iOS ≥ 15.4 without dvh too), then
+       dvh where supported, so the cards never sit under Safari's bottom bar. */
+    height: calc(100svh - var(--tabbar-h, 64px) - env(safe-area-inset-bottom, 0px));
     height: calc(100dvh - var(--tabbar-h, 64px) - env(safe-area-inset-bottom, 0px));
   }
   body:has(.mx3) .ai-fab.is-map {
