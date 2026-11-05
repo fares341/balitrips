@@ -156,6 +156,9 @@ say "One-time data jobs"
 "${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx \
   --require ./scripts/data-jobs/server-only-shim.cjs scripts/data-jobs/replace-activities.ts ||
   echo "  ! replace-activities data job failed — see the log above; it retries on the next deploy"
+"${COMPOSE[@]}" run --rm --no-deps worker node_modules/.bin/tsx \
+  --require ./scripts/data-jobs/server-only-shim.cjs scripts/data-jobs/recategorize-services.ts ||
+  echo "  ! recategorize-services data job failed — see the log above; it retries on the next deploy"
 
 # --- App image --------------------------------------------------------------
 # `next build` reads the database (prerendered pages). The build container
