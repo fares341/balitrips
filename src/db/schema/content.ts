@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   boolean,
@@ -28,6 +28,7 @@ import {
   timestamps,
   type Localized,
 } from './_shared'
+import { users } from './auth'
 import { plans } from './product'
 
 // ---------------------------------------------------------------------------
@@ -648,6 +649,23 @@ export const itineraries = pgTable('itineraries', {
    */
   version: integer('version').notNull().default(1),
 
+  // --- Itineraries phase 1 (migration 0042): what the public page may show ---
+
+  /** «وش بتحصل عليه»: preview numbers typed in Studio (e.g. 52 places). */
+  previewStats:
+    jsonb('preview_stats').$type<
+      { icon: string; value: string; label: Partial<Record<string, string>> }[]
+    >(),
+  /** Generic caption per gallery image (media id → text). Never a place name. */
+  galleryCaptions:
+    jsonb('gallery_captions').$type<Record<string, Partial<Record<string, string>>>>(),
+  /** Days shown in «لمحة سريعة على أيامك» before «+X أيام». */
+  teaserDaysVisible: integer('teaser_days_visible').notNull().default(3),
+  /** «الأكثر طلبًا» badge. */
+  isPopular: boolean('is_popular').notNull().default(false),
+  seoTitle: localized('seo_title'),
+  seoDescription: localized('seo_description'),
+
   ...publishing,
   ...timestamps,
   ...softDelete,
@@ -676,6 +694,9 @@ export const itineraryDays = pgTable(
     description: localized('description'),
     /** Sale mode B: this day's activity can be booked from the itinerary page. */
     bookable: boolean('bookable').notNull().default(false),
+    /** Phase 1 (0042): the only day fields the public page may show. */
+    teaserImageId: uuid('teaser_image_id').references(() => media.id, { onDelete: 'set null' }),
+    teaserMood: localized('teaser_mood'),
   },
   (t) => [uniqueIndex('itinerary_day_unique').on(t.itineraryId, t.dayNumber)],
 )
@@ -743,9 +764,34 @@ export const itineraryDocuments = pgTable(
     /** Key in the PRIVATE bucket. Served only by presigned URL. */
     objectKey: text('object_key').notNull(),
     bytes: integer('bytes'),
+    /**
+     * Phase 1 (0042): `generated` (rendered from the days) or `uploaded` (a
+     * file from Studio). Uploaded rows carry `version = 0`, which no
+     * itinerary version equals, so readers keyed on the itinerary version
+     * only ever see generated files; the current upload is also pointed to
+     * by `itineraries.uploaded_pdf_keys`.
+     */
+    source: varchar('source', { length: 16 }).notNull().default('generated'),
+    /** Uploaded: 1, 2, 3… per itinerary + locale. 0 for generated rows. */
+    fileVersion: integer('file_version').notNull().default(0),
+    /** Uploaded: the file delivered now. Older ones stay, archived. */
+    isCurrent: boolean('is_current').notNull().default(true),
+    /** The name the buyer's copy is saved as. */
+    downloadFilename: varchar('download_filename', { length: 160 }),
+    notifyBuyers: boolean('notify_buyers').notNull().default(false),
+    uploadedById: uuid('uploaded_by_id').references((): AnyPgColumn => users.id, {
+      onDelete: 'set null',
+    }),
     ...timestamps,
   },
-  (t) => [uniqueIndex('itinerary_doc_unique').on(t.itineraryId, t.version, t.locale)],
+  (t) => [
+    uniqueIndex('itinerary_doc_unique')
+      .on(t.itineraryId, t.version, t.locale)
+      .where(sql`${t.source} = 'generated'`),
+    uniqueIndex('itinerary_doc_upload_unique')
+      .on(t.itineraryId, t.locale, t.fileVersion)
+      .where(sql`${t.source} = 'uploaded'`),
+  ],
 )
 
 // ---------------------------------------------------------------------------

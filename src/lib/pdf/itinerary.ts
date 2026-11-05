@@ -20,7 +20,7 @@
  * repair whatever is missing without re-rendering the world.
  */
 
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import {
@@ -283,6 +283,8 @@ export async function generateItineraryDocuments(
           itineraryDocuments.version,
           itineraryDocuments.locale,
         ],
+        // The unique index covers generated rows only (migration 0042).
+        targetWhere: sql`${itineraryDocuments.source} = 'generated'`,
         set: { objectKey, bytes: upload.bytes },
       })
 
