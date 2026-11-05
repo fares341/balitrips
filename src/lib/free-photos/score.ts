@@ -68,6 +68,9 @@ export function cleanTitle(title: string): string {
 export const NOT_A_PHOTO =
   /\b(map|locator|location map|logo|flag|coat of arms|emblem|diagram|icon|seal|svg|chart|plan|sign(board)?)\b/i
 
+/** A street / road view near the place: plausible, but never auto-applied. */
+export const STREET_VIEW = /(^|\s)(jl|jln|jalan|street|road|gang)(\.|\s|$)/i
+
 export function distanceScore(m: number | null): number {
   if (m === null || !Number.isFinite(m)) return 0
   if (m <= 50) return 1
@@ -114,7 +117,8 @@ export function scoreCandidate(place: ScorePlace, c: ScoreInput): Scored {
     (distanceM === null && nameScore >= 0.85)
   )
     tier = 'good'
-  else if (score < 0.3 && nameScore < 0.5) tier = 'reject'
+  if (tier === 'high' && STREET_VIEW.test(title)) tier = 'good'
+  if (tier === 'fair' && score < 0.3 && nameScore < 0.5) tier = 'reject'
   return { distanceM, nameScore, resScore, score, tier }
 }
 

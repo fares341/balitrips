@@ -75,6 +75,21 @@ describe('scoreCandidate', () => {
     expect(weak.tier === 'fair' || weak.tier === 'reject').toBe(true)
   })
 
+  it('a street view next to the place is never auto-applied', () => {
+    const s = scoreCandidate(
+      { names: ['Pantai Nunggalan'], lat: -8.83, lon: 115.1 },
+      {
+        title: 'File:Jl. Batu Nunggalan, Pecatu - panoramio.jpg',
+        lat: -8.83,
+        lon: 115.1,
+        width: 2592,
+        height: 1944,
+        via: 'geo',
+      },
+    )
+    expect(s.tier).toBe('good')
+  })
+
   it('cleanTitle strips namespace, extension and camera numbers', () => {
     expect(cleanTitle('File:Pura_Ulun_Danu_DSC_0042.JPG')).toBe('Pura Ulun Danu')
   })
