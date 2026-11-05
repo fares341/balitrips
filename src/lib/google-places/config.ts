@@ -54,11 +54,3 @@ export function matchDelayMs(): number {
 export function photoRedirectMaxAge(): number {
   return envInt('GOOGLE_PHOTO_REDIRECT_MAX_AGE', 300, 0, 3600)
 }
-
-/**
- * Google photos per place, offered only when the place has no unique photo of
- * its own (upload or free photo). Owner, Nov 2026: 1. Range 0..10.
- */
-export function googleMaxPhotos(): number {
-  return envInt('GOOGLE_PLACES_MAX_PHOTOS', 1, 0, 10)
-}

@@ -57,14 +57,21 @@ const stop = (event: MouseEvent) => event.stopPropagation()
 export function GooglePhotoCreditView({
   photo,
   lang,
+  compact = false,
 }: {
   photo: CreditPhoto | null
   lang?: string
+  /** Map cards: smaller, «© <author> · Google Maps» without the label. */
+  compact?: boolean
 }) {
   const authors = photo?.authors ?? []
   return (
-    <span className="gp-credit" data-testid="gphoto-credit" onClick={stop}>
-      {creditLabel(lang)}:{' '}
+    <span
+      className={compact ? 'gp-credit is-compact' : 'gp-credit'}
+      data-testid="gphoto-credit"
+      onClick={stop}
+    >
+      {compact ? '© ' : `${creditLabel(lang)}: `}
       {authors.length > 0
         ? authors.map((author, i) => (
             <span key={`${author.name}-${i}`}>
@@ -91,7 +98,13 @@ export function GooglePhotoCreditView({
   )
 }
 
-export function GooglePhotoCredit({ src }: { src: string | null | undefined }) {
+export function GooglePhotoCredit({
+  src,
+  compact = false,
+}: {
+  src: string | null | undefined
+  compact?: boolean
+}) {
   const parsed = parseGphotoUrl(src)
   const slug = parsed?.slug ?? null
   const index = parsed?.index ?? 0
@@ -113,5 +126,11 @@ export function GooglePhotoCredit({ src }: { src: string | null | undefined }) {
   }, [slug])
 
   if (slug === null || state === null || state.slug !== slug) return null
-  return <GooglePhotoCreditView photo={state.photos[index] ?? null} lang={state.lang} />
+  return (
+    <GooglePhotoCreditView
+      photo={state.photos[index] ?? null}
+      lang={state.lang}
+      compact={compact}
+    />
+  )
 }

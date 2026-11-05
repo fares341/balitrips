@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -52,4 +50,16 @@ export async function recentGoogleUsage(days = 31): Promise<UsageRow[]> {
     .from(googleApiUsage)
     .where(gte(googleApiUsage.day, since))
     .orderBy(desc(googleApiUsage.day), googleApiUsage.kind)
+}
+
+/**
+ * True once today's billable Google calls reached the cap. Pages then show
+ * the fallback photo (free photo / glyph) instead of the Google one, silently.
+ */
+export async function googleCapReached(): Promise<boolean> {
+  const [row] = await db
+    .select({ total: sql<number>`coalesce(sum(${googleApiUsage.count}), 0)::int` })
+    .from(googleApiUsage)
+    .where(and(eq(googleApiUsage.day, usageDay()), inArray(googleApiUsage.kind, [...BILLABLE])))
+  return Number(row?.total ?? 0) >= dailyCap().billable
 }

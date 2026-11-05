@@ -46,15 +46,16 @@ test.describe('google place photos (mocked)', () => {
     ).toBe(404)
   })
 
-  test('cards, lists and search keep our own media (details only)', async ({ request }) => {
-    for (const path of [
-      '/api/map/places?locale=en',
-      `/api/places/search?q=${encodeURIComponent(slug)}&locale=en`,
-    ]) {
-      const res = await request.get(path)
-      if (res.status() !== 200) continue
-      expect(await res.text(), path).not.toContain('/gphoto/')
+  test('map cards and the list get the same ONE Google photo', async ({ request }) => {
+    const res = await request.get('/api/map/places?locale=en')
+    expect(res.status()).toBe(200)
+    const body = (await res.json()) as {
+      places: { slug: string; thumb: string | null; images: string[] }[]
     }
+    const place = body.places.find((one) => one.slug === slug)
+    test.skip(place === undefined, 'linked place is not in a map category')
+    expect(place!.thumb).toBe(`/api/places/${slug}/gphoto/0?w=400`)
+    expect(place!.images).toEqual([`/api/places/${slug}/gphoto/0`])
   })
 
   test('the photo credit API answers live attributions', async ({ request }) => {

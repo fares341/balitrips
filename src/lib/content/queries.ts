@@ -106,7 +106,8 @@ import {
 import { resolveChildAges } from './child-ages'
 import { parseVideoUrl } from './video'
 import { imageFileKey } from './image-dedupe'
-import { googleMaxPhotos, googlePhotosEnabled } from '@/lib/google-places/config'
+import { googlePhotosEnabled } from '@/lib/google-places/config'
+import { googleCapReached } from '@/lib/google-places/usage'
 import { isUsableMatch, resolvePlaceImages, type OwnImage } from '@/lib/google-places/photo-urls'
 
 // ---------------------------------------------------------------------------
@@ -1632,9 +1633,8 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
   const galleryById = new Map(galleryRows.map((row) => [row.id, row]))
   const subKeyById = new Map(subRows.map((row) => [row.id, row.key]))
 
-  // Our own images per place, and which of them more than one place uses
-  // (the same media row, or the same file under another row). With a Google
-  // match those duplicates give way to the place's Google photos.
+  // Our own images per place, and how many places use each (the same media
+  // row, or the same file under another row): see `resolvePlaceImages`.
   const ownImages = new Map<string, { hero: OwnImage | null; gallery: OwnImage[] }>()
   const users = new Map<string, Set<string>>()
   const addUser = (key: string, placeId: string) => {
@@ -1651,7 +1651,8 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
     for (const id of place.galleryImageIds ?? []) {
       const dto = toMedia(galleryById.get(id))
       const row = galleryById.get(id)
-      if (dto) gallery.push({ id: dto.id, url: dto.url, free: isFreePhoto(row) })
+      if (dto)
+        gallery.push({ id: dto.id, url: dto.url, thumb: thumbUrl(row), free: isFreePhoto(row) })
     }
     ownImages.set(place.id, { hero: heroImage, gallery })
     for (const image of heroImage ? [heroImage, ...gallery] : gallery) {
@@ -1659,11 +1660,15 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       addUser(`file:${imageFileKey(image.url)}`, place.id)
     }
   }
-  const isShared = (image: OwnImage) =>
-    (users.get(`id:${image.id}`)?.size ?? 0) > 1 ||
-    (users.get(`file:${imageFileKey(image.url)}`)?.size ?? 0) > 1
-  const googleOn = googlePhotosEnabled()
-  const googleMax = googleMaxPhotos()
+  const placesUsing = (image: OwnImage) =>
+    Math.max(
+      users.get(`id:${image.id}`)?.size ?? 0,
+      users.get(`file:${imageFileKey(image.url)}`)?.size ?? 0,
+    )
+  // Google photo #0 needs the feature on and today's cap not reached; over the
+  // cap, places fall back to free photos / the glyph silently (≤60 s lag
+  // through the map cache, during which the photo route answers 404).
+  const googleOn = googlePhotosEnabled() && !(await googleCapReached().catch(() => true))
 
   return rows.map(
     ({
@@ -1680,15 +1685,11 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       categoryLabel,
     }) => {
       const own = ownImages.get(place.id) ?? { hero: null, gallery: [] }
-      // Cards, lists, thumbs, search: our own media only (owner, Nov 2026).
-      const images = resolvePlaceImages({ slug: place.slug, ...own, isShared, google: false })
-      // Place details (map sheet gallery, /places/[slug]): Google photos where
-      // ours are missing or shared, when the place has a usable match.
-      const details = resolvePlaceImages({
+      // The ONE photo of this place, everywhere (owner, Nov 2026).
+      const images = resolvePlaceImages({
         slug: place.slug,
         ...own,
-        isShared,
-        googleMax,
+        placesUsing,
         google: googleOn && isUsableMatch(place.googleMatchStatus, place.googlePlaceId),
       })
       return {
@@ -1726,9 +1727,6 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         detailedDescription: place.detailedDescription,
         videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
         gallery: images.gallery,
-        detailImages: [details.heroImageUrl, ...details.gallery].filter(
-          (url, i, all): url is string => !!url && all.indexOf(url) === i,
-        ),
         subCategoryKeys: (place.subCategoryIds ?? [])
           .map((id) => subKeyById.get(id))
           .filter((key): key is string => key !== undefined),
@@ -1748,12 +1746,6 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
  * `{ id, locked, requiredEntitlement }`.
  */
 export type MapPlaceRecord = FullMapPlace & {
-  /**
-   * Place-details photos only (map sheet gallery, /places/[slug] hero and
-   * gallery): ours, plus Google photo slots where ours are missing or shared
-   * (migration 0040). Every other surface uses `heroImageUrl` / `gallery`.
-   */
-  detailImages: string[]
   /** A small rung (~320px WebP) for map cards; the original when unoptimised. */
   heroThumbUrl: string | null
   /** The linked live activity's price («From»), when it has one. */

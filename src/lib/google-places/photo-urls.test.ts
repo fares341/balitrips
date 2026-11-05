@@ -7,7 +7,7 @@ import {
   parseGphotoUrl,
   resolvePlaceImages,
   snapWidth,
-  trimGooglePhotos,
+  WIDELY_SHARED,
   type OwnImage,
 } from './photo-urls'
 
@@ -16,7 +16,6 @@ const img = (id: string, thumb?: string): OwnImage => ({
   url: `/media/${id}/1280.webp`,
   thumb: thumb ?? null,
 })
-const never = () => false
 
 describe('Google photo URLs', () => {
   it('builds and parses our own photo route', () => {
@@ -32,16 +31,6 @@ describe('Google photo URLs', () => {
     })
     expect(parseGphotoUrl('/media/abc/1280.webp')).toBeNull()
     expect(parseGphotoUrl(null)).toBeNull()
-  })
-
-  it('drops Google slots a place does not have', () => {
-    const urls = ['/media/a/1.webp', gphotoUrl('p', 0), gphotoUrl('p', 1), gphotoUrl('p', 2)]
-    expect(trimGooglePhotos(urls, 2)).toEqual([
-      '/media/a/1.webp',
-      gphotoUrl('p', 0),
-      gphotoUrl('p', 1),
-    ])
-    expect(trimGooglePhotos(urls, 0)).toEqual(['/media/a/1.webp'])
   })
 
   it('only auto and confirmed matches with an id are used', () => {
@@ -60,157 +49,89 @@ describe('Google photo URLs', () => {
   })
 })
 
-describe('resolvePlaceImages precedence', () => {
-  it('without Google it is exactly our media', () => {
+describe('the ONE photo of a place (owner, Nov 2026, final)', () => {
+  const free = (id: string): OwnImage => ({ ...img(id, `/media/${id}/320.webp`), free: true })
+  const uses = (counts: Record<string, number>) => (image: OwnImage) => counts[image.id] ?? 1
+  const base = { slug: 'p', hero: null, gallery: [] as OwnImage[], placesUsing: uses({}) }
+
+  it("1. the owner's own unique upload wins, even over Google", () => {
     const out = resolvePlaceImages({
-      slug: 'p',
+      ...base,
       hero: img('h', '/t.webp'),
-      gallery: [img('g1'), img('g2')],
-      isShared: never,
-      google: false,
+      gallery: [img('g1')],
+      google: true,
     })
     expect(out).toEqual({
       heroImageUrl: '/media/h/1280.webp',
       heroThumbUrl: '/t.webp',
-      gallery: ['/media/g1/1280.webp', '/media/g2/1280.webp'],
-      googleSlots: 0,
-    })
-    expect(
-      resolvePlaceImages({ slug: 'p', hero: null, gallery: [], isShared: never, google: false })
-        .heroImageUrl,
-    ).toBeNull()
-  })
-
-  it('a place with its own unique upload gets no Google photo at all', () => {
-    const out = resolvePlaceImages({
-      slug: 'p',
-      hero: img('h', '/t.webp'),
-      gallery: [img('g1')],
-      isShared: never,
-      google: true,
-    })
-    expect(out.heroImageUrl).toBe('/media/h/1280.webp')
-    expect(out.heroThumbUrl).toBe('/t.webp')
-    expect(out.gallery).toEqual(['/media/g1/1280.webp'])
-    expect(out.googleSlots).toBe(0)
-  })
-
-  it('uploads rank before free photos (#51), and free photos block Google', () => {
-    const free = { ...img('f1'), free: true }
-    const out = resolvePlaceImages({
-      slug: 'p',
-      hero: free,
-      gallery: [img('u1')],
-      isShared: never,
-      google: true,
-    })
-    expect(out.heroImageUrl).toBe('/media/u1/1280.webp')
-    expect(out.gallery).toEqual(['/media/f1/1280.webp'])
-    expect(out.googleSlots).toBe(0)
-    const onlyFree = resolvePlaceImages({
-      slug: 'p',
-      hero: free,
       gallery: [],
-      isShared: never,
-      google: true,
+      source: 'own',
     })
-    expect(onlyFree.heroImageUrl).toBe('/media/f1/1280.webp')
-    expect(onlyFree.googleSlots).toBe(0)
   })
 
-  it('uses ONE Google photo by default when the place has nothing of its own', () => {
-    const out = resolvePlaceImages({
-      slug: 'p',
-      hero: null,
+  it('2. otherwise Google photo #0 — before free photos', () => {
+    const out = resolvePlaceImages({ ...base, hero: free('f1'), google: true })
+    expect(out).toEqual({
+      heroImageUrl: gphotoUrl('p', 0),
+      heroThumbUrl: gphotoUrl('p', 0, 400),
       gallery: [],
-      isShared: never,
-      google: true,
+      source: 'google',
     })
-    expect(out.heroImageUrl).toBe(gphotoUrl('p', 0))
-    expect(out.heroThumbUrl).toBe(gphotoUrl('p', 0, 400))
-    expect(out.gallery).toEqual([])
-    expect(out.googleSlots).toBe(1)
   })
 
-  it('GOOGLE_PLACES_MAX_PHOTOS: more slots when configured, none at 0, capped at 10', () => {
-    const base = { slug: 'p', hero: null, gallery: [], isShared: never, google: true }
-    expect(resolvePlaceImages({ ...base, googleMax: 3 }).gallery).toEqual([
-      gphotoUrl('p', 1),
-      gphotoUrl('p', 2),
-    ])
-    expect(resolvePlaceImages({ ...base, googleMax: 0 })).toEqual({
-      heroImageUrl: null,
-      heroThumbUrl: null,
-      gallery: [],
-      googleSlots: 0,
-    })
-    expect(resolvePlaceImages({ ...base, googleMax: 99 }).googleSlots).toBe(GOOGLE_PHOTO_MAX)
-  })
-
-  it('photos shared with another place count as missing: one Google photo instead', () => {
-    const shared = new Set(['h', 'g1'])
+  it('3. free photos are the fallback without a Google match (or over the cap)', () => {
     const out = resolvePlaceImages({
-      slug: 'p',
-      hero: img('h'),
-      gallery: [img('g1'), { ...img('h') }],
-      isShared: (image) => shared.has(image.id),
-      google: true,
-    })
-    expect(out.heroImageUrl).toBe(gphotoUrl('p', 0))
-    expect(out.gallery).toEqual([])
-  })
-
-  it('a unique photo next to shared ones still wins over Google', () => {
-    const out = resolvePlaceImages({
-      slug: 'p',
-      hero: img('h'),
-      gallery: [img('g1')],
-      isShared: (image) => image.id === 'h',
-      google: true,
-    })
-    expect(out.heroImageUrl).toBe('/media/g1/1280.webp')
-    expect(out.googleSlots).toBe(0)
-  })
-
-  it('keeps shared photos when there is no Google match', () => {
-    const out = resolvePlaceImages({
-      slug: 'p',
-      hero: img('h'),
-      gallery: [],
-      isShared: () => true,
+      ...base,
+      hero: free('f1'),
+      gallery: [free('f2')],
       google: false,
     })
-    expect(out.heroImageUrl).toBe('/media/h/1280.webp')
+    expect(out.heroImageUrl).toBe('/media/f1/1280.webp')
+    expect(out.heroThumbUrl).toBe('/media/f1/320.webp')
+    expect(out.source).toBe('free')
   })
 
-  it('caps the gallery', () => {
-    const many = Array.from({ length: 20 }, (_, i) => img(`g${i}`))
+  it('4. a photo shared with one other place comes after free photos', () => {
+    const placesUsing = uses({ h: 2 })
     expect(
-      resolvePlaceImages({ slug: 'p', hero: null, gallery: many, isShared: never, google: true })
-        .gallery,
-    ).toHaveLength(12)
-  })
-})
-
-describe('Google photos are for place details only (owner, Nov 2026)', () => {
-  it('cards, lists and thumbs keep our media and the glyph fallback; details get Google', () => {
-    const own = { hero: null, gallery: [] as OwnImage[], isShared: never }
-    const surfaces = resolvePlaceImages({ slug: 'p', ...own, google: false })
-    const details = resolvePlaceImages({ slug: 'p', ...own, google: true })
-    // No hero on cards → the category-glyph placeholder, never a Google URL.
-    expect(surfaces.heroImageUrl).toBeNull()
-    expect(surfaces.heroThumbUrl).toBeNull()
-    expect(surfaces.gallery).toEqual([])
-    expect(details.heroImageUrl).toBe(gphotoUrl('p', 0))
-  })
-
-  it('shared photos stay on cards but give way to Google in details', () => {
-    const own = { hero: img('h'), gallery: [] as OwnImage[], isShared: () => true }
-    expect(resolvePlaceImages({ slug: 'p', ...own, google: false }).heroImageUrl).toBe(
-      '/media/h/1280.webp',
+      resolvePlaceImages({
+        ...base,
+        placesUsing,
+        hero: img('h'),
+        gallery: [free('f1')],
+        google: false,
+      }).source,
+    ).toBe('free')
+    expect(
+      resolvePlaceImages({ ...base, placesUsing, hero: img('h'), google: false }).heroImageUrl,
+    ).toBe('/media/h/1280.webp')
+    // A shared upload never beats Google.
+    expect(resolvePlaceImages({ ...base, placesUsing, hero: img('h'), google: true }).source).toBe(
+      'google',
     )
-    expect(resolvePlaceImages({ slug: 'p', ...own, google: true }).heroImageUrl).toBe(
-      gphotoUrl('p', 0),
-    )
+  })
+
+  it('never shows a photo used by 3 or more places: category glyph instead', () => {
+    const placesUsing = uses({ h: 3, f1: 5 })
+    const out = resolvePlaceImages({
+      ...base,
+      placesUsing,
+      hero: img('h'),
+      gallery: [free('f1')],
+      google: false,
+    })
+    expect(out).toEqual({ heroImageUrl: null, heroThumbUrl: null, gallery: [], source: null })
+    expect(WIDELY_SHARED).toBe(3)
+  })
+
+  it('5. nothing at all: the category glyph (null)', () => {
+    expect(resolvePlaceImages({ ...base, google: false }).heroImageUrl).toBeNull()
+  })
+
+  it('exactly one photo: never a gallery, never a second Google photo', () => {
+    const many = Array.from({ length: 20 }, (_, i) => img(`g${i}`))
+    expect(resolvePlaceImages({ ...base, gallery: many, google: true }).gallery).toEqual([])
+    expect(resolvePlaceImages({ ...base, google: true }).gallery).toEqual([])
+    expect(GOOGLE_PHOTO_MAX).toBe(1)
   })
 })

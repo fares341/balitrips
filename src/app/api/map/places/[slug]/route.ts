@@ -10,8 +10,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { pick } from '@/lib/content/localize'
-import { liveGooglePhotoCount } from '@/lib/google-places/place-access'
-import { isGooglePhotoUrl, trimGooglePhotos } from '@/lib/google-places/photo-urls'
 import { listMapCategoriesCached, listMapPlacesCached } from '@/lib/map/cached'
 
 import { localeOf, NO_STORE, viewer } from '../../../places/_viewer'
@@ -40,11 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'not_found' }, { status: 404, headers: NO_STORE })
   }
 
-  let candidates = place.detailImages
-  // Google photo slots (migration 0040): keep only the ones the place has.
-  if (candidates.some(isGooglePhotoUrl)) {
-    candidates = trimGooglePhotos(candidates, await liveGooglePhotoCount(place.id))
-  }
+  const candidates = [place.heroImageUrl, ...place.gallery].filter((url): url is string => !!url)
   const images: string[] = []
   for (const url of candidates) {
     if (images.includes(url)) continue

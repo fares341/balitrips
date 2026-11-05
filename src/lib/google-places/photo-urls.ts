@@ -5,8 +5,8 @@
  * resolves the index to a live Google photo per request.
  */
 
-/** Google photos per place we offer (hero + gallery). */
-export const GOOGLE_PHOTO_MAX = 10
+/** Google photos per place: exactly one, #0 (owner, Nov 2026). */
+export const GOOGLE_PHOTO_MAX = 1
 
 /** Statuses whose place ID is used for photos. */
 export const USABLE_MATCH = ['auto', 'confirmed'] as const
@@ -46,14 +46,6 @@ export function isGooglePhotoUrl(src: string | null | undefined): boolean {
   return parseGphotoUrl(src) !== null
 }
 
-/** Drop Google photo URLs whose index the place does not have (count known). */
-export function trimGooglePhotos(urls: readonly string[], googleCount: number): string[] {
-  return urls.filter((url) => {
-    const parsed = parseGphotoUrl(url)
-    return parsed === null || parsed.index < googleCount
-  })
-}
-
 export interface OwnImage {
   id: string
   url: string
@@ -69,73 +61,63 @@ export interface OwnImage {
 export interface ResolvedImages {
   heroImageUrl: string | null
   heroThumbUrl: string | null
+  /** Always empty: a place shows exactly one photo (owner, Nov 2026). */
   gallery: string[]
-  /** How many Google photo slots were offered (0 = our media only). */
-  googleSlots: number
+  /** Where the one photo came from (null = the category glyph). */
+  source: 'own' | 'google' | 'free' | 'shared' | null
 }
 
+/** Media used by this many places or more is never shown (#51's rule). */
+export const WIDELY_SHARED = 3
+
 /**
- * Which photos a place shows.
- *
- * Without a usable Google match (or with the feature off, or on any surface
- * other than place details) it is exactly the old behaviour: our hero and
- * gallery.
- *
- * Place details with a usable match (owner, Nov 2026 — at most one Google
- * photo per place):
- *   1. our own uploads that no other place uses,
- *   2. then free photos (#51) that no other place uses,
- *   3. and ONLY when 1 and 2 are both empty: Google photos #0..googleMax-1
- *      (`GOOGLE_PLACES_MAX_PHOTOS`, default 1).
- * Photos shared with another place (duplicates) count as missing.
+ * The ONE photo a place shows — map cards, the list, the map sheet and the
+ * /places pages (owner, Nov 2026, final):
+ *   1. the owner's own upload that no other place uses;
+ *   2. otherwise Google photo #0 (when the place has a usable match and the
+ *      feature is on and today's cap is not reached — `google`);
+ *   3. otherwise a free photo (#51, `media.source` set) no other place uses;
+ *   4. otherwise a photo shared with ONE other place (upload or free);
+ *   5. otherwise nothing: the category glyph.
+ * A photo used by 3 or more places is never shown.
  */
 export function resolvePlaceImages(input: {
   slug: string
   hero: OwnImage | null
   gallery: readonly OwnImage[]
-  /** Media ids (and file keys) used by more than one place. */
-  isShared: (image: OwnImage) => boolean
+  /** How many places use this image (by media row or by file). */
+  placesUsing: (image: OwnImage) => number
   google: boolean
-  /** Google photos offered when the place has nothing of its own. Default 1. */
-  googleMax?: number
-  galleryMax?: number
 }): ResolvedImages {
-  const galleryMax = input.galleryMax ?? 12
-  if (!input.google) {
-    return {
-      heroImageUrl: input.hero?.url ?? null,
-      heroThumbUrl: input.hero ? (input.hero.thumb ?? input.hero.url) : null,
-      gallery: input.gallery.map((image) => image.url).slice(0, galleryMax),
-      googleSlots: 0,
-    }
-  }
-
-  const unique: OwnImage[] = []
+  const candidates: OwnImage[] = []
   for (const image of [input.hero, ...input.gallery]) {
-    if (!image || image.url === '' || input.isShared(image)) continue
-    if (unique.some((one) => one.id === image.id || one.url === image.url)) continue
-    unique.push(image)
+    if (!image || image.url === '') continue
+    if (candidates.some((one) => one.id === image.id || one.url === image.url)) continue
+    candidates.push(image)
   }
-  // Uploads first, then free photos; stable within each group.
-  const own = [...unique.filter((image) => !image.free), ...unique.filter((image) => image.free)]
-  if (own.length > 0) {
-    const first = own[0]!
+  const uses = (image: OwnImage) => Math.max(1, input.placesUsing(image))
+  const pick = (image: OwnImage, source: ResolvedImages['source']): ResolvedImages => ({
+    heroImageUrl: image.url,
+    heroThumbUrl: image.thumb ?? image.url,
+    gallery: [],
+    source,
+  })
+
+  const upload = candidates.find((image) => !image.free && uses(image) === 1)
+  if (upload) return pick(upload, 'own')
+  if (input.google) {
     return {
-      heroImageUrl: first.url,
-      heroThumbUrl: first.thumb ?? first.url,
-      gallery: own.slice(1, 1 + galleryMax).map((image) => image.url),
-      googleSlots: 0,
+      heroImageUrl: gphotoUrl(input.slug, 0),
+      heroThumbUrl: gphotoUrl(input.slug, 0, 400),
+      gallery: [],
+      source: 'google',
     }
   }
-  const slots = Math.min(Math.max(Math.round(input.googleMax ?? 1), 0), GOOGLE_PHOTO_MAX)
-  if (slots === 0) return { heroImageUrl: null, heroThumbUrl: null, gallery: [], googleSlots: 0 }
-  const google = Array.from({ length: slots }, (_, i) => gphotoUrl(input.slug, i))
-  return {
-    heroImageUrl: google[0]!,
-    heroThumbUrl: gphotoUrl(input.slug, 0, 400),
-    gallery: google.slice(1, 1 + galleryMax),
-    googleSlots: slots,
-  }
+  const free = candidates.find((image) => image.free && uses(image) === 1)
+  if (free) return pick(free, 'free')
+  const shared = candidates.find((image) => uses(image) < WIDELY_SHARED)
+  if (shared) return pick(shared, 'shared')
+  return { heroImageUrl: null, heroThumbUrl: null, gallery: [], source: null }
 }
 
 const WIDTHS = [320, 400, 640, 960, 1280, 1600] as const
