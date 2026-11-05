@@ -105,6 +105,9 @@ import {
 } from './activity-status'
 import { resolveChildAges } from './child-ages'
 import { parseVideoUrl } from './video'
+import { imageFileKey } from './image-dedupe'
+import { googlePhotosEnabled } from '@/lib/google-places/config'
+import { isUsableMatch, resolvePlaceImages, type OwnImage } from '@/lib/google-places/photo-urls'
 
 // ---------------------------------------------------------------------------
 // Shared predicates
@@ -1620,10 +1623,40 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
   const galleryById = new Map(galleryRows.map((row) => [row.id, row]))
   const subKeyById = new Map(subRows.map((row) => [row.id, row.key]))
 
+  // Our own images per place, and which of them more than one place uses
+  // (the same media row, or the same file under another row). With a Google
+  // match those duplicates give way to the place's Google photos.
+  const ownImages = new Map<string, { hero: OwnImage | null; gallery: OwnImage[] }>()
+  const users = new Map<string, Set<string>>()
+  const addUser = (key: string, placeId: string) => {
+    const set = users.get(key) ?? new Set<string>()
+    set.add(placeId)
+    users.set(key, set)
+  }
+  for (const { place, hero } of rows) {
+    const heroDto = toMedia(hero)
+    const heroImage: OwnImage | null = heroDto
+      ? { id: heroDto.id, url: heroDto.url, thumb: thumbUrl(hero) }
+      : null
+    const gallery: OwnImage[] = []
+    for (const id of place.galleryImageIds ?? []) {
+      const dto = toMedia(galleryById.get(id))
+      if (dto) gallery.push({ id: dto.id, url: dto.url })
+    }
+    ownImages.set(place.id, { hero: heroImage, gallery })
+    for (const image of heroImage ? [heroImage, ...gallery] : gallery) {
+      addUser(`id:${image.id}`, place.id)
+      addUser(`file:${imageFileKey(image.url)}`, place.id)
+    }
+  }
+  const isShared = (image: OwnImage) =>
+    (users.get(`id:${image.id}`)?.size ?? 0) > 1 ||
+    (users.get(`file:${imageFileKey(image.url)}`)?.size ?? 0) > 1
+  const googleOn = googlePhotosEnabled()
+
   return rows.map(
     ({
       place,
-      hero,
       activitySlug,
       activityPriceMinor,
       activityCurrency,
@@ -1634,53 +1667,61 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       parentRegionLabel,
       categoryKey,
       categoryLabel,
-    }) => ({
-      id: place.id,
-      slug: place.slug,
-      name: place.name,
-      category: place.category,
-      description: place.description,
-      lat: place.lat,
-      lon: place.lon,
-      rating: place.rating,
-      openingHours: place.openingHours,
-      tags: place.tags,
-      heroImageUrl: toMedia(hero)?.url ?? null,
-      heroThumbUrl: thumbUrl(hero),
-      activitySlug,
-      // A live linked activity only (the join filters the rest out).
-      fromPriceMinor:
-        activitySlug !== null && (activityPriceMinor ?? 0) > 0 ? activityPriceMinor : null,
-      fromCurrency: activitySlug !== null ? activityCurrency : null,
-      reviewCount:
-        activitySlug !== null && (activityReviewCount ?? 0) > 0 ? activityReviewCount : null,
-      travelerTypes: place.travelerTypes ?? [],
-      durationMinutes: place.durationMinutes ?? null,
-      ...placeAccess(place),
-      isHiddenGem: place.isHiddenGem,
-      regionKey,
-      regionLabel,
-      parentRegionKey,
-      parentRegionLabel,
-      categoryKey,
-      categoryLabel,
-      tagKeys: (tagsByPlace.get(place.id) ?? []).map((tag) => tag.key),
-      tagList: tagsByPlace.get(place.id) ?? [],
-      detailedDescription: place.detailedDescription,
-      videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
-      gallery: (place.galleryImageIds ?? [])
-        .map((id) => toMedia(galleryById.get(id))?.url ?? null)
-        .filter((url): url is string => url !== null)
-        .slice(0, 12),
-      subCategoryKeys: (place.subCategoryIds ?? [])
-        .map((id) => subKeyById.get(id))
-        .filter((key): key is string => key !== undefined),
-      canFavorite: place.canFavorite,
-      canAddToTrip: place.canAddToTrip,
-      priority: place.priority,
-      sortOrder: place.sortOrder,
-      popularity: popularity.get(place.id) ?? 0,
-    }),
+    }) => {
+      const own = ownImages.get(place.id) ?? { hero: null, gallery: [] }
+      const images = resolvePlaceImages({
+        slug: place.slug,
+        hero: own.hero,
+        gallery: own.gallery,
+        isShared,
+        google: googleOn && isUsableMatch(place.googleMatchStatus, place.googlePlaceId),
+      })
+      return {
+        id: place.id,
+        slug: place.slug,
+        name: place.name,
+        category: place.category,
+        description: place.description,
+        lat: place.lat,
+        lon: place.lon,
+        rating: place.rating,
+        openingHours: place.openingHours,
+        tags: place.tags,
+        // Our photos, or Google's where ours are missing / shared (migration 0040).
+        heroImageUrl: images.heroImageUrl,
+        heroThumbUrl: images.heroThumbUrl,
+        activitySlug,
+        // A live linked activity only (the join filters the rest out).
+        fromPriceMinor:
+          activitySlug !== null && (activityPriceMinor ?? 0) > 0 ? activityPriceMinor : null,
+        fromCurrency: activitySlug !== null ? activityCurrency : null,
+        reviewCount:
+          activitySlug !== null && (activityReviewCount ?? 0) > 0 ? activityReviewCount : null,
+        travelerTypes: place.travelerTypes ?? [],
+        durationMinutes: place.durationMinutes ?? null,
+        ...placeAccess(place),
+        isHiddenGem: place.isHiddenGem,
+        regionKey,
+        regionLabel,
+        parentRegionKey,
+        parentRegionLabel,
+        categoryKey,
+        categoryLabel,
+        tagKeys: (tagsByPlace.get(place.id) ?? []).map((tag) => tag.key),
+        tagList: tagsByPlace.get(place.id) ?? [],
+        detailedDescription: place.detailedDescription,
+        videos: (place.videos ?? []).filter(isSafeVideoUrl).slice(0, 4),
+        gallery: images.gallery,
+        subCategoryKeys: (place.subCategoryIds ?? [])
+          .map((id) => subKeyById.get(id))
+          .filter((key): key is string => key !== undefined),
+        canFavorite: place.canFavorite,
+        canAddToTrip: place.canAddToTrip,
+        priority: place.priority,
+        sortOrder: place.sortOrder,
+        popularity: popularity.get(place.id) ?? 0,
+      }
+    },
   )
 }
 

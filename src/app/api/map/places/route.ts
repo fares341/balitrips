@@ -15,6 +15,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { pick } from '@/lib/content/localize'
+import { parseGphotoUrl } from '@/lib/google-places/photo-urls'
 import { listMapCategoriesCached, listMapPlacesCached } from '@/lib/map/cached'
 import {
   ALL_AREA,
@@ -84,7 +85,12 @@ export async function GET(request: NextRequest) {
     reviews: place.reviewCount,
     desc: shortText(place.description ? pick(place.description, locale) : null),
     thumb: place.heroThumbUrl,
-    images: cardImages(place.heroImageUrl, place.gallery),
+    // Cards show at most the first Google photo: how many a place has is only
+    // known per request (the sheet trims its own list).
+    images: cardImages(
+      place.heroImageUrl,
+      place.gallery.filter((url) => (parseGphotoUrl(url)?.index ?? 0) === 0),
+    ),
     priceMinor: place.fromPriceMinor,
     currency: place.fromCurrency,
     activitySlug: place.activitySlug,

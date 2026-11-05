@@ -24,6 +24,9 @@
 import Image from 'next/image'
 import type { CSSProperties, ReactNode } from 'react'
 
+import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
+
+import { GooglePhotoCredit } from './google-photo-credit'
 import { useImageFallback } from './use-image-fallback'
 
 export type PhotoProps = {
@@ -132,9 +135,11 @@ export function Photo({
   }
 
   const photoClass = ['photo', className].filter(Boolean).join(' ')
+  // A Google place photo carries its attribution (Places API policy).
+  const credit = isGooglePhotoUrl(src) ? <GooglePhotoCredit src={src} /> : null
 
   if (hasIntrinsicSize) {
-    return (
+    const image = (
       <Image
         key={current}
         src={current}
@@ -146,6 +151,14 @@ export function Photo({
         style={composed}
         onError={onError}
       />
+    )
+    return credit ? (
+      <>
+        {image}
+        {credit}
+      </>
+    ) : (
+      image
     )
   }
 
@@ -168,6 +181,14 @@ export function Photo({
   )
 
   // Once the first URL failed, the srcset candidates are suspect too.
+  if (credit) {
+    return (
+      <>
+        {img}
+        {credit}
+      </>
+    )
+  }
   if (degraded || (!srcSetAvif && !srcSetWebp)) return img
 
   /**

@@ -65,6 +65,14 @@ shipped inside the project archive. Generate new `POSTGRES_PASSWORD`,
 `BETTER_AUTH_SECRET`, `PAYMENT_WEBHOOK_SECRET`, change the admin password, and
 treat the old values as public.
 
+## Google place photos
+
+Map places matched to Google Maps show their Google photos (with author and
+Google attribution) where our own photo is missing or shared with another
+place. Off until `GOOGLE_PLACES_API_KEY` is set in `/opt/balitrips/.env.production`
+(then `./deploy/update.sh`). Full setup, terms and cost:
+[google-place-photos.md](google-place-photos.md).
+
 ## Not production-ready
 
 - `PAYMENT_PROVIDER=sandbox` with `ALLOW_SANDBOX_PAYMENTS=true`. **Cannot take

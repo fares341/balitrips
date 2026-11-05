@@ -39,6 +39,9 @@ import {
 
 import type { LocalizedText } from './localize'
 import { toMedia } from './queries'
+import { googlePhotosEnabled } from '@/lib/google-places/config'
+import { isUsableMatch, teaserHeroUrl } from '@/lib/google-places/photo-urls'
+import { heroSharedSql } from '@/lib/google-places/sql'
 import { entityHref, type ArticleSummary } from './types'
 
 const PUBLISHED = 'published'
@@ -93,6 +96,9 @@ const teaserColumns = {
     isFree: mapPlaces.isFree,
     requiredEntitlement: mapPlaces.requiredEntitlement,
     isHiddenGem: mapPlaces.isHiddenGem,
+    googlePlaceId: mapPlaces.googlePlaceId,
+    googleMatchStatus: mapPlaces.googleMatchStatus,
+    heroShared: heroSharedSql,
   },
   hero: media,
   regionLabel: regions.label,
@@ -109,6 +115,9 @@ type TeaserRow = {
     isFree: boolean
     requiredEntitlement: string
     isHiddenGem: boolean
+    googlePlaceId: string | null
+    googleMatchStatus: string
+    heroShared: boolean
   }
   hero: typeof media.$inferSelect | null
   regionLabel: LocalizedText | null
@@ -127,7 +136,15 @@ function toTeaser(row: TeaserRow, held: EntitlementSet): PlaceTeaser {
     slug: row.place.slug,
     href: entityHref('place', row.place.slug),
     name: row.place.name,
-    heroImageUrl: toMedia(row.hero)?.url ?? null,
+    // Ours, or the first Google photo where ours is missing / shared (0040).
+    heroImageUrl: teaserHeroUrl({
+      slug: row.place.slug,
+      ownUrl: toMedia(row.hero)?.url ?? null,
+      ownShared: row.place.heroShared,
+      google:
+        googlePhotosEnabled() &&
+        isUsableMatch(row.place.googleMatchStatus, row.place.googlePlaceId),
+    }),
     regionLabel: row.regionLabel,
     categoryLabel: row.categoryLabel,
     lat: row.place.lat,

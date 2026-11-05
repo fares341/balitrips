@@ -9,6 +9,9 @@
 
 import type { ImgHTMLAttributes, ReactNode } from 'react'
 
+import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
+
+import { GooglePhotoCredit } from './google-photo-credit'
 import { useImageFallback } from './use-image-fallback'
 
 export type SafeImgProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'onError'> & {
@@ -20,7 +23,7 @@ export type SafeImgProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'on
 export function SafeImg({ src, fallback = null, alt = '', ...rest }: SafeImgProps) {
   const { src: current, failed, onError, attach } = useImageFallback(src)
   if (failed) return <>{fallback}</>
-  return (
+  const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       key={current ?? ''}
@@ -30,5 +33,13 @@ export function SafeImg({ src, fallback = null, alt = '', ...rest }: SafeImgProp
       onError={onError}
       {...rest}
     />
+  )
+  // A Google place photo carries its attribution (Places API policy).
+  if (!isGooglePhotoUrl(src)) return img
+  return (
+    <>
+      {img}
+      <GooglePhotoCredit src={src} />
+    </>
   )
 }

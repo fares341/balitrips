@@ -76,10 +76,18 @@ jobs:
         # Holds the TOTP secrets: kept out of the results folder.
         run: pnpm exec tsx scripts/create-test-accounts.ts > "$RUNNER_TEMP/accounts.txt" 2>&1 || (tail -5 "$RUNNER_TEMP/accounts.txt" | sed 's/^/::error::/'; exit 1)
       - run: pnpm exec playwright install --with-deps chromium
+      - name: Link one free place to a mocked Google place
+        # Google is mocked (scripts/mock-google-places.mjs): no key, no network.
+        run: |
+          slug=$(psql "$DATABASE_URL" -qtAc "update map_places set google_place_id='ChIJmockPlace000001', google_match_status='confirmed' where id = (select id from map_places where is_free and status='published' and deleted_at is null and not is_hidden and not is_hidden_gem order by slug limit 1) returning slug" | head -1)
+          echo "E2E_GOOGLE_SLUG=$slug" >> "$GITHUB_ENV"
+          locked=$(psql "$DATABASE_URL" -qtAc "update map_places set google_place_id='ChIJmockPlace000002', google_match_status='confirmed' where id = (select id from map_places where not is_free and status='published' and deleted_at is null and not is_hidden order by slug limit 1) returning slug" | head -1)
+          echo "E2E_GOOGLE_LOCKED_SLUG=$locked" >> "$GITHUB_ENV"
       - name: Start the site
         run: |
+          (node scripts/mock-google-places.mjs > mock-google.log 2>&1 &)
           cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/
-          (cd .next/standalone && PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
+          (cd .next/standalone && GOOGLE_PLACES_API_KEY=ci-mock-key GOOGLE_PLACES_API_BASE=http://127.0.0.1:4010/v1 PORT=3000 HOSTNAME=0.0.0.0 node server.js > ../../server.log 2>&1 &)
           for i in $(seq 1 60); do curl -fsS http://localhost:3000/api/health >/dev/null 2>&1 && break; sleep 2; done
       - name: Full forms suite
         env:
