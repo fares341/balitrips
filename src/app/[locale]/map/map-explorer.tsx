@@ -58,11 +58,21 @@ import {
 import type { AreaLabelPoint } from '@/lib/map/area-labels'
 import { formatDistance, haversineMeters, type LatLon } from '@/lib/map/distance'
 import { PIN_KINDS, PIN_LOOK, pinImageId, pinKindFor } from '@/lib/map/pins'
+import {
+  CLUSTER_MAX_ZOOM,
+  CLUSTER_MIN_POINTS,
+  CLUSTER_RADIUS,
+  FIT_MS,
+  PIN_SIZE_BY_ZOOM,
+  PIN_W,
+  PIN_W_ON,
+  SYMBOL_FADE_MS,
+} from '@/lib/map/map-feel'
 import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
 
 import { CategoryGlyph } from './category-glyph'
 import { MapWatermark, protectionHandlers } from './map-protect'
-import { attributionsFor, LIGHT, type MapSettings } from './map-style'
+import { attributionsFor, LIGHT, REAL_MAX_ZOOM, type MapSettings } from './map-style'
 import { loadMapLibre, type MapLike } from './maplibre-loader'
 import { FavoriteHeart } from './place-actions'
 import { drawPin, PinGlyph } from './pin-glyph'
@@ -289,6 +299,9 @@ export function MapExplorer(props: Props) {
 
   const sheetPlace =
     sheetState.placeId === null ? null : (placeById.get(sheetState.placeId) ?? null)
+  // The sheet only shows with a place; an «open» sheet whose place left the
+  // results (filter change) used to hide the cards with nothing in their place.
+  const sheetVisible = sheetOpen && sheetPlace !== null
   const selected = selectedId === null ? null : (placeById.get(selectedId) ?? null)
   const current = (sheetOpen ? sheetPlace : null) ?? selected ?? places[0] ?? null
   const currentIndex = current === null ? 0 : Math.max(0, places.indexOf(current))
@@ -321,6 +334,12 @@ export function MapExplorer(props: Props) {
     dispatchSheet({ type: 'close' })
   }, [])
 
+  // New results without the sheet's place (a filter change): close the sheet so
+  // the cards come back instead of an empty, invisible «open» sheet.
+  useEffect(() => {
+    if (sheetOpen && places.length > 0 && sheetPlace === null) closeSheet()
+  }, [sheetOpen, sheetPlace, places, closeSheet])
+
   /** A pin was tapped: the sheet opens at peek (or swaps its place). */
   const onPin = useCallback(
     (id: string) => {
@@ -333,7 +352,7 @@ export function MapExplorer(props: Props) {
   /** The carousel settled on a card: select it and ease the map to its pin. */
   const onCard = useCallback((id: string) => {
     setSelectedId((prev) => {
-      if (prev !== id) mapApi.current?.focus(id)
+      if (prev !== id) mapApi.current?.glide(id)
       return id
     })
   }, [])
@@ -591,7 +610,7 @@ export function MapExplorer(props: Props) {
       <div
         className="mx3-bottom"
         aria-live="polite"
-        data-hidden={(sheetOpen && !desktop) || undefined}
+        data-hidden={(sheetVisible && !desktop) || undefined}
       >
         {error ? (
           <div className="mx3-state" role="alert">
@@ -1317,6 +1336,8 @@ type Pad = Partial<Record<'top' | 'bottom' | 'left' | 'right', number>>
 interface ResultsMapHandle {
   /** Ease the map so the pin sits in the open area (above the cards, or beside the sheet). */
   focus(id: string, pad?: Pad): void
+  /** Card swipe (Tiqets): ease the pin to the centre, keeping the zoom. */
+  glide(id: string): void
   /** Only move when the pin is hidden under the chrome. */
   reveal(id: string): void
   /** The MapLibre instance (tests assert it survives filter changes). */
@@ -1324,6 +1345,7 @@ interface ResultsMapHandle {
 }
 
 const SRC = 'mx-places'
+
 const SRC_ON = 'mx-selected'
 const SRC_ME = 'mx-me'
 const L_CLUSTER = 'mx-clusters'
@@ -1363,7 +1385,7 @@ function addLayers(
     for (const selected of [false, true]) {
       const id = pinImageId(kind, selected)
       if (map.hasImage?.(id)) continue
-      const image = drawPin(look.color, look.path, selected ? 40 : 28, ratio)
+      const image = drawPin(look.color, look.path, selected ? PIN_W_ON : PIN_W, ratio)
       if (image) map.addImage?.(id, image, { pixelRatio: ratio })
     }
   }
@@ -1409,8 +1431,11 @@ function addLayers(
     type: 'geojson',
     data: toFeatureCollection(places),
     cluster: true,
-    clusterRadius: 40,
-    clusterMaxZoom: 14,
+    // Tiqets feel: only pins that truly overlap merge (3+ within ~12px), and
+    // nothing clusters once the island fills the screen a little closer.
+    clusterRadius: CLUSTER_RADIUS,
+    clusterMaxZoom: CLUSTER_MAX_ZOOM,
+    clusterMinPoints: CLUSTER_MIN_POINTS,
   })
   map.addSource(SRC_ON, { type: 'geojson', data: empty })
   map.addSource(SRC_ME, { type: 'geojson', data: empty })
@@ -1422,8 +1447,9 @@ function addLayers(
     paint: {
       'circle-color': PIN_ON,
       'circle-opacity': 0.92,
-      'circle-radius': ['step', ['get', 'point_count'], 15, 10, 18, 50, 22],
-      'circle-stroke-width': 2.5,
+      // Small and discreet (≈ a pin's head), a little larger for big groups.
+      'circle-radius': ['step', ['get', 'point_count'], 10, 10, 12, 50, 14],
+      'circle-stroke-width': 2,
       'circle-stroke-color': '#ffffff',
     },
   })
@@ -1435,7 +1461,7 @@ function addLayers(
     layout: {
       'text-field': ['get', 'point_count_abbreviated'],
       'text-font': ['Noto Sans Bold'],
-      'text-size': 13,
+      'text-size': 11,
       'text-allow-overlap': true,
       'text-ignore-placement': true,
     },
@@ -1448,7 +1474,10 @@ function addLayers(
     filter: pinFilter(null),
     layout: {
       'icon-image': ['concat', 'mx-pin-', ['get', 'k']],
+      'icon-size': PIN_SIZE_BY_ZOOM,
       'icon-anchor': 'bottom',
+      // The drawn tip sits 1.5px above the image's bottom edge.
+      'icon-offset': [0, 1.5],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       // Southern pins drawn over northern ones (they are "closer").
@@ -1478,7 +1507,9 @@ function addLayers(
     source: SRC_ON,
     layout: {
       'icon-image': ['concat', 'mx-on-', ['get', 'k']],
+      'icon-size': PIN_SIZE_BY_ZOOM,
       'icon-anchor': 'bottom',
+      'icon-offset': [0, 1.5],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
     },
@@ -1491,6 +1522,7 @@ function onMapClick(
   event: unknown,
   onPin: (id: string) => void,
   onEmpty: () => void,
+  padding: () => { top: number; bottom: number; left: number; right: number },
 ) {
   const point = (event as { point?: { x: number; y: number } } | undefined)?.point
   if (!point || !map.queryRenderedFeatures) return
@@ -1528,7 +1560,15 @@ function onMapClick(
     if (!source || !coords || !Number.isFinite(clusterId)) return
     void source
       .getClusterExpansionZoom(clusterId)
-      .then((zoom) => map.easeTo({ center: coords, zoom: zoom + 0.3, duration: 450 }))
+      .then((zoom) =>
+        map.easeTo({
+          center: coords,
+          // Just past the split zoom, so the group opens up at once.
+          zoom: Math.min(REAL_MAX_ZOOM, Math.max(map.getZoom() + 1, zoom + 0.5)),
+          padding: padding(),
+          duration: 450,
+        }),
+      )
       .catch(() => undefined)
     return
   }
@@ -1582,7 +1622,8 @@ function ResultsMap({
     if (!rect) return { top: 120, bottom: 200, left: 40, right: 40 }
     const top = head ? Math.max(0, head.bottom - rect.top) + 24 : 24
     const bot = bottom ? Math.max(0, rect.bottom - bottom.top) + 36 : 36
-    return { top, bottom: Math.min(bot, rect.height * 0.55), left: 40, right: 40 }
+    // Narrow sides: the island fills the phone's width (Tiqets).
+    return { top, bottom: Math.min(bot, rect.height * 0.55), left: 16, right: 16 }
   }, [])
 
   const placeById = useCallback(
@@ -1601,8 +1642,14 @@ function ResultsMap({
           center: [place.lon, place.lat],
           zoom: Math.max(map.getZoom(), 11),
           padding: pad ? { ...padding(), left: 40, right: 40, ...pad } : padding(),
-          duration: 500,
+          duration: 450,
         })
+      },
+      glide(id) {
+        const map = mapRef.current
+        const place = placeById(id)
+        if (!map || !place) return
+        map.easeTo({ center: [place.lon, place.lat], padding: padding(), duration: 450 })
       },
       reveal(id) {
         const map = mapRef.current
@@ -1613,7 +1660,7 @@ function ResultsMap({
         const pad = padding()
         const { width, height } = el.getBoundingClientRect()
         if (p.x < 24 || p.x > width - 24 || p.y < pad.top || p.y > height - pad.bottom) {
-          map.easeTo({ center: [place.lon, place.lat], padding: pad, duration: 500 })
+          map.easeTo({ center: [place.lon, place.lat], padding: pad, duration: 450 })
         }
       },
       instance: () => mapRef.current,
@@ -1628,7 +1675,12 @@ function ResultsMap({
     void loadMapLibre()
       .then((engine) => {
         if (!live || !box.current) return
-        map = createRealMap(engine, box.current, settings, { locale, flat: true, light: true })
+        map = createRealMap(engine, box.current, settings, {
+          locale,
+          flat: true,
+          light: true,
+          fadeDuration: SYMBOL_FADE_MS,
+        })
         mapRef.current = map
         ;(box.current as HTMLDivElement & { __map?: MapLike }).__map = map
         const m = map
@@ -1652,6 +1704,7 @@ function ResultsMap({
             event,
             (id) => latest.current.onPin(id),
             () => latest.current.onEmpty(),
+            padding,
           ),
         )
         for (const id of [L_PIN, L_ON, L_CLUSTER]) {
@@ -1678,11 +1731,16 @@ function ResultsMap({
 
   // Data: swap the source (no re-init), then frame the new results once.
   const framedKey = useRef<string | null>(null)
+  const sentPlaces = useRef<readonly ResultPlace[] | null>(null)
   useEffect(() => {
     const map = mapRef.current
     if (!styled || !map) return
-    const source = map.getSource(SRC) as GeoSource | undefined
-    source?.setData(toFeatureCollection(places))
+    // One setData per new result set (never during movement or re-renders).
+    if (sentPlaces.current !== places) {
+      sentPlaces.current = places
+      const source = map.getSource(SRC) as GeoSource | undefined
+      source?.setData(toFeatureCollection(places))
+    }
     if (framedKey.current === resultKey || places.length === 0) return
     const first = framedKey.current === null
     framedKey.current = resultKey
@@ -1694,15 +1752,20 @@ function ResultsMap({
     }
     const bounds = boundsOf(places)
     if (bounds) {
-      map.fitBounds(bounds, { padding: padding(), maxZoom: 14, duration: first ? 0 : 500 })
+      // Whole island first; a filter change eases to its own pins.
+      map.fitBounds(bounds, { padding: padding(), maxZoom: 14, duration: first ? 0 : FIT_MS })
     }
   }, [styled, places, resultKey, padding, initialSlug])
 
   // Selected pin: its own one-feature source, drawn above the clusters.
+  const sentOn = useRef<string | null>(null)
   useEffect(() => {
     const map = mapRef.current
     if (!styled || !map) return
     const place = selectedId === null ? null : placeById(selectedId)
+    const key = place ? `${place.id}:${place.lon}:${place.lat}:${place.categoryKey}` : ''
+    if (sentOn.current === key) return
+    sentOn.current = key
     const source = map.getSource(SRC_ON) as GeoSource | undefined
     source?.setData(
       place

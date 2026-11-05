@@ -36,6 +36,8 @@ export interface RealMapOptions {
   interactive?: boolean
   /** The clean, light 2D base of the public map (v2). */
   light?: boolean
+  /** Symbol fade in ms (MapLibre default 300). */
+  fadeDuration?: number
 }
 
 /** Throws when the engine refuses (e.g. no WebGL) — callers fall back. */
@@ -67,6 +69,9 @@ export function createRealMap(
     pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
     // The pages draw their own attribution line (always visible, in the site font).
     attributionControl: false,
+    ...(options.fadeDuration !== undefined ? { fadeDuration: options.fadeDuration } : {}),
+    // One Bali, never repeated sideways (less to draw while panning).
+    renderWorldCopies: false,
     // The page's own wrapper owns the keyboard.
     keyboard: false,
     ...(options.interactive === false ? { interactive: false } : {}),
