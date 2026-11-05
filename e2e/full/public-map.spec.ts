@@ -252,10 +252,11 @@ async function mapCounts(page: Page) {
     }
     const map = (document.querySelector('.mx-canvas') as HTMLElement & { __map?: M }).__map!
     if (map.isMoving() || !map.loaded()) await new Promise<void>((r) => map.once('idle', () => r()))
-    // The selected pin's larger copy is left out (it may also sit inside a cluster).
-    const all = map.queryRenderedFeatures({ layers: ['mx-pins', 'mx-clusters'] })
+    const all = map.queryRenderedFeatures({ layers: ['mx-pins', 'mx-pin-on', 'mx-clusters'] })
     const clusters = all.filter((one) => one.layer.id === 'mx-clusters')
     return {
+      // The selected pin is drawn on its own layer (and may also sit in a cluster).
+      selected: all.filter((one) => one.layer.id === 'mx-pin-on').length,
       pins: all.length - clusters.length,
       clusters: clusters.length,
       inClusters: clusters.reduce((n, one) => n + (one.properties.point_count ?? 0), 0),
@@ -285,7 +286,8 @@ test.describe('map v3 — Tiqets feel', () => {
     })
     const c = await mapCounts(page)
     // fitBounds on all pins: every place is drawn, as a pin or inside a cluster.
-    expect(c.pins + c.inClusters).toBe(total)
+    expect(c.pins + c.inClusters).toBeGreaterThanOrEqual(total)
+    expect(c.pins + c.inClusters).toBeLessThanOrEqual(total + c.selected)
     // Only true overlaps merge: most places are their own pin (the old
     // 40px / zoom-14 clustering hid 58 of 60 places in 8 clusters here).
     expect(c.pins).toBeGreaterThan(c.inClusters)
@@ -341,15 +343,23 @@ test.describe('map v3 — Tiqets feel', () => {
     test('a filter change never leaves the cards hidden', async ({ page }) => {
       await openMap(page)
       await expect(page.locator('.mx3-card.is-on')).toBeVisible({ timeout: 30_000 })
-      // Open the sheet on a place, then pick a category that may not contain it.
+      // Open the sheet on a place, then pick another category without it.
+      const id = await page.locator('.mx3-card.is-on').getAttribute('data-id')
+      const own = await page.evaluate(async (placeId) => {
+        const r = await fetch('/api/map/places?locale=en')
+        const data = (await r.json()) as { places: { id: string; categoryKey: string }[] }
+        return data.places.find((one) => one.id === placeId)?.categoryKey ?? ''
+      }, id)
       await page.locator('.mx3-card.is-on button.mx3-card-link').click()
       await expect(page.locator('.mx4-sheet:not([data-stop=closed])')).toBeVisible()
       await page.locator('[data-chip=cats]').click()
       const dialog = page.getByRole('dialog', { name: 'Categories' })
-      const free = dialog.locator('.mx-cat:not(.is-locked)')
-      await free.last().click()
+      const other = dialog.locator(`.mx-cat:not(.is-locked):not([data-cat="${own}"])`)
+      test.skip((await other.count()) === 0, 'one free category only')
+      await other.first().click()
       const done = dialog.getByRole('button', { name: 'Done' })
-      if (await done.isVisible()) await done.click()
+      // Closing the sheet goes through history, which may close the dialog too.
+      await done.click({ timeout: 2000 }).catch(() => undefined)
       await expect(page.locator('.mx3-bottom')).not.toHaveAttribute('data-hidden', /.*/)
       await expect(page.locator('.mx3-card.is-on')).toBeVisible()
     })
