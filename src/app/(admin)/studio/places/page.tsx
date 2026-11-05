@@ -79,9 +79,14 @@ export default async function PlacesPage({
         description={t('places.description', { count: freeRow?.value ?? 0 })}
         actions={
           can(session.role, 'content.write') ? (
-            <Link className="a-btn" href={adminHref('/places/new')}>
-              {t('places.new')}
-            </Link>
+            <>
+              <Link className="a-btn ghost" href={adminHref('/places/google')}>
+                {t('gp.start')}
+              </Link>
+              <Link className="a-btn" href={adminHref('/places/new')}>
+                {t('places.new')}
+              </Link>
+            </>
           ) : null
         }
       />

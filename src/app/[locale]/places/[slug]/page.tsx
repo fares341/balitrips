@@ -19,6 +19,8 @@ import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { listActivities, listMapPlaces } from '@/lib/content/queries'
+import { liveGooglePhotoCount } from '@/lib/google-places/place-access'
+import { isGooglePhotoUrl, trimGooglePhotos } from '@/lib/google-places/photo-urls'
 import { loadEntitlements, redactPlace } from '@/lib/entitlements'
 import { haversineKm } from '@/lib/geo'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -149,9 +151,13 @@ export default async function PlacePage({ params }: PageProps) {
     .slice(0, 4)
 
   // The place's own photos only; a neutral placeholder when it has none.
-  const photos = [place.heroImageUrl, ...place.gallery].filter(
+  let photos = [place.heroImageUrl, ...place.gallery].filter(
     (src, index, all): src is string => !!src && all.indexOf(src) === index,
   )
+  // Google photo slots (migration 0040): keep only the ones the place has.
+  if (photos.some(isGooglePhotoUrl)) {
+    photos = trimGooglePhotos(photos, await liveGooglePhotoCount(place.id))
+  }
 
   return (
     <div className="wrap">

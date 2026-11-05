@@ -22,7 +22,12 @@
  */
 
 import Image from 'next/image'
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+
+import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
+
+import { GooglePhotoCredit } from './google-photo-credit'
+import { useImageFallback } from './use-image-fallback'
 
 export type PhotoProps = {
   /** CDN URL. Nullable, because `heroImageId` is a nullable FK. */
@@ -57,6 +62,12 @@ export type PhotoProps = {
    * throws away most of the benefit of having a ladder at all.
    */
   sizes?: string
+  /**
+   * What to show when there is no image or every fallback failed. Defaults
+   * to the branded `.ph-fallback` surface; place slots pass their category
+   * glyph. Rendered inside the same box, so swapping causes no layout shift.
+   */
+  placeholder?: ReactNode
 }
 
 export function Photo({
@@ -71,16 +82,14 @@ export function Photo({
   srcSetAvif,
   srcSetWebp,
   sizes,
+  placeholder,
 }: PhotoProps) {
   /**
-   * Which src failed, rather than a boolean.
-   *
-   * The handoff kept `const [err, setErr] = useState(false)` and never reset
-   * it, so once an image 404'd the component stayed broken for every later
-   * src — and React reuses these elements aggressively when a filtered grid
-   * re-renders. Comparing against the current src makes recovery automatic.
+   * Retry, then smaller ladder rungs, then the placeholder; keyed by `src` so
+   * a recycled element recovers when it is handed a new URL, and errors that
+   * fired before hydration are caught on mount (see useImageFallback).
    */
-  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const { src: current, degraded, onError, attach } = useImageFallback(src)
 
   const hasIntrinsicSize = typeof width === 'number' && typeof height === 'number'
 
@@ -101,8 +110,11 @@ export function Photo({
   const rounded: CSSProperties = radius != null ? { borderRadius: radius } : {}
 
   const composed: CSSProperties = { ...base, ...rounded, ...style }
+  // The fallback keeps the box but not the flat ivory fill, so the branded
+  // gradient of `.ph-fallback` shows.
+  const fallbackStyle: CSSProperties = { ...composed, background: undefined }
 
-  if (!src || failedSrc === src) {
+  if (current === null) {
     /**
      * Neutral placeholder rather than a broken-image glyph.
      *
@@ -114,26 +126,39 @@ export function Photo({
     return (
       <div
         className={['photo', 'ph-fallback', className].filter(Boolean).join(' ')}
-        style={composed}
+        style={fallbackStyle}
         {...(alt ? { role: 'img', 'aria-label': alt } : { 'aria-hidden': true })}
-      />
+      >
+        {placeholder ?? <BrandMark />}
+      </div>
     )
   }
 
   const photoClass = ['photo', className].filter(Boolean).join(' ')
+  // A Google place photo carries its attribution (Places API policy).
+  const credit = isGooglePhotoUrl(src) ? <GooglePhotoCredit src={src} /> : null
 
   if (hasIntrinsicSize) {
-    return (
+    const image = (
       <Image
-        src={src}
+        key={current}
+        src={current}
         alt={alt}
         width={width}
         height={height}
         priority={priority}
         className={photoClass}
         style={composed}
-        onError={() => setFailedSrc(src)}
+        onError={onError}
       />
+    )
+    return credit ? (
+      <>
+        {image}
+        {credit}
+      </>
+    ) : (
+      image
     )
   }
 
@@ -141,7 +166,9 @@ export function Photo({
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      key={current}
+      ref={attach}
+      src={current}
       alt={alt}
       {...(sizes ? { sizes } : {})}
       loading={priority ? 'eager' : 'lazy'}
@@ -149,11 +176,20 @@ export function Photo({
       decoding="async"
       className={photoClass}
       style={composed}
-      onError={() => setFailedSrc(src)}
+      onError={onError}
     />
   )
 
-  if (!srcSetAvif && !srcSetWebp) return img
+  // Once the first URL failed, the srcset candidates are suspect too.
+  if (credit) {
+    return (
+      <>
+        {img}
+        {credit}
+      </>
+    )
+  }
+  if (degraded || (!srcSetAvif && !srcSetWebp)) return img
 
   /**
    * `<picture>` rather than a bare `srcset`, so AVIF can be offered to the
@@ -175,5 +211,21 @@ export function Photo({
       ) : null}
       {img}
     </picture>
+  )
+}
+
+/** The site's leaf mark, small and translucent: "photo coming", not broken. */
+function BrandMark() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style={{ opacity: 0.55 }}>
+      <path
+        d="M12 2C7 7 5 11 5 14a7 7 0 0 0 14 0c0-3-2-7-7-12Zm0 6v12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }

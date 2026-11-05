@@ -3,9 +3,11 @@
 import { randomUUID } from 'node:crypto'
 
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
+import { revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
+import { MAP_PLACES_TAG } from '@/lib/map/cached'
 import { media } from '@/db/schema'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -225,6 +227,11 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
  * race archives an image that became live moments earlier; it is recoverable
  * with one click on Restore, and the audit row says exactly when it happened.
  */
+/** The map's cached place list embeds media URLs (`listMapPlacesCached`). */
+function dropMapCache(): void {
+  revalidateTag(MAP_PLACES_TAG, { expire: 0 })
+}
+
 export async function deleteMedia(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('media.upload')
   const { t } = await getAdminI18n()
@@ -274,6 +281,7 @@ export async function deleteMedia(id: string, form: FormData): Promise<void> {
     outcome = { err: errorMessage(error) }
   }
 
+  dropMapCache()
   redirect(withOutcome(returnTo(form), outcome))
 }
 
@@ -314,6 +322,7 @@ export async function restoreMedia(id: string, form: FormData): Promise<void> {
     outcome = { err: errorMessage(error) }
   }
 
+  dropMapCache()
   redirect(withOutcome(returnTo(form), outcome))
 }
 

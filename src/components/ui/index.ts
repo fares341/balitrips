@@ -12,4 +12,6 @@
 
 export { Icon, iconNames, isIconName, type IconName, type IconProps } from './icon'
 export { Photo, type PhotoProps } from './photo'
+export { SafeImg, type SafeImgProps } from './safe-img'
+export { GooglePhotoCredit, GooglePhotoCreditView } from './google-photo-credit'
 export { Logo, type LogoProps } from './logo'

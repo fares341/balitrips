@@ -5066,3 +5066,32 @@ a.bt-contact-card:hover {
   padding-top: 28px;
   border-top: 1px solid var(--line);
 }
+
+/* Google place photo attribution (Places API policy): «Photo: <author> ·
+   Google Maps» over the bottom corner of the photo. The slot becomes the
+   positioning box unless it already positions itself. */
+:where(*:has(> .gp-credit)) {
+  position: relative;
+}
+.gp-credit {
+  position: absolute;
+  inset-inline-start: 6px;
+  bottom: 6px;
+  z-index: 2;
+  max-width: calc(100% - 12px);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

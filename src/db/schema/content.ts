@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm'
 import {
   type AnyPgColumn,
   boolean,
+  date,
   doublePrecision,
   index,
   integer,
@@ -935,11 +936,24 @@ export const mapPlaces = pgTable(
 
     heroImageId: uuid('hero_image_id').references(() => media.id),
 
+    /**
+     * Google place photos (migration 0040). Only the Google place ID is kept:
+     * Places API policy exempts it from the caching rules. Photo names, URIs,
+     * bytes and author attributions are fetched live per request
+     * (`@/lib/google-places`), never stored.
+     *   status: none | auto | confirmed | rejected | review
+     */
+    googlePlaceId: text('google_place_id'),
+    googleMatchStatus: varchar('google_match_status', { length: 16 }).notNull().default('none'),
+    googleMatchScore: real('google_match_score'),
+    googleCheckedAt: timestamp('google_checked_at', { withTimezone: true }),
+
     ...publishing,
     ...timestamps,
     ...softDelete,
   },
   (t) => [
+    index('map_places_google_status_idx').on(t.googleMatchStatus),
     index('map_places_free_idx').on(t.isFree),
     index('map_places_coords_idx').on(t.lat, t.lon),
     index('map_places_region_idx').on(t.regionId),
@@ -1098,3 +1112,18 @@ export const mapPlacesRelations = relations(mapPlaces, ({ one }) => ({
   activity: one(activities, { fields: [mapPlaces.activityId], references: [activities.id] }),
   heroImage: one(media, { fields: [mapPlaces.heroImageId], references: [media.id] }),
 }))
+
+/**
+ * Google Places API calls per day and kind (migration 0040): the cost guard's
+ * counter and the usage table in Studio → Places → Google photos.
+ */
+export const googleApiUsage = pgTable(
+  'google_api_usage',
+  {
+    day: date('day').notNull(),
+    kind: varchar('kind', { length: 32 }).notNull(),
+    count: integer('count').notNull().default(0),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ name: 'google_api_usage_pk', columns: [t.day, t.kind] })],
+)

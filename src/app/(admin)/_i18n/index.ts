@@ -12,6 +12,7 @@ import common from './common'
 import content from './content'
 import dashboard from './dashboard'
 import financeCrm from './finance-crm'
+import googlePlaces from './google-places'
 import ops from './ops'
 import people from './people'
 import phase3 from './phase3'
@@ -47,6 +48,7 @@ const SECTIONS = [
   whatsapp,
   ownerOps,
   leadTime,
+  googlePlaces,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
