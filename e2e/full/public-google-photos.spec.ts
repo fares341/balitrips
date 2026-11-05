@@ -45,6 +45,17 @@ test.describe('google place photos (mocked)', () => {
     ).toBe(404)
   })
 
+  test('cards, lists and search keep our own media (details only)', async ({ request }) => {
+    for (const path of [
+      '/api/map/places?locale=en',
+      `/api/places/search?q=${encodeURIComponent(slug)}&locale=en`,
+    ]) {
+      const res = await request.get(path)
+      if (res.status() !== 200) continue
+      expect(await res.text(), path).not.toContain('/gphoto/')
+    }
+  })
+
   test('the photo credit API answers live attributions', async ({ request }) => {
     const res = await request.get(`/api/places/${slug}/gphotos`)
     expect(res.status()).toBe(200)
