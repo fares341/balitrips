@@ -88,7 +88,7 @@ const section: Section = {
     'rp.note_all_time': 'all time',
     'rp.note_of_customers': 'of {n} customers',
     'rp.note_currency':
-      'Money is shown per currency. Amounts in different currencies are never added together.',
+      'All money is shown in SAR. Older orders paid in another currency are converted at the Studio rate and marked ≈.',
     'rp.note_bali_time': 'An order belongs to the day it was placed, in Bali time (WITA, UTC+8).',
     'rp.note_consent':
       'Visits, views and clicks are counted only for visitors who accepted statistics cookies, so they are lower than the real number of visitors. Sales, bookings and payments are always complete.',
@@ -177,7 +177,7 @@ const section: Section = {
     'rp.def_view_to_booking':
       'Of the visitors who opened an activity, itinerary or package page in the period, the share who also bought in the period. Counts only visitors who accepted statistics cookies.',
 
-    'rp.chart_sales': 'Bookings value over time ({currency})',
+    'rp.chart_sales': 'Bookings value over time (SAR)',
     'rp.def_chart_sales':
       'Bookings value per day (per hour for a single day), this period against the same days of the previous one.',
     'rp.chart_bookings_status': 'Bookings by status',
@@ -185,10 +185,10 @@ const section: Section = {
       'Bookings of paid orders placed in the period: confirmed, waiting, cancelled.',
     'rp.def_chart_bookings_status_detail':
       'Bookings of paid orders placed in the period, by their exact status.',
-    'rp.chart_top_products': 'Top products ({currency})',
+    'rp.chart_top_products': 'Top products (SAR)',
     'rp.def_chart_top_products':
       'Products with the highest sales value in paid orders placed in the period.',
-    'rp.chart_sources': 'Where customers come from ({currency})',
+    'rp.chart_sources': 'Where customers come from (SAR)',
     'rp.def_chart_sources':
       'Paid orders by the campaign (UTM tags) or website the visitor came from. "Direct / unknown" = typed the address, or did not accept statistics cookies.',
     'rp.group_confirmed': 'Confirmed',
@@ -355,9 +355,9 @@ const section: Section = {
     'rp.kpi_reminders': 'Reminders sent',
     'rp.def_reminders':
       'Abandoned-checkout reminders sent in the period (only to signed-in customers who agreed to receive offers).',
-    'rp.table_sources': 'Sources and campaigns ({currency})',
+    'rp.table_sources': 'Sources and campaigns (SAR)',
     'rp.def_sources':
-      'Visitors and paid orders per source (UTM tags or the website that sent them). Revenue in the chosen currency.',
+      'Visitors and paid orders per source (UTM tags or the website that sent them). Revenue in SAR.',
     'rp.col_source': 'Source',
     'rp.col_campaign': 'Campaign',
     'rp.col_visitors': 'Visitors',
@@ -645,7 +645,7 @@ const section: Section = {
     'rp.note_late_tickets': '{n} متأخرة',
     'rp.note_all_time': 'منذ البداية',
     'rp.note_of_customers': 'من {n} عميل',
-    'rp.note_currency': 'المبالغ معروضة لكل عملة على حدة. لا نجمع مبالغ بعملات مختلفة أبداً.',
+    'rp.note_currency': 'كل المبالغ بالريال السعودي. الطلبات القديمة المدفوعة بعملة أخرى تُحوَّل بسعر الاستوديو وتُعلَّم بـ ≈.',
     'rp.note_bali_time': 'الطلب يُحسب في اليوم الذي أُنشئ فيه، بتوقيت بالي (UTC+8).',
     'rp.note_consent':
       'الزيارات والمشاهدات والنقرات تُحسب فقط للزوار الذين قبلوا ملفات الإحصاءات، لذلك هي أقل من العدد الحقيقي. المبيعات والحجوزات والمدفوعات كاملة دائماً.',
@@ -727,7 +727,7 @@ const section: Section = {
     'rp.def_view_to_booking':
       'من الزوار الذين فتحوا صفحة نشاط أو جدول أو باقة في الفترة، نسبة من اشترى أيضاً في الفترة. يُحسب فقط للزوار الذين قبلوا ملفات الإحصاءات.',
 
-    'rp.chart_sales': 'قيمة الحجوزات عبر الوقت ({currency})',
+    'rp.chart_sales': 'قيمة الحجوزات عبر الوقت (ر.س)',
     'rp.def_chart_sales':
       'قيمة الحجوزات لكل يوم (لكل ساعة في يوم واحد)، الفترة الحالية مقابل نفس أيام الفترة السابقة.',
     'rp.chart_bookings_status': 'الحجوزات حسب الحالة',
@@ -735,10 +735,10 @@ const section: Section = {
       'حجوزات الطلبات المدفوعة التي أُنشئت في الفترة: مؤكدة، بالانتظار، ملغاة.',
     'rp.def_chart_bookings_status_detail':
       'حجوزات الطلبات المدفوعة التي أُنشئت في الفترة حسب حالتها بالتفصيل.',
-    'rp.chart_top_products': 'أكثر المنتجات مبيعاً ({currency})',
+    'rp.chart_top_products': 'أكثر المنتجات مبيعاً (ر.س)',
     'rp.def_chart_top_products':
       'المنتجات الأعلى قيمة مبيعات في الطلبات المدفوعة التي أُنشئت في الفترة.',
-    'rp.chart_sources': 'من أين يأتي العملاء ({currency})',
+    'rp.chart_sources': 'من أين يأتي العملاء (ر.س)',
     'rp.def_chart_sources':
       'الطلبات المدفوعة حسب الحملة (وسوم UTM) أو الموقع الذي جاء منه الزائر. "مباشر / غير معروف" = كتب العنوان بنفسه، أو لم يقبل ملفات الإحصاءات.',
     'rp.group_confirmed': 'مؤكدة',
@@ -897,9 +897,9 @@ const section: Section = {
     'rp.kpi_reminders': 'تذكيرات مرسلة',
     'rp.def_reminders':
       'تذكيرات السلة المتروكة المرسلة في الفترة (فقط لعملاء مسجلين وافقوا على تلقي العروض).',
-    'rp.table_sources': 'المصادر والحملات ({currency})',
+    'rp.table_sources': 'المصادر والحملات (ر.س)',
     'rp.def_sources':
-      'الزوار والطلبات المدفوعة لكل مصدر (وسوم UTM أو الموقع الذي أرسلهم). الإيراد بالعملة المختارة.',
+      'الزوار والطلبات المدفوعة لكل مصدر (وسوم UTM أو الموقع الذي أرسلهم). الإيراد بالريال السعودي.',
     'rp.col_source': 'المصدر',
     'rp.col_campaign': 'الحملة',
     'rp.col_visitors': 'الزوار',

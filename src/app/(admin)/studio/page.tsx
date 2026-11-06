@@ -10,7 +10,6 @@ import {
   entitlements,
   favorites,
   mapPlaces,
-  orderItems,
   orders,
   securityAlerts,
   users,
@@ -18,13 +17,14 @@ import {
 import { pick } from '@/lib/content/localize'
 import { liveModeIssues } from '@/lib/live-mode'
 import { can } from '@/lib/auth/roles'
-import { studioMoney as formatMoney, studioTotal } from '@/lib/currency/studio'
+import { studioMoney as formatMoney, studioSarMinor, studioTotal } from '@/lib/currency/studio'
+import { formatMoney as plainMoney } from '@/lib/money'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 import { AUTHORIZATION_DAYS } from '@/lib/orders/capture'
 import { isUrgent, timeLeftParts } from '@/lib/orders/supplier-wait'
 
 import { buildOverview } from '@/lib/reports/builders/overview'
-import { currencyOptions, staffOptions, supplierOptions } from '@/lib/reports/data'
+import { staffOptions, supplierOptions } from '@/lib/reports/data'
 import { parseReportFilters } from '@/lib/reports/filters'
 
 import { adminHref } from '../_lib/admin-path'
@@ -36,10 +36,12 @@ import { Advanced } from '../_ui/advanced'
 import { Flash } from '../_ui/flash'
 import { Icon, type IconName } from '../_ui/icons'
 import { FilterBar } from '../_ui/reports/filter-bar'
-import { ReportBody } from '../_ui/reports/report-view'
-import { Empty, OrderStatusPill, Pill, Table, When } from '../_ui/table'
+import { ReportBody, type KpiGroup } from '../_ui/reports/report-view'
+import { Ago, Empty, OrderStatusPill, Pill, Table } from '../_ui/table'
 import { OpsKpis } from './dashboard-ops'
 import { buildContext } from './reports/access'
+
+import './dashboard.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,8 +90,6 @@ export default async function DashboardPage({
   const placedAt = sql`coalesce(${orders.placedAt}, ${orders.createdAt})`
 
   const [
-    userCountRows,
-    itinerariesSoldRows,
     mapUserRows,
     openAlertRows,
     topViewed,
@@ -102,19 +102,6 @@ export default async function DashboardPage({
     newContactRows,
     pendingDeviceRows,
   ] = await Promise.all([
-    mayReadCustomers
-      ? db
-          .select({ value: sql<number>`count(*)::int` })
-          .from(users)
-          .where(isNull(users.deletedAt))
-      : [],
-    mayReadOrders
-      ? db
-          .select({ value: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int` })
-          .from(orderItems)
-          .innerJoin(orders, eq(orders.id, orderItems.orderId))
-          .where(and(eq(orderItems.kind, 'itinerary'), inArray(orders.status, PAID)))
-      : [],
     mayReadCustomers
       ? db
           .select({ value: sql<number>`count(distinct ${entitlements.userId})::int` })
@@ -225,15 +212,10 @@ export default async function DashboardPage({
   // Phase 6: the period dashboard is a report (`reports.read`).
   const reportCtx = can(session.role, 'reports.read') ? await buildContext(session.role) : null
   const filters = parseReportFilters(params, now)
-  const [overview, supplierList, currencyList, staffList] =
+  const [overview, supplierList, staffList] =
     reportCtx === null
-      ? [null, [], [], []]
-      : await Promise.all([
-          buildOverview(filters, reportCtx),
-          supplierOptions(),
-          currencyOptions(),
-          staffOptions(),
-        ])
+      ? [null, [], []]
+      : await Promise.all([buildOverview(filters, reportCtx), supplierOptions(), staffOptions()])
   const lowSpots = overview?.kpis.find((kpi) => kpi.id === 'low_availability')?.value ?? null
   const lowSpotCount = lowSpots && lowSpots.kind === 'count' ? (lowSpots.value ?? 0) : 0
 
@@ -296,15 +278,17 @@ export default async function DashboardPage({
       ])
     : [[], []]
 
-  const totalOrders = byStatus.reduce((sum, row) => sum + row.orderCount, 0)
-
-  // Only settled money counts as revenue. Pending orders have not been paid
-  // and cancelled ones never will be, so folding them in would overstate it.
-  const earnedByCurrency = new Map<string, number>()
+  // «الطلبات حسب الحالة»: one SAR value per status (owner: SAR only).
+  const statusSar = new Map<string, { orders: number; minor: number; converted: boolean }>()
   for (const row of byStatus) {
-    if (!PAID.includes(row.status)) continue
-    earnedByCurrency.set(row.currency, (earnedByCurrency.get(row.currency) ?? 0) + row.revenueMinor)
+    const entry = statusSar.get(row.status) ?? { orders: 0, minor: 0, converted: false }
+    entry.orders += row.orderCount
+    const sar = studioSarMinor(Math.round(row.revenueMinor), row.currency)
+    entry.minor += sar ?? 0
+    if (row.currency.toUpperCase() !== 'SAR' && row.revenueMinor !== 0) entry.converted = true
+    statusSar.set(row.status, entry)
   }
+
   const monthByCurrency = monthRevenue.filter((row) => row.revenueMinor > 0)
 
   const count = (rows: readonly { value: number }[]) => rows[0]?.value ?? 0
@@ -445,6 +429,66 @@ export default async function DashboardPage({
   const pendingWork = attention.filter(
     (item) => item.count > 0 && canOpenHref(session.role, item.href),
   )
+
+  // --- KPI groups (Studio home): three short grids instead of one long one ---
+  const kpiGroups: KpiGroup[] = [
+    {
+      title: t('dashboard.grp_sales'),
+      tone: 'forest',
+      icon: 'bag',
+      ids: [
+        'bookings_value',
+        'collected',
+        'refunds',
+        'supplier_cost',
+        'margin',
+        'itinerary_sales',
+        'activity_sales',
+        'vip_sales',
+      ],
+      icons: {
+        collected: 'card',
+        refunds: 'card',
+        supplier_cost: 'box',
+        margin: 'pulse',
+        itinerary_sales: 'route',
+        activity_sales: 'compass',
+        vip_sales: 'star',
+      },
+    },
+    {
+      title: t('dashboard.grp_ops'),
+      tone: 'orange',
+      icon: 'clipboard',
+      ids: [
+        'orders',
+        'bookings_confirmed',
+        'bookings_pending',
+        'bookings_cancelled',
+        'payment_success',
+        'payment_failed',
+        'open_requests',
+        'open_tickets',
+        'low_availability',
+        'supplier_sync_errors',
+      ],
+      icons: {
+        payment_success: 'check',
+        payment_failed: 'alert',
+        open_requests: 'inbox',
+        open_tickets: 'message',
+        low_availability: 'layers',
+        supplier_sync_errors: 'pulse',
+      },
+    },
+    {
+      title: t('dashboard.grp_customers'),
+      tone: 'forest',
+      icon: 'users',
+      ids: ['new_customers', 'returning_customers', 'view_to_booking'],
+      icons: { view_to_booking: 'pulse' },
+    },
+  ]
 
   // --- Quick actions -------------------------------------------------------
   const quickActions: { href: string; label: string; icon: IconName }[] = []
@@ -607,24 +651,40 @@ export default async function DashboardPage({
       <OpsKpis role={session.role} t={t} intl={intl} />
 
       {overview !== null && reportCtx !== null ? (
-        <section aria-labelledby="dash-numbers" style={{ marginBlockStart: 18 }}>
-          <h2 id="dash-numbers" className="a-section-title">
-            {t('rp.dashboard_numbers')}
-          </h2>
-          <FilterBar
-            action={adminHref('')}
-            filters={filters}
-            t={t}
-            intl={intl}
-            suppliers={supplierList}
-            currencies={currencyList}
-            staff={staffList}
-          >
-            <a className="a-btn ghost" href={adminHref('/reports')}>
+        <section aria-labelledby="dash-numbers" className="dash-numbers">
+          <div className="dash-numbers-head">
+            <h2 id="dash-numbers" className="a-section-title">
+              {t('rp.dashboard_numbers')}
+            </h2>
+            <a className="a-btn ghost small" href={adminHref('/reports')}>
               {t('rp.all_reports')}
             </a>
-          </FilterBar>
-          <ReportBody result={overview} t={t} intl={intl} rtl={reportCtx.rtl} role={session.role} />
+          </div>
+          {/* Phone: the filters fold into a sheet behind one button (no JS). */}
+          <input type="checkbox" id="dash-fsheet" className="dash-fsheet-toggle" hidden />
+          <label htmlFor="dash-fsheet" className="a-btn ghost small dash-fsheet-btn">
+            <Icon name="sliders" size={16} />
+            {t('dashboard.filters_btn')}
+          </label>
+          <div className="dash-filters">
+            <FilterBar
+              action={adminHref('')}
+              filters={filters}
+              t={t}
+              intl={intl}
+              suppliers={supplierList}
+              currencies={[]}
+              staff={staffList}
+            />
+          </div>
+          <ReportBody
+            result={overview}
+            t={t}
+            intl={intl}
+            rtl={reportCtx.rtl}
+            role={session.role}
+            groups={kpiGroups}
+          />
         </section>
       ) : null}
 
@@ -690,8 +750,10 @@ export default async function DashboardPage({
         </section>
       ) : null}
 
+      <h2 className="a-section-title">{t('dashboard.lists_title')}</h2>
+
       {mayReadOrders ? (
-        <section className="a-card">
+        <section className="a-card dash-list">
           <div className="a-card-head">
             <h2>{t('dashboard.recent_orders')}</h2>
             <Link className="a-btn ghost small" href={adminHref('/orders')}>
@@ -714,20 +776,22 @@ export default async function DashboardPage({
               <tbody>
                 {recentOrders.map((order) => (
                   <tr key={order.id}>
-                    <td>
+                    <td className="dash-cell-main">
                       <Link href={adminHref(`/orders/${order.id}`)} className="a-mono">
                         {order.orderNumber}
                       </Link>
                     </td>
-                    <td>
+                    <td className="dash-cell-sub">
                       {order.email ?? <span className="a-muted">{t('dashboard.guest')}</span>}
                     </td>
                     <td>
                       <OrderStatusPill status={order.status} />
                     </td>
-                    <td className="num">{formatMoney(order.totalMinor, order.currency, intl)}</td>
-                    <td>
-                      <When value={order.placedAt ?? order.createdAt} />
+                    <td className="num dash-cell-money">
+                      {formatMoney(order.totalMinor, order.currency, intl)}
+                    </td>
+                    <td className="dash-cell-when">
+                      <Ago now={now} value={order.placedAt ?? order.createdAt} />
                     </td>
                   </tr>
                 ))}
@@ -739,7 +803,7 @@ export default async function DashboardPage({
 
       <div className="a-cols">
         {mayReadLeads ? (
-          <section className="a-card">
+          <section className="a-card dash-list">
             <div className="a-card-head">
               <h2>{t('dashboard.recent_requests')}</h2>
               <Link className="a-btn ghost small" href={adminHref('/leads')}>
@@ -761,7 +825,7 @@ export default async function DashboardPage({
                 <tbody>
                   {recentTrips.map((lead) => (
                     <tr key={lead.id}>
-                      <td>
+                      <td className="dash-cell-main">
                         <Link href={adminHref('/leads')}>
                           {lead.name ?? t('dashboard.unnamed')}
                         </Link>
@@ -776,9 +840,9 @@ export default async function DashboardPage({
                           {leadLabel(lead.status)}
                         </Pill>
                       </td>
-                      <td className="num">{lead.travellers ?? '—'}</td>
-                      <td>
-                        <When value={lead.createdAt} />
+                      <td className="num">{lead.travellers ?? 0}</td>
+                      <td className="dash-cell-when">
+                        <Ago now={now} value={lead.createdAt} />
                       </td>
                     </tr>
                   ))}
@@ -788,7 +852,7 @@ export default async function DashboardPage({
           </section>
         ) : null}
         {mayReadLeads ? (
-          <section className="a-card">
+          <section className="a-card dash-list">
             <div className="a-card-head">
               <h2>{t('dashboard.contact_messages')}</h2>
               <Link className="a-btn ghost small" href={adminHref('/leads?tab=contact')}>
@@ -810,17 +874,21 @@ export default async function DashboardPage({
                 <tbody>
                   {recentContacts.map((message) => (
                     <tr key={message.id}>
-                      <td>
+                      <td className="dash-cell-main">
                         <Link href={adminHref('/leads?tab=contact')}>{message.name}</Link>
                       </td>
-                      <td>{message.subject ?? <span className="a-muted">—</span>}</td>
+                      <td className="dash-cell-sub">
+                        {message.subject ?? (
+                          <span className="a-muted">{t('dashboard.none_yet')}</span>
+                        )}
+                      </td>
                       <td>
                         <Pill tone={LEAD_TONES[message.status] ?? 'neutral'}>
                           {leadLabel(message.status)}
                         </Pill>
                       </td>
-                      <td>
-                        <When value={message.createdAt} />
+                      <td className="dash-cell-when">
+                        <Ago now={now} value={message.createdAt} />
                       </td>
                     </tr>
                   ))}
@@ -831,104 +899,9 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      <h2 className="a-section-title">{t('dashboard.insights_title')}</h2>
-
-      {mayReadOrders || mayReadCustomers ? (
-        <section className="a-kpis a-kpis-quiet" aria-label={t('dashboard.insights_title')}>
-          {mayReadCustomers ? (
-            <div className="a-kpi">
-              <span className="a-kpi-label">{t('dashboard.kpi_users')}</span>
-              <b className="a-kpi-value">{count(userCountRows)}</b>
-            </div>
-          ) : null}
-          {mayReadOrders ? (
-            <div className="a-kpi">
-              <span className="a-kpi-label">{t('dashboard.kpi_orders_total')}</span>
-              <b className="a-kpi-value">{totalOrders}</b>
-            </div>
-          ) : null}
-          {mayReadOrders ? (
-            <div className="a-kpi">
-              <span className="a-kpi-label">{t('dashboard.kpi_itineraries_sold')}</span>
-              <b className="a-kpi-value">{count(itinerariesSoldRows)}</b>
-            </div>
-          ) : null}
-          {mayReadOrders ? (
-            <div className="a-kpi">
-              <span className="a-kpi-label">{t('dashboard.kpi_revenue_all')}</span>
-              {earnedByCurrency.size === 0 ? (
-                <b className="a-kpi-value a-muted">—</b>
-              ) : (
-                <b className="a-kpi-value" dir="ltr">
-                  {studioTotal(
-                    [...earnedByCurrency.entries()].map(([currency, minor]) => ({
-                      currency,
-                      minor,
-                    })),
-                    intl,
-                    undefined,
-                    { short: true },
-                  )}
-                </b>
-              )}
-              <span className="a-kpi-note">{t('dashboard.kpi_revenue_note')}</span>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      <div className="a-cols">
-        <section className="a-card">
-          <h2>{t('dashboard.top_viewed')}</h2>
-          {topViewed.length === 0 ? (
-            <Empty>{t('dashboard.no_views')}</Empty>
-          ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <th>{t('dashboard.col_place')}</th>
-                  <th className="num">{t('dashboard.col_views')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topViewed.map((row) => (
-                  <tr key={row.slug}>
-                    <td>{pick(row.name, locale, row.slug)}</td>
-                    <td className="num">{row.hits}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </section>
-        <section className="a-card">
-          <h2>{t('dashboard.top_saved')}</h2>
-          {topSaved.length === 0 ? (
-            <Empty>{t('dashboard.no_saves')}</Empty>
-          ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <th>{t('dashboard.col_place')}</th>
-                  <th className="num">{t('dashboard.col_saves')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topSaved.map((row) => (
-                  <tr key={row.slug}>
-                    <td>{pick(row.name, locale, row.slug)}</td>
-                    <td className="num">{row.hits}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </section>
-      </div>
-
       <div className="a-cols">
         {mayReadCustomers ? (
-          <section className="a-card">
+          <section className="a-card dash-list">
             <div className="a-card-head">
               <h2>{t('dashboard.newest_users')}</h2>
               <Link className="a-btn ghost small" href={adminHref('/customers')}>
@@ -949,14 +922,16 @@ export default async function DashboardPage({
                 <tbody>
                   {latestUsers.map((user) => (
                     <tr key={user.id}>
-                      <td>
+                      <td className="dash-cell-main">
                         <Link href={adminHref(`/customers/${user.id}`)} dir="ltr">
                           {user.email}
                         </Link>
                       </td>
-                      <td>{user.name ?? <span className="a-muted">—</span>}</td>
-                      <td>
-                        <When value={user.createdAt} />
+                      <td className="dash-cell-sub">
+                        {user.name ?? <span className="a-muted">{t('dashboard.none_yet')}</span>}
+                      </td>
+                      <td className="dash-cell-when">
+                        <Ago now={now} value={user.createdAt} />
                       </td>
                     </tr>
                   ))}
@@ -967,47 +942,86 @@ export default async function DashboardPage({
         ) : null}
 
         {mayReadOrders ? (
-          <section className="a-card">
+          <section className="a-card dash-list">
             <h2>{t('dashboard.by_status')}</h2>
             <Table>
               <thead>
                 <tr>
                   <th>{t('common.status')}</th>
-                  <th>{t('common.currency')}</th>
                   <th className="num">{t('dashboard.col_orders')}</th>
                   <th className="num">{t('dashboard.col_value')}</th>
                 </tr>
               </thead>
               <tbody>
-                {ORDER_STATUSES.flatMap((status) => {
-                  const rows = byStatus.filter((row) => row.status === status)
-                  if (rows.length === 0) {
-                    return [
-                      <tr key={status}>
-                        <td>
-                          <OrderStatusPill status={status} />
-                        </td>
-                        <td className="a-muted">—</td>
-                        <td className="num">0</td>
-                        <td className="num a-muted">—</td>
-                      </tr>,
-                    ]
-                  }
-                  return rows.map((row) => (
-                    <tr key={`${status}-${row.currency}`}>
+                {ORDER_STATUSES.map((status) => {
+                  const row = statusSar.get(status)
+                  return (
+                    <tr key={status}>
                       <td>
                         <OrderStatusPill status={status} />
                       </td>
-                      <td className="a-mono">{row.currency}</td>
-                      <td className="num">{row.orderCount}</td>
-                      <td className="num">{formatMoney(row.revenueMinor, row.currency, intl)}</td>
+                      <td className="num">{row?.orders ?? 0}</td>
+                      <td className="num dash-cell-money" dir="ltr">
+                        {row && row.orders > 0
+                          ? `${row.converted ? '≈ ' : ''}${plainMoney(row.minor, 'SAR', intl)}`
+                          : plainMoney(0, 'SAR', intl)}
+                      </td>
                     </tr>
-                  ))
+                  )
                 })}
               </tbody>
             </Table>
           </section>
         ) : null}
+      </div>
+
+      <div className="a-cols">
+        <section className="a-card dash-list">
+          <h2>{t('dashboard.top_viewed')}</h2>
+          {topViewed.length === 0 ? (
+            <Empty>{t('dashboard.no_views')}</Empty>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <th>{t('dashboard.col_place')}</th>
+                  <th className="num">{t('dashboard.col_views')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topViewed.map((row) => (
+                  <tr key={row.slug}>
+                    <td className="dash-cell-main">{pick(row.name, locale, row.slug)}</td>
+                    <td className="num">{row.hits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </section>
+        <section className="a-card dash-list">
+          <h2>{t('dashboard.top_saved')}</h2>
+          {topSaved.length === 0 ? (
+            <Empty>{t('dashboard.no_saves')}</Empty>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <th>{t('dashboard.col_place')}</th>
+                  <th className="num">{t('dashboard.col_saves')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topSaved.map((row) => (
+                  <tr key={row.slug}>
+                    <td className="dash-cell-main">{pick(row.name, locale, row.slug)}</td>
+                    <td className="num">{row.hits}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </section>
       </div>
     </>
   )
