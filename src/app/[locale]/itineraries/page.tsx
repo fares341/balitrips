@@ -1,17 +1,16 @@
 /**
- * Itineraries hub.
+ * All itineraries (itineraries phase 2, corrected spec §2.1, design 01).
  *
- * Ported from `ItinerariesPage` in
- * design/handoff/sections-bt/page-plans.jsx — banner, then the 4-up grid.
+ * Hero, the two filters — number of days and who you travel with (youth /
+ * couples / family, from `audience`) — kept in the URL (`?days=6&for=family`),
+ * then the cards: cover, type, days, name, blurb, Studio's preview numbers,
+ * «يبدأ من» + price, the «الأكثر طلبًا» badge and the map savings line
+ * «+ الخريطة بـ Y بدل Z — وفّر X», every figure from the `itinerarySales`
+ * settings. Then «ما لقيت اللي يناسبك؟ ← خصّص جدولك» (the existing custom
+ * request, unchanged) and «كيف تشتغل؟».
  *
- * Two differences from the handoff, both forced by the move off the in-memory
- * `ITINERARIES` array:
- *
- *  - The banner photograph is the first itinerary's hero rather than a
- *    loremflickr URL synthesised from the tag string `"lempuyang,temple"`. The
- *    prototype's banner images were random every deploy; this one is content.
- *  - An empty catalogue renders the "nothing matches" copy instead of an empty
- *    grid. `ITINERARIES` was a literal and could never be empty; a table can.
+ * Cards come from the public allow-list DTO: no regions, places or day
+ * content before purchase.
  */
 
 import type { Metadata } from 'next'
@@ -20,38 +19,34 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ChipLink, ChipRow } from '@/components/bt/chip'
 import { ItineraryCard } from '@/components/cards'
-import { Breadcrumbs, LinkButton } from '@/components/shared'
-import { Icon, Photo, type IconName } from '@/components/ui'
-import { isLocale, locales } from '@/i18n/config'
-import {
-  BUDGET_TIER_LABEL,
-  BUDGET_TIERS,
-  parseBudgetTier,
-  tiersFromPrices,
-  type BudgetTier,
-} from '@/lib/budget-tier'
-import { pick } from '@/lib/content/localize'
-import { listItineraries } from '@/lib/content/queries'
-import { ENTITY_PATHS } from '@/lib/content/types'
+import { Money } from '@/components/currency/currency-context'
 import { HOME_HREF } from '@/components/layout'
-import { CUSTOM_HREF } from '../_ui/routes-extra'
-import { pricedTiers } from '@/lib/itineraries/tiers'
-import { alternates } from './_meta'
-import { ItineraryHowItWorks } from './_ui/how-it-works'
+import { Breadcrumbs, LinkButton } from '@/components/shared'
+import { Icon, Photo } from '@/components/ui'
+import { isLocale, locales } from '@/i18n/config'
+import { pick, pickOptional } from '@/lib/content/localize'
+import { ENTITY_PATHS } from '@/lib/content/types'
+import { listPublicItineraries, loadMapBundleOffer } from '@/lib/itineraries/public'
+import { AUDIENCE_KEYS, isAudienceKey, type AudienceKey } from '@/lib/itineraries/public-dto'
+import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
+
+import { CUSTOM_HREF } from '../_ui/routes-extra'
+import { alternates } from './_meta'
+import { toCardItinerary } from './_ui/card-props'
+import { ItineraryHowItWorks } from './_ui/how-it-works'
+import './_ui/itineraries.css'
 
 const HREF = ENTITY_PATHS.itinerary
 
 /** Above-the-fold row on the widest breakpoint is four cards. */
 const PRIORITY_CARDS = 4
 
-/** The four promises above the list (v3 itineraries.html). */
-const FEATURES_ROW: readonly { icon: IconName; key: string }[] = [
-  { icon: 'doc', key: 'it_ft1' },
-  { icon: 'map', key: 'it_ft2' },
-  { icon: 'clock', key: 'it_ft3' },
-  { icon: 'download', key: 'it_ft4' },
-]
+const AUDIENCE_LABEL: Record<AudienceKey, string> = {
+  youth: 'it_aud_youth',
+  couples: 'itl_aud_couples',
+  family: 'itl_aud_family',
+}
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -64,23 +59,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   if (!isLocale(locale)) notFound()
-
   const t = await getTranslations({ locale })
-
   return {
-    // `ih_title` is a sentence with a full stop — right for an <h1>, wrong
-    // inside the "%s · Bali Trips" template. The nav label is the title.
     title: t('svc_itin_t'),
-    description: t('ih_sub'),
+    description: t('itl_sub'),
     alternates: alternates(HREF, locale),
     openGraph: {
       images: [DEFAULT_SHARE_IMAGE],
       type: 'website',
-      title: t('ih_title'),
-      description: t('ih_sub'),
+      title: t('itl_title'),
+      description: t('itl_sub'),
     },
   }
 }
+
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
 
 export default async function ItinerariesPage({
   params,
@@ -93,78 +86,60 @@ export default async function ItinerariesPage({
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, itineraries, query] = await Promise.all([
+  const [t, itineraries, query, settings] = await Promise.all([
     getTranslations({ locale }),
-    listItineraries(),
+    listPublicItineraries(),
     searchParams,
+    readItinerarySales(),
   ])
+  const offer = await loadMapBundleOffer(settings)
+  const bannerSrc = itineraries[0]?.hero?.url ?? '/brand/flatlay.webp'
 
-  const banner = itineraries[0]?.hero ?? null
-  /** The package's banner photo when no itinerary has one. */
-  const bannerSrc = banner?.url ?? '/brand/flatlay.webp'
-
-  // Budget category filter (?budget=economy|mid|luxury); unknown → all.
-  const tier = parseBudgetTier(query.budget)
-  // Bands from the real prices on sale (lib/budget-tier.ts), not fixed figures.
-  const itineraryTiers = tiersFromPrices(itineraries, (itinerary) => ({
-    minor: itinerary.priceMinor,
-    currency: itinerary.currency,
-  }))
-  // An itinerary sold in levels (economy / mid / luxury) is in each level it
-  // has a price for; otherwise in the band its single price falls in.
-  const tiers = itineraries.map((itinerary, index) => {
-    const levels = pricedTiers(itinerary.tierPrices).map((one) => one.key)
-    const derived = itineraryTiers[index] ?? null
-    return {
-      itinerary,
-      levels: levels.length > 0 ? levels : derived === null ? [] : [derived],
-    }
-  })
-  const counts = Object.fromEntries(
-    BUDGET_TIERS.map((key) => [key, tiers.filter((one) => one.levels.includes(key)).length]),
-  ) as Record<BudgetTier, number>
-  // Number of days (?days=5): the real lengths in the catalogue.
-  const dayOptions = [...new Set(itineraries.map((itinerary) => itinerary.days))].sort(
-    (a, b) => a - b,
-  )
-  const daysParam = Number(Array.isArray(query.days) ? query.days[0] : query.days)
+  // ?days=6 — the real lengths in the catalogue; unknown → all.
+  const dayOptions = [...new Set(itineraries.map((one) => one.days))].sort((a, b) => a - b)
+  const daysParam = Number(first(query.days))
   const days = dayOptions.includes(daysParam) ? daysParam : null
-  // Region (?region=north): the regions the catalogue's itineraries really visit.
-  const regionOptions = new Map<string, (typeof itineraries)[number]['regions'][number]>()
-  for (const itinerary of itineraries) {
-    for (const region of itinerary.regions) {
-      if (!regionOptions.has(region.key)) regionOptions.set(region.key, region)
-    }
-  }
-  const regionParam = Array.isArray(query.region) ? query.region[0] : query.region
-  const region = regionParam !== undefined && regionOptions.has(regionParam) ? regionParam : null
-  const shown = tiers
-    .filter(
-      (one) =>
-        (tier === null || one.levels.includes(tier)) &&
-        (days === null || one.itinerary.days === days) &&
-        (region === null || one.itinerary.regions.some((r) => r.key === region)),
-    )
-    .map((one) => one.itinerary)
-  /** This listing with one filter changed and the others kept. */
-  const hrefWith = (next: {
-    days?: number | null
-    budget?: BudgetTier | null
-    region?: string | null
-  }) => {
+  // ?for=youth|couples|family — only the audiences some itinerary has.
+  const audienceOptions = AUDIENCE_KEYS.filter((key) =>
+    itineraries.some((one) => one.audienceKeys.includes(key)),
+  )
+  const forParam = first(query.for)
+  const audience = isAudienceKey(forParam) && audienceOptions.includes(forParam) ? forParam : null
+
+  const shown = itineraries.filter(
+    (one) =>
+      (days === null || one.days === days) &&
+      (audience === null || one.audienceKeys.includes(audience)),
+  )
+  const hrefWith = (next: { days?: number | null; for?: AudienceKey | null }) => {
     const d = next.days === undefined ? days : next.days
-    const b = next.budget === undefined ? tier : next.budget
-    const r = next.region === undefined ? region : next.region
-    const params = new URLSearchParams()
-    if (d !== null) params.set('days', String(d))
-    if (b !== null) params.set('budget', b)
-    if (r !== null) params.set('region', r)
-    const qs = params.toString()
-    return qs === '' ? HREF : `${HREF}?${qs}`
+    const a = next.for === undefined ? audience : next.for
+    const qs = new URLSearchParams()
+    if (d !== null) qs.set('days', String(d))
+    if (a !== null) qs.set('for', a)
+    const s = qs.toString()
+    return s === '' ? HREF : `${HREF}?${s}`
   }
+
+  const popular = pickOptional(settings.popularBadge, locale) ?? t('itl_popular')
+  const mapLine =
+    offer !== null && settings.options.withMap.enabled ? (
+      <p className="it-card-map">
+        <Icon name="map" size={14} />{' '}
+        {offer.savingMinor > 0
+          ? t.rich('itl_map_line', {
+              price: () => <Money minor={offer.bundleMinor} currency={offer.currency} />,
+              full: () => <Money minor={offer.fullMinor} currency={offer.currency} />,
+              saving: () => <Money minor={offer.savingMinor} currency={offer.currency} />,
+            })
+          : t.rich('itl_map_line_plain', {
+              price: () => <Money minor={offer.fullMinor} currency={offer.currency} />,
+            })}
+      </p>
+    ) : null
 
   return (
-    <main>
+    <main className="itl">
       <div className="bt-banner">
         <Photo
           src={bannerSrc}
@@ -182,35 +157,20 @@ export default async function ItinerariesPage({
             className="tag"
             style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
           >
-            {t('pkg_eyebrow')}
+            {t('itl_eyebrow')}
           </span>
-          <h1 className="bt-banner-title">{t('ih_title')}</h1>
-          <p className="bt-banner-sub">{t('ih_sub')}</p>
+          <h1 className="bt-banner-title">{t('itl_title')}</h1>
+          <p className="bt-banner-sub">{t('itl_sub')}</p>
+          {itineraries.length > 0 && (
+            <p className="itl-count-hero">
+              <b dir="ltr">{itineraries.length}</b> {t('itl_ready')}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* What every itinerary gives you (v3 itineraries.html) */}
-      <section className="sec-tight it-feat-sec">
-        <ul className="wrap it-feat" role="list">
-          {FEATURES_ROW.map((feature) => (
-            <li key={feature.key}>
-              <span className="ic" aria-hidden="true">
-                <Icon name={feature.icon} size={18} />
-              </span>
-              <span>
-                <b>{t(`${feature.key}_t`)}</b>
-                <span className="muted">{t(`${feature.key}_b`)}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <section className="bg-ivory sec-tight">
         <div className="wrap stack" style={{ gap: 16 }}>
-          <a href="#it-how" className="it-how-link">
-            <Icon name="info" size={16} /> {t('ihw_link')}
-          </a>
           {itineraries.length > 0 && (
             <div className="panel it-filter">
               {dayOptions.length > 1 && (
@@ -230,53 +190,30 @@ export default async function ItinerariesPage({
                   </ChipRow>
                 </div>
               )}
-              {regionOptions.size > 1 && (
+              {audienceOptions.length > 0 && (
                 <div className="it-frow">
                   <span className="label" aria-hidden="true">
-                    {t('it_f_region')}
+                    {t('itl_f_for')}
                   </span>
-                  <ChipRow scroll label={t('it_f_region')}>
-                    <ChipLink href={hrefWith({ region: null })} active={region === null}>
+                  <ChipRow scroll label={t('itl_f_for')}>
+                    <ChipLink href={hrefWith({ for: null })} active={audience === null}>
                       {t('it_f_all')}
                     </ChipLink>
-                    {[...regionOptions.values()].map((option) => (
-                      <ChipLink
-                        key={option.key}
-                        href={hrefWith({ region: option.key })}
-                        active={region === option.key}
-                        count={
-                          itineraries.filter((it) => it.regions.some((r) => r.key === option.key))
-                            .length
-                        }
-                      >
-                        {pick(option.label, locale, option.key)}
+                    {audienceOptions.map((key) => (
+                      <ChipLink key={key} href={hrefWith({ for: key })} active={audience === key}>
+                        {t(AUDIENCE_LABEL[key])}
                       </ChipLink>
                     ))}
                   </ChipRow>
                 </div>
               )}
-              <div className="it-frow">
-                <span className="label" aria-hidden="true">
-                  {t('it_f_budget')}
-                </span>
-                <ChipRow scroll label={t('ct_budget')}>
-                  <ChipLink href={hrefWith({ budget: null })} active={tier === null}>
-                    {t('bud_all')}
-                  </ChipLink>
-                  {BUDGET_TIERS.filter((key) => counts[key] > 0).map((key) => (
-                    <ChipLink
-                      key={key}
-                      href={hrefWith({ budget: key })}
-                      active={tier === key}
-                      count={counts[key]}
-                    >
-                      {t(BUDGET_TIER_LABEL[key])}
-                    </ChipLink>
-                  ))}
-                </ChipRow>
-              </div>
             </div>
           )}
+
+          <div className="itl-head">
+            <h2 className="h2">{t('itl_pick_t')}</h2>
+            <p className="muted">{t('itl_pick_b')}</p>
+          </div>
           <p className="muted it-count">{t('it_count', { n: shown.length })}</p>
           {shown.length === 0 ? (
             <p className="muted center">{t('ah_none')}</p>
@@ -285,27 +222,34 @@ export default async function ItinerariesPage({
               {shown.map((itinerary, index) => (
                 <ItineraryCard
                   key={itinerary.id}
-                  itinerary={itinerary}
+                  itinerary={toCardItinerary(itinerary)}
                   priority={index < PRIORITY_CARDS}
+                  badge={itinerary.isPopular ? popular : null}
+                  stats={itinerary.stats.slice(0, 3).map((stat) => ({
+                    icon: stat.icon,
+                    value: stat.value,
+                    label: pick(stat.label, locale),
+                  }))}
+                  extra={itinerary.includesMap ? null : mapLine}
                 />
               ))}
             </div>
           )}
 
-          <div className="it-how-wrap">
-            <ItineraryHowItWorks locale={locale} photo={bannerSrc} />
-          </div>
-
           <div className="panel row between it-custom">
             <span className="stack" style={{ gap: 4 }}>
               <b className="h3" style={{ color: 'var(--forest)' }}>
-                {t('it_custom_t')}
+                {t('itl_custom_t')}
               </b>
-              <span className="muted">{t('it_custom_b')}</span>
+              <span className="muted">{t('itl_custom_b')}</span>
             </span>
             <LinkButton href={CUSTOM_HREF} variant="forest">
-              {t('it_custom_cta')}
+              {t('itl_custom_cta')}
             </LinkButton>
+          </div>
+
+          <div className="it-how-wrap">
+            <ItineraryHowItWorks locale={locale} photo={bannerSrc} />
           </div>
         </div>
       </section>
