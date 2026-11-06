@@ -38,6 +38,7 @@ import { Icon, type IconName } from '../_ui/icons'
 import { FilterBar } from '../_ui/reports/filter-bar'
 import { ReportBody } from '../_ui/reports/report-view'
 import { Empty, OrderStatusPill, Pill, Table, When } from '../_ui/table'
+import { OpsKpis } from './dashboard-ops'
 import { buildContext } from './reports/access'
 
 export const dynamic = 'force-dynamic'
@@ -602,6 +603,8 @@ export default async function DashboardPage({
           )}
         </section>
       ) : null}
+
+      <OpsKpis role={session.role} t={t} intl={intl} />
 
       {overview !== null && reportCtx !== null ? (
         <section aria-labelledby="dash-numbers" style={{ marginBlockStart: 18 }}>
