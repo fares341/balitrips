@@ -22,6 +22,7 @@ import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
 import { deleteReplyTemplate, openTicketForCustomer, saveReplyTemplate } from './actions'
 import { PRIORITY_TONES, STATUS_TONES } from './tones'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -179,9 +180,11 @@ export default async function SupportPage({
                       </td>
                       <td>
                         <form action={deleteReplyTemplate.bind(null, template.id)}>
-                          <button className="a-btn ghost small" type="submit">
-                            {t('support.template_delete')}
-                          </button>
+                          <ConfirmSubmit
+                            className="a-btn ghost small"
+                            label={t('support.template_delete')}
+                            title={t('confirm.delete_title')}
+                          />
                         </form>
                       </td>
                     </tr>

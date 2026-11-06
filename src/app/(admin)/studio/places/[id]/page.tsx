@@ -35,6 +35,7 @@ import { PageHead } from '../../../_ui/shell'
 import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
 import { TRAVELER_TYPES } from '@/lib/map/explore'
 import { VisitorPreview } from './preview'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -486,9 +487,11 @@ export default async function PlaceEditorPage({
           <form className="a-card" action={deletePlace.bind(null, place.id)}>
             <h2>{t('places.archive')}</h2>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
-              <button className="a-btn danger" type="submit">
-                {t('places.archive_btn')}
-              </button>
+              <ConfirmSubmit
+                className="a-btn danger"
+                label={t('places.archive_btn')}
+                title={t('confirm.archive_title')}
+              />
             </div>
           </form>
         </>

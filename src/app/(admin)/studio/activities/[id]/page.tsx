@@ -60,6 +60,7 @@ import { TierEditor } from './tier-editor'
 import { deleteActivity, reorderTiers, saveActivity } from '../actions'
 import { duplicateActivity } from '../v2-actions'
 import { ChecklistCard, HistoryCard, packageScopes, SeoTab, TemplateCard } from './v2-cards'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -560,9 +561,11 @@ export default async function ActivityEditorPage({
           <h2>{t('activities.section_archive')}</h2>
           <p className="a-hint">{t('activities.archive_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('activities.archive')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('activities.archive')}
+              title={t('confirm.archive_title')}
+            />
           </div>
         </form>
       ) : null}

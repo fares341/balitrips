@@ -48,6 +48,7 @@ import { accessLine, loadAccountSummaries } from '../summary'
 import { StudioLink } from '../../../_ui/studio-link'
 import { CrmPanel } from './crm-panel'
 import { ProtectionPanel } from './protection-panel'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -498,9 +499,12 @@ export default async function CustomerPage({
                             action={revokeSession.bind(null, account.id)}
                           >
                             <input type="hidden" name="sessionId" value={row.id} />
-                            <button className="a-btn danger small" type="submit">
-                              {t('customers.revoke')}
-                            </button>
+                            <ConfirmSubmit
+                              className="a-btn danger small"
+                              label={t('customers.revoke')}
+                              title={t('confirm.revoke_title')}
+                              typedWord="revoke"
+                            />
                           </form>
                         )}
                       </td>
@@ -516,9 +520,12 @@ export default async function CustomerPage({
                 action={revokeAllSessions.bind(null, account.id)}
                 style={{ marginBlockStart: 12 }}
               >
-                <button className="a-btn danger" type="submit">
-                  {t('customers.revoke_all', { count: live.length })}
-                </button>
+                <ConfirmSubmit
+                  className="a-btn danger"
+                  label={t('customers.revoke_all', { count: live.length })}
+                  title={t('confirm.revoke_title')}
+                  typedWord="revoke"
+                />
               </form>
             ) : null}
           </>
@@ -765,9 +772,12 @@ export default async function CustomerPage({
                         <form className="a-inline-form" action={revokeEntitlement}>
                           <input type="hidden" name="entitlementId" value={row.id} />
                           <input type="hidden" name="customerId" value={account.id} />
-                          <button className="a-btn danger small" type="submit">
-                            {t('customers.revoke')}
-                          </button>
+                          <ConfirmSubmit
+                            className="a-btn danger small"
+                            label={t('customers.revoke')}
+                            title={t('confirm.revoke_title')}
+                            typedWord="revoke"
+                          />
                         </form>
                       ) : null}
                     </td>

@@ -548,10 +548,9 @@ export async function markOrderPaidOffline(orderId: string, form: FormData): Pro
     // الطلب مدفوع فعلاً هنا: فشل الإشعار أو الطابور لا يُظهر خطأً للمشغّل
     // (كان يعيد المحاولة فيُرفض "الطلب ليس معلّقاً" ولا يصل التأكيد أبداً).
     try {
+      // The confirmation email and voucher were queued by applyPaidOrder,
+      // inside the transaction above.
       await notifyOrderPaid(orderId)
-      const { enqueueEmail, enqueueVoucherPdf } = await import('@/worker/queues')
-      await enqueueEmail({ kind: 'order_confirmation', orderId })
-      await enqueueVoucherPdf(orderId)
     } catch (error) {
       console.error('[orders] follow-ups after offline payment failed', error)
     }

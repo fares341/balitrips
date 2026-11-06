@@ -21,6 +21,7 @@ import {
 } from '../phase1-actions'
 import { PREVIEW_STAT_ICONS, PREVIEW_STAT_ROWS } from '../phase1-shared'
 import { removeItineraryPdf } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 type Localized = Partial<Record<string, string>> | null | undefined
 type Option = { value: string; label: string }
@@ -271,9 +272,11 @@ export function PdfCard({
                   action={removeItineraryPdf.bind(null, itinerary.id)}
                 >
                   <input type="hidden" name="locale" value={locale} />{' '}
-                  <button className="a-btn ghost small" type="submit">
-                    {t('ip1.pdf_back_to_generated')}
-                  </button>
+                  <ConfirmSubmit
+                    className="a-btn ghost small"
+                    label={t('ip1.pdf_back_to_generated')}
+                    title={t('confirm.remove_title')}
+                  />
                 </form>
               ) : null}
             </li>

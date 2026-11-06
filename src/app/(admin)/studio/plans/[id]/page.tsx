@@ -23,6 +23,7 @@ import {
 import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { archivePlan, savePlan } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -189,9 +190,11 @@ export default async function PlanEditPage({
           <h2>{t('plans.archive_heading')}</h2>
           <p className="a-hint">{t('plans.archive_hint')}</p>
           <div className="a-actions">
-            <button className="a-btn danger" type="submit">
-              {t('plans.archive_btn')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('plans.archive_btn')}
+              title={t('confirm.archive_title')}
+            />
           </div>
         </form>
       ) : null}

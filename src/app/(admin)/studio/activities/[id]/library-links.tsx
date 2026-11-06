@@ -16,6 +16,7 @@ import {
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { linkLibraryAddon, saveLibraryLink, unlinkLibraryAddon } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface LibraryItem {
   id: string
@@ -139,13 +140,12 @@ export async function LibraryLinks({
                   <button className="a-btn ghost small" type="submit">
                     {t('ae.lib_save')}
                   </button>
-                  <button
+                  <ConfirmSubmit
                     className="a-btn danger small"
-                    type="submit"
                     formAction={unlinkLibraryAddon.bind(null, activityId, link.addonId)}
-                  >
-                    {t('ae.lib_unlink')}
-                  </button>
+                    label={t('ae.lib_unlink')}
+                    title={t('confirm.remove_title')}
+                  />
                 </div>
               </div>
               {fields(`link_${link.addonId}`, item, link)}

@@ -15,6 +15,7 @@ import { notifyPlanActivated } from '@/lib/notify/plans'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import { assertTypedWord } from '../../_lib/confirm'
 import { fbool, freq, fstr, fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
@@ -161,6 +162,7 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
   let outcome: Outcome
 
   try {
+    assertTypedWord(form, 'revoke', t('confirm.err_typed_word'))
     const sessionId = fuuid(form, 'sessionId', t('customers.session'))
 
     await db.transaction(async (tx) => {
@@ -215,12 +217,13 @@ export async function revokeSession(userId: string, form: FormData): Promise<voi
 }
 
 /** Sign every device out at once. */
-export async function revokeAllSessions(userId: string): Promise<void> {
+export async function revokeAllSessions(userId: string, form: FormData): Promise<void> {
   const session = await requireCapability('customers.read')
   const { t } = await getAdminI18n()
   let outcome: Outcome
 
   try {
+    assertTypedWord(form, 'revoke', t('confirm.err_typed_word'))
     const revoked = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).limit(1)
       if (!user) throw new Error(t('customers.err_no_account'))

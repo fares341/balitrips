@@ -36,6 +36,7 @@ import {
   updateMedia,
   uploadMedia,
 } from './actions'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -440,9 +441,11 @@ export default async function MediaPage({
                       style={{ marginBlockStart: 10 }}
                     >
                       <input type="hidden" name="returnQuery" value={returnQuery} />
-                      <button className="a-btn danger small" type="submit">
-                        {t('media.archive')}
-                      </button>
+                      <ConfirmSubmit
+                        className="a-btn danger small"
+                        label={t('media.archive')}
+                        title={t('confirm.archive_title')}
+                      />
                       {blocking.length > 0 ? (
                         <span className="a-hint">
                           {t('media.archive_blocked', { count: blocking.length })}

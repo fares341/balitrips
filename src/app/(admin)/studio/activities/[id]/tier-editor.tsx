@@ -21,6 +21,7 @@ import { Pill } from '../../../_ui/table'
 import { addActivityTier, removeActivityTier, saveActivityTier } from '../actions'
 import { duplicateActivityTier } from '../v2-actions'
 import type { PickerItem } from '../../../_ui/media-picker'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface TierRow {
   id: string
@@ -144,13 +145,12 @@ export async function TierEditor({
                   </button>
                 )}
                 {locked ? null : (
-                  <button
+                  <ConfirmSubmit
                     className="a-btn danger small"
-                    type="submit"
                     formAction={removeActivityTier.bind(null, activityId, tier.id)}
-                  >
-                    {t('common.remove')}
-                  </button>
+                    label={t('common.remove')}
+                    title={t('confirm.remove_title')}
+                  />
                 )}
               </div>
             </div>
