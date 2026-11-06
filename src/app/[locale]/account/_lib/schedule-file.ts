@@ -321,3 +321,100 @@ export async function deliverSchedule(
     },
   })
 }
+
+/**
+ * Phase 4 — the e-mail download link (`/dl/<token>`). No session: the token
+ * is the proof (see src/lib/itineraries/download-tokens.ts). Every refusal
+ * (malformed, forged, expired, used up, revoked, refunded) looks the same to
+ * the visitor: a redirect to «جداولي», where signing in always works. The file
+ * goes through the same stamping as the account download, with the buyer's
+ * name and order number from the order.
+ */
+export async function deliverScheduleByToken(
+  request: Request,
+  rawLocale: string,
+  token: string,
+): Promise<Response> {
+  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const { redeemDownloadToken, refundDownloadUse } =
+    await import('@/lib/itineraries/download-tokens')
+  const refused = () => toAccountRedirect(request, locale, { doc: 'link-expired' })
+
+  const redemption = await redeemDownloadToken(token)
+  if (!redemption.ok) {
+    await logActivity({
+      action: 'unauthorized_access',
+      details: { resource: 'schedule-token', why: `token_${redemption.reason}` },
+    })
+    return refused()
+  }
+
+  const { orderItemId, tokenId } = redemption
+  const policy = await readSetting('security')
+  if (policy.pdfDownloads === 'view_only') {
+    await refundDownloadUse(tokenId)
+    return toAccountRedirect(request, locale, { doc: 'view-only' })
+  }
+
+  const resolved = await resolveScheduleDocument(null, orderItemId, locale)
+  if (resolved === null || resolved === 'not-ready') {
+    await refundDownloadUse(tokenId)
+    return resolved === null ? refused() : toAccountRedirect(request, locale, { doc: 'pending' })
+  }
+
+  const { orderItems, orders } = await import('@/db/schema')
+  const [buyer] = await db
+    .select({ userId: orders.userId, snapshot: orders.customerSnapshot })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(eq(orderItems.id, orderItemId))
+    .limit(1)
+
+  const source = await loadSource(resolved.objectKey)
+  const deliveryId = randomUUID()
+  let stamped: Uint8Array | null = null
+  if (source !== null) {
+    try {
+      stamped = await stampPdf(source, {
+        email: contactLabel({
+          email: buyer?.snapshot?.email ?? '',
+          phone: buyer?.snapshot?.phone ?? null,
+        }),
+        name: buyer?.snapshot?.name ?? null,
+        orderNumber: resolved.orderNumber,
+        deliveryId,
+        at: new Date(),
+      })
+    } catch (error) {
+      console.error('[schedules] watermarking failed', resolved.objectKey, error)
+    }
+  }
+  if (stamped === null) {
+    await refundDownloadUse(tokenId)
+    return new NextResponse(null, { status: 503, headers: NO_STORE })
+  }
+
+  await logActivity({
+    action: 'download_pdf',
+    userId: buyer?.userId ?? null,
+    details: {
+      orderItemId,
+      orderNumber: resolved.orderNumber,
+      deliveryId,
+      locale,
+      via: 'email_link',
+      tokenId,
+    },
+  })
+
+  return new NextResponse(Buffer.from(stamped), {
+    status: 200,
+    headers: {
+      ...NO_STORE,
+      'Content-Type': 'application/pdf',
+      'Content-Length': String(stamped.byteLength),
+      'Content-Disposition': contentDisposition(`${resolved.slug}-${resolved.orderNumber}.pdf`),
+      'Referrer-Policy': 'no-referrer',
+    },
+  })
+}

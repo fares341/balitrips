@@ -1,0 +1,76 @@
+import type { Section } from './types'
+
+/**
+ * Studio strings — itinerary delivery (phase 4). Keys `dlv.*`.
+ */
+const section: Section = {
+  en: {
+    'dlv.title': 'Itinerary delivery',
+    'dlv.hint':
+      'Sent automatically the moment the order is paid: e-mail with a download link and a WhatsApp message (Studio → WhatsApp → «Ready itinerary purchased»). The itinerary is always in the customer’s account.',
+    'dlv.channel': 'Channel',
+    'dlv.status': 'Status',
+    'dlv.time': 'Time',
+    'dlv.to': 'To',
+    'dlv.note': 'Note',
+    'dlv.email': 'E-mail',
+    'dlv.whatsapp': 'WhatsApp',
+    'dlv.st_pending': 'Not sent yet',
+    'dlv.st_queued': 'Queued',
+    'dlv.st_sending': 'Sending',
+    'dlv.st_sent': 'Sent',
+    'dlv.st_failed': 'Failed',
+    'dlv.st_skipped': 'Skipped',
+    'dlv.round': 'Resends: {n}',
+    'dlv.why_not_configured': 'WhatsApp is off or not configured (Studio → WhatsApp).',
+    'dlv.why_automation_off': 'The «Ready itinerary purchased» WhatsApp message is turned off.',
+    'dlv.why_no_consent': 'The customer did not agree to WhatsApp messages.',
+    'dlv.why_no_number': 'No phone number with a country code.',
+    'dlv.why_no_email': 'Phone-only account — no e-mail address.',
+    'dlv.why_not_paid': 'The order is not paid (or the line was refunded).',
+    'dlv.resend': 'Resend',
+    'dlv.resend_email': 'Resend e-mail (new link)',
+    'dlv.resend_whatsapp': 'Resend WhatsApp',
+    'dlv.resend_title': 'Resend the itinerary?',
+    'dlv.resend_msg':
+      'The customer receives the itinerary again. A new download link is made and the previous one stops working.',
+    'dlv.ok_resent': 'Delivery queued again.',
+    'dlv.err_busy': 'A send is in progress — try again in a minute.',
+    'dlv.err_not_deliverable': 'This line is not paid, or was refunded.',
+  },
+  ar: {
+    'dlv.title': 'تسليم الجدول',
+    'dlv.hint':
+      'يُرسل تلقائيًا لحظة الدفع: إيميل فيه رابط التحميل ورسالة واتساب (Studio ← واتساب ← «شراء جدول جاهز»). والجدول دائمًا في حساب العميل.',
+    'dlv.channel': 'القناة',
+    'dlv.status': 'الحالة',
+    'dlv.time': 'الوقت',
+    'dlv.to': 'إلى',
+    'dlv.note': 'ملاحظة',
+    'dlv.email': 'البريد',
+    'dlv.whatsapp': 'واتساب',
+    'dlv.st_pending': 'لم يُرسل بعد',
+    'dlv.st_queued': 'في الطابور',
+    'dlv.st_sending': 'جارٍ الإرسال',
+    'dlv.st_sent': 'أُرسل',
+    'dlv.st_failed': 'فشل',
+    'dlv.st_skipped': 'تم التخطي',
+    'dlv.round': 'مرات إعادة الإرسال: {n}',
+    'dlv.why_not_configured': 'واتساب مقفول أو غير مُعدّ (Studio ← واتساب).',
+    'dlv.why_automation_off': 'رسالة «شراء جدول جاهز» في واتساب مقفولة.',
+    'dlv.why_no_consent': 'العميل لم يوافق على رسائل واتساب.',
+    'dlv.why_no_number': 'لا يوجد رقم جوال بمفتاح الدولة.',
+    'dlv.why_no_email': 'حساب بالجوال فقط — لا يوجد بريد.',
+    'dlv.why_not_paid': 'الطلب غير مدفوع (أو البند مسترد).',
+    'dlv.resend': 'إعادة الإرسال',
+    'dlv.resend_email': 'إعادة إرسال البريد (رابط جديد)',
+    'dlv.resend_whatsapp': 'إعادة إرسال واتساب',
+    'dlv.resend_title': 'إعادة إرسال الجدول؟',
+    'dlv.resend_msg': 'سيستلم العميل الجدول مرة أخرى. يُنشأ رابط تحميل جديد ويتوقف الرابط السابق.',
+    'dlv.ok_resent': 'أُعيد التسليم إلى الطابور.',
+    'dlv.err_busy': 'يوجد إرسال قيد التنفيذ — حاول بعد دقيقة.',
+    'dlv.err_not_deliverable': 'هذا البند غير مدفوع أو مسترد.',
+  },
+}
+
+export default section

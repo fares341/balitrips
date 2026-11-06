@@ -12,6 +12,7 @@
  *     phase 5), with ids derived from the rows so a replay writes nothing.
  *  6. the customer's confirmation email and voucher are queued in the same
  *     transaction, deduplicated with the reconcile sweep (paid-paperwork.ts).
+ *  7. bought itineraries are delivered by e-mail and WhatsApp (itineraries/delivery.ts).
  */
 
 import type { db } from '@/db'
@@ -19,6 +20,7 @@ import { emitPaidOrderEvents } from '@/lib/analytics/server-events'
 import { grantOrderPlans } from '@/lib/entitlements/plans'
 import { applyPaidFinance } from '@/lib/finance/paid'
 import { expandPaidPackages } from '@/lib/packages/expand'
+import { queueItineraryDelivery } from '@/lib/itineraries/delivery'
 import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 
 import { queuePaidPaperwork } from './paid-paperwork'
@@ -32,4 +34,5 @@ export async function applyPaidOrder(tx: Tx, orderId: string, now = new Date()):
   await applyPaidFinance(tx, orderId, now)
   await emitPaidOrderEvents(tx, orderId, now)
   await queuePaidPaperwork(tx, orderId)
+  await queueItineraryDelivery(tx, orderId)
 }

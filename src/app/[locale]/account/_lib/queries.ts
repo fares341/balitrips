@@ -497,7 +497,8 @@ export async function listSchedules(userId: string, locale: Locale): Promise<Sch
  * the second without the first.
  */
 export async function resolveScheduleDocument(
-  userId: string,
+  /** Null only for a redeemed e-mail link (ownership proven by the token). */
+  userId: string | null,
   orderItemId: string,
   locale: Locale,
 ): Promise<ScheduleDocument | null | 'not-ready'> {
@@ -509,7 +510,7 @@ export async function resolveScheduleDocument(
     .where(
       and(
         eq(orderItems.id, orderItemId),
-        eq(orders.userId, userId),
+        userId === null ? undefined : eq(orders.userId, userId),
         eq(orderItems.kind, 'itinerary'),
         inArray(orders.status, [...SETTLED]),
       ),

@@ -48,6 +48,8 @@ export const ACTIVITY_ACTIONS = [
   'fx_rates_changed',
   /** Migration 0043 converted catalog prices to SAR (summary row). */
   'currency_migration',
+  /** Phase 4: itinerary delivered / failed / resent (details.event). */
+  'itinerary_delivery',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

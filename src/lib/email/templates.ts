@@ -325,3 +325,62 @@ export function renderNotificationEmail(input: NotificationEmailInput): Rendered
   })
   return { subject: title, html, text }
 }
+
+/* --------------------------------------------------------------------------
+   Itinerary delivery (phase 4)
+   -------------------------------------------------------------------------- */
+
+export interface ItineraryDeliveryEmailInput {
+  locale: Locale
+  name: string | null
+  orderNumber: string
+  itineraryName: string
+  days: number | null
+  /** The itinerary inside the customer's account (sign-in, no token). */
+  openUrl: string
+  /** Token link to the stamped PDF. Null when no link could be made. */
+  pdfUrl: string | null
+  linkValidDays: number
+  linkMaxUses: number
+}
+
+export function renderItineraryDeliveryEmail(input: ItineraryDeliveryEmailInput): RenderedEmail {
+  const { locale } = input
+  const t = translator(locale)
+  const subject = t('dlv_mail_subject', { order: input.orderNumber })
+
+  const facts = [
+    { label: t('dlv_mail_plan'), value: input.itineraryName },
+    { label: t('dlv_mail_order'), value: `#${input.orderNumber}` },
+    ...(input.days === null
+      ? []
+      : [{ label: t('dlv_mail_days'), value: t('dlv_mail_days_v', { days: input.days }) }]),
+  ]
+
+  const blocks: Block[] = [
+    { kind: 'heading', text: t('dlv_mail_t') },
+    greeting(locale, input.name),
+    { kind: 'text', text: t('dlv_mail_b') },
+    { kind: 'facts', rows: facts },
+    { kind: 'button', label: t('dlv_mail_open'), href: input.openUrl },
+  ]
+  if (input.pdfUrl !== null) {
+    blocks.push(
+      { kind: 'button', label: t('dlv_mail_pdf'), href: input.pdfUrl, variant: 'secondary' },
+      {
+        kind: 'muted',
+        text: t('dlv_mail_expiry', { days: input.linkValidDays, uses: input.linkMaxUses }),
+      },
+    )
+  } else {
+    blocks.push({ kind: 'muted', text: t('dlv_mail_nolink') })
+  }
+
+  const { html, text } = renderDocument({
+    locale,
+    preheader: subject,
+    blocks,
+    footer: footer(locale),
+  })
+  return { subject, html, text }
+}
