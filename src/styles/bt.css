@@ -4131,3 +4131,95 @@ html {
     font-size: 12.5px;
   }
 }
+
+/* --- Header proportions (owner, Nov 2026) -------------------------------
+   Three-column grid so the logo is truly centred whatever the two groups
+   weigh; one control height (44px) for icons, pills and the CTA; logo 32px
+   tall on phones and tablets, 44px on desktop; fixed row heights so the
+   sticky header never shifts. */
+.hdr-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  height: 64px;
+  gap: 8px;
+}
+.hdr-start,
+.hdr-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.hdr-end {
+  justify-content: flex-end;
+}
+.hdr .hdr-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.hdr .hdr-logo img {
+  /* !important: overrides client revision 1's fluid logo rule above. */
+  height: 32px !important;
+  width: auto !important;
+  max-width: none;
+  max-height: none;
+  display: block;
+}
+.hdr .cta-plan {
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 20px;
+  border-radius: var(--r-pill);
+  font-family: var(--f);
+  font-size: 14px;
+  box-shadow: none;
+}
+@media (min-width: 1024px) {
+  .hdr-top {
+    height: 76px;
+    gap: 16px;
+  }
+  .hdr-start,
+  .hdr-end {
+    gap: 8px;
+  }
+  .hdr .hdr-logo img {
+    height: 44px !important;
+  }
+  .hdr-nav {
+    height: 52px;
+    display: flex;
+    align-items: center;
+  }
+  .hdr-nav a {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--f);
+  }
+}
+@media (max-width: 1023px) {
+  /* Phones: menu + language pill | logo | favourites + trip. Currency lives in the drawer. */
+  .hdr-top {
+    gap: 4px;
+  }
+  .hdr-start,
+  .hdr-end {
+    gap: 0;
+  }
+  .hdr .lang-btn {
+    padding-inline: 10px;
+  }
+}
+@media (max-width: 374px) {
+  .hdr .hdr-logo img {
+    height: 30px !important;
+  }
+  .hdr .lang-btn .lbl,
+  .hdr .lang-btn > span:not(:first-child) {
+    display: none;
+  }
+}
