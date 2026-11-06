@@ -25,10 +25,15 @@ import { PAID_ORDER_STATUSES, payableWhere } from './payables/queries'
  *
  * Each figure is shown only to a role that may open the screen it links to.
  */
+/** A moment `days` ago (outside the component: reading the clock is not render-pure). */
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000)
+}
+
 export async function OpsKpis({ role, t, intl }: { role: Role; t: Translate; intl: string }) {
   if (!can(role, 'orders.read')) return null
   const today = todayInBali()
-  const since = new Date(Date.now() - 30 * 86_400_000)
+  const since = daysAgo(30)
   const showPayables = can(role, 'suppliers.write')
   const showFunnel = can(role, 'reports.read')
 
