@@ -14,7 +14,7 @@ import { fbool, flocalized, fstr } from '../../../_lib/form'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
-import { parseSetting, SETTING_DEFAULTS } from '../../../_lib/settings'
+import { parseSetting, readSetting, SETTING_DEFAULTS } from '../../../_lib/settings'
 
 const BACK = adminHref('/packages/vehicles')
 
@@ -74,7 +74,10 @@ export async function saveVehicles(form: FormData): Promise<void> {
         regionZones,
       })
     }
-    const value = parseSetting('vehicles', { sarPerUsd: num(form, 'sarPerUsd') ?? 3.75, vehicles })
+    // The rate is edited in Configuration → «العملة والصرف» now; the stored
+    // legacy value is kept as it is (it is only a back-compat read).
+    const previous = await readSetting('vehicles')
+    const value = parseSetting('vehicles', { sarPerUsd: previous.sarPerUsd, vehicles })
 
     await db.transaction(async (tx) => {
       const [existing] = await tx

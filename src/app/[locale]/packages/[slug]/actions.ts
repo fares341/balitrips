@@ -12,6 +12,7 @@
  * names a price.
  */
 
+import { readSarPerUsd } from '@/lib/currency/fx-store'
 import { and, gt, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -113,7 +114,7 @@ export async function requestPackageAction(
       }),
       travellers,
       vehicle,
-      sarPerUsd: setting.sarPerUsd,
+      sarPerUsd: await readSarPerUsd(),
     })
 
     const userId = await currentUserId()

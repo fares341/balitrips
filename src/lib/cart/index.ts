@@ -38,6 +38,7 @@
  * Server-only. Nothing here may be imported into a Client Component.
  */
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import {
   isItineraryTier,
   normaliseTierPrices,
@@ -109,8 +110,8 @@ const CART_COOKIE_MAX_AGE = 60 * 60 * 24 * 60
  */
 export const CART_MAX_QUANTITY = 30
 
-/** Currency a brand-new, still-empty cart is created in. */
-const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? 'USD'
+/** Every cart is in the base currency (SAR); it never comes from its first item. */
+const DEFAULT_CURRENCY = BASE_CURRENCY
 
 /** Group order on the cart page, matching the handoff's `groups` array. */
 export const CART_KIND_ORDER: readonly CartItemKind[] = [
@@ -640,12 +641,6 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
     driverItemId = await attachDriver(cart.id, itemId, input, input.driver, rows)
   }
 
-  // An empty cart has no currency of its own yet; adopt the first priced
-  // item's so the summary and the quote agree from the first line onwards.
-  if (price.currency !== null && rows.length === 0) {
-    await db.update(carts).set({ currency: price.currency }).where(eq(carts.id, cart.id))
-  }
-
   const itemCount = await writeCartCount(cart.id)
   // Phase 5: first-party "added to trip" (only with analytics consent).
   await trackFromServer([
@@ -927,10 +922,6 @@ export async function addActivityBooking(
       { guests: people, endDate: endDate ?? raw.date },
       [],
     )
-  }
-
-  if (rows.length === 0 && quote.currency) {
-    await db.update(carts).set({ currency: quote.currency }).where(eq(carts.id, cart.id))
   }
 
   const itemCount = await writeCartCount(cart.id)
@@ -1419,13 +1410,8 @@ export async function getCartWithTotals(): Promise<CartView | null> {
     }
   })
 
-  /**
-   * An empty cart has no lines for `buildQuote` to infer a currency from, and
-   * it falls back to USD. The cart's own column is the honest answer there —
-   * showing a zero total in the wrong currency is a small lie that becomes a
-   * large one the moment a price is added.
-   */
-  const cartCurrency = rows.length === 0 ? cart.currency : quote.currency
+  // Always the base currency (SAR), empty or not.
+  const cartCurrency = BASE_CURRENCY
 
   const groups: CartGroupView[] = []
   for (const kind of CART_KIND_ORDER) {
@@ -1434,13 +1420,9 @@ export async function getCartWithTotals(): Promise<CartView | null> {
 
     let subtotalMinor = 0
     let unpricedCount = 0
-    let currency: string | null = null
     for (const line of lines) {
       if (line.lineTotalMinor === null) unpricedCount += 1
-      else {
-        subtotalMinor += line.lineTotalMinor
-        currency ??= line.currency
-      }
+      else subtotalMinor += line.lineTotalMinor
     }
 
     groups.push({
@@ -1448,7 +1430,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       lines,
       subtotalMinor,
       unpricedCount,
-      currency: currency ?? cartCurrency,
+      currency: cartCurrency,
     })
   }
 

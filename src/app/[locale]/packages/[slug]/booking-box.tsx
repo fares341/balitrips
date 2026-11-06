@@ -1,7 +1,6 @@
 'use client'
 
-import { useDisplayCurrency } from '@/components/currency/currency-context'
-import { formatInCurrency } from '@/lib/currency/shared'
+import { Money } from '@/components/currency/currency-context'
 
 /**
  * Package request sidebar (client, Oct 2026).
@@ -78,9 +77,7 @@ export function PackageBookingBox({
         : estimatePackage({ days: dayPlan, travellers: guests, vehicle, sarPerUsd }),
     [vehicle, dayPlan, guests, sarPerUsd],
   )
-  const display = useDisplayCurrency()
-  const money = (minor: number) =>
-    formatInCurrency(minor, estimate?.currency ?? 'USD', display.currency, locale, display.rates)
+  const money = (minor: number) => <Money minor={minor} currency={estimate?.currency ?? 'SAR'} />
 
   const dateLabel =
     date === ''

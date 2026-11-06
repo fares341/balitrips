@@ -7,7 +7,6 @@ import type { ReactElement } from 'react'
 import { getTranslations } from 'next-intl/server'
 
 import { Breadcrumbs, LinkButton, Tag } from '@/components/bt'
-import { formatPrice } from '@/components/bt/card'
 import { Icon } from '@/components/ui'
 import { policyLink } from '@/components/layout/routes'
 import type { IconName } from '@/components/ui/icon'
@@ -38,7 +37,7 @@ import {
 import { Gallery, InfoTabs, RelatedRow, SaveButton, SectionNav, ShareButton } from './detail-client'
 import { dedupeImages } from '@/lib/content/image-dedupe'
 import { Money } from '@/components/currency/currency-context'
-import { convertMinor, FALLBACK_RATES } from '@/lib/currency/shared'
+import { DEFAULT_FX, toSarMinor } from '@/lib/currency/fx'
 import { JsonLd } from '@/components/seo/json-ld'
 import { shareUrl } from '@/lib/seo/site-origin'
 
@@ -87,7 +86,6 @@ export async function ActivityView({
   const cancellation = pickOptional(activity.cancellationPolicy, lang) ?? t('cancel_default')
   const meetingAddress = pickOptional(activity.meeting.address, lang)
   const meetingTime = pickOptional(activity.meeting.timeNote, lang)
-  const money = (minor: number, currency = activity.currency) => formatPrice(minor, currency, lang)
 
   const faq = activity.faq
     .map((entry) => ({ q: pick(entry.q, lang), a: pick(entry.a, lang), pkg: entry.pkg ?? null }))
@@ -404,11 +402,8 @@ export async function ActivityView({
     brand: { '@type': 'Brand', name: 'Bali Trips' },
     offers: {
       '@type': 'Offer',
-      // SAR: the site's default display currency and the charge currency.
-      price:
-        Math.round(
-          (convertMinor(activity.priceMinor, activity.currency, 'SAR', FALLBACK_RATES) ?? 0) * 100,
-        ) / 100,
+      // SAR: the base currency, and what is charged (never the visitor's ≈ price).
+      price: (toSarMinor(activity.priceMinor, activity.currency, DEFAULT_FX.rates) ?? 0) / 100,
       priceCurrency: 'SAR',
       availability: activity.bookable
         ? 'https://schema.org/InStock'
@@ -591,7 +586,10 @@ export async function ActivityView({
                 area:
                   pickOptional(other.area, lang) ??
                   (other.region ? pick(other.region.label, lang) : null),
-                price: other.priceMinor > 0 ? money(other.priceMinor, other.currency) : null,
+                price:
+                  other.priceMinor > 0 ? (
+                    <Money minor={other.priceMinor} currency={other.currency} />
+                  ) : null,
                 imageUrl: other.hero?.url ?? null,
                 unavailable: other.unavailable === true,
               }))}

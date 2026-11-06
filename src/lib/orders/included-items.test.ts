@@ -9,7 +9,7 @@ const NOW = new Date('2026-08-01T00:00:00Z')
 function catalog(): CatalogSnapshot {
   const activity = (timeSlots: string[]) => ({
     priceMinor: 3000,
-    currency: 'USD',
+    currency: 'SAR',
     maxGuests: 10,
     leadTimeHours: 24,
     timeSlots,
@@ -26,7 +26,7 @@ function catalog(): CatalogSnapshot {
         {
           activityId: 'ubud',
           priceMinor: 9000,
-          currency: 'USD',
+          currency: 'SAR',
           pricingMode: 'per_person',
           maxGuests: null,
           includedActivities: [

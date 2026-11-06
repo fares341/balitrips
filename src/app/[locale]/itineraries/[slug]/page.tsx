@@ -139,8 +139,14 @@ export default async function ItineraryPage({
   if (settings.options.itineraryOnly.enabled || itinerary.includesMap) {
     options.push({
       key: 'itineraryOnly',
-      label: label(settings.options.itineraryOnly.label, t('itp_opt_only')),
-      badge: pickOptional(settings.options.itineraryOnly.badge, locale),
+      // An itinerary that already includes the map is not «الجدول فقط»: it is
+      // sold as «الجدول + الخريطة», with the map included in its own price.
+      label: itinerary.includesMap
+        ? label(settings.options.withMap.label, t('itp_opt_map'))
+        : label(settings.options.itineraryOnly.label, t('itp_opt_only')),
+      badge: itinerary.includesMap
+        ? null
+        : pickOptional(settings.options.itineraryOnly.badge, locale),
       price: planPrice,
       was: null,
       saving: null,

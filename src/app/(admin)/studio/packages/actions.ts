@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
@@ -11,14 +12,12 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
-  fcurrency,
   fenum,
   fint,
   flines,
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fcurrencyOr,
   fmoney,
   fmulti,
   freq,
@@ -54,8 +53,8 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
       days: fint(form, 'days', 1, t('packages.days')),
       maxGuests: fint(form, 'maxGuests', 1, t('packages.max_guests')),
       driverIncluded: fbool(form, 'driverIncluded'),
-      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
-      currency: fcurrency(form, 'currency'),
+      priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
+      currency: BASE_CURRENCY,
       // The prototype advertised "from $X" and then charged a flat X no
       // matter how many guests were entered. This makes the intent explicit
       // instead of leaving the contradiction in the renderer.

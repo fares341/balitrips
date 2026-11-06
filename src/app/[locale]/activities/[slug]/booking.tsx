@@ -1,6 +1,6 @@
 'use client'
 
-import { useDisplayCurrency } from '@/components/currency/currency-context'
+import { Money, useDisplayCurrency } from '@/components/currency/currency-context'
 import { formatInCurrency } from '@/lib/currency/shared'
 
 /**
@@ -249,7 +249,8 @@ type Ctx = {
   closeModal: () => void
   /** Editing a My Trip line (`?edit=<itemId>`): saving replaces it. */
   editing: boolean
-  money: (minor: number) => string
+  money: (minor: number) => React.ReactNode
+  moneyText: (minor: number) => string
 }
 
 /** "Instant" or "the supplier confirms within N hours". */
@@ -525,9 +526,12 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const rules: AvailabilityRules | null = facts?.availability ?? null
   const promise = promiseFor(facts, state.pkg, state.date, state.time)
 
-  // Primary prices in the visitor's display currency (SAR until detected).
+  // Primary prices: SAR in the HTML, shown in the visitor's display currency
+  // («≈») before first paint by the money runtime. `moneyText` is for the few
+  // places that need a plain string (an <option>, a sentence).
   const display = useDisplayCurrency()
-  const money = (minor: number) =>
+  const money = (minor: number) => <Money minor={minor} currency={data.currency} />
+  const moneyText = (minor: number) =>
     formatInCurrency(minor, data.currency, display.currency, locale, display.rates)
 
   /** Every change goes through here: prune add-ons, clamp people, bump the total. */
@@ -714,6 +718,7 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
         'people',
       ),
     money,
+    moneyText,
     modalOpen,
     closeModal: () => setModalOpen(false),
     editing: editing !== null,
@@ -1557,7 +1562,7 @@ export function BookingBox() {
   const locale = useLocale() as Locale
   const uid = useId()
   const b = useBooking()
-  const { data, state, errors, price, money, pkgInfo } = b
+  const { data, state, errors, price, money, moneyText, pkgInfo } = b
 
   const intlLocale = locale === 'ar' ? 'ar-EG' : locale
   const fmtDate = (value: string) =>
@@ -1632,7 +1637,7 @@ export function BookingBox() {
     const addon = line.refId ? addonById.get(line.refId) : undefined
     const name = addon?.name ?? ''
     if (line.included) return `${name} · ${t('act_included')}`
-    return line.quantity > 1 ? `${name} (${line.quantity} × ${money(line.unitMinor)})` : name
+    return line.quantity > 1 ? `${name} (${line.quantity} × ${moneyText(line.unitMinor)})` : name
   }
 
   const selected = new Set(Object.keys(state.addons))
@@ -1680,7 +1685,7 @@ export function BookingBox() {
             >
               {data.packages.map((p) => (
                 <option key={p.id} value={p.id} disabled={!p.available}>
-                  {`${p.name} — ${money(p.priceMinor)} ${perLabel(t, p)}`}
+                  {`${p.name} — ${moneyText(p.priceMinor)} ${perLabel(t, p)}`}
                 </option>
               ))}
             </select>
@@ -1829,9 +1834,9 @@ export function BookingBox() {
               {pkgInfo?.pricing === 'per_group'
                 ? t('act_ppl_note_group', { n: pkgInfo.groupMax ?? b.cap })
                 : pkgInfo?.pricing === 'per_couple'
-                  ? t('act_ppl_note_couple', { price: money(pkgInfo.priceMinor) })
+                  ? t('act_ppl_note_couple', { price: moneyText(pkgInfo.priceMinor) })
                   : t('act_ppl_note_person', {
-                      price: money(pkgInfo?.priceMinor ?? data.basePriceMinor),
+                      price: moneyText(pkgInfo?.priceMinor ?? data.basePriceMinor),
                     })}
             </small>
           </div>
@@ -1904,7 +1909,7 @@ export function BookingBox() {
                       ) : null}
                     </span>
                     <span className="ad-price">
-                      <span dir="ltr">{included ? '—' : `+${money(a.priceMinor)}`}</span>
+                      <span dir="ltr">{included ? '—' : <>+{money(a.priceMinor)}</>}</span>
                       <br />
                       <small className="muted">{a.unitLabel ?? perAddon(t, a)}</small>
                     </span>

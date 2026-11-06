@@ -7,22 +7,28 @@ import { createHash } from 'node:crypto'
 import { getTableColumns, sql, type SQL } from 'drizzle-orm'
 import type { PgTable, PgUpdateSetSource } from 'drizzle-orm/pg-core'
 
+import { BASE_CURRENCY, PEG_SAR_PER_USD, toSarMinor } from '@/lib/currency/fx'
 import { minorUnitExponent } from '@/lib/money'
 
 /**
  * The handoff priced everything in whole US dollars rendered with a
- * hard-coded "$". Everything below is minor units plus this code.
+ * hard-coded "$". The site's one base currency is SAR (Nov 2026), so the
+ * seed stores SAR halalas, converted from the handoff's dollars at the
+ * official peg — the same rate migration 0043 uses when nothing else is set.
  */
-export const SEED_CURRENCY = 'USD'
+export const SEED_CURRENCY = BASE_CURRENCY
+const HANDOFF_CURRENCY = 'USD'
 
-/** Whole units of SEED_CURRENCY -> minor units. */
+/** Whole handoff dollars -> SAR minor units (halalas), at 3.75. */
 export function toMinor(whole: number): number {
   if (!Number.isInteger(whole) || whole < 0) {
     throw new Error(`price must be a non-negative integer, got ${whole}`)
   }
-  // Derived from the currency rather than assumed to be 100, matching
-  // src/lib/money.ts. USD is 2, but the helper must not encode that.
-  return whole * 10 ** minorUnitExponent(SEED_CURRENCY)
+  const sar = toSarMinor(whole * 10 ** minorUnitExponent(HANDOFF_CURRENCY), HANDOFF_CURRENCY, {
+    USD: 1 / PEG_SAR_PER_USD,
+  })
+  if (sar === null) throw new Error('no rate for the handoff currency')
+  return sar
 }
 
 /**

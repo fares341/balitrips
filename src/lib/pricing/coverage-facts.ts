@@ -6,6 +6,7 @@
  * price a cart identically.
  */
 
+import { readFx } from '@/lib/currency/fx-store'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -75,6 +76,7 @@ export async function applyCoverageFacts(
     const offer = mapBundleOffer(
       settings,
       mapRows.map((row) => ({ ...row, published: row.status === 'published' })),
+      (await readFx()).rates,
     )
     const entry = offer === null ? undefined : snapshot.plans.get(offer.planId)
     if (offer !== null && entry !== undefined && offer.savingMinor > 0) {

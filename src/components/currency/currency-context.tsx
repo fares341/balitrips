@@ -3,22 +3,18 @@
 /**
  * Visitor display currency.
  *
- * Fetched once per page load from /api/currency (never cached), so static,
- * edge-cached HTML stays identical for everyone: the local amount appears
- * after hydration. The switcher writes the `bt_currency` cookie.
+ * Decided on the server and applied before first paint (see the provider);
+ * the switcher writes the `bt_currency` cookie.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import {
-  convertUsdMinor,
   CURRENCY_COOKIE,
   DEFAULT_DISPLAY_CURRENCY,
-  DISPLAY_CURRENCIES,
-  FALLBACK_RATES,
-  formatApprox,
-  formatInCurrency,
+  formatSar,
   isDisplayCurrency,
   type DisplayCurrency,
 } from '@/lib/currency/shared'
@@ -26,52 +22,63 @@ import {
 type State = {
   currency: DisplayCurrency
   rates: Record<string, number>
-  ready: boolean
+  supported: readonly string[]
   setCurrency: (currency: DisplayCurrency) => void
 }
 
 const CurrencyContext = createContext<State>({
   currency: DEFAULT_DISPLAY_CURRENCY,
-  rates: FALLBACK_RATES,
-  ready: false,
+  rates: { [BASE_CURRENCY]: 1 },
+  supported: [BASE_CURRENCY],
   setCurrency: () => {},
 })
 
-export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrencyState] = useState<DisplayCurrency>(DEFAULT_DISPLAY_CURRENCY)
-  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES)
-  const [ready, setReady] = useState(false)
+type Runtime = { get: () => string; set: (code: string) => void }
+const runtime = (): Runtime | undefined => (window as unknown as { __btMoney?: Runtime }).__btMoney
 
-  useEffect(() => {
-    let alive = true
-    fetch('/api/currency', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body: { currency?: unknown; rates?: Record<string, number> } | null) => {
-        if (!alive || !body) return
-        if (isDisplayCurrency(body.currency)) setCurrencyState(body.currency)
-        if (body.rates) setRates(body.rates)
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (alive) setReady(true)
-      })
-    return () => {
-      alive = false
-    }
-  }, [])
+const listeners = new Set<() => void>()
+const subscribe = (fn: () => void) => {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+const snapshot = () =>
+  runtime()?.get() ?? document.documentElement.getAttribute('data-cur') ?? BASE_CURRENCY
+const serverSnapshot = () => DEFAULT_DISPLAY_CURRENCY
 
-  const setCurrency = useCallback((next: DisplayCurrency) => {
-    setCurrencyState(next)
-    try {
-      document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
-    } catch {
-      // Cookies blocked: the choice lasts for this page only.
-    }
-  }, [])
+/**
+ * The visitor's display currency. Decided on the server (`src/proxy.ts`
+ * sets the geo cookie; the switcher cookie wins) and applied to the HTML
+ * before first paint by the inline runtime (`@/lib/currency/money-runtime`);
+ * this provider only mirrors it for the switcher.
+ */
+export function CurrencyProvider({
+  children,
+  rates,
+  supported,
+}: {
+  children: React.ReactNode
+  rates: Record<string, number>
+  supported: readonly string[]
+}) {
+  const currency = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
+
+  const setCurrency = useCallback(
+    (next: DisplayCurrency) => {
+      if (!isDisplayCurrency(next, supported)) return
+      try {
+        document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
+      } catch {
+        // Cookies blocked: the choice lasts for this page only.
+      }
+      runtime()?.set(next)
+      listeners.forEach((fn) => fn())
+    },
+    [supported],
+  )
 
   const value = useMemo(
-    () => ({ currency, rates, ready, setCurrency }),
-    [currency, rates, ready, setCurrency],
+    () => ({ currency, rates, supported, setCurrency }),
+    [currency, rates, supported, setCurrency],
   )
   return <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
 }
@@ -81,43 +88,38 @@ export function useDisplayCurrency(): State {
 }
 
 /**
- * "≈ 375 ر.س" next to a USD price. Renders nothing for non-USD sources,
- * when the visitor's currency is USD, or before the currency is known.
+ * «≈ X» in the visitor's currency next to a SAR amount (checkout). Empty
+ * for SAR visitors. Rendered empty and filled by the runtime, so the markup
+ * is identical on the server and the client.
  */
 export function LocalPrice({
   minor,
   currency,
   className,
-  except,
 }: {
   minor: number
   currency: string
   className?: string
-  /** Also render nothing when the visitor's currency is this one (e.g. SAR next to the SAR charge). */
-  except?: string
 }) {
-  const locale = useLocale()
-  const { currency: target, rates, ready } = useDisplayCurrency()
-  if (!ready || target === 'USD' || currency.toUpperCase() !== 'USD' || minor <= 0) return null
-  if (except !== undefined && target === except.toUpperCase()) return null
-  const amount = convertUsdMinor(minor, target, rates)
-  if (amount === null) return null
   return (
     <small
       className={className ?? 'local-price muted'}
       style={{ display: 'block', fontWeight: 500 }}
     >
-      <bdi>≈ {formatApprox(amount, target, locale)}</bdi>
+      <bdi
+        data-money={minor}
+        data-from={currency}
+        data-money-mode="approx"
+        suppressHydrationWarning
+      />
     </small>
   )
 }
 
 /**
- * A catalogue price in the visitor's display currency — the primary price
- * everywhere public. Server HTML (and the first client render) shows SAR at
- * the fallback rate, so static pages stay identical for everyone and hydrate
- * cleanly; it swaps to the detected/chosen currency once /api/currency
- * answers. Zero/negative amounts are formatted as-is (callers decide "free").
+ * A catalogue price — the primary price everywhere public. Rendered as SAR
+ * (identical HTML for every visitor, cache-friendly); the inline runtime
+ * shows it in the visitor's currency with «≈» before first paint.
  */
 export function Money({
   minor,
@@ -129,10 +131,9 @@ export function Money({
   className?: string
 }) {
   const locale = useLocale()
-  const { currency: target, rates } = useDisplayCurrency()
   return (
-    <bdi className={className} data-money="" suppressHydrationWarning>
-      {formatInCurrency(minor, currency, target, locale, rates)}
+    <bdi className={className} data-money={minor} data-from={currency} suppressHydrationWarning>
+      {formatSar(minor, currency, locale)}
     </bdi>
   )
 }
@@ -140,14 +141,14 @@ export function Money({
 /** Compact <select> for the header / drawer. */
 export function CurrencySwitcher({ className }: { className?: string }) {
   const t = useTranslations()
-  const { currency, setCurrency } = useDisplayCurrency()
+  const { currency, setCurrency, supported } = useDisplayCurrency()
   return (
     <label className={className ?? 'currency-switcher'} style={{ display: 'inline-flex' }}>
       <span className="sr-only">{t('cur_label')}</span>
       <select
         value={currency}
         onChange={(e) => {
-          if (isDisplayCurrency(e.target.value)) setCurrency(e.target.value)
+          setCurrency(e.target.value)
         }}
         aria-label={t('cur_label')}
         dir="ltr"
@@ -161,7 +162,7 @@ export function CurrencySwitcher({ className }: { className?: string }) {
           padding: '4px 8px',
         }}
       >
-        {DISPLAY_CURRENCIES.map((code) => (
+        {supported.map((code) => (
           <option key={code} value={code}>
             {code}
           </option>

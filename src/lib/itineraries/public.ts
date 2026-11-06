@@ -6,6 +6,7 @@
  * internal notes.
  */
 
+import { readFx } from '@/lib/currency/fx-store'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
@@ -186,5 +187,6 @@ export async function loadMapBundleOffer(
   return mapBundleOffer(
     sales,
     rows.map((row) => ({ ...row, published: row.status === 'published' })),
+    (await readFx()).rates,
   )
 }

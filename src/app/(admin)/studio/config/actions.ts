@@ -6,7 +6,14 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
 import { db } from '@/db'
-import { siteSettings } from '@/db/schema'
+import { activityLog, siteSettings } from '@/db/schema'
+import {
+  BASE_CURRENCY,
+  parseRateLines,
+  rateChanges,
+  resolveFx,
+  type CurrenciesSetting,
+} from '@/lib/currency/fx'
 import { locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -76,6 +83,13 @@ async function save<K extends SettingKey>(
   back: string = LIST,
   /** Phase 6: VIP settings are `vip.manage`; every other setting stays `config.write`. */
   capability: 'config.write' | 'vip.manage' = 'config.write',
+  /** Runs in the same transaction, after the write (e.g. the FX change log). */
+  onSaved?: (
+    before: unknown,
+    after: SettingsShape[K],
+    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    userId: string,
+  ) => Promise<void>,
 ): Promise<void> {
   const session = await requireCapability(capability)
   const { t } = await getAdminI18n()
@@ -122,6 +136,7 @@ async function save<K extends SettingKey>(
         },
         tx,
       )
+      await onSaved?.(existing?.value, value, tx, session.userId)
     })
 
     outcome = { ok: t(successKey) }
@@ -150,13 +165,14 @@ function readableError(t: Translate, error: unknown): string {
 }
 
 /**
- * Currencies and presentment.
- *
- * Changing the base currency does NOT re-denominate the catalog — every
- * `price_minor` keeps its own `currency` column. This is presentation policy,
- * and saying so on the form matters more than the validation does.
+ * «العملة والصرف»: the base currency is SAR (fixed), the SAR→X display
+ * rates, the switcher list and the default display currency. The one FX
+ * source for the site: display, the USD→SAR charge conversion of old orders
+ * and the vehicles sheet all read it. Every rate change is written to
+ * activity_log (`fx_rates_changed`) as well as the audit log.
  */
 export async function saveCurrencies(form: FormData): Promise<void> {
+  revalidatePath('/', 'layout')
   await save(
     'currencies',
     (t) => {
@@ -164,21 +180,43 @@ export async function saveCurrencies(form: FormData): Promise<void> {
         line.toUpperCase(),
       )
       const defaultPresentment = fcurrency(form, 'defaultPresentment')
+      const rates = parseRateLines(flines(form, 'rates'))
 
       if (presentmentCurrencies.length === 0) {
         throw new Error(t('config.err_no_presentment'))
       }
-      if (!presentmentCurrencies.includes(defaultPresentment)) {
+      const listed = [BASE_CURRENCY, ...presentmentCurrencies]
+      if (!listed.includes(defaultPresentment)) {
         throw new Error(t('config.err_default_not_listed', { currency: defaultPresentment }))
+      }
+      const unpriced = presentmentCurrencies.filter((c) => c !== BASE_CURRENCY && !rates[c])
+      if (unpriced.length > 0) {
+        throw new Error(t('config.err_rate_missing', { currencies: unpriced.join(', ') }))
       }
 
       return {
-        baseCurrency: fcurrency(form, 'baseCurrency'),
+        baseCurrency: BASE_CURRENCY,
         presentmentCurrencies,
         defaultPresentment,
+        rates,
+        autoRefresh: fbool(form, 'autoRefresh'),
+        ratesUpdatedAt: new Date().toISOString(),
+        ratesSource: 'manual' as const,
       }
     },
     'config.ok_currencies',
+    LIST,
+    'config.write',
+    async (before, after, tx, userId) => {
+      const old = resolveFx(before as Partial<CurrenciesSetting> | undefined).rates
+      const changes = rateChanges(old, after.rates ?? {})
+      if (changes.length === 0) return
+      await tx.insert(activityLog).values({
+        userId,
+        action: 'fx_rates_changed',
+        details: { source: 'studio', changes },
+      })
+    },
   )
 }
 

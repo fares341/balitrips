@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -14,14 +15,12 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
-  fcurrency,
   fenum,
   fint,
   fintOrNull,
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fcurrencyOr,
   fmoney,
   freq,
   fstr,
@@ -68,8 +67,8 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       description: flocalizedOrNull(form, 'description'),
       features: flocalizedList(form, 'features'),
       icon: fstr(form, 'icon')?.slice(0, 32) ?? null,
-      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
-      currency: fcurrency(form, 'currency'),
+      priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
+      currency: BASE_CURRENCY,
       entitlementKind: fenum(form, 'entitlementKind', ENTITLEMENT_KINDS, 'map_access'),
       durationDays,
       deviceLimit,

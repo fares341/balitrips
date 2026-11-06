@@ -519,7 +519,7 @@ export type RelatedItem = {
   name: string
   area: string | null
   /** Formatted «from» price; null when the activity has none set. */
-  price: string | null
+  price: React.ReactNode | null
   imageUrl: string | null
   unavailable: boolean
 }

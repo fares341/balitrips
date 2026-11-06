@@ -89,7 +89,6 @@ export default async function CouponPage({
       : Promise.resolve([]),
   ])
 
-  const currency = coupon?.currency ?? ''
   const valueInput =
     coupon === null
       ? ''
@@ -179,11 +178,10 @@ export default async function CouponPage({
           <Field label={t('disc.currency')} htmlFor="currency" hint={t('disc.currency_hint')}>
             <TextInput
               id="currency"
-              name="currency"
-              maxLength={3}
-              dir="ltr"
-              defaultValue={currency}
-              style={{ textTransform: 'uppercase' }}
+              value="ر.س (SAR)"
+              readOnly
+              aria-readonly
+              className="a-locked"
             />
           </Field>
         </div>

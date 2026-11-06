@@ -186,7 +186,7 @@ export async function applyImport(
         .update(activitySupplierOffers)
         .set({
           costMinor: change.after?.costMinor ?? 0,
-          currency: change.after?.currency ?? 'USD',
+          currency: change.after?.currency ?? 'SAR',
           updatedAt: at,
         })
         .where(

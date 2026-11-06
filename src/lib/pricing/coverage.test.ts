@@ -15,19 +15,19 @@ function catalog(over: Partial<CatalogSnapshot> = {}): CatalogSnapshot {
     activityTiers: new Map(),
     activities: new Map(),
     plans: new Map([
-      ['vip-30', { priceMinor: 3900, currency: 'USD', kind: 'vip' }],
-      ['map-30', { priceMinor: 1900, currency: 'USD', kind: 'map_access' }],
+      ['vip-30', { priceMinor: 3900, currency: 'SAR', kind: 'vip' }],
+      ['map-30', { priceMinor: 1900, currency: 'SAR', kind: 'map_access' }],
     ]),
     itineraries: new Map([
-      ['it7', { priceMinor: 7900, currency: 'USD', version: 3 }],
-      ['it-vip', { priceMinor: 9900, currency: 'USD', version: 1, grantsVip: true }],
+      ['it7', { priceMinor: 7900, currency: 'SAR', version: 3 }],
+      ['it-vip', { priceMinor: 9900, currency: 'SAR', version: 1, grantsVip: true }],
     ]),
     packages: new Map([
       [
         'pk-incl',
         {
           priceMinor: 69000,
-          currency: 'USD',
+          currency: 'SAR',
           maxGuests: 4,
           pricingMode: 'flat' as const,
           coversItineraries: ['it7'],
@@ -38,7 +38,7 @@ function catalog(over: Partial<CatalogSnapshot> = {}): CatalogSnapshot {
         'pk-upgrade',
         {
           priceMinor: 50000,
-          currency: 'USD',
+          currency: 'SAR',
           maxGuests: 4,
           pricingMode: 'flat' as const,
           coversItineraries: ['it7'],
@@ -47,7 +47,7 @@ function catalog(over: Partial<CatalogSnapshot> = {}): CatalogSnapshot {
       ],
       [
         'pk-plain',
-        { priceMinor: 30000, currency: 'USD', maxGuests: 4, pricingMode: 'flat' as const },
+        { priceMinor: 30000, currency: 'SAR', maxGuests: 4, pricingMode: 'flat' as const },
       ],
     ]),
     vehicles: new Map(),
@@ -154,7 +154,7 @@ describe('no double counting', () => {
 })
 
 describe('deducted on upgrade', () => {
-  const owned = new Map([['it7', { paidMinor: 7900, currency: 'USD' }]])
+  const owned = new Map([['it7', { paidMinor: 7900, currency: 'SAR' }]])
 
   it('deducts what the buyer already paid for the itinerary', () => {
     const quote = buildQuote([pkg('pk-upgrade')], catalog({ ownedItineraries: owned }), NOW)
@@ -177,7 +177,7 @@ describe('deducted on upgrade', () => {
   })
 
   it('never goes below zero, and never mixes currencies', () => {
-    const big = new Map([['it7', { paidMinor: 999999, currency: 'USD' }]])
+    const big = new Map([['it7', { paidMinor: 999999, currency: 'SAR' }]])
     expect(
       buildQuote([pkg('pk-upgrade')], catalog({ ownedItineraries: big }), NOW).totalMinor,
     ).toBe(0)

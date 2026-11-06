@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
@@ -12,7 +13,6 @@ import { writeAudit } from '../../_lib/audit'
 import { fbaliDateTime } from '../../_lib/bali-time'
 import {
   fbool,
-  fcurrency,
   fenum,
   fintOrNull,
   fmoneyOrNull,
@@ -45,24 +45,15 @@ export async function saveCoupon(id: string, form: FormData): Promise<void> {
     const code = freq(form, 'code', t('disc.code')).toUpperCase()
     if (!isValidCouponCode(code)) throw new Error(t('disc.err_code'))
     const type = fenum(form, 'type', ['percent', 'fixed'] as const, 'percent')
-    const currencyText = (fstr(form, 'currency') ?? '').toUpperCase()
-    const currency = currencyText === '' ? null : fcurrency(form, 'currency')
-    if (type === 'fixed' && currency === null) throw new Error(t('disc.err_currency_fixed'))
+    // One base currency: fixed amounts and minimums are always SAR.
+    const currency: string = BASE_CURRENCY
     const value =
       type === 'percent'
         ? fpercent(form, 'value', 0, t('disc.value'))
-        : (fmoneyOrNull(form, 'value', currency ?? 'USD', t('disc.value')) ?? 0)
+        : (fmoneyOrNull(form, 'value', currency, t('disc.value')) ?? 0)
     if (value <= 0) throw new Error(t('disc.err_value'))
     if (type === 'percent' && value > 10_000) throw new Error(t('disc.err_percent'))
-    const minSubtotalMinor = fmoneyOrNull(
-      form,
-      'minSubtotal',
-      currency ?? 'USD',
-      t('disc.min_subtotal'),
-    )
-    if (minSubtotalMinor !== null && minSubtotalMinor > 0 && currency === null) {
-      throw new Error(t('disc.err_currency_min'))
-    }
+    const minSubtotalMinor = fmoneyOrNull(form, 'minSubtotal', currency, t('disc.min_subtotal'))
     const validFrom = fbaliDateTime(form, 'validFrom', t('disc.valid_from'))
     const validTo = fbaliDateTime(form, 'validTo', t('disc.valid_to'))
     if (validFrom && validTo && validTo < validFrom) throw new Error(t('disc.err_dates'))

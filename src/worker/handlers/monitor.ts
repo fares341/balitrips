@@ -23,6 +23,7 @@ import { backupStatus } from '@/lib/monitoring/health'
 import { deadLettersSince } from '@/lib/monitoring/jobs'
 import { WEBHOOK_PROVIDER } from '@/lib/integrations/webhook'
 import { pruneRateLimits } from '@/lib/rate-limit'
+import { refreshRatesIfDue } from '@/lib/currency/fx-refresh'
 
 import { enqueueIntegrationWebhook, type SystemMonitorJob } from '../queues'
 
@@ -125,7 +126,11 @@ export async function handleSystemMonitor(_job: SystemMonitorJob): Promise<objec
     .where(and(lt(errorEvents.lastSeenAt, new Date(now - 90 * DAY_MS))))
     .returning({ id: errorEvents.id })
 
+  // 7. Display exchange rates (only when switched on in Studio; daily).
+  const fx = await refreshRatesIfDue()
+
   return {
+    fx,
     alerts: sent,
     deadLetters: dead,
     newErrors: errors,

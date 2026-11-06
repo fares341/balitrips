@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { ITINERARY_TIERS, normaliseTierPrices, type TierPrices } from '@/lib/itineraries/tiers'
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
@@ -31,12 +32,10 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit, type Tx } from '../../_lib/audit'
 import {
   fbool,
-  fcurrency,
   fintOrNull,
   flocalizedList,
   flocalizedOrNull,
   flocalizedRequired,
-  fcurrencyOr,
   fenum,
   fmoney,
   fmoneyOrNull,
@@ -81,12 +80,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       Object.fromEntries(
         ITINERARY_TIERS.map((key) => [
           key,
-          fmoneyOrNull(
-            form,
-            `tier_${key}`,
-            fcurrencyOr(form, 'currency'),
-            t(`itineraries.tier_${key}`),
-          ),
+          fmoneyOrNull(form, `tier_${key}`, BASE_CURRENCY, t(`itineraries.tier_${key}`)),
         ]),
       ),
     )
@@ -98,8 +92,8 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       spots: fintOrNull(form, 'spots', t('itineraries.f_spots')),
       tripType: flocalizedOrNull(form, 'tripType'),
       audience: flocalizedList(form, 'audience'),
-      priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
-      currency: fcurrency(form, 'currency'),
+      priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
+      currency: BASE_CURRENCY,
       tierPrices,
       heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
       // الوثيقة 4.2

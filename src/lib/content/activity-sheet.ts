@@ -251,7 +251,7 @@ export function normalizeCell(
   spec: ColumnSpec,
   raw: string,
   lookups: Lookups,
-  currency = 'USD',
+  currency = 'SAR',
 ): { value: string } | { error: CellError } {
   const text = raw.replace(/ /g, ' ').trim()
   if (text === '' && spec.kind !== 'bool') return { value: '' }
@@ -555,7 +555,7 @@ export function planRows(
       continue
     }
     const currency =
-      (row.cells.currency ?? '').trim().toUpperCase() || existing.get(slug)?.currency || 'USD'
+      (row.cells.currency ?? '').trim().toUpperCase() || existing.get(slug)?.currency || 'SAR'
     const values = normalizeRow(row, currency)
     if (!values) continue
     const isNew = !existing.has(slug)
@@ -633,7 +633,7 @@ export function planRows(
         bySlug.set(slug, stub)
         return stub
       })()
-    const currency = target.values.currency || existing.get(slug)?.currency || 'USD'
+    const currency = target.values.currency || existing.get(slug)?.currency || 'SAR'
     const values = normalizeRow(row, currency)
     if (!values) continue
     if (row.sheet === 'packages') {
@@ -761,7 +761,7 @@ export const SHEET_DEFAULTS: Record<SheetKey, Record_> = {
   activities: {
     status: 'draft',
     price: '0.00',
-    currency: 'USD',
+    currency: 'SAR',
     min_guests: '1',
     max_guests: '20',
     lead_time_hours: '24',
@@ -848,7 +848,7 @@ export const SHEET_EXAMPLES: Record<SheetKey, Record_> = {
     highlights_ar: 'شروق الشمس | فطور على القمة',
     highlights_en: 'Sunrise | Breakfast at the top',
     price: '45.00',
-    currency: 'USD',
+    currency: 'SAR',
     min_guests: '1',
     max_guests: '12',
     time_slots: '02:00 | 03:00',

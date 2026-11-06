@@ -44,6 +44,10 @@ export const ACTIVITY_ACTIONS = [
   'page_view',
   /** رقم جوال غير مُتحقق منه سُحب من الحساب لأن صاحبه أثبت ملكيته (phone-actions.ts). */
   'phone_released',
+  /** Studio «العملة والصرف» (or the optional feed job) changed SAR→X rates. */
+  'fx_rates_changed',
+  /** Migration 0043 converted catalog prices to SAR (summary row). */
+  'currency_migration',
 ] as const
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number]

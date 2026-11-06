@@ -9,9 +9,8 @@
  * client's sheets, Oct 2026) and the pure price helpers.
  *
  * Prices are written as the client wrote them: SAR on every sheet, IDR and
- * USD where the sheet gives them. The site sells in USD, so a day price is
- * the sheet's USD when there is one, else SAR ÷ the Studio rate (default
- * 3.75), rounded to the cent.
+ * USD where the sheet gives them. The site sells in SAR (the base currency),
+ * so a day price is the sheet's SAR, else its USD × the Studio rate.
  *
  * Capacity was NOT on the client's sheets. The defaults below are placeholders
  * (`capacityConfirmed: false`, shown as «للتأكيد» in the Studio) until the
@@ -57,7 +56,11 @@ export const vehicleSchema = z.object({
 })
 
 export const vehiclesSchema = z.object({
-  /** How many SAR make one USD. */
+  /**
+   * Deprecated (Nov 2026): the rate now lives in Configuration → «العملة
+   * والصرف» (`currencies.rates`). Still read as the USD rate until that
+   * table stores one; Studio no longer edits it here.
+   */
   sarPerUsd: z.number().min(0.5).max(20).default(3.75),
   vehicles: z.array(vehicleSchema).max(20).default([]),
 })
@@ -232,10 +235,13 @@ export function isLuxury(vehicle: Pick<Vehicle, 'vehicleClass'>): boolean {
   return vehicle.vehicleClass === 'luxury'
 }
 
-/** A zone's day price in USD cents: the sheet's USD, else SAR ÷ rate. Null when neither. */
-export function zoneUsdMinor(zone: VehicleZone, sarPerUsd: number): number | null {
-  if (zone.usd !== null) return Math.round(zone.usd * 100)
-  if (zone.sar !== null && sarPerUsd > 0) return Math.round((zone.sar / sarPerUsd) * 100)
+/**
+ * A zone's day price in SAR halalas (the base currency): the sheet's SAR,
+ * else its USD × the Studio rate. Null when neither.
+ */
+export function zoneSarMinor(zone: VehicleZone, sarPerUsd: number): number | null {
+  if (zone.sar !== null) return Math.round(zone.sar * 100)
+  if (zone.usd !== null && sarPerUsd > 0) return Math.round(zone.usd * sarPerUsd * 100)
   return null
 }
 

@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { ADMIN_ROBOTS_TAG, isAdminPath, toInternalAdminPath } from './app/(admin)/_lib/admin-path'
 import { routing } from './i18n/routing'
+import { detectCurrency } from './lib/currency/server'
+import { CURRENCY_COOKIE, GEO_CURRENCY_COOKIE } from './lib/currency/shared'
 
 /**
  * Locale negotiation and redirects.
@@ -73,7 +75,32 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return localeProxy(request)
+  return withGeoCurrency(request, localeProxy(request))
+}
+
+/**
+ * Display currency, decided on the server (owner, Nov 2026): the visitor's
+ * country (CDN geo header, else the offline IP table, else Accept-Language)
+ * mapped to a currency, handed to the page in a small readable cookie. The
+ * HTML itself stays identical for everyone, so pages remain static; the
+ * inline runtime in <head> converts the prices before first paint. Set once
+ * a day and only when the switcher has not chosen (its cookie wins).
+ */
+function withGeoCurrency(request: NextRequest, response: NextResponse): NextResponse {
+  if (request.cookies.has(CURRENCY_COOKIE) || request.cookies.has(GEO_CURRENCY_COOKIE)) {
+    return response
+  }
+  try {
+    response.cookies.set(GEO_CURRENCY_COOKIE, detectCurrency(request.headers), {
+      path: '/',
+      maxAge: 60 * 60 * 24,
+      sameSite: 'lax',
+      httpOnly: false,
+    })
+  } catch {
+    // Detection is best effort: no cookie means SAR.
+  }
+  return response
 }
 
 export const config = {

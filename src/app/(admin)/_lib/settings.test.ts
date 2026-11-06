@@ -26,33 +26,29 @@ const {
 } = await import('./settings')
 
 describe('currencies', () => {
-  it('uppercases and accepts ISO 4217 codes', () => {
+  it('uppercases codes and always reads the base currency as SAR', () => {
     const parsed = currenciesSchema.parse({
       baseCurrency: 'usd',
       presentmentCurrencies: ['usd', 'idr'],
       defaultPresentment: 'usd',
+      rates: { usd: 0.2667 },
     })
-    expect(parsed.baseCurrency).toBe('USD')
+    expect(parsed.baseCurrency).toBe('SAR')
     expect(parsed.presentmentCurrencies).toEqual(['USD', 'IDR'])
+    expect(parsed.rates).toEqual({ USD: 0.2667 })
+    expect(parsed.autoRefresh).toBe(false)
   })
 
-  it('rejects a currency that is not three letters', () => {
+  it('rejects a currency that is not three letters, or a non-positive rate', () => {
     expect(() =>
-      currenciesSchema.parse({
-        baseCurrency: 'DOLLAR',
-        presentmentCurrencies: ['USD'],
-        defaultPresentment: 'USD',
-      }),
+      currenciesSchema.parse({ presentmentCurrencies: ['DOLLAR'], defaultPresentment: 'USD' }),
     ).toThrow()
+    expect(() => currenciesSchema.parse({ rates: { USD: 0 } })).toThrow()
   })
 
   it('rejects an empty presentment list', () => {
     expect(() =>
-      currenciesSchema.parse({
-        baseCurrency: 'USD',
-        presentmentCurrencies: [],
-        defaultPresentment: 'USD',
-      }),
+      currenciesSchema.parse({ presentmentCurrencies: [], defaultPresentment: 'SAR' }),
     ).toThrow()
   })
 })

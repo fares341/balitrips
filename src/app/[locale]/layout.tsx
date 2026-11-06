@@ -17,6 +17,8 @@ import { loadPublicSections } from '@/lib/content/public-sections-server'
 import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
 import { CurrencyProvider } from '@/components/currency/currency-context'
+import { readFx } from '@/lib/currency/fx-store'
+import { moneyRuntimeScript } from '@/lib/currency/money-runtime'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
 import { fontVariables } from '@/styles/fonts'
@@ -72,21 +74,34 @@ export default async function LocaleLayout({
   // and send every Riyadh/London/NY visitor on a round trip to Singapore.
   setRequestLocale(locale)
 
-  const [messages, contact, sections] = await Promise.all([
+  const [messages, contact, sections, fx] = await Promise.all([
     getMessages(),
     getContact(),
     loadPublicSections(),
+    readFx(),
   ])
   // Owner, Oct 2026: empty sections (no package / article yet) leave the nav.
   const hidden = hiddenHrefs(sections)
   const { dir } = localeConfig[locale as Locale]
 
   return (
-    <html lang={locale} dir={dir} className={fontVariables}>
+    <html lang={locale} dir={dir} className={fontVariables} suppressHydrationWarning>
+      <head>
+        {/* Display currency before first paint (see lib/currency/money-runtime). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: moneyRuntimeScript({
+              rates: fx.rates,
+              supported: fx.presentment,
+              fallback: fx.defaultPresentment,
+            }),
+          }}
+        />
+      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           <ContactProvider value={contact}>
-            <CurrencyProvider>
+            <CurrencyProvider rates={fx.rates} supported={fx.presentment}>
               {/*
             The shell is mounted once, above the route slot. Header and Footer
             therefore persist across every navigation — the scroll listener,
