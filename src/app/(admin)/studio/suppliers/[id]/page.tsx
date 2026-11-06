@@ -13,7 +13,7 @@ import {
 } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { formatMoneyInput } from '@/lib/money-input'
 import { SUPPLIER_TYPES } from '@/lib/suppliers/assign'
 
@@ -449,7 +449,7 @@ function OfferForm({
   locked?: boolean
 }) {
   const key = offer?.id ?? 'new'
-  const currency = offer?.currency ?? 'USD'
+  const currency = offer?.currency ?? 'SAR'
   return (
     <form className="a-day" action={saveOffer.bind(null, supplierId, key)}>
       <div className="a-day-head">

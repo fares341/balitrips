@@ -19,7 +19,7 @@ import { defaultLocale, isLocale } from '@/i18n/config'
 import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { parseUserAgent } from '@/lib/security/fingerprint'
 
 import { adminHref } from '../../../_lib/admin-path'

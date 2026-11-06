@@ -7,7 +7,7 @@ import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import { mapBundleSaving } from '@/lib/itineraries/savings'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { formatMoneyInput } from '@/lib/money-input'
 
 import { adminHref } from '../../../_lib/admin-path'

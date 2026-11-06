@@ -4,7 +4,7 @@
  * Visitor display currency.
  *
  * Decided on the server and applied before first paint (see the provider);
- * the switcher writes the `bt_currency` cookie.
+ * only an explicit switcher pick writes the `bt_cur_choice` cookie.
  */
 
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react'
@@ -66,6 +66,7 @@ export function CurrencyProvider({
     (next: DisplayCurrency) => {
       if (!isDisplayCurrency(next, supported)) return
       try {
+        // Only here, on an explicit pick: never written automatically.
         document.cookie = `${CURRENCY_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
       } catch {
         // Cookies blocked: the choice lasts for this page only.
@@ -162,7 +163,7 @@ export function CurrencySwitcher({ className }: { className?: string }) {
           padding: '4px 8px',
         }}
       >
-        {supported.map((code) => (
+        {(supported.includes(currency) ? supported : [...supported, currency]).map((code) => (
           <option key={code} value={code}>
             {code}
           </option>

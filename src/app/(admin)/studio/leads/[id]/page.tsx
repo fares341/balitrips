@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { customTripDocuments, customTripRequests, orders, users } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { loadStaff } from '@/lib/crm/queries'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
@@ -98,7 +98,7 @@ export default async function LeadDetailPage({
             t('veh.lead_estimate'),
             request.estimateMinor === null
               ? '—'
-              : formatMoney(request.estimateMinor, request.estimateCurrency ?? 'USD', intl),
+              : formatMoney(request.estimateMinor, request.estimateCurrency ?? 'SAR', intl),
           ],
         ] as [string, string][])
       : []),
@@ -244,7 +244,7 @@ export default async function LeadDetailPage({
               currencyName="quoteCurrency"
               minor={request.quoteMinor ?? request.estimateMinor}
               currency={
-                request.quoteCurrency ?? request.estimateCurrency ?? request.currency ?? 'USD'
+                request.quoteCurrency ?? request.estimateCurrency ?? request.currency ?? 'SAR'
               }
             />
             <div className="a-actions">

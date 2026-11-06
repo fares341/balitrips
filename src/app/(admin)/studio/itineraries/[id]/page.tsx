@@ -490,7 +490,7 @@ export default async function ItineraryEditorPage({
                     defaultValue={
                       minor === undefined
                         ? ''
-                        : formatMoneyInput(minor, itinerary?.currency ?? 'USD')
+                        : formatMoneyInput(minor, itinerary?.currency ?? 'SAR')
                     }
                     {...priceInputProps(pricesLocked)}
                   />

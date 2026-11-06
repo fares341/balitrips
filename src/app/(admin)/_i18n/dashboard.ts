@@ -39,7 +39,8 @@ const section: Section = {
     'dashboard.today_title': 'Today at a glance',
     'dashboard.kpi_orders_today': 'New orders today',
     'dashboard.kpi_revenue_month': 'Revenue this month',
-    'dashboard.kpi_revenue_note': 'Paid orders only, per currency.',
+    'dashboard.kpi_revenue_note':
+      'Paid orders only, in SAR. ≈ = older orders in another currency converted at the Studio rate.',
     'dashboard.kpi_requests': 'Requests waiting',
     'dashboard.kpi_alerts': 'Open alerts',
     'dashboard.kpi_map_users': 'Active map users',
@@ -131,7 +132,8 @@ const section: Section = {
     'dashboard.today_title': 'نظرة سريعة على اليوم',
     'dashboard.kpi_orders_today': 'طلبات جديدة اليوم',
     'dashboard.kpi_revenue_month': 'إيرادات هذا الشهر',
-    'dashboard.kpi_revenue_note': 'الطلبات المدفوعة فقط، لكل عملة.',
+    'dashboard.kpi_revenue_note':
+      'الطلبات المدفوعة فقط، بالريال. ≈ = طلبات قديمة بعملة أخرى حُوّلت بسعر الاستوديو.',
     'dashboard.kpi_requests': 'طلبات خاصة بالانتظار',
     'dashboard.kpi_alerts': 'تنبيهات مفتوحة',
     'dashboard.kpi_map_users': 'مستخدمو الخريطة النشطون',

@@ -11,7 +11,8 @@
 
 import { useId, useMemo, useState } from 'react'
 
-import { formatMoney, minorUnitExponent } from '@/lib/money'
+import { minorUnitExponent } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { lineGeometry, polyline } from '@/lib/reports/svg'
 import type { LineChartBlock } from '@/lib/reports/types'
 

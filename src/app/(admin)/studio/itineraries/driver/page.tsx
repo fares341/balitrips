@@ -7,7 +7,7 @@ import { pick } from '@/lib/content/localize'
 import { FEATURES } from '@/lib/features'
 import { addDays, dayState, driverWindow, weekday } from '@/lib/itineraries/driver-calendar'
 import { readDriverSettings } from '@/lib/itineraries/sales-settings-store'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'

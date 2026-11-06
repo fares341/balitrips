@@ -138,7 +138,7 @@ export default async function LibraryAddonPage({
           <AddonRuleFields
             idPrefix="lib"
             tiers={addon?.priceTiers}
-            currency={addon?.currency ?? 'USD'}
+            currency={addon?.currency ?? 'SAR'}
             incompatible={others
               .filter((other) => other.id !== addon?.id)
               .map((other) => ({ value: other.id, label: pick(other.name, locale) }))}

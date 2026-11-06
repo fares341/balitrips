@@ -14,7 +14,7 @@ import {
 } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 import { COUPON_KINDS } from '@/lib/finance/coupons'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { formatMoneyInput, formatPercentInput } from '@/lib/money-input'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -95,7 +95,7 @@ export default async function CouponPage({
       ? ''
       : coupon.type === 'percent'
         ? formatPercentInput(coupon.value)
-        : formatMoneyInput(coupon.value, coupon.currency ?? 'USD')
+        : formatMoneyInput(coupon.value, coupon.currency ?? 'SAR')
   const items = new Set(coupon?.appliesItems ?? [])
   const kinds = new Set(coupon?.appliesKinds ?? [])
   const name = (value: Parameters<typeof pick>[0]) =>
@@ -195,7 +195,7 @@ export default async function CouponPage({
               dir="ltr"
               defaultValue={
                 coupon?.minSubtotalMinor
-                  ? formatMoneyInput(coupon.minSubtotalMinor, coupon.currency ?? 'USD')
+                  ? formatMoneyInput(coupon.minSubtotalMinor, coupon.currency ?? 'SAR')
                   : ''
               }
             />
