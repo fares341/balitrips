@@ -22,6 +22,7 @@ import { CURRENCY_COOKIE, GEO_CURRENCY_COOKIE } from './shared'
 
 export interface MoneyRuntimeConfig {
   rates: Record<string, number>
+  /** The switcher list (what a visitor may pick). */
   supported: string[]
   fallback: string
 }
@@ -40,9 +41,15 @@ function runtime(
   function ok(code: string): boolean {
     return cfg.supported.indexOf(code) !== -1
   }
+  // The country's currency applies whenever there is a rate for it, even if
+  // the Studio switcher list does not offer it (pre-#56 settings rows store
+  // a short list without EGP, which pinned Egypt to SAR).
+  function rated(code: string): boolean {
+    return code === cfg.base || (code !== '' && (cfg.rates[code] || 0) > 0)
+  }
   var chosen = readCookie(cfg.cookie).toUpperCase()
   var geo = readCookie(cfg.geoCookie).toUpperCase()
-  var cur = ok(chosen) ? chosen : ok(geo) ? geo : ok(cfg.fallback) ? cfg.fallback : cfg.base
+  var cur = ok(chosen) ? chosen : rated(geo) ? geo : ok(cfg.fallback) ? cfg.fallback : cfg.base
   function exp(code: string): number {
     if ('BHD IQD JOD KWD LYD OMR TND'.indexOf(code) !== -1) return 3
     if ('JPY KRW VND CLP'.indexOf(code) !== -1) return 0
@@ -106,7 +113,7 @@ function runtime(
       return cur
     },
     set: function (next: string) {
-      if (!ok(next)) return
+      if (!ok(next) && !rated(next)) return
       cur = next
       root.setAttribute('data-cur', cur)
       scan(root)

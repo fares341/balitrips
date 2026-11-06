@@ -8,7 +8,7 @@
  */
 
 import { isBudgetTier, tierForLegacyBudget, type BudgetTier } from '@/lib/budget-tier'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import type { Translate } from '../../_i18n'
 

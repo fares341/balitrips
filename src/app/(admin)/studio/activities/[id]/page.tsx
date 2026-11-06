@@ -22,7 +22,7 @@ import { activityStatus, ACTIVITY_STATUSES, isPublicStatus } from '@/lib/content
 import { ADVANCE_MODES, advanceModeOf } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
 import { mediaUrl } from '@/lib/content/queries'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { countWaitingAlerts, listAlerts } from '@/lib/notify/availability'
 
 import { adminHref } from '../../../_lib/admin-path'

@@ -5,6 +5,7 @@ import { cache } from 'react'
 import { readSettings } from '@/app/(admin)/_lib/settings'
 
 import { DEFAULT_FX, resolveFx, type FxTable } from './fx'
+import { setStudioRates } from './studio'
 
 /**
  * The one exchange-rate source, read from `site_settings`.
@@ -20,7 +21,9 @@ export const readFx = cache(async (): Promise<FxTable> => {
     const storedUsd = values.currencies.rates?.USD
     const legacy =
       storedUsd === undefined && !missing.includes('vehicles') ? values.vehicles.sarPerUsd : null
-    return resolveFx(values.currencies, legacy)
+    const fx = resolveFx(values.currencies, legacy)
+    setStudioRates(fx.rates)
+    return fx
   } catch {
     return DEFAULT_FX
   }

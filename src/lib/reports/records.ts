@@ -3,7 +3,7 @@ import { and, desc, eq, gte, inArray, lt, ne, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { orderItems, orders, payments, refunds, users } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import {
   BOOKABLE,

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { conversationDetail } from '@/lib/assistant/store'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../../_lib/admin-path'
 import { getAdminI18n } from '../../../../_lib/i18n'

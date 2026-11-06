@@ -5,7 +5,7 @@ import { db } from '@/db'
 import { packages } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { pageParam, param } from '../../_lib/result'

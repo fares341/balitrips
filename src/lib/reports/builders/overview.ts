@@ -353,7 +353,7 @@ export async function buildOverview(
   )
 
   // --- Charts --------------------------------------------------------------
-  const currency = chartCurrency(filters, currencies[0] ?? 'USD', value, valuePrev)
+  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', value, valuePrev)
   const [series, seriesPrev, top, sources] = await Promise.all([
     salesSeries({ start: p.start, end: p.end }, p.bucket, currency, filters),
     filters.compare

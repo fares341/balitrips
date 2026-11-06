@@ -1,6 +1,5 @@
-import { formatMoney } from '@/lib/money'
+import { studioTotal, studioTotalSar } from '@/lib/currency/studio'
 
-import { amountIn } from './metrics'
 import { pctChange } from './period'
 import type { Kpi } from './types'
 
@@ -13,9 +12,8 @@ export function kpiText(kpi: Kpi, intl: string, hoursLabel = 'h'): string[] {
   const v = kpi.value
   switch (v.kind) {
     case 'money':
-      return v.money.length === 0
-        ? ['—']
-        : v.money.map((m) => formatMoney(m.minor, m.currency, intl))
+      // One SAR figure; labelled when older non-SAR orders were converted.
+      return [studioTotal(v.money, intl)]
     case 'percent':
       return [
         v.value === null
@@ -53,10 +51,11 @@ export function kpiChange(kpi: Kpi): Change {
   let previous: number | null = null
   if (v.kind === 'money') {
     if (v.prev === null) return { pct: null, compared: false, direction: 'flat', good: null }
-    const currency = v.money[0]?.currency ?? v.prev[0]?.currency
-    if (!currency) return { pct: null, compared: false, direction: 'flat', good: null }
-    current = amountIn(v.money, currency)
-    previous = amountIn(v.prev, currency)
+    if (v.money.length === 0 && v.prev.length === 0) {
+      return { pct: null, compared: false, direction: 'flat', good: null }
+    }
+    current = studioTotalSar(v.money).minor
+    previous = studioTotalSar(v.prev).minor
   } else if (v.kind === 'unavailable') {
     return { pct: null, compared: false, direction: 'flat', good: null }
   } else {
@@ -97,11 +96,7 @@ export function changeText(
 export function prevText(kpi: Kpi, intl: string): string {
   const v = kpi.value
   if (v.kind === 'money') {
-    return v.prev === null
-      ? ''
-      : v.prev.length === 0
-        ? '—'
-        : v.prev.map((m) => formatMoney(m.minor, m.currency, intl)).join(' · ')
+    return v.prev === null ? '' : studioTotal(v.prev, intl)
   }
   if (v.kind === 'unavailable' || v.prev === null) return ''
   return kpiText({ ...kpi, value: { ...v, value: v.prev } }, intl).join(' ')

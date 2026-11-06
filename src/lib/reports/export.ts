@@ -1,4 +1,4 @@
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { changeText, kpiChange, kpiText, prevText } from './format'
 import { lineGeometry, polyline } from './svg'

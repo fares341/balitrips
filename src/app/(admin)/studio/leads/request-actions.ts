@@ -10,7 +10,7 @@ import { db } from '@/db'
 import { customTripDocuments, customTripRequests, users } from '@/db/schema'
 import { defaultLocale, isLocale } from '@/i18n/config'
 import { can } from '@/lib/auth/roles'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { notifyUser } from '@/lib/notify'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
@@ -210,8 +210,7 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
    -------------------------------------------------------------------------- */
 
 type WhatsappTarget =
-  | { ok: true; userId: string; name: string; link: string }
-  | { ok: false; reason: string }
+  { ok: true; userId: string; name: string; link: string } | { ok: false; reason: string }
 
 /**
  * هل يمكن إرسال هذه النسخة لصاحب الطلب على واتساب؟ الطلب مربوط بحساب، والحساب

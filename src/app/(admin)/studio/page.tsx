@@ -18,7 +18,7 @@ import {
 import { pick } from '@/lib/content/localize'
 import { liveModeIssues } from '@/lib/live-mode'
 import { can } from '@/lib/auth/roles'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney, studioTotal } from '@/lib/currency/studio'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 import { AUTHORIZATION_DAYS } from '@/lib/orders/capture'
 import { isUrgent, timeLeftParts } from '@/lib/orders/supplier-wait'
@@ -642,11 +642,17 @@ export default async function DashboardPage({
               {monthByCurrency.length === 0 ? (
                 <b className="a-kpi-value a-muted">—</b>
               ) : (
-                monthByCurrency.map((row) => (
-                  <b className="a-kpi-value" key={row.currency} dir="ltr">
-                    {formatMoney(row.revenueMinor, row.currency, intl)}
-                  </b>
-                ))
+                <b className="a-kpi-value" dir="ltr">
+                  {studioTotal(
+                    monthByCurrency.map((row) => ({
+                      currency: row.currency,
+                      minor: row.revenueMinor,
+                    })),
+                    intl,
+                    undefined,
+                    { short: true },
+                  )}
+                </b>
               )}
               <span className="a-kpi-note">{t('dashboard.kpi_revenue_note')}</span>
             </div>
@@ -850,12 +856,19 @@ export default async function DashboardPage({
               {earnedByCurrency.size === 0 ? (
                 <b className="a-kpi-value a-muted">—</b>
               ) : (
-                [...earnedByCurrency.entries()].map(([currency, minor]) => (
-                  <b className="a-kpi-value" key={currency} dir="ltr">
-                    {formatMoney(minor, currency, intl)}
-                  </b>
-                ))
+                <b className="a-kpi-value" dir="ltr">
+                  {studioTotal(
+                    [...earnedByCurrency.entries()].map(([currency, minor]) => ({
+                      currency,
+                      minor,
+                    })),
+                    intl,
+                    undefined,
+                    { short: true },
+                  )}
+                </b>
               )}
+              <span className="a-kpi-note">{t('dashboard.kpi_revenue_note')}</span>
             </div>
           ) : null}
         </section>

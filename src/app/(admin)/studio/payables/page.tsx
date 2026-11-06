@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 import { db } from '@/db'
 import { orderItems, orders, supplierSettlements, suppliers } from '@/db/schema'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
@@ -97,7 +97,7 @@ export default async function PayablesPage({
                     <Link href={adminHref(`/suppliers/${row.supplierId}`)}>{row.supplierName}</Link>
                   </div>
                   <b dir="ltr">
-                    {formatMoney(Number(row.totalMinor), row.currency ?? 'USD', intl)}
+                    {formatMoney(Number(row.totalMinor), row.currency ?? 'SAR', intl)}
                   </b>
                 </div>
                 <p className="a-hint">

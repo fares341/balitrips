@@ -247,7 +247,7 @@ export async function buildFinancial(
     empty: t('rp.empty'),
   }
 
-  const currency = chartCurrency(filters, currencies[0] ?? 'USD', value, valuePrev)
+  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', value, valuePrev)
   return {
     id: 'financial',
     title: t('rp.r_financial'),
@@ -904,7 +904,7 @@ export async function buildActivities(
   if (ctx.finance) columns.push({ key: 'margin', label: t('rp.kpi_margin'), num: true })
   columns.push({ key: 'cancel', label: t('rp.kpi_cancellation_rate'), num: true })
 
-  const currency = chartCurrency(filters, currencies[0] ?? 'USD', revenue(now))
+  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', revenue(now))
   return {
     id: 'activities',
     title: t('rp.r_activities'),
@@ -1112,7 +1112,7 @@ export async function buildMarketing(
       both(filters, (r) => abandonedCheckouts(r)),
       currencyOptions(),
     ])
-  const currency = filters.currency ?? currencies[0] ?? 'USD'
+  const currency = filters.currency ?? currencies[0] ?? 'SAR'
   type Row = { label: string; campaign: string; visitors: number; orders: number; minor: number }
   const rows = new Map<string, Row>()
   const keyOf = (s: string | null, m: string | null, c: string | null) =>

@@ -5,7 +5,7 @@ import { moneyRuntimeScript } from './money-runtime'
 import { formatInCurrency } from './shared'
 
 /** Just enough DOM for the runtime: price nodes, cookies, an observer stub. */
-function run(cookie: string, lang = 'ar') {
+function run(cookie: string, lang = 'ar', supported: string[] = DEFAULT_FX.presentment) {
   const text = (value: string) => ({ nodeType: 3, nodeValue: value, nextSibling: null })
   const price = (minor: number, mode?: string) => {
     const attrs: Record<string, string> = { 'data-money': String(minor), 'data-from': 'SAR' }
@@ -44,7 +44,7 @@ function run(cookie: string, lang = 'ar') {
   new Function(
     moneyRuntimeScript({
       rates: DEFAULT_FX.rates,
-      supported: DEFAULT_FX.presentment,
+      supported,
       fallback: 'SAR',
     }),
   )()
@@ -72,7 +72,7 @@ describe('money runtime (before first paint)', () => {
   })
 
   it('the switcher cookie wins over the country, and unsupported codes fall back to SAR', () => {
-    expect(run('bt_cur_geo=EGP; bt_currency=USD').api.get()).toBe('USD')
+    expect(run('bt_cur_geo=EGP; bt_cur_choice=USD').api.get()).toBe('USD')
     expect(run('bt_cur_geo=JPY').api.get()).toBe('SAR')
     expect(run('').api.get()).toBe('SAR')
   })
@@ -83,5 +83,20 @@ describe('money runtime (before first paint)', () => {
     expect(nodes[1]!.textContent).toBe(
       formatInCurrency(7_500, 'SAR', 'AED', 'en', DEFAULT_FX.rates),
     )
+  })
+
+  it('ignores the pre-v2 bt_currency override, so old pinned visitors get their country again', () => {
+    expect(run('bt_cur_geo=EGP; bt_currency=SAR').api.get()).toBe('EGP')
+  })
+
+  it('applies the country currency even when the Studio switcher list does not offer it', () => {
+    // Settings rows saved before #56 hold ['SAR','USD','IDR','AED','EUR'].
+    const { api, nodes } = run('bt_cur_geo=EGP', 'ar', ['SAR', 'USD', 'IDR', 'AED', 'EUR'])
+    expect(api.get()).toBe('EGP')
+    expect(nodes[0]!.textContent).toContain('≈')
+  })
+
+  it('a switcher pick still has to be in the switcher list', () => {
+    expect(run('bt_cur_choice=EGP', 'ar', ['SAR', 'USD']).api.get()).toBe('SAR')
   })
 })

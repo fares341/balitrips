@@ -1,4 +1,4 @@
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney, studioTotal } from '@/lib/currency/studio'
 
 import { filterQuery, type ReportFilters } from '../filters'
 import { mainCurrency, type Money } from '../metrics'
@@ -45,7 +45,7 @@ export function money(minor: number, currency: string, intl: string): string {
 
 export function moneyText(list: readonly Money[], intl: string): string {
   if (list.length === 0) return '—'
-  return list.map((m) => formatMoney(m.minor, m.currency, intl)).join(' · ')
+  return studioTotal(list, intl)
 }
 
 export function numberText(value: number | null, intl: string, digits = 0): string {
