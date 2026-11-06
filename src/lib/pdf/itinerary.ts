@@ -37,6 +37,8 @@ import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 import { pick, pickOptional, type LocalizedInput } from '@/lib/content/localize'
 import { googleMapsPlaceUrl, googleMapsSearchUrl, orderStops } from '@/lib/itineraries/day-route'
 import { uploadPrivate } from '@/lib/storage'
+import { qrSvg } from '@/lib/qr'
+import { shareUrl } from '@/lib/seo/site-origin'
 
 import { renderPdf } from './gotenberg'
 import { itineraryPdfHtml, type ItineraryPdfDay } from './templates'
@@ -239,6 +241,10 @@ export async function generateItineraryDocuments(
       blurb: pickOptional(itinerary.blurb, locale),
       version: itinerary.version,
       days,
+      activitiesLink: (() => {
+        const url = shareUrl(`/${locale}/account/itineraries/${itinerary.slug}/activities`)
+        return { url, qrSvg: qrSvg(url), title: t('pdf_bact_t'), body: t('pdf_bact_b') }
+      })(),
       labels: {
         brand: BRAND,
         dayByDay: t('dt_daybyday'),

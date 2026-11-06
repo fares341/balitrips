@@ -671,6 +671,11 @@ export const itineraries = pgTable('itineraries', {
    * Never a place name or a day's content: the page is pre-purchase.
    */
   faq: jsonb('faq').$type<{ q: Localized; a: Localized; hidden?: true }[]>(),
+  /**
+   * Migration 0045: «احجز كل الفعاليات» percent for this itinerary's buyer
+   * page («فعاليات جدولي»). Null = `itinerarySales.allActivitiesDiscountPct`.
+   */
+  bundleDiscountPct: integer('bundle_discount_pct'),
 
   ...publishing,
   ...timestamps,

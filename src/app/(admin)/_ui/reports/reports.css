@@ -574,3 +574,198 @@ th.rp-staff-na {
 p.rp-staff-na-note {
   margin: 0 0 8px;
 }
+
+/* --- Polish (Nov 2026): grouped, clickable KPI cards; gradient area; folded glossary --- */
+
+.rp-kpi-group {
+  margin-block: 18px 6px;
+}
+
+.rp-kpi-group-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--a-muted);
+}
+
+.rp-kpi-group .rp-kpis {
+  margin-block: 8px 0;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  grid-auto-rows: 1fr;
+}
+
+.rp-kpi-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 10px;
+  background: var(--a-primary-soft);
+  color: var(--a-primary);
+}
+
+.rp-kpi-group[data-tone='orange'] .rp-kpi-icon {
+  background: var(--a-warn-bg);
+  color: #b35f00;
+}
+
+.rp-kpi-head:has(.rp-kpi-icon) {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.rp-kpi-head:has(.rp-kpi-icon) .rp-tip {
+  margin-inline-start: auto;
+}
+
+.rp-kpi-head .rp-kpi-label {
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.rp-kpi-group .rp-kpi-value {
+  font-size: clamp(24px, 2.2vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin-block: 6px 2px;
+}
+
+.rp-kpi-foot {
+  font-size: 12px;
+}
+
+/* The whole card opens its records; the info tip stays clickable above it. */
+.rp-kpi {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.rp-kpi:has(.rp-kpi-link) {
+  cursor: pointer;
+}
+
+.rp-kpi-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.rp-kpi .rp-tip {
+  position: relative;
+  z-index: 2;
+}
+
+.rp-kpi:has(.rp-kpi-link:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(27, 63, 34, 0.1);
+}
+
+.rp-kpi:has(.rp-kpi-link:focus-visible) {
+  outline: 3px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.rp-kpi-link:focus-visible {
+  outline: none;
+  text-decoration: none;
+}
+
+.rp-line .rp-area-top {
+  stop-color: var(--a-primary);
+  stop-opacity: 0.22;
+}
+
+.rp-line .rp-area-bottom {
+  stop-color: var(--a-primary);
+  stop-opacity: 0;
+}
+
+.rp-line .rp-area {
+  stroke: none;
+}
+
+.rp-line .rp-axis-unit {
+  font-weight: 700;
+}
+
+.rp-bar-value,
+.rp-tooltip {
+  font-variant-numeric: tabular-nums;
+}
+
+/* «معنى كل رقم»: folded by default. */
+details.rp-definitions > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+details.rp-definitions > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.rp-definitions > summary::before {
+  content: '';
+  inline-size: 8px;
+  block-size: 8px;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+[dir='rtl'] details.rp-definitions > summary::before {
+  transform: rotate(45deg);
+}
+
+details.rp-definitions[open] > summary::before {
+  transform: rotate(45deg) translate(-2px, -2px);
+}
+
+details.rp-definitions[open] > summary {
+  margin-block-end: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-kpi,
+  details.rp-definitions > summary::before {
+    transition: none;
+  }
+
+  .rp-kpi:has(.rp-kpi-link:hover) {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .rp-kpi-group .rp-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .rp-kpi-group .rp-kpi {
+    padding: 12px;
+  }
+
+  .rp-kpi-group .rp-kpi-value {
+    font-size: 19px;
+  }
+
+  .rp-kpi-group .rp-kpi-icon {
+    inline-size: 28px;
+    block-size: 28px;
+  }
+
+  .rp-kpi-group .rp-kpi-head .rp-kpi-label {
+    font-size: 12.5px;
+  }
+}

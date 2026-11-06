@@ -54,6 +54,20 @@ export function LineChart({
         }).format(value / 10 ** minorUnitExponent(block.currency))
       : new Intl.NumberFormat(intl, { notation: 'compact' }).format(value)
 
+  // The value axis is in the chart's currency (the Studio: SAR); its symbol is
+  // written once above the axis instead of on every tick.
+  const unit =
+    block.unit === 'money' && block.currency
+      ? (new Intl.NumberFormat(intl, { style: 'currency', currency: block.currency })
+          .formatToParts(0)
+          .find((part) => part.type === 'currency')?.value ?? block.currency)
+      : null
+  const area =
+    g.current.length > 1
+      ? `M${g.current[0]!.x},${g.plot.bottom} L${polyline(g.current).replace(/ /g, ' L')} L${
+          g.current[g.current.length - 1]!.x
+        },${g.plot.bottom} Z`
+      : null
   const n = block.current.length
   const pickIndex = (clientX: number, rect: DOMRect) => {
     const x = ((clientX - rect.left) / rect.width) * g.width
@@ -104,6 +118,22 @@ export function LineChart({
         }}
       >
         <desc id={`${id}-desc`}>{summary}</desc>
+        <defs>
+          <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" className="rp-area-top" />
+            <stop offset="100%" className="rp-area-bottom" />
+          </linearGradient>
+        </defs>
+        {unit ? (
+          <text
+            className="rp-axis-text rp-axis-unit"
+            x={axisX}
+            y={Math.max(10, g.plot.top - 2)}
+            textAnchor={rtl ? 'start' : 'end'}
+          >
+            {unit}
+          </text>
+        ) : null}
         {g.ticks.map((tick) => (
           <g key={tick.value}>
             <line className="rp-grid" x1={g.plot.left} x2={g.plot.right} y1={tick.y} y2={tick.y} />
@@ -129,6 +159,7 @@ export function LineChart({
           </text>
         ))}
         {g.previous ? <polyline className="rp-prev" points={polyline(g.previous)} /> : null}
+        {area ? <path className="rp-area" d={area} fill={`url(#${id}-fill)`} /> : null}
         <polyline className="rp-cur" points={polyline(g.current)} />
         {point ? (
           <>

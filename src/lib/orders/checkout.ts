@@ -36,6 +36,7 @@ import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
 import { assertBookingsOpen } from '@/lib/bookings-open'
 import { adjustQuote } from '@/lib/finance/pricing'
+import { itineraryBundleDiscounts } from '@/lib/itineraries/bundle-server'
 import { getPaymentProvider } from '@/lib/payments'
 import { cancelUnpaidOrder } from '@/lib/orders/expire'
 import {
@@ -373,6 +374,8 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
     parents: new Map(
       [...catalog.activityTiers].map(([id, tier]) => [id, tier.activityId] as const),
     ),
+    // Itineraries phase 3: «كل الفعاليات», recomputed here for the owner only.
+    extraDiscounts: await itineraryBundleDiscounts(requestItems, baseQuote, catalog, input.userId),
   })
   const quote: Quote = { ...baseQuote, totalMinor: adjusted.totals.totalMinor }
 

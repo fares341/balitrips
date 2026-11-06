@@ -1,7 +1,8 @@
 import Link from 'next/link'
 
 import { conversationDetail } from '@/lib/assistant/store'
-import { studioMoney as formatMoney } from '@/lib/currency/studio'
+// AI usage is billed in real US dollars: shown in USD on purpose.
+import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../../_lib/admin-path'
 import { getAdminI18n } from '../../../../_lib/i18n'

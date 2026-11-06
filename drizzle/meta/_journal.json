@@ -321,7 +321,14 @@
       "idx": 45,
       "version": "7",
       "when": 1794000000000,
-      "tag": "0045_itinerary_delivery",
+      "tag": "0045_itinerary_bundle_discount",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1794100000000,
+      "tag": "0046_itinerary_delivery",
       "breakpoints": true
     }
   ]

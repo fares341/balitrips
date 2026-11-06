@@ -54,6 +54,7 @@ import { db } from '@/db'
 import { cartItems, carts, itineraries, type OrderAdjustmentLine } from '@/db/schema'
 import type { CouponRejection } from '@/lib/finance/coupons'
 import { adjustQuote } from '@/lib/finance/pricing'
+import { itineraryBundleDiscounts } from '@/lib/itineraries/bundle-server'
 import { itemKindForCart, trackFromServer } from '@/lib/analytics/server-track'
 import type { Localized } from '@/db/schema/_shared'
 import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/routes'
@@ -723,6 +724,8 @@ export interface ActivityBookingInput {
   included?: { activityId: string; time: string | null }[]
   /** Hire a driver for the booking: vehicle from `vehicleFor(people)`, same dates. */
   driver: boolean
+  /** «فعاليات جدولي»: the bought itinerary the line belongs to (a tag, never a price). */
+  itineraryBundle?: string | null
 }
 
 /** Included-activity times in a stable order, empty ones dropped. */
@@ -778,6 +781,7 @@ export async function addActivityBooking(
     ...(included.length > 0 ? { included } : {}),
     ...(children > 0 ? { children } : {}),
     ...(infants > 0 ? { infants } : {}),
+    ...(raw.itineraryBundle ? { itineraryBundle: raw.itineraryBundle } : {}),
   }
   const kind: CartItemKind = raw.packageId === null ? 'activity' : 'activity_tier'
   const refId = raw.packageId ?? raw.activityId
@@ -1447,6 +1451,7 @@ export async function getCartWithTotals(): Promise<CartView | null> {
     userId: cart.userId,
     email: viewer?.email ?? null,
     parents: tierParents(snapshot),
+    extraDiscounts: await itineraryBundleDiscounts(requestItems, quote, snapshot, cart.userId),
   })
 
   return {

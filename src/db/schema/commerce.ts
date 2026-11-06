@@ -44,6 +44,12 @@ export interface BookingOptions {
    * 2026). Priced from `itineraries.tier_prices`, never from the client.
    */
   tier?: string
+  /**
+   * Activity line booked from «فعاليات جدولي»: the bought itinerary it belongs
+   * to. Never a price — the «كل الفعاليات» discount is recomputed by the
+   * server (`@/lib/itineraries/bundle-server`) for the itinerary's owner only.
+   */
+  itineraryBundle?: string
 }
 
 /** One line between subtotal and total, frozen on the order (phase 4). */
@@ -56,6 +62,8 @@ export interface OrderAdjustmentLine {
   /** Discount: the code. Tax: the label in each language. */
   code?: string
   label?: Partial<Localized> | null
+  /** «كل الفعاليات» discount: the bought itinerary it was granted for (counts its uses). */
+  itineraryId?: string
 }
 
 /** One priced line of a booking, frozen on the order item. */

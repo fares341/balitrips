@@ -28,6 +28,7 @@ import {
 } from '@/db/schema'
 
 import { STUDIO_ROLES } from '@/lib/auth/roles'
+import { studioSarMinor } from '@/lib/currency/studio'
 
 import type { ProductType, ReportFilters } from './filters'
 import { sumByCurrency, type Money } from './metrics'
@@ -482,11 +483,19 @@ export async function viewToPurchase(range: Range): Promise<{ viewers: number; b
   return { viewers: Number(row?.viewers ?? 0), buyers: Number(row?.buyers ?? 0) }
 }
 
-/** Bookings value per bucket (Bali time) in one currency. */
+/** Halalas of an amount stored in `currency` (0 when there is no rate). */
+function sar(minor: number, currency: string | null): number {
+  return studioSarMinor(Math.round(Number(minor)), currency) ?? 0
+}
+
+/**
+ * Bookings value per bucket (Bali time), in SAR: every currency is converted
+ * at the Studio rate (the Studio shows SAR only). The currency filter, when
+ * set, still narrows the orders.
+ */
 export async function salesSeries(
   range: Range,
   bucket: Bucket,
-  currency: string,
   f: F,
 ): Promise<Map<string, number>> {
   const key = sql<string>`to_char(${placedAt} at time zone 'Asia/Makassar', ${bucketSqlFormat(bucket)})`
@@ -494,48 +503,41 @@ export async function salesSeries(
   const rows =
     line === null
       ? await db
-          .select({ key, minor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8` })
+          .select({
+            key,
+            currency: orders.presentmentCurrency,
+            minor: sql<number>`coalesce(sum(${orders.totalMinor}), 0)::float8`,
+          })
           .from(orders)
-          .where(
-            and(
-              everPaid,
-              inRange(placedAt, range),
-              eq(orders.presentmentCurrency, currency),
-              staffCond(f),
-            ),
-          )
-          .groupBy(sql`1`)
+          .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f)))
+          .groupBy(sql`1`, orders.presentmentCurrency)
       : await db
           .select({
             key,
+            currency: orders.presentmentCurrency,
             minor: sql<number>`coalesce(sum(${orderItems.lineTotalMinor}), 0)::float8`,
           })
           .from(orderItems)
           .innerJoin(orders, eq(orders.id, orderItems.orderId))
-          .where(
-            and(
-              everPaid,
-              inRange(placedAt, range),
-              eq(orders.presentmentCurrency, currency),
-              staffCond(f),
-              line,
-            ),
-          )
-          .groupBy(sql`1`)
-  return new Map(rows.map((row) => [row.key, row.minor]))
+          .where(and(everPaid, inRange(placedAt, range), currencyCond(f), staffCond(f), line))
+          .groupBy(sql`1`, orders.presentmentCurrency)
+  const out = new Map<string, number>()
+  for (const row of rows) out.set(row.key, (out.get(row.key) ?? 0) + sar(row.minor, row.currency))
+  return out
 }
 
-/** Best-selling products (paid lines) in one currency. */
-export async function topProducts(range: Range, currency: string, f: F, limit = 8) {
+/** Best-selling products (paid lines), valued in SAR at the Studio rate. */
+export async function topProducts(range: Range, f: F, limit = 8) {
   const name = sql<
     Record<string, string>
   >`(array_agg(${orderItems.nameSnapshot} order by ${orderItems.createdAt} desc))[1]`
   const refKey = sql<string>`coalesce(${orderItems.refId}::text, ${orderItems.kind})`
-  return db
+  const rows = await db
     .select({
       kind: orderItems.kind,
       refId: refKey,
       name,
+      currency: orders.presentmentCurrency,
       count: sql<number>`count(*)::int`,
       minor: sql<number>`coalesce(sum(${orderItems.lineTotalMinor}), 0)::float8`,
     })
@@ -546,14 +548,26 @@ export async function topProducts(range: Range, currency: string, f: F, limit = 
         everPaid,
         inRange(placedAt, range),
         soldLine,
-        eq(orders.presentmentCurrency, currency),
+        currencyCond(f),
         staffCond(f),
         lineFilter(f) ?? undefined,
       ),
     )
-    .groupBy(orderItems.kind, refKey)
-    .orderBy(sql`5 desc`, sql`4 desc`)
-    .limit(limit)
+    .groupBy(orderItems.kind, refKey, orders.presentmentCurrency)
+  const byRef = new Map<
+    string,
+    { kind: string; refId: string; name: Record<string, string>; count: number; minor: number }
+  >()
+  for (const row of rows) {
+    const k = `${row.kind}|${row.refId}`
+    const entry = byRef.get(k) ?? { kind: row.kind, refId: row.refId, name: row.name, count: 0, minor: 0 }
+    entry.count += row.count
+    entry.minor += sar(row.minor, row.currency)
+    byRef.set(k, entry)
+  }
+  return [...byRef.values()]
+    .sort((a, b) => b.minor - a.minor || b.count - a.count)
+    .slice(0, limit)
 }
 
 /** Paid orders by where the visitor came from (last-touch UTM; empty = direct / unknown). */

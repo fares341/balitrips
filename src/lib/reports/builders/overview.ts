@@ -1,3 +1,4 @@
+import { studioSarMinor } from '@/lib/currency/studio'
 import { integrationErrorCounts } from '@/lib/integrations/service'
 import { pick } from '@/lib/content/localize'
 import { sourceLabel } from '@/lib/analytics/utm'
@@ -36,7 +37,6 @@ import { alignSeries, bucketKeys } from '../period'
 import type { BarChartBlock, Block, Kpi, ReportResult } from '../types'
 import {
   both,
-  chartCurrency,
   countKpi,
   lineChart,
   money,
@@ -113,7 +113,7 @@ export async function buildOverview(
     openRequests,
     tickets,
     lowSpots,
-    currencies,
+    _currencies,
   ] = await Promise.all([
     both(filters, (r) => bookingsValue(r, filters)),
     both(filters, (r) => collected(r, filters)),
@@ -353,13 +353,14 @@ export async function buildOverview(
   )
 
   // --- Charts --------------------------------------------------------------
-  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', value, valuePrev)
+  // The Studio shows SAR only: charts sum every currency converted to SAR.
+  const currency = 'SAR'
   const [series, seriesPrev, top, sources] = await Promise.all([
-    salesSeries({ start: p.start, end: p.end }, p.bucket, currency, filters),
+    salesSeries({ start: p.start, end: p.end }, p.bucket, filters),
     filters.compare
-      ? salesSeries({ start: p.prevStart, end: p.prevEnd }, p.bucket, currency, filters)
+      ? salesSeries({ start: p.prevStart, end: p.prevEnd }, p.bucket, filters)
       : Promise.resolve(null),
-    topProducts({ start: p.start, end: p.end }, currency, filters),
+    topProducts({ start: p.start, end: p.end }, filters),
     ordersBySource({ start: p.start, end: p.end }, filters),
   ])
 
@@ -411,11 +412,10 @@ export async function buildOverview(
 
   const bySource = new Map<string, { count: number; minor: number }>()
   for (const row of sources) {
-    if (row.currency !== currency) continue
     const label = row.source ? sourceLabel(row.source, row.medium) : t('rp.source_direct')
     const entry = bySource.get(label) ?? { count: 0, minor: 0 }
     entry.count += row.count
-    entry.minor += row.minor
+    entry.minor += studioSarMinor(Math.round(row.minor), row.currency) ?? 0
     bySource.set(label, entry)
   }
   blocks.push({

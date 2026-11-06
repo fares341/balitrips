@@ -1,3 +1,4 @@
+import { studioSarMinor } from '@/lib/currency/studio'
 import { pick } from '@/lib/content/localize'
 import { sourceLabel } from '@/lib/analytics/utm'
 
@@ -33,7 +34,6 @@ import type { Block, Kpi, ReportResult, TableBlock } from '../types'
 import {
   both,
   cell,
-  chartCurrency,
   countKpi,
   currentRange,
   lineChart,
@@ -87,9 +87,9 @@ function markNotByStaff(filters: ReportFilters, kpis: Kpi[], ids: readonly strin
 async function salesLine(filters: ReportFilters, ctx: BuildContext, currency: string, id: string) {
   const p = filters.period
   const [series, prev] = await Promise.all([
-    salesSeries({ start: p.start, end: p.end }, p.bucket, currency, filters),
+    salesSeries({ start: p.start, end: p.end }, p.bucket, filters),
     filters.compare
-      ? salesSeries({ start: p.prevStart, end: p.prevEnd }, p.bucket, currency, filters)
+      ? salesSeries({ start: p.prevStart, end: p.prevEnd }, p.bucket, filters)
       : Promise.resolve(null),
   ])
   return lineChart({
@@ -126,7 +126,7 @@ export async function buildFinancial(
     [refund, refundPrev],
     [lines, linesPrev],
     [orders, ordersPrev],
-    currencies,
+    _currencies,
   ] = await Promise.all([
     both(filters, (r) => bookingsValue(r, filters)),
     both(filters, (r) => collected(r, filters)),
@@ -247,7 +247,7 @@ export async function buildFinancial(
     empty: t('rp.empty'),
   }
 
-  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', value, valuePrev)
+  const currency = 'SAR'
   return {
     id: 'financial',
     title: t('rp.r_financial'),
@@ -768,7 +768,7 @@ export async function buildActivities(
   ctx: BuildContext,
 ): Promise<ReportResult> {
   const { t, intl } = ctx
-  const [[lines, linesPrev], addons, currencies] = await Promise.all([
+  const [[lines, linesPrev], addons, _currencies] = await Promise.all([
     both(filters, (r) => bookingLines(r, filters)),
     addonSales(currentRange(filters), filters),
     currencyOptions(),
@@ -904,7 +904,7 @@ export async function buildActivities(
   if (ctx.finance) columns.push({ key: 'margin', label: t('rp.kpi_margin'), num: true })
   columns.push({ key: 'cancel', label: t('rp.kpi_cancellation_rate'), num: true })
 
-  const currency = chartCurrency(filters, currencies[0] ?? 'SAR', revenue(now))
+  const currency = 'SAR'
   return {
     id: 'activities',
     title: t('rp.r_activities'),
@@ -1104,7 +1104,7 @@ export async function buildMarketing(
 ): Promise<ReportResult> {
   const { t, intl } = ctx
   const range = currentRange(filters)
-  const [sources, visitors, [steps, stepsPrev], [abandoned, abandonedPrev], currencies] =
+  const [sources, visitors, [steps, stepsPrev], [abandoned, abandonedPrev], _currencies] =
     await Promise.all([
       ordersBySource(range, filters),
       visitorsBySource(range),
@@ -1112,7 +1112,7 @@ export async function buildMarketing(
       both(filters, (r) => abandonedCheckouts(r)),
       currencyOptions(),
     ])
-  const currency = filters.currency ?? currencies[0] ?? 'SAR'
+  const currency = 'SAR'
   type Row = { label: string; campaign: string; visitors: number; orders: number; minor: number }
   const rows = new Map<string, Row>()
   const keyOf = (s: string | null, m: string | null, c: string | null) =>
@@ -1135,7 +1135,7 @@ export async function buildMarketing(
   for (const o of sources) {
     const r = row(o.source, o.medium, o.campaign)
     r.orders += o.count
-    if (o.currency === currency) r.minor += o.minor
+    r.minor += studioSarMinor(Math.round(o.minor), o.currency) ?? 0
   }
 
   const purchase = steps.get('purchase') ?? 0

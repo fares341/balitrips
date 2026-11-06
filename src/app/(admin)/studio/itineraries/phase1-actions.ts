@@ -71,6 +71,38 @@ function intIn(form: FormData, name: string, min: number, max: number, fallback:
 }
 
 // ---------------------------------------------------------------------------
+// «فعاليات جدولي» (phase 3): the itinerary's own «كل الفعاليات» percent
+// ---------------------------------------------------------------------------
+
+export async function saveBuyerPageSettings(id: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
+    if (!before) throw new Error(t('itineraries.err_gone'))
+    const raw = fstr(form, 'bundleDiscountPct')
+    const values = {
+      bundleDiscountPct: raw === null ? null : intIn(form, 'bundleDiscountPct', 0, 90, 0),
+    }
+    await db.update(itineraries).set(values).where(eq(itineraries.id, id))
+    await writeAudit({
+      actor: session,
+      action: 'itinerary.buyer_page',
+      entityType: 'itinerary',
+      entityId: id,
+      before,
+      after: { ...before, ...values },
+    })
+    outcome = { ok: t('ip1.ok_buyer') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(id), outcome))
+}
+
+// ---------------------------------------------------------------------------
 // Public page preview
 // ---------------------------------------------------------------------------
 

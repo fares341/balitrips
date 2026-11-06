@@ -6,10 +6,10 @@
  * (orders placed before the SAR switch, supplier costs, AI usage in USD)
  * are converted at the Studio rate (Studio → Configuration → «العملة والصرف»):
  *
- *  - a single amount: «≈ 221.25 ر.س (US$59.00)», the SAR figure first, the
- *    original kept in brackets because that is what was actually recorded;
- *  - a total over several currencies: one SAR figure, prefixed «≈» and
- *    suffixed «(converted)» whenever any part had to be converted.
+ *  - a single amount: «≈ 221.25 ر.س», SAR only (owner: no other currency
+ *    anywhere in the Studio); the «≈» marks a converted figure;
+ *  - a total over several currencies: one SAR figure, prefixed «≈» whenever
+ *    any part had to be converted (no English suffix: the Studio is Arabic too).
  *
  * Rates: `readFx()` (fx-store) records the table it resolved here on every
  * read, so these formatters stay synchronous and drop-in for `formatMoney`.
@@ -40,7 +40,7 @@ export function studioSarMinor(
   return toSarMinor(minor, (currency ?? BASE_CURRENCY).toUpperCase(), rates)
 }
 
-/** One stored amount, in SAR (original in brackets when it was not SAR). */
+/** One stored amount, in SAR («≈» when it was stored in another currency). */
 export function studioMoney(
   minor: number,
   currency: string | null | undefined,
@@ -49,10 +49,9 @@ export function studioMoney(
 ): string {
   const code = (currency ?? BASE_CURRENCY).toUpperCase()
   if (code === BASE_CURRENCY) return formatMoney(minor, BASE_CURRENCY, intl)
-  const original = formatMoney(minor, code, intl)
   const sar = toSarMinor(minor, code, rates)
-  if (sar === null) return original
-  return `≈ ${formatMoney(sar, BASE_CURRENCY, intl)} (${original})`
+  if (sar === null) return formatMoney(minor, code, intl)
+  return `≈ ${formatMoney(sar, BASE_CURRENCY, intl)}`
 }
 
 /** Several amounts (any currencies) as one SAR total. */
@@ -80,18 +79,18 @@ export function studioTotalSar(
   return { minor, converted, unconvertible }
 }
 
-/** The text of a SAR total, labelled when part of it was converted. */
+/** The text of a SAR total, prefixed «≈» when part of it was converted. */
 export function studioTotal(
   list: readonly { currency: string | null | undefined; minor: number }[],
   intl: string,
   rates: Readonly<Record<string, number>> = studioRates,
-  /** `short`: only the «≈» prefix (where the label is explained next to it). */
-  options: { short?: boolean } = {},
+  /** Kept for callers; the text is the same either way («≈» prefix only). */
+  _options: { short?: boolean } = {},
 ): string {
   if (list.length === 0) return '—'
   const total = studioTotalSar(list, rates)
   const sar = formatMoney(total.minor, BASE_CURRENCY, intl)
-  const head = total.converted ? (options.short ? `≈ ${sar}` : `≈ ${sar} (converted)`) : sar
+  const head = total.converted ? `≈ ${sar}` : sar
   const rest = total.unconvertible.map((m) => formatMoney(m.minor, m.currency, intl))
   return [head, ...rest].join(' · ')
 }
