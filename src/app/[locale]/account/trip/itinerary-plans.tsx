@@ -76,6 +76,14 @@ export async function ItineraryPlans({ userId, locale }: { userId: string; local
                   />
                 </div>
               )}
+              <p style={{ margin: '0 0 10px' }}>
+                <Link
+                  href={`/account/itineraries/${plan.slug}/activities`}
+                  className="btn btn-orange btn-sm"
+                >
+                  {t('bact_trip_cta')}
+                </Link>
+              </p>
               {withPlaces.length === 0 ? (
                 <p className="muted" style={{ margin: 0 }}>
                   {t('p3_my_itin_no_places')}{' '}

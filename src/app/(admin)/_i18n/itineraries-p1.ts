@@ -60,6 +60,14 @@ const section: Section = {
     'ip1.seo_description': 'Page description',
     'ip1.save_preview': 'Save preview',
     'ip1.ok_preview': 'Preview saved.',
+    'ip1.buyer_t': '«My itinerary activities» buyer page',
+    'ip1.buyer_hint':
+      'Only customers who paid for this itinerary can open it. They see the activities of the days ticked «Can be booked from the itinerary», and «Book all activities» adds them to the cart with the discount below (computed by the server in the cart and at checkout).',
+    'ip1.buyer_pct': '«Book all activities» discount (%)',
+    'ip1.buyer_pct_hint': 'Empty = the default from Itineraries → Prices ({pct}%). 0–90.',
+    'ip1.buyer_preview': 'Preview the buyer page',
+    'ip1.buyer_n_acts': 'Bookable activities linked: {n}',
+    'ip1.ok_buyer': 'Buyer page settings saved.',
     // Teasers
     'ip1.teasers_t': 'Day teasers (locked preview)',
     'ip1.teasers_hint':
@@ -243,6 +251,14 @@ const section: Section = {
     'ip1.seo_description': 'وصف الصفحة',
     'ip1.save_preview': 'حفظ المعاينة',
     'ip1.ok_preview': 'تم حفظ المعاينة.',
+    'ip1.buyer_t': 'صفحة المشتري «فعاليات جدولي»',
+    'ip1.buyer_hint':
+      'تفتح فقط لمن دفع ثمن هذا الجدول. تعرض فعاليات الأيام المعلَّمة «يمكن حجزه من صفحة الجدول»، وزر «احجز كل الفعاليات» يضيفها للسلة بالخصم أدناه (يحسبه السيرفر في السلة وعند الدفع).',
+    'ip1.buyer_pct': 'خصم «احجز كل الفعاليات» (٪)',
+    'ip1.buyer_pct_hint': 'فارغ = الافتراضي من الجداول ← الأسعار ({pct}٪). من 0 إلى 90.',
+    'ip1.buyer_preview': 'معاينة صفحة المشتري',
+    'ip1.buyer_n_acts': 'الفعاليات القابلة للحجز المرتبطة: {n}',
+    'ip1.ok_buyer': 'تم حفظ إعدادات صفحة المشتري.',
     'ip1.teasers_t': 'لمحة الأيام (معاينة مقفولة)',
     'ip1.teasers_hint':
       'يظهر للعامة فقط صورة ورقم اليوم وطابعه — لأول {count} أيام. بدون أماكن أو فعاليات.',

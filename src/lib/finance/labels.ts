@@ -26,8 +26,11 @@ export function adjustmentLabel(
           maximumFractionDigits: 2,
         }).format(line.bps / 100)}%)`
   switch (line.kind) {
-    case 'discount':
-      return words.discount(line.code ?? '')
+    case 'discount': {
+      // «كل الفعاليات»: its own words, stored on the line.
+      const own = line.label?.[locale]?.trim() || line.label?.en?.trim() || ''
+      return own === '' ? words.discount(line.code ?? '') : own
+    }
     case 'service_fee':
       return `${words.serviceFee}${rate}`
     case 'booking_fee':

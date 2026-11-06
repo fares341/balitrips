@@ -5,7 +5,12 @@ import { couponRedemptions, coupons } from '@/db/schema'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import type { Quote } from '@/lib/pricing/quote'
 
-import { computeTotals, type FeeSchedule, type PricedTotals } from './adjustments'
+import {
+  computeTotals,
+  type ExtraDiscount,
+  type FeeSchedule,
+  type PricedTotals,
+} from './adjustments'
 import {
   evaluateCoupon,
   normalizeCouponCode,
@@ -116,6 +121,8 @@ export async function adjustQuote(
     parents?: ReadonlyMap<string, string>
     schedule?: FeeSchedule
     now?: Date
+    /** Server-computed «كل الفعاليات» discounts (`@/lib/itineraries/bundle-server`). */
+    extraDiscounts?: readonly ExtraDiscount[]
   },
 ): Promise<AdjustedQuote> {
   const schedule = options.schedule ?? (await loadFeeSchedule())
@@ -156,7 +163,13 @@ export async function adjustQuote(
   }
 
   return {
-    totals: computeTotals(quote.subtotalMinor, quote.currency, discount, schedule),
+    totals: computeTotals(
+      quote.subtotalMinor,
+      quote.currency,
+      discount,
+      schedule,
+      quote.ok ? (options.extraDiscounts ?? []) : [],
+    ),
     coupon,
     couponError,
   }

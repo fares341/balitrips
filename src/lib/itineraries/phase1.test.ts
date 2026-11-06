@@ -72,7 +72,7 @@ describe('publish gating', () => {
 
 describe('settings schemas', () => {
   it('defaults are valid and safe', () => {
-    expect(ITINERARY_SALES_DEFAULT.allActivitiesDiscountPct).toBe(0)
+    expect(ITINERARY_SALES_DEFAULT.allActivitiesDiscountPct).toBe(10)
     expect(ITINERARY_SALES_DEFAULT.linkValidDays).toBe(7)
     expect(ITINERARY_SALES_DEFAULT.linkMaxUses).toBe(5)
     expect(ITINERARY_SALES_DEFAULT.usesPerPurchase).toBe(1)

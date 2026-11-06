@@ -55,6 +55,7 @@ import {
 import { getAdminI18n } from '../../../_lib/i18n'
 import { DayPlan } from './day-plan'
 import { DayTeasersCard, PdfCard, PdfStatusPill, PreviewCard, type PdfDocRow } from './phase1-cards'
+import { BuyerPageCard } from './buyer-page-card'
 import { pdfStatus, publishBlock, type PdfStatus } from '@/lib/itineraries/publish-gate'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import type { DayStopDraft, PlaceChoice } from './day-places-editor'
@@ -526,6 +527,13 @@ export default async function ItineraryEditorPage({
           />
 
           <PreviewCard itinerary={itinerary} mediaList={mediaList} t={t} />
+
+          <BuyerPageCard
+            itinerary={itinerary}
+            globalPct={(await readItinerarySales()).allActivitiesDiscountPct}
+            locale={uiLocale}
+            t={t}
+          />
 
           <div className="a-card">
             <h2>{t('p3.section_packages')}</h2>
