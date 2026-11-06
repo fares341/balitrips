@@ -21,6 +21,7 @@ import {
   cleanLocalized,
   teaserSplit,
   toPublicImage,
+  toPublicFaq,
   toPublicStats,
   type MediaLike,
   type PublicItineraryDetail,
@@ -121,6 +122,7 @@ export async function getPublicItinerary(slug: string): Promise<PublicItineraryD
       teaserDaysVisible: itineraries.teaserDaysVisible,
       seoTitle: itineraries.seoTitle,
       seoDescription: itineraries.seoDescription,
+      faq: itineraries.faq,
     })
     .from(itineraries)
     .where(and(LIVE, eq(itineraries.slug, slug)))
@@ -164,6 +166,7 @@ export async function getPublicItinerary(slug: string): Promise<PublicItineraryD
     moreDays: Math.max(0, more + Math.max(0, row.days - sold.length)),
     seoTitle: cleanLocalized(row.seoTitle),
     seoDescription: cleanLocalized(row.seoDescription),
+    faq: toPublicFaq(row.faq),
   }
 }
 

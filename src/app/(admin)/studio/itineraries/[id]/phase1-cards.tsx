@@ -10,6 +10,7 @@ import type { PdfStatus } from '@/lib/itineraries/publish-gate'
 
 import type { Translate } from '../../../_i18n'
 import { Checkbox, Field, LocalizedField, TextInput } from '../../../_ui/field'
+import { FaqRepeater, type FaqRepeaterEntry } from '../../../_ui/faq-repeater'
 import { OptionField } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { When } from '../../../_ui/table'
@@ -52,6 +53,7 @@ export function PreviewCard({
     isPopular: boolean
     seoTitle: Localized
     seoDescription: Localized
+    faq?: unknown[] | null
     slug: string
   }
   mediaList: Option[]
@@ -150,6 +152,10 @@ export function PreviewCard({
             </div>
           ))
         )}
+
+        <h3>{t('ip1.faq_t')}</h3>
+        <p className="a-hint">{t('ip1.faq_hint')}</p>
+        <FaqRepeater entries={(itinerary.faq ?? []) as unknown as FaqRepeaterEntry[]} />
 
         <h3>{t('ip1.seo_t')}</h3>
         <p className="a-hint">{t('ip1.seo_hint', { path: `/itineraries/${itinerary.slug}` })}</p>

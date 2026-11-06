@@ -75,6 +75,30 @@ export interface PublicItineraryDetail extends PublicItinerarySummary {
   moreDays: number
   seoTitle: Partial<Record<string, string>> | null
   seoDescription: Partial<Record<string, string>> | null
+  /** «أسئلة شائعة عن هذا الجدول» from Studio; empty = the generic questions. */
+  faq: PublicFaq[]
+}
+
+export interface PublicFaq {
+  q: Partial<Record<string, string>>
+  a: Partial<Record<string, string>>
+}
+
+/** Studio's per-itinerary FAQ: visible rows with a question, at most 20. */
+export function toPublicFaq(raw: unknown): PublicFaq[] {
+  if (!Array.isArray(raw)) return []
+  const out: PublicFaq[] = []
+  for (const entry of raw) {
+    if (entry === null || typeof entry !== 'object') continue
+    const row = entry as Record<string, unknown>
+    if (row.hidden === true) continue
+    const q = cleanLocalized(row.q)
+    const a = cleanLocalized(row.a)
+    if (q === null || a === null) continue
+    out.push({ q, a })
+    if (out.length === 20) break
+  }
+  return out
 }
 
 /** A media row as the loader reads it. */
@@ -184,4 +208,5 @@ export const PUBLIC_DETAIL_KEYS = [
   'moreDays',
   'seoTitle',
   'seoDescription',
+  'faq',
 ] as const

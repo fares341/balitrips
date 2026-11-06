@@ -24,7 +24,8 @@ import { ItineraryCard } from '@/components/cards'
 import { Money } from '@/components/currency/currency-context'
 import { HOME_HREF } from '@/components/layout'
 import { Breadcrumbs } from '@/components/shared'
-import { Icon, Photo } from '@/components/ui'
+import { Logo, Photo } from '@/components/ui'
+import { BaliIcon, type BaliIconName } from '@/components/ui/bali-icon'
 import { isLocale, locales, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { getUser } from '@/lib/auth/session'
@@ -45,10 +46,10 @@ import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 import { CUSTOM_HREF } from '../../_ui/routes-extra'
 import { alternates } from '../_meta'
-import { ItineraryHowItWorks } from '../_ui/how-it-works'
 import { toCardItinerary } from '../_ui/card-props'
 import { PackageBox, type PackageOption } from './package-box'
 import '../_ui/itineraries.css'
+import './itinerary-page.css'
 
 const INDEX_HREF = ENTITY_PATHS.itinerary
 
@@ -194,7 +195,21 @@ export default async function ItineraryPage({
     })
   }
 
-  const gallery = itinerary.gallery.slice(0, 7)
+  const gallery = itinerary.gallery.slice(0, 5)
+  const faq =
+    itinerary.faq.length > 0
+      ? itinerary.faq.map((row) => ({ q: pick(row.q, locale), a: pick(row.a, locale) }))
+      : FAQ_KEYS.map((key) => ({ q: t(`${key}_q`), a: t(`${key}_a`) }))
+  const hasMapStat = itinerary.stats.some((stat) => stat.icon === 'map' || stat.icon === 'pin')
+  const benefits: { icon: BaliIconName; key: string; values?: Record<string, number> }[] = [
+    { icon: 'calendar', key: 'itd_b_days', values: { n: itinerary.days } },
+    { icon: 'food', key: 'itd_b_food' },
+    ...(hasMapStat || itinerary.includesMap ? [{ icon: 'pin' as const, key: 'itd_b_map' }] : []),
+    { icon: 'clock', key: 'itd_b_time' },
+    { icon: 'tip', key: 'itd_b_tips' },
+    { icon: 'phone', key: 'itd_b_pdf' },
+  ]
+  const how = ['itd_how1', 'itd_how2', 'itd_how3'] as const
 
   return (
     <main className="itp">
@@ -221,12 +236,10 @@ export default async function ItineraryPage({
             ]}
           />
           <div className="itp-chips">
-            <span className="itp-chip is-brand">
-              <Icon name="cal" size={13} /> {t('c_days_n', { n: itinerary.days })}
-            </span>
-            {audience.map((entry) => (
+            <span className="itp-chip">{t('c_days_n', { n: itinerary.days })}</span>
+            {audience.slice(0, 2).map((entry) => (
               <span key={entry} className="itp-chip">
-                <Icon name="users" size={13} /> {entry}
+                {entry}
               </span>
             ))}
             {itinerary.isPopular && (
@@ -240,32 +253,75 @@ export default async function ItineraryPage({
           </h1>
           {blurb !== null && <p className="itp-lede">{blurb}</p>}
           <p className="itp-from">
-            {t('it_price_from')} <strong className="bt-money">{planPrice}</strong>
+            <span>{t('it_price_from')}</span> <strong className="bt-money">{planPrice}</strong>
           </p>
         </div>
       </section>
 
       <div className="wrap itp-grid">
         <div className="itp-main">
+          {(intro !== null || itinerary.stats.length > 0) && (
+            <section className="itp-card" aria-labelledby="itp-about">
+              <h2 className="itp-h" id="itp-about">
+                {t('itd_about_t')}
+              </h2>
+              {intro !== null && <p className="itp-intro">{intro}</p>}
+              {itinerary.stats.length > 0 && (
+                <ul className="itp-stats" role="list">
+                  {itinerary.stats.slice(0, 4).map((stat) => (
+                    <li key={`${stat.icon}-${stat.value}`}>
+                      <b dir="ltr">{stat.value}</b>
+                      <span>{pick(stat.label, locale)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          <section className="itp-card" aria-labelledby="itp-get">
+            <h2 className="itp-h" id="itp-get">
+              {t('itd_get_t')}
+            </h2>
+            <ul className="itp-benefits" role="list">
+              {benefits.map((benefit) => (
+                <li key={benefit.key}>
+                  <span className="itp-bi">
+                    <BaliIcon name={benefit.icon} size={24} />
+                  </span>
+                  <span>
+                    <b>{t(`${benefit.key}_t`)}</b>
+                    <small>{t(`${benefit.key}_b`, benefit.values ?? {})}</small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           {gallery.length > 0 && (
-            <section className="itp-block" aria-labelledby="itp-gal">
+            <section className="itp-card" aria-labelledby="itp-gal">
               <h2 className="itp-h" id="itp-gal">
                 {t('itp_shots_t')}
               </h2>
-              <p className="muted itp-sub">{t('itp_shots_b')}</p>
-              <ul className="itp-gallery" role="list">
+              <ul className={`itp-gallery is-${Math.min(gallery.length, 5)}`} role="list">
                 {gallery.map((image, index) => {
                   const text = caption(image, locale)
                   return (
-                    <li key={image.url} className={index === 0 ? 'is-big' : undefined}>
-                      <Photo
-                        src={image.url}
-                        srcSetAvif={image.srcSetAvif}
-                        srcSetWebp={image.srcSetWebp}
-                        sizes="(max-width: 720px) 50vw, 360px"
-                        alt={text ?? name}
-                      />
-                      {text !== null && <span className="itp-cap">{text}</span>}
+                    <li key={image.url}>
+                      <figure>
+                        <Photo
+                          src={image.url}
+                          srcSetAvif={image.srcSetAvif}
+                          srcSetWebp={image.srcSetWebp}
+                          sizes={
+                            index === 0
+                              ? '(max-width: 620px) 100vw, 420px'
+                              : '(max-width: 620px) 50vw, 220px'
+                          }
+                          alt={text ?? name}
+                        />
+                        {text !== null && <figcaption>{text}</figcaption>}
+                      </figure>
                     </li>
                   )
                 })}
@@ -273,96 +329,93 @@ export default async function ItineraryPage({
             </section>
           )}
 
-          {intro !== null && (
-            <section className="itp-block" aria-labelledby="itp-intro">
-              <h2 className="itp-h" id="itp-intro">
-                {t('id_overview')}
+          {itinerary.teaserDays.length > 0 && (
+            <section className="itp-card" aria-labelledby="itp-days">
+              <h2 className="itp-h" id="itp-days">
+                {t('itd_days_t')}
               </h2>
-              <p className="itp-intro">{intro}</p>
+              <ol className="itp-days" role="list">
+                {itinerary.teaserDays.map((day) => (
+                  <li key={day.dayNumber} className="itp-day">
+                    {day.image !== null ? (
+                      <Photo
+                        src={day.image.url}
+                        srcSetAvif={day.image.srcSetAvif}
+                        srcSetWebp={day.image.srcSetWebp}
+                        sizes="(max-width: 620px) 50vw, 200px"
+                        alt=""
+                      />
+                    ) : (
+                      <span className="itp-day-fallback" aria-hidden="true">
+                        <Logo variant="light" onLight={false} height={26} alt="" />
+                      </span>
+                    )}
+                    <span className="itp-day-shine" aria-hidden="true" />
+                    <span className="itp-day-lock">
+                      <BaliIcon name="lock" size={22} title={t('itd_day_locked')} />
+                    </span>
+                    <span className="itp-day-n">
+                      <b dir="ltr">{String(day.dayNumber).padStart(2, '0')}</b>
+                      <span>{t('itd_day_ord', { n: String(day.dayNumber) })}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="itp-note">
+                <span className="itp-note-ic">
+                  <BaliIcon name="unlock" size={18} />
+                </span>
+                {t('itd_days_note')}
+              </p>
             </section>
           )}
 
-          {itinerary.stats.length > 0 && (
-            <section className="itp-block" aria-labelledby="itp-stats">
-              <h2 className="itp-h" id="itp-stats">
-                {t('itp_stats_t')}
+          {audience.length > 0 && (
+            <section className="itp-card" aria-labelledby="itp-fit">
+              <h2 className="itp-h" id="itp-fit">
+                {t('itd_fit_t')}
               </h2>
-              <ul className="itp-stats" role="list">
-                {itinerary.stats.map((stat) => (
-                  <li key={`${stat.icon}-${stat.value}`}>
-                    <span className="itp-stat-ic" aria-hidden="true">
-                      <Icon name={stat.icon} size={20} />
-                    </span>
-                    <b dir="auto">{stat.value}</b>
-                    <span className="muted">{pick(stat.label, locale)}</span>
+              <ul className="itp-fit" role="list">
+                {audience.map((entry) => (
+                  <li key={entry}>
+                    <BaliIcon name="family" size={18} />
+                    {entry}
                   </li>
                 ))}
               </ul>
             </section>
           )}
 
-          {(itinerary.teaserDays.length > 0 || itinerary.moreDays > 0) && (
-            <section className="itp-block" aria-labelledby="itp-days">
-              <h2 className="itp-h" id="itp-days">
-                {t('itp_days_t')}
-              </h2>
-              <p className="muted itp-sub">{t('itp_days_b')}</p>
-              <ol className="itp-days" role="list">
-                {itinerary.teaserDays.map((day) => (
-                  <li key={day.dayNumber} className="itp-day">
-                    <div className="itp-day-img">
-                      <Photo
-                        src={day.image?.url}
-                        srcSetAvif={day.image?.srcSetAvif}
-                        srcSetWebp={day.image?.srcSetWebp}
-                        sizes="(max-width: 720px) 45vw, 220px"
-                        alt=""
-                      />
-                      <span className="itp-day-n">{t('itp_day_n', { n: day.dayNumber })}</span>
-                    </div>
-                    {pickOptional(day.mood, locale) !== null && (
-                      <span className="itp-day-mood">{pick(day.mood, locale)}</span>
-                    )}
-                  </li>
-                ))}
-                {itinerary.moreDays > 0 && (
-                  <li className="itp-day is-more">
-                    <Icon name="lock" size={18} />
-                    <b>{t('itp_more_days', { n: itinerary.moreDays })}</b>
-                    <small>{t('itp_more_days_b')}</small>
-                  </li>
-                )}
-              </ol>
-            </section>
-          )}
+          <section className="itp-card" aria-labelledby="itp-how">
+            <h2 className="itp-h" id="itp-how">
+              {t('itd_how_t')}
+            </h2>
+            <ol className="itp-how" role="list">
+              {how.map((key, index) => (
+                <li key={key}>
+                  <span className="itp-how-n" dir="ltr" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <b>{t(`${key}_t`)}</b>
+                  <small>{t(`${key}_b`)}</small>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-          <p className="itp-acts-note" role="note">
-            <Icon name="star" size={16} /> {t('itp_acts_line')}
-          </p>
-
-          <section className="itp-block" aria-labelledby="itp-faq">
+          <section className="itp-card" aria-labelledby="itp-faq">
             <h2 className="itp-h" id="itp-faq">
-              {t('ad_faq')}
+              {t('itd_faq_t')}
             </h2>
             <div className="itp-faq">
-              {FAQ_KEYS.map((key) => (
-                <details key={key}>
-                  <summary>{t(`${key}_q`)}</summary>
-                  <p className="muted">{t(`${key}_a`)}</p>
+              {faq.map((row, index) => (
+                <details key={`${index}-${row.q}`} open={index === 0}>
+                  <summary>{row.q}</summary>
+                  <p>{row.a}</p>
                 </details>
               ))}
             </div>
           </section>
-
-          <div className="itp-custom">
-            <span>
-              <b>{t('itl_custom_t')}</b>
-              <span className="muted">{t('itl_custom_b')}</span>
-            </span>
-            <Link href={CUSTOM_HREF} className="btn btn-ghost btn-sm">
-              {t('itl_custom_cta')}
-            </Link>
-          </div>
         </div>
 
         <aside className="itp-aside" id="it-buy" aria-label={t('itp_box_t')}>
@@ -375,25 +428,25 @@ export default async function ItineraryPage({
               label: t(BUDGET_TIER_LABEL[one.key]),
               price: <Money minor={one.priceMinor} currency={itinerary.currency} />,
             }))}
-            footnote={
-              <>
-                <Icon name="info" size={14} /> {t('itp_digital')}
-              </>
-            }
+            footnote={t('itp_digital')}
           />
         </aside>
       </div>
 
-      <div className="sec bg-ivory">
-        <div className="wrap">
-          <ItineraryHowItWorks
-            locale={locale}
-            photo={itinerary.hero?.url ?? '/brand/flatlay.webp'}
-            title={name}
-            days={itinerary.days}
-          />
+      <section className="wrap itp-custom-wrap" aria-labelledby="itp-custom">
+        <div className="itp-custom">
+          <span className="itp-custom-art" aria-hidden="true">
+            <BaliIcon name="map" size={40} />
+          </span>
+          <span className="itp-custom-text">
+            <b id="itp-custom">{t('itd_custom_t')}</b>
+            <span>{t('itd_custom_b')}</span>
+          </span>
+          <Link href={CUSTOM_HREF} className="btn btn-primary itp-custom-cta">
+            {t('itd_custom_cta')} <span aria-hidden="true">←</span>
+          </Link>
         </div>
-      </div>
+      </section>
 
       {others.length > 0 && (
         <section className="sec bg-ivory2" aria-labelledby="it-others">

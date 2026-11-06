@@ -15,7 +15,7 @@ import { useTranslations } from 'next-intl'
 
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
 import { useToast } from '@/components/shared'
-import { Icon } from '@/components/ui'
+import { BaliIcon } from '@/components/ui/bali-icon'
 import { useRouter } from '@/i18n/routing'
 
 import { buyItineraryAction } from './actions'
@@ -166,18 +166,18 @@ export function PackageBox({
           ))}
         </fieldset>
         {button('btn btn-primary btn-block')}
-        <ul className="itp-promises">
+        <p className="itp-digital">{footnote}</p>
+        <ul className="itp-trust" role="list">
           <li>
-            <Icon name="download" size={15} /> {t('itp_p_instant')}
+            <BaliIcon name="shield" size={20} /> {t('itd_trust_pay')}
           </li>
           <li>
-            <Icon name="doc" size={15} /> {t('itp_p_offline')}
-          </li>
-          <li>
-            <Icon name="check" size={15} /> {t('itp_p_updates')}
+            <BaliIcon name="bolt" size={20} /> {t('itd_trust_fast')}
           </li>
         </ul>
-        <p className="itp-digital">{footnote}</p>
+        <p className="itp-after">
+          <BaliIcon name="ticket" size={24} /> {t('itp_acts_line')}
+        </p>
       </div>
 
       <div

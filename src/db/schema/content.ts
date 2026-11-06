@@ -665,6 +665,12 @@ export const itineraries = pgTable('itineraries', {
   isPopular: boolean('is_popular').notNull().default(false),
   seoTitle: localized('seo_title'),
   seoDescription: localized('seo_description'),
+  /**
+   * Migration 0044: «أسئلة شائعة عن هذا الجدول» — per-itinerary questions for
+   * the public page (Studio `<FaqRepeater>`). Hidden rows stay in Studio only.
+   * Never a place name or a day's content: the page is pre-purchase.
+   */
+  faq: jsonb('faq').$type<{ q: Localized; a: Localized; hidden?: true }[]>(),
 
   ...publishing,
   ...timestamps,
