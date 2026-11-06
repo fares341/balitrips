@@ -1,0 +1,813 @@
+/* Itinerary page (design: owner-approved concept «جدول عائلي 4 أيام»).
+   Mobile first, logical properties (RTL mirrors on its own), brand tokens
+   only: --forest / --forest-deep for structure, --orange for action. One
+   vertical rhythm: 20px between cards on a phone, 24px from 720px. */
+
+.itp {
+  --itp-gap: 20px;
+  padding-bottom: 88px;
+}
+
+/* ---- Hero ----------------------------------------------------------- */
+.itp-hero {
+  position: relative;
+  isolation: isolate;
+  color: #fff;
+  background: var(--forest-ink);
+  border-end-start-radius: var(--r-lg);
+  border-end-end-radius: var(--r-lg);
+  overflow: hidden; /* rounds the photo only; nothing sticky lives in here */
+}
+.itp-hero-media,
+.itp-hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.itp-hero-media img,
+.itp-hero-media .photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Strong, even veil: white text stays AA on any photo. */
+.itp-hero-veil {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 28, 14, 0.55) 0%,
+      rgba(10, 28, 14, 0.25) 30%,
+      rgba(10, 28, 14, 0.88) 100%
+    ),
+    linear-gradient(90deg, rgba(10, 28, 14, 0.25), rgba(10, 28, 14, 0.25));
+}
+.itp-hero-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 420px;
+  padding-block: 20px 28px;
+}
+.itp-hero-inner > nav,
+.itp-hero-inner > .bt-crumbs {
+  margin-block-end: auto;
+}
+.itp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.itp-chip {
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+.itp-chip.is-hot {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--forest-ink);
+}
+.itp-title {
+  margin: 0;
+  max-width: 760px;
+  font-size: clamp(28px, 5.4vw, 48px);
+  line-height: 1.25;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.35);
+}
+.itp-lede {
+  margin: 0;
+  max-width: 640px;
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+}
+.itp-from {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  width: fit-content;
+  margin: 4px 0 0;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--forest-deep);
+  font-size: 14px;
+}
+.itp-from strong {
+  font-size: 18px;
+  color: var(--forest-deep);
+}
+
+/* ---- Layout --------------------------------------------------------- */
+.itp-grid {
+  display: grid;
+  gap: var(--itp-gap);
+  padding-block: var(--itp-gap) 0;
+}
+.itp-main {
+  display: grid;
+  gap: var(--itp-gap);
+  min-width: 0;
+  align-content: start;
+}
+.itp-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px 18px;
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 22px;
+  box-shadow: var(--sh-1);
+}
+.itp-h {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--forest-deep);
+}
+.itp-intro {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--text);
+}
+
+/* ---- About: preview stats ------------------------------------------ */
+.itp-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.itp-stats li {
+  display: grid;
+  gap: 2px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: var(--ivory);
+}
+.itp-stats b {
+  font-family: var(--f-en);
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--forest);
+}
+.itp-stats span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ---- Benefits ------------------------------------------------------- */
+.itp-benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.itp-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--palm-soft);
+}
+.itp-bi {
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: var(--sh-1);
+}
+.itp-benefits b {
+  display: block;
+  font-size: 15.5px;
+  color: var(--forest-deep);
+}
+.itp-benefits small {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ---- Gallery: a fixed mosaic, never odd crops ------------------------ */
+.itp-gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 132px;
+  gap: 10px;
+}
+.itp-gallery li:first-child {
+  grid-column: 1 / -1;
+  grid-row: span 2;
+}
+.itp-gallery.is-2 li:first-child {
+  grid-row: span 2;
+}
+.itp-gallery.is-4 li:last-child,
+.itp-gallery.is-2 li:last-child {
+  grid-column: 1 / -1;
+}
+.itp-gallery figure {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ivory-2);
+}
+.itp-gallery img,
+.itp-gallery .photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.6s var(--ease);
+}
+.itp-gallery figure:hover img {
+  transform: scale(1.04);
+}
+.itp-gallery figcaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 24px 12px 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(10, 28, 14, 0.75));
+}
+
+/* ---- Teaser days ---------------------------------------------------- */
+.itp-days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.itp-day {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--forest-deep);
+  isolation: isolate;
+}
+.itp-day > .photo,
+.itp-day > img,
+.itp-day > picture,
+.itp-day > picture img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.itp-day::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(10, 28, 14, 0.05) 35%, rgba(10, 28, 14, 0.85));
+}
+/* No image: brand gradient, frangipani pattern, the light wordmark. */
+.itp-day-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 144, 0, 0.28) 0 2px, transparent 3px) 0 0 / 26px
+      26px,
+    radial-gradient(circle at 70% 65%, rgba(113, 255, 133, 0.16) 0 2px, transparent 3px) 0 0 / 34px
+      34px,
+    linear-gradient(155deg, var(--forest-soft), var(--forest-deep) 60%, var(--forest-ink));
+}
+.itp-day-fallback img {
+  opacity: 0.55;
+  max-width: 70%;
+  height: auto;
+}
+.itp-day-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    110deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.24) 50%,
+    transparent 65%
+  );
+  transform: translateX(100%);
+  animation: itp-shine 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.itp-day:nth-child(2) .itp-day-shine {
+  animation-delay: 0.4s;
+}
+.itp-day:nth-child(3) .itp-day-shine {
+  animation-delay: 0.8s;
+}
+.itp-day:nth-child(4) .itp-day-shine {
+  animation-delay: 1.2s;
+}
+@keyframes itp-shine {
+  0% {
+    transform: translateX(100%);
+  }
+  60%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .itp-day-shine {
+    animation: none;
+    display: none;
+  }
+  .itp-gallery img {
+    transition: none;
+  }
+}
+.itp-day-lock {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-end: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ivory);
+  box-shadow: 0 4px 12px rgba(10, 28, 14, 0.25);
+}
+.itp-day-n {
+  position: absolute;
+  inset-block-end: 12px;
+  inset-inline-start: 12px;
+  z-index: 3;
+  display: grid;
+  color: #fff;
+}
+.itp-day-n b {
+  font-family: var(--f-en);
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+.itp-day-n span {
+  font-size: 13.5px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+.itp-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.itp-note-ic {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--orange-soft);
+}
+
+/* ---- Who it's for --------------------------------------------------- */
+.itp-fit {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.itp-fit li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px 7px 12px;
+  border-radius: var(--r-pill);
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---- How it works --------------------------------------------------- */
+.itp-how {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.itp-how li {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--ivory-2);
+}
+.itp-how-n {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-block-end: 6px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: #fff;
+  font-family: var(--f-en);
+  font-weight: 700;
+}
+.itp-how b {
+  color: var(--forest-deep);
+}
+.itp-how small {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+/* ---- FAQ ------------------------------------------------------------ */
+.itp-faq details {
+  border-bottom: 1px solid var(--line-soft);
+}
+.itp-faq details:last-child {
+  border-bottom: 0;
+}
+.itp-faq summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding-block: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--forest-deep);
+}
+.itp-faq summary::-webkit-details-marker {
+  display: none;
+}
+.itp-faq summary::after {
+  content: '+';
+  flex: 0 0 auto;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--orange-deep);
+  transition: transform var(--d-base) var(--ease);
+}
+.itp-faq details[open] summary::after {
+  transform: rotate(45deg);
+}
+.itp-faq summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.itp-faq p {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+/* ---- Customize card ------------------------------------------------- */
+.itp-custom-wrap {
+  padding-block: 28px;
+}
+.itp-custom {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  overflow: hidden;
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 144, 0, 0.35), transparent 40%),
+    linear-gradient(135deg, var(--forest), var(--forest-ink));
+  box-shadow: var(--sh-2);
+}
+.itp-custom-art {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: var(--ivory);
+}
+.itp-custom-text {
+  display: grid;
+  gap: 4px;
+}
+.itp-custom-text b {
+  font-size: 20px;
+  font-weight: 800;
+}
+.itp-custom-text span {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+}
+.itp-custom-cta {
+  justify-self: start;
+  min-height: 44px;
+}
+
+/* ---- Package box ---------------------------------------------------- */
+.itp-aside {
+  min-width: 0;
+}
+.itp-box {
+  display: grid;
+  gap: 12px;
+  padding: 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--sh-2);
+}
+.itp-box-t {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--forest-deep);
+}
+.itp-opts {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.itp-opt {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  cursor: pointer;
+  transition:
+    border-color var(--d-fast),
+    background var(--d-fast);
+}
+.itp-opt:has(input:checked) {
+  border-color: var(--forest);
+  background: var(--palm-soft);
+}
+.itp-opt:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.itp-opt input {
+  inline-size: 20px;
+  block-size: 20px;
+  margin-top: 2px;
+  accent-color: var(--forest);
+  flex-shrink: 0;
+}
+.itp-opt-main {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.itp-opt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--forest-deep);
+}
+.itp-opt-main small {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.itp-badge {
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--forest);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.itp-save {
+  width: fit-content;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--orange);
+  color: var(--forest-ink);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.itp-opt-price {
+  display: grid;
+  justify-items: end;
+  text-align: end;
+  white-space: nowrap;
+}
+.itp-opt-price s {
+  font-size: 13px;
+}
+.itp-opt-price strong {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--forest-deep);
+}
+.itp-box .btn-block {
+  min-height: 52px;
+  font-size: 17px;
+  font-weight: 800;
+}
+.itp-digital {
+  margin: 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.itp-trust {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--forest-deep);
+}
+.itp-trust li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.itp-after {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--orange-soft);
+  color: var(--orange-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.itp-after .bi {
+  flex: 0 0 auto;
+}
+
+/* Phone: the box's button again, only while the box is out of view. */
+.itp-mbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -6px 18px rgba(10, 26, 14, 0.08);
+}
+.itp-mbar[hidden] {
+  display: none;
+}
+.itp-mbar .btn {
+  min-height: 44px;
+  padding-inline: 26px;
+}
+.itp-mbar-price {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.itp-mbar-price small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.itp-mbar-price strong {
+  font-size: 18px;
+  color: var(--forest-deep);
+}
+
+@media (min-width: 620px) {
+  .itp-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .itp-benefits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .itp-gallery {
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-auto-rows: 150px;
+  }
+  .itp-gallery li:first-child {
+    grid-column: auto;
+    grid-row: span 2;
+  }
+  .itp-gallery.is-2 {
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 300px;
+  }
+  .itp-gallery.is-2 li:first-child {
+    grid-row: auto;
+  }
+  .itp-gallery.is-2 li:last-child,
+  .itp-gallery.is-4 li:last-child {
+    grid-column: auto;
+  }
+  .itp-gallery.is-4 li:last-child {
+    grid-column: span 2;
+  }
+  .itp-days {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .itp-how {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .itp-custom {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 20px;
+    padding: 26px 28px;
+  }
+}
+
+@media (min-width: 720px) {
+  .itp {
+    --itp-gap: 24px;
+  }
+  .itp-card {
+    padding: 24px;
+  }
+  .itp-hero-inner {
+    min-height: 460px;
+    padding-block-end: 36px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .itp {
+    padding-bottom: 0;
+  }
+  .itp-grid {
+    grid-template-columns: minmax(0, 1fr) 370px;
+    align-items: start;
+    gap: 28px;
+    padding-block-start: 28px;
+  }
+  /* Sticky: start-aligned in the grid, under the (in-flow) header, and
+     never taller than the viewport, so its button cannot be clipped. */
+  .itp-aside {
+    position: sticky;
+    top: calc(var(--sticky-top, 16px) + 8px);
+    align-self: start;
+  }
+  .itp-box {
+    max-height: calc(100vh - var(--sticky-top, 16px) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .itp-mbar {
+    display: none;
+  }
+}
