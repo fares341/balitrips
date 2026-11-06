@@ -164,6 +164,8 @@ export interface CatalogSnapshot {
       grantsVip?: boolean
       /** Priced levels (client, Oct 2026). A chosen level not priced here is refused. */
       tierPrices?: Partial<Record<string, number>>
+      /** Itineraries phase 2: the plan already includes the map (no map bundle with it). */
+      includesMap?: boolean
     }
   >
   /** الباقات المنشورة (`plans`). سعرها من هنا دائماً، لا من العميل. */
@@ -174,6 +176,12 @@ export interface CatalogSnapshot {
       currency: string
       /** `basic` | `map_access` | `vip` (phase 3: a VIP plan already covered is not charged). */
       kind?: string
+      /**
+       * Itineraries phase 2: this is the «الجدول + الخريطة» map product, and
+       * this is its price when the cart also holds an itinerary (same
+       * currency as `priceMinor`, from `itinerarySales`). Absent = no bundle.
+       */
+      withItineraryMinor?: number
     }
   >
   /**
@@ -237,6 +245,11 @@ export interface QuoteLine {
    * (`deducted_on_upgrade`). `lineTotalMinor` is already net of it.
    */
   credit?: { itineraryId: string; amountMinor: number }
+  /**
+   * Itineraries phase 2, plan lines: priced as the map with an itinerary
+   * («الجدول + الخريطة»). `savingMinor` = full price − charged price.
+   */
+  mapBundle?: { itineraryItemId: string; fullMinor: number; savingMinor: number }
 }
 
 export type QuoteIssueCode =
@@ -442,6 +455,33 @@ export function applyCoverage(lines: QuoteLine[], catalog: CatalogSnapshot): voi
     )
     const by = byPackage ?? byItinerary
     if (by) cover(line, by)
+  }
+
+  // 4. Itineraries phase 2: the map bought with an itinerary costs the
+  //    bundle price — only while a charged itinerary that does not already
+  //    include the map is in the same cart.
+  const bundleItinerary = lines.find(
+    (other) =>
+      other.kind === 'itinerary' &&
+      other.refId !== null &&
+      other.coveredBy === undefined &&
+      catalog.itineraries.get(other.refId)?.includesMap !== true,
+  )
+  if (bundleItinerary) {
+    for (const line of lines) {
+      if (line.kind !== 'plan' || line.refId === null || line.coveredBy !== undefined) continue
+      const bundle = catalog.plans.get(line.refId)?.withItineraryMinor
+      if (bundle === undefined || bundle < 0 || bundle >= line.unitPriceMinor) continue
+      const fullMinor = line.unitPriceMinor
+      line.unitPriceMinor = bundle
+      line.lineTotalMinor = bundle
+      line.mapBundle = {
+        itineraryItemId: bundleItinerary.itemId,
+        fullMinor,
+        savingMinor: fullMinor - bundle,
+      }
+      break
+    }
   }
 
   const inCart = new Set(

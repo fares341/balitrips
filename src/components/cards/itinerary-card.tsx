@@ -23,6 +23,7 @@ import {
   PriceFrom,
 } from '@/components/bt/card'
 import { Tag } from '@/components/bt/chip'
+import { Icon, type IconName } from '@/components/ui'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
 import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
@@ -38,9 +39,25 @@ export type ItineraryCardProps = {
   /** Replaces the default "Buy" button — normally the buy/add-to-trip control. */
   action?: ReactNode
   priority?: boolean
+  /**
+   * Itineraries list (phase 2): the «وش بتحصل عليه» numbers, the «الأكثر
+   * طلبًا» badge, and the map savings line («+ الخريطة بـ Y بدل Z — وفّر X»),
+   * all prepared on the server. With `stats` the regions line is left out:
+   * the list shows no place names before purchase.
+   */
+  stats?: readonly { icon: IconName; value: string; label: string }[]
+  badge?: string | null
+  extra?: ReactNode
 }
 
-export function ItineraryCard({ itinerary, action, priority = false }: ItineraryCardProps) {
+export function ItineraryCard({
+  itinerary,
+  action,
+  priority = false,
+  stats,
+  badge = null,
+  extra,
+}: ItineraryCardProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
 
@@ -68,9 +85,16 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
         ratio="5/4"
         priority={priority}
         badges={
-          <Tag variant="glass" icon="cal">
-            {t('c_days_n', { n: itinerary.days })}
-          </Tag>
+          <>
+            <Tag variant="glass" icon="cal">
+              {t('c_days_n', { n: itinerary.days })}
+            </Tag>
+            {badge !== null && (
+              <Tag variant="orange" icon="star">
+                {badge}
+              </Tag>
+            )}
+          </>
         }
         fav={<FavButton kind="itinerary" refId={itinerary.id} />}
       />
@@ -91,10 +115,24 @@ export function ItineraryCard({ itinerary, action, priority = false }: Itinerary
           </div>
         )}
         {blurb !== null && <CardText>{blurb}</CardText>}
-        <CardMeta items={regions === '' ? [] : [{ icon: 'pin', label: regions }]} />
+        {stats !== undefined ? (
+          stats.length > 0 && (
+            <ul className="it-card-stats" role="list">
+              {stats.map((stat) => (
+                <li key={`${stat.icon}-${stat.value}`}>
+                  <Icon name={stat.icon} size={14} />
+                  <b dir="auto">{stat.value}</b> {stat.label}
+                </li>
+              ))}
+            </ul>
+          )
+        ) : (
+          <CardMeta items={regions === '' ? [] : [{ icon: 'pin', label: regions }]} />
+        )}
+        {extra}
         <CardFoot>
           <PriceFrom
-            label={levels > 0 ? t('it_price_from') : t('bt_pdf_map')}
+            label={levels > 0 || stats !== undefined ? t('it_price_from') : t('bt_pdf_map')}
             amount={formatPrice(priceMinor, itinerary.currency, locale)}
             minor={priceMinor}
             currency={itinerary.currency}

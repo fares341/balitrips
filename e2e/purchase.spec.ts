@@ -8,7 +8,7 @@ import { closeDb, db, orderStatus } from './support/db'
  * C2 — the whole purchase path in the payment test mode CI supports (the
  * sandbox provider, whose 3-D Secure page stands in for Stripe test mode):
  *
- *  1. itinerary: choose who it is for → buy → pay → the PDF is in the
+ *  1. itinerary: «Itinerary only» → continue → pay → the PDF is in the
  *     account and downloads as a real PDF (desktop and phone);
  *  2. an activity package (tier): choose → date → time → trip → pay →
  *     confirmation;
@@ -91,7 +91,44 @@ test.afterAll(async () => {
   await closeDb()
 })
 
-test('itinerary: choose audience, buy, pay, download the PDF', async ({ page }) => {
+test('itinerary pages: no day content, places or PDF links in the public HTML', async ({
+  request,
+}) => {
+  const rows = await db()<{ id: string; slug: string }[]>`
+    select id, slug from itineraries
+    where status = 'published' and deleted_at is null order by created_at limit 3`
+  for (const row of rows) {
+    // Every name the plan is made of: day titles, activities, linked places.
+    const secrets = await db()<{ text: string }[]>`
+      select v.text from (
+        select jsonb_each_text(d.title) as kv from itinerary_days d where d.itinerary_id = ${row.id}
+        union all
+        select jsonb_each_text(a.name) from itinerary_days d
+          join activities a on a.id = d.activity_id where d.itinerary_id = ${row.id}
+        union all
+        select jsonb_each_text(p.name) from itinerary_day_places dp
+          join itinerary_days d on d.id = dp.day_id
+          join map_places p on p.id = dp.place_id where d.itinerary_id = ${row.id}
+      ) s, lateral (select (s.kv).value as text) v
+      where length((s.kv).value) >= 6`
+    for (const locale of ['ar', 'en']) {
+      // Site chrome (menus, the message bundle) names famous spots on every
+      // page; only what this page adds counts.
+      const chrome = await (await request.get(`/${locale}/contact`)).text()
+      const html = await (await request.get(`/${locale}/itineraries/${row.slug}`)).text()
+      expect(html).not.toContain('linkedPlaceIds')
+      expect(html).not.toMatch(/\.pdf\b|\/file\b|uploadedPdf/i)
+      for (const secret of secrets) {
+        if (chrome.includes(secret.text)) continue
+        expect(html, `"${secret.text}" leaked on /${locale}/itineraries/${row.slug}`).not.toContain(
+          secret.text,
+        )
+      }
+    }
+  }
+})
+
+test('itinerary: choose a package, continue, pay, download the PDF', async ({ page }) => {
   const [row] = await db()<{ slug: string }[]>`
     select i.slug from itineraries i
     where i.status = 'published' and i.deleted_at is null and i.sale_digital
@@ -102,18 +139,11 @@ test('itinerary: choose audience, buy, pay, download the PDF', async ({ page }) 
   await signUp(page, 'itin')
   await page.goto(`/en/itineraries/${row?.slug}`)
 
-  // The buy button is a real control in the sidebar (H1: audience first).
+  // Phase 2: the package box — «Itinerary only», then «Continue» → checkout.
   const box = page.locator('#it-buy')
-  const buy = box.getByRole('button', { name: 'Get this itinerary' })
-  await expect(buy).toBeVisible()
-  const audience = box.locator('.it-audience input[type="radio"]')
-  if ((await audience.count()) > 0) {
-    await buy.click()
-    await expect(box.getByRole('alert'), 'buying without an audience was allowed').toBeVisible()
-    await audience.first().check()
-  }
-  await buy.click()
-  await page.waitForURL(/\/my-trip/, { timeout: 30_000 })
+  await box.getByRole('radio', { name: /Itinerary only/ }).check()
+  await box.getByRole('button', { name: 'Continue' }).first().click()
+  await page.waitForURL(/\/checkout/, { timeout: 30_000 })
 
   const orderNumber = await payTrip(page)
 

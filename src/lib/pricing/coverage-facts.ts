@@ -18,6 +18,9 @@ import {
   plans,
 } from '@/db/schema'
 
+import { mapBundleOffer } from '@/lib/itineraries/map-bundle'
+import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
+
 import type { CatalogSnapshot, QuoteRequestItem } from './quote'
 
 const SETTLED = ['paid', 'confirmed', 'partially_refunded']
@@ -50,6 +53,34 @@ export async function applyCoverageFacts(
       const entry = snapshot.itineraries.get(row.id)
       if (!entry) continue
       entry.grantsVip = row.mapAccess === 'vip_included' && row.includesMap && row.isVip
+      entry.includesMap = row.includesMap
+    }
+  }
+
+  // Itineraries phase 2: the map product's «with an itinerary» price.
+  if (itineraryIds.length > 0 && planIds.length > 0) {
+    const [settings, mapRows] = await Promise.all([
+      readItinerarySales(),
+      db
+        .select({
+          id: plans.id,
+          priceMinor: plans.priceMinor,
+          currency: plans.currency,
+          kind: plans.entitlementKind,
+          status: plans.status,
+        })
+        .from(plans)
+        .where(and(inArray(plans.entitlementKind, ['map_access', 'vip']), isNull(plans.deletedAt))),
+    ])
+    const offer = mapBundleOffer(
+      settings,
+      mapRows.map((row) => ({ ...row, published: row.status === 'published' })),
+    )
+    const entry = offer === null ? undefined : snapshot.plans.get(offer.planId)
+    if (offer !== null && entry !== undefined && offer.savingMinor > 0) {
+      if (entry.currency === offer.currency && entry.priceMinor === offer.fullMinor) {
+        entry.withItineraryMinor = offer.bundleMinor
+      }
     }
   }
 
