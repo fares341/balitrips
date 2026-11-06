@@ -348,7 +348,7 @@ async function payablesSection(f: ListingFilters, ctx: ListingContext): Promise<
     return [
       row.supplier,
       String(row.lines),
-      `${row.first ?? '—'} → ${row.last ?? '—'}`,
+      `${row.first ?? '—'} – ${row.last ?? '—'}`,
       money(value, intl),
     ]
   })

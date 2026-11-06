@@ -3200,7 +3200,7 @@ details > summary.a-btn::-webkit-details-marker {
   padding-inline: 16px;
 }
 
-.a-palette-list {
+.a-palette .a-palette-list {
   list-style: none;
   margin: 0;
   padding: 6px;
@@ -3442,4 +3442,9 @@ details > summary.a-btn::-webkit-details-marker {
 .a-funnel small {
   color: var(--a-muted);
   text-align: end;
+}
+
+/* Phone order cards use the full width (a generic list indent was leaking in). */
+ul.a-ocards {
+  padding-inline: 0;
 }

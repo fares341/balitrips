@@ -145,7 +145,11 @@ export function listingFooterHtml(meta: {
   of: string
   brand: string
 }): string {
-  return `<html dir="${meta.dir}"><head><style>
-body{font-family:'DejaVu Sans',sans-serif;font-size:8px;color:#5b675c;width:100%;margin:0 12mm;display:flex;justify-content:space-between}
-</style></head><body><span>${e(meta.brand)}</span><span>${e(meta.page)} <span class="pageNumber"></span> ${e(meta.of)} <span class="totalPages"></span></span></body></html>`
+  // Chromium header/footer templates take inline layout only, and no web fonts.
+  const side = meta.dir === 'rtl' ? 'right' : 'left'
+  const other = meta.dir === 'rtl' ? 'left' : 'right'
+  return `<html><head><style>
+.f{width:100%;margin:0 12mm;font-family:'DejaVu Sans',sans-serif;font-size:8px;color:#5b675c;overflow:hidden}
+.a{float:${side}}.b{float:${other};direction:${meta.dir}}
+</style></head><body><div class="f" dir="${meta.dir}"><span class="a">${e(meta.brand)}</span><span class="b">${e(meta.page)} <span class="pageNumber"></span> ${e(meta.of)} <span class="totalPages"></span></span></div></body></html>`
 }

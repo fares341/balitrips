@@ -140,8 +140,7 @@ export async function renderListingPdf(
   const locale = localeValue === 'en' ? 'en' : 'ar'
   const t = translator(locale)
   const intl = locale === 'ar' ? 'ar-u-nu-latn' : 'en-GB'
-  const { readFx } = await import('@/lib/currency/fx-store')
-  await readFx() // the Studio SAR rate for any non-SAR amount
+  await loadStudioRates() // the Studio SAR rate for any non-SAR amount
   const filters = parseListingFilters(params)
   const doc = await buildListing(kind, filters, { t, intl, role, locale })
   const day = (iso: string) =>
@@ -185,4 +184,23 @@ export async function renderListingPdf(
     margins: { top: 0.55, bottom: 0.7, left: 0.5, right: 0.5 },
     metadata: { Title: doc.title, Author: brand, Creator: brand },
   })
+}
+
+/**
+ * `readFx()` for the worker: fx-store is `server-only` (a Next import guard
+ * the worker cannot load), so the same three steps are done here.
+ */
+async function loadStudioRates(): Promise<void> {
+  try {
+    const { readSettings } = await import('@/app/(admin)/_lib/settings')
+    const { resolveFx } = await import('@/lib/currency/fx')
+    const { setStudioRates } = await import('@/lib/currency/studio')
+    const { values, missing } = await readSettings()
+    const storedUsd = values.currencies.rates?.USD
+    const legacy =
+      storedUsd === undefined && !missing.includes('vehicles') ? values.vehicles.sarPerUsd : null
+    setStudioRates(resolveFx(values.currencies, legacy).rates)
+  } catch {
+    // The shipped table stays in force.
+  }
 }
