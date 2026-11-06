@@ -795,7 +795,8 @@ for (const role of ROLE_ORDER) {
     await page.goto(BASE + full, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {})
     const hrefs = await page
       .$$eval(
-        'main a[href]',
+        // Section tabs are navigation, not a detail page.
+        'main a[href]:not(.a-subtabs a)',
         (as, prefix) =>
           as
             .map((a) => a.getAttribute('href') ?? '')
@@ -803,7 +804,7 @@ for (const role of ROLE_ORDER) {
         full,
       )
       .catch(() => [])
-    const detail = hrefs.find((h) => !/\/(export|receipt|vip)(\/|$)/.test(h))
+    const detail = hrefs.find((h) => !/\/(export|receipt|vip|template)(\/|$)/.test(h))
     if (detail) {
       for (const w of [1440, 390]) await visit(page, role, detail, w)
       // The activity editor is split into sections (tabs): open each one.

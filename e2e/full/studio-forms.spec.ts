@@ -96,7 +96,8 @@ async function firstDetail(listPath: string): Promise<string | null> {
   await settle(page)
   const hrefs = await page
     .$$eval(
-      'main a[href]',
+      // Section tabs are navigation, not a detail page.
+      'main a[href]:not(.a-subtabs a)',
       (as, prefix) =>
         as
           .map((a) => a.getAttribute('href') ?? '')
@@ -104,7 +105,7 @@ async function firstDetail(listPath: string): Promise<string | null> {
       full,
     )
     .catch(() => [] as string[])
-  return hrefs.find((h) => !/\/(export|receipt|invoice|vip|file)(\/|$)/.test(h)) ?? null
+  return hrefs.find((h) => !/\/(export|receipt|invoice|vip|file|template)(\/|$)/.test(h)) ?? null
 }
 
 test('admin signed in to the Studio', async ({ browserName: _browserName }, info) => {
