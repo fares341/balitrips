@@ -43,7 +43,16 @@ export function CommandPalette({
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        setOpen((value) => !value)
+        // Follow the dialog itself: Esc closes it natively, and React's
+        // state must not be left thinking it is still open.
+        const isOpen = dialog.current?.open ?? false
+        if (isOpen) {
+          dialog.current?.close()
+        } else {
+          dialog.current?.showModal()
+          input.current?.focus()
+        }
+        setOpen(!isOpen)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -73,7 +82,17 @@ export function CommandPalette({
 
   return (
     <>
-      <button type="button" className="a-palette-btn" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className="a-palette-btn"
+        onClick={() => {
+          if (!dialog.current?.open) {
+            dialog.current?.showModal()
+            input.current?.focus()
+          }
+          setOpen(true)
+        }}
+      >
         <Icon name="search" size={18} />
         <span>{labels.open}</span>
         <kbd dir="ltr">Ctrl K</kbd>
@@ -83,6 +102,7 @@ export function CommandPalette({
         className="a-palette"
         aria-label={labels.open}
         onClose={close}
+        onCancel={close}
         onClick={(event) => {
           if (event.target === event.currentTarget) close()
         }}
