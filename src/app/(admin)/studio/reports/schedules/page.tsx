@@ -13,6 +13,7 @@ import { Flash } from '../../../_ui/flash'
 import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { createSchedule, deleteSchedule, toggleSchedule } from './actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,9 +87,11 @@ export default async function SchedulesPage({
                       </form>
                       <form action={deleteSchedule}>
                         <input type="hidden" name="id" value={row.id} />
-                        <button className="a-btn ghost small" type="submit">
-                          {t('rp.delete')}
-                        </button>
+                        <ConfirmSubmit
+                          className="a-btn ghost small"
+                          label={t('rp.delete')}
+                          title={t('confirm.delete_title')}
+                        />
                       </form>
                     </div>
                   </td>

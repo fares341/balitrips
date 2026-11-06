@@ -7,6 +7,7 @@ import { TextArea, TextInput } from '../../../_ui/field'
 import { Pill } from '../../../_ui/table'
 import { addItineraryDay, moveItineraryDay, removeItineraryDay, saveItineraryDay } from '../actions'
 import { DayPlacesEditor, type DayStopDraft, type PlaceChoice } from './day-places-editor'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface DayRow {
   id: string
@@ -95,13 +96,12 @@ export async function DayPlan({
                   >
                     {t('itineraries.day_move_down')}
                   </button>
-                  <button
+                  <ConfirmSubmit
                     className="a-btn danger small"
-                    type="submit"
                     formAction={removeItineraryDay.bind(null, itineraryId, day.id)}
-                  >
-                    {t('common.remove')}
-                  </button>
+                    label={t('common.remove')}
+                    title={t('confirm.remove_title')}
+                  />
                 </div>
               </div>
 

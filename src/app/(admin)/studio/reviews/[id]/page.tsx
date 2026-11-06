@@ -14,6 +14,7 @@ import { Flash } from '../../../_ui/flash'
 import { OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { deleteReview, saveReview } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -122,9 +123,11 @@ export default async function ReviewEditorPage({
         <form className="a-card" action={deleteReview.bind(null, review.id)}>
           <h2>{t('reviews.archive')}</h2>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('reviews.archive_btn')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('reviews.archive_btn')}
+              title={t('confirm.archive_title')}
+            />
           </div>
         </form>
       ) : null}

@@ -78,14 +78,14 @@ export async function POST(request: Request): Promise<Response> {
     if (outcome.handled && outcome.to === 'paid' && outcome.from !== outcome.to) {
       // Best effort, and deliberately outside the state transaction: a cart
       // that fails to empty must never roll back a confirmed payment.
-      await releaseCartFor(outcome.orderId)
-      await notifyOrderPaid(outcome.orderId)
+      await followUp('release cart', () => releaseCartFor(outcome.orderId))
+      await followUp('order paid notices', () => notifyOrderPaid(outcome.orderId))
     }
     // Manual capture (client, Oct 2026): the card is held, the checkout is
     // done — empty the cart and ask staff to confirm with the supplier.
     if (outcome.handled && outcome.to === 'authorized' && outcome.from !== outcome.to) {
-      await releaseCartFor(outcome.orderId)
-      await notifyOrderAuthorized(outcome.orderId)
+      await followUp('release cart', () => releaseCartFor(outcome.orderId))
+      await followUp('order authorized notices', () => notifyOrderAuthorized(outcome.orderId))
     }
     // A failed attempt leaves the order open for a retry on the same order
     // number (see processWebhookEvent); staff still hear about it.
@@ -93,7 +93,7 @@ export async function POST(request: Request): Promise<Response> {
       outcome.handled &&
       (outcome.paymentFailed === true || (outcome.to === 'cancelled' && outcome.from === 'pending'))
     ) {
-      await notifyPaymentFailed(outcome.orderId)
+      await followUp('payment failed notices', () => notifyPaymentFailed(outcome.orderId))
     }
 
     // الوثيقة 22.7: طريقة الدفع (بطاقة / Apple Pay / Google Pay…). بعد إرسال الرد،
@@ -126,6 +126,20 @@ export async function POST(request: Request): Promise<Response> {
     })
     // Retry, please. See rule 3 above.
     return NextResponse.json({ error: 'processing_failed' }, { status: 500 })
+  }
+}
+
+/**
+ * A follow-up after the state transaction committed. It must never turn the
+ * response into a 500: the provider would retry, the retry finds the order
+ * already paid (`from === to`) and skips every follow-up — so a throw here
+ * meant the notices were lost for good. Log it and answer 200.
+ */
+async function followUp(what: string, run: () => Promise<unknown>): Promise<void> {
+  try {
+    await run()
+  } catch (error) {
+    console.error(`[payments/webhook] follow-up failed: ${what}`, { error })
   }
 }
 

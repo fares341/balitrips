@@ -11,6 +11,7 @@ import { notifyPlanActivated } from '@/lib/notify/plans'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import { assertTypedWord } from '../../_lib/confirm'
 import { fenum, freq, fstr, fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
@@ -131,6 +132,7 @@ export async function revokeEntitlement(form: FormData): Promise<void> {
   const back = customerId && UUID.test(customerId) ? adminHref(`/customers/${customerId}`) : LIST
 
   try {
+    assertTypedWord(form, 'revoke', t('confirm.err_typed_word'))
     const id = fuuid(form, 'entitlementId', t('entitlements.field_entitlement'))
     const reason = fstr(form, 'reason') ?? `revoked by ${session.email}`
 

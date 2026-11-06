@@ -15,6 +15,7 @@ import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { accessKindLabel } from '../orders/labels'
 import { StudioLink } from '../../_ui/studio-link'
 import { extendEntitlement, grantEntitlement, revokeEntitlement } from './actions'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -239,9 +240,12 @@ export default async function EntitlementsPage({
                     {mayGrant && !row.revokedAt ? (
                       <form className="a-inline-form" action={revokeEntitlement}>
                         <input type="hidden" name="entitlementId" value={row.id} />
-                        <button className="a-btn danger small" type="submit">
-                          {t('entitlements.revoke')}
-                        </button>
+                        <ConfirmSubmit
+                          className="a-btn danger small"
+                          label={t('entitlements.revoke')}
+                          title={t('confirm.revoke_title')}
+                          typedWord="revoke"
+                        />
                       </form>
                     ) : null}
                   </td>

@@ -14,6 +14,7 @@ import {
   summarizeContract,
   uploadContract,
 } from '../operator-actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 const SUMMARY_ROWS: readonly (keyof Omit<ContractSummary, 'redFlags'>)[] = [
   'prices',
@@ -119,9 +120,11 @@ export async function OperatorTab({ activityId }: { activityId: string }) {
               {row.contractBytes ? ` · ${Math.ceil(row.contractBytes / 1024)} KB` : ''}
             </span>
             <form action={removeContract.bind(null, activityId)}>
-              <button className="a-btn ghost small" type="submit">
-                {t('oo.op_remove')}
-              </button>
+              <ConfirmSubmit
+                className="a-btn ghost small"
+                label={t('oo.op_remove')}
+                title={t('confirm.remove_title')}
+              />
             </form>
           </div>
         ) : (

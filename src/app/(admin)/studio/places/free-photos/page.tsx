@@ -15,6 +15,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill } from '../../../_ui/table'
 import { decideCandidate, replaceSharedPhotos } from './actions'
 import { FindPanel } from './find-panel'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -236,9 +237,11 @@ export default async function FreePhotosPage({
                   <div className="a-actions" style={{ marginTop: 6 }}>
                     {c.status === 'applied' ? (
                       <form action={decideCandidate.bind(null, c.id, 'remove', back)}>
-                        <button className="a-btn ghost small" type="submit">
-                          {t('fp.undo')}
-                        </button>
+                        <ConfirmSubmit
+                          className="a-btn ghost small"
+                          label={t('fp.undo')}
+                          title={t('confirm.remove_title')}
+                        />
                       </form>
                     ) : c.status === 'new' ? (
                       <>

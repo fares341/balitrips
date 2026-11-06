@@ -46,6 +46,7 @@ import {
   savePackage,
   savePackageActivity,
 } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -381,13 +382,12 @@ export default async function PackageEditorPage({
                       <button className="a-btn ghost small" type="submit">
                         {t('p3.link_save')}
                       </button>
-                      <button
+                      <ConfirmSubmit
                         className="a-btn danger small"
-                        type="submit"
                         formAction={removePackageActivity.bind(null, pkg.id, row.activityId)}
-                      >
-                        {t('common.remove')}
-                      </button>
+                        label={t('common.remove')}
+                        title={t('confirm.remove_title')}
+                      />
                     </span>
                   </form>
                 ),
@@ -503,9 +503,11 @@ export default async function PackageEditorPage({
           <h2>{t('packages.section_archive')}</h2>
           <p className="a-hint">{t('packages.archive_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('packages.archive')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('packages.archive')}
+              title={t('confirm.archive_title')}
+            />
           </div>
         </form>
       ) : null}

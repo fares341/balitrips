@@ -29,6 +29,7 @@ import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { deleteCoupon, saveCoupon } from '../actions'
 import { couponStateOf } from '../labels'
 import { StudioLink } from '../../../_ui/studio-link'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -363,9 +364,11 @@ export default async function CouponPage({
           )}
           {redemptions.length === 0 ? (
             <form action={deleteCoupon.bind(null, coupon.id)} style={{ marginBlockStart: 12 }}>
-              <button className="a-btn danger" type="submit">
-                {t('disc.delete')}
-              </button>
+              <ConfirmSubmit
+                className="a-btn danger"
+                label={t('disc.delete')}
+                title={t('confirm.delete_title')}
+              />
             </form>
           ) : null}
         </div>

@@ -12,6 +12,7 @@ import { getAdminI18n } from '../../../_lib/i18n'
 import { Field, TextInput } from '../../../_ui/field'
 import { Empty, Pill, Table, When } from '../../../_ui/table'
 import { actOnDevice, banUser, decideDevice, unbanUser } from '../../protection/actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 /**
  * بطاقة الحماية في صفحة العميل: حالة الحظر، الأجهزة، وحد الأجهزة.
@@ -98,9 +99,11 @@ export async function ProtectionPanel({
             </select>
           </Field>
           <div className="a-actions">
-            <button className="a-btn danger" type="submit">
-              {t('customers.ban_account')}
-            </button>
+            <ConfirmSubmit
+              label={t('customers.ban_account')}
+              title={t('confirm.ban_title')}
+              typedWord="ban"
+            />
           </div>
         </form>
       ) : null}

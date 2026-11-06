@@ -20,6 +20,7 @@ import { normalizeIp } from '@/lib/security/ip'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import { assertTypedWord } from '../../_lib/confirm'
 import { getAdminI18n } from '../../_lib/i18n'
 import { fbool, fenum, fint, freq, fstr, fuuid } from '../../_lib/form'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
@@ -79,6 +80,7 @@ export async function banUser(userId: string, form: FormData): Promise<void> {
 
   await run(customerHref(userId), async (t) => {
     if (userId === actor.userId) throw new Error(t('protection.err_ban_self'))
+    assertTypedWord(form, 'ban', t('confirm.err_typed_word'))
     const reason = freq(form, 'reason', t('protection.reason')).slice(0, 500)
     const duration = fenum(form, 'duration', BAN_DURATIONS, 'permanent')
     const until = untilFor(duration)
@@ -270,6 +272,7 @@ export async function liftDeviceBan(form: FormData): Promise<void> {
 export async function banIp(form: FormData): Promise<void> {
   const actor = await requireCapability('security.write')
   await run(PROTECTION, async (t) => {
+    assertTypedWord(form, 'ban', t('confirm.err_typed_word'))
     const ip = normalizeIp(freq(form, 'ip', t('protection.ip_address')))
     if (ip === null) throw new Error(t('protection.err_invalid_ip'))
     if (ip === actor.ipAddress) throw new Error(t('protection.err_own_ip'))

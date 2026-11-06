@@ -27,6 +27,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, Pager, Pill, Table } from '../../../_ui/table'
 import { decideMatch } from './actions'
 import { MatchPanel } from './match-panel'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -359,9 +360,11 @@ export default async function GooglePhotosPage({
                       ) : null}
                       {tab === 'confirmed' ? (
                         <form action={decideMatch.bind(null, row.id, 'unlink', back, undefined)}>
-                          <button className="a-btn ghost small" type="submit">
-                            {t('gp.unlink')}
-                          </button>
+                          <ConfirmSubmit
+                            className="a-btn ghost small"
+                            label={t('gp.unlink')}
+                            title={t('confirm.remove_title')}
+                          />
                         </form>
                       ) : null}
                       {enabled ? (

@@ -10,6 +10,8 @@
  *  4. the coupon use is counted and the invoice number issued (phase 4).
  *  5. the server analytics events (purchase, payment, VIP, booking request —
  *     phase 5), with ids derived from the rows so a replay writes nothing.
+ *  6. the customer's confirmation email and voucher are queued in the same
+ *     transaction, deduplicated with the reconcile sweep (paid-paperwork.ts).
  */
 
 import type { db } from '@/db'
@@ -19,6 +21,8 @@ import { applyPaidFinance } from '@/lib/finance/paid'
 import { expandPaidPackages } from '@/lib/packages/expand'
 import { applyPaidBookings } from '@/lib/suppliers/after-payment'
 
+import { queuePaidPaperwork } from './paid-paperwork'
+
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 export async function applyPaidOrder(tx: Tx, orderId: string, now = new Date()): Promise<void> {
@@ -27,4 +31,5 @@ export async function applyPaidOrder(tx: Tx, orderId: string, now = new Date()):
   await applyPaidBookings(tx, orderId, now)
   await applyPaidFinance(tx, orderId, now)
   await emitPaidOrderEvents(tx, orderId, now)
+  await queuePaidPaperwork(tx, orderId)
 }

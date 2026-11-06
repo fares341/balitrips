@@ -8,6 +8,7 @@ import {
   reorderTierIncluded,
   saveTierIncluded,
 } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface IncludedTier {
   id: string
@@ -75,13 +76,12 @@ export async function IncludedEditor({
                           <button className="a-btn ghost small" type="submit">
                             {t('ae.inc_save')}
                           </button>
-                          <button
+                          <ConfirmSubmit
                             className="a-btn danger small"
-                            type="submit"
                             formAction={removeTierIncluded.bind(null, activityId, tier.id, row.id)}
-                          >
-                            {t('ae.inc_remove')}
-                          </button>
+                            label={t('ae.inc_remove')}
+                            title={t('confirm.remove_title')}
+                          />
                         </span>
                       </form>
                     ),

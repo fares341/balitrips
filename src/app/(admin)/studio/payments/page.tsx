@@ -15,6 +15,7 @@ import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
 import { paymentMethodName, paymentProviderName, paymentStatusLabel } from '../orders/labels'
 import { refundDuplicatePayment } from './actions'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 import { PAYMENT_METHOD_FILTERS, PAYMENT_STATUSES, paymentFilters } from './filters'
 
 export const dynamic = 'force-dynamic'
@@ -216,9 +217,23 @@ export default async function PaymentsPage({
                       {mayRefund ? (
                         <form className="a-inline-form" action={refundDuplicatePayment}>
                           <input type="hidden" name="paymentId" value={row.id} />
-                          <button className="a-btn danger small" type="submit">
-                            {t('payments.refund_duplicate')}
-                          </button>
+                          <ConfirmSubmit
+                            className="a-btn danger small"
+                            label={t('payments.refund_duplicate')}
+                            title={t('confirm.refund_title')}
+                            message={t('confirm.refund_message')}
+                            details={[
+                              {
+                                label: t('confirm.refund_amount'),
+                                value: formatMoney(row.amountMinor, row.currency, intl),
+                              },
+                              { label: t('confirm.refund_order'), value: row.orderNumber },
+                            ]}
+                            typed={{
+                              expected: row.orderNumber,
+                              label: t('confirm.refund_type_order', { value: row.orderNumber }),
+                            }}
+                          />
                         </form>
                       ) : null}
                     </>

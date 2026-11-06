@@ -3039,3 +3039,51 @@ details > summary.a-btn::-webkit-details-marker {
     inline-size: 38%;
   }
 }
+
+/* Shared confirmation dialog (<ConfirmSubmit>). */
+.a-confirm {
+  max-inline-size: min(32rem, calc(100vw - 32px));
+  padding: 20px;
+  border: 1px solid var(--a-line, #ddd);
+  border-radius: 12px;
+  background: var(--a-surface, #fff);
+  color: inherit;
+}
+.a-confirm::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+.a-confirm h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+.a-confirm-details {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.a-confirm-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.a-confirm-details dt {
+  opacity: 0.7;
+}
+.a-confirm-details dd {
+  margin: 0;
+  font-weight: 600;
+}
+.a-confirm-typed {
+  display: grid;
+  gap: 4px;
+  margin-block: 12px;
+}
+.a-confirm-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.a-confirm .a-actions {
+  justify-content: flex-end;
+}

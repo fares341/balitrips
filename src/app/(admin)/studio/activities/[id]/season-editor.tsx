@@ -10,6 +10,7 @@ import { getAdminI18n } from '../../../_lib/i18n'
 import { Field, PriceLockNote, TextInput } from '../../../_ui/field'
 import { Empty } from '../../../_ui/table'
 import { addSeasonalPrice, removeSeasonalPrice, saveChildAges } from '../availability-actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 type ActivityRow = typeof activities.$inferSelect
 
@@ -154,9 +155,11 @@ export async function SeasonEditor({
                             </span>
                           ) : null}
                           {locked ? null : (
-                            <button className="a-btn danger small" type="submit">
-                              {t('common.remove')}
-                            </button>
+                            <ConfirmSubmit
+                              className="a-btn danger small"
+                              label={t('common.remove')}
+                              title={t('confirm.remove_title')}
+                            />
                           )}
                         </form>
                       </li>
