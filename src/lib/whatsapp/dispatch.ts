@@ -476,3 +476,33 @@ async function triggerItemTimed(
     console.error('[whatsapp] timed trigger failed', { key, orderId, error })
   }
 }
+
+/* ---------------- Lead capture (not tied to an order) ---------------- */
+
+/**
+ * The «first booking» code and the abandoned-cart reminder. Same rules as
+ * every automation: master switch + this automation on, consent, a number
+ * with a country code, and one message per `dedupeKey`. Never throws.
+ */
+export async function triggerContactAutomation(
+  key: 'lead_offer_code' | 'cart_reminder',
+  dedupeKey: string,
+  recipient: {
+    userId: string | null
+    phone: string | null
+    consent: boolean
+    locale: Locale
+    name: string
+  },
+  vars: Record<string, string>,
+): Promise<boolean> {
+  try {
+    const settings = await readWhatsappSettings()
+    if (!isAutomationOn(settings, key)) return false
+    await queueMessage(settings, key, dedupeKey, recipient, vars, null)
+    return recipient.consent
+  } catch (error) {
+    console.error('[whatsapp] contact trigger failed', { key, error })
+    return false
+  }
+}

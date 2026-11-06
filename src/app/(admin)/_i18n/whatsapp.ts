@@ -98,6 +98,12 @@ const section: Section = {
     'wa.w_trip_thanks': 'The evening of the activity day (20:00 Bali time).',
     'wa.a_review_request': 'Review request',
     'wa.w_review_request': 'The day after the activity (11:00 Bali time).',
+    'wa.a_lead_offer_code': 'First-booking discount code',
+    'wa.w_lead_offer_code':
+      'When a visitor asks for the first-booking offer and ticks WhatsApp consent (Leads → settings).',
+    'wa.a_cart_reminder': 'Abandoned cart reminder',
+    'wa.w_cart_reminder':
+      'Once per cart, after the delay set in Leads → settings, only to people who agreed to offers.',
   },
   ar: {
     'nav.whatsapp': 'واتساب',
@@ -190,6 +196,12 @@ const section: Section = {
     'wa.w_trip_thanks': 'مساء يوم الفعالية (20:00 بتوقيت بالي).',
     'wa.a_review_request': 'طلب التقييم',
     'wa.w_review_request': 'في اليوم التالي للفعالية (11:00 بتوقيت بالي).',
+    'wa.a_lead_offer_code': 'كود خصم أول حجز',
+    'wa.w_lead_offer_code':
+      'عندما يطلب الزائر عرض أول حجز ويوافق على رسائل واتساب (العملاء المحتملون ← الإعدادات).',
+    'wa.a_cart_reminder': 'تذكير السلة المتروكة',
+    'wa.w_cart_reminder':
+      'مرة واحدة لكل سلة بعد المدة المحددة في «العملاء المحتملون»، ولمن وافق على العروض فقط.',
   },
 }
 

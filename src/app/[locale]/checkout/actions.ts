@@ -301,6 +301,20 @@ export async function startCheckoutAction(
   // WhatsApp «order received» (proposal §03), right after the order exists.
   await triggerOrderAutomation('order_received', result.orderId)
 
+  // Lead capture: the buyer as a lead; the offers tick is their consent.
+  const { recordCheckoutLead } = await import('@/lib/leads/capture')
+  const { getTranslations } = await import('next-intl/server')
+  const tr = await getTranslations({ locale })
+  await recordCheckoutLead({
+    name,
+    email,
+    phone,
+    locale,
+    userId: user?.id ?? null,
+    marketingConsent,
+    consentText: tr('co_marketing'),
+  })
+
   followProvider(result.payment.nextAction, locale, result.orderNumber)
 }
 

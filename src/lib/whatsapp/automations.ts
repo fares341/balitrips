@@ -29,6 +29,8 @@ export const AUTOMATION_KEYS = [
   'trip_reminder',
   'trip_thanks',
   'review_request',
+  'lead_offer_code',
+  'cart_reminder',
 ] as const
 
 export type AutomationKey = (typeof AUTOMATION_KEYS)[number]
@@ -141,6 +143,22 @@ export const AUTOMATIONS: Record<AutomationKey, AutomationSpec> = {
       ar: 'رأيك يهمنا!\n\nيسعدنا تقييمك لتجربتك الأخيرة معنا ({activity}).\nقيّم الرحلة: {link}',
       en: 'Your opinion matters!\n\nWe would love to hear how your recent experience with us went ({activity}).\nRate your trip: {link}',
       id: 'Pendapat Anda penting!\n\nKami ingin tahu kesan Anda tentang pengalaman terakhir bersama kami ({activity}).\nBeri ulasan: {link}',
+    },
+  },
+  lead_offer_code: {
+    vars: ['name', 'code', 'percent', 'link'],
+    defaults: {
+      ar: 'مرحبًا {name}،\nهذا كود خصمك {percent}% على أول حجز مع Bali Trips: {code}\n\nاستخدمه عند إتمام الحجز: {link}\n\nلإيقاف رسائلنا التسويقية ردّ بكلمة «إيقاف».',
+      en: 'Hello {name},\nHere is your {percent}% off code for your first Bali Trips booking: {code}\n\nUse it at checkout: {link}\n\nReply STOP to stop our offers.',
+      id: 'Halo {name},\nIni kode diskon {percent}% untuk pemesanan pertama Anda di Bali Trips: {code}\n\nGunakan saat checkout: {link}\n\nBalas STOP untuk berhenti menerima penawaran.',
+    },
+  },
+  cart_reminder: {
+    vars: ['name', 'link'],
+    defaults: {
+      ar: 'مرحبًا {name}،\nتركت بعض التجارب في سلتك على Bali Trips. سلتك محفوظة ويمكنك إكمال الحجز متى شئت:\n{link}\n\nلإيقاف رسائلنا التسويقية ردّ بكلمة «إيقاف».',
+      en: 'Hello {name},\nYou left a few experiences in your Bali Trips cart. It is saved — finish your booking whenever you like:\n{link}\n\nReply STOP to stop our offers.',
+      id: 'Halo {name},\nAda beberapa pengalaman yang tertinggal di keranjang Bali Trips Anda. Keranjang tersimpan — selesaikan pemesanan kapan saja:\n{link}\n\nBalas STOP untuk berhenti menerima penawaran.',
     },
   },
 }

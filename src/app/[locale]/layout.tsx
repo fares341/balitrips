@@ -7,6 +7,7 @@ import { hasLocale } from 'next-intl'
 import { Footer, Header, Tabbar } from '@/components/layout'
 import { PageViewBeacon } from '@/components/layout/page-view-beacon'
 import { ConsentBanner } from '@/components/analytics/consent-banner'
+import { LeadOffer } from '@/components/leads/lead-offer'
 import { Tracking } from '@/components/analytics/tracking'
 import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
@@ -128,6 +129,8 @@ export default async function LocaleLayout({
                 with consent) the marketing tags. Both render nothing on the
                 server, so pages stay static. */}
                 <ConsentBanner />
+                {/* «خصم أول حجز»: opt-in offer, off until enabled in Studio. */}
+                <LeadOffer />
                 <Tracking />
                 <ErrorBeacon />
                 {/* Mobile bottom tab bar. Must stay a direct child of <body>

@@ -675,7 +675,16 @@ async function main(): Promise<void> {
   )
   await register(boss, QUEUES.waSweep, waSweepJobSchema, () => runWhatsappSweep())
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))
-  await register(boss, QUEUES.crmSweep, crmSweepJobSchema, (job) => handleCrmSweep(job))
+  await register(boss, QUEUES.crmSweep, crmSweepJobSchema, async (job) => {
+    const result = await handleCrmSweep(job)
+    // Lead capture: the one abandoned-cart reminder per cart (off by default).
+    const { runAbandonedCartSweep } = await import('@/lib/leads/abandoned')
+    const cartReminders = await runAbandonedCartSweep().catch((error: unknown) => {
+      console.error('[leads] cart sweep failed', error)
+      return 0
+    })
+    return { ...result, cartReminders }
+  })
   await register(boss, QUEUES.analytics, analyticsJobSchema, (job) => handleAnalyticsJob(job))
   await register(boss, QUEUES.integrationSync, integrationSyncJobSchema, (job) =>
     handleIntegrationSync(job),

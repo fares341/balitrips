@@ -332,43 +332,56 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
               </Field>
             </div>
 
-            <Field
-              id={id('phone')}
-              label={t('co_phone_l')}
-              hint={t('co_phone_hint')}
-              error={err('phone')}
+            {/* Lead capture: the WhatsApp number is where the schedule and the
+                confirmation go — made prominent, validation unchanged. */}
+            <div
+              className="ck-wa-box"
+              style={{
+                border: '1.5px solid var(--orange, #ff9000)',
+                background: 'var(--orange-soft, #ffebd1)',
+                borderRadius: 14,
+                padding: '12px 14px 4px',
+                marginBlock: 6,
+              }}
             >
-              <div className="ck-phone">
-                <Select
-                  name="dialCode"
-                  aria-label={t('co_dial')}
-                  dir="ltr"
-                  defaultValue={props.defaults.dialCode}
-                  onChange={() => clearError('phone')}
-                >
-                  {DIAL_CODES.map((code) => (
-                    <option key={code} value={code}>
-                      {code}
-                    </option>
-                  ))}
-                </Select>
-                <Input
-                  id={id('phone')}
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  dir="ltr"
-                  autoComplete="tel-national"
-                  defaultValue={props.defaults.phone}
-                  invalid={errors.phone !== undefined}
-                  aria-describedby={fieldDescribedBy(id('phone'), {
-                    hint: t('co_phone_hint'),
-                    error: err('phone'),
-                  })}
-                  onInput={() => clearError('phone')}
-                />
-              </div>
-            </Field>
+              <Field
+                id={id('phone')}
+                label={t('co_phone_l')}
+                hint={t('co_phone_hint')}
+                error={err('phone')}
+              >
+                <div className="ck-phone">
+                  <Select
+                    name="dialCode"
+                    aria-label={t('co_dial')}
+                    dir="ltr"
+                    defaultValue={props.defaults.dialCode}
+                    onChange={() => clearError('phone')}
+                  >
+                    {DIAL_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    id={id('phone')}
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    dir="ltr"
+                    autoComplete="tel-national"
+                    defaultValue={props.defaults.phone}
+                    invalid={errors.phone !== undefined}
+                    aria-describedby={fieldDescribedBy(id('phone'), {
+                      hint: t('co_phone_hint'),
+                      error: err('phone'),
+                    })}
+                    onInput={() => clearError('phone')}
+                  />
+                </div>
+              </Field>
+            </div>
 
             <Field id={id('notes')} label={t('co_notes_l')} error={err('notes')}>
               <Textarea
