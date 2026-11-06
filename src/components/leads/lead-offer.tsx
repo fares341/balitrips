@@ -89,8 +89,9 @@ export function LeadOffer() {
     }
   }, [excluded, config, locale])
 
-  const show = useCallback(() => {
-    if (shown.current) return
+  /** True when shown (or already shown); false = blocked for now, try later. */
+  const show = useCallback((): boolean => {
+    if (shown.current) return true
     // Cookie banner or another dialog first: try again a little later.
     if (
       document.querySelector('.bt-consent') ||
@@ -99,18 +100,14 @@ export function LeadOffer() {
         (el) => el.offsetParent !== null,
       )
     ) {
-      window.setTimeout(() => showRef.current(), 5000)
-      return
+      return false
     }
-    if (!mayShowOffer(readMemory(), Date.now())) return
+    if (!mayShowOffer(readMemory(), Date.now())) return true
     shown.current = true
     writeMemory({ shownAt: Date.now() })
     setOpen(true)
+    return true
   }, [])
-  const showRef = useRef(show)
-  useEffect(() => {
-    showRef.current = show
-  }, [show])
 
   // Triggers.
   useEffect(() => {
@@ -124,7 +121,11 @@ export function LeadOffer() {
       window.addEventListener('scroll', onScroll, { passive: true })
       return () => window.removeEventListener('scroll', onScroll)
     }
-    const timer = window.setTimeout(show, config.delaySeconds * 1000)
+    let timer = 0
+    const tick = () => {
+      if (!show()) timer = window.setTimeout(tick, 5000)
+    }
+    timer = window.setTimeout(tick, config.delaySeconds * 1000)
     const onLeave = (event: MouseEvent) => {
       if (event.clientY <= 0 && event.relatedTarget === null) show()
     }
