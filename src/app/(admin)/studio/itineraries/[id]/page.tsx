@@ -58,6 +58,7 @@ import { DayTeasersCard, PdfCard, PdfStatusPill, PreviewCard, type PdfDocRow } f
 import { pdfStatus, publishBlock, type PdfStatus } from '@/lib/itineraries/publish-gate'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import type { DayStopDraft, PlaceChoice } from './day-places-editor'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -572,17 +573,16 @@ export default async function ItineraryEditorPage({
                         <button className="a-btn ghost small" type="submit">
                           {t('p3.link_save')}
                         </button>
-                        <button
+                        <ConfirmSubmit
                           className="a-btn danger small"
-                          type="submit"
                           formAction={removeItineraryPackageLink.bind(
                             null,
                             itinerary.id,
                             link.packageId,
                           )}
-                        >
-                          {t('common.remove')}
-                        </button>
+                          label={t('common.remove')}
+                          title={t('confirm.remove_title')}
+                        />
                       </span>
                     </form>
                   ),
@@ -701,9 +701,11 @@ export default async function ItineraryEditorPage({
             <h2>{t('itineraries.section_archive')}</h2>
             <p className="a-hint">{t('itineraries.archive_hint')}</p>
             <div className="a-actions" style={{ marginBlockStart: 12 }}>
-              <button className="a-btn danger" type="submit">
-                {t('itineraries.archive')}
-              </button>
+              <ConfirmSubmit
+                className="a-btn danger"
+                label={t('itineraries.archive')}
+                title={t('confirm.archive_title')}
+              />
             </div>
           </form>
         </>

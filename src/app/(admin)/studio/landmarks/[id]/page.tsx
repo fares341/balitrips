@@ -16,6 +16,7 @@ import { Flash } from '../../../_ui/flash'
 import { OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { deleteLandmark, saveLandmark } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -145,9 +146,11 @@ export default async function LandmarkEditorPage({
         <form className="a-card" action={deleteLandmark.bind(null, landmark.id)}>
           <h2>{t('landmarks.archive')}</h2>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('landmarks.archive_btn')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('landmarks.archive_btn')}
+              title={t('confirm.delete_title')}
+            />
           </div>
         </form>
       ) : null}

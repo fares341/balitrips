@@ -16,10 +16,25 @@ import { triggerOrderAutomation } from '@/lib/whatsapp/dispatch'
 import { notifyStaff, notifyUser } from './index'
 import { accessLabel } from './plans'
 
+/** Post-commit follow-ups never throw: log and carry on. */
+async function safely(what: string, orderId: string, run: () => Promise<unknown>): Promise<void> {
+  try {
+    await run()
+  } catch (error) {
+    console.error(`[notify] ${what} failed`, { orderId, error })
+  }
+}
+
 export async function notifyOrderPaid(orderId: string): Promise<void> {
   // WhatsApp automations (proposal §04/§05): payment success, ready itinerary bought.
-  await triggerOrderAutomation('payment_success', orderId)
-  await triggerOrderAutomation('itinerary_purchased', orderId)
+  // Each on its own: callers run after the payment committed, and a throw
+  // here used to fail the webhook — whose retry then skipped every notice.
+  await safely('payment_success automation', orderId, () =>
+    triggerOrderAutomation('payment_success', orderId),
+  )
+  await safely('itinerary_purchased automation', orderId, () =>
+    triggerOrderAutomation('itinerary_purchased', orderId),
+  )
   try {
     const [order] = await db
       .select({
@@ -101,31 +116,35 @@ export async function notifyOrderPaid(orderId: string): Promise<void> {
 }
 
 export async function notifyPaymentFailed(orderId: string): Promise<void> {
-  const [order] = await db
-    .select({ orderNumber: orders.orderNumber })
-    .from(orders)
-    .where(eq(orders.id, orderId))
-    .limit(1)
-  // WhatsApp «payment failed» (proposal §04): once per payment attempt.
-  const [attempt] = await db
-    .select({ id: payments.id })
-    .from(payments)
-    .where(eq(payments.orderId, orderId))
-    .orderBy(desc(payments.createdAt))
-    .limit(1)
-  await triggerOrderAutomation('payment_failed', orderId, { suffix: attempt?.id ?? '' })
-  if (order)
-    await notifyStaff(
-      'staff_payment_failed',
-      { orderNumber: order.orderNumber },
-      `/orders/${orderId}`,
-    )
+  await safely('payment failed notices', orderId, async () => {
+    const [order] = await db
+      .select({ orderNumber: orders.orderNumber })
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1)
+    // WhatsApp «payment failed» (proposal §04): once per payment attempt.
+    const [attempt] = await db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(eq(payments.orderId, orderId))
+      .orderBy(desc(payments.createdAt))
+      .limit(1)
+    await triggerOrderAutomation('payment_failed', orderId, { suffix: attempt?.id ?? '' })
+    if (order)
+      await notifyStaff(
+        'staff_payment_failed',
+        { orderNumber: order.orderNumber },
+        `/orders/${orderId}`,
+      )
+  })
 }
 
 /** Client, Oct 2026: a booking's card is held — tell staff to confirm and capture. */
 export async function notifyOrderAuthorized(orderId: string): Promise<void> {
   // The gateway confirmed the payment (card held): WhatsApp «payment success».
-  await triggerOrderAutomation('payment_success', orderId)
+  await safely('payment_success automation', orderId, () =>
+    triggerOrderAutomation('payment_success', orderId),
+  )
   try {
     const [order] = await db
       .select({

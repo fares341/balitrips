@@ -16,6 +16,7 @@ import { OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { deleteArticle, saveArticle } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -166,9 +167,11 @@ export default async function ArticleEditorPage({
           <h2>{t('articles.section_archive')}</h2>
           <p className="a-hint">{t('articles.archive_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('articles.archive')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('articles.archive')}
+              title={t('confirm.delete_title')}
+            />
           </div>
         </form>
       ) : null}

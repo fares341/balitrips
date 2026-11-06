@@ -104,7 +104,23 @@ export default async function OrderPage({
   const retryRaw = (await searchParams).retry
   const retryReason = typeof retryRaw === 'string' && RETRY_REASONS.has(retryRaw) ? retryRaw : null
 
-  const [order] = await db.select().from(orders).where(eq(orders.orderNumber, orderNumber)).limit(1)
+  // Explicit columns: the customer's page never loads staff-only data
+  // (cost, supplier, internal notes) even though it never renders them.
+  const [order] = await db
+    .select({
+      id: orders.id,
+      orderNumber: orders.orderNumber,
+      status: orders.status,
+      userId: orders.userId,
+      guestTokenHash: orders.guestTokenHash,
+      customerSnapshot: orders.customerSnapshot,
+      presentmentCurrency: orders.presentmentCurrency,
+      totalMinor: orders.totalMinor,
+      placedAt: orders.placedAt,
+    })
+    .from(orders)
+    .where(eq(orders.orderNumber, orderNumber))
+    .limit(1)
   const user = await getSessionUser()
   const viewer = { userId: user?.id ?? null, guestTokenHash: await readGuestTokenHash() }
   // Unknown, or someone else's: both are a 404, never a hint that it exists.
@@ -112,7 +128,22 @@ export default async function OrderPage({
 
   const [lines, attempts] = await Promise.all([
     db
-      .select()
+      .select({
+        id: orderItems.id,
+        kind: orderItems.kind,
+        refId: orderItems.refId,
+        quantity: orderItems.quantity,
+        travelDate: orderItems.travelDate,
+        travelTime: orderItems.travelTime,
+        guests: orderItems.guests,
+        endDate: orderItems.endDate,
+        parentItemId: orderItems.parentItemId,
+        nameSnapshot: orderItems.nameSnapshot,
+        options: orderItems.options,
+        vehicleClass: orderItems.vehicleClass,
+        lineTotalMinor: orderItems.lineTotalMinor,
+        bookingStatus: orderItems.bookingStatus,
+      })
       .from(orderItems)
       .where(eq(orderItems.orderId, order.id))
       .orderBy(asc(orderItems.createdAt), asc(orderItems.id)),

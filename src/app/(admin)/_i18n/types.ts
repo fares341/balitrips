@@ -20,6 +20,11 @@ export type Messages = Record<string, string>
 export interface Section {
   en: Messages
   ar: Messages
+  /**
+   * Indonesian, for sections that already have it. The Studio UI renders ar
+   * and en only today; these strings are kept ready for when `id` is added.
+   */
+  id?: Messages
 }
 
 export function isAdminLocale(value: unknown): value is AdminLocale {

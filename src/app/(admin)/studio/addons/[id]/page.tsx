@@ -24,6 +24,7 @@ import { Flash } from '../../../_ui/flash'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
 import { deleteLibraryAddon, saveLibraryAddon } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -188,9 +189,11 @@ export default async function LibraryAddonPage({
           <h2>{t('addons.delete')}</h2>
           <p className="a-hint">{t('addons.delete_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('addons.delete')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('addons.delete')}
+              title={t('confirm.delete_title')}
+            />
           </div>
         </form>
       ) : null}

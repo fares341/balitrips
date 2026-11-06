@@ -4,11 +4,12 @@ import { and, asc, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { payments, refunds } from '@/db/schema'
+import { orders, payments, refunds } from '@/db/schema'
 import { getPaymentProvider } from '@/lib/payments'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
+import { assertTypedValue } from '../../_lib/confirm'
 import { fuuid } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome, type ActionOutcome } from '../../_lib/result'
@@ -37,6 +38,16 @@ export async function refundDuplicatePayment(form: FormData): Promise<void> {
         .limit(1)
       if (!payment) throw new Error(t('payments.err_gone'))
       if (payment.status !== 'succeeded') throw new Error(t('payments.err_not_succeeded'))
+
+      // The operator typed the order number in the confirmation dialog;
+      // checked here so a bare POST can never move money.
+      const [order] = await tx
+        .select({ orderNumber: orders.orderNumber })
+        .from(orders)
+        .where(eq(orders.id, payment.orderId))
+        .limit(1)
+      if (!order) throw new Error(t('payments.err_gone'))
+      assertTypedValue(form, order.orderNumber, t('confirm.err_refund_order'))
 
       const settled = await tx
         .select({ id: payments.id })

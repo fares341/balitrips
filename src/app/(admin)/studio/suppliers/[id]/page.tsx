@@ -35,6 +35,7 @@ import { PageHead } from '../../../_ui/shell'
 import { Empty, Pill, Table } from '../../../_ui/table'
 import { bookingStatusLabel } from '../../orders/labels'
 import { deleteSupplier, removeOffer, saveOffer, saveSupplier } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -381,9 +382,11 @@ export default async function SupplierPage({
           <h2>{t('sup.delete')}</h2>
           <p className="a-hint">{t('sup.delete_hint')}</p>
           <div className="a-actions" style={{ marginBlockStart: 12 }}>
-            <button className="a-btn danger" type="submit">
-              {t('sup.delete')}
-            </button>
+            <ConfirmSubmit
+              className="a-btn danger"
+              label={t('sup.delete')}
+              title={t('confirm.delete_title')}
+            />
           </div>
         </form>
       ) : null}
@@ -459,13 +462,12 @@ function OfferForm({
             {offer ? t('sup.offer_save') : t('sup.offer_add')}
           </button>
           {offer ? (
-            <button
+            <ConfirmSubmit
               className="a-btn danger small"
-              type="submit"
               formAction={removeOffer.bind(null, supplierId, offer.id)}
-            >
-              {t('common.remove')}
-            </button>
+              label={t('common.remove')}
+              title={t('confirm.remove_title')}
+            />
           ) : null}
         </div>
       </div>

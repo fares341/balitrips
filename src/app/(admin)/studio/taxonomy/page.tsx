@@ -24,6 +24,7 @@ import {
   saveTag,
   deleteTag,
 } from './actions'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -416,13 +417,12 @@ function TaxonomySection({
               <button className="a-btn ghost small" type="submit">
                 {t('common.save')}
               </button>
-              <button
+              <ConfirmSubmit
                 className="a-btn danger small"
-                type="submit"
                 formAction={remove.bind(null, row.id)}
-              >
-                {t('common.delete')}
-              </button>
+                label={t('common.delete')}
+                title={t('confirm.remove_title')}
+              />
             </div>
           </form>
         ))}

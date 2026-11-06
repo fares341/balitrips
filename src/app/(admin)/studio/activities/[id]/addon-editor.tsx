@@ -18,6 +18,7 @@ import { AddonPricingOptions, AddonRuleFields } from '../../../_ui/addon-extras'
 import { OptionChecklist } from '../../../_ui/select-field'
 import { Pill } from '../../../_ui/table'
 import { addActivityAddon, removeActivityAddon, saveActivityAddon } from '../actions'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface AddonRow {
   id: string
@@ -129,13 +130,12 @@ export async function AddonEditor({
                 <button className="a-btn ghost small" type="submit">
                   {t('activities.addon_save')}
                 </button>
-                <button
+                <ConfirmSubmit
                   className="a-btn danger small"
-                  type="submit"
                   formAction={removeActivityAddon.bind(null, activityId, addon.id)}
-                >
-                  {t('common.remove')}
-                </button>
+                  label={t('common.remove')}
+                  title={t('confirm.remove_title')}
+                />
               </div>
             </div>
 

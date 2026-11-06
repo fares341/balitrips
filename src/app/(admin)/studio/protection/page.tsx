@@ -14,6 +14,7 @@ import { PageHead } from '../../_ui/shell'
 import { Empty, Pill, Table, When } from '../../_ui/table'
 import { getAdminI18n } from '../../_lib/i18n'
 import { banIp, liftDeviceBan, liftIpBan, liftSuspension, saveSecuritySettings } from './actions'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -315,9 +316,12 @@ export default async function ProtectionPage({
               </select>
             </Field>
             <div className="a-actions">
-              <button className="a-btn danger" type="submit">
-                {t('protection.ban_ip')}
-              </button>
+              <ConfirmSubmit
+                className="a-btn danger"
+                label={t('protection.ban_ip')}
+                title={t('confirm.ban_title')}
+                typedWord="ban"
+              />
             </div>
           </form>
         ) : null}

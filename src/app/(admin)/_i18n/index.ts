@@ -9,6 +9,7 @@ import catalog from './catalog'
 import clientAnswers from './client-answers'
 import commerce from './commerce'
 import common from './common'
+import confirm from './confirm'
 import content from './content'
 import dashboard from './dashboard'
 import financeCrm from './finance-crm'
@@ -53,6 +54,7 @@ const SECTIONS = [
   googlePlaces,
   freePhotos,
   itinerariesP1,
+  confirm,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

@@ -50,6 +50,7 @@ import {
 } from '../actions'
 import { KeyNotice, StatusPill } from '../parts'
 import { WebhookSecretForm } from '../webhook-secret'
+import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
 
@@ -369,13 +370,12 @@ export default async function IntegrationPage({
                   <td>
                     <form action={removeCredential.bind(null, id)}>
                       <input type="hidden" name="field" value={field} />
-                      <button
+                      <ConfirmSubmit
                         className="a-btn danger small"
-                        type="submit"
                         disabled={keyStatus !== 'ok'}
-                      >
-                        {t('int.key_remove')}
-                      </button>
+                        label={t('int.key_remove')}
+                        title={t('confirm.remove_title')}
+                      />
                     </form>
                   </td>
                 </tr>
@@ -498,9 +498,11 @@ ${EVENT_ID_HEADER}: <unique event id>   (optional, recommended)`}
                   <td>
                     <form action={removeMapping.bind(null, id)}>
                       <input type="hidden" name="mappingId" value={mapping.id} />
-                      <button className="a-btn ghost small" type="submit">
-                        {t('int.unlink')}
-                      </button>
+                      <ConfirmSubmit
+                        className="a-btn ghost small"
+                        label={t('int.unlink')}
+                        title={t('confirm.remove_title')}
+                      />
                     </form>
                   </td>
                 </tr>
