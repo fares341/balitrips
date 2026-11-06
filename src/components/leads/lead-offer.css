@@ -89,13 +89,14 @@
   display: flex;
   gap: 8px;
 }
-.lo-dial {
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 108px;
+.lo-phone .lo-dial {
+  flex: 0 0 116px;
+  width: 116px;
+  min-width: 0;
 }
 .lo-phone .bt-input:last-child {
-  flex: 1;
+  flex: 1 1 auto;
+  width: auto;
   min-width: 0;
 }
 .lo-consent {

@@ -91,13 +91,26 @@ export function LeadOffer() {
 
   const show = useCallback(() => {
     if (shown.current) return
-    if (document.querySelector('.bt-consent')) return // cookie banner first
-    if (document.querySelector('[role="dialog"][aria-modal="true"]')) return // another dialog
+    // Cookie banner or another dialog first: try again a little later.
+    if (
+      document.querySelector('.bt-consent') ||
+      // (a closed drawer stays in the DOM, hidden: only a visible one counts)
+      [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')].some(
+        (el) => el.offsetParent !== null,
+      )
+    ) {
+      window.setTimeout(() => showRef.current(), 5000)
+      return
+    }
     if (!mayShowOffer(readMemory(), Date.now())) return
     shown.current = true
     writeMemory({ shownAt: Date.now() })
     setOpen(true)
   }, [])
+  const showRef = useRef(show)
+  useEffect(() => {
+    showRef.current = show
+  }, [show])
 
   // Triggers.
   useEffect(() => {
