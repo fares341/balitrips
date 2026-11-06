@@ -159,3 +159,73 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
+
+/* --- Compact bar (default, before "Settings" is opened) -----------------
+   About 120-140px on a phone: one short line of text, then
+   Settings · Necessary only · Accept all on one row. The full description
+   and the three groups appear only after "Settings". */
+.bt-consent-inner.is-compact {
+  padding: 10px 14px;
+  border-radius: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.bt-consent-inner.is-compact .bt-consent-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.bt-consent-inner.is-compact .bt-consent-actions {
+  margin-top: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.bt-consent-inner.is-compact .bt-consent-btn {
+  padding: 0 14px;
+  font-size: 14px;
+  flex: 1 1 auto;
+}
+
+.bt-consent-settings {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 6px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--forest, #26552e);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.bt-consent-settings:focus-visible {
+  outline: 3px solid var(--orange, #ff9000);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .bt-consent-inner.is-compact .bt-consent-actions {
+    display: flex;
+  }
+}
+
+@media (max-width: 360px) {
+  .bt-consent-inner.is-compact .bt-consent-btn {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}
+
+/* While the banner is up on a phone, the floating chat button steps aside:
+   both live in the bottom band, and the banner must stay fully readable. */
+@media (max-width: 1023px) {
+  body:has(.bt-consent) .wa-fab {
+    display: none;
+  }
+}

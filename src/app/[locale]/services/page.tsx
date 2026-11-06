@@ -9,6 +9,7 @@
  * `./start-quiz.tsx`; nothing is invented.
  */
 
+import { BrandImg } from '@/components/ui/brand-img'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
@@ -107,6 +108,8 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
     days: item.days,
     maxGuests: extra.maxGuests ?? null,
     price: formatPrice(item.priceMinor, item.currency, locale),
+    priceMinor: item.priceMinor,
+    currency: item.currency,
     image: item.hero?.url ?? null,
   })
 
@@ -129,8 +132,12 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
               <li key={service.key}>
                 <Link href={service.href} className="sv-card">
                   <div className="m">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
-                    <img src={service.image} alt="" loading={index < 3 ? 'eager' : 'lazy'} />
+                    <BrandImg
+                      src={service.image}
+                      alt=""
+                      sizes="(min-width: 1100px) 360px, (min-width: 720px) 50vw, 100vw"
+                      loading={index < 3 ? 'eager' : 'lazy'}
+                    />
                     {service.signature === true && (
                       <span className="tag sv-usp">{t('sv4_signature')}</span>
                     )}

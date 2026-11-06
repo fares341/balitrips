@@ -27,7 +27,7 @@ import { toLocale } from '../_seo-hreflang'
 import { accountMetadata } from './_lib/meta'
 import { listFavorites, listSchedules, listTripDays } from './_lib/queries'
 import { ProfileForm } from './profile-form'
-import { SignedOutPane } from './signed-out-pane'
+import { reasonFor, SignedOutPane } from './signed-out-pane'
 import { VerifyEmailNotice } from './verify-email-notice'
 import { VerifyPhoneNotice } from './verify-phone-notice'
 
@@ -90,6 +90,7 @@ export default async function AccountProfilePage({
           providers={enabledSocialProviders()}
           next={safeNext(query.next)}
           autoOpen={query.signin === '1'}
+          reason={query.signin === '1' ? undefined : reasonFor(safeNext(query.next))}
         />
       </>
     )

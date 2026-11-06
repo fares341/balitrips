@@ -6,7 +6,7 @@
  * the server; VIP is granted only once that order is paid.
  */
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
@@ -15,7 +15,7 @@ import { useRouter } from '@/i18n/routing'
 
 import { addVipAction } from '../../my-trip/actions'
 
-export function VipUpgradeButton({ planId, label }: { planId: string; label: string }) {
+export function VipUpgradeButton({ planId, label }: { planId: string; label: ReactNode }) {
   const t = useTranslations()
   const router = useRouter()
   const { toast } = useToast()

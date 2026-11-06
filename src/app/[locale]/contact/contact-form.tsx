@@ -56,18 +56,25 @@ import {
 const RESET_FIELD = 'bt_reset'
 
 /**
- * Off-screen but readable by assistive tech.
+ * Hidden in place but readable by assistive tech.
  *
- * Inline because src/styles is owned elsewhere and carries no `.sr-only`
- * utility; logical `insetInlineStart` so it hides off the correct edge in both
- * directions.
+ * Clipped to a 1px box at the field's own position rather than pushed 9999px
+ * off one edge: in Arabic `inset-inline-start: -9999px` became
+ * `right: -9999px`, a 10 000px-wide overflow beside the form at 1440px.
+ * Logical properties only, so it is the same in both directions.
  */
 const VISUALLY_HIDDEN: CSSProperties = {
   position: 'absolute',
-  insetInlineStart: -9999,
+  insetInlineStart: 0,
+  insetBlockStart: 0,
   width: 1,
   height: 1,
+  margin: -1,
+  padding: 0,
+  border: 0,
   overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  whiteSpace: 'nowrap',
 }
 
 type Values = Record<ContactField, string>

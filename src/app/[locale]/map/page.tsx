@@ -15,6 +15,7 @@
  * places table directly (Studio's place actions also revalidate this path).
  */
 
+import { after } from 'next/server'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { preconnect, preload } from 'react-dom'
@@ -126,7 +127,10 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   const access = await checkSecureAccess('map')
   const userId = access.ok ? access.user.id : null
   if (access.ok) {
-    await logActivity({ action: 'open_map', userId, ip: access.ip, deviceId: access.deviceId })
+    // Logged after the response is sent: an audit insert must not hold up
+    // (or, under database pressure, time out) the map itself.
+    const entry = { action: 'open_map' as const, userId, ip: access.ip, deviceId: access.deviceId }
+    after(() => logActivity(entry))
   }
 
   // Phase 3: one itinerary day, numbered in order (`?itinerary=<slug>&day=<n>`).
@@ -226,6 +230,8 @@ export default async function MapPage({ params, searchParams }: PageProps) {
       id: plan.id,
       name: pick(plan.name, lang, plan.slug),
       price: formatPrice(plan.priceMinor, plan.currency, lang),
+      priceMinor: plan.priceMinor,
+      currency: plan.currency,
       durationDays: plan.durationDays,
       href: getPathname({ href: `/plans/buy/${encodeURIComponent(plan.id)}`, locale: lang }),
     }))

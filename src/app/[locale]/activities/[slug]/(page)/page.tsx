@@ -21,6 +21,7 @@
  * with sample copy.
  */
 
+import { stripBrandSuffix } from '@/lib/seo/page-title'
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { setRequestLocale } from 'next-intl/server'
@@ -56,7 +57,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!activity) return {}
 
   const name = pick(activity.name, lang, activity.slug)
-  const title = pickOptional(activity.seoTitle, lang) ?? name
+  const title = stripBrandSuffix(pickOptional(activity.seoTitle, lang) ?? name)
   const description =
     pickOptional(activity.seoDescription, lang) ??
     pickOptional(activity.shortDescription, lang) ??
