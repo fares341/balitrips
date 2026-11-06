@@ -8,12 +8,16 @@ import { supplierType } from '@/lib/suppliers/assign'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table } from '../../_ui/table'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/suppliers')
 
 /** الموردون — the companies and people who run what the site sells. */
 export default async function SuppliersPage({
@@ -26,7 +30,7 @@ export default async function SuppliersPage({
   const params = await searchParams
   const mayWrite = can(session.role, 'suppliers.write')
 
-  const [rows, offerCounts] = await Promise.all([
+  const [rowsAll, offerCounts] = await Promise.all([
     db
       .select()
       .from(suppliers)
@@ -39,6 +43,14 @@ export default async function SuppliersPage({
       .groupBy(activitySupplierOffers.supplierId),
   ])
   const offers = new Map(offerCounts.map((row) => [row.supplierId, row.value]))
+  const list = searchAndPage(rowsAll, params, (row) => [
+    row.name,
+    row.email,
+    row.phone,
+    row.contactPerson,
+    row.type,
+  ])
+  const rows = list.rows
 
   return (
     <>
@@ -59,6 +71,7 @@ export default async function SuppliersPage({
         }
       />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
       {rows.length === 0 ? (
         <div className="a-card">
           <h2>{t('sup.empty_title')}</h2>
@@ -119,6 +132,13 @@ export default async function SuppliersPage({
           </tbody>
         </Table>
       )}
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

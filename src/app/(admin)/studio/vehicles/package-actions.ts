@@ -8,15 +8,15 @@ import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
 import { VEHICLE_CLASSES, type Vehicle, type VehicleKind } from '@/lib/packages/vehicles'
 
-import { adminHref } from '../../../_lib/admin-path'
-import { writeAudit } from '../../../_lib/audit'
-import { fbool, flocalized, fstr } from '../../../_lib/form'
-import { getAdminI18n } from '../../../_lib/i18n'
-import { errorMessage, isRedirectError, withOutcome } from '../../../_lib/result'
-import { requireCapability } from '../../../_lib/session'
-import { parseSetting, readSetting, SETTING_DEFAULTS } from '../../../_lib/settings'
+import { adminHref } from '../../_lib/admin-path'
+import { writeAudit } from '../../_lib/audit'
+import { fbool, flocalized, fstr } from '../../_lib/form'
+import { getAdminI18n } from '../../_lib/i18n'
+import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
+import { requireCapability } from '../../_lib/session'
+import { parseSetting, readSetting, SETTING_DEFAULTS } from '../../_lib/settings'
 
-const BACK = adminHref('/packages/vehicles')
+const BACK = adminHref('/vehicles')
 
 function num(form: FormData, name: string): number | null {
   const value = (fstr(form, name) ?? '').replace(/[,\s]/g, '')
@@ -110,5 +110,5 @@ export async function saveVehicles(form: FormData): Promise<void> {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(BACK, outcome))
+  redirect(`${withOutcome(BACK, outcome)}#packages`)
 }

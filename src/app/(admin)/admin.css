@@ -209,11 +209,62 @@
 }
 
 .a-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  inline-size: 100%;
+  min-block-size: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
   font-size: 12.5px;
   font-weight: 700;
-  color: rgba(217, 234, 219, 0.55);
+  color: rgba(217, 234, 219, 0.62);
   padding-inline: 12px;
-  padding-block-end: 4px;
+  cursor: pointer;
+  text-align: start;
+}
+
+.a-nav-group:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.a-nav-group:disabled {
+  cursor: default;
+}
+
+.a-nav-group > span:first-child {
+  flex: 1;
+}
+
+.a-nav-count {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.a-nav-caret {
+  transition: transform var(--dur-fast) ease;
+}
+
+.a-nav-section[data-open='false'] .a-nav-caret {
+  transform: rotate(-90deg);
+}
+
+[dir='rtl'] .a-nav-section[data-open='false'] .a-nav-caret {
+  transform: rotate(90deg);
+}
+
+.a-nav-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.a-nav-items[hidden] {
+  display: none;
 }
 
 .a-nav a {
@@ -3086,4 +3137,314 @@ details > summary.a-btn::-webkit-details-marker {
 }
 .a-confirm .a-actions {
   justify-content: flex-end;
+}
+
+/* ---- Command palette (Ctrl/⌘+K) ---------------------------------------- */
+
+.a-palette-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-block-size: 40px;
+  padding-inline: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: #d9eadb;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.a-palette-btn span {
+  flex: 1;
+  text-align: start;
+}
+
+.a-palette-btn kbd {
+  font: inherit;
+  font-size: 11px;
+  opacity: 0.7;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+.a-palette {
+  inline-size: min(620px, calc(100vw - 32px));
+  margin-block-start: 10vh;
+  padding: 0;
+  border: 1px solid var(--a-line);
+  border-radius: 14px;
+  background: var(--a-surface);
+  color: var(--a-ink);
+  box-shadow: 0 24px 60px rgba(20, 40, 25, 0.25);
+}
+
+.a-palette::backdrop {
+  background: rgba(20, 30, 22, 0.45);
+}
+
+.a-palette-box {
+  display: flex;
+  flex-direction: column;
+  max-block-size: 70vh;
+}
+
+.a-palette-input {
+  border: 0;
+  border-block-end: 1px solid var(--a-line);
+  border-radius: 0;
+  min-block-size: 54px;
+  font-size: 16px;
+  padding-inline: 16px;
+}
+
+.a-palette .a-palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.a-palette-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.a-palette-list li small {
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+.a-palette-list li[aria-selected='true'] {
+  background: var(--a-sunken);
+  box-shadow: inset 3px 0 0 var(--a-accent);
+}
+
+.a-palette-list li.a-palette-empty {
+  color: var(--a-muted);
+  cursor: default;
+}
+
+.a-palette-hint {
+  margin: 0;
+  padding: 8px 16px;
+  border-block-start: 1px solid var(--a-line);
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+/* ---- Section tabs ------------------------------------------------------ */
+
+.a-subtabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-block-end: 1px solid var(--a-line);
+  margin-block-end: 18px;
+  padding-block-end: 0;
+}
+
+.a-subtabs a {
+  flex: none;
+  padding: 10px 14px;
+  border-block-end: 3px solid transparent;
+  color: var(--a-ink-2);
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.a-subtabs a:hover {
+  color: var(--a-ink);
+  text-decoration: none;
+}
+
+.a-subtabs a[aria-current='page'] {
+  border-block-end-color: var(--a-accent);
+  color: var(--a-ink);
+}
+
+/* ---- «السيارات والسائق» -------------------------------------------------- */
+
+.a-vd-h {
+  font-size: 19px;
+  margin-block: 28px 4px;
+  scroll-margin-block-start: 16px;
+}
+
+.a-vd-banner b {
+  font-weight: 700;
+}
+
+.a-vd-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 4px 8px;
+}
+
+.a-vd-jump a {
+  padding: 6px 12px;
+  border: 1px solid var(--a-line);
+  border-radius: 999px;
+  background: var(--a-surface);
+  font-size: 14px;
+  color: var(--a-ink-2);
+}
+
+/* ---- Orders: pinned search, filter sheet, scrolling chips ----------------- */
+
+.a-visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.a-ofilters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a-osearch {
+  display: flex;
+  gap: 8px;
+}
+
+.a-osearch .a-input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.a-fsheet-btn {
+  display: none;
+}
+
+/* Chips: never squeezed, never clipped (room for the focus ring), and the row
+   scrolls edge to edge on a phone. */
+.a-quickfilter {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 4px 2px 8px;
+  scroll-padding-inline: 16px;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.a-quickfilter .a-qf {
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .a-quickfilter {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .a-ofilters {
+    position: sticky;
+    inset-block-start: 60px;
+    z-index: 5;
+    padding: 10px;
+    box-shadow: 0 6px 16px rgba(20, 40, 25, 0.08);
+  }
+
+  .a-fsheet-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    inline-size: 100%;
+    justify-content: center;
+  }
+
+  .a-fsheet-body {
+    display: none;
+  }
+
+  .a-fsheet[data-open='true'] .a-fsheet-body {
+    display: block;
+    margin-block-start: 10px;
+    max-block-size: 60vh;
+    overflow-y: auto;
+  }
+
+  .a-fsheet-body .a-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .a-ocard {
+    min-inline-size: 0;
+  }
+}
+
+.a-listsearch {
+  margin-block-end: 14px;
+}
+
+/* Arabic Studio: a localized format hint under every date field. */
+.a-field:has(> input[type='date'])::after,
+.a-field:has(> .a-input[type='date'])::after {
+  content: var(--a-date-hint, none);
+  display: block;
+  margin-block-start: 4px;
+  color: var(--a-muted);
+  font-size: 12.5px;
+}
+
+/* ---- Dashboard: funnel ---------------------------------------------------- */
+
+.a-funnel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.a-funnel ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.a-funnel li {
+  display: grid;
+  grid-template-columns: minmax(80px, 140px) 1fr auto 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.a-funnel-bar {
+  block-size: 12px;
+  border-radius: 999px;
+  background: var(--a-sunken);
+  overflow: hidden;
+}
+
+.a-funnel-bar span {
+  display: block;
+  block-size: 100%;
+  background: var(--a-primary-deep);
+  border-radius: 999px;
+}
+
+.a-funnel small {
+  color: var(--a-muted);
+  text-align: end;
+}
+
+/* Phone order cards use the full width (a generic list indent was leaking in). */
+ul.a-ocards {
+  padding-inline: 0;
 }

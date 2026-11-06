@@ -103,6 +103,8 @@ export const CAPABILITIES = [
   'reports.read',
   /** Phase 6: system health — errors, background jobs, backups. Admin only. */
   'system.read',
+  /** Studio, Nov 2026: broadcast a notification to customers (Studio → إرسال إشعار). Admin and marketing. */
+  'marketing.send',
 ] as const
 
 export type Capability = (typeof CAPABILITIES)[number]
@@ -199,6 +201,7 @@ const ROLE_CAPABILITIES: Record<Role, readonly Capability[]> = {
     'customers.read',
     'discounts.write',
     'reports.read',
+    'marketing.send',
   ],
 
   // The money picture: payments, profit, payment checks, what we owe

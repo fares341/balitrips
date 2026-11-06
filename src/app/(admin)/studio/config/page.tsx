@@ -605,7 +605,11 @@ export default async function ConfigPage({
                           id={fieldId}
                           name={fieldName}
                           rows={16}
-                          defaultValue={policy.body[locale] ?? ''}
+                          // The shipped placeholder is English-only text about
+                          // a pending review; the editor starts empty instead,
+                          // with a prompt in the Studio language.
+                          defaultValue={missing.includes(key) ? '' : (policy.body[locale] ?? '')}
+                          placeholder={t('err.policy_placeholder')}
                           lang={locale}
                           dir={localeConfig[locale].dir}
                           required={locale === 'en'}

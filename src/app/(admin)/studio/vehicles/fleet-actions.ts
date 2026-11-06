@@ -15,7 +15,7 @@ import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 
-const LIST = adminHref('/capacity')
+const LIST = adminHref('/vehicles')
 
 type Outcome = { ok: string } | { err: string }
 
@@ -46,6 +46,12 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       currency: BASE_CURRENCY,
       fleetSize: fint(form, 'fleetSize', 0, t('capacity.fleet_size')),
       sortOrder: fint(form, 'sortOrder', 0, t('common.order')),
+      // Was on Itineraries → Driver; now edited with the rest of the class.
+      noticeDaysOverride:
+        (form.get('noticeDaysOverride') ?? '').toString().trim() === ''
+          ? null
+          : fint(form, 'noticeDaysOverride', 0, t('ip1.notice_override')),
+      hoursPerDay: fint(form, 'hoursPerDay', 10, t('ip1.hours_per_day')),
     }
 
     if (values.minPassengers < 1) throw new Error(t('capacity.err_min_passengers'))
@@ -53,6 +59,13 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       throw new Error(t('capacity.err_max_below_min'))
     }
     if (values.fleetSize < 0) throw new Error(t('capacity.err_fleet_negative'))
+    if (
+      values.noticeDaysOverride !== null &&
+      (values.noticeDaysOverride < 0 || values.noticeDaysOverride > 30)
+    )
+      throw new Error(t('err.too_big', { field: t('ip1.notice_override'), max: 30 }))
+    if (values.hoursPerDay < 1 || values.hoursPerDay > 24)
+      throw new Error(t('err.too_big', { field: t('ip1.hours_per_day'), max: 24 }))
 
     await db.transaction(async (tx) => {
       const before =
@@ -96,7 +109,7 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(LIST, outcome))
+  redirect(`${withOutcome(LIST, outcome)}#fleet`)
 }
 
 /**
@@ -159,5 +172,5 @@ export async function setDayBlocked(
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(`${LIST}${returnQuery}`, outcome))
+  redirect(withOutcome(`${LIST}${returnQuery}`, outcome) + '#calendar')
 }

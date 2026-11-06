@@ -117,16 +117,6 @@ export default async function ItinerariesPage({
         description={t('itineraries.list_description')}
         actions={
           <>
-            {can(session.role, 'content.read') ? (
-              <Link className="a-btn ghost" href={adminHref('/itineraries/pricing')}>
-                {t('ip1.pricing_t')}
-              </Link>
-            ) : null}
-            {can(session.role, 'capacity.write') ? (
-              <Link className="a-btn ghost" href={adminHref('/itineraries/driver')}>
-                {t('ip1.driver_t')}
-              </Link>
-            ) : null}
             {can(session.role, 'content.write') ? (
               <Link className="a-btn" href={adminHref('/itineraries/new')}>
                 {t('itineraries.new')}

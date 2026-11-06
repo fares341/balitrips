@@ -5,7 +5,9 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { reportSchedules, users } from '@/db/schema'
+import { isRole } from '@/lib/auth/roles'
 import { isReportId } from '@/lib/reports/catalog'
+import { listingReportId, mayExportListing } from '@/lib/reports/listing'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { writeAudit } from '../../../_lib/audit'
@@ -53,6 +55,52 @@ export async function createSchedule(form: FormData): Promise<void> {
       entityId: row?.id ?? null,
       before: null,
       after: { report, frequency, recipients: staff.length },
+    })
+    outcome = { ok: encodeMessage('rp.ok_schedule_saved') }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(BACK, outcome))
+}
+
+/**
+ * The «تقرير المحاسب» preset: monthly, a PDF attached, to people who hold
+ * `finance.read` (admin, accountant). Created switched OFF; the owner turns
+ * it on from the list.
+ */
+export async function createAccountantPreset(form: FormData): Promise<void> {
+  const session = await requireCapability('config.write')
+  const { t } = await getAdminI18n()
+  let outcome: { ok: string } | { err: string }
+  try {
+    const wanted = fmulti(form, 'recipients').filter((id) => /^[0-9a-f-]{36}$/i.test(id))
+    const people = wanted.length
+      ? await db
+          .select({ id: users.id, role: users.role })
+          .from(users)
+          .where(and(inArray(users.id, wanted), isNull(users.deletedAt)))
+      : []
+    const allowed = people.filter((p) => isRole(p.role) && mayExportListing(p.role, 'accountant'))
+    if (allowed.length === 0) throw new Error(t('rp.err_recipients'))
+    const report = listingReportId('accountant')
+    const [row] = await db
+      .insert(reportSchedules)
+      .values({
+        report,
+        frequency: 'monthly',
+        recipients: allowed.map((p) => p.id),
+        enabled: false,
+        createdBy: session.userId,
+      })
+      .returning({ id: reportSchedules.id })
+    await writeAudit({
+      actor: session,
+      action: 'report.schedule_create',
+      entityType: 'report_schedule',
+      entityId: row?.id ?? null,
+      before: null,
+      after: { report, frequency: 'monthly', recipients: allowed.length, enabled: false },
     })
     outcome = { ok: encodeMessage('rp.ok_schedule_saved') }
   } catch (error) {

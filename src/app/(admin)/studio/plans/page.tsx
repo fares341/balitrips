@@ -9,13 +9,17 @@ import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, PublishPill, Table } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, PublishPill, Table } from '../../_ui/table'
 import { accessKindLabel } from '../orders/labels'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/plans')
 
 export default async function PlansPage({
   searchParams,
@@ -29,7 +33,7 @@ export default async function PlansPage({
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
-  const rows = await db
+  const rowsAll = await db
     .select({
       plan: plans,
       active: sql<number>`(
@@ -41,6 +45,8 @@ export default async function PlansPage({
     .from(plans)
     .where(isNull(plans.deletedAt))
     .orderBy(asc(plans.sortOrder))
+  const list = searchAndPage(rowsAll, params, ({ plan }) => [plan.name, plan.slug])
+  const rows = list.rows
 
   const [legacy] = await db
     .select({ value: count() })
@@ -66,6 +72,7 @@ export default async function PlansPage({
         }
       />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
 
       {rows.length === 0 ? (
         <Empty>{t('plans.empty')}</Empty>
@@ -116,6 +123,13 @@ export default async function PlansPage({
         </Table>
       )}
       <p className="a-hint">{t('plans.legacy_hint', { count: legacy?.value ?? 0 })}</p>
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

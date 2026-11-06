@@ -18,13 +18,7 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import {
-  driverVehicles,
-  itineraries,
-  itineraryDays,
-  itineraryDocuments,
-  siteSettings,
-} from '@/db/schema'
+import { itineraries, itineraryDays, itineraryDocuments, siteSettings } from '@/db/schema'
 import { isLocale } from '@/i18n/config'
 import { can } from '@/lib/auth/roles'
 import { cleanDownloadFilename, isPdfMime, looksLikePdf } from '@/lib/itineraries/publish-gate'
@@ -47,6 +41,7 @@ import {
   flocalized,
   flocalizedOrNull,
   fmulti,
+  FormError,
   fstr,
   isUuid,
 } from '../../_lib/form'
@@ -60,13 +55,18 @@ type Outcome = { ok: string } | { err: string }
 
 const editor = (id: string) => adminHref(`/itineraries/${id}`)
 const PRICING = adminHref('/itineraries/pricing')
-const DRIVER = adminHref('/itineraries/driver')
+const DRIVER = adminHref('/vehicles')
 
 function intIn(form: FormData, name: string, min: number, max: number, fallback: number): number {
   const raw = fstr(form, name)
   if (raw === null) return fallback
   const n = Number(raw)
-  if (!Number.isInteger(n) || n < min || n > max) throw new Error(`${name}: ${min}–${max}`)
+  if (!Number.isInteger(n) || n < min || n > max)
+    throw new FormError(`${name}: ${min}–${max}`, 'err.between', {
+      field: `i18n:field.${name}`,
+      min,
+      max,
+    })
   return n
 }
 
@@ -377,7 +377,8 @@ function moneyOrZero(form: FormData, name: string, currency: string): number {
   const raw = fstr(form, name)
   if (raw === null) return 0
   const parsed = parseMoneyInput(raw, currency)
-  if (!parsed.ok || parsed.value < 0) throw new Error(`${name}: ${raw}`)
+  if (!parsed.ok || parsed.value < 0)
+    throw new FormError(`${name}: ${raw}`, 'err.invalid', { field: `i18n:field.${name}` })
   return parsed.value
 }
 
@@ -438,10 +439,8 @@ export async function saveItinerarySales(form: FormData): Promise<void> {
         : {}),
     }
     const parsed = itinerarySalesSchema.safeParse(candidate)
-    if (!parsed.success)
-      throw new Error(
-        t('ip1.err_settings', { detail: parsed.error.issues[0]?.path.join('.') ?? '' }),
-      )
+    // Mapped to a sentence in the Studio language by errorMessage().
+    if (!parsed.success) throw parsed.error
     const before = await writeSetting(ITINERARY_SALES_KEY, parsed.data, session.userId)
     await writeAudit({
       actor: session,
@@ -493,34 +492,9 @@ export async function saveDriverSettings(form: FormData): Promise<void> {
       throw new Error(t('ip1.err_timezone'))
     }
     const parsed = driverSettingsSchema.safeParse(candidate)
-    if (!parsed.success)
-      throw new Error(
-        t('ip1.err_settings', { detail: parsed.error.issues[0]?.path.join('.') ?? '' }),
-      )
+    // Mapped to a sentence in the Studio language by errorMessage().
+    if (!parsed.success) throw parsed.error
 
-    const vehicles = await db.select().from(driverVehicles)
-    const vehicleChanges: Record<
-      string,
-      { noticeDaysOverride: number | null; hoursPerDay: number }
-    > = {}
-    for (const vehicle of vehicles) {
-      const rawOverride = fstr(form, `veh_${vehicle.id}_notice`)
-      const noticeDaysOverride =
-        rawOverride === null ? null : intIn(form, `veh_${vehicle.id}_notice`, 0, 30, 0)
-      const hoursPerDay = intIn(form, `veh_${vehicle.id}_hours`, 1, 24, vehicle.hoursPerDay)
-      if (
-        noticeDaysOverride !== vehicle.noticeDaysOverride ||
-        hoursPerDay !== vehicle.hoursPerDay
-      ) {
-        vehicleChanges[vehicle.id] = { noticeDaysOverride, hoursPerDay }
-      }
-    }
-
-    await db.transaction(async (tx) => {
-      for (const [vehicleId, change] of Object.entries(vehicleChanges)) {
-        await tx.update(driverVehicles).set(change).where(eq(driverVehicles.id, vehicleId))
-      }
-    })
     const before = await writeSetting(DRIVER_SETTINGS_KEY, parsed.data, session.userId)
     await writeAudit({
       actor: session,
@@ -528,12 +502,12 @@ export async function saveDriverSettings(form: FormData): Promise<void> {
       entityType: 'site_settings',
       entityId: null,
       before: (before as Record<string, unknown> | null) ?? null,
-      after: { ...parsed.data, vehicles: vehicleChanges },
+      after: parsed.data,
     })
     outcome = { ok: t('ip1.ok_settings') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(DRIVER, outcome))
+  redirect(`${withOutcome(DRIVER, outcome)}#rules`)
 }

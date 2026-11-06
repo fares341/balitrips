@@ -7,13 +7,17 @@ import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table, When } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { couponStateOf, couponValueLabel } from './labels'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/discounts')
 
 /** الخصومات والقسائم — discount codes and how much each one has been used. */
 export default async function DiscountsPage({
@@ -25,7 +29,7 @@ export default async function DiscountsPage({
   const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
-  const [rows, usage] = await Promise.all([
+  const [rowsAll, usage] = await Promise.all([
     db.select().from(coupons).orderBy(desc(coupons.createdAt)).limit(500),
     db
       .select({
@@ -42,6 +46,8 @@ export default async function DiscountsPage({
   for (const row of usage) usageOf.set(row.couponId, [...(usageOf.get(row.couponId) ?? []), row])
   const now = new Date()
   const totalUses = usage.reduce((sum, row) => sum + row.uses, 0)
+  const list = searchAndPage(rowsAll, params, (row) => [row.code, row.type])
+  const rows = list.rows
 
   return (
     <>
@@ -55,6 +61,7 @@ export default async function DiscountsPage({
         }
       />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
 
       <div className="a-grid">
         <div className="a-stat">
@@ -130,6 +137,13 @@ export default async function DiscountsPage({
           </tbody>
         </Table>
       )}
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

@@ -133,7 +133,7 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'files.title': ['PDF files', 'ملفات PDF'],
   'files.description': [
     'Every PDF the website gives to customers: itinerary plans (per version and language) and custom-trip plans. To replace an itinerary PDF, open the itinerary; to upload or withdraw a custom plan, open the request.',
-    'كل ملفات PDF التي يقدّمها الموقع للعملاء: خطط الرحلات (لكل إصدار ولغة) وخطط الرحلات الخاصة. لاستبدال ملف خطة رحلة افتح خطة الرحلة، ولرفع خطة خاصة أو سحبها افتح الطلب.',
+    'كل ملفات PDF التي يقدّمها الموقع للعملاء: الجداول السياحية (لكل إصدار ولغة) وخطط الرحلات المخصّصة. لاستبدال ملف خطة رحلة افتح خطة الرحلة، ولرفع خطة خاصة أو سحبها افتح الطلب.',
   ],
   'files.itinerary_pdfs': ['Itinerary PDFs', 'ملفات البرامج'],
   'files.empty_itinerary': ['No itinerary PDFs yet.', 'لا توجد ملفات برامج بعد.'],

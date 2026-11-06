@@ -1,58 +1,16 @@
 import Link from 'next/link'
 
-import { can } from '@/lib/auth/roles'
-
+import { translator } from '../_i18n'
 import { adminHref } from '../_lib/admin-path'
+import { canOpen } from '../_lib/route-access'
 import { setAdminLocale } from '../_lib/i18n-actions'
 import type { AdminSession, TwoFactorGate } from '../_lib/session'
 import { SECURITY_PATH } from '../_lib/session'
 import { uiI18n } from './i18n-server'
-import { Icon, type IconName } from './icons'
-import { NAV_GROUPS } from './nav'
+import { CommandPalette, type PaletteEntry } from './command-palette'
+import { Icon } from './icons'
+import { NAV_GROUPS, paletteEntries } from './nav'
 import { SideFrame, SideNav, type SideNavGroup } from './side-nav'
-
-/** One glyph per sidebar link, keyed by the link's dictionary key. */
-const NAV_ICONS: Record<string, IconName> = {
-  'nav.dashboard': 'home',
-  'nav.inbox': 'inbox',
-  'nav.assistant': 'sparkle',
-  'nav.notify': 'bell',
-  'nav.customers': 'users',
-  'nav.leads': 'message',
-  'nav.tasks': 'check',
-  'nav.support': 'send',
-  'nav.duplicates': 'users',
-  'nav.discounts': 'tag',
-  'nav.profit': 'pulse',
-  'nav.reconciliation': 'clipboard',
-  'nav.orders': 'bag',
-  'nav.payments': 'card',
-  'nav.plans': 'layers',
-  'nav.vip': 'star',
-  'nav.entitlements': 'key',
-  'nav.capacity': 'car',
-  'nav.places': 'pin',
-  'nav.map': 'map',
-  'nav.itineraries': 'route',
-  'nav.activities': 'compass',
-  'nav.packages': 'box',
-  'nav.articles': 'article',
-  'nav.landmarks': 'landmark',
-  'nav.reviews': 'star',
-  'nav.taxonomy': 'tag',
-  'nav.media': 'image',
-  'nav.files': 'file',
-  'nav.protection': 'shield',
-  'nav.alerts': 'alert',
-  'nav.sessions': 'pulse',
-  'nav.devices': 'phone',
-  'nav.activity': 'list',
-  'nav.translations': 'globe',
-  'nav.config': 'sliders',
-  'nav.whatsapp': 'message',
-  'nav.audit': 'clipboard',
-  'nav.security': 'lock',
-}
 
 /**
  * The admin frame: sidebar (a drawer on phones), identity, language switch,
@@ -70,17 +28,31 @@ export async function Shell({
   const { t, locale } = await uiI18n()
   const otherLocale = locale === 'ar' ? 'en' : 'ar'
 
+  // A link is shown exactly when the page behind it opens for this role.
   const groups: SideNavGroup[] = NAV_GROUPS.map((group) => ({
+    id: group.id,
     title: t(group.titleKey),
     items: group.items
-      .filter((item) => can(session.role, item.capability))
+      .filter((item) => canOpen(session.role, item.path))
       .map((item) => ({
         href: adminHref(item.path),
         label: t(item.labelKey),
         exact: item.exact ?? false,
-        icon: NAV_ICONS[item.labelKey],
+        icon: item.icon,
       })),
   })).filter((group) => group.items.length > 0)
+
+  // ⌘K: every screen this role may open, searchable in Arabic and English.
+  const ar = translator('ar')
+  const en = translator('en')
+  const palette: PaletteEntry[] = paletteEntries()
+    .filter((entry) => canOpen(session.role, entry.path))
+    .map((entry) => ({
+      href: adminHref(entry.path),
+      label: t(entry.labelKey),
+      group: t(entry.groupKey),
+      search: `${ar(entry.labelKey)} ${en(entry.labelKey)} ${ar(entry.groupKey)} ${en(entry.groupKey)}`,
+    }))
 
   const brand = (
     <>
@@ -94,14 +66,49 @@ export async function Shell({
     </>
   )
 
+  // Arabic Studio: every date field carries a format hint (CSS reads it from
+  // this variable, see admin.css `.a-field:has(input[type='date'])`), because
+  // the browser's own date box follows the device language, not the Studio's.
+  const dateHint =
+    locale === 'ar'
+      ? t('form.date_hint', {
+          example: new Intl.DateTimeFormat('ar-u-nu-latn', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'Asia/Makassar',
+          }).format(new Date()),
+        })
+      : null
+
   return (
-    <div className="a-shell">
+    <div
+      className="a-shell"
+      style={
+        dateHint
+          ? ({ '--a-date-hint': JSON.stringify(dateHint) } as React.CSSProperties)
+          : undefined
+      }
+    >
       <a className="a-skip" href="#a-content">
         {t('shell.skip_to_content')}
       </a>
 
       <SideFrame brand={brand} menuLabel={t('shell.menu')} closeLabel={t('shell.close_menu')}>
-        <SideNav groups={groups} ariaLabel={t('nav.aria')} />
+        <CommandPalette
+          entries={palette}
+          labels={{
+            open: t('palette.open'),
+            placeholder: t('palette.placeholder'),
+            empty: t('palette.empty'),
+            hint: t('palette.hint'),
+          }}
+        />
+        <SideNav
+          groups={groups}
+          ariaLabel={t('nav.aria')}
+          storageKey={`studio.nav.${session.userId}`}
+        />
 
         <div className="a-side-foot">
           <form action={setAdminLocale} className="a-lang">

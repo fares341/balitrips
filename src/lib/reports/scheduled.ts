@@ -8,6 +8,7 @@ import { can, isRole } from '@/lib/auth/roles'
 import { renderDocument, sendEmail, type Block } from '@/lib/email'
 
 import { buildReport, isReportId, mayOpen } from './catalog'
+import { listingReportId, mayExportListing } from './listing'
 import { changeText, kpiChange, kpiText } from './format'
 import { parseReportFilters } from './filters'
 import { scheduleDue, schedulePeriod } from './schedule-time'
@@ -29,6 +30,19 @@ export async function sendDueReports(now = new Date()): Promise<number> {
   const schedules = await db.select().from(reportSchedules).where(eq(reportSchedules.enabled, true))
   let sent = 0
   for (const schedule of schedules) {
+    if (schedule.report === listingReportId('accountant')) {
+      if (!scheduleDue(schedule.frequency, schedule.lastSentAt, now)) continue
+      sent += await sendAccountantReport(
+        schedule.recipients,
+        schedulePeriod(schedule.frequency, now),
+        now,
+      )
+      await db
+        .update(reportSchedules)
+        .set({ lastSentAt: now })
+        .where(eq(reportSchedules.id, schedule.id))
+      continue
+    }
     if (!isReportId(schedule.report) && schedule.report !== 'overview') continue
     if (!scheduleDue(schedule.frequency, schedule.lastSentAt, now)) continue
     const recipients =
@@ -111,6 +125,64 @@ export async function sendDueReports(now = new Date()): Promise<number> {
       .update(reportSchedules)
       .set({ lastSentAt: now })
       .where(eq(reportSchedules.id, schedule.id))
+  }
+  return sent
+}
+
+/**
+ * «تقرير المحاسب» (Studio v2): last month's orders, payments, refunds and
+ * supplier payables as an Arabic PDF in SAR, attached to an e-mail. Each
+ * recipient must still hold `finance.read`; the PDF is built for them.
+ */
+async function sendAccountantReport(
+  recipientIds: readonly string[],
+  period: Record<string, string>,
+  now: Date,
+): Promise<number> {
+  if (recipientIds.length === 0) return 0
+  const { renderListingPdf } = await import('./pdf')
+  const t = translator('ar')
+  const recipients = await db
+    .select({ id: users.id, email: users.email, role: users.role })
+    .from(users)
+    .where(and(inArray(users.id, [...recipientIds]), isNull(users.deletedAt)))
+  const range = `${period.from ?? ''} – ${period.to ?? ''}`
+  let sent = 0
+  for (const recipient of recipients) {
+    const role = isRole(recipient.role) ? recipient.role : 'customer'
+    if (!mayExportListing(role, 'accountant')) continue
+    const pdf = await renderListingPdf(
+      listingReportId('accountant'),
+      { from: period.from ?? '', to: period.to ?? '' },
+      'ar',
+      recipient.id,
+      now,
+    )
+    if (pdf === null) continue
+    const { html, text } = renderDocument({
+      locale: 'ar',
+      preheader: `${t('pdf.l_accountant')} — ${range}`,
+      blocks: [
+        { kind: 'heading', text: t('pdf.l_accountant') },
+        { kind: 'muted', text: `${t('pdf.period')}: ${range}` },
+        { kind: 'muted', text: t('rp.email_why') },
+      ],
+      footer: [t('rp.email_footer')],
+    })
+    const delivery = await sendEmail({
+      to: recipient.email,
+      subject: `${t('pdf.l_accountant')} — ${range}`,
+      html,
+      text,
+      attachments: [
+        {
+          filename: `accountant-${period.from ?? 'month'}.pdf`,
+          content: pdf,
+          contentType: 'application/pdf',
+        },
+      ],
+    })
+    if (delivery.delivered) sent += 1
   }
   return sent
 }

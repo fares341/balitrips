@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Icon, type IconName } from './icons'
 
@@ -21,35 +21,112 @@ import { Icon, type IconName } from './icons'
  */
 
 export interface SideNavGroup {
+  id: string
   title: string
   items: { href: string; label: string; exact: boolean; icon?: IconName }[]
 }
 
-export function SideNav({ groups, ariaLabel }: { groups: SideNavGroup[]; ariaLabel?: string }) {
+/** Remembered state per user: `{ [groupId]: true }` for a collapsed group. */
+function readCollapsed(key: string): Record<string, boolean> {
+  try {
+    const raw = window.localStorage.getItem(key)
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, boolean>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeCollapsed(key: string, value: Record<string, boolean>): void {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // Private window or blocked storage: the sidebar still works, it just forgets.
+  }
+}
+
+/**
+ * Collapsible groups. Every group starts open (the server render, and a
+ * first visit); the remembered state is applied after mount. The group that
+ * holds the current page is always open, so the highlighted link is never
+ * hidden.
+ */
+export function SideNav({
+  groups,
+  ariaLabel,
+  storageKey,
+}: {
+  groups: SideNavGroup[]
+  ariaLabel?: string
+  storageKey: string
+}) {
   const pathname = usePathname()
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
+    setCollapsed(readCollapsed(storageKey))
+  }, [storageKey])
+
   const matches = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
   // A nested entry (e.g. Plans → VIP settings) wins over its parent section.
   const hrefs = groups.flatMap((group) => group.items)
   const deeper = (href: string) =>
     hrefs.some((other) => other.href.startsWith(`${href}/`) && matches(other.href, other.exact))
+  const isActive = (item: { href: string; exact: boolean }) =>
+    matches(item.href, item.exact) && !deeper(item.href)
+
+  const toggle = (id: string) => {
+    setCollapsed((current) => {
+      const next = { ...current, [id]: !current[id] }
+      if (!next[id]) delete next[id]
+      writeCollapsed(storageKey, next)
+      return next
+    })
+  }
 
   return (
     <nav className="a-nav" aria-label={ariaLabel}>
-      {groups.map((group) => (
-        <div className="a-nav-section" key={group.title}>
-          <div className="a-nav-group">{group.title}</div>
-          {group.items.map((item) => {
-            const active = matches(item.href, item.exact) && !deeper(item.href)
-            return (
-              <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}>
-                {item.icon ? <Icon name={item.icon} size={18} /> : null}
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      ))}
+      {groups.map((group) => {
+        const holdsCurrent = group.items.some(isActive)
+        const open = holdsCurrent || !collapsed[group.id]
+        const listId = `a-nav-${group.id}`
+        return (
+          <div className="a-nav-section" key={group.id} data-open={open}>
+            <button
+              type="button"
+              className="a-nav-group"
+              aria-expanded={open}
+              aria-controls={listId}
+              onClick={() => toggle(group.id)}
+              disabled={holdsCurrent}
+            >
+              <span>{group.title}</span>
+              <span className="a-nav-count">{group.items.length}</span>
+              <svg
+                className="a-nav-caret"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
+            <div className="a-nav-items" id={listId} hidden={!open}>
+              {group.items.map((item) => {
+                const active = isActive(item)
+                return (
+                  <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}>
+                    {item.icon ? <Icon name={item.icon} size={18} /> : null}
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
     </nav>
   )
 }

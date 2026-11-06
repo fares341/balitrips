@@ -1,3 +1,5 @@
+import { ZodError } from 'zod'
+
 import { FormError } from './form'
 import { reportError } from '@/lib/monitoring/errors'
 
@@ -29,6 +31,7 @@ export function withOutcome(path: string, outcome: ActionOutcome): string {
  */
 export function errorMessage(error: unknown): string {
   if (isKeyedError(error)) return encodeMessage(error.key, error.vars)
+  if (error instanceof ZodError) return zodMessage(error)
   const code = databaseErrorCode(error)
   if (code !== null) {
     console.error('[admin] database error', code, error)
@@ -49,6 +52,61 @@ export function errorMessage(error: unknown): string {
     reportError(error, { source: 'action' })
   }
   return encodeMessage('form.unexpected')
+}
+
+/**
+ * A schema rejection as a translatable sentence. Zod's own text (and any
+ * English `message` a schema carries) is never shown: the Arabic Studio
+ * would otherwise print "Too small: expected number to be >=1". The field
+ * is named through `field.<name>` (`_i18n/studio-v2.ts`), falling back to
+ * the field's own name.
+ */
+export function zodMessage(error: ZodError): string {
+  const issue = error.issues[0]
+  if (!issue) return encodeMessage('err.unknown')
+  const name = [...issue.path].reverse().find((part) => typeof part === 'string')
+  const field = name ? `${MESSAGE_PREFIX}field.${name}` : `${MESSAGE_PREFIX}err.field_root`
+  const raw = issue as unknown as {
+    code: string
+    minimum?: number | bigint
+    maximum?: number | bigint
+    origin?: string
+    format?: string
+    input?: unknown
+  }
+  const sized = raw.origin === 'string' || raw.origin === 'array'
+  switch (raw.code) {
+    case 'too_small':
+      if (sized && Number(raw.minimum) === 1 && (raw.input === '' || raw.input === undefined))
+        return encodeMessage('err.required', { field })
+      return encodeMessage(sized ? 'err.too_short' : 'err.too_small', {
+        field,
+        min: String(raw.minimum),
+      })
+    case 'too_big':
+      return encodeMessage(sized ? 'err.too_long' : 'err.too_big', {
+        field,
+        max: String(raw.maximum),
+      })
+    case 'invalid_type':
+      return encodeMessage(
+        raw.input === undefined || raw.input === null ? 'err.required' : 'err.invalid_type',
+        { field },
+      )
+    case 'invalid_format':
+      return encodeMessage(
+        raw.format === 'email'
+          ? 'err.invalid_email'
+          : raw.format === 'url'
+            ? 'err.invalid_url'
+            : 'err.invalid_format',
+        { field },
+      )
+    case 'invalid_value':
+      return encodeMessage('err.invalid_value', { field })
+    default:
+      return encodeMessage('err.invalid', { field })
+  }
 }
 
 /** The SQLSTATE of a Postgres error, also when wrapped (`cause`) by the ORM. */
@@ -100,7 +158,7 @@ export function decodeMessage(message: string): { key: string; vars: MessageVars
   const body = message.slice(MESSAGE_PREFIX.length)
   const mark = body.indexOf('?')
   const key = mark === -1 ? body : body.slice(0, mark)
-  if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(key)) return null
+  if (!/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/.test(key)) return null
   const vars: MessageVars = {}
   if (mark !== -1) {
     new URLSearchParams(body.slice(mark + 1)).forEach((value, name) => {
@@ -116,7 +174,26 @@ export function localizeMessage(
   t: (key: string, vars?: MessageVars) => string,
 ): string {
   const decoded = decodeMessage(message)
-  return decoded ? t(decoded.key, decoded.vars) : message
+  if (!decoded) return message
+  // A placeholder may itself be a key (`i18n:field.priceMinor`): translate
+  // it; with no dictionary entry, show the field name in plain words.
+  const vars: MessageVars = {}
+  for (const [name, value] of Object.entries(decoded.vars)) {
+    const inner = typeof value === 'string' ? decodeMessage(value) : null
+    if (!inner) {
+      vars[name] = value
+      continue
+    }
+    const text = t(inner.key, inner.vars)
+    vars[name] =
+      text === inner.key
+        ? inner.key
+            .slice(inner.key.indexOf('.') + 1)
+            .replace(/([a-z])([A-Z])/g, '$1 $2')
+            .replace(/_/g, ' ')
+        : text
+  }
+  return t(decoded.key, vars)
 }
 
 function isKeyedError(error: unknown): error is FormError & { key: string } {

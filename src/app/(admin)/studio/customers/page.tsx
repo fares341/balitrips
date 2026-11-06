@@ -13,6 +13,7 @@ import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
+import { PdfExportButton } from '../../_ui/pdf-export'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { customerFilters } from './filters'
@@ -195,6 +196,12 @@ export default async function CustomersPage({
               {t('customers.export_csv')}
             </a>
           ) : null}
+          <PdfExportButton
+            kind="customers"
+            role={session.role}
+            searchParams={params}
+            back="/customers"
+          />
         </div>
       </form>
 

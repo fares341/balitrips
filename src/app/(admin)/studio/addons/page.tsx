@@ -9,12 +9,16 @@ import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table } from '../../_ui/table'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/addons')
 
 /** The shared extras library ("الخدمات الإضافية"). Each row opens its own page. */
 export default async function AddonsLibraryPage({
@@ -26,7 +30,7 @@ export default async function AddonsLibraryPage({
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
 
-  const [rows, usage] = await Promise.all([
+  const [allRows, usage] = await Promise.all([
     db
       .select()
       .from(addonsLibrary)
@@ -37,6 +41,8 @@ export default async function AddonsLibraryPage({
       .from(activityAddonLinks)
       .groupBy(activityAddonLinks.addonId),
   ])
+  const list = searchAndPage(allRows, params, (row) => [row.name, row.description])
+  const rows = list.rows
   const used = new Map(usage.map((row) => [row.addonId, row.value]))
   const pricing = (value: string) =>
     value === 'per_person'
@@ -59,6 +65,7 @@ export default async function AddonsLibraryPage({
         }
       />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
       {rows.length === 0 ? (
         <Empty>{t('addons.empty')}</Empty>
       ) : (
@@ -99,6 +106,13 @@ export default async function AddonsLibraryPage({
           </tbody>
         </Table>
       )}
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

@@ -19,7 +19,7 @@ export default async function NotifyPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('roles.write')
+  await requireCapability('marketing.send')
   const params = await searchParams
   const { t, intl } = await getAdminI18n()
 

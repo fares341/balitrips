@@ -11,6 +11,7 @@ import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
+import { PdfExportButton } from '../../_ui/pdf-export'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Pill, Table, When } from '../../_ui/table'
 import { paymentMethodName, paymentProviderName, paymentStatusLabel } from '../orders/labels'
@@ -152,6 +153,19 @@ export default async function PaymentsPage({
               {t('payments.export_csv')}
             </a>
           ) : null}
+          <PdfExportButton
+            kind="payments"
+            role={session.role}
+            searchParams={params}
+            back="/payments"
+          />
+          <PdfExportButton
+            kind="refunds"
+            role={session.role}
+            searchParams={params}
+            back="/payments"
+            label={`${t('pdf.export')} · ${t('pdf.l_refunds')}`}
+          />
         </div>
       </form>
 

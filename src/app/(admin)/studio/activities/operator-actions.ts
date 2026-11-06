@@ -1,5 +1,6 @@
 'use server'
 
+import { FormError } from '../../_lib/form'
 /**
  * «المشغّل» — the operator who runs an activity, its contract and the AI
  * contract summary (owner, Oct 2026). Staff only: opening the editor needs
@@ -63,7 +64,7 @@ async function ensureActivity(id: string): Promise<void> {
     .from(activities)
     .where(eq(activities.id, id))
     .limit(1)
-  if (!row) throw new Error('Activity not found')
+  if (!row) throw new FormError('Activity not found', 'activities.err_gone', {})
 }
 
 function text(form: FormData, name: string, max: number): string {

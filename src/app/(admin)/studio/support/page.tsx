@@ -15,16 +15,20 @@ import { averageHours, TICKET_STATUSES } from '@/lib/support/tickets'
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
 import { buildQuery, param } from '../../_lib/result'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Field, Select, TextArea, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table, When } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { deleteReplyTemplate, openTicketForCustomer, saveReplyTemplate } from './actions'
 import { PRIORITY_TONES, STATUS_TONES } from './tones'
 import { ConfirmSubmit } from '../../_ui/confirm-submit'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/support')
 
 const VIEWS = ['active', ...TICKET_STATUSES, 'mine', 'templates'] as const
 type View = (typeof VIEWS)[number]
@@ -62,7 +66,7 @@ export default async function SupportPage({
           : eq(supportTickets.status, view)
 
   const since = daysAgo(30)
-  const [tickets, recent, counts, templates] = await Promise.all([
+  const [ticketsAll, recent, counts, templates] = await Promise.all([
     view === 'templates'
       ? Promise.resolve([])
       : db
@@ -87,7 +91,7 @@ export default async function SupportPage({
             sql`case ${supportTickets.priority} when 'urgent' then 0 when 'high' then 1 when 'normal' then 2 else 3 end`,
             desc(supportTickets.updatedAt),
           )
-          .limit(200),
+          .limit(2000),
     db
       .select({
         createdAt: supportTickets.createdAt,
@@ -118,6 +122,15 @@ export default async function SupportPage({
       : Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
   const hours = (value: number | null) =>
     value === null ? '—' : t('support.hours', { count: value })
+
+  const list = searchAndPage(ticketsAll, params, (r) => [
+    r.number,
+    r.subject,
+    r.name,
+    r.email,
+    r.assigneeName,
+  ])
+  const tickets = list.rows
 
   return (
     <>
@@ -210,6 +223,7 @@ export default async function SupportPage({
         </>
       ) : (
         <>
+          <ListSearch basePath={LIST} searchParams={params} />
           <div className="a-card">
             {tickets.length === 0 ? (
               <Empty>{t('support.empty')}</Empty>
@@ -262,6 +276,13 @@ export default async function SupportPage({
             )}
           </div>
 
+          <Pager
+            basePath={LIST}
+            searchParams={params}
+            page={list.page}
+            pageSize={list.pageSize}
+            total={list.total}
+          />
           <form className="a-card a-form" action={openTicketForCustomer}>
             <h2>{t('support.open_for_customer')}</h2>
             <p className="a-hint">{t('support.open_for_customer_hint')}</p>

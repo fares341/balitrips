@@ -261,6 +261,12 @@ const GLYPHS = {
       <path d="M22 2 11 13" />
     </>
   ),
+  search: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </>
+  ),
 } as const
 
 export type IconName = keyof typeof GLYPHS

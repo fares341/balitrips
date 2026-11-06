@@ -7,14 +7,19 @@ import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
+import { listParams, matchesQuery, searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
+import { PdfExportButton } from '../../_ui/pdf-export'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table, When } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { createSettlement, setSettlementStatus } from './actions'
 import { payableWhere } from './queries'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/payables')
 
 const TONES: Record<string, 'neutral' | 'good' | 'warn' | 'info'> = {
   draft: 'neutral',
@@ -28,11 +33,11 @@ export default async function PayablesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('suppliers.write')
+  const session = await requireCapability('suppliers.write')
   const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
-  const [owed, runs] = await Promise.all([
+  const [owedAll, runsAll] = await Promise.all([
     db
       .select({
         supplierId: orderItems.supplierId,
@@ -54,8 +59,13 @@ export default async function PayablesPage({
       .from(supplierSettlements)
       .innerJoin(suppliers, eq(suppliers.id, supplierSettlements.supplierId))
       .orderBy(desc(supplierSettlements.createdAt))
-      .limit(100),
+      .limit(2000),
   ])
+  // One search box for both: what we owe (all shown) and past runs (paged).
+  const { q } = listParams(params)
+  const owed = owedAll.filter((row) => matchesQuery(q, row.supplierName))
+  const list = searchAndPage(runsAll, params, (r) => [r.supplierName, r.run.reference])
+  const runs = list.rows
 
   return (
     <>
@@ -63,12 +73,21 @@ export default async function PayablesPage({
         title={t('pay.title')}
         description={t('pay.description')}
         actions={
-          <Link className="a-btn ghost" href={adminHref('/suppliers')}>
-            {t('nav.suppliers')}
-          </Link>
+          <>
+            <Link className="a-btn ghost" href={adminHref('/suppliers')}>
+              {t('nav.suppliers')}
+            </Link>
+            <PdfExportButton
+              kind="payables"
+              role={session.role}
+              searchParams={params}
+              back="/payables"
+            />
+          </>
         }
       />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
 
       <div className="a-card">
         <h2>{t('pay.owed_title')}</h2>
@@ -249,6 +268,13 @@ export default async function PayablesPage({
           </Table>
         )}
       </div>
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

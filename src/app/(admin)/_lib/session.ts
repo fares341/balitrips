@@ -124,6 +124,26 @@ export async function requireCapability(capability: Capability): Promise<AdminSe
   return session
 }
 
+/**
+ * Gate on ANY of several capabilities (a screen with sections for different
+ * jobs, e.g. «السيارات والسائق»). Each section must still check its own.
+ */
+export async function requireAnyCapability(
+  capabilities: readonly Capability[],
+): Promise<AdminSession> {
+  const session = await getAdminSession()
+  if (!session) signInFirst()
+
+  if (!isElevated(session.role) || !capabilities.some((c) => can(session.role, c))) {
+    console.warn(`[admin] denied ${capabilities.join('|')} for ${session.email} (${session.role})`)
+    notFound()
+  }
+
+  await enforceTwoFactor(session)
+
+  return session
+}
+
 export type TwoFactorGate = 'satisfied' | 'enrol' | 'challenge'
 
 /**

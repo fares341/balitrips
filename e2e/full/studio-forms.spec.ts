@@ -19,13 +19,17 @@ import { ADMIN, check, fuzzPage, settle, signInAs, Watch, XSS } from './_support
 test.describe.configure({ mode: 'serial' })
 test.skip(!process.env.ACCOUNTS_FILE, 'test accounts not created')
 
+// nav.ts lists a path in the sidebar and again in a section's tabs: once each.
 const NAV = [
-  ...readFileSync(resolve(__dirname, '..', '..', 'src/app/(admin)/_ui/nav.ts'), 'utf8').matchAll(
-    /path: '([^']*)'/g,
+  ...new Set(
+    [
+      ...readFileSync(
+        resolve(__dirname, '..', '..', 'src/app/(admin)/_ui/nav.ts'),
+        'utf8',
+      ).matchAll(/path: '([^']*)'/g),
+    ].map((m) => m[1] ?? ''),
   ),
-]
-  .map((m) => m[1] ?? '')
-  .filter((p) => p !== '/security' && p !== '/assistant')
+].filter((p) => p !== '/security' && p !== '/assistant')
 
 const ACTIVITY_TABS = [
   'content',
@@ -92,7 +96,8 @@ async function firstDetail(listPath: string): Promise<string | null> {
   await settle(page)
   const hrefs = await page
     .$$eval(
-      'main a[href]',
+      // Section tabs are navigation, not a detail page.
+      'main a[href]:not(.a-subtabs a)',
       (as, prefix) =>
         as
           .map((a) => a.getAttribute('href') ?? '')
@@ -100,7 +105,7 @@ async function firstDetail(listPath: string): Promise<string | null> {
       full,
     )
     .catch(() => [] as string[])
-  return hrefs.find((h) => !/\/(export|receipt|invoice|vip|file)(\/|$)/.test(h)) ?? null
+  return hrefs.find((h) => !/\/(export|receipt|invoice|vip|file|template)(\/|$)/.test(h)) ?? null
 }
 
 test('admin signed in to the Studio', async ({ browserName: _browserName }, info) => {
@@ -209,11 +214,24 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
   await page.locator('form:has(input[type="file"]) button[type="submit"]').first().click()
   await settle(page, 20_000)
   const afterTiny = await db()<{ n: number }[]>`select count(*)::int n from media`
-  check(info, 'studio media', 'tiny (1x1) image refused, no row', afterTiny[0]?.n === before[0]?.n, `${before[0]?.n} → ${afterTiny[0]?.n}`)
+  check(
+    info,
+    'studio media',
+    'tiny (1x1) image refused, no row',
+    afterTiny[0]?.n === before[0]?.n,
+    `${before[0]?.n} → ${afterTiny[0]?.n}`,
+  )
   await page.goto(`${ADMIN}/media`)
   await settle(page)
-  await page.locator('input[type="file"]').first().setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: makePng(640, 400) })
-  await page.locator('input[name^="alt"]').first().fill(`${XSS} 🌴`).catch(() => {})
+  await page
+    .locator('input[type="file"]')
+    .first()
+    .setInputFiles({ name: 'full-test.png', mimeType: 'image/png', buffer: makePng(640, 400) })
+  await page
+    .locator('input[name^="alt"]')
+    .first()
+    .fill(`${XSS} 🌴`)
+    .catch(() => {})
   const submit = page.locator('form:has(input[type="file"]) button[type="submit"]').first()
   if (await submit.isVisible().catch(() => false)) await submit.click()
   await settle(page, 20_000)
