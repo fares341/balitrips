@@ -459,7 +459,7 @@ export default async function DashboardPage({
       icon: 'route',
     })
   }
-  if (can(session.role, 'roles.write')) {
+  if (can(session.role, 'marketing.send')) {
     quickActions.push({ href: adminHref('/notify'), label: t('dashboard.qa_notify'), icon: 'bell' })
   }
   if (mayReadCustomers) {

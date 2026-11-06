@@ -198,7 +198,7 @@ const section: Section = {
     'payments.ok_refunded': 'Duplicate payment refunded. The order and its access are unchanged.',
 
     // ── Plans ──
-    'plans.title': 'Plans',
+    'plans.title': 'Access plans',
     'plans.description':
       'The plans sold on the website’s Plans page. Customers keep the access, duration and device limit of the plan as it was when they bought it.',
     'plans.new': 'New plan',
@@ -392,7 +392,7 @@ const section: Section = {
     'orders.fulfil_refunded': 'مسترد',
     'orders.mark_delivered': 'تحديد كمنفَّذ',
     'orders.whatsapp_title':
-      'يرسل رسالة واتساب برابط خطة الرحلة في حساب العميل (فقط للعملاء الذين وافقوا على رسائل واتساب).',
+      'يرسل رسالة واتساب برابط الجدول السياحي في حساب العميل (فقط للعملاء الذين وافقوا على رسائل واتساب).',
     'orders.whatsapp_btn': 'إرسال PDF عبر واتساب',
     'orders.refund_heading': 'استرداد مبلغ',
     'orders.not_refundable': 'لا يمكن استرداد طلب حالته «{status}».',
@@ -472,7 +472,7 @@ const section: Section = {
     'orders.err_no_whatsapp_optin': 'لم يوافق العميل على تلقي رسائل واتساب.',
     'orders.err_no_intl_phone': 'لا يوجد في حساب العميل رقم هاتف دولي (+رمز الدولة).',
     'orders.err_whatsapp_queue': 'تعذّر إرسال رسالة واتساب. حاول مرة أخرى بعد قليل.',
-    'orders.ok_whatsapp_queued': 'تم إرسال رسالة واتساب برابط خطة الرحلة في حساب العميل.',
+    'orders.ok_whatsapp_queued': 'تم إرسال رسالة واتساب برابط الجدول السياحي في حساب العميل.',
 
     // ── Payments ──
     'payments.title': 'المدفوعات',
@@ -518,7 +518,7 @@ const section: Section = {
     'payments.ok_refunded': 'تم استرداد الدفعة المكررة. الطلب وصلاحياته لم تتغير.',
 
     // ── Plans ──
-    'plans.title': 'الباقات',
+    'plans.title': 'باقات الوصول',
     'plans.description':
       'الباقات المعروضة للبيع في صفحة الباقات بالموقع. يحتفظ العميل بالوصول والمدة وحد الأجهزة كما كانت عند شرائه.',
     'plans.new': 'باقة جديدة',

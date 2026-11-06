@@ -15,7 +15,9 @@ import { adminBasePath } from './admin-path'
  * Order matters: the first matching pattern wins, so specific paths come
  * before their section.
  */
-const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
+type Rule = readonly [RegExp, readonly Capability[]] | readonly [RegExp, readonly Capability[], 'any']
+
+const ROUTES: readonly Rule[] = [
   [/^$/, ['admin.access']],
   [/^\/inbox$/, ['admin.access']],
   [/^\/security$/, ['admin.access']],
@@ -30,7 +32,8 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   [/^\/assistant$/, ['admin.access']],
   [/^\/assistant\/settings$/, ['config.write']],
   [/^\/assistant\/conversations(\/[^/]+)?$/, ['customers.read']],
-  [/^\/notify$/, ['roles.write']],
+  // Broadcast to customers: admin and marketing (was roles.write).
+  [/^\/notify$/, ['marketing.send']],
 
   // Personal data leaves the system only through an export capability.
   [/^\/(customers|leads|orders|payments)\/export$/, ['customers.export']],
@@ -47,7 +50,11 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   [/^\/plans$/, ['content.read']],
   [/^\/plans\/vip$/, ['vip.manage']],
   [/^\/plans\/[^/]+$/, ['config.write']],
-  [/^\/capacity$/, ['capacity.write']],
+  // «السيارات والسائق»: one screen; each section needs its own capability
+  // (driver fleet: capacity.write, package vehicles: content.write). The old
+  // addresses only redirect to it.
+  [/^\/vehicles$/, ['capacity.write', 'content.write'], 'any'],
+  [/^\/(capacity|itineraries\/driver|packages\/vehicles)$/, ['capacity.write', 'content.write'], 'any'],
   [/^\/suppliers(\/[^/]+)?$/, ['orders.read']],
   [/^\/payables(\/.*)?$/, ['suppliers.write']],
   [/^\/discounts(\/[^/]+)?$/, ['discounts.write']],
@@ -65,7 +72,6 @@ const ROUTES: readonly (readonly [RegExp, readonly Capability[]])[] = [
   // Itineraries phase 1 (owner, Nov 2026): pricing and driver settings
   // (before /itineraries/[id]).
   [/^\/itineraries\/pricing$/, ['content.read']],
-  [/^\/itineraries\/driver$/, ['capacity.write']],
 
   // v2: bulk import of activities (CSV) and its template.
   [/^\/activity-import(\/template|\/export)?$/, ['content.write']],
@@ -98,9 +104,16 @@ function routePath(path: string): string {
 
 /** Capabilities the page at `path` needs, or null for a path this table does not know. */
 export function studioPathCapabilities(path: string): readonly Capability[] | null {
+  return studioPathRule(path)?.capabilities ?? null
+}
+
+/** The capabilities and whether ALL (default) or ANY of them open the page. */
+export function studioPathRule(
+  path: string,
+): { capabilities: readonly Capability[]; any: boolean } | null {
   const bare = routePath(path)
-  for (const [pattern, capabilities] of ROUTES) {
-    if (pattern.test(bare)) return capabilities
+  for (const rule of ROUTES) {
+    if (rule[0].test(bare)) return { capabilities: rule[1], any: rule[2] === 'any' }
   }
   return null
 }
@@ -110,9 +123,11 @@ export function studioPathCapabilities(path: string): readonly Capability[] | nu
  * (a link to a page this table has never heard of is shown to nobody else).
  */
 export function canOpen(role: Role, path: string): boolean {
-  const capabilities = studioPathCapabilities(path)
-  if (capabilities === null) return can(role, 'config.write')
-  return capabilities.every((capability) => can(role, capability))
+  const rule = studioPathRule(path)
+  if (rule === null) return can(role, 'config.write')
+  return rule.any
+    ? rule.capabilities.some((capability) => can(role, capability))
+    : rule.capabilities.every((capability) => can(role, capability))
 }
 
 /** `canOpen` for a full Studio href (as `adminHref()` builds it). Other hrefs are not Studio pages: true. */

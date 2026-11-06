@@ -556,7 +556,7 @@ const section: Section = {
     // itineraries
     'itineraries.title': 'الجداول السياحية',
     'itineraries.list_description':
-      'كل خطة رحلة مقسّمة يوماً بيوم. عمود «الأيام» يبيّن عدد الأيام المخطَّطة.',
+      'كل جدول سياحي مقسّم يوماً بيوم. عمود «الأيام» يبيّن عدد الأيام المخطَّطة.',
     'itineraries.new': 'جدول جديد',
     'itineraries.search_placeholder': 'الاسم أو رابط الصفحة',
     'itineraries.empty': 'لا توجد جداول تطابق عوامل التصفية هذه.',
@@ -617,7 +617,7 @@ const section: Section = {
     'itineraries.pdf_upload': 'رفع PDF',
     'itineraries.section_archive': 'الأرشفة',
     'itineraries.archive_hint':
-      'يزيل خطة الرحلة من الموقع. العملاء الذين اشتروها سابقاً يحتفظون بخطتهم.',
+      'يزيل الجدول السياحي من الموقع. العملاء الذين اشتروها سابقاً يحتفظون بخطتهم.',
     'itineraries.archive': 'أرشفة الجدول',
     'itineraries.day_plan': 'خطة الأيام',
     'itineraries.day_plan_empty':

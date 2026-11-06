@@ -39,7 +39,7 @@ from yet; the future portal must enrol them before showing anything.
 | --- | - | - | - | - | - | - | - | - | --- |
 | `admin.access` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Studio entry, dashboard, inbox |
 | `content.read` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Catalogue lists |
-| `content.write` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Editors, taxonomy |
+| `content.write` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Editors, taxonomy, package vehicles (on «السيارات والسائق») |
 | `content.publish` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Publish / unpublish |
 | `media.upload` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Media library |
 | `translations.write` | ✓ | ✓ |  |  |  | ✓ | ✓ |  | Website texts |
@@ -49,7 +49,7 @@ from yet; the future portal must enrol them before showing anything.
 | `orders.refund` | ✓ |  |  |  |  |  |  |  | Refunds |
 | `payments.read` | ✓ | ✓ | ✓ |  |  |  |  | ✓ | Payments |
 | `entitlements.grant` | ✓ |  |  |  |  |  |  |  | Manual map/VIP grants |
-| `capacity.write` | ✓ | ✓ | ✓ | ✓ |  |  |  |  | Capacity, availability calendar |
+| `capacity.write` | ✓ | ✓ | ✓ | ✓ |  |  |  |  | «السيارات والسائق»: driver fleet, booking rules, availability calendar |
 | `prices.write` (new) | ✓ | ✓ | ✓ |  |  |  |  |  | Every stored price or cost: activity "from" price, package and child prices, seasonal prices, legacy and library add-on prices (and per-activity overrides), itinerary and package prices, plan prices, supplier offer cost and sell price (with `suppliers.write`), vehicle day rates, CSV cost import (`src/lib/auth/price-guard.ts`) |
 | `customers.read` | ✓ | ✓ | ✓ | ✓ | ✓ |  | ✓ | ✓ | Customers, entitlements list, duplicates |
 | `customers.export` | ✓ |  |  |  |  |  |  |  | CSV exports of personal data |
@@ -65,7 +65,8 @@ from yet; the future portal must enrol them before showing anything.
 | `security.read` | ✓ | ✓ | ✓ |  |  |  |  |  | Protection pages |
 | `security.write` | ✓ |  |  |  |  |  |  |  | Bans |
 | `config.write` | ✓ |  |  |  |  |  |  |  | Settings, plans |
-| `roles.write` | ✓ |  |  |  |  |  |  |  | Role on the customer page, notifications |
+| `roles.write` | ✓ |  |  |  |  |  |  |  | Role on the customer page |
+| `marketing.send` (new) | ✓ |  |  |  |  |  | ✓ |  | Studio → Send notification (was `roles.write`) |
 | `users.manage` (new) | ✓ |  |  |  |  |  |  |  | Studio → Team & permissions |
 | `integrations.write` (new) | ✓ |  |  |  |  |  |  |  | Studio → Integrations |
 | `system.read` (new) | ✓ |  |  |  |  |  |  |  | Studio → System health, `/api/health/deep` |
@@ -82,8 +83,16 @@ tested in `price-guard.test.ts`). The Studio shows those price fields
 read-only with a short note for such a role, so an ordinary save posts the
 stored price back unchanged. Discount codes keep `discounts.write`.
 
+**Suppliers and payables.** The suppliers directory is open to anyone who
+reads orders (`orders.read`), because bookings are assigned to suppliers;
+adding or editing a supplier and its costs needs `suppliers.write`. What we
+owe suppliers (payables) is money and needs `suppliers.write` for the list
+and every action. Both live under «العمليات» in the sidebar, and the payables
+link on the suppliers page is shown only to `suppliers.write`.
+
 **Links follow access too.** `src/app/(admin)/_lib/route-access.ts` mirrors
-the capability every Studio page requires (a unit test reads each page and
+the capability every Studio page requires, and the sidebar, section tabs
+and ⌘K palette show a screen only when `canOpen()` says the viewer can open it (a unit test reads each page and
 fails on drift); in-page links, dashboard shortcuts and report drill-downs to
 a page the viewer cannot open are hidden or shown as plain text
 (`StudioLink`). `scripts/admin-check.mjs` requests every visible Studio link

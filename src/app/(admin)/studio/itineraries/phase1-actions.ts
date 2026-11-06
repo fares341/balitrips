@@ -19,7 +19,6 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import {
-  driverVehicles,
   itineraries,
   itineraryDays,
   itineraryDocuments,
@@ -60,7 +59,7 @@ type Outcome = { ok: string } | { err: string }
 
 const editor = (id: string) => adminHref(`/itineraries/${id}`)
 const PRICING = adminHref('/itineraries/pricing')
-const DRIVER = adminHref('/itineraries/driver')
+const DRIVER = adminHref('/vehicles')
 
 function intIn(form: FormData, name: string, min: number, max: number, fallback: number): number {
   const raw = fstr(form, name)
@@ -498,29 +497,6 @@ export async function saveDriverSettings(form: FormData): Promise<void> {
         t('ip1.err_settings', { detail: parsed.error.issues[0]?.path.join('.') ?? '' }),
       )
 
-    const vehicles = await db.select().from(driverVehicles)
-    const vehicleChanges: Record<
-      string,
-      { noticeDaysOverride: number | null; hoursPerDay: number }
-    > = {}
-    for (const vehicle of vehicles) {
-      const rawOverride = fstr(form, `veh_${vehicle.id}_notice`)
-      const noticeDaysOverride =
-        rawOverride === null ? null : intIn(form, `veh_${vehicle.id}_notice`, 0, 30, 0)
-      const hoursPerDay = intIn(form, `veh_${vehicle.id}_hours`, 1, 24, vehicle.hoursPerDay)
-      if (
-        noticeDaysOverride !== vehicle.noticeDaysOverride ||
-        hoursPerDay !== vehicle.hoursPerDay
-      ) {
-        vehicleChanges[vehicle.id] = { noticeDaysOverride, hoursPerDay }
-      }
-    }
-
-    await db.transaction(async (tx) => {
-      for (const [vehicleId, change] of Object.entries(vehicleChanges)) {
-        await tx.update(driverVehicles).set(change).where(eq(driverVehicles.id, vehicleId))
-      }
-    })
     const before = await writeSetting(DRIVER_SETTINGS_KEY, parsed.data, session.userId)
     await writeAudit({
       actor: session,
@@ -528,12 +504,12 @@ export async function saveDriverSettings(form: FormData): Promise<void> {
       entityType: 'site_settings',
       entityId: null,
       before: (before as Record<string, unknown> | null) ?? null,
-      after: { ...parsed.data, vehicles: vehicleChanges },
+      after: parsed.data,
     })
     outcome = { ok: t('ip1.ok_settings') }
   } catch (error) {
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(DRIVER, outcome))
+  redirect(`${withOutcome(DRIVER, outcome)}#rules`)
 }

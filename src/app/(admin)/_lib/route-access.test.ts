@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ROLES } from '@/lib/auth/roles'
 
-import { NAV_GROUPS } from '../_ui/nav'
+import { NAV_GROUPS, paletteEntries, SECTION_TABS } from '../_ui/nav'
 import { canOpen, studioPathCapabilities } from './route-access'
 
 const STUDIO = join(process.cwd(), 'src', 'app', '(admin)', 'studio')
@@ -45,12 +45,38 @@ describe('Studio route table', () => {
     })
   }
 
-  it('agrees with the sidebar', () => {
+  it('knows every sidebar, tab and palette path (so visibility follows the table)', () => {
     for (const group of NAV_GROUPS) {
       for (const item of group.items) {
-        expect(studioPathCapabilities(item.path), item.path).toEqual([item.capability])
+        expect(studioPathCapabilities(item.path), item.path).not.toBeNull()
       }
     }
+    for (const tabs of Object.values(SECTION_TABS)) {
+      for (const tab of tabs) expect(studioPathCapabilities(tab.path), tab.path).not.toBeNull()
+    }
+    for (const entry of paletteEntries()) {
+      expect(studioPathCapabilities(entry.path), entry.path).not.toBeNull()
+    }
+  })
+
+  it('shows the driver screens only to roles that run capacity or package vehicles', () => {
+    expect(canOpen('content_editor', '/itineraries')).toBe(true)
+    expect(canOpen('support_agent', '/vehicles')).toBe(false)
+    expect(canOpen('booking_agent', '/vehicles')).toBe(true)
+    expect(canOpen('content_editor', '/vehicles')).toBe(true)
+    expect(canOpen('accountant', '/vehicles')).toBe(false)
+  })
+
+  it('gates customer notifications on marketing.send', () => {
+    expect(canOpen('marketing_manager', '/notify')).toBe(true)
+    expect(canOpen('staff', '/notify')).toBe(false)
+    expect(canOpen('admin', '/notify')).toBe(true)
+  })
+
+  it('keeps payables with suppliers.write while the suppliers directory follows orders.read', () => {
+    expect(canOpen('support_agent', '/suppliers')).toBe(true)
+    expect(canOpen('support_agent', '/payables')).toBe(false)
+    expect(canOpen('accountant', '/payables')).toBe(true)
   })
 
   it('hides plan editors from every role but the admin (VIP settings stay open to operations)', () => {

@@ -591,7 +591,7 @@ const section: Section = {
     'config.ok_policy': 'تم حفظ السياسة.',
 
     // Audit log
-    'audit.title': 'سجل التغييرات',
+    'audit.title': 'سجل تغييرات الفريق',
     'audit.description': 'كل تغيير أجراه فريقك في لوحة التحكم: من قام به، ومتى، وما الذي تغيّر.',
     'audit.search': 'بحث',
     'audit.search_placeholder': 'بريد عضو الفريق',
@@ -635,8 +635,8 @@ const section: Section = {
     'audit.entity_entitlement': 'وصول عميل',
     'audit.entity_ip': 'عنوان إنترنت',
     'audit.entity_ip_ban': 'عنوان محظور',
-    'audit.entity_itinerary': 'خطة رحلة',
-    'audit.entity_itinerary_day': 'يوم في خطة رحلة',
+    'audit.entity_itinerary': 'جدول سياحي',
+    'audit.entity_itinerary_day': 'يوم في جدول سياحي',
     'audit.entity_landmark': 'معلم',
     'audit.entity_map_place': 'مكان على الخريطة',
     'audit.entity_media': 'صورة',

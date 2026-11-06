@@ -25,7 +25,7 @@ const BATCH = 50
  * داخل الموقع دائماً؛ البريد وواتساب اختياريان. للمدير فقط.
  */
 export async function sendAdminNotification(form: FormData): Promise<void> {
-  const actor = await requireCapability('roles.write')
+  const actor = await requireCapability('marketing.send')
   const { t } = await getAdminI18n()
   let outcome: ActionOutcome
   try {

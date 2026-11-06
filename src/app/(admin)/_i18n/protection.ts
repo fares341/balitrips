@@ -275,7 +275,7 @@ const section: Section = {
     'protection.pdf_downloads': 'تنزيل ملفات PDF',
     'protection.pdf_allow': 'مسموح (مع علامة مائية)',
     'protection.pdf_view_only': 'العرض في المتصفح فقط',
-    'protection.downloads_per_schedule': 'عدد التنزيلات لكل خطة رحلة',
+    'protection.downloads_per_schedule': 'عدد التنزيلات لكل جدول سياحي',
     'protection.downloads_per_schedule_hint': '0 = بلا حد. العرض في المتصفح لا يُحتسب.',
     'protection.auto_ban':
       'الحماية التلقائية: كثرة كلمات المرور الخاطئة من مكان واحد تحظر عنوان الإنترنت ساعة واحدة؛ وكثرة تبديل الأجهزة تحظر الحساب 24 ساعة؛ وتكرار تجاوز حد الأجهزة أو محاولة فتح محتوى لم يشتره العميل يوقف الحساب مؤقتاً حتى تراجعه. حسابات الفريق لا تُحظر تلقائياً أبداً. وتصلك تنبيهات في كل الأحوال.',
@@ -311,9 +311,9 @@ const section: Section = {
     'protection.col_fingerprint': 'الجهاز',
 
     // Activity log
-    'protection.activity_title': 'سجل النشاط',
+    'protection.activity_title': 'سجل نشاط العملاء',
     'protection.activity_description':
-      'ما قام به العملاء: تسجيلات الدخول والمحاولات الفاشلة والأجهزة الجديدة وتنزيلات PDF والوصول المحجوب. التغييرات التي أجراها فريقك موجودة في سجل التغييرات.',
+      'ما قام به العملاء: تسجيلات الدخول والمحاولات الفاشلة والأجهزة الجديدة وتنزيلات PDF والوصول المحجوب. التغييرات التي أجراها فريقك موجودة في «سجل تغييرات الفريق».',
     'protection.export_csv': 'تنزيل كجدول بيانات',
     'protection.activity_empty': 'لا يوجد ما يطابق عوامل التصفية هذه.',
     'protection.anonymous': 'غير مسجّل الدخول',

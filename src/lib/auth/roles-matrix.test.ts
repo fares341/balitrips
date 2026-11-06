@@ -88,6 +88,7 @@ const MATRIX: Record<Exclude<Role, 'admin'>, readonly Capability[]> = {
     'customers.read',
     'discounts.write',
     'reports.read',
+    'marketing.send',
   ],
   accountant: [
     'admin.access',
@@ -158,6 +159,13 @@ describe('capability matrix', () => {
     expect(can('support_agent', 'orders.fulfil')).toBe(false)
     expect(can('booking_agent', 'finance.read')).toBe(false)
     expect(can('accountant', 'orders.refund')).toBe(false)
+  })
+
+  it('lets only the admin and marketing send customer notifications', () => {
+    expect(ROLES.filter((role) => can(role, 'marketing.send'))).toEqual([
+      'admin',
+      'marketing_manager',
+    ])
   })
 
   it('lets the bookings operator run bookings and nothing else', () => {
