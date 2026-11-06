@@ -5,15 +5,17 @@
  * not in the data, so they are not shown.
  */
 
+import { cache } from 'react'
+
 import type { Locale } from '@/i18n/config'
 import {
   listActivities,
   listItineraries,
   listLandmarks,
-  listMapPlaces,
   listRegions,
   regionParentKeys,
 } from '@/lib/content/queries'
+import { listMapPlacesCached } from '@/lib/map/cached'
 import type { ActivitySummary, ItinerarySummary, LandmarkDto, RegionDto } from '@/lib/content/types'
 import { buildMapPayload, emptyEntitlements, type MapPlaceForClient } from '@/lib/entitlements'
 
@@ -34,13 +36,21 @@ export type RegionView = {
 
 const CATALOGUE_LIMIT = 200
 
-export async function regionViews(locale: Locale): Promise<RegionView[]> {
+/**
+ * Built once per request: generateMetadata and the page both need it, and
+ * before this every /explore/<region> view ran the whole catalogue query set
+ * twice (a 502 was seen on /ar/explore/south under load). Map places come
+ * from the same 60 s cache the map uses.
+ */
+export const regionViews = cache(loadRegionViews)
+
+async function loadRegionViews(locale: Locale): Promise<RegionView[]> {
   const [regions, activities, itineraries, landmarks, mapPlaces, parents] = await Promise.all([
     listRegions(),
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
     listItineraries(),
     listLandmarks({ limit: CATALOGUE_LIMIT }),
-    listMapPlaces(),
+    listMapPlacesCached(),
     regionParentKeys(),
   ])
   // An area (Ubud) counts towards its broad region (Central Bali) — list H9:

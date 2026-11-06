@@ -446,3 +446,23 @@
 .acct-stats b {
   font: 800 24px var(--f-en);
 }
+
+/* One line on why sign-in is asked for (redirect from favourites, account or trip). */
+.bt-auth-why {
+  max-width: 1100px;
+  margin: 16px auto 0;
+  padding: 10px 14px;
+  padding-inline-start: 14px;
+  border-inline-start: 3px solid var(--orange, #ff9000);
+  border-radius: 10px;
+  background: var(--palm-soft, #eef6ea);
+  color: var(--forest-deep, #1b3f22);
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+@media (max-width: 1160px) {
+  .bt-auth-why {
+    margin-inline: 16px;
+  }
+}

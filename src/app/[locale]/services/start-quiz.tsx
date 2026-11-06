@@ -10,6 +10,7 @@
  * the server passed in.
  */
 
+import { Money } from '@/components/currency/currency-context'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
@@ -27,6 +28,9 @@ export type QuizOption = {
   maxGuests: number | null
   /** Formatted. */
   price: string
+  /** For the live «≈» display-currency price. */
+  priceMinor: number
+  currency: string
   image: string | null
 }
 
@@ -134,7 +138,9 @@ export function StartQuiz({
                     </span>
                     <b>{option.name}</b>
                     <small className="muted">
-                      {t('c_days_n', { n: option.days })} · <bdi dir="ltr">{option.price}</bdi>
+                      {t('c_days_n', { n: option.days })} · <bdi dir="ltr">
+                        <Money minor={option.priceMinor} currency={option.currency} />
+                      </bdi>
                     </small>
                   </span>
                   <Icon name="chevronr" size={20} className="flip" />

@@ -3,17 +3,22 @@
  *
  * Rendered inside the [locale] layout (header, footer, tab bar) for any
  * `notFound()` in a public page and for unknown paths (`[...rest]`).
+ * The <title> is set here (React hoists it into <head>), because a
+ * not-found boundary has no generateMetadata of its own.
  */
 
 import { getTranslations } from 'next-intl/server'
 
 import { LinkButton } from '@/components/bt'
 
+import { PopularLinks } from './_ui/popular-links'
+
 export default async function LocaleNotFound() {
   const t = await getTranslations()
 
   return (
     <main className="nf">
+      <title>{`${t('nf5_meta')} · Bali Trips`}</title>
       <div className="arc" aria-hidden="true" />
       <div className="stack nf-in">
         <div className="nf-num" aria-hidden="true" dir="ltr">
@@ -30,6 +35,7 @@ export default async function LocaleNotFound() {
             {t('nf4_search')}
           </LinkButton>
         </div>
+        <PopularLinks headingId="nf-pop-h" />
       </div>
     </main>
   )

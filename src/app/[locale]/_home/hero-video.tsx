@@ -13,7 +13,10 @@
  * Media paths live in `hero-media.ts` only (licence note there).
  *
  * Plays only while the hero is on screen (IntersectionObserver), with the
- * poster JPG first (`preload="none"`: no video bytes until it plays). With
+ * poster first (`preload="none"`: no video bytes until it plays). On phones
+ * the clip starts only after the first interaction or once the page has been
+ * loaded and idle for ~6 s (never on Save-Data / 2G / 3G), and only the
+ * current and next posters are fetched. With
  * `prefers-reduced-motion` nothing plays or rotates: the first poster stays.
  * A pause button stops the videos and the rotation (WCAG 2.2.2); the tabs
  * jump to a clip.
@@ -86,6 +89,14 @@ export function HeroVideo({
   const rootRef = useRef<HTMLElement>(null)
   const videosRef = useRef<(HTMLVideoElement | null)[]>([])
   const visibleRef = useRef(false)
+  /**
+   * Phones: no video bytes on the first load. The poster is the hero until
+   * the page has loaded and the browser is idle, and not at all on Save-Data
+   * or a 2G/3G connection (the poster simply stays).
+   */
+  const phoneReadyRef = useRef(false)
+  /** Which posters to set: the first always; on phones the others only when next up. */
+  const [wideView, setWideView] = useState(false)
   const currentRef = useRef(0)
   const pausedRef = useRef(false)
 
@@ -93,7 +104,8 @@ export function HeroVideo({
   const apply = useCallback(() => {
     const reduced = window.matchMedia(REDUCED).matches
     const wide = window.matchMedia(WIDE).matches
-    const run = visibleRef.current && !pausedRef.current && !reduced
+    const run =
+      visibleRef.current && !pausedRef.current && !reduced && (wide || phoneReadyRef.current)
     videosRef.current.forEach((video, index) => {
       if (video === null) return
       const active = index === currentRef.current
@@ -126,6 +138,53 @@ export function HeroVideo({
     },
     [apply, clips.length],
   )
+
+  // Phones: arm the video only once the page is loaded and idle.
+  useEffect(() => {
+    const wide = window.matchMedia(WIDE)
+    const syncWide = () => setWideView(wide.matches)
+    syncWide()
+    wide.addEventListener('change', syncWide)
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }
+    ).connection
+    const frugal =
+      connection?.saveData === true || /(^|-)(2g|3g)$/.test(connection?.effectiveType ?? '')
+    let idleId: number | undefined
+    let timer: number | undefined
+    const INTERACTIONS = ['pointerdown', 'scroll', 'keydown'] as const
+    const ready = () => {
+      if (phoneReadyRef.current) return
+      phoneReadyRef.current = true
+      INTERACTIONS.forEach((name) => window.removeEventListener(name, onInteract))
+      apply()
+    }
+    // Whichever comes first: the visitor interacts, or the page has been
+    // loaded and idle for a few seconds. The first load is the poster only.
+    function onInteract() {
+      ready()
+    }
+    const arm = () => {
+      INTERACTIONS.forEach((name) =>
+        window.addEventListener(name, onInteract, { once: true, passive: true }),
+      )
+      timer = window.setTimeout(() => {
+        if ('requestIdleCallback' in window) idleId = window.requestIdleCallback(ready)
+        else ready()
+      }, 6000)
+    }
+    if (!frugal) {
+      if (document.readyState === 'complete') arm()
+      else window.addEventListener('load', arm, { once: true })
+    }
+    return () => {
+      wide.removeEventListener('change', syncWide)
+      window.removeEventListener('load', arm)
+      INTERACTIONS.forEach((name) => window.removeEventListener(name, onInteract))
+      if (timer !== undefined) window.clearTimeout(timer)
+      if (idleId !== undefined && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId)
+    }
+  }, [apply])
 
   // Reduced motion switched on or off: stop or resume the videos.
   useEffect(() => {
@@ -201,7 +260,14 @@ export function HeroVideo({
                   playsInline
                   loop
                   preload="none"
-                  poster={clip.poster}
+                  poster={
+                    index === 0 ||
+                    wideView ||
+                    index === current ||
+                    index === (current + 1) % clips.length
+                      ? clip.poster
+                      : undefined
+                  }
                   tabIndex={-1}
                 >
                   <source src={clip.webm} type="video/webm" />

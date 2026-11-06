@@ -16,6 +16,7 @@
  * Server-only: `getPathname` resolves to the react-server build here.
  */
 
+import { stripBrandSuffix } from '@/lib/seo/page-title'
 import type { Metadata } from 'next'
 
 import { defaultLocale, locales, type Locale } from '@/i18n/config'
@@ -65,7 +66,7 @@ export function pageMetadata({
   }
 
   return {
-    title: absoluteTitle ? { absolute: title } : title,
+    title: absoluteTitle ? { absolute: title } : stripBrandSuffix(title),
     description,
     alternates: { canonical: url, languages },
     openGraph: {

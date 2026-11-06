@@ -49,6 +49,7 @@ export default async function AccountFavoritesPage({ params }: { params: PagePar
         providers={enabledSocialProviders()}
         next="/account/favorites"
         autoOpen={false}
+        reason="favorites"
       />
     )
   }

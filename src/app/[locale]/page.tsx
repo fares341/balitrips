@@ -61,6 +61,7 @@ import { suggestKeys, type SuggestEntry } from '@/lib/search/fuzzy'
 
 import { pageMetadata } from './_meta'
 import { AboutSlider } from './_home/about-slider'
+import { BrandImg } from '@/components/ui/brand-img'
 import { BaliInfoStrip, type VisaInfo } from './_home/bali-info'
 import { HERO_CLIPS } from './_home/hero-media'
 import { HeroSearch } from './_home/hero-search'
@@ -126,12 +127,8 @@ const GUIDE_ICONS: Record<(typeof GUIDE_KEYS)[number], IconName> = {
   markets: 'cart',
 }
 
-const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'].map(
-  (name) => `/brand/${name}.webp`,
-)
-const SLIDER_DOWN = ['penida-cove', 'kelingking', 'jungle-pool', 'lempuyang', 'beach-palms'].map(
-  (name) => `/brand/${name}.webp`,
-)
+const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'] as const
+const SLIDER_DOWN = ['penida-cove', 'kelingking', 'jungle-pool', 'lempuyang', 'beach-palms'] as const
 
 const VALUES: readonly { icon: IconName; key: string }[] = [
   { icon: 'pin', key: 'v1' },
@@ -473,11 +470,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               >
                 <span className="nc-ph" aria-hidden="true">
                   <span className="clip">
-                    {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
-                    <img
+                    <BrandImg
                       src={service.key === 'shop' && shopImage !== null ? shopImage : service.image}
                       alt=""
-                      loading="lazy"
+                      sizes="124px"
                     />
                   </span>
                   <span className="nc-ic">
@@ -592,7 +588,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {/* 5 — who we are (short strip) */}
       <section className="sec" aria-labelledby="ab-h">
         <div className="wrap about-grid">
-          <AboutSlider up={SLIDER_UP} down={SLIDER_DOWN} />
+          <AboutSlider
+            up={SLIDER_UP.map((name) => ({
+              src: `/brand/${name}.webp`,
+              alt: t(`hv7_alt_${name.replace('-', '_')}`),
+            }))}
+            down={SLIDER_DOWN.map((name) => ({
+              src: `/brand/${name}.webp`,
+              alt: t(`hv7_alt_${name.replace('-', '_')}`),
+            }))}
+          />
           <div className="stack about-copy">
             <span className="eyebrow">{t('hv3_ab_eyebrow')}</span>
             <h2 className="h2" id="ab-h">
@@ -653,13 +658,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="sec-tight" aria-labelledby="ct-h">
         <div className="wrap">
           <div className="ct">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo (CUSTOM_TRIP_PHOTO) */}
-            <img
+            <BrandImg
               src={CUSTOM_TRIP_PHOTO}
               alt={t('hv3_ct_img_alt')}
               width={1600}
               height={1366}
-              loading="lazy"
+              sizes="(min-width: 1000px) 50vw, 100vw"
             />
             <div className="ct-copy">
               <span className="eyebrow">{t('hv3_ct_eyebrow')}</span>

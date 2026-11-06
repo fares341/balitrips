@@ -103,6 +103,9 @@ export interface PlanItem {
   id: string
   name: string
   price: string
+  /** For the live «≈» display-currency price. */
+  priceMinor: number
+  currency: string
   durationDays: number | null
   href: string
 }
@@ -982,7 +985,7 @@ function Paywall({
             rel="nofollow"
             className={index === 0 ? 'mx-cta is-orange' : 'mx-cta is-ghost'}
           >
-            {plan.name} — {plan.price} {term(plan)}
+            {plan.name} — <Money minor={plan.priceMinor} currency={plan.currency} /> {term(plan)}
           </a>
         ))}
         {plans.length === 0 && (

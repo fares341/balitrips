@@ -221,7 +221,8 @@ export function ActivitiesExplorer({
           <div className="chips scroll" role="group" aria-label={t('act_cats_label')}>
             {[{ key: 'all', label: t('act_cat_all') }, ...categories].map((chip) => {
               const count = chip.key === 'all' ? activities.length : (counts.get(chip.key) ?? 0)
-              if (chip.key !== 'all' && count === 0) return null
+              // Empty categories, and any with no label in this language, stay out.
+              if (chip.key !== 'all' && (count === 0 || chip.label.trim() === '')) return null
               return (
                 <button
                   key={chip.key}
@@ -283,10 +284,14 @@ export function ActivitiesExplorer({
         <div className="wrap stack" style={{ gap: 16 }}>
           <div className="row between">
             <p className="muted" aria-live="polite" style={{ margin: 0 }}>
-              <b className="num" style={{ color: 'var(--forest)' }}>
-                {format.number(results.length)}
-              </b>{' '}
-              {t('act_count')}
+              {t.rich('act_count', {
+                n: results.length,
+                b: (chunks) => (
+                  <b className="num" style={{ color: 'var(--forest)' }}>
+                    {chunks}
+                  </b>
+                ),
+              })}
             </p>
             {active.length > 0 && (
               <div className="active-f">

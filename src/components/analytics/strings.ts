@@ -11,6 +11,9 @@ export type ConsentLocale = 'ar' | 'en' | 'id'
 export interface ConsentStrings {
   title: string
   body: string
+  /** One-line summary for the compact bar; the full body shows in settings. */
+  short: string
+  settings: string
   acceptAll: string
   necessaryOnly: string
   customize: string
@@ -30,6 +33,8 @@ export const CONSENT_STRINGS: Record<ConsentLocale, ConsentStrings> = {
   ar: {
     title: 'ملفات تعريف الارتباط',
     body: 'نستخدم ملفات ضرورية لتشغيل الموقع. بموافقتك نستخدم أيضاً ملفات لفهم كيف يُستخدم الموقع، وأخرى للإعلانات. يمكنك تغيير اختيارك في أي وقت.',
+    short: 'نستخدم ملفات ضرورية لتشغيل الموقع، وأخرى اختيارية للإحصاءات والإعلانات بموافقتك.',
+    settings: 'الإعدادات',
     acceptAll: 'قبول الكل',
     necessaryOnly: 'الضرورية فقط',
     customize: 'اختيار ما أوافق عليه',
@@ -49,6 +54,8 @@ export const CONSENT_STRINGS: Record<ConsentLocale, ConsentStrings> = {
   en: {
     title: 'Cookies',
     body: 'We use necessary cookies to run the site. With your permission we also use cookies to understand how the site is used, and others for advertising. You can change your choice at any time.',
+    short: 'We use necessary cookies to run the site, and optional ones for statistics and ads with your permission.',
+    settings: 'Settings',
     acceptAll: 'Accept all',
     necessaryOnly: 'Necessary only',
     customize: 'Let me choose',
@@ -69,6 +76,8 @@ export const CONSENT_STRINGS: Record<ConsentLocale, ConsentStrings> = {
   id: {
     title: 'Cookie',
     body: 'Kami memakai cookie yang diperlukan untuk menjalankan situs. Dengan izin Anda, kami juga memakai cookie untuk memahami cara situs digunakan, dan cookie lain untuk iklan. Anda bisa mengubah pilihan kapan saja.',
+    short: 'Kami memakai cookie yang diperlukan, dan cookie opsional untuk statistik dan iklan dengan izin Anda.',
+    settings: 'Pengaturan',
     acceptAll: 'Terima semua',
     necessaryOnly: 'Hanya yang diperlukan',
     customize: 'Saya pilih sendiri',

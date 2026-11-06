@@ -33,7 +33,7 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { buttonClass } from '@/components/bt'
@@ -57,7 +57,7 @@ import { listPublishedPlans, loadLivePlanIds, type PlanRow } from '@/lib/entitle
 import { pageMetadata } from '../_meta'
 import { imageAt, imagePool } from '../_ui/imagery'
 import { PageBanner } from '../_ui/page-banner'
-import { formatPrice } from '../_ui/price'
+import { MONEY_SLOT, withMoney } from '@/components/currency/with-money'
 import { Money } from '@/components/currency/currency-context'
 import { currentUserId } from '../_viewer/session'
 import { PLAN_TIERS } from './tiers'
@@ -250,7 +250,6 @@ function PlanGrid({
   t: Translator
 }) {
   const free = PLAN_TIERS[0]
-  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
 
   return (
     <div className={`bt-ptiers n${plans.length + (free ? 1 : 0)}`}>
@@ -381,9 +380,18 @@ function PlanGrid({
                     <Icon name="arrow" size={14} className="bt-ptier-up" />
                     <span>
                       {t.rich('pl_upgrade', {
-                        price: money(plan.priceMinor - from.priceMinor, plan.currency),
+                        price: MONEY_SLOT,
                         plan: pick(from.name, locale),
-                        b: (chunks) => <strong>{chunks}</strong>,
+                        // The difference goes through the «≈» display-currency runtime.
+                        b: (chunks) => (
+                          <strong>
+                            {(Array.isArray(chunks) ? chunks : [chunks]).map((chunk: ReactNode) =>
+                              typeof chunk === 'string'
+                                ? withMoney(chunk, plan.priceMinor - from.priceMinor, plan.currency)
+                                : chunk,
+                            )}
+                          </strong>
+                        ),
                       })}
                     </span>
                   </>
