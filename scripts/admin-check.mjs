@@ -111,10 +111,31 @@ const secrets = secretsFromFile()
 say(`accounts with TOTP secrets: ${[...secrets.keys()].join(', ') || 'none'}`)
 
 /* ---- Pages -------------------------------------------------------------- */
+/**
+ * Studio v2: nav.ts no longer names capabilities; a link is shown when
+ * `canOpen()` in route-access.ts says so. Read that table here (its entries
+ * are plain regex / string literals) so this check expects exactly what the
+ * Studio shows: `a+b` = all of them, `a|b` = any of them.
+ */
+function routeTable() {
+  const src = readFileSync('src/app/(admin)/_lib/route-access.ts', 'utf8')
+  const body = src.slice(
+    src.indexOf('const ROUTES: readonly Rule[] = [') + 'const ROUTES: readonly Rule[] = '.length,
+  )
+  const literal = body.slice(0, body.indexOf('\n]\n') + 2)
+  return new Function(`return ${literal}`)()
+}
+const ROUTE_TABLE = routeTable()
+function capabilityOf(path) {
+  const bare = path.split(/[?#]/)[0].replace(/\/+$/, '')
+  const rule = ROUTE_TABLE.find(([pattern]) => pattern.test(bare))
+  if (!rule) return 'config.write'
+  return rule[1].join(rule[2] === 'any' ? '|' : '+')
+}
 function navPaths() {
   const src = readFileSync('src/app/(admin)/_ui/nav.ts', 'utf8')
-  const items = [...src.matchAll(/path: '([^']*)',\s*labelKey: '[^']+',\s*capability: '([^']+)'/g)]
-  return items.map((m) => ({ path: m[1], capability: m[2] }))
+  const paths = [...new Set([...src.matchAll(/path: '([^']*)'/g)].map((m) => m[1]))]
+  return paths.map((path) => ({ path, capability: capabilityOf(path) }))
 }
 const NAV = navPaths()
 
@@ -135,7 +156,7 @@ const PHASE5_PAGES = [
   ['/reports/records?metric=orders_paid&period=30d', 'reports.read'],
   ['/reports/records?metric=bookings&group=pending', 'reports.read'],
   ['/reports/records?metric=low_availability', 'reports.read'],
-  ['/reports/exports', 'reports.read'],
+  ['/reports/exports', 'admin.access'],
   ['/reports/schedules', 'config.write'],
 ]
 say(`nav pages: ${NAV.map((n) => n.path || '/').join(' ')}`)
@@ -162,7 +183,10 @@ say(
 )
 // `a+b` = needs both.
 const allowed = (role, cap) =>
-  role === 'admin' || cap.split('+').every((c) => ROLE_CAPS[role]?.has(c) ?? false)
+  role === 'admin' ||
+  (cap.includes('|')
+    ? cap.split('|').some((c) => ROLE_CAPS[role]?.has(c) ?? false)
+    : cap.split('+').every((c) => ROLE_CAPS[role]?.has(c) ?? false))
 
 function serverLogSize() {
   try {
