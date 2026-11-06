@@ -68,13 +68,17 @@ export function ConsentBanner() {
       aria-labelledby={titleId}
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
     >
-      <div className="bt-consent-inner">
-        <h2 id={titleId} className="bt-consent-title">
+      <div className={choosing ? 'bt-consent-inner is-open' : 'bt-consent-inner is-compact'}>
+        <h2 id={titleId} className={choosing ? 'bt-consent-title' : 'bt-consent-title sr-only'}>
           {s.title}
         </h2>
         <p className="bt-consent-body">
-          {s.body}{' '}
-          <Link href={policyLink('/cookies', locale)} className="bt-consent-link">
+          {choosing ? s.body : s.short}{' '}
+          <Link
+            href={policyLink('/cookies', locale)}
+            className="bt-consent-link"
+            prefetch={false}
+          >
             {s.policy}
           </Link>
         </p>
@@ -130,14 +134,14 @@ export function ConsentBanner() {
           ) : (
             <button
               type="button"
-              className="bt-consent-btn"
+              className="bt-consent-settings"
               onClick={() => {
                 setAnalytics(stored?.analytics ?? false)
                 setMarketing(stored?.marketing ?? false)
                 setChoosing(true)
               }}
             >
-              {s.customize}
+              {s.settings}
             </button>
           )}
           <button

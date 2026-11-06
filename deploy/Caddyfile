@@ -373,11 +373,32 @@
 
 	# A bare 502 is indistinguishable from DNS pointing at the wrong place.
 	# Say which it is, and make sure no cache keeps the answer.
+	#
+	# 5xx (the app is down, restarting or too slow): a small branded page in
+	# Arabic and English instead of bare text. Self-contained — no request
+	# back to the app that just failed — and it retries itself after 15 s.
+	# The status code is kept, so monitoring and crawlers still see the 5xx.
+	handle_errors 5xx {
+		header Cache-Control "no-store"
+		header Cloudflare-CDN-Cache-Control "no-store"
+		header Retry-After 15
+		header Content-Type "text/html; charset=utf-8"
+		respond <<HTML
+			<!doctype html>
+			<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="15"><meta name="robots" content="noindex">
+			<title>Bali Trips — نعود خلال لحظات</title>
+			<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fffbf8;color:#1c2a1f;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;padding:16px;text-align:center}main{max-width:520px}.n{font:800 80px/1 system-ui,sans-serif;color:#26552e}h1{font-size:22px;color:#1b3f22;margin:16px 0 8px}p{color:#5f6e62;line-height:1.6;margin:0 0 8px}a{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;margin-top:12px;border-radius:999px;background:#ff9000;color:#13301a;font-weight:700;text-decoration:none}</style></head>
+			<body><main><div class="n" dir="ltr">{err.status_code}</div>
+			<h1>نعود خلال لحظات</h1><p>الموقع مشغول أو يُحدَّث الآن. ستُعاد محاولة تحميل الصفحة تلقائيًا.</p>
+			<p dir="ltr" lang="en">We'll be right back — this page will retry by itself in a few seconds.</p>
+			<a href="">حاول الآن · Try now</a></main></body></html>
+			HTML {err.status_code}
+	}
+
+	# Everything else (4xx raised by Caddy itself): plain text, never cached.
 	handle_errors {
 		header Cache-Control "no-store"
 		header Cloudflare-CDN-Cache-Control "no-store"
-		@gateway expression {err.status_code} >= 500
-		header @gateway Retry-After 15
 		respond "{err.status_code} {err.status_text}" {err.status_code}
 	}
 }

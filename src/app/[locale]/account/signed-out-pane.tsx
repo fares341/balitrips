@@ -12,6 +12,8 @@
  * `?signin=1` from the Studio link, /login, /register, /forgot-password).
  */
 
+import { useTranslations } from 'next-intl'
+
 import { AuthModal, type AuthMode } from '@/components/auth'
 import { useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
@@ -34,6 +36,21 @@ export type SignedOutPaneProps = {
   autoOpen?: boolean
   /** Which form to show: sign in, create an account, or reset the password. */
   initialMode?: AuthMode
+  /**
+   * Why the visitor is being asked to sign in, shown as one line above the
+   * form. Omit on /login itself, where the visitor chose to sign in.
+   */
+  reason?: SignInReason
+}
+
+export type SignInReason = 'favorites' | 'account' | 'trip'
+
+/** The reason implied by where the visitor was going (an internal path). */
+export function reasonFor(next: string | null): SignInReason {
+  if (next === null) return 'account'
+  if (next.startsWith('/account/favorites')) return 'favorites'
+  if (/^\/(?:my-trip|trip|cart|checkout|account\/trip)(?:[/?#]|$)/.test(next)) return 'trip'
+  return 'account'
 }
 
 export function SignedOutPane({
@@ -41,14 +58,22 @@ export function SignedOutPane({
   next,
   autoOpen: _autoOpen = false,
   initialMode = 'signin',
+  reason,
 }: SignedOutPaneProps) {
   const router = useRouter()
+  const t = useTranslations()
 
   // The sign-in form is the page itself (v3 login.html), not a dialog over a
   // card: popups are for confirmations only. `?signin=1` and `?next=` land
   // on the same form.
   return (
-    <AuthModal
+    <>
+      {reason !== undefined && (
+        <p className="bt-auth-why" role="note">
+          {t(`auth5_why_${reason}`)}
+        </p>
+      )}
+      <AuthModal
       variant="page"
       open
       onClose={() => undefined}
@@ -60,6 +85,7 @@ export function SignedOutPane({
         // visitor back to whatever they were doing when they were stopped.
         if (next !== null) router.replace(next)
       }}
-    />
+      />
+    </>
   )
 }

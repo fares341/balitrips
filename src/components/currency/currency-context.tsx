@@ -152,15 +152,7 @@ export function CurrencySwitcher({ className }: { className?: string }) {
         }}
         aria-label={t('cur_label')}
         dir="ltr"
-        style={{
-          border: '1px solid var(--line, #ddd)',
-          borderRadius: 999,
-          background: 'transparent',
-          color: 'inherit',
-          font: 'inherit',
-          fontSize: 13,
-          padding: '4px 8px',
-        }}
+        className="currency-select"
       >
         {supported.map((code) => (
           <option key={code} value={code}>

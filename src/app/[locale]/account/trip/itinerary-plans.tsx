@@ -22,7 +22,7 @@ import {
   vipPlanOffer,
 } from '@/lib/itineraries/queries'
 
-import { formatPrice } from '../../_ui/price'
+import { MONEY_SLOT, withMoney } from '@/components/currency/with-money'
 import { VipUpgradeButton } from './vip-upgrade'
 
 export async function ItineraryPlans({ userId, locale }: { userId: string; locale: Locale }) {
@@ -68,9 +68,11 @@ export async function ItineraryPlans({ userId, locale }: { userId: string; local
                   </span>
                   <VipUpgradeButton
                     planId={offer.planId}
-                    label={t('p3_vip_later_cta', {
-                      price: formatPrice(offer.priceMinor, offer.currency, locale),
-                    })}
+                    label={withMoney(
+                      t('p3_vip_later_cta', { price: MONEY_SLOT }),
+                      offer.priceMinor,
+                      offer.currency,
+                    )}
                   />
                 </div>
               )}

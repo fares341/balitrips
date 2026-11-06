@@ -317,6 +317,10 @@ export function Header(props: { hidden?: readonly string[] }) {
             <Link
               key={route.href}
               href={route.href}
+              // The closed drawer sits just off-screen, where the viewport
+              // prefetcher still "sees" every link: on a phone that pulled
+              // ~12 routes (and their hero images) on the first load.
+              prefetch={menuOpen ? null : false}
               aria-current={isActivePath(pathname, route.href) ? 'page' : undefined}
               onClick={() => setMenuOpen(false)}
             >

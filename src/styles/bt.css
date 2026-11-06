@@ -4005,3 +4005,221 @@ html {
   gap: 10px;
   margin-block-start: 6px;
 }
+
+/* --- 404 / error: popular pages ----------------------------------------- */
+.nf .nf-pop {
+  margin-top: 8px;
+  text-align: center;
+}
+.nf .nf-pop-h {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--forest-deep, var(--forest));
+  margin: 0 0 8px;
+}
+.nf .nf-pop ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.nf .nf-pop a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 16px;
+  border-radius: var(--r-pill, 999px);
+  border: 1px solid var(--line);
+  color: var(--forest);
+  font-weight: 600;
+  text-decoration: none;
+}
+.nf .nf-pop a:hover {
+  border-color: var(--forest);
+}
+
+/* --- Tap targets on phones (WCAG 2.5.5 / Apple HIG: at least 44 × 44) --- */
+@media (max-width: 1023px) {
+  .hdr .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .hdr .lang-btn {
+    min-height: 44px;
+  }
+  .hdr-top {
+    gap: 2px;
+  }
+  .ftr ul {
+    gap: 0;
+  }
+  .ftr ul a,
+  .ftr ul button,
+  .ftr-contact a,
+  .ftr-bottom a,
+  .ftr-bottom button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .ftr .soc a {
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 359px) {
+  .hdr-logo img {
+    height: 26px;
+  }
+}
+
+/* --- Scrolling chip rows: snap, and never widen the page ---------------- */
+.chips.scroll {
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--gutter);
+  overscroll-behavior-x: contain;
+  max-width: calc(100% + var(--gutter) * 2);
+  min-width: 0;
+}
+.chips.scroll > * {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+@media (max-width: 1023px) {
+  .hdr-logo {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+/* <BrandImg> wraps the photo in <picture>; it adds no box of its own. */
+.sv-card .m picture {
+  display: contents;
+}
+
+/* --- Header controls: one family (owner, Nov 2026) ----------------------
+   Language button, currency select and icon buttons share the brand font,
+   height and pill radius, on phones and desktop. */
+.lang-btn,
+.currency-select {
+  font-family: var(--f);
+  font-weight: 700;
+  font-size: 13px;
+  height: 44px;
+  min-height: 44px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--line);
+  background: var(--white);
+  color: var(--forest);
+}
+.currency-select {
+  padding: 0 12px;
+  cursor: pointer;
+}
+.hdr .icon-btn {
+  border-radius: var(--r-pill);
+}
+@media (max-width: 1023px) {
+  .hdr .lang-btn,
+  .hdr .currency-select {
+    height: 44px;
+    font-size: 12.5px;
+  }
+}
+
+/* --- Header proportions (owner, Nov 2026) -------------------------------
+   Three-column grid so the logo is truly centred whatever the two groups
+   weigh; one control height (44px) for icons, pills and the CTA; logo 32px
+   tall on phones and tablets, 44px on desktop; fixed row heights so the
+   sticky header never shifts. */
+.hdr-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  height: 64px;
+  gap: 8px;
+}
+.hdr-start,
+.hdr-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.hdr-end {
+  justify-content: flex-end;
+}
+.hdr .hdr-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.hdr .hdr-logo img {
+  /* !important: overrides client revision 1's fluid logo rule above. */
+  height: 32px !important;
+  width: auto !important;
+  max-width: none;
+  max-height: none;
+  display: block;
+}
+.hdr .cta-plan {
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 20px;
+  border-radius: var(--r-pill);
+  font-family: var(--f);
+  font-size: 14px;
+  box-shadow: none;
+}
+@media (min-width: 1024px) {
+  .hdr-top {
+    height: 76px;
+    gap: 16px;
+  }
+  .hdr-start,
+  .hdr-end {
+    gap: 8px;
+  }
+  .hdr .hdr-logo img {
+    height: 44px !important;
+  }
+  .hdr-nav {
+    height: 52px;
+    display: flex;
+    align-items: center;
+  }
+  .hdr-nav a {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--f);
+  }
+}
+@media (max-width: 1023px) {
+  /* Phones: menu + language pill | logo | favourites + trip. Currency lives in the drawer. */
+  .hdr-top {
+    gap: 4px;
+  }
+  .hdr-start,
+  .hdr-end {
+    gap: 0;
+  }
+  .hdr .lang-btn {
+    padding-inline: 10px;
+  }
+}
+@media (max-width: 374px) {
+  .hdr .hdr-logo img {
+    height: 30px !important;
+  }
+  .hdr .lang-btn .lbl,
+  .hdr .lang-btn > span:not(:first-child) {
+    display: none;
+  }
+}
