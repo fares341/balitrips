@@ -77,7 +77,7 @@ export const itinerarySalesSchema = z.object({
     .max(30)
     .default([]),
   /** «احجز كل الفعاليات»: percent off the itinerary's linked activities. */
-  allActivitiesDiscountPct: z.number().int().min(0).max(90).default(0),
+  allActivitiesDiscountPct: z.number().int().min(0).max(90).default(10),
   /** Whether the private driver counts toward the bundle discount. */
   discountIncludesDriver: z.boolean().default(false),
   /** How many times one bought itinerary may use the bundle discount. */

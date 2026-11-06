@@ -46,6 +46,13 @@ export const FEES_OFF: FeeSchedule = {
   taxLabel: null,
 }
 
+export interface ExtraDiscount {
+  amountMinor: number
+  code: string
+  label?: Partial<Localized> | null
+  itineraryId?: string
+}
+
 export interface PricedTotals {
   subtotalMinor: number
   discountMinor: number
@@ -68,12 +75,32 @@ export function computeTotals(
   currency: string,
   discount: { amountMinor: number; code: string } | null,
   schedule: FeeSchedule = FEES_OFF,
+  /**
+   * Itineraries phase 3: server-computed «كل الفعاليات» discounts, each its own
+   * line after the code's. Together with the code they never exceed the subtotal.
+   */
+  extraDiscounts: readonly ExtraDiscount[] = [],
 ): PricedTotals {
   const lines: OrderAdjustmentLine[] = []
-  const discountMinor =
+  let discountMinor =
     discount === null ? 0 : Math.max(0, Math.min(Math.trunc(discount.amountMinor), subtotalMinor))
   if (discount !== null && discountMinor > 0) {
     lines.push({ kind: 'discount', amountMinor: discountMinor, code: discount.code })
+  }
+  for (const extra of extraDiscounts) {
+    const amount = Math.max(
+      0,
+      Math.min(Math.trunc(extra.amountMinor), subtotalMinor - discountMinor),
+    )
+    if (amount <= 0) continue
+    discountMinor += amount
+    lines.push({
+      kind: 'discount',
+      amountMinor: amount,
+      code: extra.code,
+      ...(extra.label ? { label: extra.label } : {}),
+      ...(extra.itineraryId ? { itineraryId: extra.itineraryId } : {}),
+    })
   }
   const base = subtotalMinor - discountMinor
 

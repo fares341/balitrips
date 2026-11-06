@@ -83,6 +83,8 @@ export interface QuoteRequestItem {
     audience?: string
     /** Itinerary: the level chosen (economy / mid / luxury), priced from the catalog. */
     tier?: string
+    /** «فعاليات جدولي»: the bought itinerary this activity line belongs to (never priced here). */
+    itineraryBundle?: string
   } | null
 }
 
