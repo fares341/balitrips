@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const fx = await readFx()
   const chosen = request.cookies.get(CURRENCY_COOKIE)?.value?.toUpperCase()
-  const detected = detectCurrency(request.headers, fx.presentment)
+  const detected = detectCurrency(request.headers, Object.keys(fx.rates))
   return NextResponse.json(
     {
       base: fx.base,

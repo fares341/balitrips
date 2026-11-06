@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { can } from '@/lib/auth/roles'
 import { orders, payments, users } from '@/db/schema'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'

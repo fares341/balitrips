@@ -3,7 +3,7 @@ import { Fragment, type ReactNode } from 'react'
 
 import { db } from '@/db'
 import { siteSettings, users } from '@/db/schema'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { resolveFx } from '@/lib/currency/fx'
 import { listNonSarPrices } from '@/lib/currency/health'
 import { formatMoneyInput, formatPercentInput } from '@/lib/money-input'

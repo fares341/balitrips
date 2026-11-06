@@ -122,7 +122,7 @@ export function fmoneyOrNull(
 }
 
 /** The currency typed next to an amount, for reading the amount; USD when not a code. */
-export function fcurrencyOr(form: FormData, name: string, fallback = 'USD'): string {
+export function fcurrencyOr(form: FormData, name: string, fallback = 'SAR'): string {
   const value = raw(form, name).toUpperCase()
   return /^[A-Z]{3}$/.test(value) ? value : fallback
 }

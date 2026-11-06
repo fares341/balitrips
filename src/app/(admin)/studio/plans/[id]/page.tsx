@@ -103,7 +103,7 @@ export default async function PlanEditPage({
         <div className="a-card">
           <h2>{t('plans.price_access')}</h2>
           <div className="a-row">
-            <MoneyField minor={plan?.priceMinor} currency={plan?.currency ?? 'USD'} />
+            <MoneyField minor={plan?.priceMinor} currency={plan?.currency ?? 'SAR'} />
             <Field
               label={t('plans.map_access')}
               htmlFor="entitlementKind"

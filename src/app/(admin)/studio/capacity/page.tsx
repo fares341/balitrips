@@ -6,7 +6,7 @@ import { driverCapacity, driverVehicles } from '@/db/schema'
 import { todayInBali } from '@/lib/booking-rules'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { formatMoneyInput } from '@/lib/money-input'
 import { localeConfig, locales } from '@/i18n/config'
 

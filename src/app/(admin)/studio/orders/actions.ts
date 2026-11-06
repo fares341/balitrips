@@ -18,7 +18,8 @@ import {
   users,
 } from '@/db/schema'
 import { absoluteUrl } from '@/app/[locale]/_meta'
-import { allocateMinor, formatMoney } from '@/lib/money'
+import { allocateMinor } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { pick } from '@/lib/content/localize'
 import { toMailLocale } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
@@ -79,7 +80,7 @@ export async function refundOrderItem(orderId: string, form: FormData): Promise<
     // The amount is typed as money ("25.00"); its decimals depend on the
     // order's currency, so it is read once the order is loaded. A first read
     // with the most common currency rejects garbage before any locking.
-    fmoney(form, 'amountMinor', 'USD', t('orders.field_refund_amount'))
+    fmoney(form, 'amountMinor', 'SAR', t('orders.field_refund_amount'))
     let amountMinor = 0
 
     const summary = await db.transaction(async (tx) => {

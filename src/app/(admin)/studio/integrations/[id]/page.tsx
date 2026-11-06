@@ -26,7 +26,7 @@ import { CONFLICT_POLICIES, CSV_COLUMNS } from '@/lib/integrations/csv'
 import { adapterFor, isImplemented } from '@/lib/integrations/registry'
 import { integrationPublicColumns } from '@/lib/integrations/service'
 import { EVENT_ID_HEADER, SIGNATURE_HEADER, TIMESTAMP_HEADER } from '@/lib/integrations/webhook'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'

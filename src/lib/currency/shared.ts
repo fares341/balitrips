@@ -15,8 +15,16 @@ import { formatMoneyText } from './money-format'
 /** Any ISO 4217 code the Studio list offers. */
 export type DisplayCurrency = string
 
-/** The switcher's choice (wins over detection). */
-export const CURRENCY_COOKIE = 'bt_currency'
+/**
+ * The switcher's choice (wins over detection). Written ONLY by an explicit
+ * pick in the switcher. Versioned (v2, Nov 2026): the old `bt_currency`
+ * cookie is ignored and deleted, because visitors who once picked a
+ * currency in the pre-#56 switcher (often SAR) were pinned to it for a year
+ * and never saw their country's currency again.
+ */
+export const CURRENCY_COOKIE = 'bt_cur_choice'
+/** The pre-v2 override cookie: never read, cleared by the proxy. */
+export const LEGACY_CURRENCY_COOKIE = 'bt_currency'
 /** What the proxy detected from the visitor's country (informational, not HttpOnly). */
 export const GEO_CURRENCY_COOKIE = 'bt_cur_geo'
 

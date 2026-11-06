@@ -60,10 +60,34 @@ test('an Egyptian visitor sees ≈ EGP from the first frame; a Saudi visitor see
 
 test('the switcher choice (cookie) wins over the country', async ({ browser }) => {
   const href = await firstActivityHref(browser)
-  const { context, page } = await pageAs(browser, 'EG', { bt_currency: 'USD' })
+  const { context, page } = await pageAs(browser, 'EG', { bt_cur_choice: 'USD' })
   await page.goto(href)
   await expect(page.locator('html')).toHaveAttribute('data-cur', 'USD')
   await expect(page.locator('[data-money]').first()).toContainText('≈')
+  await context.close()
+})
+
+test('an old bt_currency override is ignored and cleared; the switcher shows the effective currency', async ({
+  browser,
+}) => {
+  const href = await firstActivityHref(browser)
+  const { context, page } = await pageAs(browser, 'EG', { bt_currency: 'SAR' })
+  await page.goto(href)
+  await expect(page.locator('html')).toHaveAttribute('data-cur', 'EGP')
+  await expect(page.locator('select[aria-label]').first()).toHaveValue('EGP')
+  const names = (await context.cookies()).map((c) => c.name)
+  expect(names).not.toContain('bt_currency')
+  expect(names).not.toContain('bt_cur_choice')
+  await context.close()
+})
+
+test('prices stay converted after a client-side navigation', async ({ browser }) => {
+  const { context, page } = await pageAs(browser, 'EG')
+  await page.goto('/ar/activities')
+  await expect(page.locator('html')).toHaveAttribute('data-cur', 'EGP')
+  await page.locator('a[href*="/ar/activities/"]').first().click()
+  await page.waitForURL(/\/ar\/activities\/.+/)
+  await expect(page.locator('[data-money]:not([data-money-mode])').first()).toContainText('ج.م')
   await context.close()
 })
 

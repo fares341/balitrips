@@ -4,7 +4,7 @@ import { db } from '@/db'
 import { tierSeasonalPrices, type activities } from '@/db/schema'
 import { weekdayList } from '@/lib/availability/rules'
 import { DEFAULT_CHILD_AGE_MAX, DEFAULT_CHILD_AGE_MIN } from '@/lib/content/child-ages'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { getAdminI18n } from '../../../_lib/i18n'
 import { Field, PriceLockNote, TextInput } from '../../../_ui/field'

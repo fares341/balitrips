@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
@@ -170,7 +170,7 @@ export default async function ProfitPage({
             </thead>
             <tbody>
               {months.map(([key, row]) => {
-                const [month, currency = 'USD'] = key.split('|')
+                const [month, currency = 'SAR'] = key.split('|')
                 return (
                   <tr key={key}>
                     <td className="a-mono">

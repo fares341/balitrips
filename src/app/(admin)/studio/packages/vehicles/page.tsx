@@ -12,7 +12,7 @@ import {
   type Vehicle,
 } from '@/lib/packages/vehicles'
 import { readSarPerUsd } from '@/lib/currency/fx-store'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'

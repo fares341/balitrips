@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { db } from '@/db'
 import { orders, users } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { ORDER_STATUSES } from '@/lib/orders/state'
 import { isUrgent, timeLeftParts } from '@/lib/orders/supplier-wait'
 

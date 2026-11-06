@@ -7,7 +7,7 @@ import { mediaUrl } from '@/lib/content/queries'
 import { activityVisibility } from '@/lib/content/activity-status'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { ACTIVITY_STATUSES } from '@/lib/content/activity-status'
 
 import { adminHref } from '../../_lib/admin-path'

@@ -1,5 +1,5 @@
 import type { coupons } from '@/db/schema'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 type CouponRow = typeof coupons.$inferSelect
 
@@ -20,6 +20,6 @@ export function couponValueLabel(
   row: Pick<CouponRow, 'type' | 'value' | 'currency'>,
   intl: string,
 ): string {
-  if (row.type === 'fixed') return formatMoney(row.value, row.currency ?? 'USD', intl)
+  if (row.type === 'fixed') return formatMoney(row.value, row.currency ?? 'SAR', intl)
   return `${new Intl.NumberFormat(intl, { maximumFractionDigits: 2 }).format(row.value / 100)}%`
 }

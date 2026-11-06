@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { integrationImports, supplierIntegrations } from '@/db/schema'
 import { isConflictPolicy, type PlannedChange } from '@/lib/integrations/csv'
 import { previewImport } from '@/lib/integrations/imports'
-import { formatMoney } from '@/lib/money'
+import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import type { Translate } from '../../../../../_i18n'
 import { adminHref } from '../../../../../_lib/admin-path'
