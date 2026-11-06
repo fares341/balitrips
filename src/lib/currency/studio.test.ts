@@ -11,11 +11,12 @@ describe('Studio money is always SAR', () => {
     expect(studioMoney(22_100, 'SAR', 'en', rates)).not.toContain('$')
   })
 
-  it('an old USD order shows ≈ SAR first, original in brackets', () => {
+  it('an old USD order shows ≈ SAR only, no dollars', () => {
     const text = studioMoney(5_900, 'USD', 'en', rates)
     expect(text.startsWith('≈ ')).toBe(true)
     expect(text).toContain('221.25')
-    expect(text).toContain('($59.00)')
+    expect(text).not.toContain('$')
+    expect(text).not.toContain('(')
   })
 
   it('a missing currency counts as SAR', () => {
@@ -33,8 +34,10 @@ describe('Studio money is always SAR', () => {
       unconvertible: [],
     })
     const text = studioTotal(list, 'en', rates)
-    expect(text).toMatch(/^≈ .*137\.50.*\(converted\)$/)
+    expect(text).toMatch(/^≈ .*137\.50/)
+    expect(text).not.toContain('converted')
     expect(text).not.toContain('$')
+    expect(studioTotal(list, 'ar', rates)).not.toMatch(/[A-Za-z]/)
   })
 
   it('an all-SAR total is not labelled', () => {

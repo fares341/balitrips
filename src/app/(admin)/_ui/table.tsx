@@ -148,3 +148,40 @@ export async function When({ value }: { value: Date | string | null }) {
     </time>
   )
 }
+
+/**
+ * Relative time («منذ ساعتين», "2 hours ago") for recent rows; the full Bali
+ * date and time stays in the tooltip and the `datetime` attribute.
+ */
+export async function Ago({ value, now }: { value: Date | string | null; now: Date }) {
+  if (!value) return <span className="a-muted">—</span>
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return <span className="a-muted">—</span>
+
+  const { intl } = await uiI18n()
+  const seconds = Math.round((date.getTime() - now.getTime()) / 1000)
+  const abs = Math.abs(seconds)
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ['year', 31_536_000],
+    ['month', 2_592_000],
+    ['week', 604_800],
+    ['day', 86_400],
+    ['hour', 3_600],
+    ['minute', 60],
+  ]
+  const [unit, size] = units.find(([, s]) => abs >= s) ?? ['second', 1]
+  const text = new Intl.RelativeTimeFormat(intl, { numeric: 'auto' }).format(
+    Math.round(seconds / size),
+    unit,
+  )
+  const full = new Intl.DateTimeFormat(intl, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Asia/Makassar',
+  }).format(date)
+  return (
+    <time dateTime={date.toISOString()} className="a-when" title={full}>
+      {text}
+    </time>
+  )
+}

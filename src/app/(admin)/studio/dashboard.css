@@ -1,0 +1,251 @@
+/* ===========================================================================
+   Studio home (Nov 2026 polish): one clear order — greeting, «بحاجة إلى
+   متابعتك», grouped numbers, charts, then the latest activity. Light motion
+   only (fade/slide on load), all of it off for prefers-reduced-motion.
+   =========================================================================== */
+
+.dash-numbers {
+  margin-block-start: 22px;
+}
+
+.dash-numbers-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dash-numbers-head .a-section-title {
+  flex: 1;
+  margin: 0;
+}
+
+.dash-numbers-head > .a-btn {
+  flex: none;
+}
+
+/* Filters: compact on desktop. */
+.dash-filters {
+  margin-block-start: 10px;
+}
+
+.dash-filters .rp-filters {
+  padding: 10px 12px;
+  gap: 8px 10px;
+}
+
+.dash-filters .rp-filters .a-field {
+  flex: 1 1 130px;
+  min-inline-size: 120px;
+}
+
+.dash-filters .rp-filters .a-field:has(.rp-dates) {
+  flex: 2 1 290px;
+  min-inline-size: 280px;
+}
+
+.dash-filters .rp-filters .a-field label,
+.dash-filters .rp-filters .a-field .a-hint {
+  font-size: 12px;
+}
+
+.dash-filters .rp-period-line {
+  font-size: 12.5px;
+}
+
+.dash-fsheet-btn {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .dash-fsheet-btn {
+    display: inline-flex;
+    margin-block-start: 10px;
+    cursor: pointer;
+  }
+
+  .dash-filters > .rp-filters {
+    display: none;
+  }
+
+  .dash-fsheet-toggle:checked ~ .dash-filters > .rp-filters {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dash-fsheet-toggle:checked ~ .dash-fsheet-btn {
+    background: var(--a-primary-soft);
+    border-color: var(--a-primary);
+  }
+
+  .dash-filters .rp-filters .a-field {
+    flex: none;
+  }
+
+  .dash-filters .rp-filter-actions {
+    margin: 0;
+  }
+
+  .dash-filters .rp-filter-actions .a-btn {
+    flex: 1;
+  }
+}
+
+/* Lists: cleaner rows, hover, tabular money, relative times. */
+.dash-list .a-table td {
+  vertical-align: middle;
+}
+
+.dash-list .a-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.dash-list .a-table tbody tr:hover {
+  background: var(--a-sunken);
+}
+
+.dash-list .num,
+.dash-cell-money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dash-cell-money {
+  font-weight: 700;
+}
+
+.dash-cell-when {
+  color: var(--a-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dash-cell-main .a-sub {
+  display: block;
+}
+
+/* Phone: each row becomes a small card. */
+@media (max-width: 640px) {
+  .dash-list .a-table-wrap {
+    overflow: visible;
+    max-block-size: none;
+    block-size: auto;
+    border: 0;
+    background: none;
+  }
+
+  .dash-list .a-table td,
+  .dash-list .a-table tbody tr:nth-child(n) td {
+    background: none;
+  }
+
+  .dash-list .a-table thead {
+    display: none;
+  }
+
+  .dash-list .a-table,
+  .dash-list .a-table tbody {
+    display: block;
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  .dash-list .a-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 12px 2px;
+    border-block-end: 1px solid var(--a-line);
+  }
+
+  .dash-list .a-table tbody tr:last-child {
+    border-block-end: 0;
+  }
+
+  .dash-list .a-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+
+  .dash-list .a-table td.dash-cell-main {
+    flex: 1 1 60%;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .dash-list .a-table td.dash-cell-sub {
+    order: 5;
+    flex: 1 1 100%;
+    color: var(--a-muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  .dash-list .a-table td.num {
+    margin-inline-start: auto;
+  }
+
+  .dash-list .a-table td.dash-cell-when {
+    order: 6;
+    font-size: 12px;
+  }
+}
+
+/* Load-in: sections fade and rise a little, one after another. */
+@media (prefers-reduced-motion: no-preference) {
+  .a-hello,
+  .a-attn,
+  .a-wait,
+  .dash-numbers,
+  .rp-kpi-group,
+  .rp-chart,
+  .dash-list {
+    animation: dash-in 0.45s ease both;
+  }
+
+  .rp-kpi-group:nth-of-type(2) {
+    animation-delay: 0.06s;
+  }
+
+  .rp-kpi-group:nth-of-type(3) {
+    animation-delay: 0.12s;
+  }
+
+  .rp-chart {
+    animation-delay: 0.15s;
+  }
+
+  .rp-bar-fill {
+    transform-origin: left center;
+    animation: dash-grow 0.7s ease both 0.2s;
+  }
+}
+
+[dir='rtl'] .rp-bar-fill {
+  transform-origin: right center;
+}
+
+@keyframes dash-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dash-grow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}

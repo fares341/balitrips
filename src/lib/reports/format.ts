@@ -1,4 +1,5 @@
 import { studioTotal, studioTotalSar } from '@/lib/currency/studio'
+import { formatMoney } from '@/lib/money'
 
 import { pctChange } from './period'
 import type { Kpi } from './types'
@@ -13,7 +14,8 @@ export function kpiText(kpi: Kpi, intl: string, hoursLabel = 'h'): string[] {
   switch (v.kind) {
     case 'money':
       // One SAR figure; labelled when older non-SAR orders were converted.
-      return [studioTotal(v.money, intl)]
+      // Nothing sold yet reads «0.00 ر.س», not a bare dash.
+      return [v.money.length === 0 ? formatMoney(0, 'SAR', intl) : studioTotal(v.money, intl)]
     case 'percent':
       return [
         v.value === null

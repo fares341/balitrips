@@ -8,6 +8,8 @@ import type { Role } from '@/lib/auth/roles'
 import { adminHref } from '../../_lib/admin-path'
 import { canOpen } from '../../_lib/route-access'
 import type { Translate } from '../../_i18n'
+import { Icon, type IconName } from '../icons'
+import { CountUp } from './count-up'
 import { LineChart } from './line-chart'
 
 import './reports.css'
@@ -42,11 +44,14 @@ export function KpiCard({
   t,
   intl,
   role,
+  icon,
 }: {
   kpi: Kpi
   t: Translate
   intl: string
   role?: Role
+  /** A small brand-tinted icon (the Studio home groups). */
+  icon?: IconName
 }) {
   const change = kpiChange(kpi)
   const values = kpiText(kpi, intl, t('rp.hours_short'))
@@ -63,17 +68,26 @@ export function KpiCard({
       data-staff-na={kpi.staffNA ? 'true' : undefined}
     >
       <div className="rp-kpi-head">
+        {icon ? (
+          <span className="rp-kpi-icon" aria-hidden="true">
+            <Icon name={icon} size={18} />
+          </span>
+        ) : null}
         <span className="rp-kpi-label">{kpi.label}</span>
         <DefinitionTip text={kpi.definition} label={t('rp.what_is_this', { name: kpi.label })} />
       </div>
       {kpi.value.kind === 'unavailable' ? (
         <b className="rp-kpi-value rp-unavailable">{values[0]}</b>
       ) : (
-        values.map((text, i) => (
-          <b className="rp-kpi-value" key={`${text}-${i}`} dir="ltr">
-            {text}
-          </b>
-        ))
+        values.map((text, i) =>
+          text === '—' ? (
+            <b className="rp-kpi-value rp-unavailable" key={`${text}-${i}`}>
+              {t('dashboard.none_yet')}
+            </b>
+          ) : (
+            <CountUp className="rp-kpi-value" key={`${text}-${i}`} text={text} />
+          ),
+        )
       )}
       <div className="rp-kpi-foot">
         {changeLabel ? (
@@ -206,6 +220,7 @@ export function ReportBody({
   rtl,
   wideFirstChart = true,
   role,
+  groups,
 }: {
   result: ReportResult
   t: Translate
@@ -214,14 +229,53 @@ export function ReportBody({
   wideFirstChart?: boolean
   /** The viewer: drill-down links to pages they cannot open are left out. */
   role?: Role
+  /**
+   * Optional KPI groups (the Studio home): each a small titled grid. KPIs not
+   * named in any group are shown in a last, untitled grid.
+   */
+  groups?: readonly KpiGroup[]
 }) {
+  const grouped = new Set(groups?.flatMap((group) => group.ids) ?? [])
+  const rest = result.kpis.filter((kpi) => !grouped.has(kpi.id))
   return (
     <>
-      <section className="rp-kpis" aria-label={t('rp.numbers')}>
-        {result.kpis.map((kpi) => (
-          <KpiCard key={kpi.id} kpi={kpi} t={t} intl={intl} role={role} />
-        ))}
-      </section>
+      {groups
+        ? groups.map((group) => {
+            const kpis = group.ids
+              .map((id) => result.kpis.find((kpi) => kpi.id === id))
+              .filter((kpi): kpi is Kpi => kpi !== undefined)
+            if (kpis.length === 0) return null
+            return (
+              <section
+                key={group.title}
+                className="rp-kpi-group"
+                data-tone={group.tone}
+                aria-label={group.title}
+              >
+                <h3 className="rp-kpi-group-title">{group.title}</h3>
+                <div className="rp-kpis">
+                  {kpis.map((kpi) => (
+                    <KpiCard
+                      key={kpi.id}
+                      kpi={kpi}
+                      t={t}
+                      intl={intl}
+                      role={role}
+                      icon={group.icons?.[kpi.id] ?? group.icon}
+                    />
+                  ))}
+                </div>
+              </section>
+            )
+          })
+        : null}
+      {rest.length > 0 ? (
+        <section className="rp-kpis" aria-label={t('rp.numbers')}>
+          {rest.map((kpi) => (
+            <KpiCard key={kpi.id} kpi={kpi} t={t} intl={intl} role={role} />
+          ))}
+        </section>
+      ) : null}
 
       <div className="rp-charts">
         {result.blocks.map((block, index) => {
@@ -273,9 +327,11 @@ export function ReportBody({
         })}
       </div>
 
-      <section className="a-card rp-definitions" aria-labelledby="rp-defs">
-        <h2 id="rp-defs">{t('rp.definitions_title')}</h2>
-        <dl>
+      <details className="a-card rp-definitions">
+        <summary>
+          <span id="rp-defs">{t('rp.definitions_title')}</span>
+        </summary>
+        <dl aria-labelledby="rp-defs">
           {result.kpis.map((kpi) => (
             <div key={kpi.id} style={{ display: 'contents' }}>
               <dt>{kpi.label}</dt>
@@ -290,7 +346,17 @@ export function ReportBody({
             ))}
           </ul>
         ) : null}
-      </section>
+      </details>
     </>
   )
+}
+
+export interface KpiGroup {
+  title: string
+  ids: readonly string[]
+  /** Icon for every card of the group, unless `icons` names one for a KPI. */
+  icon?: IconName
+  icons?: Readonly<Record<string, IconName>>
+  /** Brand tint of the group's icons. */
+  tone?: 'forest' | 'orange'
 }
