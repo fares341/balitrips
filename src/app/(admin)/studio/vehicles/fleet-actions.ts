@@ -59,7 +59,10 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       throw new Error(t('capacity.err_max_below_min'))
     }
     if (values.fleetSize < 0) throw new Error(t('capacity.err_fleet_negative'))
-    if (values.noticeDaysOverride !== null && (values.noticeDaysOverride < 0 || values.noticeDaysOverride > 30))
+    if (
+      values.noticeDaysOverride !== null &&
+      (values.noticeDaysOverride < 0 || values.noticeDaysOverride > 30)
+    )
       throw new Error(t('err.too_big', { field: t('ip1.notice_override'), max: 30 }))
     if (values.hoursPerDay < 1 || values.hoursPerDay > 24)
       throw new Error(t('err.too_big', { field: t('ip1.hours_per_day'), max: 24 }))

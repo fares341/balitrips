@@ -12,14 +12,19 @@ import {
 } from '@/lib/auth/roles'
 
 import { getAdminI18n } from '../../_lib/i18n'
+import { searchAndPage } from '../../_lib/list'
+import { adminHref } from '../../_lib/admin-path'
 import { requireCapability } from '../../_lib/session'
 import { Advanced } from '../../_ui/advanced'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
-import { Empty, Pill, Table, When } from '../../_ui/table'
+import { ListSearch } from '../../_ui/list-search'
+import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { changeMemberRole, inviteMember, resendInvite, setMemberActive } from './actions'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/team')
 
 /** What each role is for, in plain words (`team.about_<role>`). */
 const ROLE_ORDER: readonly Role[] = [
@@ -53,7 +58,7 @@ export default async function TeamPage({
     .groupBy(sessions.userId)
     .as('last_seen')
 
-  const members = await db
+  const membersAll = await db
     .select({
       id: users.id,
       name: users.name,
@@ -68,6 +73,13 @@ export default async function TeamPage({
     .leftJoin(lastSeen, eq(lastSeen.userId, users.id))
     .where(and(ne(users.role, 'customer'), isNull(users.deletedAt)))
     .orderBy(asc(users.role), desc(users.createdAt))
+  const list = searchAndPage(membersAll, params, (m) => [
+    m.name,
+    m.email,
+    m.role,
+    isRole(m.role) ? t(`shell.role_${m.role}`) : m.role,
+  ])
+  const members = list.rows
 
   const grantable = assignableRoles(session.role).filter((role) => role !== 'customer')
   const roleLabel = (role: string) => (isRole(role) ? t(`shell.role_${role}`) : role)
@@ -76,6 +88,7 @@ export default async function TeamPage({
     <>
       <PageHead title={t('team.title')} description={t('team.description')} />
       <Flash searchParams={params} />
+      <ListSearch basePath={LIST} searchParams={params} />
 
       <form className="a-card a-form" action={inviteMember}>
         <h2>{t('team.invite_title')}</h2>
@@ -264,6 +277,13 @@ export default async function TeamPage({
           </Table>
         </Advanced>
       </div>
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
     </>
   )
 }

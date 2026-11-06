@@ -289,23 +289,45 @@ export const ACTION_TTL_MS = 30 * 60 * 1000
    Studio review + retention
    -------------------------------------------------------------------------- */
 
-export async function listConversations(kind: ConversationKind, limit = 50, offset = 0) {
-  return db
-    .select({
-      id: assistantConversations.id,
-      userId: assistantConversations.userId,
-      locale: assistantConversations.locale,
-      messageCount: assistantConversations.messageCount,
-      costMicros: assistantConversations.costMicros,
-      lastModel: assistantConversations.lastModel,
-      createdAt: assistantConversations.createdAt,
-      updatedAt: assistantConversations.updatedAt,
-    })
-    .from(assistantConversations)
-    .where(eq(assistantConversations.kind, kind))
-    .orderBy(desc(assistantConversations.updatedAt))
-    .limit(limit)
-    .offset(offset)
+/**
+ * One page of conversations, optionally only those with a message containing
+ * `q` (Studio → Assistant → conversations), with the total for the pager.
+ */
+export async function searchConversations(
+  kind: ConversationKind,
+  q: string | null,
+  limit: number,
+  offset: number,
+) {
+  const where = and(
+    eq(assistantConversations.kind, kind),
+    q
+      ? sql`exists (select 1 from ${assistantMessages} m where m.conversation_id = ${assistantConversations.id} and m.content ilike ${`%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`})`
+      : undefined,
+  )
+  const [rows, [total]] = await Promise.all([
+    db
+      .select({
+        id: assistantConversations.id,
+        userId: assistantConversations.userId,
+        locale: assistantConversations.locale,
+        messageCount: assistantConversations.messageCount,
+        costMicros: assistantConversations.costMicros,
+        lastModel: assistantConversations.lastModel,
+        createdAt: assistantConversations.createdAt,
+        updatedAt: assistantConversations.updatedAt,
+      })
+      .from(assistantConversations)
+      .where(where)
+      .orderBy(desc(assistantConversations.updatedAt))
+      .limit(limit)
+      .offset(offset),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(assistantConversations)
+      .where(where),
+  ])
+  return { rows, total: total?.value ?? 0 }
 }
 
 export async function conversationDetail(id: string) {

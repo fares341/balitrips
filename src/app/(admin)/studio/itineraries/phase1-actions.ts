@@ -18,12 +18,7 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import {
-  itineraries,
-  itineraryDays,
-  itineraryDocuments,
-  siteSettings,
-} from '@/db/schema'
+import { itineraries, itineraryDays, itineraryDocuments, siteSettings } from '@/db/schema'
 import { isLocale } from '@/i18n/config'
 import { can } from '@/lib/auth/roles'
 import { cleanDownloadFilename, isPdfMime, looksLikePdf } from '@/lib/itineraries/publish-gate'

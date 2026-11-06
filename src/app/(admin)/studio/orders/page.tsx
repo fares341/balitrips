@@ -12,6 +12,7 @@ import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
 import { buildQuery, pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import { FilterSheet } from '../../_ui/filter-sheet'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Table, When } from '../../_ui/table'
@@ -35,6 +36,7 @@ export default async function OrdersPage({
   const { q, status, from, to, where } = orderFilters(params)
   const page = pageParam(params)
   const mayExport = can(session.role, 'customers.export')
+  const activeFilters = [status, from, to].filter(Boolean).length
 
   const [rows, [totalRow]] = await Promise.all([
     db
@@ -106,54 +108,87 @@ export default async function OrdersPage({
         <Link href={LIST} className={`a-qf${!status ? ' is-on' : ''}`}>
           {t('oo.o_all')}
         </Link>
+        {ORDER_STATUSES.filter((value) => value !== 'authorized' && value !== 'paid').map(
+          (value) => (
+            <Link
+              key={value}
+              href={`${LIST}?status=${value}`}
+              className={`a-qf${status === value ? ' is-on' : ''}`}
+              aria-current={status === value ? 'page' : undefined}
+            >
+              {orderStatusLabel(t, value)}
+            </Link>
+          ),
+        )}
       </nav>
 
-      <form className="a-row a-card" method="get" action={LIST}>
-        <div className="a-field">
-          <label htmlFor="q">{t('common.search')}</label>
+      <form className="a-card a-ofilters" method="get" action={LIST}>
+        {/* Pinned on phones: search stays reachable while scrolling the list. */}
+        <div className="a-osearch">
+          <label className="a-visually-hidden" htmlFor="q">
+            {t('common.search')}
+          </label>
           <input
             className="a-input"
             id="q"
             name="q"
+            type="search"
             defaultValue={q ?? ''}
             placeholder={t('orders.search_placeholder')}
           />
-        </div>
-        <div className="a-field">
-          <label htmlFor="status">{t('common.status')}</label>
-          <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">{t('orders.any')}</option>
-            {ORDER_STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {orderStatusLabel(t, value)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="a-field">
-          <label htmlFor="from">{t('orders.from')}</label>
-          <input className="a-input" id="from" name="from" type="date" defaultValue={from ?? ''} />
-        </div>
-        <div className="a-field">
-          <label htmlFor="to">{t('orders.to')}</label>
-          <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
-        </div>
-        <div className="a-actions">
           <button className="a-btn" type="submit">
-            {t('common.filter')}
+            {t('common.search')}
           </button>
-          <Link className="a-btn ghost" href={LIST}>
-            {t('orders.reset')}
-          </Link>
-          {mayExport ? (
-            <a
-              className="a-btn ghost"
-              href={`${adminHref('/orders/export')}${buildQuery(params, {})}`}
-            >
-              {t('crm.export_orders')}
-            </a>
-          ) : null}
         </div>
+        <FilterSheet
+          label={t('orders.filters_toggle')}
+          activeLabel={t('orders.filters_active', { n: activeFilters })}
+          active={activeFilters}
+        >
+          <div className="a-row">
+            <div className="a-field">
+              <label htmlFor="status">{t('common.status')}</label>
+              <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
+                <option value="">{t('orders.any')}</option>
+                {ORDER_STATUSES.map((value) => (
+                  <option key={value} value={value}>
+                    {orderStatusLabel(t, value)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="a-field">
+              <label htmlFor="from">{t('orders.from')}</label>
+              <input
+                className="a-input"
+                id="from"
+                name="from"
+                type="date"
+                defaultValue={from ?? ''}
+              />
+            </div>
+            <div className="a-field">
+              <label htmlFor="to">{t('orders.to')}</label>
+              <input className="a-input" id="to" name="to" type="date" defaultValue={to ?? ''} />
+            </div>
+            <div className="a-actions">
+              <button className="a-btn" type="submit">
+                {t('common.filter')}
+              </button>
+              <Link className="a-btn ghost" href={LIST}>
+                {t('orders.reset')}
+              </Link>
+              {mayExport ? (
+                <a
+                  className="a-btn ghost"
+                  href={`${adminHref('/orders/export')}${buildQuery(params, {})}`}
+                >
+                  {t('crm.export_orders')}
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </FilterSheet>
       </form>
 
       {rows.length === 0 ? (

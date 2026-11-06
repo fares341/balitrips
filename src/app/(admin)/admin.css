@@ -3299,3 +3299,96 @@ details > summary.a-btn::-webkit-details-marker {
   font-size: 14px;
   color: var(--a-ink-2);
 }
+
+/* ---- Orders: pinned search, filter sheet, scrolling chips ----------------- */
+
+.a-visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.a-ofilters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a-osearch {
+  display: flex;
+  gap: 8px;
+}
+
+.a-osearch .a-input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.a-fsheet-btn {
+  display: none;
+}
+
+/* Chips: never squeezed, never clipped (room for the focus ring), and the row
+   scrolls edge to edge on a phone. */
+.a-quickfilter {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: 4px 2px 8px;
+  scroll-padding-inline: 16px;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.a-quickfilter .a-qf {
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .a-quickfilter {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .a-ofilters {
+    position: sticky;
+    inset-block-start: 60px;
+    z-index: 5;
+    padding: 10px;
+    box-shadow: 0 6px 16px rgba(20, 40, 25, 0.08);
+  }
+
+  .a-fsheet-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    inline-size: 100%;
+    justify-content: center;
+  }
+
+  .a-fsheet-body {
+    display: none;
+  }
+
+  .a-fsheet[data-open='true'] .a-fsheet-body {
+    display: block;
+    margin-block-start: 10px;
+    max-block-size: 60vh;
+    overflow-y: auto;
+  }
+
+  .a-fsheet-body .a-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .a-ocard {
+    min-inline-size: 0;
+  }
+}
+
+.a-listsearch {
+  margin-block-end: 14px;
+}

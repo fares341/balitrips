@@ -1,22 +1,33 @@
 import Link from 'next/link'
 
-import { listConversations } from '@/lib/assistant/store'
+import { searchConversations } from '@/lib/assistant/store'
 import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
+import { listParams } from '../../../_lib/list'
 import { requireCapability } from '../../../_lib/session'
 import { PageHead } from '../../../_ui/shell'
-import { Empty, Pill, Table, When } from '../../../_ui/table'
+import { ListSearch } from '../../../_ui/list-search'
+import { Empty, Pager, Pill, Table, When } from '../../../_ui/table'
 
 export const dynamic = 'force-dynamic'
 
 /** Studio → Assistant → website conversations, newest first (quality review). */
-export default async function AssistantConversationsPage() {
+const LIST = adminHref('/assistant/conversations')
+
+export default async function AssistantConversationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   // Visitors' own words, sometimes with their name or dates: customer data.
   await requireCapability('customers.read')
   const { t } = await getAdminI18n()
-  const rows = await listConversations('public', 100)
+  const params = await searchParams
+  // `q` searches what was said in the conversation (any message).
+  const { q, page, offset, pageSize } = listParams(params)
+  const { rows, total } = await searchConversations('public', q, pageSize, offset)
   const retention = Number.parseInt(process.env.ASSISTANT_RETENTION_DAYS ?? '', 10)
   const days = Number.isFinite(retention) && retention >= 1 ? retention : 90
 
@@ -31,8 +42,9 @@ export default async function AssistantConversationsPage() {
           </Link>
         }
       />
+      <ListSearch basePath={LIST} searchParams={params} />
       {rows.length === 0 ? (
-        <Empty>{t('assistant.conv_empty')}</Empty>
+        <Empty>{q ? t('list.no_match', { q }) : t('assistant.conv_empty')}</Empty>
       ) : (
         <Table>
           <thead>
@@ -78,6 +90,7 @@ export default async function AssistantConversationsPage() {
           </tbody>
         </Table>
       )}
+      <Pager basePath={LIST} searchParams={params} page={page} pageSize={pageSize} total={total} />
     </>
   )
 }

@@ -7,12 +7,17 @@ import { loadStaff } from '@/lib/crm/queries'
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
 import { buildQuery, param } from '../../_lib/result'
+import { searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
+import { ListSearch } from '../../_ui/list-search'
 import { PageHead } from '../../_ui/shell'
+import { Pager } from '../../_ui/table'
 import { baliToday, loadTasks, NewTaskForm, TaskList } from './task-ui'
 
 export const dynamic = 'force-dynamic'
+
+const LIST = adminHref('/tasks')
 
 const VIEWS = ['mine', 'all', 'overdue', 'done'] as const
 type View = (typeof VIEWS)[number]
@@ -39,7 +44,9 @@ export default async function TasksPage({
           ? sql`${crmTasks.status} <> 'open'`
           : eq(crmTasks.status, 'open')
 
-  const [tasks, staff] = await Promise.all([loadTasks(where), loadStaff()])
+  const [tasksAll, staff] = await Promise.all([loadTasks(where, 2000), loadStaff()])
+  const list = searchAndPage(tasksAll, params, (task) => [task.title, task.notes])
+  const tasks = list.rows
 
   return (
     <>
@@ -59,9 +66,17 @@ export default async function TasksPage({
         ))}
       </nav>
 
+      <ListSearch basePath={LIST} searchParams={params} />
       <div className="a-card">
         <TaskList tasks={tasks} back="/tasks" />
       </div>
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={list.page}
+        pageSize={list.pageSize}
+        total={list.total}
+      />
 
       <div className="a-card">
         <h2>{t('tasks.new')}</h2>

@@ -14,13 +14,15 @@ export function TabLinks({
   const pathname = usePathname()
   const hit = (tab: { href: string; exact: boolean }) =>
     tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`)
-  const current = tabs
-    .filter(hit)
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href
+  const current = tabs.filter(hit).sort((a, b) => b.href.length - a.href.length)[0]?.href
   return (
     <nav className="a-subtabs" aria-label={label}>
       {tabs.map((tab) => (
-        <Link key={tab.href} href={tab.href} aria-current={tab.href === current ? 'page' : undefined}>
+        <Link
+          key={tab.href}
+          href={tab.href}
+          aria-current={tab.href === current ? 'page' : undefined}
+        >
           {tab.label}
         </Link>
       ))}

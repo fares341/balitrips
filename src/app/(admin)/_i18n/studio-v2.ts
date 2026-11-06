@@ -83,7 +83,8 @@ const section: Section = {
 
     // PDF exports of lists
     'pdf.export': 'Export PDF',
-    'pdf.queued': 'The PDF is being prepared. It appears under Reports → PDF downloads in a minute.',
+    'pdf.queued':
+      'The PDF is being prepared. It appears under Reports → PDF downloads in a minute.',
     'pdf.rows': '{n} rows',
     'pdf.page': 'Page',
     'pdf.of': 'of',

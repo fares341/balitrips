@@ -16,7 +16,11 @@ export async function SectionTabs({ section }: { section: TabSection }) {
   const { t } = await uiI18n()
   const tabs = (SECTION_TABS[section] as readonly SectionTab[])
     .filter((tab) => canOpen(session.role, tab.path))
-    .map((tab) => ({ href: adminHref(tab.path), label: t(tab.labelKey), exact: tab.exact ?? false }))
+    .map((tab) => ({
+      href: adminHref(tab.path),
+      label: t(tab.labelKey),
+      exact: tab.exact ?? false,
+    }))
   if (tabs.length < 2) return null
   return <TabLinks tabs={tabs} label={t(`tabs.section_${section}`)} />
 }

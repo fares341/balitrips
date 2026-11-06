@@ -15,7 +15,8 @@ import { adminBasePath } from './admin-path'
  * Order matters: the first matching pattern wins, so specific paths come
  * before their section.
  */
-type Rule = readonly [RegExp, readonly Capability[]] | readonly [RegExp, readonly Capability[], 'any']
+type Rule =
+  readonly [RegExp, readonly Capability[]] | readonly [RegExp, readonly Capability[], 'any']
 
 const ROUTES: readonly Rule[] = [
   [/^$/, ['admin.access']],
@@ -54,7 +55,11 @@ const ROUTES: readonly Rule[] = [
   // (driver fleet: capacity.write, package vehicles: content.write). The old
   // addresses only redirect to it.
   [/^\/vehicles$/, ['capacity.write', 'content.write'], 'any'],
-  [/^\/(capacity|itineraries\/driver|packages\/vehicles)$/, ['capacity.write', 'content.write'], 'any'],
+  [
+    /^\/(capacity|itineraries\/driver|packages\/vehicles)$/,
+    ['capacity.write', 'content.write'],
+    'any',
+  ],
   [/^\/suppliers(\/[^/]+)?$/, ['orders.read']],
   [/^\/payables(\/.*)?$/, ['suppliers.write']],
   [/^\/discounts(\/[^/]+)?$/, ['discounts.write']],
