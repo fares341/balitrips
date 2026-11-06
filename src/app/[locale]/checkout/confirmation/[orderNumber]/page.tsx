@@ -160,19 +160,17 @@ export default async function OrderPage({
 
   // Photos for the lines, from the live catalogue (names stay the snapshot).
   const catalog = await loadCartCatalog(
-    lines.map(
-      (line): QuoteRequestItem => ({
-        id: line.id,
-        kind: line.kind as CartItemKind,
-        refId: line.refId,
-        quantity: line.quantity,
-        travelDate: line.travelDate,
-        travelTime: line.travelTime,
-        guests: line.guests,
-        endDate: line.endDate,
-        parentItemId: line.parentItemId,
-      }),
-    ),
+    lines.map((line): QuoteRequestItem => ({
+      id: line.id,
+      kind: line.kind as CartItemKind,
+      refId: line.refId,
+      quantity: line.quantity,
+      travelDate: line.travelDate,
+      travelTime: line.travelTime,
+      guests: line.guests,
+      endDate: line.endDate,
+      parentItemId: line.parentItemId,
+    })),
     await loadEntitlements(order.userId),
     order.userId,
   ).catch(() => null)

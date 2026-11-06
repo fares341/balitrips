@@ -11,12 +11,7 @@
 export type ContactField = 'name' | 'email' | 'subject' | 'message'
 
 export type ContactErrorCode =
-  | 'required'
-  | 'email'
-  | 'too_long'
-  | 'rejected'
-  | 'failed'
-  | 'rate_limited'
+  'required' | 'email' | 'too_long' | 'rejected' | 'failed' | 'rate_limited'
 
 /**
  * What the action returns.

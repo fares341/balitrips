@@ -67,6 +67,8 @@ export interface RenderPdfOptions {
    * filename. Only needed if a template ever embeds a font file.
    */
   files?: readonly { name: string; content: Uint8Array | string; contentType?: string }[]
+  /** Gotenberg footer (`footer.html`): `.pageNumber` / `.totalPages` are filled in per page. */
+  footerHtml?: string
   landscape?: boolean
   /** Inches. Gotenberg 8 reads unitless numbers as inches. */
   margins?: { top: number; bottom: number; left: number; right: number }
@@ -98,6 +100,10 @@ export async function renderPdf(options: RenderPdfOptions): Promise<Uint8Array> 
       new Blob([new Uint8Array(bytes)], { type: file.contentType ?? 'application/octet-stream' }),
       file.name,
     )
+  }
+
+  if (options.footerHtml !== undefined) {
+    form.append('files', new Blob([options.footerHtml], { type: 'text/html' }), 'footer.html')
   }
 
   const margins = options.margins ?? DEFAULT_MARGINS

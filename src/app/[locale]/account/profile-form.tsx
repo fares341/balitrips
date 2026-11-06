@@ -27,7 +27,13 @@
 import { useActionState, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
+import {
+  FormError,
+  FormNotice,
+  SelectField,
+  TextField,
+  type CountryOption,
+} from '@/components/auth'
 import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
 import { Button } from '@/components/shared'
 import { locales, localeConfig, type Locale } from '@/i18n/config'

@@ -23,6 +23,11 @@ const ROUTES: readonly Rule[] = [
   [/^\/inbox$/, ['admin.access']],
   [/^\/security$/, ['admin.access']],
 
+  // Listing PDFs (Studio v2): each kind checks its own capability; the
+  // downloads list shows a person only their own files (admin: all).
+  [/^\/pdf\/[^/]+$/, ['admin.access']],
+  [/^\/reports\/exports(\/[^/]+)?$/, ['admin.access']],
+
   // Reports: two reports also need the data they show.
   [/^\/reports\/financial(\/export)?$/, ['reports.read', 'finance.read']],
   [/^\/reports\/customers(\/export)?$/, ['reports.read', 'customers.read']],

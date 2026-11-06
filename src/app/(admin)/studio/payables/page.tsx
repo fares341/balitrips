@@ -10,6 +10,7 @@ import { getAdminI18n } from '../../_lib/i18n'
 import { listParams, matchesQuery, searchAndPage } from '../../_lib/list'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
+import { PdfExportButton } from '../../_ui/pdf-export'
 import { PageHead } from '../../_ui/shell'
 import { ListSearch } from '../../_ui/list-search'
 import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
@@ -32,7 +33,7 @@ export default async function PayablesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('suppliers.write')
+  const session = await requireCapability('suppliers.write')
   const { t, intl } = await getAdminI18n()
   const params = await searchParams
 
@@ -72,9 +73,17 @@ export default async function PayablesPage({
         title={t('pay.title')}
         description={t('pay.description')}
         actions={
-          <Link className="a-btn ghost" href={adminHref('/suppliers')}>
-            {t('nav.suppliers')}
-          </Link>
+          <>
+            <Link className="a-btn ghost" href={adminHref('/suppliers')}>
+              {t('nav.suppliers')}
+            </Link>
+            <PdfExportButton
+              kind="payables"
+              role={session.role}
+              searchParams={params}
+              back="/payables"
+            />
+          </>
         }
       />
       <Flash searchParams={params} />

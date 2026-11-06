@@ -14,6 +14,8 @@ export function scheduleDue(frequency: string, lastSentAt: Date | null, now: Dat
       BALI_OFFSET_MS,
   )
   if (frequency === 'weekly' && local.getUTCDay() !== 1) return false
+  // Monthly (the accountant's report): the 1st of the month, Bali time.
+  if (frequency === 'monthly' && local.getUTCDate() !== 1) return false
   return lastSentAt === null || lastSentAt < todaySend
 }
 
@@ -23,6 +25,14 @@ export function schedulePeriod(frequency: string, now: Date): Record<string, str
   if (frequency === 'weekly') {
     const from = baliDate(new Date(now.getTime() - 7 * 86_400_000))
     return { period: 'custom', from, to: yesterday }
+  }
+  if (frequency === 'monthly') {
+    // The whole previous calendar month (Bali dates).
+    const lastDay = new Date(now.getTime() + BALI_OFFSET_MS)
+    lastDay.setUTCDate(0)
+    const iso = (d: Date) => d.toISOString().slice(0, 10)
+    const first = new Date(Date.UTC(lastDay.getUTCFullYear(), lastDay.getUTCMonth(), 1))
+    return { period: 'custom', from: iso(first), to: iso(lastDay) }
   }
   return { period: 'yesterday' }
 }

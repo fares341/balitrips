@@ -5,6 +5,7 @@ import { db } from '@/db'
 import { reportExports } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { isReportId } from '@/lib/reports/catalog'
+import { listingKindOf } from '@/lib/reports/listing'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { requireCapability } from '../../../_lib/session'
@@ -21,7 +22,7 @@ export default async function ExportsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await requireCapability('reports.read')
+  const session = await requireCapability('admin.access')
   const query = await searchParams
   const { t } = await buildContext(session.role)
   const admin = can(session.role, 'roles.write')
@@ -61,7 +62,13 @@ export default async function ExportsPage({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <td>{isReportId(row.report) ? t(`rp.r_${row.report}`) : row.report}</td>
+                  <td>
+                    {isReportId(row.report)
+                      ? t(`rp.r_${row.report}`)
+                      : listingKindOf(row.report)
+                        ? `${t(`pdf.l_${listingKindOf(row.report)}`)} (PDF)`
+                        : row.report}
+                  </td>
                   <td dir="ltr">
                     {row.params.period === 'custom'
                       ? `${row.params.from ?? ''} – ${row.params.to ?? ''}`

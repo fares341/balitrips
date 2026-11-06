@@ -11,6 +11,8 @@ import { uploadPrivate } from '@/lib/storage'
 import { rangeLabel } from './builders/helpers'
 import { buildReport, isReportId, mayOpen } from './catalog'
 import { reportHtml } from './export'
+import { buildListing, listingKindOf, mayExportListing, parseListingFilters } from './listing'
+import { listingAssets, listingFooterHtml, listingHtml } from './listing-html'
 import { parseReportFilters } from './filters'
 
 /**
@@ -26,6 +28,33 @@ export async function renderReportExport(exportId: string): Promise<void> {
       .update(reportExports)
       .set({ status: 'failed', error: error.slice(0, 500) })
       .where(eq(reportExports.id, exportId))
+  }
+  if (listingKindOf(row.report) !== null && row.requestedBy !== null) {
+    const kind = listingKindOf(row.report)
+    try {
+      const pdf = await renderListingPdf(
+        row.report,
+        row.params,
+        row.locale,
+        row.requestedBy,
+        row.createdAt,
+      )
+      if (pdf === null || kind === null) return fail('no access')
+      const objectKey = `reports/${row.id}.pdf`
+      const upload = await uploadPrivate({
+        key: objectKey,
+        body: pdf,
+        contentType: 'application/pdf',
+      })
+      await db
+        .update(reportExports)
+        .set({ status: 'ready', objectKey: upload.key, bytes: upload.bytes, error: null })
+        .where(eq(reportExports.id, exportId))
+      return
+    } catch (error) {
+      await fail(error instanceof Error ? error.message : String(error))
+      throw error
+    }
   }
   if (!isReportId(row.report) || row.requestedBy === null) return fail('unknown report')
   const [requester] = await db
@@ -81,4 +110,79 @@ export async function renderReportExport(exportId: string): Promise<void> {
     .update(reportExports)
     .set({ status: 'ready', objectKey: upload.key, bytes: upload.bytes, error: null })
     .where(eq(reportExports.id, exportId))
+}
+
+/**
+ * A listing PDF (orders, payments, refunds, payables, customers, sales,
+ * itinerary sales, the accountant's month) for `userId`, with that person's
+ * CURRENT role. Null when they may no longer make it.
+ */
+export async function renderListingPdf(
+  report: string,
+  params: Record<string, string>,
+  localeValue: string,
+  userId: string,
+  createdAt: Date,
+): Promise<Uint8Array | null> {
+  const kind = listingKindOf(report)
+  if (kind === null) return null
+  const [requester] = await db
+    .select({ role: users.role, deletedAt: users.deletedAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  const role =
+    requester && requester.deletedAt === null && isRole(requester.role)
+      ? requester.role
+      : 'customer'
+  if (!mayExportListing(role, kind)) return null
+
+  const locale = localeValue === 'en' ? 'en' : 'ar'
+  const t = translator(locale)
+  const intl = locale === 'ar' ? 'ar-u-nu-latn' : 'en-GB'
+  const { readFx } = await import('@/lib/currency/fx-store')
+  await readFx() // the Studio SAR rate for any non-SAR amount
+  const filters = parseListingFilters(params)
+  const doc = await buildListing(kind, filters, { t, intl, role, locale })
+  const day = (iso: string) =>
+    new Intl.DateTimeFormat(intl, { dateStyle: 'medium', timeZone: 'UTC' }).format(
+      new Date(`${iso}T12:00:00Z`),
+    )
+  const period =
+    filters.from || filters.to
+      ? `${filters.from ? day(filters.from) : '…'} – ${filters.to ? day(filters.to) : '…'}`
+      : t('pdf.all_time')
+  const shownFilters: [string, string][] = []
+  if (filters.status) shownFilters.push([t('common.status'), filters.status])
+  if (filters.q) shownFilters.push([t('list.search'), filters.q])
+  const dir = locale === 'ar' ? 'rtl' : 'ltr'
+  const brand = 'Bali Trips'
+  const html = listingHtml(doc, {
+    dir,
+    lang: locale,
+    brand,
+    period,
+    filters: shownFilters,
+    generatedAt: new Intl.DateTimeFormat(intl, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Makassar',
+    }).format(createdAt),
+    labels: {
+      period: t('pdf.period'),
+      filters: t('pdf.filters'),
+      noFilters: t('pdf.no_filters'),
+      generated: t('pdf.generated'),
+      totals: t('pdf.totals'),
+      truncated: (n) => t('pdf.truncated', { n }),
+      empty: t('rp.empty'),
+    },
+  })
+  return renderPdf({
+    html,
+    files: await listingAssets(),
+    footerHtml: listingFooterHtml({ dir, page: t('pdf.page'), of: t('pdf.of'), brand }),
+    margins: { top: 0.55, bottom: 0.7, left: 0.5, right: 0.5 },
+    metadata: { Title: doc.title, Author: brand, Creator: brand },
+  })
 }

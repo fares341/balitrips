@@ -23,7 +23,10 @@ export type BrandImgProps = {
 const HAS_VARIANTS = new Set<string>(BRAND_SOURCES)
 
 function variantSet(src: string, ext: 'avif' | 'webp'): string {
-  const name = src.split('/').pop()!.replace(/\.[a-z0-9]+$/i, '')
+  const name = src
+    .split('/')
+    .pop()!
+    .replace(/\.[a-z0-9]+$/i, '')
   return BRAND_WIDTHS.map((w) => `/brand/r/${name}-${w}.${ext} ${w}w`).join(', ')
 }
 

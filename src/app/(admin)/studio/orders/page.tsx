@@ -14,6 +14,7 @@ import { buildQuery, pageParam } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
 import { FilterSheet } from '../../_ui/filter-sheet'
 import { Flash } from '../../_ui/flash'
+import { PdfExportButton } from '../../_ui/pdf-export'
 import { PageHead } from '../../_ui/shell'
 import { Empty, OrderStatusPill, Pager, Table, When } from '../../_ui/table'
 import { orderFilters } from './filters'
@@ -186,6 +187,12 @@ export default async function OrdersPage({
                   {t('crm.export_orders')}
                 </a>
               ) : null}
+              <PdfExportButton
+                kind="orders"
+                role={session.role}
+                searchParams={params}
+                back="/orders"
+              />
             </div>
           </div>
         </FilterSheet>

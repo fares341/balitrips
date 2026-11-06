@@ -138,7 +138,8 @@ export function StartQuiz({
                     </span>
                     <b>{option.name}</b>
                     <small className="muted">
-                      {t('c_days_n', { n: option.days })} · <bdi dir="ltr">
+                      {t('c_days_n', { n: option.days })} ·{' '}
+                      <bdi dir="ltr">
                         <Money minor={option.priceMinor} currency={option.currency} />
                       </bdi>
                     </small>

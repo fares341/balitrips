@@ -20,16 +20,7 @@ import { Icon, type IconName } from '@/components/ui/icon'
 import { Link } from '@/i18n/routing'
 
 export type TagVariant =
-  | 'default'
-  | 'palm'
-  | 'orange'
-  | 'forest'
-  | 'ok'
-  | 'warn'
-  | 'err'
-  | 'info'
-  | 'glass'
-  | 'sun'
+  'default' | 'palm' | 'orange' | 'forest' | 'ok' | 'warn' | 'err' | 'info' | 'glass' | 'sun'
 
 const TAG_CLASS: Record<TagVariant, string | null> = {
   default: null,
