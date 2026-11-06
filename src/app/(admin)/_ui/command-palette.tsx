@@ -123,7 +123,12 @@ export function CommandPalette({
               setCursor(0)
             }}
             onKeyDown={(event) => {
-              if (event.key === 'ArrowDown') {
+              if (event.key === 'Escape') {
+                // One Esc closes (a search box would otherwise only clear itself).
+                event.preventDefault()
+                dialog.current?.close()
+                close()
+              } else if (event.key === 'ArrowDown') {
                 event.preventDefault()
                 setCursor((c) => Math.min(c + 1, results.length - 1))
               } else if (event.key === 'ArrowUp') {
