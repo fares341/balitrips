@@ -54,6 +54,7 @@ import {
 import { labelOr } from '../../protection/labels'
 import { assignLineSupplier, confirmLineWithSupplier } from '../supplier-actions'
 
+import { DeliveryPanel } from './delivery-panel'
 import { OrderMoneyCard } from './money-card'
 
 export const dynamic = 'force-dynamic'
@@ -507,6 +508,16 @@ export default async function OrderDetailPage({
           </tbody>
         </Table>
       </div>
+
+      <DeliveryPanel
+        orderId={row.id}
+        t={t}
+        intl={intl}
+        mayResend={mayFulfil}
+        lines={lines
+          .filter((line) => line.kind === 'itinerary' && line.parentItemId === null)
+          .map((line) => ({ id: line.id, name: pick(line.nameSnapshot, locale) }))}
+      />
 
       {supplierLines.length > 0 ? (
         <div className="a-card" id="suppliers">

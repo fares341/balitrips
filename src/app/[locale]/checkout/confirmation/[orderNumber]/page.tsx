@@ -49,6 +49,7 @@ import type { CartItemKind, QuoteRequestItem } from '@/lib/pricing/quote'
 
 import { toLocale } from '../../../_seo-hreflang'
 import { retryPaymentAction } from '../../actions'
+import { DeliveredCard } from './delivered-card'
 import { OrderStatusWatcher } from './order-status-watcher'
 import { PurchaseTracker } from '@/components/analytics/purchase-tracker'
 import { serverEventId } from '@/lib/analytics/event-id'
@@ -160,19 +161,17 @@ export default async function OrderPage({
 
   // Photos for the lines, from the live catalogue (names stay the snapshot).
   const catalog = await loadCartCatalog(
-    lines.map(
-      (line): QuoteRequestItem => ({
-        id: line.id,
-        kind: line.kind as CartItemKind,
-        refId: line.refId,
-        quantity: line.quantity,
-        travelDate: line.travelDate,
-        travelTime: line.travelTime,
-        guests: line.guests,
-        endDate: line.endDate,
-        parentItemId: line.parentItemId,
-      }),
-    ),
+    lines.map((line): QuoteRequestItem => ({
+      id: line.id,
+      kind: line.kind as CartItemKind,
+      refId: line.refId,
+      quantity: line.quantity,
+      travelDate: line.travelDate,
+      travelTime: line.travelTime,
+      guests: line.guests,
+      endDate: line.endDate,
+      parentItemId: line.parentItemId,
+    })),
     await loadEntitlements(order.userId),
     order.userId,
   ).catch(() => null)
@@ -353,6 +352,16 @@ export default async function OrderPage({
               )}
             </div>
           </section>
+
+          {state === 'success' && (
+            <DeliveredCard
+              locale={locale}
+              email={email}
+              lines={lines
+                .filter((line) => line.kind === 'itinerary' && line.parentItemId === null)
+                .map((line) => ({ id: line.id, name: nameOf(line) }))}
+            />
+          )}
 
           {state === 'transfer' && (
             <section className="panel stack" aria-labelledby="cf-bank-t">

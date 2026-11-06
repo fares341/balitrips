@@ -40,6 +40,8 @@ export {
   type WelcomeEmailInput,
   renderNotificationEmail,
   type NotificationEmailInput,
+  renderItineraryDeliveryEmail,
+  type ItineraryDeliveryEmailInput,
 } from './templates'
 export { ConsoleTransport } from './console'
 export { ResendTransport } from './resend'

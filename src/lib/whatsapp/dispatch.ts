@@ -198,7 +198,12 @@ export async function triggerOrderAutomation(
           vehicle: activity,
           link: itemKey === 'itinerary_purchased' ? link('/account/schedules', locale) : orderLink,
         }
-        await queueMessage(settings, itemKey, `${itemKey}:${item.id}`, recipient, vars, orderId)
+        // A suffix (an explicit resend) makes a new message; without one the key
+        // is the item's own, so every trigger for the same line sends once.
+        const itemDedupe = options.suffix
+          ? `${itemKey}:${item.id}:${options.suffix}`
+          : `${itemKey}:${item.id}`
+        await queueMessage(settings, itemKey, itemDedupe, recipient, vars, orderId)
       }
       return
     }

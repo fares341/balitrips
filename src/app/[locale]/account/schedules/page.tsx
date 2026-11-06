@@ -23,6 +23,7 @@ import { toLocale } from '../../_seo-hreflang'
 import { accountMetadata } from '../_lib/meta'
 import { listSchedules } from '../_lib/queries'
 import { CustomPlans } from './custom-plans'
+import { resendScheduleAction } from './delivery-actions'
 import { loadPermissions } from '@/lib/entitlements/plans'
 
 const ITINERARIES_HREF = '/itineraries'
@@ -78,6 +79,26 @@ export default async function AccountSchedulesPage({
           <FormNotice>
             {t(query.doc === 'limit' ? 'acct_sched_dl_limit' : 'acct_sched_view_only')}
           </FormNotice>
+        </div>
+      )}
+
+      {(query.sent === 'ok' || query.sent === 'limit' || query.sent === 'err') && (
+        <div style={{ marginBottom: 20 }}>
+          <FormNotice>
+            {t(
+              query.sent === 'ok'
+                ? 'dlv_resend_ok'
+                : query.sent === 'limit'
+                  ? 'dlv_resend_limit'
+                  : 'dlv_resend_err',
+            )}
+          </FormNotice>
+        </div>
+      )}
+
+      {query.doc === 'link-expired' && (
+        <div style={{ marginBottom: 20 }}>
+          <FormNotice>{t('dlv_link_expired')}</FormNotice>
         </div>
       )}
 
@@ -188,6 +209,18 @@ export default async function AccountSchedulesPage({
                       </LinkButton>
                     )}
                   </div>
+                  <form action={resendScheduleAction} style={{ marginTop: 10 }}>
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="itemId" value={item.orderItemId} />
+                    <button
+                      type="submit"
+                      className="btn btn-ghost btn-sm"
+                      style={{ width: '100%', minHeight: 44, fontSize: 13.5 }}
+                    >
+                      <Icon name="refresh" size={15} />
+                      {t('dlv_resend')}
+                    </button>
+                  </form>
                 </div>
               </article>
             )

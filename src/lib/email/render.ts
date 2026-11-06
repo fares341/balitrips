@@ -102,7 +102,7 @@ export type Block =
   | { kind: 'heading'; text: string }
   | { kind: 'text'; text: string }
   | { kind: 'muted'; text: string }
-  | { kind: 'button'; label: string; href: string }
+  | { kind: 'button'; label: string; href: string; variant?: 'primary' | 'secondary' }
   | { kind: 'facts'; rows: readonly FactRow[] }
   | {
       kind: 'items'
@@ -130,7 +130,7 @@ function blockHtml(block: Block, dir: Dir): string {
       // A table wrapper, not a bare <a>: Outlook drops padding on inline
       // anchors and the button collapses to plain underlined text.
       return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px" dir="${dir}">
-  <tr><td style="border-radius:12px;background:${COLOR.accent}">
+  <tr><td style="border-radius:12px;background:${block.variant === 'secondary' ? COLOR.forest : COLOR.accent}">
     <a href="${escapeHtml(block.href)}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:700;color:${COLOR.accentText};text-decoration:none">${escapeHtml(block.label)}</a>
   </td></tr>
 </table>`

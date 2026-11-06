@@ -98,6 +98,12 @@ export const emailJobSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('notification'), notificationId: z.uuid() }),
   /** «أبلغني عند التوفر» (src/lib/notify/availability.ts): email and/or WhatsApp. */
   z.object({ kind: z.literal('availability_alert'), alertId: z.uuid() }),
+  /** Phase 4: a bought itinerary's delivery e-mail (src/lib/itineraries/delivery.ts). */
+  z.object({
+    kind: z.literal('itinerary_delivery'),
+    orderItemId: z.uuid(),
+    round: z.number().int().min(0),
+  }),
 ])
 
 export type EmailJob = z.infer<typeof emailJobSchema>

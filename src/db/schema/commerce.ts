@@ -775,3 +775,30 @@ export const downloadTokens = pgTable(
   },
   (t) => [index('download_tokens_item_idx').on(t.orderItemId)],
 )
+
+/**
+ * Phase 4 delivery log: one row per (order item, channel). The unique pair
+ * makes delivery idempotent; `round` counts resends. See
+ * src/lib/itineraries/delivery.ts.
+ */
+export const itineraryDeliveries = pgTable(
+  'itinerary_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orderItemId: uuid('order_item_id')
+      .notNull()
+      .references(() => orderItems.id, { onDelete: 'cascade' }),
+    /** 'email' | 'whatsapp' */
+    channel: varchar('channel', { length: 16 }).notNull(),
+    /** 'queued' | 'sending' | 'sent' | 'failed' | 'skipped' */
+    status: varchar('status', { length: 16 }).notNull().default('queued'),
+    recipient: varchar('recipient', { length: 320 }),
+    round: integer('round').notNull().default(0),
+    attempts: integer('attempts').notNull().default(0),
+    error: text('error'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    requestedById: uuid('requested_by_id').references(() => users.id, { onDelete: 'set null' }),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('itinerary_deliveries_item_channel_uq').on(t.orderItemId, t.channel)],
+)

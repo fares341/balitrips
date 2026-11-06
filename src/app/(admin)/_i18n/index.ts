@@ -24,6 +24,7 @@ import reports from './reports'
 import suppliers from './suppliers'
 import system from './system'
 import whatsapp from './whatsapp'
+import delivery from './delivery'
 import currency from './currency'
 import studioV2 from './studio-v2'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
@@ -59,6 +60,7 @@ const SECTIONS = [
   currency,
   confirm,
   studioV2,
+  delivery,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {
