@@ -66,8 +66,30 @@ export async function Shell({
     </>
   )
 
+  // Arabic Studio: every date field carries a format hint (CSS reads it from
+  // this variable, see admin.css `.a-field:has(input[type='date'])`), because
+  // the browser's own date box follows the device language, not the Studio's.
+  const dateHint =
+    locale === 'ar'
+      ? t('form.date_hint', {
+          example: new Intl.DateTimeFormat('ar-u-nu-latn', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            timeZone: 'Asia/Makassar',
+          }).format(new Date()),
+        })
+      : null
+
   return (
-    <div className="a-shell">
+    <div
+      className="a-shell"
+      style={
+        dateHint
+          ? ({ '--a-date-hint': JSON.stringify(dateHint) } as React.CSSProperties)
+          : undefined
+      }
+    >
       <a className="a-skip" href="#a-content">
         {t('shell.skip_to_content')}
       </a>

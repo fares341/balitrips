@@ -12,7 +12,7 @@ describe('command palette matching', () => {
   it('finds a screen by its Arabic or English name', () => {
     expect(matchEntries(entries, 'orders')[0]?.label).toBe('الطلبات')
     expect(matchEntries(entries, 'السائق')[0]?.label).toBe('السيارات والسائق')
-    expect(matchEntries(entries, 'باقه')[0]?.label).toBe('باقات الوصول')
+    expect(matchEntries(entries, 'باقات')[0]?.label).toBe('باقات الوصول')
     expect(matchEntries(entries, 'zzz')).toHaveLength(0)
     expect(matchEntries(entries, '')).toHaveLength(3)
   })

@@ -1,5 +1,6 @@
 'use server'
 
+import { FormError } from '../../_lib/form'
 import { redirect } from 'next/navigation'
 
 import { locales } from '@/i18n/config'
@@ -48,7 +49,9 @@ export async function saveWhatsappConnection(form: FormData): Promise<void> {
       throw new Error(t('wa.err_staff_number'))
     }
     if (next.apiUrl !== '' && !/^https:\/\/[^\s]+$/.test(next.apiUrl)) {
-      throw new Error('API endpoint must start with https://')
+      throw new FormError('API endpoint must start with https://', 'err.https_only', {
+        field: 'i18n:field.apiUrl',
+      })
     }
     await writeWhatsappSettings(next, actor.userId)
 

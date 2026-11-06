@@ -41,6 +41,7 @@ import {
   flocalized,
   flocalizedOrNull,
   fmulti,
+  FormError,
   fstr,
   isUuid,
 } from '../../_lib/form'
@@ -60,7 +61,12 @@ function intIn(form: FormData, name: string, min: number, max: number, fallback:
   const raw = fstr(form, name)
   if (raw === null) return fallback
   const n = Number(raw)
-  if (!Number.isInteger(n) || n < min || n > max) throw new Error(`${name}: ${min}–${max}`)
+  if (!Number.isInteger(n) || n < min || n > max)
+    throw new FormError(`${name}: ${min}–${max}`, 'err.between', {
+      field: `i18n:field.${name}`,
+      min,
+      max,
+    })
   return n
 }
 
@@ -371,7 +377,8 @@ function moneyOrZero(form: FormData, name: string, currency: string): number {
   const raw = fstr(form, name)
   if (raw === null) return 0
   const parsed = parseMoneyInput(raw, currency)
-  if (!parsed.ok || parsed.value < 0) throw new Error(`${name}: ${raw}`)
+  if (!parsed.ok || parsed.value < 0)
+    throw new FormError(`${name}: ${raw}`, 'err.invalid', { field: `i18n:field.${name}` })
   return parsed.value
 }
 
@@ -432,10 +439,8 @@ export async function saveItinerarySales(form: FormData): Promise<void> {
         : {}),
     }
     const parsed = itinerarySalesSchema.safeParse(candidate)
-    if (!parsed.success)
-      throw new Error(
-        t('ip1.err_settings', { detail: parsed.error.issues[0]?.path.join('.') ?? '' }),
-      )
+    // Mapped to a sentence in the Studio language by errorMessage().
+    if (!parsed.success) throw parsed.error
     const before = await writeSetting(ITINERARY_SALES_KEY, parsed.data, session.userId)
     await writeAudit({
       actor: session,
@@ -487,10 +492,8 @@ export async function saveDriverSettings(form: FormData): Promise<void> {
       throw new Error(t('ip1.err_timezone'))
     }
     const parsed = driverSettingsSchema.safeParse(candidate)
-    if (!parsed.success)
-      throw new Error(
-        t('ip1.err_settings', { detail: parsed.error.issues[0]?.path.join('.') ?? '' }),
-      )
+    // Mapped to a sentence in the Studio language by errorMessage().
+    if (!parsed.success) throw parsed.error
 
     const before = await writeSetting(DRIVER_SETTINGS_KEY, parsed.data, session.userId)
     await writeAudit({

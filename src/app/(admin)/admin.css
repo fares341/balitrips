@@ -3392,3 +3392,13 @@ details > summary.a-btn::-webkit-details-marker {
 .a-listsearch {
   margin-block-end: 14px;
 }
+
+/* Arabic Studio: a localized format hint under every date field. */
+.a-field:has(> input[type='date'])::after,
+.a-field:has(> .a-input[type='date'])::after {
+  content: var(--a-date-hint, none);
+  display: block;
+  margin-block-start: 4px;
+  color: var(--a-muted);
+  font-size: 12.5px;
+}

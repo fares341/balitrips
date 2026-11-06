@@ -1,5 +1,6 @@
 'use server'
 
+import { FormError } from '../../_lib/form'
 import { and, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
@@ -33,7 +34,7 @@ async function run(
   const session = await requireCapability('crm.write')
   let outcome: Outcome
   try {
-    if (!isUuid(userId)) throw new Error('Unknown customer')
+    if (!isUuid(userId)) throw new FormError('Unknown customer', 'err.unknown_customer', {})
     outcome = { ok: await work(session) }
   } catch (error) {
     if (isRedirectError(error)) throw error

@@ -1,5 +1,4 @@
 import { normaliseSearch } from './search-text'
-import { pageParam, param } from './result'
 
 /**
  * Search (`?q=`) and paging (`?page=`) for the smaller Studio lists — the
@@ -11,9 +10,14 @@ import { pageParam, param } from './result'
 
 export const LIST_PAGE_SIZE = 25
 
+function first(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : value)?.trim() ?? ''
+}
+
 export function listParams(params: Record<string, string | string[] | undefined>) {
-  const q = param(params, 'q')?.trim().slice(0, 100) || null
-  const page = pageParam(params)
+  const q = first(params.q).slice(0, 100) || null
+  const parsed = Number.parseInt(first(params.page), 10)
+  const page = Number.isInteger(parsed) && parsed >= 1 ? Math.min(parsed, 10_000) : 1
   return { q, page, offset: (page - 1) * LIST_PAGE_SIZE, pageSize: LIST_PAGE_SIZE }
 }
 
