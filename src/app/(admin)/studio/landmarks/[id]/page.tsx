@@ -149,7 +149,7 @@ export default async function LandmarkEditorPage({
             <ConfirmSubmit
               className="a-btn danger"
               label={t('landmarks.archive_btn')}
-              title={t('confirm.delete_title')}
+              title={t('confirm.archive_title')}
             />
           </div>
         </form>

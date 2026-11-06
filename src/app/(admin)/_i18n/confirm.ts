@@ -11,7 +11,6 @@ const section: Section = {
     'confirm.cannot_undo': 'This cannot be undone from here.',
     'confirm.type_to_confirm': 'Type {value} to confirm',
     'confirm.delete_title': 'Delete this for good?',
-    'confirm.delete_message':
       '“{name}” will be removed. Orders and history that point to it are kept.',
     'confirm.archive_title': 'Archive this?',
     'confirm.remove_title': 'Remove this?',
@@ -32,7 +31,6 @@ const section: Section = {
     'confirm.cannot_undo': 'لا يمكن التراجع عن هذا من هنا.',
     'confirm.type_to_confirm': 'اكتب {value} للتأكيد',
     'confirm.delete_title': 'حذف نهائي؟',
-    'confirm.delete_message': 'سيُحذف «{name}». الطلبات والسجل المرتبط به تبقى محفوظة.',
     'confirm.archive_title': 'أرشفة هذا العنصر؟',
     'confirm.remove_title': 'إزالة هذا العنصر؟',
     'confirm.revoke_title': 'سحب الصلاحية؟',
@@ -52,7 +50,6 @@ const section: Section = {
     'confirm.cannot_undo': 'Tindakan ini tidak bisa dibatalkan dari sini.',
     'confirm.type_to_confirm': 'Ketik {value} untuk mengonfirmasi',
     'confirm.delete_title': 'Hapus permanen?',
-    'confirm.delete_message':
       '“{name}” akan dihapus. Pesanan dan riwayat yang terkait tetap disimpan.',
     'confirm.archive_title': 'Arsipkan ini?',
     'confirm.remove_title': 'Hapus ini?',

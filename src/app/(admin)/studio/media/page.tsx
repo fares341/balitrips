@@ -444,7 +444,7 @@ export default async function MediaPage({
                       <ConfirmSubmit
                         className="a-btn danger small"
                         label={t('media.archive')}
-                        title={t('confirm.delete_title')}
+                        title={t('confirm.archive_title')}
                       />
                       {blocking.length > 0 ? (
                         <span className="a-hint">

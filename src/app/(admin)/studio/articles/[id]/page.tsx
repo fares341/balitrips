@@ -170,7 +170,7 @@ export default async function ArticleEditorPage({
             <ConfirmSubmit
               className="a-btn danger"
               label={t('articles.archive')}
-              title={t('confirm.delete_title')}
+              title={t('confirm.archive_title')}
             />
           </div>
         </form>
