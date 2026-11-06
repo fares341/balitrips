@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { DEFAULT_FREE_CANCEL_HOURS } from '@/lib/content/cancellation'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
@@ -31,7 +32,6 @@ import { feventRange } from '../../_lib/bali-time'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
-  fcurrency,
   fenum,
   fint,
   fintOrNull,
@@ -41,7 +41,6 @@ import {
   flocalizedOrNull,
   flocalized,
   flocalizedAny,
-  fcurrencyOr,
   ffaqRows,
   fpriceTiers,
   fscopedRows,
@@ -118,8 +117,8 @@ async function sectionValues(
         area: flocalizedOrNull(form, 'area'),
         duration: flocalizedOrNull(form, 'duration'),
         regionId: fuuidOrNull(form, 'regionId', t('activities.region')),
-        priceMinor: fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price')),
-        currency: fcurrency(form, 'currency'),
+        priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
+        currency: BASE_CURRENCY,
         primaryCategoryId: fuuidOrNull(form, 'primaryCategoryId', t('ae.primary_category')),
         isFeatured: fbool(form, 'isFeatured'),
         isMostPopular: fbool(form, 'isMostPopular'),
@@ -650,7 +649,7 @@ async function ownIds(
 }
 
 async function tierValuesFrom(form: FormData, t: Translate, activityId: string) {
-  const priceMinor = fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price'))
+  const priceMinor = fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price'))
   if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
   const maxGuests = fintOrNull(form, 'maxGuests', t('activities.max_guests'))
@@ -674,14 +673,14 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
   // Phase 2: children only cost less on a per-person package.
   const childPriceMinor =
     pricingMode === 'per_person'
-      ? fmoneyOrNull(form, 'childPrice', fcurrencyOr(form, 'currency'), t('av.child_price'))
+      ? fmoneyOrNull(form, 'childPrice', BASE_CURRENCY, t('av.child_price'))
       : null
 
   // v2: a reference price must be above the price to mean a discount.
   const compareAtPriceMinor = fmoneyOrNull(
     form,
     'compareAtPrice',
-    fcurrencyOr(form, 'currency'),
+    BASE_CURRENCY,
     t('av2.compare_at'),
   )
   if (compareAtPriceMinor !== null && compareAtPriceMinor <= priceMinor) {
@@ -699,7 +698,7 @@ async function tierValuesFrom(form: FormData, t: Translate, activityId: string) 
     tagline: flocalizedOrNull(form, 'tagline'),
     priceMinor,
     childPriceMinor,
-    currency: fcurrency(form, 'currency'),
+    currency: BASE_CURRENCY,
     pricingMode,
     groupMax: pricingMode === 'per_group' ? groupMax : null,
     maxGuests,
@@ -938,7 +937,7 @@ async function addonValuesFrom(
   activityId: string,
   selfId: string | null,
 ) {
-  const priceMinor = fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price'))
+  const priceMinor = fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price'))
   if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
 
   const pricing = fenum(
@@ -951,7 +950,7 @@ async function addonValuesFrom(
   if (maxQty !== null && maxQty < 1) throw new Error(t('activities.err_addon_max_qty'))
   const priceTiers =
     pricing === 'tiered'
-      ? fpriceTiers(form, fcurrencyOr(form, 'currency'), (line) => t('av2.err_tiers', { line }))
+      ? fpriceTiers(form, BASE_CURRENCY, (line) => t('av2.err_tiers', { line }))
       : null
 
   const tierRows = await db
@@ -996,7 +995,7 @@ async function addonValuesFrom(
     name: flocalizedAny(form, 'name', t('activities.addon_name')),
     description: flocalizedOrNull(form, 'description'),
     priceMinor,
-    currency: fcurrency(form, 'currency'),
+    currency: BASE_CURRENCY,
     pricing,
     maxQty:
       pricing === 'per_qty' || pricing === 'per_hour'

@@ -840,7 +840,7 @@ async function applyActivity(
   const cols = item.columns
   const touched = (key: string) =>
     before ? own.includes(key) : cols.includes(key) && v[key] !== ''
-  const currency = (touched('currency') ? v.currency : before?.row.currency) || 'USD'
+  const currency = (touched('currency') ? v.currency : before?.row.currency) || 'SAR'
   const patch: Partial<typeof activities.$inferInsert> = {}
 
   for (const [base, column] of Object.entries(TEXTS)) {

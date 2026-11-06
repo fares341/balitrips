@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -12,8 +13,6 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import {
   fbool,
-  fcurrency,
-  fcurrencyOr,
   fenum,
   fint,
   fintOrNull,
@@ -43,7 +42,7 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
   let outcome: { ok: string } | { err: string }
 
   try {
-    const priceMinor = fmoney(form, 'priceMinor', fcurrencyOr(form, 'currency'), t('common.price'))
+    const priceMinor = fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price'))
     if (priceMinor < 0) throw new Error(t('activities.err_price_negative'))
     const pricing = fenum(
       form,
@@ -59,7 +58,7 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
       unitLabel: flocalizedOrNull(form, 'unitLabel'),
       imageId: fuuidOrNull(form, 'imageId', t('addons.image')),
       priceMinor,
-      currency: fcurrency(form, 'currency'),
+      currency: BASE_CURRENCY,
       pricing,
       maxQty:
         pricing === 'per_qty' || pricing === 'per_hour'
@@ -69,7 +68,7 @@ export async function saveLibraryAddon(id: string, form: FormData): Promise<void
             : null,
       priceTiers:
         pricing === 'tiered'
-          ? fpriceTiers(form, fcurrencyOr(form, 'currency'), (line) => t('av2.err_tiers', { line }))
+          ? fpriceTiers(form, BASE_CURRENCY, (line) => t('av2.err_tiers', { line }))
           : null,
       incompatibleWith: [...new Set(fmulti(form, 'incompatibleWith'))].filter(
         (other) => isUuid(other) && other !== id,

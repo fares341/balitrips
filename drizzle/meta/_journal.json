@@ -302,6 +302,13 @@
       "when": 1793701500000,
       "tag": "0042_itineraries_phase1",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793800000000,
+      "tag": "0043_sar_base_currency",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { lineTotalMinor, sumMinor } from '@/lib/money'
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import {
   daysBetweenInclusive,
   isPastInBali,
@@ -381,12 +382,15 @@ export function buildQuote(
 
   applyCoverage(lines, catalog)
 
-  const currencies = new Set(lines.map((l) => l.currency))
-  if (currencies.size > 1) {
+  // One base currency (SAR). The catalog loaders convert anything else
+  // (`./base-currency`); a line still in another currency had no rate, and
+  // is refused rather than added to a SAR total as if it were riyals.
+  const foreign = new Set(lines.map((l) => l.currency).filter((c) => c !== BASE_CURRENCY))
+  if (foreign.size > 0) {
     issues.push({
       itemId: '*',
       code: 'currency_mismatch',
-      detail: [...currencies].join(', '),
+      detail: [...foreign].join(', '),
     })
   }
 
@@ -398,7 +402,7 @@ export function buildQuote(
     // No tax or fees at launch. When they arrive they are added HERE, on
     // the server, never assembled in the browser.
     totalMinor: subtotalMinor,
-    currency: lines[0]?.currency ?? inferCurrency(catalog),
+    currency: BASE_CURRENCY,
     issues,
     ok: issues.length === 0,
   }
@@ -968,10 +972,9 @@ function toHourMinute(time: string): string {
   return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`
 }
 
-function inferCurrency(catalog: CatalogSnapshot): string {
-  const first =
-    catalog.activities.values().next().value ?? catalog.itineraries.values().next().value
-  return first?.currency ?? 'USD'
+/** Zero-value lines (saved places) are in the base currency, like every line. */
+function inferCurrency(_catalog: CatalogSnapshot): string {
+  return BASE_CURRENCY
 }
 
 /**

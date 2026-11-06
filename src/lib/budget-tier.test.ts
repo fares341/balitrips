@@ -12,27 +12,27 @@ import {
 describe('tierForPrice', () => {
   it('splits activities at the activity thresholds', () => {
     const [low, high] = BUDGET_TIER_THRESHOLDS.activity
-    expect(tierForPrice((low - 1) * 100, 'USD', 'activity')).toBe('economy')
-    expect(tierForPrice(low * 100, 'USD', 'activity')).toBe('mid')
-    expect(tierForPrice((high - 1) * 100, 'usd', 'activity')).toBe('mid')
-    expect(tierForPrice(high * 100, 'USD', 'activity')).toBe('luxury')
+    expect(tierForPrice((low - 1) * 100, 'SAR', 'activity')).toBe('economy')
+    expect(tierForPrice(low * 100, 'SAR', 'activity')).toBe('mid')
+    expect(tierForPrice((high - 1) * 100, 'sar', 'activity')).toBe('mid')
+    expect(tierForPrice(high * 100, 'SAR', 'activity')).toBe('luxury')
   })
 
   it('uses each kind’s own scale', () => {
-    expect(tierForPrice(59_00, 'USD', 'itinerary')).toBe('economy')
-    expect(tierForPrice(120_000, 'USD', 'package')).toBe('mid')
-    expect(tierForPrice(189_000, 'USD', 'package')).toBe('luxury')
+    expect(tierForPrice(221_25, 'SAR', 'itinerary')).toBe('economy')
+    expect(tierForPrice(450_000, 'SAR', 'package')).toBe('mid')
+    expect(tierForPrice(708_750, 'SAR', 'package')).toBe('luxury')
   })
 
   it('compares a per-guest package per person', () => {
-    expect(tierForPrice(500_00, 'USD', 'package')).toBe('economy')
-    expect(tierForPrice(500_00, 'USD', 'package', { perGuest: true })).toBe('mid')
+    expect(tierForPrice(1875_00, 'SAR', 'package')).toBe('economy')
+    expect(tierForPrice(1875_00, 'SAR', 'package', { perGuest: true })).toBe('mid')
   })
 
   it('never classifies a price it cannot judge', () => {
-    expect(tierForPrice(0, 'USD', 'activity')).toBeNull()
+    expect(tierForPrice(0, 'SAR', 'activity')).toBeNull()
     expect(tierForPrice(1_000_000, 'IDR', 'activity')).toBeNull()
-    expect(tierForPrice(Number.NaN, 'USD', 'activity')).toBeNull()
+    expect(tierForPrice(Number.NaN, 'SAR', 'activity')).toBeNull()
   })
 })
 

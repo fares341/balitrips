@@ -237,7 +237,7 @@ test('edited export → expected updates, applied, idempotent', async ({ browser
   added.getCell(keyIndex(acts, 'status')).value = 'draft'
   added.getCell(keyIndex(acts, 'highlights_ar')).value = 'أول | ثاني'
   added.getCell(keyIndex(acts, 'price')).value = 30
-  added.getCell(keyIndex(acts, 'currency')).value = 'USD'
+  added.getCell(keyIndex(acts, 'currency')).value = 'SAR'
   const pk = wb.getWorksheet('Packages') as ExcelJS.Worksheet
   const pr = pk.addRow([])
   pr.getCell(keyIndex(pk, 'activity_slug')).value = newSlug

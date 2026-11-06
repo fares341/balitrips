@@ -5,6 +5,7 @@
  * itineraries offered next to it at their own price.
  */
 
+import { readSarPerUsd } from '@/lib/currency/fx-store'
 import { getFormatter, getTranslations } from 'next-intl/server'
 
 import { PackageCard } from '@/components/cards'
@@ -35,6 +36,7 @@ export async function PackageDetailView({
   /** Staff preview of a draft: a banner, and no "other packages" strip. */
   preview: boolean
 }) {
+  const sarPerUsd = await readSarPerUsd()
   const [t, format, vehicleSetting] = await Promise.all([
     getTranslations({ locale }),
     getFormatter({ locale }),
@@ -360,7 +362,7 @@ export async function PackageDetailView({
             fallbackRegion: pkg.regions[0] ?? null,
           })}
           vehicles={vehicleSetting.vehicles.filter((vehicle) => vehicle.active)}
-          sarPerUsd={vehicleSetting.sarPerUsd}
+          sarPerUsd={sarPerUsd}
         />
       </div>
 

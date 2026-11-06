@@ -473,6 +473,9 @@
   border-top: 1px solid var(--line);
   box-shadow: 0 -6px 18px rgba(10, 26, 14, 0.08);
 }
+.itp-mbar[hidden] {
+  display: none;
+}
 .itp-mbar-price {
   display: grid;
   line-height: 1.2;

@@ -233,7 +233,8 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   await page.locator('input[name="isFeatured"]').check()
   await page.locator('input[name="showOnHome"]').check()
   await page.locator('#priceMinor').fill('125')
-  await page.locator('#currency').fill('USD')
+  // One base currency: the field is fixed to SAR (ر.س).
+  await expect(page.locator('#currency')).toHaveValue(/SAR/)
   await shots('05-basics-filled')
   await submitMain()
   const m = /\/activities\/([0-9a-f-]{36})/.exec(page.url())

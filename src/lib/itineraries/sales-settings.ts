@@ -34,12 +34,11 @@ const optionSchema = z.object({
 })
 
 export const itinerarySalesSchema = z.object({
-  /** Prices on this screen are in this currency (SAR per the spec). */
+  /** Prices on this screen are SAR — the base currency. Stored rows that say otherwise read as SAR. */
   currency: z
     .string()
-    .trim()
-    .regex(/^[A-Z]{3}$/)
-    .default('SAR'),
+    .optional()
+    .transform((): 'SAR' => 'SAR'),
   options: z
     .object({
       itineraryOnly: optionSchema.default({

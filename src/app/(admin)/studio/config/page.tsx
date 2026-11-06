@@ -4,6 +4,8 @@ import { Fragment, type ReactNode } from 'react'
 import { db } from '@/db'
 import { siteSettings, users } from '@/db/schema'
 import { formatMoney } from '@/lib/money'
+import { resolveFx } from '@/lib/currency/fx'
+import { listNonSarPrices } from '@/lib/currency/health'
 import { formatMoneyInput, formatPercentInput } from '@/lib/money-input'
 import { localeConfig, locales } from '@/i18n/config'
 
@@ -93,7 +95,7 @@ export default async function ConfigPage({
       bps / 100,
     )
 
-  const [{ values, invalid, missing }, rows, pickerMedia] = await Promise.all([
+  const [{ values, invalid, missing }, rows, pickerMedia, nonSar] = await Promise.all([
     readSettings(),
     db
       .select({
@@ -106,6 +108,7 @@ export default async function ConfigPage({
       .where(inArray(siteSettings.key, SETTING_KEYS))
       .orderBy(desc(siteSettings.updatedAt)),
     loadPickerMedia(),
+    listNonSarPrices(),
   ])
 
   const meta = new Map(rows.map((row) => [row.key, row]))
@@ -113,6 +116,12 @@ export default async function ConfigPage({
 
   const fees = values.fees
   const currencies = values.currencies
+  const fx = resolveFx(
+    currencies,
+    missing.includes('vehicles') || currencies.rates?.USD !== undefined
+      ? null
+      : values.vehicles.sarPerUsd,
+  )
   const contact = values.contact
   const seller = values.seller
   const home = values.home
@@ -161,14 +170,7 @@ export default async function ConfigPage({
               htmlFor="baseCurrency"
               hint={t('config.base_currency_hint')}
             >
-              <TextInput
-                id="baseCurrency"
-                name="baseCurrency"
-                maxLength={3}
-                defaultValue={currencies.baseCurrency}
-                style={{ textTransform: 'uppercase' }}
-                required
-              />
+              <TextInput id="baseCurrency" value="SAR — ر.س" readOnly disabled />
             </Field>
             <Field
               label={t('config.default_presentment')}
@@ -179,30 +181,94 @@ export default async function ConfigPage({
                 id="defaultPresentment"
                 name="defaultPresentment"
                 maxLength={3}
-                defaultValue={currencies.defaultPresentment}
+                defaultValue={fx.defaultPresentment}
                 style={{ textTransform: 'uppercase' }}
                 required
               />
             </Field>
           </div>
-          <Field
-            label={t('config.presentment_list')}
-            htmlFor="presentmentCurrencies"
-            hint={t('config.presentment_list_hint')}
-          >
-            <TextArea
-              id="presentmentCurrencies"
-              name="presentmentCurrencies"
-              rows={5}
-              defaultValue={currencies.presentmentCurrencies.join('\n')}
-            />
-          </Field>
+          <div className="a-row">
+            <Field
+              label={t('config.presentment_list')}
+              htmlFor="presentmentCurrencies"
+              hint={t('config.presentment_list_hint')}
+            >
+              <TextArea
+                id="presentmentCurrencies"
+                name="presentmentCurrencies"
+                rows={8}
+                dir="ltr"
+                defaultValue={fx.presentment.filter((c) => c !== 'SAR').join('\n')}
+              />
+            </Field>
+            <Field label={t('config.rates')} htmlFor="rates" hint={t('config.rates_hint')}>
+              <TextArea
+                id="rates"
+                name="rates"
+                rows={8}
+                dir="ltr"
+                data-testid="fx-rates"
+                defaultValue={Object.entries(fx.rates)
+                  .filter(([code]) => code !== 'SAR')
+                  .map(([code, rate]) => `${code} ${Number(rate.toPrecision(6))}`)
+                  .join('\n')}
+              />
+            </Field>
+          </div>
+          <p className="a-hint">
+            {t('config.rates_usd', { sar: String(fx.sarPerUsd) })}{' '}
+            {currencies.ratesUpdatedAt
+              ? t('config.rates_updated', {
+                  when: new Intl.DateTimeFormat(intl, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }).format(new Date(currencies.ratesUpdatedAt)),
+                  source: currencies.ratesSource ?? 'manual',
+                })
+              : null}
+          </p>
+          <Checkbox
+            name="autoRefresh"
+            label={t('config.auto_refresh')}
+            defaultChecked={currencies.autoRefresh}
+          />
           <div className="a-actions">
             <button className="a-btn" type="submit">
               {t('config.save_currencies')}
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="a-card" id="currency-health" data-testid="currency-health">
+        <h2>{t('cur.health_title')}</h2>
+        {nonSar.length === 0 ? (
+          <p className="a-hint">
+            <Pill tone="good">{t('cur.health_ok')}</Pill>
+          </p>
+        ) : (
+          <>
+            <p className="a-hint">{t('cur.health_bad', { n: nonSar.length })}</p>
+            <table className="a-table">
+              <thead>
+                <tr>
+                  <th>{t('cur.health_col_kind')}</th>
+                  <th>{t('cur.health_col_item')}</th>
+                  <th>{t('cur.health_col_cur')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nonSar.map((row) => (
+                  <tr key={`${row.kind}:${row.id}`}>
+                    <td>{row.kind}</td>
+                    <td dir="auto">{row.name}</td>
+                    <td dir="ltr">{row.currency}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
 
       <div className="a-card">

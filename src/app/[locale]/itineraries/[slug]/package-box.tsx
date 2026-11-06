@@ -10,7 +10,7 @@
  * the screen, so «متابعة» is always one tap away.
  */
 
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { CART_CHANGED_EVENT } from '@/components/layout/routes'
@@ -63,6 +63,25 @@ export function PackageBox({
   const [busy, setBusy] = useState(false)
   const chosen = options.find((one) => one.key === choice) ?? options[0]
 
+  // The phone bar repeats the box's price and button. While the box itself
+  // is on screen that was the same offer twice («الجدول فقط … متابعة» in the
+  // box and again in the bar right under it), so the bar only shows once the
+  // box has scrolled out of view.
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [boxVisible, setBoxVisible] = useState(false)
+  useEffect(() => {
+    const box = boxRef.current
+    if (box === null || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => setBoxVisible(entry?.isIntersecting === true),
+      {
+        threshold: 0.15,
+      },
+    )
+    observer.observe(box)
+    return () => observer.disconnect()
+  }, [])
+
   const go = () => {
     void (async () => {
       setBusy(true)
@@ -96,7 +115,7 @@ export function PackageBox({
 
   return (
     <>
-      <div className="itp-box">
+      <div className="itp-box" ref={boxRef} data-testid="itp-box">
         <h2 className="itp-box-t">{title}</h2>
         {tiers.length > 1 && (
           <fieldset className="it-tiers">
@@ -161,7 +180,13 @@ export function PackageBox({
         <p className="itp-digital">{footnote}</p>
       </div>
 
-      <div className="itp-mbar" role="region" aria-label={title}>
+      <div
+        className="itp-mbar"
+        role="region"
+        aria-label={title}
+        hidden={boxVisible}
+        data-testid="itp-mbar"
+      >
         <span className="itp-mbar-price">
           <small>{chosen?.label}</small>
           <strong className="bt-money">{chosen?.price}</strong>

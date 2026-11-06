@@ -51,8 +51,9 @@ function activity(
       label: label(key),
       icon: null,
     })),
-    priceMinor,
-    currency: 'USD',
+    // Fixtures are written in USD cents; the catalogue is SAR (× 3.75).
+    priceMinor: Math.round(priceMinor * 3.75),
+    currency: 'SAR',
     rating,
     reviewCount: 10,
     hero: null,

@@ -172,9 +172,22 @@ describe('map bundle offer', () => {
     })
   })
 
-  it('never applies a bundle price across currencies', () => {
-    const usd = plans.map((plan) => ({ ...plan, currency: 'USD' }))
-    expect(mapBundleOffer(settings, usd)?.savingMinor).toBe(0)
+  it('reads a map plan still stored in USD in SAR, so the bundle still shows', () => {
+    // The live bug: the plan was USD and the settings SAR, so no «وفّر».
+    const usd = plans.map((plan) => ({
+      ...plan,
+      currency: 'USD',
+      priceMinor: plan.id === 'vip' ? 2640 : 2000,
+    }))
+    const offer = mapBundleOffer(settings, usd, { USD: 1 / 3.75 })
+    expect(offer?.currency).toBe('SAR')
+    expect(offer?.fullMinor).toBe(7500)
+    expect(offer?.savingMinor).toBe(7500 - settings.mapBundlePriceMinor)
+  })
+
+  it('drops a plan whose currency has no rate', () => {
+    const odd = plans.map((plan) => ({ ...plan, currency: 'XYZ' }))
+    expect(mapBundleOffer(settings, odd, {})).toBeNull()
   })
 })
 

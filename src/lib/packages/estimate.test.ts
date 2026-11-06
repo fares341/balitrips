@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { estimatePackage, packageDayPlan } from './estimate'
-import { VEHICLES_DEFAULT, isLuxury, vehiclesFor, zoneFor, zoneUsdMinor } from './vehicles'
+import { VEHICLES_DEFAULT, isLuxury, vehiclesFor, zoneFor, zoneSarMinor } from './vehicles'
 
 const standard = VEHICLES_DEFAULT.vehicles.find((v) => v.key === 'standard')!
 const hiace = VEHICLES_DEFAULT.vehicles.find((v) => v.key === 'hiace')!
@@ -9,9 +9,11 @@ const ubud = { key: 'ubud', label: { en: 'Ubud', ar: 'أوبود', id: 'Ubud' } 
 const kintamani = { key: 'kintamani', label: { en: 'Kintamani', ar: 'كينتاماني', id: 'Kintamani' } }
 
 describe('vehicle zones', () => {
-  it('converts SAR at the Studio rate and prefers a sheet USD', () => {
-    expect(zoneUsdMinor(standard.zones[0]!, 3.75)).toBe(3733) // 140 / 3.75
-    expect(zoneUsdMinor(hiace.zones[0]!, 3.75)).toBe(9000)
+  it('uses the sheet SAR, and converts a USD-only zone at the Studio rate', () => {
+    expect(zoneSarMinor(standard.zones[0]!, 3.75)).toBe(14000) // 140 SAR
+    expect(zoneSarMinor({ zone: 9, areas: '', sar: null, idr: null, usd: 24 }, 3.75)).toBe(9000)
+    expect(zoneSarMinor({ zone: 9, areas: '', sar: null, idr: null, usd: null }, 3.75)).toBeNull()
+    expect(hiace.zones.length).toBeGreaterThan(0)
   })
 
   it('finds the zone by region name, Studio choice first, else zone 1', () => {
@@ -32,8 +34,8 @@ describe('estimatePackage', () => {
     const days = packageDayPlan({
       days: 3,
       activities: [
-        { id: 'a', priceMinor: 5000, currency: 'USD', region: kintamani },
-        { id: 'b', priceMinor: 2000, currency: 'USD', region: ubud },
+        { id: 'a', priceMinor: 5000, currency: 'SAR', region: kintamani },
+        { id: 'b', priceMinor: 2000, currency: 'SAR', region: ubud },
       ],
       activityDays: {},
       fallbackRegion: ubud,
@@ -41,8 +43,8 @@ describe('estimatePackage', () => {
     const result = estimatePackage({ days, travellers: 2, vehicle: standard, sarPerUsd: 3.75 })
     expect(result.activitiesMinor).toBe(14000)
     expect(result.days.map((d) => d.zone)).toEqual([3, 1, 1])
-    expect(result.driverMinor).toBe(4400 + 3733 + 3733)
-    expect(result.totalMinor).toBe(14000 + 11866)
+    expect(result.driverMinor).toBe(16500 + 14000 + 14000)
+    expect(result.totalMinor).toBe(14000 + 44500)
     expect(result.incomplete).toBe(false)
   })
 

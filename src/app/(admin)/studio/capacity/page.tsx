@@ -300,19 +300,19 @@ function VehicleForm({
             name="dayRateMinor"
             inputMode="decimal"
             dir="ltr"
-            defaultValue={formatMoneyInput(vehicle?.dayRateMinor ?? 0, vehicle?.currency ?? 'USD')}
+            defaultValue={formatMoneyInput(vehicle?.dayRateMinor ?? 0, 'SAR')}
           />
           {locked ? <span className="a-hint">{t('team.prices_locked')}</span> : null}
         </div>
         <div className="a-field">
           <label htmlFor={`cur-${id}`}>{t('common.currency')}</label>
+          <input type="hidden" name="currency" value="SAR" />
           <input
-            className={lockedClass}
-            readOnly={locked}
+            className="a-input a-locked"
             id={`cur-${id}`}
-            name="currency"
-            maxLength={3}
-            defaultValue={vehicle?.currency ?? 'USD'}
+            value="ر.س (SAR)"
+            readOnly
+            aria-readonly
           />
         </div>
         <div className="a-field">

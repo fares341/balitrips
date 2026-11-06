@@ -10,7 +10,7 @@
  * sends a payment link for the amount they quote.
  */
 
-import { zoneFor, zoneUsdMinor, type Vehicle, type ZoneRegion } from './vehicles'
+import { zoneFor, zoneSarMinor, type Vehicle, type ZoneRegion } from './vehicles'
 
 export interface EstimateDay {
   /** Price per traveller of the activities on this day, in `currency` minor units. */
@@ -43,9 +43,9 @@ export function estimatePackage(input: {
   sarPerUsd: number
   currency?: string
 }): PackageEstimate {
-  const currency = (input.currency ?? 'USD').toUpperCase()
+  const currency = (input.currency ?? 'SAR').toUpperCase()
   const travellers = Math.max(1, Math.trunc(input.travellers))
-  let incomplete = currency !== 'USD'
+  let incomplete = currency !== 'SAR'
   let activitiesMinor = 0
   let driverMinor = 0
 
@@ -59,7 +59,7 @@ export function estimatePackage(input: {
       dayActivities += activity.priceMinor * travellers
     }
     const zone = zoneFor(input.vehicle, day.region)
-    const driver = zone === null ? null : zoneUsdMinor(zone, input.sarPerUsd)
+    const driver = zone === null ? null : zoneSarMinor(zone, input.sarPerUsd)
     if (driver === null) incomplete = true
     activitiesMinor += dayActivities
     driverMinor += driver ?? 0

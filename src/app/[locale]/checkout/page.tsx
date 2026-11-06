@@ -22,12 +22,14 @@ import { BUDGET_TIER_LABEL } from '@/lib/budget-tier'
 import { isItineraryTier } from '@/lib/itineraries/tiers'
 import { LocalPrice } from '@/components/currency/currency-context'
 import { toChargeMinor } from '@/lib/currency/charge'
+import { readSarPerUsd } from '@/lib/currency/fx-store'
 import { randomUUID } from 'node:crypto'
 
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { Breadcrumbs, formatPrice, LinkButton } from '@/components/bt'
+import { Breadcrumbs, LinkButton } from '@/components/bt'
+import { formatMoney } from '@/lib/money'
 import { CART_HREF, HOME_HREF } from '@/components/layout/routes'
 import { TRIP_KIND_ICON } from '@/components/trip'
 import { PriceBreakdown } from '@/components/trip/price-breakdown'
@@ -180,13 +182,14 @@ export default async function CheckoutPage({
     )
   }
 
-  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
+  // Exact SAR at checkout (what is charged), never a rounded or converted figure.
+  const money = (minor: number, currency: string) => formatMoney(minor, currency, locale)
 
-  // The card is always debited in SAR, at the Studio rate (same conversion as
-  // lib/orders/checkout.ts). Say so plainly, with the visitor's approximation.
+  // The card is always debited in SAR (the base currency). Say so plainly,
+  // with the visitor's «≈» approximation under it when they browse in another currency.
   const chargeLabel = await (async () => {
     try {
-      const sarPerUsd = (await readSetting('vehicles')).sarPerUsd
+      const sarPerUsd = await readSarPerUsd()
       const charge = toChargeMinor(cart.totalMinor, cart.currency, sarPerUsd)
       if (locale === 'ar') {
         const sar = charge.amountMinor / 100
@@ -201,7 +204,7 @@ export default async function CheckoutPage({
   const chargeNote = (
     <div className="ck-charge-note" data-testid="charge-note" role="note">
       <b>{t('pay_charge_sar', { amount: chargeLabel })}</b>
-      <LocalPrice minor={cart.totalMinor} currency={cart.currency} except="SAR" />
+      <LocalPrice minor={cart.totalMinor} currency={cart.currency} />
     </div>
   )
   const titleOf = (line: CartLineView) => {
@@ -435,9 +438,7 @@ export default async function CheckoutPage({
           {money(cart.totalMinor, cart.currency)}
         </b>
       </div>
-      <LocalPrice minor={cart.totalMinor} currency={cart.currency} except="SAR" />
       {chargeNote}
-      <small className="muted">{t('co_charged_note', { currency: cart.currency })}</small>
       <small className="muted">{t('cur_checkout_note')}</small>
       <form action={applyCouponAction} className="ck-coupon stack" style={{ gap: 8 }}>
         <input type="hidden" name="locale" value={locale} />

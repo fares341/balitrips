@@ -19,7 +19,7 @@ function catalog(): CatalogSnapshot {
         {
           activityId: 'batur',
           priceMinor: 9900,
-          currency: 'USD',
+          currency: 'SAR',
           pricingMode: 'per_guest' as const,
           maxGuests: null,
         },
@@ -29,7 +29,7 @@ function catalog(): CatalogSnapshot {
         {
           activityId: 'batur',
           priceMinor: 17000,
-          currency: 'USD',
+          currency: 'SAR',
           pricingMode: 'flat' as const,
           maxGuests: 2,
         },
@@ -40,24 +40,24 @@ function catalog(): CatalogSnapshot {
         'batur',
         {
           priceMinor: 5500,
-          currency: 'USD',
+          currency: 'SAR',
           maxGuests: 20,
           leadTimeHours: 24,
           timeSlots: ['09:00', '11:30', '14:00', '16:30'],
         },
       ],
     ]),
-    plans: new Map([['plan-1', { priceMinor: 1900, currency: 'USD' }]]),
-    customRequests: new Map([['req-1', { priceMinor: 25000, currency: 'USD' }]]),
-    itineraries: new Map([['it7', { priceMinor: 7900, currency: 'USD', version: 3 }]]),
+    plans: new Map([['plan-1', { priceMinor: 1900, currency: 'SAR' }]]),
+    customRequests: new Map([['req-1', { priceMinor: 25000, currency: 'SAR' }]]),
+    itineraries: new Map([['it7', { priceMinor: 7900, currency: 'SAR', version: 3 }]]),
     packages: new Map([
-      ['pk_honey', { priceMinor: 69000, currency: 'USD', maxGuests: 2, pricingMode: 'flat' }],
-      ['pk_family', { priceMinor: 12000, currency: 'USD', maxGuests: 6, pricingMode: 'per_guest' }],
+      ['pk_honey', { priceMinor: 69000, currency: 'SAR', maxGuests: 2, pricingMode: 'flat' }],
+      ['pk_family', { priceMinor: 12000, currency: 'SAR', maxGuests: 6, pricingMode: 'per_guest' }],
     ]),
     vehicles: new Map([
-      ['sedan', { dayRateMinor: 4500, currency: 'USD', maxPassengers: 4 }],
-      ['suv', { dayRateMinor: 7000, currency: 'USD', maxPassengers: 7 }],
-      ['van', { dayRateMinor: 9500, currency: 'USD', maxPassengers: 20 }],
+      ['sedan', { dayRateMinor: 4500, currency: 'SAR', maxPassengers: 4 }],
+      ['suv', { dayRateMinor: 7000, currency: 'SAR', maxPassengers: 7 }],
+      ['van', { dayRateMinor: 9500, currency: 'SAR', maxPassengers: 20 }],
     ]),
   }
 }
@@ -527,7 +527,7 @@ describe('activity packages and add-ons (v3 handoff formula)', () => {
   const addon = (id: string, over: Record<string, unknown> = {}) => ({
     id,
     priceMinor: 1000,
-    currency: 'USD',
+    currency: 'SAR',
     pricing: 'per_booking' as const,
     maxQty: null,
     onlyPackages: [] as string[],
@@ -541,7 +541,7 @@ describe('activity packages and add-ons (v3 handoff formula)', () => {
     c.activityTiers.set('batur-family', {
       activityId: 'batur',
       priceMinor: 16000,
-      currency: 'USD',
+      currency: 'SAR',
       pricingMode: 'per_group',
       groupMax: 4,
       maxGuests: null,
@@ -676,7 +676,7 @@ describe('phase 1: minimum party, per couple and included activities', () => {
     const c = catalog()
     c.activities.set('batur', {
       priceMinor: 5500,
-      currency: 'USD',
+      currency: 'SAR',
       maxGuests: 20,
       leadTimeHours: 24,
       timeSlots: ['09:00', '11:30', '14:00', '16:30'],
@@ -684,14 +684,14 @@ describe('phase 1: minimum party, per couple and included activities', () => {
     })
     c.activities.set('swing', {
       priceMinor: 3000,
-      currency: 'USD',
+      currency: 'SAR',
       maxGuests: 20,
       leadTimeHours: 24,
       timeSlots: [],
     })
     c.activities.set('temple', {
       priceMinor: 2500,
-      currency: 'USD',
+      currency: 'SAR',
       maxGuests: 20,
       leadTimeHours: 24,
       timeSlots: ['08:00', '15:00'],
@@ -699,7 +699,7 @@ describe('phase 1: minimum party, per couple and included activities', () => {
     c.activityTiers.set('batur-couple', {
       activityId: 'batur',
       priceMinor: 15000,
-      currency: 'USD',
+      currency: 'SAR',
       pricingMode: 'per_couple',
       maxGuests: null,
       minGuests: 2,
@@ -707,7 +707,7 @@ describe('phase 1: minimum party, per couple and included activities', () => {
     c.activityTiers.set('batur-full', {
       activityId: 'batur',
       priceMinor: 12000,
-      currency: 'USD',
+      currency: 'SAR',
       pricingMode: 'per_person',
       maxGuests: null,
       minGuests: null,
@@ -809,7 +809,7 @@ describe('phase 2: places, closed dates, children, seasons', () => {
     snapshot.activityTiers.set('batur-kids', {
       activityId: 'batur',
       priceMinor: 9900,
-      currency: 'USD',
+      currency: 'SAR',
       pricingMode: 'per_person',
       maxGuests: null,
       childPriceMinor: 4900,
@@ -833,7 +833,7 @@ describe('phase 2: places, closed dates, children, seasons', () => {
     snapshot.activityTiers.set('batur-season', {
       activityId: 'batur',
       priceMinor: 9900,
-      currency: 'USD',
+      currency: 'SAR',
       pricingMode: 'per_person',
       maxGuests: null,
       seasons: [

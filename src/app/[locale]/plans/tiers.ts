@@ -54,8 +54,8 @@ export type PlanTier = {
   featured: boolean
 }
 
-/** The design quotes $19 and $39; the catalogue is seeded in the same currency. */
-const PLAN_CURRENCY = 'USD'
+/** The design quoted $19 and $39; in SAR (the base currency) at the 3.75 peg. */
+const PLAN_CURRENCY = 'SAR'
 
 export const PLAN_TIERS: readonly PlanTier[] = [
   {
@@ -74,7 +74,7 @@ export const PLAN_TIERS: readonly PlanTier[] = [
     titleKey: 'sub_map_t',
     bodyKey: 'sub_map_b',
     featureKeys: ['sub_map_f1', 'sub_map_f2', 'sub_map_f3', 'sub_map_f4'],
-    price: { amountMinor: 1900, currency: PLAN_CURRENCY },
+    price: { amountMinor: 7125, currency: PLAN_CURRENCY },
     entitlement: 'map_access',
     featured: true,
   },
@@ -84,7 +84,7 @@ export const PLAN_TIERS: readonly PlanTier[] = [
     titleKey: 'sub_vip_t',
     bodyKey: 'sub_vip_b',
     featureKeys: ['sub_vip_f1', 'sub_vip_f2', 'sub_vip_f3', 'sub_vip_f4'],
-    price: { amountMinor: 3900, currency: PLAN_CURRENCY },
+    price: { amountMinor: 14625, currency: PLAN_CURRENCY },
     // Distinct from map_access, and the implication table in
     // `@/lib/entitlements` is what makes VIP also unlock the map — rather than
     // the prototype's shared handler, which made VIP unlock only the map.

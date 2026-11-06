@@ -1,5 +1,6 @@
 'use server'
 
+import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { and, eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
@@ -9,15 +10,7 @@ import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import {
-  fcurrency,
-  fint,
-  flocalizedOrNull,
-  flocalizedRequired,
-  fcurrencyOr,
-  fmoney,
-  freq,
-} from '../../_lib/form'
+import { fint, flocalizedOrNull, flocalizedRequired, fmoney, freq } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -49,13 +42,8 @@ export async function saveVehicle(id: string, form: FormData): Promise<void> {
       description: flocalizedOrNull(form, 'description'),
       minPassengers: fint(form, 'minPassengers', 1, t('capacity.min_passengers')),
       maxPassengers: fint(form, 'maxPassengers', 4, t('capacity.max_passengers')),
-      dayRateMinor: fmoney(
-        form,
-        'dayRateMinor',
-        fcurrencyOr(form, 'currency'),
-        t('capacity.day_rate'),
-      ),
-      currency: fcurrency(form, 'currency'),
+      dayRateMinor: fmoney(form, 'dayRateMinor', BASE_CURRENCY, t('capacity.day_rate')),
+      currency: BASE_CURRENCY,
       fleetSize: fint(form, 'fleetSize', 0, t('capacity.fleet_size')),
       sortOrder: fint(form, 'sortOrder', 0, t('common.order')),
     }

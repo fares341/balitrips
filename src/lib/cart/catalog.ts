@@ -19,6 +19,8 @@
  * rather than quietly selling something withdrawn from sale.
  */
 
+import { readFx } from '@/lib/currency/fx-store'
+import { toBaseCatalog } from '@/lib/pricing/base-currency'
 import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
@@ -467,8 +469,12 @@ export async function loadCartCatalog(
       tierRows.map((row) => row.id),
     ),
   )
+  // One base currency: anything not yet in SAR is priced in SAR here.
+  const { rates } = await readFx()
+  toBaseCatalog(snapshot, rates)
   // Phase 3: what already pays for what (package ⊃ itinerary, VIP), and credits.
   await applyCoverageFacts(snapshot, items, userId)
+  toBaseCatalog(snapshot, rates)
 
   return { snapshot, display, partNames }
 }

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 
-import { readSetting } from '@/app/(admin)/_lib/settings'
 import { toChargeMinor, type Charge } from '@/lib/currency/charge'
 import { normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
@@ -30,6 +29,8 @@ import { loadTierIncluded } from '@/lib/booking/included'
 import { applyExtras, loadBookingExtras } from '@/lib/booking/extras'
 import { includedOrderItems } from '@/lib/orders/included-items'
 import { applyCoverageFacts } from '@/lib/pricing/coverage-facts'
+import { toBaseCatalog } from '@/lib/pricing/base-currency'
+import { readFx, readSarPerUsd } from '@/lib/currency/fx-store'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { reserveDriverCapacity } from '@/lib/availability/capacity'
 import type { VehicleClass } from '@/lib/booking-rules'
@@ -309,8 +310,11 @@ async function loadCatalog(
     ),
   }
   applyExtras(snapshot, extras)
+  const { rates } = await readFx()
+  toBaseCatalog(snapshot, rates)
   // Phase 3: never charge twice for what a package or VIP itinerary already covers.
   await applyCoverageFacts(snapshot, items, userId)
+  toBaseCatalog(snapshot, rates)
   return snapshot
 }
 
@@ -393,11 +397,7 @@ export async function checkout(input: CheckoutInput): Promise<CheckoutResult> {
 
   // The gateway settles in SAR only: convert the agreed total once, here, and
   // freeze the amount and rate on the order (refunds reuse them).
-  const charge = toChargeMinor(
-    quote.totalMinor,
-    quote.currency,
-    (await readSetting('vehicles')).sarPerUsd,
-  )
+  const charge = toChargeMinor(quote.totalMinor, quote.currency, await readSarPerUsd())
 
   const orderNumber = await nextOrderNumber()
   const provider = getPaymentProvider()

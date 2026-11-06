@@ -23,6 +23,7 @@ import {
 import { db } from '@/db'
 import { siteSettings } from '@/db/schema'
 import { locales, type Locale } from '@/i18n/config'
+import { CURRENCIES_DEFAULT, currenciesSchema, type CurrenciesSetting } from '@/lib/currency/fx'
 import { VEHICLES_DEFAULT, vehiclesSchema, type VehiclesSetting } from '@/lib/packages/vehicles'
 
 /**
@@ -76,18 +77,8 @@ const localizedText = z.object(
   Object.fromEntries(locales.map((locale) => [locale, z.string().default('')])) as LocaleShape,
 )
 
-export const currenciesSchema = z.object({
-  /**
-   * The currency catalog prices are authored in. Changing it does NOT convert
-   * existing prices — every `price_minor` in the catalog keeps its own
-   * `currency` column, which is why this is presentation policy and not a
-   * silent re-denomination.
-   */
-  baseCurrency: currencyCode,
-  /** Offered to the buyer at checkout. Must contain `defaultPresentment`. */
-  presentmentCurrencies: z.array(currencyCode).min(1),
-  defaultPresentment: currencyCode,
-})
+/** One base currency (SAR) and the SAR→X display rates: `@/lib/currency/fx`. */
+export { currenciesSchema }
 
 export const feesSchema = z.object({
   /**
@@ -277,7 +268,7 @@ export const homeSchema = z.object({
 export type HomeSetting = z.infer<typeof homeSchema>
 
 export type SecuritySetting = z.infer<typeof securitySchema>
-export type CurrenciesSetting = z.infer<typeof currenciesSchema>
+export type { CurrenciesSetting }
 export type FeesSetting = z.infer<typeof feesSchema>
 export type ContactSetting = z.infer<typeof contactSchema>
 export type PolicySetting = z.infer<typeof policySchema>
@@ -348,18 +339,12 @@ function placeholderPolicy(title: string): PolicySetting {
  * source changes nothing until an operator edits it.
  */
 export const SETTING_DEFAULTS: SettingsShape = {
-  currencies: {
-    baseCurrency: 'USD',
-    presentmentCurrencies: ['SAR', 'USD', 'IDR', 'AED', 'EUR'],
-    // Cards are always charged in SAR (lib/currency/charge.ts); visitors from a
-    // known country still see an approximate price in their own currency.
-    defaultPresentment: 'SAR',
-  },
+  currencies: CURRENCIES_DEFAULT,
   fees: {
     serviceFeeBps: 0,
     bookingFeeMinor: 0,
     paymentSurchargeBps: 0,
-    feeCurrency: 'USD',
+    feeCurrency: 'SAR',
     enabled: false,
     taxEnabled: false,
     taxRateBps: 0,

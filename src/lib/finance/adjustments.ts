@@ -40,7 +40,7 @@ export const FEES_OFF: FeeSchedule = {
   serviceFeeBps: 0,
   bookingFeeMinor: 0,
   paymentSurchargeBps: 0,
-  feeCurrency: 'USD',
+  feeCurrency: 'SAR',
   taxEnabled: false,
   taxRateBps: 0,
   taxLabel: null,

@@ -8,9 +8,10 @@ import {
   emptyLocalized,
   isLuxury,
   zoneFor,
-  zoneUsdMinor,
+  zoneSarMinor,
   type Vehicle,
 } from '@/lib/packages/vehicles'
+import { readSarPerUsd } from '@/lib/currency/fx-store'
 import { formatMoney } from '@/lib/money'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -41,8 +42,9 @@ export default async function VehiclesPage({
   await requireCapability('content.write')
   const { t, intl, locale } = await getAdminI18n()
   const params = await searchParams
-  const [setting, areaRows] = await Promise.all([
+  const [setting, sarPerUsd, areaRows] = await Promise.all([
     readSetting('vehicles'),
+    readSarPerUsd(),
     db
       .select({ key: regions.key, label: regions.label })
       .from(regions)
@@ -75,11 +77,15 @@ export default async function VehiclesPage({
             <input
               className="a-input"
               id="sarPerUsd"
-              name="sarPerUsd"
               inputMode="decimal"
-              defaultValue={String(setting.sarPerUsd)}
+              value={String(sarPerUsd)}
+              readOnly
+              disabled
             />
           </Field>
+          <p className="a-hint">
+            <a href={adminHref('/config')}>{t('veh.sar_where')}</a>
+          </p>
         </div>
 
         {rows.map((vehicle, i) => {
@@ -166,7 +172,7 @@ export default async function VehiclesPage({
                 </thead>
                 <tbody>
                   {zoneSlots.map((zone, j) => {
-                    const usd = zone === null ? null : zoneUsdMinor(zone, setting.sarPerUsd)
+                    const sar = zone === null ? null : zoneSarMinor(zone, sarPerUsd)
                     const cell = (field: 'sar' | 'idr' | 'usd') => (
                       <input
                         className="a-input"
@@ -202,7 +208,7 @@ export default async function VehiclesPage({
                         <td>{cell('sar')}</td>
                         <td>{cell('idr')}</td>
                         <td>{cell('usd')}</td>
-                        <td>{usd === null ? '—' : formatMoney(usd, 'USD', intl)}</td>
+                        <td>{sar === null ? '—' : formatMoney(sar, 'SAR', intl)}</td>
                       </tr>
                     )
                   })}

@@ -260,29 +260,31 @@ export async function MoneyField({
           name={minorName}
           inputMode="decimal"
           dir="ltr"
-          defaultValue={formatMoneyInput(minor ?? 0, currency ?? 'USD')}
+          defaultValue={formatMoneyInput(minor ?? 0, 'SAR')}
           required
           readOnly={locked}
           aria-readonly={locked || undefined}
           className={locked ? 'a-locked' : undefined}
         />
       </Field>
-      <Field
-        label={t('common.currency')}
-        htmlFor={currencyName}
-        hint={locked ? undefined : t('ui.currency_hint')}
-      >
+      {/*
+        One base currency (owner, Nov 2026): every sellable price is entered
+        and stored in Saudi riyals. The currency is not a choice any more; a
+        price stored in another currency (before migration 0043) is re-saved
+        in SAR. Its old code is shown so the owner notices.
+      */}
+      <Field label={t('common.currency')} htmlFor={currencyName} hint={t('cur.sar_only')}>
+        <input type="hidden" name={currencyName} value="SAR" />
         <TextInput
           id={currencyName}
-          name={currencyName}
-          maxLength={3}
-          dir="ltr"
-          defaultValue={currency ?? 'USD'}
-          style={{ textTransform: 'uppercase' }}
-          required
-          readOnly={locked}
-          aria-readonly={locked || undefined}
-          className={locked ? 'a-locked' : undefined}
+          dir="rtl"
+          value={
+            currency && currency.toUpperCase() !== 'SAR' ? `ر.س (SAR) ← ${currency}` : 'ر.س (SAR)'
+          }
+          readOnly
+          aria-readonly
+          className="a-locked"
+          data-testid="price-currency"
         />
       </Field>
     </>

@@ -31,7 +31,8 @@ export const BUDGET_TIER_LABEL: Record<BudgetTier, string> = {
 export type TierKind = 'activity' | 'package' | 'itinerary'
 
 /**
- * THE thresholds, in whole USD.
+ * THE thresholds, in whole SAR (the base currency; the Oct 2026 USD figures
+ * × 3.75, rounded).
  *
  * `[a, b]`: price < a → economy, a ≤ price < b → mid, price ≥ b → luxury.
  *
@@ -41,16 +42,18 @@ export type TierKind = 'activity' | 'package' | 'itinerary'
  *  - itinerary: the price of the digital day-by-day plan.
  */
 export const BUDGET_TIER_THRESHOLDS: Record<TierKind, readonly [number, number]> = {
-  activity: [40, 90],
-  package: [800, 1600],
-  itinerary: [60, 90],
+  activity: [150, 340],
+  package: [3000, 6000],
+  itinerary: [225, 340],
 }
 
 /** Currencies the thresholds are written in. Others are not classified. */
-const THRESHOLD_CURRENCY = 'USD'
+const THRESHOLD_CURRENCY = 'SAR'
 
-/** Minor units → whole units of USD (2 decimals). */
+/** Minor units → whole units (SAR and USD both have 2 decimals). */
 const USD_MINOR = 100
+/** Legacy custom-trip budgets were stored in USD. */
+const LEGACY_CURRENCY = 'USD'
 
 /**
  * The tier of one real price, or null when it cannot be classified honestly
@@ -91,8 +94,10 @@ export function tierForLegacyBudget(
   currency: string | null,
 ): BudgetTier | null {
   if (budgetPerPersonMinor === null || currency === null) return null
-  if (currency.toUpperCase() !== THRESHOLD_CURRENCY) return null
-  const whole = budgetPerPersonMinor / USD_MINOR
+  const code = currency.toUpperCase()
+  if (code !== LEGACY_CURRENCY && code !== THRESHOLD_CURRENCY) return null
+  // Written in USD; a SAR budget is read at the peg.
+  const whole = budgetPerPersonMinor / USD_MINOR / (code === THRESHOLD_CURRENCY ? 3.75 : 1)
   const [low, high] = LEGACY_BUDGET_THRESHOLDS
   if (whole < low) return 'economy'
   if (whole < high) return 'mid'
