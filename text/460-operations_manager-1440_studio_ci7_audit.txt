@@ -1,0 +1,280 @@
+/studio-ci7/audit
+
+تخطَّ إلى المحتوى
+B
+بالي تريبس
+لوحة الإدارة
+ابحث في الاستوديو
+Ctrl K
+نظرة عامة
+4
+الرئيسية
+صندوق الوارد
+التقارير
+المساعد
+الحجوزات والمبيعات
+5
+الطلبات
+المدفوعات
+طلبات الرحلات المخصّصة
+وصول العملاء
+دليل التشغيل
+العمليات
+2
+السيارات والسائق
+الموردون
+العملاء
+5
+العملاء
+المهام
+الدعم
+محادثات المساعد
+عملاء مكررون محتملون
+المالية
+1
+إعدادات VIP
+التسويق
+1
+إحصاءات الخريطة
+السجلات
+2
+سجل تغييرات الفريق
+سجل نشاط العملاء
+الحماية
+4
+الحظر والحماية
+التنبيهات
+عمليات الدخول الحالية
+الأجهزة
+حسابي
+1
+الدخول بخطوتين
+English
+T
+Test Operations
+مدير العمليات
+سجل تغييرات الفريق
+
+كل تغيير أجراه فريقك في لوحة التحكم: من قام به، ومتى، وما الذي تغيّر.
+
+بحث
+القسم
+الكل
+مستوى نشاط
+طلب رحلة خاصة
+طلب
+Report
+عملية دخول
+الإعدادات
+حساب
+من
+إلى
+تصفية
+إعادة تعيين
+الوقت	مَن	ماذا	القسم	قبل	بعد
+07‏/11‏/2026، 2:11 ص	operations_manager@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: orders_all
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: refunds
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: collected
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: low_availability
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export records csv	Report	—	
+Rows: 0
+Metric: orders_paid
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:11 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:itinerary_sales
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:refunds
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:payments
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:10 ص	staff@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	staff@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:payables
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:itinerary_sales
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+1–50 من 72
+التالي

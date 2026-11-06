@@ -1,0 +1,270 @@
+/studio-ci7/audit
+
+تخطَّ إلى المحتوى
+B
+بالي تريبس
+لوحة الإدارة
+ابحث في الاستوديو
+Ctrl K
+نظرة عامة
+4
+الرئيسية
+صندوق الوارد
+التقارير
+المساعد
+الحجوزات والمبيعات
+5
+الطلبات
+المدفوعات
+طلبات الرحلات المخصّصة
+وصول العملاء
+دليل التشغيل
+العمليات
+2
+السيارات والسائق
+الموردون
+العملاء
+5
+العملاء
+المهام
+الدعم
+محادثات المساعد
+عملاء مكررون محتملون
+المحتوى
+12
+الجداول السياحية
+الأنشطة
+الخدمات الإضافية
+الباقات
+أماكن الخريطة
+المقالات
+المعالم
+التقييمات
+التصنيفات والمناطق
+مكتبة الوسائط
+ملفات PDF
+جاهزية المحتوى
+المالية
+1
+باقات الوصول
+التسويق
+1
+إحصاءات الخريطة
+السجلات
+2
+سجل تغييرات الفريق
+سجل نشاط العملاء
+الحماية
+4
+الحظر والحماية
+التنبيهات
+عمليات الدخول الحالية
+الأجهزة
+النظام
+1
+نصوص الموقع
+حسابي
+1
+الدخول بخطوتين
+English
+T
+Test Staff
+موظف
+سجل تغييرات الفريق
+
+كل تغيير أجراه فريقك في لوحة التحكم: من قام به، ومتى، وما الذي تغيّر.
+
+بحث
+القسم
+الكل
+مستوى نشاط
+طلب رحلة خاصة
+طلب
+Report
+عملية دخول
+الإعدادات
+حساب
+من
+إلى
+تصفية
+إعادة تعيين
+الوقت	مَن	ماذا	القسم	قبل	بعد
+07‏/11‏/2026، 2:04 ص	staff@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: operations
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:payables
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: suppliers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: marketing
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: activities
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: VIP
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:itinerary_sales
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: itineraries
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: bookings
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:sales
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: financial
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — نُزّلت القائمة	Report	—	
+Report: financial
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	نشاط — نُزّلت القائمة	حساب	—	
+Rows: 4
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Profit — نُزّلت القائمة	طلب	—	
+Rows: 0
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	حساب — نُزّلت البيانات	حساب	—	
+Orders: 0
+Sessions: 0
+Generated at: 06‏/11‏/2026، 6:04 م
+Subject email: suspended@test.balitrips.local
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:customers
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	العملاء — نُزّلت القائمة	حساب	—	
+Rows: 18
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:payables
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Leads — نُزّلت القائمة	طلب رحلة خاصة	—	
+Rows: 0
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:refunds
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:payments
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	المدفوعات — نُزّلت القائمة	حساب	—	
+Rows: 0
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Report — export pdf	Report	—	
+Report: list:orders
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	Orders — نُزّلت القائمة	طلب	—	
+Rows: 0
+Filters: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	الإعدادات — عُدّل	الإعدادات	
+Fees: (عنصر مرتبط)
+	
+Fees: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	الإعدادات — عُدّل	الإعدادات	
+Fees: (عنصر مرتبط)
+	
+Fees: (عنصر مرتبط)
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	مستوى نشاط — عُدّل	مستوى نشاط	
+Updated at: 06‏/11‏/2026، 6:04 م
+السعر (بالسنت): 12345
+	
+Updated at: 06‏/11‏/2026، 6:04 م
+السعر (بالسنت): 20625
+
+07‏/11‏/2026، 2:04 ص	admin@test.balitrips.local	مستوى نشاط — عُدّل	مستوى نشاط	
+الملاحظات: —
+Details: —
+Excludes: —
+Features: —
+Updated at: 06‏/11‏/2026، 5:54 م
+Highlights: —
+السعر (بالسنت): 20625
+Includes addons: —
+	
+الملاحظات: —
+Details: —
+Excludes: —
+Features: —
+Updated at: 06‏/11‏/2026، 6:04 م
+Highlights: —
+السعر (بالسنت): 12345
+Includes addons: —
+
+07‏/11‏/2026، 1:57 ص	admin@test.balitrips.local	الدخول بخطوتين — أُدخل الرمز	عملية دخول	—	
+الطريقة: رمز تطبيق المصادقة
+1–40 من 40
