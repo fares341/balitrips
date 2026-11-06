@@ -85,12 +85,14 @@ export async function loadOrderProfit(where: SQL | undefined, limit = 20_000) {
     .where(where)
     .orderBy(desc(sql`coalesce(${orders.placedAt}, ${orders.createdAt})`))
     .limit(limit)
-  return rows.map((row): OrderProfitRow => ({
-    ...row,
-    placedAt: new Date(row.placedAt),
-    refundedMinor: Number(row.refundedMinor),
-    costMinor: Number(row.costMinor),
-  }))
+  return rows.map(
+    (row): OrderProfitRow => ({
+      ...row,
+      placedAt: new Date(row.placedAt),
+      refundedMinor: Number(row.refundedMinor),
+      costMinor: Number(row.costMinor),
+    }),
+  )
 }
 
 export interface Totals {
