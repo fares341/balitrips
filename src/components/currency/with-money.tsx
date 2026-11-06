@@ -19,6 +19,8 @@ export function withMoney(text: string, minor: number, currency: string): ReactN
   const parts = text.split(MONEY_SLOT)
   if (parts.length === 1) return text
   return parts.flatMap((part, index) =>
-    index === 0 ? [part] : [<Money key={`m${index}`} minor={minor} currency={currency} />, part],
+    index === 0
+      ? [part]
+      : [<Money key={`m${index}`} minor={minor} currency={currency} />, part],
   )
 }

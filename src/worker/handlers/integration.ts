@@ -70,7 +70,8 @@ export async function handleIntegrationSync(job: IntegrationSyncJob): Promise<ob
     if (!supports(adapter, step.operation)) continue
     if (!context.integration.services.includes(step.service)) continue
     const run = adapter[step.operation] as
-      ((ctx: typeof context) => Promise<ImportResult>) | undefined
+      | ((ctx: typeof context) => Promise<ImportResult>)
+      | undefined
     if (!run) continue
     const started = Date.now()
     try {

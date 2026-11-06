@@ -74,17 +74,17 @@ export function SignedOutPane({
         </p>
       )}
       <AuthModal
-        variant="page"
-        open
-        onClose={() => undefined}
-        initialMode={initialMode}
-        callbackPath={next ?? ACCOUNT_HREF}
-        socialProviders={providers}
-        onAuthenticated={() => {
-          // AuthModal has already refreshed the router; this carries the
-          // visitor back to whatever they were doing when they were stopped.
-          if (next !== null) router.replace(next)
-        }}
+      variant="page"
+      open
+      onClose={() => undefined}
+      initialMode={initialMode}
+      callbackPath={next ?? ACCOUNT_HREF}
+      socialProviders={providers}
+      onAuthenticated={() => {
+        // AuthModal has already refreshed the router; this carries the
+        // visitor back to whatever they were doing when they were stopped.
+        if (next !== null) router.replace(next)
+      }}
       />
     </>
   )

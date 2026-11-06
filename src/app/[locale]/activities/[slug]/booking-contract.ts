@@ -74,7 +74,14 @@ export interface BookingFacts {
 
 /** Which booking-box step an issue belongs to, so the page can mark it. */
 export type BookingField =
-  'package' | 'date' | 'time' | 'included' | 'people' | 'addons' | 'driver' | 'form'
+  | 'package'
+  | 'date'
+  | 'time'
+  | 'included'
+  | 'people'
+  | 'addons'
+  | 'driver'
+  | 'form'
 
 export type BookActivityResponse =
   | { ok: true; itemCount: number; totalMinor: number; currency: string }

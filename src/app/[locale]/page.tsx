@@ -128,13 +128,7 @@ const GUIDE_ICONS: Record<(typeof GUIDE_KEYS)[number], IconName> = {
 }
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'] as const
-const SLIDER_DOWN = [
-  'penida-cove',
-  'kelingking',
-  'jungle-pool',
-  'lempuyang',
-  'beach-palms',
-] as const
+const SLIDER_DOWN = ['penida-cove', 'kelingking', 'jungle-pool', 'lempuyang', 'beach-palms'] as const
 
 const VALUES: readonly { icon: IconName; key: string }[] = [
   { icon: 'pin', key: 'v1' },

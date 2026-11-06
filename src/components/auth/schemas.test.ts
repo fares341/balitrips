@@ -18,7 +18,8 @@ import {
 
 function errorsFor(schema: { safeParse: (input: unknown) => unknown }, input: unknown) {
   const result = schema.safeParse(input) as
-    { success: true } | { success: false; error: Parameters<typeof fieldErrors>[0] }
+    | { success: true }
+    | { success: false; error: Parameters<typeof fieldErrors>[0] }
   if (result.success) return null
   return fieldErrors(result.error)
 }

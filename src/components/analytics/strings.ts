@@ -54,8 +54,7 @@ export const CONSENT_STRINGS: Record<ConsentLocale, ConsentStrings> = {
   en: {
     title: 'Cookies',
     body: 'We use necessary cookies to run the site. With your permission we also use cookies to understand how the site is used, and others for advertising. You can change your choice at any time.',
-    short:
-      'We use necessary cookies to run the site, and optional ones for statistics and ads with your permission.',
+    short: 'We use necessary cookies to run the site, and optional ones for statistics and ads with your permission.',
     settings: 'Settings',
     acceptAll: 'Accept all',
     necessaryOnly: 'Necessary only',
@@ -77,8 +76,7 @@ export const CONSENT_STRINGS: Record<ConsentLocale, ConsentStrings> = {
   id: {
     title: 'Cookie',
     body: 'Kami memakai cookie yang diperlukan untuk menjalankan situs. Dengan izin Anda, kami juga memakai cookie untuk memahami cara situs digunakan, dan cookie lain untuk iklan. Anda bisa mengubah pilihan kapan saja.',
-    short:
-      'Kami memakai cookie yang diperlukan, dan cookie opsional untuk statistik dan iklan dengan izin Anda.',
+    short: 'Kami memakai cookie yang diperlukan, dan cookie opsional untuk statistik dan iklan dengan izin Anda.',
     settings: 'Pengaturan',
     acceptAll: 'Terima semua',
     necessaryOnly: 'Hanya yang diperlukan',

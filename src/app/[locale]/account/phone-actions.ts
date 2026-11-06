@@ -279,7 +279,9 @@ export async function verifyPhoneCodeAction(
   // Locked check-and-count: parallel guesses (and resends) queue on the lock,
   // so the five-attempt cap holds however many requests arrive at once.
   type Outcome =
-    { kind: 'expired' } | { kind: 'wrong' } | { kind: 'ok'; phone: string; claim: boolean }
+    | { kind: 'expired' }
+    | { kind: 'wrong' }
+    | { kind: 'ok'; phone: string; claim: boolean }
   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
     await lockUser(tx, user.id)
     const [row] = await tx

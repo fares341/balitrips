@@ -149,4 +149,5 @@ export type CustomTripState =
     }
 
 export type AddToTripResult =
-  { ok: true; itemCount: number } | { ok: false; reason: 'validation' | 'server' }
+  | { ok: true; itemCount: number }
+  | { ok: false; reason: 'validation' | 'server' }

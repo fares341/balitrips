@@ -24,7 +24,14 @@ import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 
 export type ButtonVariant =
-  'primary' | 'secondary' | 'ghost' | 'light' | 'glass' | 'dark' | 'orange' | 'forest'
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'light'
+  | 'glass'
+  | 'dark'
+  | 'orange'
+  | 'forest'
 
 export type ButtonSize = 'sm' | 'md' | 'lg'
 

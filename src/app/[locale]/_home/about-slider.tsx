@@ -30,13 +30,7 @@ export function AboutSlider({ up, down }: AboutSliderProps) {
   )
 }
 
-function Column({
-  images,
-  direction,
-}: {
-  images: readonly SliderPhoto[]
-  direction: 'up' | 'down'
-}) {
+function Column({ images, direction }: { images: readonly SliderPhoto[]; direction: 'up' | 'down' }) {
   // Two identical halves for a seamless loop. The first half is the real
   // content (meaningful alt); the clone half is hidden from assistive tech
   // and carries empty alt, so a screen reader hears each photo once.

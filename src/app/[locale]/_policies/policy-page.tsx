@@ -37,7 +37,13 @@ import { alternatesFor } from '../_seo-hreflang'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 export type PolicyId =
-  'terms' | 'privacy' | 'refund' | 'payment' | 'cookies' | 'platform-use' | 'map-use'
+  | 'terms'
+  | 'privacy'
+  | 'refund'
+  | 'payment'
+  | 'cookies'
+  | 'platform-use'
+  | 'map-use'
 
 type PolicyCopy = {
   /** Message key for the page title. Shared with the footer's link label. */
