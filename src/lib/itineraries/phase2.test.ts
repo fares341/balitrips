@@ -55,6 +55,7 @@ describe('public itinerary DTO', () => {
     moreDays: 4,
     seoTitle: null,
     seoDescription: null,
+    faq: [{ q: { ar: 'س' }, a: { ar: 'ج' } }],
   }
 
   it('carries only allow-listed keys', () => {

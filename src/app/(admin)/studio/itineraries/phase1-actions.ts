@@ -41,7 +41,15 @@ import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { fbool, flocalized, flocalizedOrNull, fmulti, fstr, isUuid } from '../../_lib/form'
+import {
+  fbool,
+  ffaqRows,
+  flocalized,
+  flocalizedOrNull,
+  fmulti,
+  fstr,
+  isUuid,
+} from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -98,6 +106,11 @@ export async function saveItineraryPreview(id: string, form: FormData): Promise<
       if (caption) galleryCaptions[mediaId] = caption
     }
 
+    // No packages here: a question belongs to the whole itinerary.
+    const faqRows = ffaqRows(form, 'faq', []).map(({ q, a, hidden }) =>
+      hidden ? { q, a, hidden } : { q, a },
+    )
+
     const values = {
       previewStats: previewStats.length > 0 ? previewStats : null,
       galleryImageIds,
@@ -106,6 +119,7 @@ export async function saveItineraryPreview(id: string, form: FormData): Promise<
       isPopular: fbool(form, 'isPopular'),
       seoTitle: flocalizedOrNull(form, 'seoTitle'),
       seoDescription: flocalizedOrNull(form, 'seoDescription'),
+      faq: faqRows.length > 0 ? faqRows : null,
     }
     await db.update(itineraries).set(values).where(eq(itineraries.id, id))
     await writeAudit({

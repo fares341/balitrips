@@ -25,6 +25,9 @@ const section: Section = {
     'ip1.pdf_none': 'No file',
     'ip1.is_popular': 'Most requested',
     'ip1.is_popular_hint': 'Shows the «most requested» badge on the card and page.',
+    'ip1.faq_t': 'FAQ about this itinerary',
+    'ip1.faq_hint':
+      'Shown on the public page before purchase: never name places or reveal a day. Empty = the general questions.',
     // Preview
     'ip1.preview_t': 'Public page preview',
     'ip1.preview_hint':
@@ -207,6 +210,9 @@ const section: Section = {
     'ip1.pdf_none': 'لا يوجد ملف',
     'ip1.is_popular': 'الأكثر طلبًا',
     'ip1.is_popular_hint': 'تظهر شارة «الأكثر طلبًا» على الكارت والصفحة.',
+    'ip1.faq_t': 'أسئلة شائعة عن هذا الجدول',
+    'ip1.faq_hint':
+      'تظهر في صفحة الجدول قبل الشراء: لا تذكر أسماء أماكن ولا تفاصيل الأيام. إن تُركت فارغة تظهر الأسئلة العامة.',
     'ip1.preview_t': 'معاينة الصفحة العامة',
     'ip1.preview_hint':
       'هذا ما يراه الزائر قبل الشراء. لا تكتب أسماء أماكن هنا: تفاصيل الأيام والأماكن والفعاليات المرتبطة تظهر بعد الشراء فقط.',

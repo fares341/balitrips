@@ -309,6 +309,13 @@
       "when": 1793800000000,
       "tag": "0043_sar_base_currency",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1793900000000,
+      "tag": "0044_itinerary_faq",
+      "breakpoints": true
     }
   ]
 }
