@@ -478,6 +478,11 @@ export const auth = betterAuth({
         after: async (account) => {
           if (account.providerId === 'credential') return
           const userId = String(account.userId)
+          if (account.providerId === 'google') {
+            // Lead capture: name + e-mail from Google (no consent implied).
+            const { recordGoogleLead } = await import('@/lib/leads/capture')
+            await recordGoogleLead(userId)
+          }
           const [owner] = await db
             .select({ verifiedAt: users.emailVerifiedAt })
             .from(users)

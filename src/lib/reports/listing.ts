@@ -1,7 +1,7 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { orderItems, orders, payments, refunds, suppliers, users } from '@/db/schema'
+import { leadContacts, orderItems, orders, payments, refunds, suppliers, users } from '@/db/schema'
 import type { Translate } from '@/app/(admin)/_i18n'
 import {
   orderStatusLabel,
@@ -35,6 +35,7 @@ export const LISTING_KINDS = [
   'customers',
   'itinerary_sales',
   'accountant',
+  'leads',
 ] as const
 export type ListingKind = (typeof LISTING_KINDS)[number]
 
@@ -52,6 +53,7 @@ export const LISTING_ACCESS: Record<ListingKind, Capability> = {
   customers: 'customers.export',
   itinerary_sales: 'reports.read',
   accountant: 'finance.read',
+  leads: 'customers.export',
 }
 
 export function mayExportListing(role: Role, kind: ListingKind): boolean {
@@ -504,6 +506,72 @@ async function itinerarySalesSection(
   )
 }
 
+/**
+ * Lead capture: people who left their details (no phone or e-mail in the PDF —
+ * contact details stay in the CSV). `status` filters by source.
+ */
+async function leadsSection(f: ListingFilters, ctx: ListingContext): Promise<ListingSection> {
+  const { t, intl } = ctx
+  const paid = sql`o.status in ('paid','confirmed','partially_refunded')
+    and ((${leadContacts.userId} is not null and o.user_id = ${leadContacts.userId})
+      or (${leadContacts.email} is not null and lower(o.customer_snapshot->>'email') = ${leadContacts.email})
+      or (${leadContacts.phone} is not null and o.customer_snapshot->>'phone' = ${leadContacts.phone}))`
+  const rows = await db
+    .select({
+      day: baliDay(leadContacts.createdAt),
+      name: leadContacts.name,
+      source: leadContacts.source,
+      wa: leadContacts.whatsappConsent,
+      mail: leadContacts.emailConsent,
+      orders: sql<number>`(select count(*) from ${orders} o where ${paid})::int`,
+      spent: sql<string>`(select coalesce(sum(o.total_minor), 0) from ${orders} o where ${paid} and o.presentment_currency = 'SAR')::text`,
+    })
+    .from(leadContacts)
+    .where(
+      and(
+        ...dayRange(leadContacts.createdAt, f),
+        f.status ? eq(leadContacts.source, f.status) : undefined,
+        f.q ? ilike(leadContacts.name, likeOf(f.q)) : undefined,
+      ),
+    )
+    .orderBy(desc(leadContacts.createdAt))
+    .limit(ROW_CAP + 1)
+  let spent = 0
+  let consenting = 0
+  const body = rows.map((row) => {
+    spent += Number(row.spent)
+    if (row.wa || row.mail) consenting += 1
+    const consent = [row.wa ? t('lc.ch_whatsapp') : '', row.mail ? t('lc.ch_email') : '']
+      .filter(Boolean)
+      .join(' + ')
+    return [
+      row.day,
+      row.name ?? '—',
+      t(`lc.src_${row.source}`),
+      consent || t('lc.no_consent'),
+      String(row.orders),
+      money(Number(row.spent), intl),
+    ]
+  })
+  return section(
+    t('pdf.l_leads'),
+    [
+      { label: t('pdf.c_date') },
+      { label: t('pdf.c_customer') },
+      { label: t('lc.col_source') },
+      { label: t('lc.col_consent') },
+      { label: t('pdf.c_orders'), num: true },
+      { label: t('pdf.c_spent'), num: true },
+    ],
+    body,
+    [
+      [t('pdf.c_count'), String(rows.length)],
+      [t('lc.with_consent'), String(consenting)],
+      [t('pdf.c_spent'), money(spent, intl)],
+    ],
+  )
+}
+
 /** Build the document for one listing kind. */
 export async function buildListing(
   kind: ListingKind,
@@ -529,6 +597,8 @@ export async function buildListing(
         title: t('pdf.l_itinerary_sales'),
         sections: [await itinerarySalesSection(f, ctx)],
       }
+    case 'leads':
+      return { title: t('pdf.l_leads'), sections: [await leadsSection(f, ctx)] }
     case 'accountant': {
       // One month for the accountant: what came in, what went back, what we owe.
       const plain = { ...f, status: null, q: null }

@@ -32,6 +32,8 @@ export const RATE_RULES = {
   clientError: { window: 10 * 60, max: 30 },
   /** «Notify me when available» requests, per IP. */
   availabilityAlert: { window: 60 * 60, max: 8 },
+  /** «First booking» offer form, per IP. */
+  leadOffer: { window: 60 * 60, max: 6 },
   /** Inbound supplier webhooks, per connection. */
   webhook: { window: 60, max: 120 },
 } as const satisfies Record<string, RateRule>

@@ -15,6 +15,7 @@ import { Empty, Pager, Pill, Table, When } from '../../_ui/table'
 import { CONTACT_STATUSES, LEAD_TONES, TRIP_STATUSES } from '../../_lib/lead-statuses'
 import { setContactMessageStatus, setTripRequestStatus } from './actions'
 import { budgetLabel } from './budget'
+import { countPeople, PeopleTab } from './people-tab'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +36,12 @@ export default async function LeadsPage({
   const statusLabel = (value: string) =>
     t(`leads.status_${value}`) === `leads.status_${value}` ? value : t(`leads.status_${value}`)
 
-  const tab = param(params, 'tab') === 'contact' ? 'contact' : 'trip'
+  // Lead capture: «العملاء المحتملون» carries phone numbers, so it needs
+  // customers.read like the customers screen.
+  const mayPeople = can(session.role, 'customers.read')
+  const rawTab = param(params, 'tab')
+  const tab =
+    rawTab === 'contact' ? 'contact' : rawTab === 'people' && mayPeople ? 'people' : 'trip'
   const q = param(params, 'q')
   const status = param(params, 'status')
   const page = pageParam(params)
@@ -86,6 +92,7 @@ export default async function LeadsPage({
       : Promise.resolve([]),
     db.select({ value: count() }).from(contactMessages).where(contactWhere),
   ])
+  const peopleTotal = mayPeople ? await countPeople() : 0
 
   return (
     <>
@@ -106,7 +113,15 @@ export default async function LeadsPage({
             >
               {t('leads.tab_contact', { count: contactTotal?.value ?? 0 })}
             </Link>
-            {can(session.role, 'customers.export') ? (
+            {mayPeople ? (
+              <Link
+                className={`a-btn ${tab === 'people' ? '' : 'ghost'}`}
+                href={`${LIST}${buildQuery(params, { tab: 'people', page: null, status: null })}`}
+              >
+                {t('leads.tab_people', { count: peopleTotal })}
+              </Link>
+            ) : null}
+            {tab !== 'people' && can(session.role, 'customers.export') ? (
               <a className="a-btn ghost" href={adminHref('/leads/export')}>
                 {t('crm.export_leads')}
               </a>
@@ -116,34 +131,38 @@ export default async function LeadsPage({
       />
       <Flash searchParams={params} />
 
-      <form className="a-row a-card" method="get" action={LIST}>
-        <input type="hidden" name="tab" value={tab} />
-        <div className="a-field">
-          <label htmlFor="q">{t('leads.search')}</label>
-          <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
-        </div>
-        <div className="a-field">
-          <label htmlFor="status">{t('leads.status')}</label>
-          <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
-            <option value="">{t('leads.any')}</option>
-            {STATUSES.map((value) => (
-              <option key={value} value={value}>
-                {statusLabel(value)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="a-actions">
-          <button className="a-btn" type="submit">
-            {t('leads.filter')}
-          </button>
-          <Link className="a-btn ghost" href={`${LIST}?tab=${tab}`}>
-            {t('leads.reset')}
-          </Link>
-        </div>
-      </form>
+      {tab === 'people' ? <PeopleTab params={params} role={session.role} t={t} /> : null}
 
-      {tab === 'trip' ? (
+      {tab === 'people' ? null : (
+        <form className="a-row a-card" method="get" action={LIST}>
+          <input type="hidden" name="tab" value={tab} />
+          <div className="a-field">
+            <label htmlFor="q">{t('leads.search')}</label>
+            <input className="a-input" id="q" name="q" defaultValue={q ?? ''} />
+          </div>
+          <div className="a-field">
+            <label htmlFor="status">{t('leads.status')}</label>
+            <select className="a-select" id="status" name="status" defaultValue={status ?? ''}>
+              <option value="">{t('leads.any')}</option>
+              {STATUSES.map((value) => (
+                <option key={value} value={value}>
+                  {statusLabel(value)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="a-actions">
+            <button className="a-btn" type="submit">
+              {t('leads.filter')}
+            </button>
+            <Link className="a-btn ghost" href={`${LIST}?tab=${tab}`}>
+              {t('leads.reset')}
+            </Link>
+          </div>
+        </form>
+      )}
+
+      {tab === 'people' ? null : tab === 'trip' ? (
         trips.length === 0 ? (
           <Empty>{t('leads.empty_trips')}</Empty>
         ) : (
@@ -258,13 +277,15 @@ export default async function LeadsPage({
         </Table>
       )}
 
-      <Pager
-        basePath={LIST}
-        searchParams={params}
-        page={page}
-        pageSize={PAGE_SIZE}
-        total={tab === 'trip' ? (tripTotal?.value ?? 0) : (contactTotal?.value ?? 0)}
-      />
+      {tab === 'people' ? null : (
+        <Pager
+          basePath={LIST}
+          searchParams={params}
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={tab === 'trip' ? (tripTotal?.value ?? 0) : (contactTotal?.value ?? 0)}
+        />
+      )}
     </>
   )
 }

@@ -7,6 +7,7 @@ import { customTripRequests, users } from '@/db/schema'
 import { writeAudit } from '../../../_lib/audit'
 import { CSV_MAX_ROWS, csvResponse } from '../../../_lib/csv'
 import { requireCapability } from '../../../_lib/session'
+import { exportPeople } from './people'
 
 /**
  * Phase 4: custom-trip requests (leads) as CSV. Personal data, so admin only
@@ -18,8 +19,10 @@ export const dynamic = 'force-dynamic'
 const owner = alias(users, 'lead_owner')
 const assignee = alias(users, 'lead_assignee')
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await requireCapability('customers.export')
+  const search = Object.fromEntries(new URL(request.url).searchParams)
+  if (search.tab === 'people') return exportPeople(session, search)
   const rows = await db
     .select({
       request: customTripRequests,

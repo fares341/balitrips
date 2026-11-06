@@ -90,8 +90,8 @@ const POLICIES: Record<PolicyId, PolicyCopy> = {
     titleKey: 'ft_p_privacy',
     subKey: 'pol_privacy_sub',
     scopeKey: 'pol_privacy_scope',
-    updated: '2026-10-23',
-    sections: sectionKeys('pol_pr', 10),
+    updated: '2026-11-06',
+    sections: sectionKeys('pol_pr', 11),
   },
   refund: {
     titleKey: 'ft_p_refund',
