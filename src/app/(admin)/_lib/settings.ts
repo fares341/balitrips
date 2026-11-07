@@ -267,6 +267,19 @@ export const homeSchema = z.object({
 
 export type HomeSetting = z.infer<typeof homeSchema>
 
+/** Home page texts/images/visibility overrides (`@/lib/content/home-content`). */
+const localeText = z.object({
+  en: z.string().max(2000).optional(),
+  ar: z.string().max(2000).optional(),
+  id: z.string().max(2000).optional(),
+})
+export const homeContentSchema = z.object({
+  texts: z.record(z.string().max(128), localeText).default({}),
+  images: z.record(z.string().max(64), uuidOrEmpty).default({}),
+  hidden: z.array(z.string().max(32)).max(20).default([]),
+})
+export type HomeContentSetting = z.infer<typeof homeContentSchema>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type { CurrenciesSetting }
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -291,6 +304,7 @@ export type SettingKey =
   | 'seller'
   | 'vehicles'
   | 'home'
+  | 'homeContent'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -304,6 +318,7 @@ export interface SettingsShape {
   seller: SellerSetting
   vehicles: VehiclesSetting
   home: HomeSetting
+  homeContent: HomeContentSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -388,6 +403,7 @@ export const SETTING_DEFAULTS: SettingsShape = {
     visaLink: '',
     shopImageId: '',
   },
+  homeContent: { texts: {}, images: {}, hidden: [] },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -405,6 +421,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   seller: sellerSchema,
   vehicles: vehiclesSchema,
   home: homeSchema,
+  homeContent: homeContentSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,

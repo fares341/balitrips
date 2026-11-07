@@ -99,6 +99,9 @@ const ROUTES: readonly Rule[] = [
   ],
   [/^\/taxonomy$/, ['content.write']],
   [/^\/media$/, ['media.upload']],
+  [/^\/home-content$/, ['config.write']],
+  [/^\/archive$/, ['content.write']],
+  [/^\/help$/, ['admin.access']],
 
   [/^\/protection(\/(alerts|sessions|devices|activity))?$/, ['security.read']],
   [/^\/translations$/, ['translations.write']],

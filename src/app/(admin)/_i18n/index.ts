@@ -29,6 +29,7 @@ import delivery from './delivery'
 import currency from './currency'
 import studioV2 from './studio-v2'
 import leadsCapture from './leads-capture'
+import studioControl from './studio-control'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
 
 export * from './types'
@@ -65,6 +66,7 @@ const SECTIONS = [
   studioV2,
   delivery,
   leadsCapture,
+  studioControl,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

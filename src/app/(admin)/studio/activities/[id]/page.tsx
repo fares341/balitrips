@@ -21,7 +21,6 @@ import { can } from '@/lib/auth/roles'
 import { activityStatus, ACTIVITY_STATUSES, isPublicStatus } from '@/lib/content/activity-status'
 import { ADVANCE_MODES, advanceModeOf } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
-import { mediaUrl } from '@/lib/content/queries'
 import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { countWaitingAlerts, listAlerts } from '@/lib/notify/availability'
 
@@ -44,10 +43,10 @@ import { FaqRepeater, type FaqRepeaterEntry } from '../../../_ui/faq-repeater'
 import { Flash } from '../../../_ui/flash'
 import { FormKeeper } from '../../../_ui/form-keeper'
 import { MarkdownEditor } from '../../../_ui/markdown-editor'
-import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
+import { loadPickerMedia, MediaGalleryPicker, MediaPicker } from '../../../_ui/media-picker'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { PageHead } from '../../../_ui/shell'
-import { GalleryEditor, LocalizedRepeater, SortableList } from '../../../_ui/sortable'
+import { LocalizedRepeater, SortableList } from '../../../_ui/sortable'
 import { Pill } from '../../../_ui/table'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { AddonEditor } from './addon-editor'
@@ -815,7 +814,7 @@ async function MediaTab({
   save: (form: FormData) => Promise<void>
   actions: ReactNode
 }) {
-  const { t, locale } = await getAdminI18n()
+  const { t } = await getAdminI18n()
   const [mediaList, gallery] = await Promise.all([
     loadPickerMedia(),
     db
@@ -825,8 +824,6 @@ async function MediaTab({
       .where(and(eq(activityImages.activityId, activity.id), isNull(media.deletedAt)))
       .orderBy(asc(activityImages.sortOrder)),
   ])
-  const label = (row: { objectKey: string; alt: Parameters<typeof pick>[0] }) =>
-    pick(row.alt, locale, row.objectKey.split('/').pop() ?? row.objectKey)
 
   return (
     <form className="a-form" action={save}>
@@ -846,20 +843,11 @@ async function MediaTab({
           value={activity.mobileHeroImageId}
           hint={t('ae.mobile_hero_hint')}
         />
-        <GalleryEditor
+        <MediaGalleryPicker
           name="galleryIds"
           label={t('ae.gallery')}
           hint={t('ae.gallery_hint')}
-          initial={gallery.map((row) => ({
-            id: row.id,
-            url: mediaUrl(row.objectKey),
-            label: label(row),
-          }))}
-          library={mediaList.map((row) => ({
-            id: row.id,
-            url: mediaUrl(row.objectKey),
-            label: label(row),
-          }))}
+          values={gallery.map((row) => row.id)}
         />
         <Field label={t('ae.video')} htmlFor="videoUrl" hint={t('ae.video_hint')}>
           <TextInput

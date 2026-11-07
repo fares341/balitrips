@@ -9,12 +9,7 @@ import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
-import {
-  activityOptions,
-  categoryOptions,
-  mediaOptions,
-  regionOptions,
-} from '../../../_lib/lookups'
+import { activityOptions, categoryOptions, regionOptions } from '../../../_lib/lookups'
 import { param } from '../../../_lib/result'
 import { requireCapability } from '../../../_lib/session'
 import { readSetting } from '../../../_lib/settings'
@@ -31,6 +26,7 @@ import {
 import { Flash } from '../../../_ui/flash'
 import { OptionChecklist, OptionField } from '../../../_ui/select-field'
 import { baliInputValue } from '../../../_lib/bali-time'
+import { MediaGalleryPicker, MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
 import { deletePlace, savePlace, uploadPlaceVideo } from '../actions'
 import { TRAVELER_TYPES } from '@/lib/map/explore'
@@ -65,11 +61,10 @@ export default async function PlaceEditorPage({
 
   if (!isNew && !place) notFound()
 
-  const [regions, activities, mediaList, categoryList, tagList, placeTagRows, mapSettings, all] =
+  const [regions, activities, categoryList, tagList, placeTagRows, mapSettings, all] =
     await Promise.all([
       regionOptions(),
       activityOptions(),
-      mediaOptions(),
       categoryOptions(),
       db.select().from(tags).orderBy(asc(tags.sortOrder), asc(tags.key)),
       place
@@ -352,10 +347,9 @@ export default async function PlaceEditorPage({
               options={activities}
               value={place?.activityId}
             />
-            <OptionField
+            <MediaPicker
               name="heroImageId"
               label={t('places.hero_image')}
-              options={mediaList}
               value={place?.heroImageId}
             />
           </div>
@@ -424,10 +418,9 @@ export default async function PlaceEditorPage({
             values={place?.subCategoryIds ?? []}
             hint={t('places.sub_categories_hint')}
           />
-          <OptionChecklist
+          <MediaGalleryPicker
             name="galleryImageIds"
             label={t('places.gallery')}
-            options={mediaList}
             values={place?.galleryImageIds ?? []}
             hint={t('places.gallery_hint')}
           />

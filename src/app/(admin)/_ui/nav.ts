@@ -41,6 +41,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/inbox', labelKey: 'nav.inbox', icon: 'inbox' },
       { path: '/reports', labelKey: 'nav.reports', icon: 'pulse' },
       { path: '/assistant', labelKey: 'nav.assistant', icon: 'sparkle', exact: true },
+      { path: '/help', labelKey: 'nav.help', icon: 'info' },
     ],
   },
   {
@@ -88,8 +89,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/landmarks', labelKey: 'nav.landmarks', icon: 'landmark' },
       { path: '/reviews', labelKey: 'nav.reviews', icon: 'star' },
       { path: '/taxonomy', labelKey: 'nav.taxonomy', icon: 'tag' },
+      { path: '/home-content', labelKey: 'nav.home_content', icon: 'home' },
       { path: '/media', labelKey: 'nav.media', icon: 'image' },
       { path: '/files', labelKey: 'nav.files', icon: 'file' },
+      { path: '/archive', labelKey: 'nav.archive', icon: 'clipboard' },
       { path: '/readiness', labelKey: 'nav.readiness', icon: 'check' },
     ],
   },

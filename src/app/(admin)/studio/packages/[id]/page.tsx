@@ -18,7 +18,7 @@ import { packageCost } from '@/lib/packages/cost'
 import { loadOffers } from '@/lib/suppliers/offers'
 
 import { adminHref } from '../../../_lib/admin-path'
-import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
+import { activityOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import { Advanced } from '../../../_ui/advanced'
 import {
@@ -33,7 +33,8 @@ import {
   TextInput,
 } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
-import { OptionChecklist, OptionField } from '../../../_ui/select-field'
+import { OptionChecklist } from '../../../_ui/select-field'
+import { MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
 import { SortableList } from '../../../_ui/sortable'
 import { Pill } from '../../../_ui/table'
@@ -78,10 +79,9 @@ export default async function PackageEditorPage({
 
   if (!isNew && !pkg) notFound()
 
-  const [regions, activities, mediaList, selectedActivities, selectedRegions] = await Promise.all([
+  const [regions, activities, selectedActivities, selectedRegions] = await Promise.all([
     regionOptions(),
     activityOptions(),
-    mediaOptions(),
     pkg
       ? db
           .select({
@@ -262,10 +262,9 @@ export default async function PackageEditorPage({
               defaultChecked={pkg?.driverIncluded ?? false}
               hint={t('packages.f_driver_hint')}
             />
-            <OptionField
+            <MediaPicker
               name="heroImageId"
               label={t('packages.hero_image')}
-              options={mediaList}
               value={pkg?.heroImageId}
             />
           </div>

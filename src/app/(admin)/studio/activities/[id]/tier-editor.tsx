@@ -21,6 +21,9 @@ import { Pill } from '../../../_ui/table'
 import { addActivityTier, removeActivityTier, saveActivityTier } from '../actions'
 import { duplicateActivityTier } from '../v2-actions'
 import type { PickerItem } from '../../../_ui/media-picker'
+import { MediaPickerClient } from '../../../_ui/media-picker-client'
+import { MAX_UPLOAD_BYTES as MEDIA_PICKER_MAX_BYTES } from '../../../_lib/image/pipeline'
+import { mediaUrl } from '@/lib/content/queries'
 import { ConfirmSubmit } from '../../../_ui/confirm-submit'
 
 export interface TierRow {
@@ -196,23 +199,23 @@ export async function TierEditor({
               />
             </Field>
             <div className="a-row">
-              <Field
+              <MediaPickerClient
+                name="imageId"
                 label={t('av2.pkg_image')}
-                htmlFor={`imageId_${tier.id}`}
                 hint={t('av2.pkg_image_hint')}
-              >
-                <Select id={`imageId_${tier.id}`} name="imageId" defaultValue={tier.imageId ?? ''}>
-                  <option value="">{t('av2.pkg_image_none')}</option>
-                  {tier.imageId !== null && !media.some((item) => item.id === tier.imageId) ? (
-                    <option value={tier.imageId}>{t('av2.pkg_image_keep')}</option>
-                  ) : null}
-                  {media.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.objectKey.split('/').pop()}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                maxBytes={MEDIA_PICKER_MAX_BYTES}
+                initial={(() => {
+                  if (tier.imageId === null) return null
+                  const item = media.find((m) => m.id === tier.imageId)
+                  return item
+                    ? {
+                        id: item.id,
+                        name: item.name || item.objectKey.split('/').pop() || item.id,
+                        url: mediaUrl(item.objectKey),
+                      }
+                    : { id: tier.imageId, name: t('av2.pkg_image_keep'), url: '' }
+                })()}
+              />
               <Field label={t('av2.badge_color')} htmlFor={`badgeColor_${tier.id}`}>
                 <Select
                   id={`badgeColor_${tier.id}`}
