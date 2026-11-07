@@ -367,21 +367,25 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   await page.goto(`${ADMIN}/activities/${activityId}?tab=media`)
   await settle(page)
   const heroId = String(media[0]?.id ?? '')
+  const galleryId = String(media[1]?.id ?? '')
+  // The media tab uses <MediaPicker> / <MediaGalleryPicker> (#67): each posts
+  // hidden inputs. Set them the way a pick does (the picker UI has its own spec).
   await page
-    .locator(`input[type="radio"][name="heroImageId"][value="${heroId}"]`)
-    .evaluate((el: HTMLInputElement) => {
-      el.checked = true
-    })
-  const fieldset = page
-    .locator('fieldset:has(input[name="galleryIds"]), fieldset:has(button[aria-expanded])')
+    .locator('form input[type="hidden"][name="heroImageId"]')
     .first()
+    .evaluate((el: HTMLInputElement, id: string) => {
+      el.value = id
+    }, heroId)
   await page
-    .getByRole('button', { name: /إضافة صور من المكتبة|Add photos from the library/ })
-    .click()
-  const pick = page.locator('fieldset button[aria-pressed="false"]')
-  if ((await pick.count()) > 0) await pick.first().click()
-  if ((await pick.count()) > 0) await pick.first().click()
-  void fieldset
+    .locator('form input[type="hidden"][name="galleryIds__present"]')
+    .first()
+    .evaluate((el: HTMLInputElement, id: string) => {
+      const add = document.createElement('input')
+      add.type = 'hidden'
+      add.name = 'galleryIds'
+      add.value = id
+      el.after(add)
+    }, galleryId)
   await shots('08-media-filled')
   await submitMain()
   r = await row()

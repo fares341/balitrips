@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto'
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { expect, type Page, type TestInfo } from '@playwright/test'
+import { type Dialog, expect, type Page, type TestInfo } from '@playwright/test'
 
 /**
  * Shared helpers for the full forms suite (e2e/full).
@@ -283,18 +283,26 @@ async function fillForm(page: Page, formIndex: number, mode: FillMode): Promise<
  * the script. Forms whose only submit button is destructive are skipped.
  */
 /**
- * `page.goto` that survives a navigation the previous page started (a
- * fuzzed form whose redirect lands while we leave): Chromium reports that
- * as net::ERR_ABORTED for the new URL. Wait for the page to settle and try
- * once more.
+ * `page.goto` that survives leaving a page the fuzzer left dirty: the Studio's
+ * unsaved-changes guard asks «leave?» (beforeunload), Playwright dismisses it,
+ * and Chromium reports the cancelled navigation as net::ERR_ABORTED. Leaving
+ * is what the test means, so accept that prompt and go again.
  */
 async function gotoSettled(page: Page, path: string): Promise<void> {
   try {
     await page.goto(path, { waitUntil: 'domcontentloaded' })
   } catch (error) {
     if (!String(error).includes('ERR_ABORTED')) throw error
-    await page.waitForLoadState('load').catch(() => {})
-    await page.goto(path, { waitUntil: 'domcontentloaded' })
+    const leave = (dialog: Dialog) => {
+      if (dialog.type() === 'beforeunload') void dialog.accept()
+    }
+    page.on('dialog', leave)
+    try {
+      await page.waitForLoadState('load').catch(() => {})
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+    } finally {
+      page.off('dialog', leave)
+    }
   }
 }
 
