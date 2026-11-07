@@ -54,10 +54,13 @@ export function liveModeIssues(): LiveModeWarning[] {
       text: 'RESEND_API_KEY is empty — password reset and receipts will not be emailed.',
     })
   }
-  if (!process.env.SPACES_KEY || !process.env.SPACES_SECRET) {
+  if (
+    (!process.env.SPACES_KEY || !process.env.SPACES_SECRET) &&
+    !process.env.PRIVATE_STORAGE_DIR?.trim()
+  ) {
     issues.push({
       code: 'no_storage',
-      text: 'SPACES_KEY/SPACES_SECRET are empty — PDFs and uploads cannot be stored.',
+      text: 'SPACES_KEY/SPACES_SECRET are empty and PRIVATE_STORAGE_DIR is unset — PDFs cannot be stored.',
     })
   }
   return issues
