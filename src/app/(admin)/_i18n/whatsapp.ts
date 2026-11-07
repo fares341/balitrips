@@ -87,7 +87,8 @@ const section: Section = {
     'wa.a_payment_failed': 'Payment failed',
     'wa.w_payment_failed': 'When the gateway reports the payment declined.',
     'wa.a_itinerary_purchased': 'Ready itinerary purchased',
-    'wa.w_itinerary_purchased': 'After a successful payment for a ready itinerary.',
+    'wa.w_itinerary_purchased':
+      'After a successful payment for a ready itinerary. Transactional (Meta «utility» template): sent to the order’s phone even without marketing consent; never after the buyer opts out (STOP).',
     'wa.a_custom_itinerary_ready': 'Custom itinerary ready',
     'wa.w_custom_itinerary_ready': 'When the team sets a custom request to «completed».',
     'wa.a_driver_confirmed': 'Private driver confirmed',
@@ -185,7 +186,8 @@ const section: Section = {
     'wa.a_payment_failed': 'فشل الدفع',
     'wa.w_payment_failed': 'عندما تُبلغ بوابة الدفع برفض العملية.',
     'wa.a_itinerary_purchased': 'شراء جدول جاهز',
-    'wa.w_itinerary_purchased': 'بعد نجاح الدفع لجدول جاهز.',
+    'wa.w_itinerary_purchased':
+      'بعد نجاح الدفع لجدول جاهز. رسالة تشغيلية (قالب Meta من فئة «utility»): تُرسل لرقم الطلب حتى بدون موافقة تسويقية، ولا تُرسل أبدًا بعد إلغاء الاشتراك (STOP).',
     'wa.a_custom_itinerary_ready': 'جاهزية جدول مخصص',
     'wa.w_custom_itinerary_ready': 'عندما يحدد الفريق حالة الطلب المخصص «مكتمل».',
     'wa.a_driver_confirmed': 'تأكيد حجز السائق الخاص',

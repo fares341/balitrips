@@ -342,6 +342,12 @@ export interface ItineraryDeliveryEmailInput {
   pdfUrl: string | null
   linkValidDays: number
   linkMaxUses: number
+  /**
+   * «احجز فعاليات جدولك ووفّر X%» — the buyer-only activities page and the
+   * itinerary's effective bundle discount. Null / omitted = no button (the
+   * itinerary has no bookable activities).
+   */
+  activities?: { url: string; pct: number } | null
 }
 
 export function renderItineraryDeliveryEmail(input: ItineraryDeliveryEmailInput): RenderedEmail {
@@ -374,6 +380,14 @@ export function renderItineraryDeliveryEmail(input: ItineraryDeliveryEmailInput)
     )
   } else {
     blocks.push({ kind: 'muted', text: t('dlv_mail_nolink') })
+  }
+  if (input.activities) {
+    blocks.push({
+      kind: 'button',
+      label: t('dlv_bundle_cta', { pct: input.activities.pct }),
+      href: input.activities.url,
+      variant: 'secondary',
+    })
   }
 
   const { html, text } = renderDocument({

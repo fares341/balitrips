@@ -190,6 +190,7 @@
   "dlv_mail_open": "Open it in your account",
   "dlv_mail_pdf": "Download the PDF",
   "dlv_mail_expiry": "The download link works for {days} days and {uses} downloads. After that, your itinerary is always in “My itineraries” in your account.",
+  "dlv_bundle_cta": "Book your itinerary’s activities and save {pct}%",
   "dlv_mail_nolink": "Your itinerary is always in “My itineraries” in your account.",
   "dlv_ok_badge": "Delivered",
   "dlv_ok_t": "Your itinerary is ready to open",

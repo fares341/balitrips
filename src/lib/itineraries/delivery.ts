@@ -46,6 +46,8 @@ import { renderItineraryDeliveryEmail, sendEmail, toMailLocale } from '@/lib/ema
 import { txExecutor, type TxExecutor } from '@/lib/orders/paid-paperwork'
 import { logActivity } from '@/lib/security/activity'
 
+import { bundlePct } from './bundle'
+import { linkedBookableActivities } from './bundle-server'
 import { issueDownloadToken } from './download-tokens'
 import { readItinerarySales } from './sales-settings-store'
 
@@ -74,7 +76,68 @@ export const DELIVERY_PATHS = {
   download: (orderItemId: string) => `/account/schedules/${orderItemId}/download`,
   /** Token link; route: src/app/[locale]/dl/[token]/route.ts */
   tokenDownload: (token: string) => `/dl/${token}`,
+  /** Phase 3 buyer-only page; route: src/app/[locale]/account/itineraries/[slug]/activities */
+  activities: (slug: string) => `/account/itineraries/${slug}/activities`,
 } as const
+
+/** «احجز فعاليات جدولك ووفّر X%» — where it points and the percentage shown. */
+export interface ActivitiesOffer {
+  path: string
+  pct: number
+}
+
+/**
+ * The offer for one itinerary, or null when there is nothing to book (no
+ * bookable activity linked to its days) — then the button is not shown.
+ * `own` is the itinerary's bundle discount, null = the global default.
+ */
+export function activitiesOffer(
+  slug: string | null,
+  linkedBookable: number,
+  own: number | null | undefined,
+  globalPct: number,
+): ActivitiesOffer | null {
+  if (slug === null || slug === '' || linkedBookable <= 0) return null
+  return { path: DELIVERY_PATHS.activities(slug), pct: bundlePct(own, globalPct) }
+}
+
+/** Offers per order item (itinerary lines only). Never throws: no offer on error. */
+export async function loadActivitiesOffers(
+  orderItemIds: readonly string[],
+): Promise<Map<string, ActivitiesOffer>> {
+  const map = new Map<string, ActivitiesOffer>()
+  if (orderItemIds.length === 0) return map
+  try {
+    const rows = await db
+      .select({
+        orderItemId: orderItems.id,
+        itineraryId: itineraries.id,
+        slug: itineraries.slug,
+        own: itineraries.bundleDiscountPct,
+      })
+      .from(orderItems)
+      .innerJoin(itineraries, eq(itineraries.id, orderItems.refId))
+      .where(and(inArray(orderItems.id, [...orderItemIds]), eq(orderItems.kind, 'itinerary')))
+    if (rows.length === 0) return map
+    const settings = await readItinerarySales()
+    const linked = new Map<string, number>()
+    for (const id of new Set(rows.map((row) => row.itineraryId))) {
+      linked.set(id, (await linkedBookableActivities(id)).length)
+    }
+    for (const row of rows) {
+      const offer = activitiesOffer(
+        row.slug,
+        linked.get(row.itineraryId) ?? 0,
+        row.own,
+        settings.allActivitiesDiscountPct,
+      )
+      if (offer) map.set(row.orderItemId, offer)
+    }
+  } catch (error) {
+    console.error('[delivery] could not load the activities offer', { error })
+  }
+  return map
+}
 
 function origin(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
@@ -271,6 +334,7 @@ export async function runItineraryDelivery(job: DeliveryJob, now = new Date()): 
     console.error('[delivery] could not issue a download link', { orderItemId, error })
   }
 
+  const offer = (await loadActivitiesOffers([orderItemId])).get(orderItemId) ?? null
   const rendered = renderItineraryDeliveryEmail({
     locale,
     name,
@@ -281,6 +345,7 @@ export async function runItineraryDelivery(job: DeliveryJob, now = new Date()): 
     pdfUrl,
     linkValidDays: settings.linkValidDays,
     linkMaxUses: settings.linkMaxUses,
+    activities: offer === null ? null : { url: absoluteLink(offer.path, locale), pct: offer.pct },
   })
   const result = await sendEmail({ to, ...rendered })
 

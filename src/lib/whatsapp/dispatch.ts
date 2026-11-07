@@ -25,7 +25,13 @@ import { pick } from '@/lib/content/localize'
 import { formatMoney } from '@/lib/money'
 import { toWhatsappNumber } from '@/lib/notify/whatsapp'
 
-import { messageLocale, renderText, templateValues, type AutomationKey } from './automations'
+import {
+  messageLocale,
+  renderText,
+  skipReasonFor,
+  templateValues,
+  type AutomationKey,
+} from './automations'
 import { createProvider, type SendResult } from './providers'
 import {
   automationTemplate,
@@ -66,6 +72,8 @@ interface Recipient {
   userId: string | null
   phone: string | null
   consent: boolean
+  /** The person opted out (STOP). Blocks every automation, transactional too. */
+  optedOut?: boolean
   locale: Locale
   name: string
 }
@@ -79,7 +87,7 @@ async function queueMessage(
   orderId: string | null,
 ): Promise<void> {
   const to = toWhatsappNumber(recipient.phone)
-  const skipReason = !recipient.consent ? 'no_consent' : to === null ? 'no_number' : null
+  const skipReason = skipReasonFor(key, recipient, to)
   const body = renderText(automationText(settings, key, recipient.locale), vars)
   const [row] = await db
     .insert(whatsappMessages)
@@ -118,6 +126,7 @@ async function loadOrder(orderId: string) {
       userName: users.name,
       userLocale: users.locale,
       userOptIn: users.whatsappOptIn,
+      userOptedOutAt: users.whatsappOptedOutAt,
     })
     .from(orders)
     .leftJoin(users, eq(users.id, orders.userId))
@@ -134,6 +143,7 @@ function orderRecipient(order: LoadedOrder): Recipient {
     userId: order.userId,
     phone: snap?.phone || order.userPhone || null,
     consent: snap?.whatsappConsent === true || order.userOptIn === true,
+    optedOut: order.userOptedOutAt !== null,
     locale: messageLocale(snap?.locale ?? order.userLocale),
     name: (snap?.name || order.userName || '').trim(),
   }
@@ -235,6 +245,7 @@ export async function triggerCustomItineraryReady(requestId: string): Promise<vo
         userPhone: users.phone,
         userLocale: users.locale,
         optIn: users.whatsappOptIn,
+        optedOutAt: users.whatsappOptedOutAt,
       })
       .from(customTripRequests)
       .leftJoin(users, eq(users.id, customTripRequests.userId))
@@ -246,6 +257,7 @@ export async function triggerCustomItineraryReady(requestId: string): Promise<vo
       userId: row.userId,
       phone: row.phone || row.userPhone,
       consent: row.optIn === true,
+      optedOut: row.optedOutAt !== null,
       locale,
       name: row.name ?? '',
     }

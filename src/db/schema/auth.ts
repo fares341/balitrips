@@ -72,6 +72,12 @@ export const users = pgTable(
      * التشغيلية). افتراضياً لا — لا نراسل أحداً لم يطلب ذلك.
      */
     whatsappOptIn: boolean('whatsapp_opt_in').notNull().default(false),
+    /**
+     * Migration 0048: the buyer said STOP / opted out of WhatsApp. Blocks every
+     * automation, including the transactional itinerary delivery that
+     * otherwise needs no marketing consent (`TRANSACTIONAL_AUTOMATIONS`).
+     */
+    whatsappOptedOutAt: timestamp('whatsapp_opted_out_at', { withTimezone: true }),
     bannedUntil: timestamp('banned_until', { withTimezone: true }),
     banReason: text('ban_reason'),
 

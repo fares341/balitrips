@@ -182,3 +182,27 @@ export function templateValues(key: AutomationKey, vars: Record<string, string>)
 export function messageLocale(raw: string | null | undefined): Locale {
   return raw && (locales as readonly string[]).includes(raw) ? (raw as Locale) : 'en'
 }
+
+/**
+ * Transactional automations (Meta «utility» templates): a message about
+ * something the person bought. They need a valid number and the automation
+ * on — not marketing consent. An opt-out (STOP) still blocks them.
+ * Everything else (lead_offer_code, cart_reminder, campaigns…) needs consent.
+ */
+export const TRANSACTIONAL_AUTOMATIONS: ReadonlySet<AutomationKey> = new Set([
+  'itinerary_purchased',
+])
+
+export type SkipReason = 'opted_out' | 'no_consent' | 'no_number'
+
+/** Why a message is not sent, or null to send it. Pure. */
+export function skipReasonFor(
+  key: AutomationKey,
+  recipient: { consent: boolean; optedOut?: boolean },
+  to: string | null,
+): SkipReason | null {
+  if (recipient.optedOut === true) return 'opted_out'
+  if (!recipient.consent && !TRANSACTIONAL_AUTOMATIONS.has(key)) return 'no_consent'
+  if (to === null) return 'no_number'
+  return null
+}

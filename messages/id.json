@@ -190,6 +190,7 @@
   "dlv_mail_open": "Buka di akun Anda",
   "dlv_mail_pdf": "Unduh PDF",
   "dlv_mail_expiry": "Tautan unduhan berlaku {days} hari dan {uses} kali unduh. Setelah itu, itinerary Anda selalu ada di “Itinerary saya” di akun Anda.",
+  "dlv_bundle_cta": "Pesan aktivitas itinerary Anda dan hemat {pct}%",
   "dlv_mail_nolink": "Itinerary Anda selalu ada di “Itinerary saya” di akun Anda.",
   "dlv_ok_badge": "Terkirim",
   "dlv_ok_t": "Itinerary Anda siap dibuka",
