@@ -613,6 +613,12 @@ function priceItinerary(
     }
     unitPriceMinor = priced
   }
+  // No price set (a draft seeded without one, or a 0 typed in Studio) is
+  // never sold as free: the line is refused like an unknown item.
+  if (!Number.isSafeInteger(unitPriceMinor) || unitPriceMinor <= 0) {
+    issues.push({ itemId: item.id, code: 'unknown_item' })
+    return
+  }
   // A downloadable plan is bought once; quantity is meaningless.
   lines.push({
     itemId: item.id,

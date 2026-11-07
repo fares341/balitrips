@@ -1,5 +1,6 @@
 'use server'
 
+import { hasSellablePrice } from '@/lib/itineraries/price-guard'
 import { BASE_CURRENCY } from '@/lib/currency/fx'
 import { ITINERARY_TIERS, normaliseTierPrices, type TierPrices } from '@/lib/itineraries/tiers'
 
@@ -243,6 +244,11 @@ export async function publishItinerary(id: string): Promise<void> {
       const unresolved = days.filter((day) => !day.activityId && !day.isFreeDay)
       if (unresolved.length > 0) {
         throw new Error(t('itineraries.err_publish_unresolved', { count: unresolved.length }))
+      }
+
+      // No price (0 / unset and no priced level) = never on sale as free.
+      if (!hasSellablePrice(before.priceMinor, before.tierPrices)) {
+        throw new Error(t('itineraries.err_publish_no_price'))
       }
 
       // Phase 1 (spec §3.1/§9): no ready Arabic PDF — uploaded or generated — no publish.
