@@ -431,6 +431,18 @@ describe('whole-cart behaviour', () => {
     expect(q.totalMinor).toBe(27_900)
   })
 
+  it('never sells an itinerary with no price as free', () => {
+    const cat = catalog()
+    cat.itineraries.set('it0', { priceMinor: 0, currency: 'SAR', version: 1 })
+    const q = buildQuote(
+      [item({ id: 't0', kind: 'itinerary', refId: 'it0', travelDate: null, travelTime: null })],
+      cat,
+      NOW,
+    )
+    expect(q.ok).toBe(false)
+    expect(q.issues[0]?.code).toBe('unknown_item')
+  })
+
   it('an empty cart totals zero and is valid', () => {
     const q = buildQuote([], catalog(), NOW)
     expect(q.ok).toBe(true)

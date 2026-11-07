@@ -235,6 +235,7 @@ const section: Section = {
     'itineraries.err_save_failed': 'Couldn’t save. Please try again.',
     'itineraries.ok_saved': 'Itinerary saved.',
     'itineraries.err_publish_no_days': 'Add at least one day before publishing.',
+    'itineraries.err_publish_no_price': 'Set a price above 0 before publishing.',
     'itineraries.err_publish_unresolved':
       'Days with no activity and not marked as a free day: {count}. Complete them before publishing.',
     'itineraries.ok_published':
@@ -597,6 +598,7 @@ const section: Section = {
     'itineraries.err_save_failed': 'تعذّر الحفظ. حاول مرة أخرى.',
     'itineraries.ok_saved': 'تم حفظ الجدول.',
     'itineraries.err_publish_no_days': 'أضف يوماً واحداً على الأقل قبل النشر.',
+    'itineraries.err_publish_no_price': 'حدّد سعرًا أكبر من صفر قبل النشر.',
     'itineraries.err_publish_unresolved':
       'أيام بلا نشاط وغير محددة كيوم حر: {count}. أكملها قبل النشر.',
     'itineraries.ok_published':
