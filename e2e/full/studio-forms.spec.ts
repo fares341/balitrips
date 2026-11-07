@@ -211,7 +211,17 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
     'base64',
   )
   await file.setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: tiny })
-  await page.locator('form:has(input[type="file"]) button[type="submit"]').first().click()
+  // Bulk uploader (#67): «Upload n», then each row turns done / error.
+  await page
+    .locator('.mu-actions button.primary')
+    .first()
+    .click({ timeout: 5000 })
+    .catch(() => {})
+  await page
+    .locator('.mu-row.done, .mu-row.error')
+    .first()
+    .waitFor({ timeout: 20_000 })
+    .catch(() => {})
   await settle(page, 20_000)
   const afterTiny = await db()<{ n: number }[]>`select count(*)::int n from media`
   check(
@@ -232,8 +242,13 @@ test('media: upload a small image', async ({ browserName: _browserName }, info) 
     .first()
     .fill(`${XSS} 🌴`)
     .catch(() => {})
-  const submit = page.locator('form:has(input[type="file"]) button[type="submit"]').first()
+  const submit = page.locator('.mu-actions button.primary').first()
   if (await submit.isVisible().catch(() => false)) await submit.click()
+  await page
+    .locator('.mu-row.done, .mu-row.error')
+    .first()
+    .waitFor({ timeout: 20_000 })
+    .catch(() => {})
   await settle(page, 20_000)
   await page.waitForTimeout(2000)
   const after = await db()<{ n: number }[]>`select count(*)::int n from media`
@@ -278,8 +293,13 @@ test('activity CSV import: junk file handled', async ({ browserName: _browserNam
     mimeType: 'text/csv',
     buffer: Buffer.from(`name,price\n"${XSS}",-5\n,abc\n`),
   })
-  const submit = page.locator('form:has(input[type="file"]) button[type="submit"]').first()
+  const submit = page.locator('.mu-actions button.primary').first()
   if (await submit.isVisible().catch(() => false)) await submit.click()
+  await page
+    .locator('.mu-row.done, .mu-row.error')
+    .first()
+    .waitFor({ timeout: 20_000 })
+    .catch(() => {})
   await settle(page, 20_000)
   const problems = await watch.collect()
   check(

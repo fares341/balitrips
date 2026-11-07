@@ -18,6 +18,8 @@ import { AuthModal, type AuthMode } from '@/components/auth'
 import { useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
 
+import type { SignInReason } from './sign-in-reason'
+
 const ACCOUNT_HREF = '/account'
 
 export type SignedOutPaneProps = {
@@ -43,16 +45,6 @@ export type SignedOutPaneProps = {
   reason?: SignInReason
 }
 
-export type SignInReason = 'favorites' | 'account' | 'trip'
-
-/** The reason implied by where the visitor was going (an internal path). */
-export function reasonFor(next: string | null): SignInReason {
-  if (next === null) return 'account'
-  if (next.startsWith('/account/favorites')) return 'favorites'
-  if (/^\/(?:my-trip|trip|cart|checkout|account\/trip)(?:[/?#]|$)/.test(next)) return 'trip'
-  return 'account'
-}
-
 export function SignedOutPane({
   providers,
   next,
@@ -74,17 +66,17 @@ export function SignedOutPane({
         </p>
       )}
       <AuthModal
-      variant="page"
-      open
-      onClose={() => undefined}
-      initialMode={initialMode}
-      callbackPath={next ?? ACCOUNT_HREF}
-      socialProviders={providers}
-      onAuthenticated={() => {
-        // AuthModal has already refreshed the router; this carries the
-        // visitor back to whatever they were doing when they were stopped.
-        if (next !== null) router.replace(next)
-      }}
+        variant="page"
+        open
+        onClose={() => undefined}
+        initialMode={initialMode}
+        callbackPath={next ?? ACCOUNT_HREF}
+        socialProviders={providers}
+        onAuthenticated={() => {
+          // AuthModal has already refreshed the router; this carries the
+          // visitor back to whatever they were doing when they were stopped.
+          if (next !== null) router.replace(next)
+        }}
       />
     </>
   )

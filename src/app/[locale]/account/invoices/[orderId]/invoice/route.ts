@@ -11,6 +11,7 @@ import { getPathname } from '@/i18n/routing'
 import { invoiceAvailable, invoiceRendered, loadOrderInvoice, presignOrderInvoice } from '@/lib/pdf'
 import { checkSecureAccess } from '@/lib/security/guard'
 import { contentDisposition, isStorageConfigured, localPrivateRoot } from '@/lib/storage'
+import { localRedirect } from '@/lib/http/local-redirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,12 +26,11 @@ export async function GET(
   const locale = isLocale(raw) ? raw : defaultLocale
   const access = await checkSecureAccess(`invoice:${orderId}`)
   const back = (query: Record<string, string>) =>
-    NextResponse.redirect(
-      new URL(getPathname({ href: { pathname: '/account/invoices', query }, locale }), request.url),
-      { headers: NO_STORE },
-    )
+    localRedirect(getPathname({ href: { pathname: '/account/invoices', query }, locale }), {
+      headers: NO_STORE,
+    })
   if (!access.ok) {
-    return NextResponse.redirect(new URL(getPathname({ href: '/account', locale }), request.url), {
+    return localRedirect(getPathname({ href: '/account', locale }), {
       headers: NO_STORE,
     })
   }

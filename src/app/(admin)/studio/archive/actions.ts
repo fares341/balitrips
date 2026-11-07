@@ -20,7 +20,13 @@ export async function restoreFromArchive(form: FormData): Promise<void> {
   const kind = form.get('kind')
   const id = String(form.get('id') ?? '')
   const session = await requireCapability(
-    kind === 'suppliers' ? 'suppliers.write' : kind === 'plans' ? 'config.write' : 'content.write',
+    kind === 'suppliers'
+      ? 'suppliers.write'
+      : kind === 'plans'
+        ? 'config.write'
+        : kind === 'media'
+          ? 'media.upload'
+          : 'content.write',
   )
   const { t } = await getAdminI18n()
   let outcome: { ok: string } | { err: string }

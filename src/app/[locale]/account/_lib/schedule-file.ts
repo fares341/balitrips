@@ -29,6 +29,7 @@ import { stampPdf } from '@/lib/pdf/watermark'
 import { logActivity } from '@/lib/security/activity'
 import { checkSecureAccess } from '@/lib/security/guard'
 import { contentDisposition, isPrivateStorageAvailable, readPrivateObject } from '@/lib/storage'
+import { localRedirect } from '@/lib/http/local-redirect'
 
 import { resolveScheduleDocument } from './queries'
 
@@ -130,11 +131,8 @@ async function reserveDelivery(input: {
 }
 
 function toAccountRedirect(request: Request, locale: Locale, query?: Record<string, string>) {
-  return NextResponse.redirect(
-    new URL(
-      getPathname({ href: { pathname: '/account/schedules', query: query ?? {} }, locale }),
-      request.url,
-    ),
+  return localRedirect(
+    getPathname({ href: { pathname: '/account/schedules', query: query ?? {} }, locale }),
     { headers: NO_STORE },
   )
 }
@@ -182,13 +180,9 @@ export async function deliverSchedule(
       return new NextResponse(null, { status: 403, headers: NO_STORE })
     }
     const next = getPathname({ href: '/account/schedules', locale })
-    return NextResponse.redirect(
-      new URL(
-        getPathname({ href: { pathname: '/account', query: { next } }, locale }),
-        request.url,
-      ),
-      { headers: NO_STORE },
-    )
+    return localRedirect(getPathname({ href: { pathname: '/account', query: { next } }, locale }), {
+      headers: NO_STORE,
+    })
   }
   const { user } = access
 
@@ -222,7 +216,7 @@ export async function deliverSchedule(
       kind === 'custom'
         ? `/account/custom/${encodeURIComponent(itemId)}/view`
         : `/account/schedules/${encodeURIComponent(itemId)}/view`
-    return NextResponse.redirect(new URL(getPathname({ href: viewPath, locale }), request.url), {
+    return localRedirect(getPathname({ href: viewPath, locale }), {
       headers: NO_STORE,
     })
   }

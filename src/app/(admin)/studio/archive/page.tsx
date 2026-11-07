@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { adminHref } from '../../_lib/admin-path'
-import { ARCHIVE_REGISTRY, listArchived } from '../../_lib/archive'
+import { archivedHref, listArchived } from '../../_lib/archive'
 import { getAdminI18n } from '../../_lib/i18n'
 import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
@@ -44,7 +44,7 @@ export default async function ArchivePage({
                 <tr key={`${row.kind}-${row.id}`}>
                   <td>{t(`arc.kind_${row.kind}`)}</td>
                   <td>
-                    <Link href={adminHref(`/${ARCHIVE_REGISTRY[row.kind].section}/${row.id}`)}>
+                    <Link href={adminHref(archivedHref(row.kind, row.id))}>
                       {row.label || row.id}
                     </Link>
                   </td>

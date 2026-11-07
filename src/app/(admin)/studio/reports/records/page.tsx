@@ -26,7 +26,8 @@ export default async function RecordsPage({
 }) {
   const session = await requireCapability('reports.read')
   const query = await searchParams
-  const metric = param(query, 'metric')
+  // The «Records» tab links here bare: open the paid orders rather than a 404.
+  const metric = param(query, 'metric') || 'orders_paid'
   if (!isRecordMetric(metric)) notFound()
   const access = reportAccess(session.role)
   // Customer lists are personal data.

@@ -247,6 +247,24 @@ export function toMedia(row: MediaRow | null | undefined): MediaDto | null {
   }
 }
 
+/**
+ * A ladder rung at least `minWidth` wide (WebP), for places that take one URL
+ * rather than a srcset. Falls back to the stored object when it has no ladder.
+ * Final QA, Nov 2026: home guide cards and Studio-picked slot images pointed at
+ * `original.jpg` (1–1.6 MB each, ~5 MB of the home page) while 50–200 KB rungs
+ * already existed.
+ */
+export function ladderUrl(
+  row: { id: string; objectKey: string; width: number },
+  minWidth: number,
+): string {
+  if (isUnoptimised(row.objectKey)) return mediaUrl(row.objectKey)
+  const rungs = rungsFor(row.width)
+  const rung =
+    rungs.find((w) => w >= minWidth) ?? rungs[rungs.length - 1] ?? fallbackRung(row.width)
+  return mediaUrl(derivativeKey(row.id, rung, 'webp'))
+}
+
 /** The smallest ladder rung at least 320px wide: a card thumbnail, not a hero. */
 export function thumbUrl(row: MediaRow | null | undefined): string | null {
   if (!row || row.deletedAt !== null) return null
@@ -2070,7 +2088,9 @@ export async function listGuideCategories(keys: readonly string[]): Promise<
       key: categories.key,
       label: categories.label,
       icon: categories.icon,
+      mediaId: media.id,
       objectKey: media.objectKey,
+      mediaWidth: media.width,
       mediaDeleted: media.deletedAt,
     })
     .from(categories)
@@ -2086,7 +2106,12 @@ export async function listGuideCategories(keys: readonly string[]): Promise<
         label: row.label,
         icon: row.icon,
         imageUrl:
-          row.objectKey !== null && row.mediaDeleted === null ? mediaUrl(row.objectKey) : null,
+          row.mediaId !== null &&
+          row.objectKey !== null &&
+          row.mediaWidth !== null &&
+          row.mediaDeleted === null
+            ? ladderUrl({ id: row.mediaId, objectKey: row.objectKey, width: row.mediaWidth }, 640)
+            : null,
       },
     ]
   })
@@ -2096,11 +2121,11 @@ export async function listGuideCategories(keys: readonly string[]): Promise<
 export async function mediaUrlById(id: string): Promise<string | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null
   const [row] = await db
-    .select({ objectKey: media.objectKey })
+    .select({ id: media.id, objectKey: media.objectKey, width: media.width })
     .from(media)
     .where(and(eq(media.id, id), isNull(media.deletedAt)))
     .limit(1)
-  return row ? mediaUrl(row.objectKey) : null
+  return row ? ladderUrl(row, 1280) : null
 }
 
 /** Several media ids → public URLs in one query (archived/missing ids are left out). */
@@ -2108,8 +2133,8 @@ export async function mediaUrlsByIds(ids: readonly string[]): Promise<Map<string
   const valid = [...new Set(ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id)))]
   if (valid.length === 0) return new Map()
   const rows = await db
-    .select({ id: media.id, objectKey: media.objectKey })
+    .select({ id: media.id, objectKey: media.objectKey, width: media.width })
     .from(media)
     .where(and(inArray(media.id, valid), isNull(media.deletedAt)))
-  return new Map(rows.map((row) => [row.id, mediaUrl(row.objectKey)]))
+  return new Map(rows.map((row) => [row.id, ladderUrl(row, 1280)]))
 }

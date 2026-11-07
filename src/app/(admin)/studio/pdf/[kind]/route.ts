@@ -9,6 +9,7 @@ import {
   mayExportListing,
   parseListingFilters,
 } from '@/lib/reports/listing'
+import { localRedirect } from '@/lib/http/local-redirect'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { writeAudit } from '../../../_lib/audit'
@@ -60,8 +61,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ kind
   }
   // Back to the screen it came from (a Studio path only), else the downloads list.
   const target = back && /^\/[a-z0-9/_-]*$/i.test(back) ? back : '/reports/exports'
-  return NextResponse.redirect(
-    new URL(withOutcome(adminHref(target), { ok: encodeMessage('pdf.queued') }), request.url),
-    303,
-  )
+  return localRedirect(withOutcome(adminHref(target), { ok: encodeMessage('pdf.queued') }), 303)
 }

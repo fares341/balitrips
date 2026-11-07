@@ -246,7 +246,7 @@ const section: Section = {
     'customers.ok_granted_revoked': 'Previous plans given by staff removed: {count}.',
 
     /* leads */
-    'leads.title': 'Custom trip requests',
+    'leads.title': 'Leads & trip requests',
     'leads.description': 'Custom trip requests and messages from the contact form.',
     'leads.tab_trips': 'Trip requests ({count})',
     'leads.tab_contact': 'Contact ({count})',
@@ -666,7 +666,7 @@ const section: Section = {
     'customers.ok_granted_revoked': 'الباقات السابقة التي منحها الفريق وسُحبت: {count}.',
 
     /* leads */
-    'leads.title': 'طلبات الرحلات المخصّصة',
+    'leads.title': 'العملاء المحتملون والطلبات',
     'leads.description': 'طلبات الرحلات الخاصة ورسائل نموذج التواصل.',
     'leads.tab_trips': 'طلبات الرحلات ({count})',
     'leads.tab_contact': 'التواصل ({count})',

@@ -113,8 +113,8 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   ],
   'media.and_more': [' and {count} more', ' و{count} غيرها'],
   'media.ok_archived': [
-    'Photo archived. You can restore it at any time.',
-    'تمت أرشفة الصورة. يمكنك استعادتها في أي وقت.',
+    'Photo archived. Restore it any time from “Archive bin” or the library’s “Archived” filter.',
+    'تمت أرشفة الصورة. يمكنك استعادتها في أي وقت من «المحذوفات» أو من فلتر «مؤرشفة» في المكتبة.',
   ],
   'media.err_not_archived': ['That image is not archived', 'هذه الصورة ليست مؤرشفة'],
   'media.ok_restored': ['Image restored.', 'تمت استعادة الصورة.'],
