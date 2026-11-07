@@ -29,10 +29,11 @@ export function isPrivateStorageAvailable(): boolean {
 }
 
 /** Key → absolute path inside the root, or null on any traversal attempt. */
-function resolveKey(root: string, key: string): string | null {
+export function resolveKey(root: string, key: string): string | null {
   const clean = key.replace(/^\/+/, '')
   if (
     clean === '' ||
+    /[\0\\]/.test(clean) ||
     clean.split('/').some((part) => part === '' || part === '.' || part === '..')
   ) {
     return null

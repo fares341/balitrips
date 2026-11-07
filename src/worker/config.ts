@@ -81,6 +81,11 @@ interface Requirement {
   /** What breaks without it, in the operator's language. */
   purpose: string
   affects: string
+  /**
+   * Another way the same need can be met. When it returns a message the
+   * requirement counts as satisfied and the message is logged at startup.
+   */
+  alternative?: () => string | null
 }
 
 /** Without these there is no worker at all. Fatal in every environment. */
@@ -128,6 +133,7 @@ const DEPLOY_REQUIREMENTS: readonly Requirement[] = [
     ],
     purpose: 'storing rendered PDFs; a render with nowhere to put the bytes is wasted',
     affects: QUEUES.pdf,
+    alternative: localPrivateStorageNote,
   },
   {
     vars: ['PAYMENT_PROVIDER'],
@@ -135,6 +141,17 @@ const DEPLOY_REQUIREMENTS: readonly Requirement[] = [
     affects: QUEUES.reconcile,
   },
 ]
+
+/**
+ * Single-host production without Spaces: private PDFs go to the local volume
+ * named by `PRIVATE_STORAGE_DIR` (see `src/lib/storage/local-private.ts`),
+ * which is mounted in both the app and the worker and never under `public/`.
+ * Only consulted when a Spaces variable is missing — Spaces wins when set.
+ */
+export function localPrivateStorageNote(): string | null {
+  const dir = process.env.PRIVATE_STORAGE_DIR?.trim()
+  return dir ? `using local private storage at ${dir} (object storage not configured)` : null
+}
 
 function missingVars(requirement: Requirement): string[] {
   return requirement.vars.filter((name) => {
@@ -155,9 +172,18 @@ function describe(requirement: Requirement, missing: readonly string[]): string 
  * Exit before touching the database, or say what will be degraded.
  * Returns the queues known to be non-functional, for the startup diagnostics.
  */
-function checkEnvironment(): ReadonlySet<string> {
+export interface EnvironmentReport {
+  fatal: string[]
+  degraded: string[]
+  notes: string[]
+  brokenQueues: Set<string>
+}
+
+/** Pure evaluation of the environment; `checkEnvironment` acts on it. */
+export function evaluateEnvironment(strict: boolean = STRICT_ENV): EnvironmentReport {
   const fatal: string[] = []
   const degraded: string[] = []
+  const notes: string[] = []
   const brokenQueues = new Set<string>()
 
   for (const requirement of CORE_REQUIREMENTS) {
@@ -169,13 +195,27 @@ function checkEnvironment(): ReadonlySet<string> {
     const missing = missingVars(requirement)
     if (missing.length === 0) continue
 
-    if (STRICT_ENV) {
+    const alternative = requirement.alternative?.() ?? null
+    if (alternative !== null) {
+      notes.push(alternative)
+      continue
+    }
+
+    if (strict) {
       fatal.push(describe(requirement, missing))
     } else {
       degraded.push(describe(requirement, missing))
       brokenQueues.add(requirement.affects)
     }
   }
+
+  return { fatal, degraded, notes, brokenQueues }
+}
+
+function checkEnvironment(): ReadonlySet<string> {
+  const { fatal, degraded, notes, brokenQueues } = evaluateEnvironment()
+
+  for (const note of notes) console.info(`[worker] ${note}`)
 
   if (fatal.length > 0) {
     console.error(
