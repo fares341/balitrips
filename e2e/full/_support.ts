@@ -86,7 +86,8 @@ export async function settle(page: Page, ms = 10_000): Promise<void> {
   await page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
   // The cookie banner covers the lower-left of the page (and buttons on phones).
   const necessary = page.getByRole('button', { name: /^(Necessary only|الضروري فقط)$/ })
-  if (await necessary.isVisible().catch(() => false)) await necessary.click({ timeout: 3000 }).catch(() => {})
+  if (await necessary.isVisible().catch(() => false))
+    await necessary.click({ timeout: 3000 }).catch(() => {})
 }
 
 /** Unique, valid contact details per call. */
@@ -281,6 +282,22 @@ async function fillForm(page: Page, formIndex: number, mode: FillMode): Promise<
  * submit, then submit it empty. The page must not crash, answer 5xx, or run
  * the script. Forms whose only submit button is destructive are skipped.
  */
+/**
+ * `page.goto` that survives a navigation the previous page started (a
+ * fuzzed form whose redirect lands while we leave): Chromium reports that
+ * as net::ERR_ABORTED for the new URL. Wait for the page to settle and try
+ * once more.
+ */
+async function gotoSettled(page: Page, path: string): Promise<void> {
+  try {
+    await page.goto(path, { waitUntil: 'domcontentloaded' })
+  } catch (error) {
+    if (!String(error).includes('ERR_ABORTED')) throw error
+    await page.waitForLoadState('load').catch(() => {})
+    await page.goto(path, { waitUntil: 'domcontentloaded' })
+  }
+}
+
 export async function fuzzPage(
   page: Page,
   info: TestInfo,
@@ -289,7 +306,7 @@ export async function fuzzPage(
   options: { max?: number } = {},
 ): Promise<void> {
   const watch = new Watch(page)
-  await page.goto(path, { waitUntil: 'domcontentloaded' })
+  await gotoSettled(page, path)
   await settle(page)
   const loadProblems = await watch.collect()
   check(
@@ -304,7 +321,7 @@ export async function fuzzPage(
   const max = Math.min(count, options.max ?? 6)
   for (let index = 0; index < max; index += 1) {
     for (const mode of ['hostile', 'empty'] as const) {
-      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      await gotoSettled(page, path)
       await settle(page)
       const form = page.locator('form').nth(index)
       if (!(await form.isVisible().catch(() => false))) break

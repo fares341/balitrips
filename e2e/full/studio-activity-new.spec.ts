@@ -338,14 +338,21 @@ test('new activity: every tab filled, saved, reloaded, persisted', async ({
   for (const shade of [0x40, 0x90]) {
     await page.goto(`${ADMIN}/media`)
     await settle(page)
-    const mediaUrl = page.url()
-    await page.locator('input[type="file"][name="file"]').setInputFiles({
-      name: `act-${tag}-${shade}.png`,
-      mimeType: 'image/png',
-      buffer: makePng(1600, 1000, shade),
-    })
-    await page.locator('form:has(input[name="file"]) button[type="submit"]').first().click()
-    await page.waitForURL((url) => url.href !== mediaUrl, { timeout: 60_000 }).catch(() => {})
+    // The library uses the bulk uploader (#67): pick → «Upload n» → each row turns «done».
+    await page
+      .locator('.mu input[type="file"]')
+      .first()
+      .setInputFiles({
+        name: `act-${tag}-${shade}.png`,
+        mimeType: 'image/png',
+        buffer: makePng(1600, 1000, shade),
+      })
+    await page.locator('.mu-actions button.primary').first().click()
+    await page
+      .locator('.mu-row.done, .mu-row.error')
+      .first()
+      .waitFor({ timeout: 60_000 })
+      .catch(() => {})
     await settle(page, 30_000)
   }
   const media =
