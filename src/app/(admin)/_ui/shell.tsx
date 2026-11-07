@@ -8,6 +8,9 @@ import type { AdminSession, TwoFactorGate } from '../_lib/session'
 import { SECURITY_PATH } from '../_lib/session'
 import { uiI18n } from './i18n-server'
 import { CommandPalette, type PaletteEntry } from './command-palette'
+import { adminBasePath } from '../_lib/admin-path'
+import { HelpButton } from './help-panel'
+import { UnsavedGuard } from './studio-ux'
 import { Icon } from './icons'
 import { NAV_GROUPS, paletteEntries } from './nav'
 import { SideFrame, SideNav, type SideNavGroup } from './side-nav'
@@ -158,6 +161,8 @@ export async function Shell({
           </div>
         )}
         {children}
+        <UnsavedGuard />
+        <HelpButton base={adminBasePath()} />
       </main>
     </div>
   )

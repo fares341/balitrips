@@ -1,7 +1,5 @@
 'use server'
 
-import { randomUUID } from 'node:crypto'
-
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -14,8 +12,8 @@ import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
 import { flocalized, freq, fstr } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
-import { ImageRejected } from '../../_lib/image/inspect'
-import { formatBytes, ingestImage, MAX_UPLOAD_BYTES } from '../../_lib/image/pipeline'
+import { formatBytes } from '../../_lib/image/pipeline'
+import { cleanName, ingestUpload } from '../../_lib/media-upload'
 import { isPlaceholder, publishedReferences, referencesTo } from '../../_lib/media-refs'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -59,103 +57,31 @@ export async function uploadMedia(form: FormData): Promise<void> {
     if (!(file instanceof File) || file.size === 0) {
       throw new Error(t('media.err_choose_image'))
     }
-
-    // Checked before the body is read into memory. `file.size` is the
-    // multipart part's declared length, so this is a cheap first gate; the
-    // pipeline checks the actual byte length again after buffering.
-    if (file.size > MAX_UPLOAD_BYTES) {
-      throw new Error(
-        t('media.err_too_large', {
-          size: formatBytes(file.size),
-          max: formatBytes(MAX_UPLOAD_BYTES),
-        }),
-      )
-    }
-
-    const alt = flocalized(form, 'alt')
-    const credit = fstr(form, 'credit')
-
-    // Minted here: the object keys are a pure function of it, so it has to
-    // exist before anything is written to storage.
-    const mediaId = randomUUID()
-
-    const result = await ingestImage({
-      mediaId,
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      declaredMime: file.type === '' ? null : file.type,
-      declaredName: file.name === '' ? null : file.name,
+    const row = await ingestUpload({
+      file,
+      session,
+      t,
+      name: fstr(form, 'name'),
+      alt: flocalized(form, 'alt'),
+      credit: fstr(form, 'credit'),
     })
-
-    const inserted = await db.transaction(async (tx) => {
-      const [row] = await tx
-        .insert(media)
-        .values({
-          id: mediaId,
-          objectKey: result.objectKey,
-          mimeType: result.mimeType,
-          width: result.width,
-          height: result.height,
-          bytes: result.bytes,
-          alt,
-          credit,
-        })
-        .returning()
-
-      if (!row) throw new Error(t('media.err_row_write'))
-
-      await writeAudit(
-        {
-          actor: session,
-          action: 'media.upload',
-          entityType: 'media',
-          entityId: row.id,
-          before: null,
-          after: {
-            objectKey: row.objectKey,
-            mimeType: row.mimeType,
+    outcome = {
+      ok: row.optimised
+        ? t('media.ok_uploaded', {
             width: row.width,
             height: row.height,
-            bytes: row.bytes,
-            credit: row.credit,
-            derivatives: result.derivatives.length,
-            optimised: result.optimised,
-            driver: result.driver,
-            originalName: file.name,
-          },
-        },
-        tx,
-      )
-
-      return row
-    })
-
-    outcome = {
-      ok: result.optimised
-        ? t('media.ok_uploaded', {
-            width: inserted.width,
-            height: inserted.height,
-            size: formatBytes(inserted.bytes),
-            count: result.derivatives.length,
+            size: formatBytes(row.bytes),
+            count: row.derivatives,
           })
         : t('media.ok_uploaded_unoptimised', {
-            width: inserted.width,
-            height: inserted.height,
-            size: formatBytes(inserted.bytes),
+            width: row.width,
+            height: row.height,
+            size: formatBytes(row.bytes),
           }),
     }
   } catch (error) {
     if (isRedirectError(error)) throw error
-    // ImageRejected carries a reason; the owner gets a plain sentence for it
-    // (the technical English message stays in the server log).
-    if (error instanceof ImageRejected) console.warn(`[media] upload refused: ${error.message}`)
-    outcome = {
-      err:
-        error instanceof ImageRejected
-          ? t('media.err_rejected', {
-              detail: t(`media.reject_${error.reason}`, error.vars),
-            })
-          : errorMessage(error),
-    }
+    outcome = { err: errorMessage(error) }
   }
 
   redirect(withOutcome(LIST, outcome))
@@ -174,7 +100,10 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
   let outcome: Outcome
 
   try {
+    const name = cleanName(fstr(form, 'name'))
+    if (name === null) throw new Error(t('mc.err_name_required'))
     const values = {
+      name,
       alt: flocalized(form, 'alt'),
       credit: fstr(form, 'credit'),
     }
@@ -191,8 +120,12 @@ export async function updateMedia(id: string, form: FormData): Promise<void> {
           action: 'media.update',
           entityType: 'media',
           entityId: id,
-          before: { alt: before.alt, credit: before.credit },
-          after: { alt: after?.alt ?? null, credit: after?.credit ?? null },
+          before: { name: before.name, alt: before.alt, credit: before.credit },
+          after: {
+            name: after?.name ?? null,
+            alt: after?.alt ?? null,
+            credit: after?.credit ?? null,
+          },
         },
         tx,
       )

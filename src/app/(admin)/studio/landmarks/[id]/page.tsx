@@ -8,12 +8,13 @@ import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { getAdminI18n } from '../../../_lib/i18n'
-import { activityOptions, mediaOptions, regionOptions } from '../../../_lib/lookups'
+import { activityOptions, regionOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import { Advanced } from '../../../_ui/advanced'
 import { Field, LocalizedField, StatusField, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { OptionField } from '../../../_ui/select-field'
+import { MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
 import { deleteLandmark, saveLandmark } from '../actions'
 import { ConfirmSubmit } from '../../../_ui/confirm-submit'
@@ -46,11 +47,7 @@ export default async function LandmarkEditorPage({
 
   if (!isNew && !landmark) notFound()
 
-  const [regions, activities, mediaList] = await Promise.all([
-    regionOptions(),
-    activityOptions(),
-    mediaOptions(),
-  ])
+  const [regions, activities] = await Promise.all([regionOptions(), activityOptions()])
 
   return (
     <>
@@ -126,10 +123,9 @@ export default async function LandmarkEditorPage({
               value={landmark?.activityId}
               hint={t('landmarks.activity_hint')}
             />
-            <OptionField
+            <MediaPicker
               name="heroImageId"
               label={t('landmarks.hero_image')}
-              options={mediaList}
               value={landmark?.heroImageId}
             />
           </div>

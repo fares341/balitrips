@@ -344,6 +344,13 @@
       "when": 1794400000000,
       "tag": "0048_whatsapp_opt_out",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1794600000000,
+      "tag": "0050_media_names",
+      "breakpoints": true
     }
   ]
 }

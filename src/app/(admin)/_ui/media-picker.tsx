@@ -1,14 +1,14 @@
-import { asc, desc, isNull } from 'drizzle-orm'
+import { asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { media } from '@/db/schema'
 import type { Localized } from '@/db/schema'
-import { pick } from '@/lib/content/localize'
 import { mediaUrl } from '@/lib/content/queries'
 
-import { adminHref } from '../_lib/admin-path'
+import { MAX_UPLOAD_BYTES } from '../_lib/image/pipeline'
 import { isPlaceholder } from '../_lib/media-refs'
 import { uiI18n } from './i18n-server'
+import { MediaPickerClient, type PickerInitial } from './media-picker-client'
 
 /**
  * Hero image picker.
@@ -37,6 +37,7 @@ export interface PickerItem {
   credit: string | null
   width: number
   height: number
+  name?: string | null
 }
 
 /**
@@ -58,6 +59,7 @@ export async function loadPickerMedia(limit = PICKER_LIMIT): Promise<PickerItem[
       credit: media.credit,
       width: media.width,
       height: media.height,
+      name: media.name,
     })
     .from(media)
     .where(isNull(media.deletedAt))
@@ -74,166 +76,40 @@ export async function MediaPicker({
 }: {
   name: string
   label: string
-  items: readonly PickerItem[]
+  /** Kept for existing callers; the dialog loads and searches the library itself. */
+  items?: readonly PickerItem[]
   value?: string | null
   hint?: string
 }) {
-  const { t, locale } = await uiI18n()
-  const selected = items.find((item) => item.id === value) ?? null
-
-  /**
-   * A value that is not in the list — archived since, or older than the cap.
-   *
-   * It must still round-trip, or opening an editor and pressing Save would
-   * silently clear the hero image. It is carried by an extra RADIO in the same
-   * group, never by a hidden input alongside it: two controls sharing a name
-   * both post, `FormData.get()` returns whichever appears first in the
-   * document, and the operator's new choice would lose to the stale hidden
-   * value with no indication anything had been ignored.
-   */
-  const orphanedValue = value && !selected ? value : null
-
+  let initial: PickerInitial | null = null
+  if (value) {
+    const known = items?.find((item) => item.id === value)
+    const row =
+      known ??
+      (
+        await db
+          .select({ id: media.id, objectKey: media.objectKey, name: media.name })
+          .from(media)
+          .where(eq(media.id, value))
+          .limit(1)
+      )[0]
+    // A value that no longer resolves still round-trips (never silently cleared).
+    initial = row
+      ? {
+          id: row.id,
+          name: ('name' in row && row.name) || row.objectKey.split('/').pop() || row.id,
+          url: mediaUrl(row.objectKey),
+        }
+      : { id: value, name: value, url: '' }
+  }
   return (
-    <fieldset className="a-fieldset">
-      <legend>{label}</legend>
-      {hint ? <span className="a-hint">{hint}</span> : null}
-
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          marginBlockEnd: 10,
-        }}
-      >
-        {selected ? (
-          <>
-            <MediaThumb item={selected} size={64} />
-            <div style={{ minWidth: 0 }}>
-              <div className="a-hint" dir="ltr" style={{ wordBreak: 'break-all' }}>
-                {selected.objectKey.split('/').pop()}
-              </div>
-              <PlaceholderNote credit={selected.credit} />
-            </div>
-          </>
-        ) : orphanedValue ? (
-          <span className="a-hint">{t('ui.media_orphan', { limit: PICKER_LIMIT })}</span>
-        ) : (
-          <span className="a-hint">{t('ui.media_none')}</span>
-        )}
-      </div>
-
-      <details>
-        <summary className="a-btn ghost small">
-          {selected || orphanedValue ? t('ui.media_change') : t('ui.media_choose')}
-        </summary>
-
-        {items.length === 0 && !orphanedValue ? (
-          <p className="a-hint" style={{ marginBlockStart: 10 }}>
-            {t('ui.media_library_empty')}{' '}
-            <a href={adminHref('/media')}>{t('ui.media_upload_first')}</a>
-          </p>
-        ) : (
-          <>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))',
-                gap: 10,
-                marginBlockStart: 10,
-                maxHeight: 420,
-                overflowY: 'auto',
-                padding: 4,
-              }}
-            >
-              <label
-                className="a-check"
-                style={{
-                  border: '1px dashed var(--line)',
-                  borderRadius: 'var(--r-sm)',
-                  padding: 10,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                }}
-              >
-                <input type="radio" name={name} value="" defaultChecked={!value} />
-                {t('ui.media_no_image')}
-              </label>
-
-              {orphanedValue ? (
-                <label
-                  className="a-check"
-                  style={{
-                    border: '1px solid var(--orange, var(--line))',
-                    borderRadius: 'var(--r-sm)',
-                    padding: 10,
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    fontSize: 11,
-                  }}
-                >
-                  <input type="radio" name={name} value={orphanedValue} defaultChecked />
-                  {t('ui.media_keep_current')}
-                </label>
-              ) : null}
-
-              {items.map((item) => (
-                <label
-                  key={item.id}
-                  className="a-check"
-                  style={{
-                    display: 'block',
-                    border: '1px solid var(--line)',
-                    borderRadius: 'var(--r-sm)',
-                    padding: 6,
-                    background: 'var(--white)',
-                  }}
-                >
-                  <MediaThumb item={item} size={120} />
-                  <span
-                    style={{
-                      display: 'flex',
-                      gap: 6,
-                      alignItems: 'flex-start',
-                      marginBlockStart: 6,
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name={name}
-                      value={item.id}
-                      defaultChecked={item.id === value}
-                    />
-                    <span style={{ minWidth: 0, fontSize: 11 }}>
-                      <span
-                        style={{
-                          display: 'block',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={item.objectKey}
-                      >
-                        {pick(item.alt, locale, item.objectKey)}
-                      </span>
-                      <PlaceholderNote credit={item.credit} />
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {items.length >= PICKER_LIMIT ? (
-              <p className="a-hint" style={{ marginBlockStart: 8 }}>
-                {t('ui.media_capped', { limit: PICKER_LIMIT })}{' '}
-                <a href={adminHref('/media')}>{t('nav.media')}</a>
-              </p>
-            ) : null}
-          </>
-        )}
-      </details>
-    </fieldset>
+    <MediaPickerClient
+      name={name}
+      label={label}
+      hint={hint}
+      initial={initial}
+      maxBytes={MAX_UPLOAD_BYTES}
+    />
   )
 }
 
@@ -281,5 +157,45 @@ export async function PlaceholderNote({ credit }: { credit: string | null }) {
     <span className="a-pill warn" style={{ marginBlockStart: 4 }}>
       {t('ui.media_placeholder')}
     </span>
+  )
+}
+
+/** Gallery (several images, ordered) — same dialog, search and inline upload. */
+export async function MediaGalleryPicker({
+  name,
+  label,
+  values,
+  hint,
+}: {
+  name: string
+  label: string
+  values: readonly string[]
+  hint?: string
+}) {
+  const ids = values.filter(Boolean)
+  const rows =
+    ids.length === 0
+      ? []
+      : await db
+          .select({ id: media.id, objectKey: media.objectKey, name: media.name })
+          .from(media)
+          .where(inArray(media.id, [...ids]))
+  const byId = new Map(rows.map((row) => [row.id, row]))
+  const initialList: PickerInitial[] = ids.map((id) => {
+    const row = byId.get(id)
+    return row
+      ? { id, name: row.name || row.objectKey.split('/').pop() || id, url: mediaUrl(row.objectKey) }
+      : { id, name: id, url: '' }
+  })
+  return (
+    <MediaPickerClient
+      multiple
+      name={name}
+      label={label}
+      hint={hint}
+      initial={null}
+      initialList={initialList}
+      maxBytes={MAX_UPLOAD_BYTES}
+    />
   )
 }

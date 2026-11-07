@@ -1,7 +1,17 @@
 'use server'
 
 import { eq, sql } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
+
+import {
+  diffAgainstBundled,
+  HIDEABLE_SECTIONS,
+  HOME_SECTIONS,
+  IMAGE_SLOT_IDS,
+  type LocaleText,
+} from '@/lib/content/home-content'
+import { BUNDLED_MESSAGES } from '@/lib/content/home-content-bundled'
+import { HOME_CONTENT_TAG } from '@/lib/content/home-content-server'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 
@@ -403,5 +413,39 @@ export async function saveHomeSettings(form: FormData): Promise<void> {
       shopImageId: fstr(form, 'shopImageId') ?? '',
     }),
     'sr.ok_home',
+  )
+}
+
+/**
+ * Studio → «الصفحة الرئيسية»: every home text (per language), the photo of
+ * each image slot and which sections show. Only texts that differ from the
+ * bundled ones are stored, so an untouched field keeps following the shipped
+ * copy. Drops the cached content so the live page updates within seconds.
+ */
+export async function saveHomeContent(form: FormData): Promise<void> {
+  const submitted: Record<string, LocaleText> = {}
+  for (const section of HOME_SECTIONS) {
+    for (const key of section.texts) {
+      submitted[key] = {
+        en: fstr(form, `t__${key}__en`) ?? '',
+        ar: fstr(form, `t__${key}__ar`) ?? '',
+        id: fstr(form, `t__${key}__id`) ?? '',
+      }
+    }
+  }
+  const images: Record<string, string> = {}
+  for (const slotId of IMAGE_SLOT_IDS) {
+    const value = fstr(form, `img__${slotId}`) ?? ''
+    if (value !== '') images[slotId] = value
+  }
+  const hidden = HIDEABLE_SECTIONS.filter((id) => form.get(`show__${id}`) !== 'on')
+
+  revalidateTag(HOME_CONTENT_TAG, { expire: 0 })
+  revalidatePath('/[locale]', 'page')
+  await save(
+    'homeContent',
+    () => ({ texts: diffAgainstBundled(submitted, BUNDLED_MESSAGES), images, hidden }),
+    'hc.ok_saved',
+    adminHref('/home-content'),
   )
 }

@@ -2101,3 +2101,14 @@ export async function mediaUrlById(id: string): Promise<string | null> {
     .limit(1)
   return row ? mediaUrl(row.objectKey) : null
 }
+
+/** Several media ids → public URLs in one query (archived/missing ids are left out). */
+export async function mediaUrlsByIds(ids: readonly string[]): Promise<Map<string, string>> {
+  const valid = [...new Set(ids.filter((id) => /^[0-9a-f-]{36}$/i.test(id)))]
+  if (valid.length === 0) return new Map()
+  const rows = await db
+    .select({ id: media.id, objectKey: media.objectKey })
+    .from(media)
+    .where(and(inArray(media.id, valid), isNull(media.deletedAt)))
+  return new Map(rows.map((row) => [row.id, mediaUrl(row.objectKey)]))
+}

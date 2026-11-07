@@ -7,12 +7,13 @@ import { articles } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
-import { articleCategoryOptions, mediaOptions } from '../../../_lib/lookups'
+import { articleCategoryOptions } from '../../../_lib/lookups'
 import { requireCapability } from '../../../_lib/session'
 import { Advanced } from '../../../_ui/advanced'
 import { Field, LocalizedField, Select, StatusField, TextInput } from '../../../_ui/field'
 import { Flash } from '../../../_ui/flash'
 import { OptionField } from '../../../_ui/select-field'
+import { MediaPicker } from '../../../_ui/media-picker'
 import { PageHead } from '../../../_ui/shell'
 import { getAdminI18n } from '../../../_lib/i18n'
 import { deleteArticle, saveArticle } from '../actions'
@@ -46,7 +47,7 @@ export default async function ArticleEditorPage({
 
   if (!isNew && !article) notFound()
 
-  const [categories, mediaList] = await Promise.all([articleCategoryOptions(), mediaOptions()])
+  const [categories] = await Promise.all([articleCategoryOptions()])
 
   return (
     <>
@@ -119,10 +120,9 @@ export default async function ArticleEditorPage({
               options={categories}
               value={article?.categoryId}
             />
-            <OptionField
+            <MediaPicker
               name="heroImageId"
               label={t('articles.hero_image')}
-              options={mediaList}
               value={article?.heroImageId}
             />
           </div>

@@ -29,14 +29,10 @@ import { Flash } from '../../_ui/flash'
 import { MediaThumb } from '../../_ui/media-picker'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, When } from '../../_ui/table'
-import {
-  clearPlaceholderCredit,
-  deleteMedia,
-  restoreMedia,
-  updateMedia,
-  uploadMedia,
-} from './actions'
+import { clearPlaceholderCredit, deleteMedia, restoreMedia, updateMedia } from './actions'
 import { ConfirmSubmit } from '../../_ui/confirm-submit'
+import { MediaLibraryUploader } from '../../_ui/media-library-uploader'
+import { MediaTour } from '../../_ui/media-tour'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,8 +81,10 @@ export default async function MediaPage({
   if (q) {
     const like = `%${q}%`
     const match = or(
+      ilike(media.name, like),
       ilike(media.objectKey, like),
       ilike(media.credit, like),
+      sql`${media.alt} ->> 'ar' ilike ${like}`,
       sql`${media.alt} ->> 'en' ilike ${like}`,
     )
     if (match) filters.push(match)
@@ -130,6 +128,7 @@ export default async function MediaPage({
   return (
     <>
       <PageHead title={t('media.title')} description={t('media.description')} />
+      <MediaTour />
       <Flash searchParams={params} />
 
       {placeholderCount > 0 ? (
@@ -161,53 +160,11 @@ export default async function MediaPage({
         the form carries a file, which is what makes `File` arrive intact in
         `FormData` on the server.
       */}
-      <form className="a-card a-form" action={uploadMedia}>
-        <h2>{t('media.upload_heading')}</h2>
-        <p className="a-hint">{t('media.upload_hint', { max: formatBytes(MAX_UPLOAD_BYTES) })}</p>
-
-        <div className="a-row">
-          <Field label={`${t('media.image_file')} *`} htmlFor="file">
-            <input
-              className="a-input"
-              id="file"
-              name="file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              required
-            />
-          </Field>
-          <Field label={t('media.credit')} htmlFor="credit" hint={t('media.credit_hint')}>
-            <TextInput id="credit" name="credit" placeholder={t('media.credit_placeholder')} />
-          </Field>
-        </div>
-
-        <fieldset className="a-fieldset">
-          <legend>{t('media.alt_text')}</legend>
-          <span className="a-hint">{t('media.alt_hint')}</span>
-          <div className="a-l10n">
-            {locales.map((locale) => {
-              const fieldName = localeFieldName('alt', locale)
-              return (
-                <div className="a-field" key={locale}>
-                  <label htmlFor={`upload-${fieldName}`}>{localeConfig[locale].label}</label>
-                  <TextInput
-                    id={`upload-${fieldName}`}
-                    name={fieldName}
-                    lang={locale}
-                    dir={localeConfig[locale].dir}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </fieldset>
-
-        <div className="a-actions">
-          <button className="a-btn accent" type="submit">
-            {t('media.upload_btn')}
-          </button>
-        </div>
-      </form>
+      <section className="a-card" id="media-upload" data-tour="upload">
+        <h2>{t('mc.bulk_heading')}</h2>
+        <p className="a-hint">{t('mc.bulk_hint')}</p>
+        <MediaLibraryUploader maxBytes={MAX_UPLOAD_BYTES} />
+      </section>
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
@@ -281,6 +238,9 @@ export default async function MediaPage({
                   />
                 </a>
 
+                <b className="mc-name" dir="auto">
+                  {row.name ?? row.objectKey.split('/').pop()}
+                </b>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBlock: 10 }}>
                   {isPlaceholder(row.credit) ? (
                     <Pill tone="warn">{t('media.pill_placeholder')}</Pill>
@@ -368,6 +328,20 @@ export default async function MediaPage({
                       style={{ marginBlockStart: 12, gap: 10 }}
                     >
                       <input type="hidden" name="returnQuery" value={returnQuery} />
+                      <Field
+                        label={`${t('mc.name')} *`}
+                        htmlFor={`${row.id}-name`}
+                        hint={t('mc.name_hint')}
+                      >
+                        <TextInput
+                          id={`${row.id}-name`}
+                          name="name"
+                          defaultValue={row.name ?? ''}
+                          required
+                          maxLength={120}
+                          dir="auto"
+                        />
+                      </Field>
                       <fieldset className="a-fieldset">
                         <legend>{t('media.alt_text')}</legend>
                         <div className="a-l10n">
@@ -445,6 +419,15 @@ export default async function MediaPage({
                         className="a-btn danger small"
                         label={t('media.archive')}
                         title={t('confirm.archive_title')}
+                        message={
+                          used.length > 0
+                            ? t('mc.delete_used', { count: used.length })
+                            : t('mc.delete_unused')
+                        }
+                        details={used.slice(0, 6).map((reference) => ({
+                          label: reference.entity,
+                          value: reference.label,
+                        }))}
                       />
                       {blocking.length > 0 ? (
                         <span className="a-hint">

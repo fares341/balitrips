@@ -51,6 +51,7 @@ import {
   listMapPlaces,
   listMapTaxonomy,
   mediaUrlById,
+  mediaUrlsByIds,
   reviewsForActivity,
 } from '@/lib/content/queries'
 import { getBaliWeather } from '@/lib/weather/bali'
@@ -74,6 +75,7 @@ import { getContact } from '@/components/layout/contact-server'
 import { SHARE_ORIGIN, shareUrl } from '@/lib/seo/site-origin'
 import { hiddenHrefs, withoutHidden } from '@/lib/content/public-sections'
 import { loadPublicSections } from '@/lib/content/public-sections-server'
+import { readHomeContent } from '@/lib/content/home-content-server'
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 
@@ -128,7 +130,13 @@ const GUIDE_ICONS: Record<(typeof GUIDE_KEYS)[number], IconName> = {
 }
 
 const SLIDER_UP = ['green-dress', 'temple-gate', 'rice-walk', 'swing', 'ulun-danu'] as const
-const SLIDER_DOWN = ['penida-cove', 'kelingking', 'jungle-pool', 'lempuyang', 'beach-palms'] as const
+const SLIDER_DOWN = [
+  'penida-cove',
+  'kelingking',
+  'jungle-pool',
+  'lempuyang',
+  'beach-palms',
+] as const
 
 const VALUES: readonly { icon: IconName; key: string }[] = [
   { icon: 'pin', key: 'v1' },
@@ -232,6 +240,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           note: pickOptional(homeSettings.visaNote, locale),
           link: homeSettings.visaLink === '' ? null : homeSettings.visaLink,
         }
+  // Studio → «الصفحة الرئيسية»: picked photos per slot and hidden sections.
+  const homeContent = await readHomeContent()
+  const slotUrls = await mediaUrlsByIds(Object.values(homeContent.images)).catch(
+    () => new Map<string, string>(),
+  )
+  const slot = (id: string, fallback: string): string => {
+    const mediaId = homeContent.images[id]
+    return (mediaId ? slotUrls.get(mediaId) : undefined) ?? fallback
+  }
+  const shown = (id: string): boolean => !homeContent.hidden.includes(id)
+
   const shopImage =
     homeSettings.shopImageId === ''
       ? null
@@ -377,7 +396,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           id: clip.id,
           webm: clip.webm,
           mp4: clip.mp4,
-          poster: clip.poster,
+          poster: slot(`hero_poster_${clip.id}`, clip.poster),
           label: t(clip.label),
           short: t(clip.short),
         }))}
@@ -452,50 +471,56 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </HeroVideo>
 
       {/* 2 — what are you planning today? (icon cards only here: v3.3) */}
-      <section className="sec-tight svc-sec" aria-labelledby="qd-h">
-        <div className="wrap">
-          <div className="svc-head">
-            <span className="eyebrow">{t('hv4_svc_eyebrow')}</span>
-            <h2 className="h2" id="qd-h">
-              {t('hv3_qd_title')}
-            </h2>
+      {shown('svc') && (
+        <section className="sec-tight svc-sec" aria-labelledby="qd-h">
+          <div className="wrap">
+            <div className="svc-head">
+              <span className="eyebrow">{t('hv4_svc_eyebrow')}</span>
+              <h2 className="h2" id="qd-h">
+                {t('hv3_qd_title')}
+              </h2>
+            </div>
+            <SvcCards labelledBy="qd-h">
+              {services.map((service, index) => (
+                <Link
+                  key={service.key}
+                  href={service.href}
+                  className="ncard"
+                  style={{ '--i': index } as CSSProperties}
+                >
+                  <span className="nc-ph" aria-hidden="true">
+                    <span className="clip">
+                      <BrandImg
+                        src={
+                          service.key === 'shop'
+                            ? (shopImage ?? service.image)
+                            : slot(`svc_${service.key}`, service.image)
+                        }
+                        alt=""
+                        sizes="124px"
+                      />
+                    </span>
+                    <span className="nc-ic">
+                      <Icon name={service.icon} size={24} stroke={1.7} />
+                    </span>
+                  </span>
+                  <span className="nc-b">
+                    <b className="nc-t">{t(`hv4_svc_${service.key}_t`)}</b>
+                    <span className="nc-d">{t(`hv4_svc_${service.key}_d`)}</span>
+                    <span className="nc-go">
+                      {t(`hv4_svc_${service.key}_go`)}{' '}
+                      <Icon name="arrow" size={14} stroke={2.2} className="flip" />
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </SvcCards>
           </div>
-          <SvcCards labelledBy="qd-h">
-            {services.map((service, index) => (
-              <Link
-                key={service.key}
-                href={service.href}
-                className="ncard"
-                style={{ '--i': index } as CSSProperties}
-              >
-                <span className="nc-ph" aria-hidden="true">
-                  <span className="clip">
-                    <BrandImg
-                      src={service.key === 'shop' && shopImage !== null ? shopImage : service.image}
-                      alt=""
-                      sizes="124px"
-                    />
-                  </span>
-                  <span className="nc-ic">
-                    <Icon name={service.icon} size={24} stroke={1.7} />
-                  </span>
-                </span>
-                <span className="nc-b">
-                  <b className="nc-t">{t(`hv4_svc_${service.key}_t`)}</b>
-                  <span className="nc-d">{t(`hv4_svc_${service.key}_d`)}</span>
-                  <span className="nc-go">
-                    {t(`hv4_svc_${service.key}_go`)}{' '}
-                    <Icon name="arrow" size={14} stroke={2.2} className="flip" />
-                  </span>
-                </span>
-              </Link>
-            ))}
-          </SvcCards>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 3 — your free Bali guide: five free map categories (owner, Oct 2026) */}
-      {guideCards.length > 0 && (
+      {shown('guide') && guideCards.length > 0 && (
         <section className="sec guide-sec" aria-labelledby="fs-h">
           <div className="wrap">
             <SectionHead
@@ -559,7 +584,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       )}
 
       {/* 4 — most requested: activities only (client) */}
-      {requestedActivities.length > 0 && (
+      {shown('mr') && requestedActivities.length > 0 && (
         <section className="sec-tight bg-ivory2 mr-sec" aria-labelledby="mr-h">
           <div className="wrap">
             <SectionHead
@@ -586,46 +611,48 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       )}
 
       {/* 5 — who we are (short strip) */}
-      <section className="sec" aria-labelledby="ab-h">
-        <div className="wrap about-grid">
-          <AboutSlider
-            up={SLIDER_UP.map((name) => ({
-              src: `/brand/${name}.webp`,
-              alt: t(`hv7_alt_${name.replace('-', '_')}`),
-            }))}
-            down={SLIDER_DOWN.map((name) => ({
-              src: `/brand/${name}.webp`,
-              alt: t(`hv7_alt_${name.replace('-', '_')}`),
-            }))}
-          />
-          <div className="stack about-copy">
-            <span className="eyebrow">{t('hv3_ab_eyebrow')}</span>
-            <h2 className="h2" id="ab-h">
-              {t('hv3_ab_title')}
-            </h2>
-            <p className="lede">{t('hv3_ab_lede')}</p>
-            <ul className="vals">
-              {VALUES.map((value) => (
-                <li key={value.key}>
-                  <span className="ic" aria-hidden="true">
-                    <Icon name={value.icon} size={18} />
-                  </span>
-                  <span>
-                    <b>{t(`hv3_ab_${value.key}_t`)}</b>
-                    <span className="muted">{t(`hv4_ab_${value.key}_d`)}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Link className="link about-more" href="/about">
-              {t('hv3_ab_more')} <Icon name="arrow" size={16} className="flip" />
-            </Link>
+      {shown('about') && (
+        <section className="sec" aria-labelledby="ab-h">
+          <div className="wrap about-grid">
+            <AboutSlider
+              up={SLIDER_UP.map((name) => ({
+                src: slot(`about_${name}`, `/brand/${name}.webp`),
+                alt: t(`hv7_alt_${name.replace('-', '_')}`),
+              }))}
+              down={SLIDER_DOWN.map((name) => ({
+                src: slot(`about_${name}`, `/brand/${name}.webp`),
+                alt: t(`hv7_alt_${name.replace('-', '_')}`),
+              }))}
+            />
+            <div className="stack about-copy">
+              <span className="eyebrow">{t('hv3_ab_eyebrow')}</span>
+              <h2 className="h2" id="ab-h">
+                {t('hv3_ab_title')}
+              </h2>
+              <p className="lede">{t('hv3_ab_lede')}</p>
+              <ul className="vals">
+                {VALUES.map((value) => (
+                  <li key={value.key}>
+                    <span className="ic" aria-hidden="true">
+                      <Icon name={value.icon} size={18} />
+                    </span>
+                    <span>
+                      <b>{t(`hv3_ab_${value.key}_t`)}</b>
+                      <span className="muted">{t(`hv4_ab_${value.key}_d`)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Link className="link about-more" href="/about">
+                {t('hv3_ab_more')} <Icon name="arrow" size={16} className="flip" />
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6 — reviews: two endless rows, opposite directions (real reviews only) */}
-      {reviews.length > 0 && (
+      {shown('reviews') && reviews.length > 0 && (
         <section className="sec bg-ivory2 rv-sec" aria-labelledby="rv-h">
           <div className="wrap">
             <SectionHead
@@ -655,35 +682,37 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       )}
 
       {/* 7 — custom trip */}
-      <section className="sec-tight" aria-labelledby="ct-h">
-        <div className="wrap">
-          <div className="ct">
-            <BrandImg
-              src={CUSTOM_TRIP_PHOTO}
-              alt={t('hv3_ct_img_alt')}
-              width={1600}
-              height={1366}
-              sizes="(min-width: 1000px) 50vw, 100vw"
-            />
-            <div className="ct-copy">
-              <span className="eyebrow">{t('hv3_ct_eyebrow')}</span>
-              <h2 className="h2" id="ct-h">
-                {t('hv3_ct_title')}
-              </h2>
-              <p>{t('hv3_ct_body')}</p>
-              <div className="row">
-                <LinkButton href={CUSTOM_HREF}>{t('hv3_ct_request')}</LinkButton>
-                <LinkButton href="/contact" variant="glass">
-                  {t('hv3_ct_talk')}
-                </LinkButton>
+      {shown('custom') && (
+        <section className="sec-tight" aria-labelledby="ct-h">
+          <div className="wrap">
+            <div className="ct">
+              <BrandImg
+                src={slot('custom_trip', CUSTOM_TRIP_PHOTO)}
+                alt={t('hv3_ct_img_alt')}
+                width={1600}
+                height={1366}
+                sizes="(min-width: 1000px) 50vw, 100vw"
+              />
+              <div className="ct-copy">
+                <span className="eyebrow">{t('hv3_ct_eyebrow')}</span>
+                <h2 className="h2" id="ct-h">
+                  {t('hv3_ct_title')}
+                </h2>
+                <p>{t('hv3_ct_body')}</p>
+                <div className="row">
+                  <LinkButton href={CUSTOM_HREF}>{t('hv3_ct_request')}</LinkButton>
+                  <LinkButton href="/contact" variant="glass">
+                    {t('hv3_ct_talk')}
+                  </LinkButton>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 8 — blog: three real articles, magazine layout */}
-      {articles.length > 0 && (
+      {shown('blog') && articles.length > 0 && (
         <section className="sec" aria-labelledby="bl-h">
           <div className="wrap">
             <SectionHead

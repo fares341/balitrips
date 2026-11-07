@@ -2,6 +2,9 @@ import { getRequestConfig } from 'next-intl/server'
 import { hasLocale } from 'next-intl'
 
 import { BALI_TIME_ZONE } from '@/lib/booking-rules'
+import { applyTextOverrides } from '@/lib/content/home-content'
+import { readHomeContent } from '@/lib/content/home-content-server'
+
 import { routing } from './routing'
 
 export default getRequestConfig(async ({ requestLocale }) => {
@@ -10,7 +13,13 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    // Studio overrides (home page texts) laid over the bundled strings; blank
+    // overrides keep the bundled text, so nothing changes until edited.
+    messages: applyTextOverrides(
+      (await import(`../../messages/${locale}.json`)).default,
+      await readHomeContent(),
+      locale,
+    ),
 
     /**
      * Pin the formatting timezone.

@@ -99,6 +99,8 @@ export const media = pgTable('media', {
   blurhash: text('blurhash'),
   /** Alt text is per-locale — it is content, not metadata. */
   alt: localized('alt'),
+  /** Human name (migration 0050): from the uploaded file name, renamable. */
+  name: text('name'),
   credit: text('credit'),
   /**
    * Provenance of a free photo (migration 0041). NULL source = an upload.
