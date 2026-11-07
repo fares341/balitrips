@@ -3,14 +3,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { revalidatePath, revalidateTag } from 'next/cache'
 
-import {
-  diffAgainstBundled,
-  HIDEABLE_SECTIONS,
-  HOME_SECTIONS,
-  IMAGE_SLOT_IDS,
-  type LocaleText,
-} from '@/lib/content/home-content'
-import { BUNDLED_MESSAGES } from '@/lib/content/home-content-bundled'
+import { HIDEABLE_SECTIONS, HOME_SECTIONS, IMAGE_SLOT_IDS } from '@/lib/content/home-content'
 import { HOME_CONTENT_TAG } from '@/lib/content/home-content-server'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -27,6 +20,7 @@ import {
 import { locales } from '@/i18n/config'
 
 import { adminHref } from '../../_lib/admin-path'
+import { revalidateSiteTexts, textsFromForm, writeSiteTexts } from '../../_lib/site-texts'
 import { writeAudit } from '../../_lib/audit'
 import type { Translate } from '../../_i18n'
 import { SATELLITE_PROVIDERS } from '@/app/[locale]/map/map-style'
@@ -423,16 +417,7 @@ export async function saveHomeSettings(form: FormData): Promise<void> {
  * copy. Drops the cached content so the live page updates within seconds.
  */
 export async function saveHomeContent(form: FormData): Promise<void> {
-  const submitted: Record<string, LocaleText> = {}
-  for (const section of HOME_SECTIONS) {
-    for (const key of section.texts) {
-      submitted[key] = {
-        en: fstr(form, `t__${key}__en`) ?? '',
-        ar: fstr(form, `t__${key}__ar`) ?? '',
-        id: fstr(form, `t__${key}__id`) ?? '',
-      }
-    }
-  }
+  const keys = HOME_SECTIONS.flatMap((section) => section.texts)
   const images: Record<string, string> = {}
   for (const slotId of IMAGE_SLOT_IDS) {
     const value = fstr(form, `img__${slotId}`) ?? ''
@@ -440,11 +425,22 @@ export async function saveHomeContent(form: FormData): Promise<void> {
   }
   const hidden = HIDEABLE_SECTIONS.filter((id) => form.get(`show__${id}`) !== 'on')
 
+  // Texts go to the shared site-text store (the same one «الترجمات» edits);
+  // the homeContent setting keeps only photos and visibility from now on.
+  const session = await requireCapability('config.write')
+  const { t } = await getAdminI18n()
+  try {
+    await writeSiteTexts(textsFromForm(form, keys), session, t)
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    redirect(withOutcome(adminHref('/home-content'), { err: errorMessage(error) }))
+  }
+
   revalidateTag(HOME_CONTENT_TAG, { expire: 0 })
-  revalidatePath('/[locale]', 'page')
+  revalidateSiteTexts()
   await save(
     'homeContent',
-    () => ({ texts: diffAgainstBundled(submitted, BUNDLED_MESSAGES), images, hidden }),
+    () => ({ texts: {}, images, hidden }),
     'hc.ok_saved',
     adminHref('/home-content'),
   )

@@ -30,6 +30,7 @@ import currency from './currency'
 import studioV2 from './studio-v2'
 import leadsCapture from './leads-capture'
 import studioControl from './studio-control'
+import siteContent from './site-content'
 import { format, type AdminLocale, type Messages, type Vars } from './types'
 
 export * from './types'
@@ -67,6 +68,7 @@ const SECTIONS = [
   delivery,
   leadsCapture,
   studioControl,
+  siteContent,
 ]
 
 const MESSAGES: Record<AdminLocale, Messages> = {

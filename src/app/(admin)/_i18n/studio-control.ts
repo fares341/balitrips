@@ -190,6 +190,7 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'arc.kind_reviews': ['Review', 'تقييم'],
   'arc.kind_addons': ['Add-on', 'إضافة'],
   'arc.kind_suppliers': ['Supplier', 'مورد'],
+  'arc.kind_plans': ['Access plan', 'باقة وصول'],
 
   // Guides
   'help.button': ['Guide for this screen', 'دليل هذه الشاشة'],

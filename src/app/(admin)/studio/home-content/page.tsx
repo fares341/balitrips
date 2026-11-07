@@ -6,6 +6,7 @@ import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
 import { readSetting } from '../../_lib/settings'
 import { requireCapability } from '../../_lib/session'
+import { loadSiteTexts } from '../../_lib/site-texts'
 import { Field, TextArea, TextInput } from '../../_ui/field'
 import { Flash } from '../../_ui/flash'
 import { MediaPicker } from '../../_ui/media-picker'
@@ -36,9 +37,13 @@ export default async function HomeContentPage({
   const { t } = await getAdminI18n()
   const params = await searchParams
   const content = await readSetting('homeContent')
+  const overrides = await loadSiteTexts(HOME_SECTIONS.flatMap((section) => section.texts))
+  const edited = (key: string) => Boolean(overrides[key] ?? content.texts[key])
 
   const current = (key: string, locale: (typeof ORDER)[number]): string =>
-    content.texts[key]?.[locale] ?? String(BUNDLED_MESSAGES[locale][key] ?? '')
+    overrides[key]?.[locale] ??
+    content.texts[key]?.[locale] ??
+    String(BUNDLED_MESSAGES[locale][key] ?? '')
 
   return (
     <>
@@ -56,7 +61,7 @@ export default async function HomeContentPage({
       <form className="a-form" action={saveHomeContent}>
         {HOME_SECTIONS.map((section, index) => {
           const hideable = HIDEABLE_SECTIONS.includes(section.id)
-          const changed = section.texts.filter((key) => content.texts[key]).length
+          const changed = section.texts.filter(edited).length
           return (
             <details className="a-card hc-sec" key={section.id} open={index === 0}>
               <summary>

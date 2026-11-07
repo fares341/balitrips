@@ -140,8 +140,20 @@ function AccountMenu({ signedIn }: { signedIn: boolean }) {
  */
 const NONE: readonly string[] = []
 
-export function Header(props: { hidden?: readonly string[] }) {
+export interface HeaderLink {
+  href: string
+  label: string
+}
+
+export function Header(props: {
+  hidden?: readonly string[]
+  /** Studio → «محتوى الموقع» → الهيدر: own nav links (null = the shipped ones). */
+  links?: readonly HeaderLink[] | null
+  /** Where «ابدأ التخطيط» leads ('' = the shipped page). */
+  ctaHref?: string
+}) {
   const hidden = props.hidden ?? NONE
+  const ctaHref = props.ctaHref || START_PLANNING_HREF
   const t = useTranslations()
   const pathname = usePathname()
   const favorites = useFavorites()
@@ -199,6 +211,17 @@ export function Header(props: { hidden?: readonly string[] }) {
       document.body.style.overflow = previousOverflow
     }
   }, [menuOpen, closeMenu])
+
+  const navItems: readonly HeaderLink[] =
+    props.links ??
+    withoutHidden(HEADER_ROUTES, hidden).map((route) => ({ href: route.href, label: t(route.key) }))
+  const navHrefs = new Set(navItems.map((item) => item.href))
+  const drawerItems: HeaderLink[] = [
+    ...navItems,
+    ...withoutHidden(DRAWER_EXTRA, hidden)
+      .filter((route) => !navHrefs.has(route.href))
+      .map((route) => ({ href: route.href, label: t(route.key) })),
+  ]
 
   const favLabel = t('bt_favorites')
   const tripLabel = t('bt_my_trip')
@@ -259,7 +282,7 @@ export function Header(props: { hidden?: readonly string[] }) {
                 <Icon name="suitcase" size={22} />
                 <Badge count={cartCount} />
               </Link>
-              <Link href={START_PLANNING_HREF} className="btn btn-primary btn-sm cta-plan">
+              <Link href={ctaHref} className="btn btn-primary btn-sm cta-plan">
                 {t('bt_start_planning')}
               </Link>
             </div>
@@ -269,13 +292,13 @@ export function Header(props: { hidden?: readonly string[] }) {
         <nav className="hdr-nav" aria-label={t('bt_main_nav')}>
           <div className="wrap">
             <ul>
-              {withoutHidden(HEADER_ROUTES, hidden).map((route) => (
+              {navItems.map((route) => (
                 <li key={route.href}>
                   <Link
                     href={route.href}
                     aria-current={isActivePath(pathname, route.href) ? 'page' : undefined}
                   >
-                    {t(route.key)}
+                    {route.label}
                   </Link>
                 </li>
               ))}
@@ -313,7 +336,7 @@ export function Header(props: { hidden?: readonly string[] }) {
           </button>
         </div>
         <nav aria-label={t('bt_main_nav')}>
-          {withoutHidden([...HEADER_ROUTES, ...DRAWER_EXTRA], hidden).map((route) => (
+          {drawerItems.map((route) => (
             <Link
               key={route.href}
               href={route.href}
@@ -324,18 +347,13 @@ export function Header(props: { hidden?: readonly string[] }) {
               aria-current={isActivePath(pathname, route.href) ? 'page' : undefined}
               onClick={() => setMenuOpen(false)}
             >
-              {t(route.key)}
+              {route.label}
               <Icon name="chevronr" size={18} className="flip" />
             </Link>
           ))}
         </nav>
         <div className="stack" style={{ marginTop: 20 }}>
-          <LinkButton
-            href={START_PLANNING_HREF}
-            variant="primary"
-            block
-            onClick={() => setMenuOpen(false)}
-          >
+          <LinkButton href={ctaHref} variant="primary" block onClick={() => setMenuOpen(false)}>
             {t('bt_start_planning')}
           </LinkButton>
           <LinkButton

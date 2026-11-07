@@ -15,6 +15,8 @@ import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
 import { hiddenHrefs } from '@/lib/content/public-sections'
 import { loadPublicSections } from '@/lib/content/public-sections-server'
+import { linkLabel, safeHref } from '@/lib/content/page-content'
+import { readPageContent } from '@/lib/content/page-content-server'
 import { AssistantLauncher } from '@/components/assistant/assistant-launcher'
 import { ToastProvider } from '@/components/shared'
 import { CurrencyProvider } from '@/components/currency/currency-context'
@@ -75,12 +77,23 @@ export default async function LocaleLayout({
   // and send every Riyadh/London/NY visitor on a round trip to Singapore.
   setRequestLocale(locale)
 
-  const [messages, contact, sections, fx] = await Promise.all([
+  const [messages, contact, sections, fx, pageContent, t] = await Promise.all([
     getMessages(),
     getContact(),
     loadPublicSections(),
     readFx(),
+    readPageContent(),
+    getTranslations(),
   ])
+  // Studio → «محتوى الموقع» → الهيدر: own nav links (null = the shipped list).
+  const headerLinks =
+    pageContent.headerLinks === null
+      ? null
+      : pageContent.headerLinks.flatMap((link) => {
+          const href = safeHref(link.href)
+          return href ? [{ href, label: linkLabel(link, locale, (key) => t(key)) }] : []
+        })
+  const ctaHref = safeHref(pageContent.ctaHref) ?? ''
   // Owner, Oct 2026: empty sections (no package / article yet) leave the nav.
   const hidden = hiddenHrefs(sections)
   const { dir } = localeConfig[locale as Locale]
@@ -112,7 +125,7 @@ export default async function LocaleLayout({
           */}
               <ToastProvider>
                 <SkipLink />
-                <Header hidden={hidden} />
+                <Header hidden={hidden} links={headerLinks} ctaHref={ctaHref} />
                 {/*
               Skip-link target. A wrapper rather than an id on each page's
               <main>: every route renders its own <main>, and the header puts

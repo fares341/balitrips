@@ -24,6 +24,8 @@ import { Link } from '@/i18n/routing'
 import { whatsappHref } from './contact-config'
 import { getContact } from './contact-server'
 import { withoutHidden } from '@/lib/content/public-sections'
+import { linkLabel, safeHref, sectionShown, type SiteLink } from '@/lib/content/page-content'
+import { readPageContent } from '@/lib/content/page-content-server'
 
 import {
   FOOTER_QUICK_ROUTES,
@@ -36,11 +38,31 @@ import {
 /** What Stripe Checkout accepts on this account — see /payment-methods. */
 const PAYMENT_METHODS = ['VISA', 'Mastercard', 'Amex', 'Apple Pay', 'Google Pay']
 
-const SOCIAL_LINKS: { label: string; icon: IconName; href: string | undefined }[] = [
-  { label: 'Instagram', icon: 'instagram', href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM },
-  { label: 'TikTok', icon: 'tiktok', href: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK },
-  { label: 'YouTube', icon: 'youtube', href: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE },
+/** Studio → «محتوى الموقع» → الفوتر sets these; the env values are the fallback. */
+const SOCIAL_LINKS: { id: string; label: string; icon: IconName; env: string | undefined }[] = [
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    icon: 'instagram',
+    env: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM,
+  },
+  { id: 'tiktok', label: 'TikTok', icon: 'tiktok', env: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK },
+  { id: 'youtube', label: 'YouTube', icon: 'youtube', env: process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE },
+  { id: 'facebook', label: 'Facebook', icon: 'globe', env: undefined },
+  { id: 'x', label: 'X', icon: 'globe', env: undefined },
+  { id: 'snapchat', label: 'Snapchat', icon: 'globe', env: undefined },
 ]
+
+/** A footer link: site paths through the locale-aware Link, others as <a>. */
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return href.startsWith('/') ? (
+    <Link href={href}>{children}</Link>
+  ) : (
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  )
+}
 
 export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {}) {
   const t = await getTranslations()
@@ -50,9 +72,24 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
   const wa = whatsappHref(contact.whatsappDigits)
   const WHATSAPP_DISPLAY = contact.whatsappDisplay
   const CONTACT_EMAIL = contact.email
-  const social = SOCIAL_LINKS.filter(
-    (link): link is { label: string; icon: IconName; href: string } => Boolean(link.href),
-  )
+  const content = await readPageContent()
+  const social = SOCIAL_LINKS.flatMap((link) => {
+    const href = safeHref(content.social[link.id as keyof typeof content.social] ?? '') ?? link.env
+    return href ? [{ label: link.label, icon: link.icon, href }] : []
+  })
+  const shown = (section: string) => sectionShown(content, 'footer', section)
+  const own = (links: SiteLink[] | null) =>
+    links === null
+      ? null
+      : links.flatMap((link) => {
+          const href = safeHref(link.href)
+          return href ? [{ href, label: linkLabel(link, locale, (key) => t(key)) }] : []
+        })
+  const quick =
+    own(content.footerQuick) ??
+    withoutHidden(FOOTER_QUICK_ROUTES, hidden).map((r) => ({ href: r.href, label: t(r.key) }))
+  const info =
+    own(content.footerInfo) ?? INFO_ROUTES.map((r) => ({ href: r.href, label: t(r.key) }))
 
   return (
     <footer className="ftr">
@@ -84,67 +121,73 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
             )}
           </div>
 
-          <nav aria-labelledby="ftr-quick">
-            <h2 id="ftr-quick">{t('ft_nav')}</h2>
-            <ul>
-              {withoutHidden(FOOTER_QUICK_ROUTES, hidden).map((route) => (
-                <li key={route.href}>
-                  <Link href={route.href}>{t(route.key)}</Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          {shown('quick') && (
+            <nav aria-labelledby="ftr-quick">
+              <h2 id="ftr-quick">{t('ft_nav')}</h2>
+              <ul>
+                {quick.map((route) => (
+                  <li key={route.href}>
+                    <FooterLink href={route.href}>{route.label}</FooterLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
 
-          <nav aria-labelledby="ftr-policies">
-            <h2 id="ftr-policies">{t('ft_policies')}</h2>
-            <ul>
-              {/* L14: one cookie entry — "Cookie preferences" opens /cookies,
+          {shown('policies') && (
+            <nav aria-labelledby="ftr-policies">
+              <h2 id="ftr-policies">{t('ft_policies')}</h2>
+              <ul>
+                {/* L14: one cookie entry — "Cookie preferences" opens /cookies,
                   whose button reopens the consent panel. */}
-              <li>
-                <Link href={POLICIES_HREF}>{t('ft_p_center')}</Link>
-              </li>
-              {POLICY_ROUTES.map((route) => (
-                <li key={route.href}>
-                  <Link href={policyLink(route.href, locale)}>{t(route.key)}</Link>
+                <li>
+                  <Link href={POLICIES_HREF}>{t('ft_p_center')}</Link>
                 </li>
-              ))}
-            </ul>
-          </nav>
+                {POLICY_ROUTES.map((route) => (
+                  <li key={route.href}>
+                    <Link href={policyLink(route.href, locale)}>{t(route.key)}</Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
 
-          <div>
-            <h2 id="ftr-general">{t('foot_info')}</h2>
-            <ul aria-labelledby="ftr-general">
-              {INFO_ROUTES.map((route) => (
-                <li key={route.href}>
-                  <Link href={route.href}>{t(route.key)}</Link>
+          {shown('general') && (
+            <div>
+              <h2 id="ftr-general">{t('foot_info')}</h2>
+              <ul aria-labelledby="ftr-general">
+                {info.map((route) => (
+                  <li key={route.href}>
+                    <FooterLink href={route.href}>{route.label}</FooterLink>
+                  </li>
+                ))}
+                <li style={{ marginTop: 8 }}>
+                  <Link href="/payment-methods" className="ftr-pay-label">
+                    {t('pm_title')}
+                  </Link>
+                  <div className="pay-row" aria-label={t('ft_pay')} role="list">
+                    {PAYMENT_METHODS.map((method) => (
+                      <span key={method} role="listitem" dir="ltr">
+                        {method}
+                      </span>
+                    ))}
+                  </div>
                 </li>
-              ))}
-              <li style={{ marginTop: 8 }}>
-                <Link href="/payment-methods" className="ftr-pay-label">
-                  {t('pm_title')}
-                </Link>
-                <div className="pay-row" aria-label={t('ft_pay')} role="list">
-                  {PAYMENT_METHODS.map((method) => (
-                    <span key={method} role="listitem" dir="ltr">
-                      {method}
-                    </span>
-                  ))}
-                </div>
-              </li>
-              <li className="ftr-contact" style={{ marginTop: 8 }}>
-                {wa !== null && WHATSAPP_DISPLAY !== null && (
-                  <a href={wa} target="_blank" rel="noopener noreferrer">
-                    <Icon name="whatsapp" size={16} />
-                    <span dir="ltr">{WHATSAPP_DISPLAY}</span>
+                <li className="ftr-contact" style={{ marginTop: 8 }}>
+                  {wa !== null && WHATSAPP_DISPLAY !== null && (
+                    <a href={wa} target="_blank" rel="noopener noreferrer">
+                      <Icon name="whatsapp" size={16} />
+                      <span dir="ltr">{WHATSAPP_DISPLAY}</span>
+                    </a>
+                  )}
+                  <a href={`mailto:${CONTACT_EMAIL}`}>
+                    <Icon name="mail" size={16} />
+                    <span dir="ltr">{CONTACT_EMAIL}</span>
                   </a>
-                )}
-                <a href={`mailto:${CONTACT_EMAIL}`}>
-                  <Icon name="mail" size={16} />
-                  <span dir="ltr">{CONTACT_EMAIL}</span>
-                </a>
-              </li>
-            </ul>
-          </div>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="ftr-bottom">

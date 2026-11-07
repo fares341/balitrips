@@ -56,6 +56,7 @@ export default async function LeadDetailPage({
       request: customTripRequests,
       account: users.email,
       whatsappOptIn: users.whatsappOptIn,
+      whatsappOptedOutAt: users.whatsappOptedOutAt,
       paidOrderNumber: orders.orderNumber,
     })
     .from(customTripRequests)
@@ -289,7 +290,11 @@ export default async function LeadDetailPage({
               {t('leads.also_whatsapp')}
             </label>
             <span className="a-hint">
-              {row.whatsappOptIn ? t('leads.whatsapp_hint_on') : t('leads.whatsapp_hint_off')}
+              {row.whatsappOptedOutAt
+                ? t('wstop.opted_out_hint')
+                : row.whatsappOptIn
+                  ? t('leads.whatsapp_hint_on')
+                  : t('leads.whatsapp_hint_off')}
             </span>
           </div>
           <div className="a-actions">

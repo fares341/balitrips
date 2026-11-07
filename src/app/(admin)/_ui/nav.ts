@@ -89,11 +89,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { path: '/landmarks', labelKey: 'nav.landmarks', icon: 'landmark' },
       { path: '/reviews', labelKey: 'nav.reviews', icon: 'star' },
       { path: '/taxonomy', labelKey: 'nav.taxonomy', icon: 'tag' },
-      { path: '/home-content', labelKey: 'nav.home_content', icon: 'home' },
       { path: '/media', labelKey: 'nav.media', icon: 'image' },
       { path: '/files', labelKey: 'nav.files', icon: 'file' },
       { path: '/archive', labelKey: 'nav.archive', icon: 'clipboard' },
       { path: '/readiness', labelKey: 'nav.readiness', icon: 'check' },
+    ],
+  },
+  {
+    id: 'site',
+    titleKey: 'nav.group_site',
+    items: [
+      { path: '/home-content', labelKey: 'nav.home_content', icon: 'home' },
+      { path: '/site-content', labelKey: 'nav.site_content', icon: 'layers' },
+      { path: '/translations', labelKey: 'nav.translations', icon: 'globe' },
     ],
   },
   {
@@ -138,7 +146,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     id: 'system',
     titleKey: 'nav.group_system',
     items: [
-      { path: '/translations', labelKey: 'nav.translations', icon: 'globe' },
       { path: '/config', labelKey: 'nav.config', icon: 'sliders' },
       { path: '/assistant/settings', labelKey: 'nav.assistant_settings', icon: 'sparkle' },
       { path: '/team', labelKey: 'nav.team', icon: 'users' },

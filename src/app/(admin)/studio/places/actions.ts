@@ -1,5 +1,7 @@
 'use server'
 
+import { MAX_VIDEO_BYTES, storePublicVideo, VIDEO_TYPES, videoKind } from '@/lib/media/video'
+
 import { randomUUID } from 'node:crypto'
 
 import { eq, inArray } from 'drizzle-orm'
@@ -12,7 +14,6 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { categories, mapPlaces, placeTags, tags } from '@/db/schema'
 import { freeOnMap } from '@/lib/content/map-access'
-import { isStorageConfigured, publicUrl, uploadPublic } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { feventRange } from '../../_lib/bali-time'
@@ -308,23 +309,6 @@ export async function deletePlace(id: string): Promise<void> {
    رفع فيديو للمكان (الوثيقة 6.3، العقد: "إضافة الصور والفيديوهات للأماكن")
    -------------------------------------------------------------------------- */
 
-const MAX_VIDEO_BYTES = 24 * 1024 * 1024
-const VIDEO_TYPES: Record<string, string> = { 'video/mp4': 'mp4', 'video/webm': 'webm' }
-
-/** يتحقق من التوقيع الفعلي للملف — الامتداد والنوع المعلن قد يكذبان. */
-function videoKind(bytes: Uint8Array): 'mp4' | 'webm' | null {
-  if (bytes.length > 12 && new TextDecoder().decode(bytes.slice(4, 8)) === 'ftyp') return 'mp4'
-  if (
-    bytes.length > 4 &&
-    bytes[0] === 0x1a &&
-    bytes[1] === 0x45 &&
-    bytes[2] === 0xdf &&
-    bytes[3] === 0xa3
-  )
-    return 'webm'
-  return null
-}
-
 export async function uploadPlaceVideo(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
@@ -345,20 +329,7 @@ export async function uploadPlaceVideo(id: string, form: FormData): Promise<void
     if ((before.videos ?? []).length >= 10) throw new Error(t('places.err_too_many_videos'))
 
     const key = `media/videos/${id}/${randomUUID()}.${kind}`
-    let url: string
-    if (isStorageConfigured()) {
-      await uploadPublic({ key, body: bytes, contentType: `video/${kind}` })
-      url = publicUrl(key)
-    } else {
-      // بلا Spaces: public/media (المجلد media_data في الإنتاج)، يخدمه
-      // src/app/media/[...path]/route.ts — كما تفعل صور مكتبة الوسائط.
-      const { mkdir, writeFile } = await import('node:fs/promises')
-      const path = await import('node:path')
-      const target = path.join(process.cwd(), 'public', key)
-      await mkdir(path.dirname(target), { recursive: true })
-      await writeFile(target, bytes)
-      url = `/${key}`
-    }
+    const url = await storePublicVideo(key, bytes, kind)
 
     const videos = [...(before.videos ?? []), url]
     await db.update(mapPlaces).set({ videos }).where(eq(mapPlaces.id, id))

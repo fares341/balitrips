@@ -18,6 +18,8 @@ import { Link } from '@/i18n/routing'
 import { pageMetadata } from '../_meta'
 import { toLocale } from '../_seo-hreflang'
 import { PlainHead } from '../_ui/plain-head'
+import { resolveFaq } from '@/lib/content/page-content'
+import { pageView } from '@/lib/content/page-content-server'
 import { FAQ_GROUPS as GROUPS } from './groups'
 import { JsonLd } from '@/components/seo/json-ld'
 
@@ -43,15 +45,18 @@ export default async function FaqPage({ params }: PageProps) {
 
   const t = await getTranslations({ locale })
   const wa = await getWhatsappLink()
+  // Studio → «محتوى الموقع» → الأسئلة الشائعة: the saved list, or the shipped one.
+  const { content, shown } = await pageView('faq')
+  const groups = resolveFaq(content.faq, GROUPS, locale, (key) => t(key))
 
   const faqLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: GROUPS.flatMap((group) =>
+    mainEntity: groups.flatMap((group) =>
       group.items.map((item) => ({
         '@type': 'Question',
-        name: t(item.q),
-        acceptedAnswer: { '@type': 'Answer', text: t(item.a) },
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
       })),
     ),
   }
@@ -70,51 +75,53 @@ export default async function FaqPage({ params }: PageProps) {
         <div className="wrap faq-lay">
           {/* Topics (v3 faq.html side list): jump to a group */}
           <nav className="faq-topics" aria-label={t('faq4_topics')}>
-            {GROUPS.map((group) => (
-              <a key={group.title} href={`#faq-${group.title}`}>
-                {t(group.title)}
+            {groups.map((group) => (
+              <a key={group.id} href={`#faq-${group.id}`}>
+                {t(group.id)}
               </a>
             ))}
           </nav>
           <div className="bt-pfaq">
-            {GROUPS.map((group, index) => (
-              <div key={group.title} style={{ marginTop: index === 0 ? 0 : 36 }}>
-                <h2 id={`faq-${group.title}`} className="bt-faq-h">
-                  {t(group.title)}
+            {groups.map((group, index) => (
+              <div key={group.id} style={{ marginTop: index === 0 ? 0 : 36 }}>
+                <h2 id={`faq-${group.id}`} className="bt-faq-h">
+                  {t(group.id)}
                 </h2>
                 <Accordion
                   className="bt-pacc"
                   defaultOpen={-1}
                   items={group.items.map((item) => ({
-                    id: item.q,
-                    question: t(item.q),
-                    answer: t(item.a),
+                    id: item.id,
+                    question: item.q,
+                    answer: item.a,
                   }))}
                 />
               </div>
             ))}
 
-            <div className="panel row between faq-help">
-              <span className="stack" style={{ gap: 4 }}>
-                <b style={{ color: 'var(--forest)' }}>{t('faq4_help_t')}</b>
-                <span className="muted">{t('faq4_help_b')}</span>
-              </span>
-              <span className="row">
-                {wa !== null && (
-                  <a
-                    className="btn btn-ghost btn-sm"
-                    href={wa}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t('wa_chat')}
-                  </a>
-                )}
-                <Link className="btn btn-forest btn-sm" href="/contact">
-                  {t('navr_contact')}
-                </Link>
-              </span>
-            </div>
+            {shown('help') && (
+              <div className="panel row between faq-help">
+                <span className="stack" style={{ gap: 4 }}>
+                  <b style={{ color: 'var(--forest)' }}>{t('faq4_help_t')}</b>
+                  <span className="muted">{t('faq4_help_b')}</span>
+                </span>
+                <span className="row">
+                  {wa !== null && (
+                    <a
+                      className="btn btn-ghost btn-sm"
+                      href={wa}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t('wa_chat')}
+                    </a>
+                  )}
+                  <Link className="btn btn-forest btn-sm" href="/contact">
+                    {t('navr_contact')}
+                  </Link>
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

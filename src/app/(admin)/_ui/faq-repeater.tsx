@@ -37,10 +37,15 @@ export function FaqRepeater({
   name = 'faq',
   entries,
   scopes = [],
+  scopeLabel,
+  scopeAllLabel,
 }: {
   name?: string
   entries: readonly FaqRepeaterEntry[] | null | undefined
   scopes?: readonly ScopeOption[]
+  /** Overrides the scope field's label (the site FAQ uses it for groups). */
+  scopeLabel?: string
+  scopeAllLabel?: string
 }) {
   const { t } = useAdminT()
   const uid = useId()
@@ -135,14 +140,14 @@ export function FaqRepeater({
               <span className="a-rep-opts">
                 {scopes.length > 0 ? (
                   <label className="a-rep-field" htmlFor={`${uid}-${row.id}-pkg`}>
-                    <span>{t('av2.rep_scope')}</span>
+                    <span>{scopeLabel ?? t('av2.rep_scope')}</span>
                     <select
                       className="a-select"
                       id={`${uid}-${row.id}-pkg`}
                       value={row.pkg}
                       onChange={(event) => setRow(row.id, { pkg: event.target.value })}
                     >
-                      <option value="">{t('av2.rep_scope_all')}</option>
+                      <option value="">{scopeAllLabel ?? t('av2.rep_scope_all')}</option>
                       {scopes.map((scope) => (
                         <option key={scope.value} value={scope.value}>
                           {scope.label}

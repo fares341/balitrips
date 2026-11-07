@@ -76,6 +76,8 @@ import { SHARE_ORIGIN, shareUrl } from '@/lib/seo/site-origin'
 import { hiddenHrefs, withoutHidden } from '@/lib/content/public-sections'
 import { loadPublicSections } from '@/lib/content/public-sections-server'
 import { readHomeContent } from '@/lib/content/home-content-server'
+import { heroVideoSources } from '@/lib/content/page-content'
+import { readPageContent } from '@/lib/content/page-content-server'
 
 type OpenPlace = Extract<MapPlaceForClient, { locked: false }>
 
@@ -242,6 +244,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         }
   // Studio → «الصفحة الرئيسية»: picked photos per slot and hidden sections.
   const homeContent = await readHomeContent()
+  // Studio → «محتوى الموقع» → فيديوهات الواجهة: uploaded clips (else the bundled ones).
+  const pageContent = await readPageContent()
   const slotUrls = await mediaUrlsByIds(Object.values(homeContent.images)).catch(
     () => new Map<string, string>(),
   )
@@ -394,8 +398,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         labelledBy="hero-h"
         clips={HERO_CLIPS.map((clip) => ({
           id: clip.id,
-          webm: clip.webm,
-          mp4: clip.mp4,
+          ...heroVideoSources(clip, pageContent.heroVideos[clip.id]),
           poster: slot(`hero_poster_${clip.id}`, clip.poster),
           label: t(clip.label),
           short: t(clip.short),

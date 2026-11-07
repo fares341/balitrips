@@ -17,6 +17,7 @@ import { locales } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 
 import { pageMetadata } from '../_meta'
+import { pageView } from '@/lib/content/page-content-server'
 import { toLocale } from '../_seo-hreflang'
 
 const HELP_PATH = '/help'
@@ -48,6 +49,7 @@ export default async function HelpPage({ params }: PageProps) {
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
+  const { shown } = await pageView('help')
 
   return (
     <main>
@@ -85,35 +87,39 @@ export default async function HelpPage({ params }: PageProps) {
 
       <section className="sec">
         <div className="wrap stack" style={{ gap: 24 }}>
-          <ul className="hp-topics" role="list">
-            {TOPICS.map((topic) => (
-              <li key={topic.key}>
-                <Link href={policyLink(topic.href, locale)}>
-                  <span className="ic" aria-hidden="true">
-                    <Icon name={topic.icon} size={22} />
-                  </span>
-                  <b>{t(`${topic.key}_t`)}</b>
-                  <span className="muted">{t(`${topic.key}_b`)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="grid hp-more">
-            <div className="panel stack">
-              <b style={{ color: 'var(--forest)' }}>{t('hp_track_t')}</b>
-              <span className="muted">{t('hp_track_b')}</span>
-              <LinkButton href="/account" variant="forest" size="sm">
-                {t('hp_track_cta')}
-              </LinkButton>
+          {shown('topics') && (
+            <ul className="hp-topics" role="list">
+              {TOPICS.map((topic) => (
+                <li key={topic.key}>
+                  <Link href={policyLink(topic.href, locale)}>
+                    <span className="ic" aria-hidden="true">
+                      <Icon name={topic.icon} size={22} />
+                    </span>
+                    <b>{t(`${topic.key}_t`)}</b>
+                    <span className="muted">{t(`${topic.key}_b`)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          {shown('cards') && (
+            <div className="grid hp-more">
+              <div className="panel stack">
+                <b style={{ color: 'var(--forest)' }}>{t('hp_track_t')}</b>
+                <span className="muted">{t('hp_track_b')}</span>
+                <LinkButton href="/account" variant="forest" size="sm">
+                  {t('hp_track_cta')}
+                </LinkButton>
+              </div>
+              <div className="panel stack">
+                <b style={{ color: 'var(--forest)' }}>{t('hp_talk_t')}</b>
+                <span className="muted">{t('hp_talk_b')}</span>
+                <LinkButton href="/contact" variant="ghost" size="sm">
+                  {t('navr_contact')}
+                </LinkButton>
+              </div>
             </div>
-            <div className="panel stack">
-              <b style={{ color: 'var(--forest)' }}>{t('hp_talk_t')}</b>
-              <span className="muted">{t('hp_talk_b')}</span>
-              <LinkButton href="/contact" variant="ghost" size="sm">
-                {t('navr_contact')}
-              </LinkButton>
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </main>

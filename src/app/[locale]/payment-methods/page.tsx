@@ -15,6 +15,7 @@ import { Icon, type IconName } from '@/components/ui'
 import { locales } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 
+import { pageView } from '@/lib/content/page-content-server'
 import { pageMetadata } from '../_meta'
 import { toLocale } from '../_seo-hreflang'
 import { PageBanner } from '../_ui/page-banner'
@@ -47,6 +48,7 @@ export default async function PaymentMethodsPage({ params }: PageProps) {
   setRequestLocale(locale)
 
   const t = await getTranslations({ locale })
+  const { shown } = await pageView('payment-methods')
 
   return (
     <main>
@@ -83,9 +85,12 @@ export default async function PaymentMethodsPage({ params }: PageProps) {
             ))}
           </ul>
 
-          <p className="bt-pm-refund">
-            {t('pm_refund_b')} <Link href={policyLink('/refund', locale)}>{t('ft_p_refund')}</Link>
-          </p>
+          {shown('refund') && (
+            <p className="bt-pm-refund">
+              {t('pm_refund_b')}{' '}
+              <Link href={policyLink('/refund', locale)}>{t('ft_p_refund')}</Link>
+            </p>
+          )}
         </div>
       </div>
     </main>

@@ -358,6 +358,20 @@
       "when": 1794600000000,
       "tag": "0050_media_names",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794700000000,
+      "tag": "0051_message_overrides",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1794800000000,
+      "tag": "0052_packages_sort",
+      "breakpoints": true
     }
   ]
 }

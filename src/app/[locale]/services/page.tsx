@@ -26,6 +26,7 @@ import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { StartQuiz, type QuizOption } from './start-quiz'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
+import { pageView } from '@/lib/content/page-content-server'
 
 const SERVICES_HREF = '/services'
 
@@ -81,11 +82,13 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
 
   const locale = toLocale(raw)
 
-  const [t, itineraries, packages] = await Promise.all([
+  const [t, itineraries, packages, view] = await Promise.all([
     getTranslations({ locale }),
     listItineraries(),
     listPackages(),
+    pageView('services'),
   ])
+  const { shown, image } = view
 
   const toOption = (
     kind: 'itinerary' | 'package',
@@ -117,7 +120,7 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
     <main>
       <PageBanner
         image={null}
-        imageSrc="/brand/flatlay-wide.webp"
+        imageSrc={image('banner', '/brand/flatlay-wide.webp')}
         tag={t('sv4_eyebrow')}
         title={t('sv4_title')}
         subtitle={t('sv4_sub')}
@@ -133,7 +136,7 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
                 <Link href={service.href} className="sv-card">
                   <div className="m">
                     <BrandImg
-                      src={service.image}
+                      src={image(`card_${service.key}`, service.image)}
                       alt=""
                       sizes="(min-width: 1100px) 360px, (min-width: 720px) 50vw, 100vw"
                       loading={index < 3 ? 'eager' : 'lazy'}
@@ -159,27 +162,29 @@ export default async function ServicesPage({ params }: { params: PageParams }) {
         </div>
       </section>
 
-      <section className="sec bg-ivory2">
-        <div className="wrap stack" style={{ gap: 24 }}>
-          <div className="stack" style={{ gap: 8 }}>
-            <span className="eyebrow">{t('sv4_how_eyebrow')}</span>
-            <h2 className="h2">{t('sv4_how_title')}</h2>
+      {shown('how') && (
+        <section className="sec bg-ivory2">
+          <div className="wrap stack" style={{ gap: 24 }}>
+            <div className="stack" style={{ gap: 8 }}>
+              <span className="eyebrow">{t('sv4_how_eyebrow')}</span>
+              <h2 className="h2">{t('sv4_how_title')}</h2>
+            </div>
+            <ol className="sv-steps">
+              {([1, 2, 3, 4] as const).map((n) => (
+                <li key={n}>
+                  <span className="n" dir="ltr" aria-hidden="true">
+                    {n}
+                  </span>
+                  <b>{t(`sv4_how${n}_t`)}</b>
+                  <span className="muted">{t(`sv4_how${n}_b`)}</span>
+                </li>
+              ))}
+            </ol>
           </div>
-          <ol className="sv-steps">
-            {([1, 2, 3, 4] as const).map((n) => (
-              <li key={n}>
-                <span className="n" dir="ltr" aria-hidden="true">
-                  {n}
-                </span>
-                <b>{t(`sv4_how${n}_t`)}</b>
-                <span className="muted">{t(`sv4_how${n}_b`)}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {(itineraries.length > 0 || packages.length > 0) && (
+      {shown('quiz') && (itineraries.length > 0 || packages.length > 0) && (
         <section className="sec">
           <StartQuiz
             itineraries={itineraries.map((itinerary) => toOption('itinerary', itinerary))}

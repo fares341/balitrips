@@ -1,12 +1,14 @@
 'use server'
 
 import { BASE_CURRENCY } from '@/lib/currency/fx'
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { activities, packageActivities, packageRegions, packages } from '@/db/schema'
 import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
+import { sortPositions } from '@/lib/packages/order'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -99,7 +101,12 @@ export async function savePackage(id: string, form: FormData): Promise<void> {
         id === 'new'
           ? await tx
               .insert(packages)
-              .values({ ...values, publishedAt: status === 'published' ? new Date() : null })
+              .values({
+                ...values,
+                publishedAt: status === 'published' ? new Date() : null,
+                // New packages go to the end of the public list.
+                sortOrder: sql<number>`(select coalesce(max(sort_order), 0) + 1 from packages)`,
+              })
               .returning()
           : await tx
               .update(packages)
@@ -419,4 +426,46 @@ export async function reorderPackageActivities(
   } catch {
     return false
   }
+}
+
+/**
+ * Studio list «ترتيب العرض»: save the drag order of the public /packages
+ * listing. Returns false on failure (the list shows «not saved»).
+ */
+export async function reorderPackages(ids: string[]): Promise<boolean> {
+  const session = await requireCapability('content.write')
+  if (!Array.isArray(ids)) return false
+  try {
+    await db.transaction(async (tx) => {
+      const rows = await tx
+        .select({ id: packages.id })
+        .from(packages)
+        .where(isNull(packages.deletedAt))
+        .orderBy(asc(packages.sortOrder), asc(packages.priceMinor))
+      const positions = sortPositions(
+        rows.map((row) => row.id),
+        ids.filter((id) => typeof id === 'string' && isUuid(id)),
+      )
+      for (const { id, sortOrder } of positions) {
+        await tx.update(packages).set({ sortOrder }).where(eq(packages.id, id))
+      }
+      await writeAudit(
+        {
+          actor: session,
+          action: 'package.reorder',
+          entityType: 'package',
+          entityId: null,
+          before: { order: rows.map((row) => row.id) },
+          after: { order: positions.map((row) => row.id) },
+        },
+        tx,
+      )
+    })
+  } catch (error) {
+    console.error('[packages] reorder failed', error)
+    return false
+  }
+  revalidatePath('/[locale]/packages', 'page')
+  revalidatePath('/[locale]/services', 'page')
+  return true
 }

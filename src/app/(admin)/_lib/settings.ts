@@ -280,6 +280,56 @@ export const homeContentSchema = z.object({
 })
 export type HomeContentSetting = z.infer<typeof homeContentSchema>
 
+/** «محتوى الموقع» pages (`@/lib/content/page-content`). */
+const linkHref = z.string().trim().max(500)
+const siteLinkSchema = z.object({
+  href: linkHref,
+  label: localeText,
+  key: z.string().max(128).optional(),
+})
+export const pageContentSchema = z.object({
+  pages: z
+    .record(
+      z.string().max(32),
+      z.object({
+        images: z.record(z.string().max(64), uuidOrEmpty).optional(),
+        hidden: z.array(z.string().max(32)).max(20).optional(),
+      }),
+    )
+    .default({}),
+  faq: z
+    .array(
+      z.object({
+        q: localeText,
+        a: z.object({
+          en: z.string().max(4000).optional(),
+          ar: z.string().max(4000).optional(),
+          id: z.string().max(4000).optional(),
+        }),
+        group: z.string().max(32),
+        hidden: z.boolean().optional(),
+        qKey: z.string().max(128).optional(),
+        aKey: z.string().max(128).optional(),
+      }),
+    )
+    .max(200)
+    .nullable()
+    .default(null),
+  headerLinks: z.array(siteLinkSchema).max(20).nullable().default(null),
+  ctaHref: linkHref.default(''),
+  footerQuick: z.array(siteLinkSchema).max(30).nullable().default(null),
+  footerInfo: z.array(siteLinkSchema).max(30).nullable().default(null),
+  social: z.record(z.string().max(16), z.string().trim().max(500)).default({}),
+  offices: z.array(localeText).max(6).nullable().default(null),
+  heroVideos: z
+    .record(
+      z.string().max(32),
+      z.object({ mp4: z.string().max(500).optional(), webm: z.string().max(500).optional() }),
+    )
+    .default({}),
+})
+export type PageContentSetting = z.infer<typeof pageContentSchema>
+
 export type SecuritySetting = z.infer<typeof securitySchema>
 export type { CurrenciesSetting }
 export type FeesSetting = z.infer<typeof feesSchema>
@@ -305,6 +355,7 @@ export type SettingKey =
   | 'vehicles'
   | 'home'
   | 'homeContent'
+  | 'pageContent'
   | `policy.${PolicyId}`
 
 export interface SettingsShape {
@@ -319,6 +370,7 @@ export interface SettingsShape {
   vehicles: VehiclesSetting
   home: HomeSetting
   homeContent: HomeContentSetting
+  pageContent: PageContentSetting
   'policy.terms': PolicySetting
   'policy.privacy': PolicySetting
   'policy.refund': PolicySetting
@@ -404,6 +456,17 @@ export const SETTING_DEFAULTS: SettingsShape = {
     shopImageId: '',
   },
   homeContent: { texts: {}, images: {}, hidden: [] },
+  pageContent: {
+    pages: {},
+    faq: null,
+    headerLinks: null,
+    ctaHref: '',
+    footerQuick: null,
+    footerInfo: null,
+    social: {},
+    offices: null,
+    heroVideos: {},
+  },
   'policy.terms': placeholderPolicy('Terms of service'),
   'policy.privacy': placeholderPolicy('Privacy policy'),
   'policy.refund': placeholderPolicy('Refund and cancellation policy'),
@@ -422,6 +485,7 @@ const SCHEMAS: { [K in SettingKey]: z.ZodType<SettingsShape[K]> } = {
   vehicles: vehiclesSchema,
   home: homeSchema,
   homeContent: homeContentSchema,
+  pageContent: pageContentSchema,
   'policy.terms': policySchema,
   'policy.privacy': policySchema,
   'policy.refund': policySchema,
