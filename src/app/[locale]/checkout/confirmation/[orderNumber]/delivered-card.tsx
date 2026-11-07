@@ -10,7 +10,12 @@ import { LinkButton } from '@/components/shared'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
-import { DELIVERY_PATHS, loadDeliveryState, type ChannelState } from '@/lib/itineraries/delivery'
+import {
+  DELIVERY_PATHS,
+  loadActivitiesOffers,
+  loadDeliveryState,
+  type ChannelState,
+} from '@/lib/itineraries/delivery'
 
 export interface DeliveredLine {
   id: string
@@ -35,7 +40,8 @@ export async function DeliveredCard({
 }) {
   if (lines.length === 0) return null
   const t = await getTranslations({ locale })
-  const states = await loadDeliveryState(lines.map((line) => line.id))
+  const ids = lines.map((line) => line.id)
+  const [states, offers] = await Promise.all([loadDeliveryState(ids), loadActivitiesOffers(ids)])
 
   return (
     <section className="panel stack dlv-card" aria-labelledby="cf-dlv-t">
@@ -50,6 +56,7 @@ export async function DeliveredCard({
       </p>
       {lines.map((line) => {
         const state = states.get(line.id)
+        const offer = offers.get(line.id)
         return (
           <div key={line.id} className="stack" style={{ gap: 10 }}>
             <b>{line.name}</b>
@@ -65,6 +72,11 @@ export async function DeliveredCard({
               >
                 <Icon name="pdf" size={16} /> {t('acct_sched_dl')}
               </a>
+              {offer && (
+                <LinkButton href={offer.path} variant="ghost">
+                  {t('dlv_bundle_cta', { pct: offer.pct })}
+                </LinkButton>
+              )}
             </div>
             {state && (
               <ul className="row" style={{ gap: 14, listStyle: 'none', padding: 0, margin: 0 }}>

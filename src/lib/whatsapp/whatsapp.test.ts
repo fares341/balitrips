@@ -9,6 +9,7 @@ import {
   renderText,
   templateValues,
 } from './automations'
+import { skipReasonFor, TRANSACTIONAL_AUTOMATIONS } from './automations'
 import { createMazbotProvider, mazbotTemplatePayload, resetMazbotToken } from './providers'
 import type { ResolvedCredentials } from './settings'
 
@@ -96,5 +97,29 @@ describe('Mazbot provider', () => {
       error: 'insufficient_conversation_limit',
     })
     expect(calls[2]?.url).toBe('https://mazbot.example/api/send-message')
+  })
+})
+
+describe('consent gate: transactional vs marketing', () => {
+  const to = '+966500000000'
+
+  it('itinerary delivery goes without marketing consent', () => {
+    expect(TRANSACTIONAL_AUTOMATIONS.has('itinerary_purchased')).toBe(true)
+    expect(skipReasonFor('itinerary_purchased', { consent: false }, to)).toBeNull()
+    expect(skipReasonFor('itinerary_purchased', { consent: false }, null)).toBe('no_number')
+  })
+
+  it('an opt-out (STOP) still blocks the delivery', () => {
+    expect(skipReasonFor('itinerary_purchased', { consent: true, optedOut: true }, to)).toBe(
+      'opted_out',
+    )
+  })
+
+  it('marketing automations still need consent', () => {
+    for (const key of ['lead_offer_code', 'cart_reminder'] as const) {
+      expect(TRANSACTIONAL_AUTOMATIONS.has(key)).toBe(false)
+      expect(skipReasonFor(key, { consent: false }, to)).toBe('no_consent')
+      expect(skipReasonFor(key, { consent: true }, to)).toBeNull()
+    }
   })
 })

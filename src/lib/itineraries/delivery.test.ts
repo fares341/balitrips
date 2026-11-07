@@ -4,7 +4,9 @@ import { renderItineraryDeliveryEmail } from '@/lib/email/templates'
 
 // Pure rules only: no database in the fast suite.
 vi.mock('@/db', () => ({ db: {} }))
+vi.mock('@/i18n/routing', () => ({ getPathname: ({ href }: { href: string }) => href }))
 
+import { activitiesOffer, DELIVERY_PATHS } from './delivery'
 import { hashDownloadToken, newDownloadToken, TOKEN_PATTERN, tokenRefusal } from './download-tokens'
 
 const now = new Date('2026-11-06T10:00:00Z')
@@ -55,5 +57,34 @@ describe('delivery e-mail', () => {
     const mail = renderItineraryDeliveryEmail({ ...base, locale: 'en', pdfUrl: null })
     expect(mail.html).toContain(base.openUrl)
     expect(mail.html).not.toContain('/dl/')
+  })
+
+  it.each(['ar', 'en', 'id'] as const)('%s: activities button with the bundle %', (locale) => {
+    const url = 'https://balitrips.co/ar/account/itineraries/family-4/activities'
+    const mail = renderItineraryDeliveryEmail({ ...base, locale, activities: { url, pct: 12 } })
+    expect(mail.html).toContain(url)
+    expect(mail.text).toContain(url)
+    expect(mail.text).toContain('12%')
+  })
+
+  it('no activities button when the itinerary has nothing to book', () => {
+    const mail = renderItineraryDeliveryEmail({ ...base, locale: 'ar', activities: null })
+    expect(mail.html).not.toContain('/activities')
+  })
+})
+
+describe('activities offer', () => {
+  it('points at the phase 3 buyer page with the effective %', () => {
+    expect(DELIVERY_PATHS.activities('fam')).toBe('/account/itineraries/fam/activities')
+    expect(activitiesOffer('fam', 3, null, 10)).toEqual({
+      path: '/account/itineraries/fam/activities',
+      pct: 10,
+    })
+    expect(activitiesOffer('fam', 3, 15, 10)?.pct).toBe(15)
+  })
+
+  it('is hidden without bookable activities or slug', () => {
+    expect(activitiesOffer('fam', 0, 15, 10)).toBeNull()
+    expect(activitiesOffer(null, 3, 15, 10)).toBeNull()
   })
 })

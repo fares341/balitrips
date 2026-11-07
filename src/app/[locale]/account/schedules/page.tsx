@@ -25,6 +25,7 @@ import { listSchedules } from '../_lib/queries'
 import { CustomPlans } from './custom-plans'
 import { resendScheduleAction } from './delivery-actions'
 import { loadPermissions } from '@/lib/entitlements/plans'
+import { loadActivitiesOffers } from '@/lib/itineraries/delivery'
 
 const ITINERARIES_HREF = '/itineraries'
 
@@ -58,6 +59,7 @@ export default async function AccountSchedulesPage({
   const downloadsAllowed = policy.pdfDownloads === 'allow' && permissions.canDownloadPdf
 
   const [items, query] = await Promise.all([listSchedules(user.id, locale), searchParams])
+  const offers = await loadActivitiesOffers(items.map((item) => item.orderItemId))
 
   return (
     <section aria-labelledby="bt-acct-sched-h">
@@ -135,6 +137,8 @@ export default async function AccountSchedulesPage({
               locale,
             })
 
+            const offer = offers.get(item.orderItemId)
+
             return (
               <article key={item.orderItemId} className="card" style={{ overflow: 'hidden' }}>
                 <div style={{ height: 140, position: 'relative' }}>
@@ -209,6 +213,16 @@ export default async function AccountSchedulesPage({
                       </LinkButton>
                     )}
                   </div>
+                  {offer && (
+                    <LinkButton
+                      href={offer.path}
+                      variant="forest"
+                      size="sm"
+                      style={{ width: '100%', minHeight: 44, marginTop: 10, fontSize: 13.5 }}
+                    >
+                      {t('dlv_bundle_cta', { pct: offer.pct })}
+                    </LinkButton>
+                  )}
                   <form action={resendScheduleAction} style={{ marginTop: 10 }}>
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="itemId" value={item.orderItemId} />
