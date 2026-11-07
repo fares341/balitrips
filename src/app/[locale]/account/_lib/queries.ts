@@ -22,6 +22,7 @@
  * a Client Component.
  */
 
+import { deliveredPdf } from '@/lib/itineraries/delivered-pdf'
 import { widelySharedMediaIds } from '@/lib/map/shared-media'
 import { unlessShared } from '@/lib/map/shared-media-rule'
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
@@ -529,31 +530,33 @@ export async function resolveScheduleDocument(
   const version = row.item.refVersion ?? row.itinerary?.version ?? 1
 
   // ملف رفعه المدير لهذا الجدول (الوثيقة 4.2) يتقدّم على المولّد تلقائياً.
+  // One rule with the Studio «ملف PDF» tab: `@/lib/itineraries/delivered-pdf`.
   const uploaded = row.itinerary?.uploadedPdfKeys ?? null
-  const uploadedKey = uploaded?.[locale] ?? uploaded?.[defaultLocale] ?? null
-  if (uploadedKey) {
-    return {
-      objectKey: uploadedKey,
-      orderNumber: row.orderNumber,
-      slug: row.itinerary?.slug ?? 'itinerary',
-    }
-  }
-
-  const docs = await db
-    .select({ objectKey: itineraryDocuments.objectKey, locale: itineraryDocuments.locale })
-    .from(itineraryDocuments)
-    .where(
-      and(eq(itineraryDocuments.itineraryId, itineraryId), eq(itineraryDocuments.version, version)),
-    )
+  const docs =
+    uploaded?.[locale] || uploaded?.[defaultLocale]
+      ? []
+      : await db
+          .select({ objectKey: itineraryDocuments.objectKey, locale: itineraryDocuments.locale })
+          .from(itineraryDocuments)
+          .where(
+            and(
+              eq(itineraryDocuments.itineraryId, itineraryId),
+              eq(itineraryDocuments.version, version),
+            ),
+          )
 
   // The requested language, then English. A plan in the wrong language beats
   // a dead button for someone standing in an airport.
-  const chosen =
-    docs.find((doc) => doc.locale === locale) ?? docs.find((doc) => doc.locale === defaultLocale)
+  const chosen = deliveredPdf({
+    locale,
+    uploadedKeys: uploaded,
+    generated: docs,
+    fallbackLocale: defaultLocale,
+  })
 
   // Entitled, but the publish step has not produced the file yet. Distinct
   // from "not yours", and the caller says so differently.
-  if (chosen === undefined) return 'not-ready'
+  if (chosen.kind === 'none') return 'not-ready'
 
   return {
     objectKey: chosen.objectKey,
