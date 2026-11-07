@@ -1,0 +1,34 @@
+diff --git a/src/app/[locale]/account/phone-actions.ts b/src/app/[locale]/account/phone-actions.ts
+index 2fa3506..484fd88 100644
+--- a/src/app/[locale]/account/phone-actions.ts
++++ b/src/app/[locale]/account/phone-actions.ts
+@@ -279,9 +279,7 @@ export async function verifyPhoneCodeAction(
+   // Locked check-and-count: parallel guesses (and resends) queue on the lock,
+   // so the five-attempt cap holds however many requests arrive at once.
+   type Outcome =
+-    | { kind: 'expired' }
+-    | { kind: 'wrong' }
+-    | { kind: 'ok'; phone: string; claim: boolean }
++    { kind: 'expired' } | { kind: 'wrong' } | { kind: 'ok'; phone: string; claim: boolean }
+   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+     await lockUser(tx, user.id)
+     const [row] = await tx
+diff --git a/src/app/[locale]/account/profile-form.tsx b/src/app/[locale]/account/profile-form.tsx
+index 96eb911..339be2d 100644
+--- a/src/app/[locale]/account/profile-form.tsx
++++ b/src/app/[locale]/account/profile-form.tsx
+@@ -27,7 +27,13 @@
+ import { useActionState, useState } from 'react'
+ import { useTranslations } from 'next-intl'
+ 
+-import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
++import {
++  FormError,
++  FormNotice,
++  SelectField,
++  TextField,
++  type CountryOption,
++} from '@/components/auth'
+ import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
+ import { Button } from '@/components/shared'
+ import { locales, localeConfig, type Locale } from '@/i18n/config'

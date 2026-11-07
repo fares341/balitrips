@@ -1,0 +1,400 @@
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied reports.read for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied admin.access for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied config.write for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied admin.access for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied customers.read for customer@test.balitrips.local (customer)
+[admin] denied entry for customer@test.balitrips.local (customer)
+[admin] denied config.write for customer@test.balitrips.local (customer)
+[admin] denied customers.export for customer@test.balitrips.local (customer)
+[admin] denied customers.export for customer@test.balitrips.local (customer)
+[admin] denied customers.export for customer@test.balitrips.local (customer)
+[admin] denied customers.export for customer@test.balitrips.local (customer)
+[admin] denied finance.read for customer@test.balitrips.local (customer)
+[admin] denied customers.export for customer@test.balitrips.local (customer)
+[admin] denied content.write for customer@test.balitrips.local (customer)
+[admin] two-factor challenge required for content_editor@test.balitrips.local
+[admin] denied users.manage for content_editor@test.balitrips.local (content_editor)
+[admin] denied payments.read for content_editor@test.balitrips.local (content_editor)
+[admin] denied finance.read for content_editor@test.balitrips.local (content_editor)
+[admin] denied config.write for content_editor@test.balitrips.local (content_editor)
+[admin] denied config.write for content_editor@test.balitrips.local (content_editor)
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-profile-mw6vi5eoasfm@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-profile-mw6vi5eoasfm@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtcHJvZmlsZS1tdzZ2aTVlb2FzZm1AZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQzNTcsImV4cCI6MTc5NDE3MDc1N30.TXuE2p38f0tDg7THNHr03BDzqR-_qF9a6UsMnPSrODU&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-support-mw6vioxt0jz5@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-support-mw6vioxt0jz5@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtc3VwcG9ydC1tdzZ2aW94dDBqejVAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQzODMsImV4cCI6MTc5NDE3MDc4M30.Uy0alWZ3B5AefuNFh4Oa6C1sKyrW-UWdPM2IbxXmpts&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6viskl6qzc@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6viskl6qzc@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2aXNrbDZxemNAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQzODcsImV4cCI6MTc5NDE3MDc4N30.baAQTrE7DdTKoYPwmJRyRKLYrk4Yk0Mp73H7DyLdjoI&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vjgjhowkx@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vjgjhowkx@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2amdqaG93a3hAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0MTgsImV4cCI6MTc5NDE3MDgxOH0.syv5q8FFCD0C-LM2k_R3V8BHTry-jph1yHmcJA2KZxQ&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vjqfisehj@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vjqfisehj@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2anFmaXNlaGpAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0MzEsImV4cCI6MTc5NDE3MDgzMX0.lv-DCUbVttThEZPe5dkFdYGFu5b3ESU3egq9Hq110fw&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vke8v246r@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vke8v246r@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a2U4djI0NnJAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0NjIsImV4cCI6MTc5NDE3MDg2Mn0.enQ3c7z5MmFWyVW8j_uiw9XWBQg6kbsz_N5jgKRIMqg&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vkgbqmef8@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vkgbqmef8@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a2dicW1lZjhAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0NjUsImV4cCI6MTc5NDE3MDg2NX0.2K0GpMYfDImTJoz-YlD7WqDaepOKzkiOATdVhYNub7Q&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vkhz5710f@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vkhz5710f@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a2h6NTcxMGZAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0NjcsImV4cCI6MTc5NDE3MDg2N30.82AsDBngH5KPuuVAfGEGqVAUI0qcNHSVK6wLJMOdNFY&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vkrj5r9wt@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vkrj5r9wt@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a3JqNXI5d3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0NzksImV4cCI6MTc5NDE3MDg3OX0.AL7K94HziJ0K8TcEh2U4bO-HHHL_fyLTTX1EYN3Z-I0&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vktb2il6r@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vktb2il6r@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a3RiMmlsNnJAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0ODIsImV4cCI6MTc5NDE3MDg4Mn0.lZoZHS24jVEXY9cHRosJ5PQIdIcgGbD8243Q1tn1lyE&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vkuzgnxdb@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vkuzgnxdb@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a3V6Z254ZGJAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0ODQsImV4cCI6MTc5NDE3MDg4NH0.x68hgMG8qhubXAacwzvxGWx8WxYWWEqMXVTtWAQND2g&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-fuzz-mw6vkx0nnkh1@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-fuzz-mw6vkx0nnkh1@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtZnV6ei1tdzZ2a3gwbm5raDFAZXhhbXBsZS5jb20iLCJpYXQiOjE3OTQwODQ0ODYsImV4cCI6MTc5NDE3MDg4Nn0.yhMHq1PApsSFjskjzKkDJwr5fpnwiU4fJlskR38iT7c&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-arname-mw6vm8aee360@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-arname-mw6vm8aee360@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi رحلة بالي 🌴🏝️ اختبار,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtYXJuYW1lLW13NnZtOGFlZTM2MEBleGFtcGxlLmNvbSIsImlhdCI6MTc5NDA4NDU0OCwiZXhwIjoxNzk0MTcwOTQ4fQ.G9bftUcnxMbH-lDp2Ri9gwfhUfeCrB0beB7DuRUa4Fw&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[2m2026-11-07T20:49:12.129Z[0m [33mWARN[0m [1m[Better Auth]:[0m User not found
+[2m2026-11-07T20:49:16.259Z[0m [33mWARN[0m [1m[Better Auth]:[0m Reset Password: User not found
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'custom-mw6vpd2jp4mh@example.com',
+  subject: 'We received your custom trip request'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      custom-mw6vpd2jp4mh@example.com
+  subject: We received your custom trip request
+──────────────────────────────────────────────────────────────
+We received your custom trip request
+
+Hello,
+
+We received your custom Bali trip request and our team will get back to you at this address soon. Create a Bali Trips account with this same email to follow the request and receive your plan in your account.
+
+Open: http://localhost:3000/en/account/schedules
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────
+[email] no mail provider configured in production — message NOT sent. Set RESEND_API_KEY. {
+  to: 'full-coupon-mw6vpijwf0da@example.com',
+  subject: 'Welcome to Bali Trips'
+}
+
+──────────────────────────────────────────────────────────────
+  to:      full-coupon-mw6vpijwf0da@example.com
+  subject: Welcome to Bali Trips
+──────────────────────────────────────────────────────────────
+Your account is ready
+
+Hi Full Test,
+
+Confirm your email address so we can send you booking confirmations and your travel documents.
+
+Confirm my email: http://localhost:3000/api/auth/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImZ1bGwtY291cG9uLW13NnZwaWp3ZjBkYUBleGFtcGxlLmNvbSIsImlhdCI6MTc5NDA4NDcwMSwiZXhwIjoxNzk0MTcxMTAxfQ.6AxczTnqzIUkjwe_Tc6va92zYw-gi_vl_lUsb4F-ngA&callbackURL=%2Fen%2Faccount%3Fverified%3D1
+
+If you did not create this account, you can ignore this email.
+
+---
+
+Questions about your trip? Reply to this email and our team in Bali will answer.
+
+You are receiving this email because you have a Bali Trips account.
+──────────────────────────────────────────────────────────────

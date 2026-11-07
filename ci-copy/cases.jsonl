@@ -1,0 +1,743 @@
+{"form":"account profile","case":"name persisted verbatim","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار <script>alert(1)</script><img src=x onerror=alert(2)>","project":"desktop","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account profile","case":"empty name refused","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار <script>alert(1)</script><img src=x onerror=alert(2)>","project":"desktop","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account profile","case":"no crash / no script ran","ok":true,"detail":"","project":"desktop","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account support","case":"ticket persisted","ok":true,"detail":"1","project":"desktop","test":"support ticket: valid ticket stored, empty refused"}
+{"form":"account support","case":"double submit → one ticket","ok":true,"detail":"1","project":"desktop","test":"support ticket: valid ticket stored, empty refused"}
+{"form":"account /en/account","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account/support","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/support"}
+{"form":"account /en/account/notifications","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/notifications"}
+{"form":"account /en/account/reviews","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/reviews"}
+{"form":"account /en/account/favorites","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/favorites"}
+{"form":"account /en/account/trip","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/trip"}
+{"form":"account /en/account/devices","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/devices"}
+{"form":"account /en/account/subscriptions","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/subscriptions"}
+{"form":"account /en/account/schedules","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /en/account/schedules"}
+{"form":"account /ar/account","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /ar/account"}
+{"form":"account /ar/account form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /ar/account"}
+{"form":"account /ar/account form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz signed-in /ar/account"}
+{"form":"contact","case":"valid submit shows success","ok":true,"detail":"","project":"desktop","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"persisted to contact_messages","ok":true,"detail":"","project":"desktop","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"XSS/Arabic/emoji stored verbatim","ok":true,"detail":"<script>alert(1)</script><img src=x onerror=alert(2)> رحلة بالي 🌴🏝️ اختبار","project":"desktop","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"no crash / no script ran","ok":true,"detail":"","project":"desktop","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact/en","case":"html dir","ok":true,"detail":"ltr","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"required markers present","ok":true,"detail":"3","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"empty submit → required errors","ok":true,"detail":"","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"bad email → email error","ok":true,"detail":"","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"html dir","ok":true,"detail":"rtl","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"required markers present","ok":true,"detail":"3","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"empty submit → required errors","ok":true,"detail":"","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"bad email → email error","ok":true,"detail":"","project":"desktop","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact","case":"maxLength caps huge message","ok":true,"detail":"4000","project":"desktop","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"contact","case":"Enter submits the form","ok":true,"detail":"1","project":"desktop","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"contact","case":"double submit stores one row","ok":true,"detail":"1","project":"desktop","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"sign-up","case":"empty submit stays on page with errors","ok":true,"detail":"","project":"desktop","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"short password message","ok":true,"detail":"","project":"desktop","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"phone needs country code message","ok":true,"detail":"","project":"desktop","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"mismatch message","ok":true,"detail":"","project":"desktop","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"no account created on invalid input","ok":true,"detail":"","project":"desktop","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"account persisted with exact name","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار","project":"desktop","test":"sign-up with Arabic+emoji name persists; ar errors translated"}
+{"form":"sign-up/ar","case":"short password error in Arabic","ok":true,"detail":"","project":"desktop","test":"sign-up with Arabic+emoji name persists; ar errors translated"}
+{"form":"sign-in","case":"empty submit keeps dialog open","ok":true,"detail":"","project":"desktop","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"sign-in","case":"wrong credentials refused (dialog stays)","ok":true,"detail":"","project":"desktop","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"sign-in","case":"error shown","ok":true,"detail":"","project":"desktop","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"forgot-password","case":"invalid identifier refused","ok":true,"detail":"","project":"desktop","test":"forgot password gives the neutral notice"}
+{"form":"forgot-password","case":"neutral notice for unknown address","ok":true,"detail":"","project":"desktop","test":"forgot password gives the neutral notice"}
+{"form":"search /en/search","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"desktop","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query % handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"desktop","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query % handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"desktop","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query % handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"desktop","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query % handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"desktop","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"api/search","case":"q=<script>alert(1","ok":true,"detail":"200","project":"desktop","test":"search API rejects junk without 5xx"}
+{"form":"api/search","case":"q=xxxxxxxxxxxxxxx","ok":true,"detail":"200","project":"desktop","test":"search API rejects junk without 5xx"}
+{"form":"api/search","case":"q=","ok":true,"detail":"200","project":"desktop","test":"search API rejects junk without 5xx"}
+{"form":"custom-trip","case":"empty request refused with errors","ok":true,"detail":"4","project":"desktop","test":"empty submit shows errors; full request is stored"}
+{"form":"custom-trip","case":"valid request persisted","ok":true,"detail":"1","project":"desktop","test":"empty submit shows errors; full request is stored"}
+{"form":"custom-trip","case":"no crash / no script ran","ok":true,"detail":"","project":"desktop","test":"empty submit shows errors; full request is stored"}
+{"form":"activity booking","case":"invalid/empty booking does not crash","ok":true,"detail":"","project":"desktop","test":"activity booking widget: invalid people count and missing date refused"}
+{"form":"activity booking","case":"cart query works","ok":true,"detail":"","project":"desktop","test":"activity booking widget: invalid people count and missing date refused"}
+{"form":"package add-ons","case":"add-on offered with a package that does not include it","ok":true,"detail":"","project":"desktop","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"package add-ons","case":"included add-on hidden; «included in the package» note shown","ok":true,"detail":"","project":"desktop","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"package add-ons","case":"no page errors","ok":true,"detail":"","project":"desktop","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"checkout coupon","case":"coupon field shown only with items (empty trip)","ok":true,"detail":"no coupon field on empty trip","project":"desktop","test":"checkout: invalid coupon is refused politely"}
+{"form":"public /en","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en"}
+{"form":"public /en form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en"}
+{"form":"public /en form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en"}
+{"form":"public /ar","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /ar"}
+{"form":"public /ar form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /ar"}
+{"form":"public /ar form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /ar"}
+{"form":"public /en/contact","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/contact"}
+{"form":"public /en/custom","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/custom"}
+{"form":"public /en/search","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/search"}
+{"form":"public /en/search form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/search"}
+{"form":"public /en/search form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/search"}
+{"form":"public /en/blog","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/blog"}
+{"form":"public /en/blog form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/blog"}
+{"form":"public /en/blog form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/blog"}
+{"form":"public /en/help","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/help"}
+{"form":"public /en/help form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/help"}
+{"form":"public /en/help form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/help"}
+{"form":"public /en/activities","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/activities"}
+{"form":"public /en/itineraries","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/itineraries"}
+{"form":"public /en/packages","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/packages"}
+{"form":"public /en/plans","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/plans"}
+{"form":"public /en/map","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/map"}
+{"form":"public /en/cart","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/cart"}
+{"form":"public /en/register","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"fuzz /en/register"}
+{"form":"public /en/register form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/register"}
+{"form":"public /en/register form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"fuzz /en/register"}
+{"form":"new activity","case":"empty form → clear error","ok":true,"detail":"اكتب الاسم بالعربية أو بالإنجليزية.","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"empty form → stays on /new","ok":true,"detail":"http://localhost:3000/studio-ci7/activities/new?err=%D8%A7%D9%83%D8%AA%D8%A8%20%D8%A7%D9%84%D8%A7%D8%B3%D9%85%20%D8%A8%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9%20%D8%A3%D9%88%20%D8%A8%D8%A7%D9%84%D8%A5%D9%86%D8%AC%D9%84%D9%8A%D8%B2%D9%8A%D8%A9.","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"empty form → nothing created","ok":true,"detail":"15→15","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"invalid slug → error summary","ok":true,"detail":"","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"invalid price → error","ok":true,"detail":"يجب أن يكون «السعر» مبلغاً مثل 125.00 (القيمة المدخلة: «abc»).","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"invalid price → typed values kept","ok":true,"detail":"رحلة برابط خاطئ","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"negative price → error","ok":true,"detail":"لا يمكن أن يكون «السعر» سالبًا.","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"Arabic-only name, empty slug → created","ok":true,"detail":"http://localhost:3000/studio-ci7/activities/50a646aa-ee62-4648-9718-0f5e2310ae66?tab=content&ok=%D8%A3%D9%8F%D9%86%D8%B4%D8%A6%20%D8%A7%D9%84%D9%86%D8%B4%D8%A7%D8%B7%20%D9%83%D9%85%D8%B3%D9%88%D8%AF%D8%A9.%20%D8%A3%D9%83%D9%85%D9%84%20%D8%A7%D9%84%D8%AE%D8%B7%D9%88%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A%D8%A9%3A%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89%D8%8C%20%D8%A7%D9%84%D8%B5%D9%88%D8%B1%D8%8C%20%D8%A7%D9%84%D8%A8%D8%A7%D9%82%D8%A7%D8%AA%E2%80%A6 أُنشئ النشاط كمسودة. أكمل الخطوات التالية: المحتوى، الصور، الباقات…","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"auto slug valid","ok":true,"detail":"activity","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"created as draft","ok":true,"detail":"draft","project":"desktop","test":"new activity: basic fields valid / empty / invalid"}
+{"form":"new activity","case":"full basics → created","ok":true,"detail":"http://localhost:3000/studio-ci7/activities/7d2abb55-8022-494a-8a8f-665621cff1e8?tab=content&ok=%D8%AD%D9%8F%D9%81%D8%B8%20%D9%83%D9%85%D8%B3%D9%88%D8%AF%D8%A9%3A%20%D9%8A%D9%8F%D9%86%D8%B4%D8%B1%20%D8%A7%D9%84%D9%86%D8%B4%D8%A7%D8%B7%20%D8%A7%D9%84%D8%AC%D8%AF%D9%8A%D8%AF%20%D8%A8%D8%B9%D8%AF%20%D8%A5%D8%B6%D8%A7%D9%81%D8%A9%20%D8%B5%D9%88%D8%B1%D9%87%20%D9%88%D8%A8%D8%A7%D9%82%D8%A7%D8%AA%D9%87%20(%D8%B1%D8%A7%D8%AC%D8%B9%20%D9%82%D8%A7%D8%A6%D9%85%D8%A9%20%D8%A7%D9%84%D8%AA%D8%AD%D9%82%D9%82). حُفظ كمسودة: يُنشر النشاط الجديد بعد إضافة صوره وباقاته (راجع قائمة التحقق).","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"new activity","case":"continues to the content step","ok":true,"detail":"http://localhost:3000/studio-ci7/activities/7d2abb55-8022-494a-8a8f-665621cff1e8?tab=content&ok=%D8%AD%D9%8F%D9%81%D8%B8%20%D9%83%D9%85%D8%B3%D9%88%D8%AF%D8%A9%3A%20%D9%8A%D9%8F%D9%86%D8%B4%D8%B1%20%D8%A7%D9%84%D9%86%D8%B4%D8%A7%D8%B7%20%D8%A7%D9%84%D8%AC%D8%AF%D9%8A%D8%AF%20%D8%A8%D8%B9%D8%AF%20%D8%A5%D8%B6%D8%A7%D9%81%D8%A9%20%D8%B5%D9%88%D8%B1%D9%87%20%D9%88%D8%A8%D8%A7%D9%82%D8%A7%D8%AA%D9%87%20(%D8%B1%D8%A7%D8%AC%D8%B9%20%D9%82%D8%A7%D8%A6%D9%85%D8%A9%20%D8%A7%D9%84%D8%AA%D8%AD%D9%82%D9%82).","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"slug from English name","ok":true,"detail":"full-trip-mw6v33hk69qk","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"saved as draft","ok":true,"detail":"draft","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"name ar/en/id","ok":true,"detail":"{\"ar\":\"رحلة كاملة\",\"en\":\"Full Trip mw6v33hk69qk\",\"id\":\"Perjalanan Lengkap\"}","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"area","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"duration","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"region","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"category","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"price 125.00","ok":true,"detail":"12500","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"featured + home","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"basics","case":"categories saved","ok":true,"detail":"2","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"content","case":"headline","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"content","case":"short description","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"content","case":"description markdown","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"content","case":"highlights incl. Arabic-only line","ok":true,"detail":"[{\"ar\":\"شروق الشمس\",\"en\":\"Sunrise\",\"id\":\"\"},{\"ar\":\"فطور\",\"en\":\"\",\"id\":\"\"}]","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"content","case":"included/excluded/suitable/notes","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"media","case":"two photos uploaded","ok":true,"detail":"2 ","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"media","case":"hero saved","ok":true,"detail":"33ad7165-ceb6-4784-81e6-846427e772e2","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"media","case":"gallery saved","ok":true,"detail":"1","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"add per_person","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"add per_group","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"add per_couple","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"add fixed","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"four packages saved","ok":true,"detail":"4","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"pricing modes","ok":true,"detail":"per_person,per_group,per_couple,fixed","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"Arabic-only includes kept","ok":true,"detail":"[{\"ar\":\"مرشد\",\"en\":\"\",\"id\":\"\"},{\"ar\":\"نقل\",\"en\":\"\",\"id\":\"\"}]","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"packages","case":"group size","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"add-ons","case":"add per_person","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"add-ons","case":"add per_booking","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"add-ons","case":"add per_qty","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"add-ons","case":"add per_hour","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"add-ons","case":"four add-ons saved","ok":true,"detail":"4","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"lat without lng → error","ok":true,"detail":"أدخل خط العرض وخط الطول معًا، أو اتركهما فارغين.","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"min > max → error","ok":true,"detail":"أقل عدد يجب أن يكون 1 على الأقل وألا يزيد على أكبر عدد.","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"bad time → error","ok":true,"detail":"«25:00» ليس وقتاً صالحاً من اليوم.","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"saved","ok":true,"detail":"تم حفظ النشاط.","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"lead time / guests","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"time slots","ok":true,"detail":"[\"08:00\",\"14:30\"]","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"meeting point + map","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"meeting time","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"what to bring + age","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"booking","case":"instant + free cancel","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"faq","case":"two questions saved","ok":true,"detail":"[{\"a\":{\"ar\":\"نعم من ١٠ سنوات\",\"en\":\"\",\"id\":\"\"},\"q\":{\"ar\":\"هل يناسب الأطفال؟\",\"en\":\"\",\"id\":\"\"}},{\"a\":{\"ar\":\"ملابس مريحة\",\"en\":\"\",\"id\":\"\"},\"q\":{\"ar\":\"ماذا أرتدي؟\",\"en\":\"\",\"id\":\"\"}}]","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"seo","case":"seo title","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"reload","case":"basics name","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"reload","case":"basics slug","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"reload","case":"booking slots","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"reload","case":"map url","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"reload","case":"headline","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"new activity","case":"no crash / 5xx during the flow","ok":true,"detail":"","project":"desktop","test":"new activity: every tab filled, saved, reloaded, persisted"}
+{"form":"edit","case":"re-save basics","ok":true,"detail":"تم حفظ النشاط.","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"edit","case":"slug taken → names the other activity","ok":true,"detail":"الرابط «sekumpul-waterfall-trek» مستخدم في «رحلة شلال سيكومبول». اختر رابطًا آخر.","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"edit","case":"slug unchanged after refusal","ok":true,"detail":"full-trip-mw6v33hk69qk","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"publish","case":"published","ok":true,"detail":"published تم حفظ النشاط.","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"publish","case":"public page opens","ok":true,"detail":"200","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"publish","case":"unpublished","ok":true,"detail":"draft","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"publish","case":"public page gone when draft","ok":true,"detail":"404","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"preview","case":"preview opens for staff","ok":true,"detail":"200","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"duplicate","case":"copy created","ok":true,"detail":"http://localhost:3000/studio-ci7/activities/746b44bc-18a0-47a6-8543-b5a10c02d763?ok=%D8%AA%D9%85%20%D8%A7%D9%84%D9%86%D8%B3%D8%AE%20%D9%83%D9%85%D8%B3%D9%88%D8%AF%D8%A9.%20%D8%B1%D8%A7%D8%AC%D8%B9%20%D8%A7%D9%84%D9%86%D8%B5%D9%88%D8%B5%20%D8%AB%D9%85%20%D8%A7%D9%86%D8%B4%D8%B1.","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"duplicate","case":"copy has the packages","ok":true,"detail":"4","project":"desktop","test":"edit, publish / unpublish, duplicate, preview"}
+{"form":"activities list","case":"button «تحميل قالب»","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"activities list","case":"button «تصدير الأنشطة»","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"activities list","case":"button «رفع ملف»","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"sheets","ok":true,"detail":"Instructions,Lists,Activities,Packages,AddOns,FAQ","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"key row","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"Arabic label row","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"status dropdown","ok":true,"detail":"{\"type\":\"list\",\"formulae\":[\"Lists!$A$1:$A$6\"],\"allowBlank\":true,\"showErrorMessage\":true,\"errorTitle\":\"ليست في القائمة\",\"error\":\"اختر قيمة من القائمة.\"}","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"pricing dropdown","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"region dropdown","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"csv has key row","ok":true,"detail":"","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"template","case":"template import → no rows, no crash","ok":true,"detail":"لا توجد صفوف أنشطة في الملف. ","project":"desktop","test":"template downloads (.xlsx and .csv) with sheets, key row and dropdowns"}
+{"form":"export","case":"every activity exported","ok":true,"detail":"18 rows / 18 stored","project":"desktop","test":"export → import unchanged = zero changes (xlsx and csv)"}
+{"form":"round trip xlsx","case":"no errors","ok":true,"detail":"","project":"desktop","test":"export → import unchanged = zero changes (xlsx and csv)"}
+{"form":"round trip xlsx","case":"zero new / updated","ok":true,"detail":"0 changed","project":"desktop","test":"export → import unchanged = zero changes (xlsx and csv)"}
+{"form":"round trip csv","case":"no errors","ok":true,"detail":"","project":"desktop","test":"export → import unchanged = zero changes (xlsx and csv)"}
+{"form":"round trip csv","case":"zero new / updated","ok":true,"detail":"0 changed","project":"desktop","test":"export → import unchanged = zero changes (xlsx and csv)"}
+{"form":"edited import","case":"no errors","ok":true,"detail":"","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"edited import","case":"one new","ok":true,"detail":"update,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,new","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"edited import","case":"one update","ok":true,"detail":"update,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,same,new","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"name updated","ok":true,"detail":"{\"ar\":\"اسم معدّل mw6v51kg2pc7\",\"en\":\"Mount Batur Sunrise Hike\",\"id\":\"Pendakian Matahari Terbit Gunung Batur\"}","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"price updated","ok":true,"detail":"9950","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"new activity created as draft","ok":true,"detail":"draft","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"highlights list","ok":true,"detail":"","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"faq","ok":true,"detail":"","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"package","ok":true,"detail":"[{\"pricing_mode\":\"per_group\",\"group_max\":4,\"price_minor\":\"12000\"}]","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"add-on","ok":true,"detail":"","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"apply","case":"same file again → zero changes","ok":true,"detail":"0 changed; ","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"sheet import","case":"no crash / 5xx","ok":true,"detail":"","project":"desktop","test":"edited export → expected updates, applied, idempotent"}
+{"form":"bad file","case":"one error per bad row","ok":true,"detail":"9: السطر 10: نوع صف غير معروف «unicorn» (activity أو package أو addon أو faq) | Activities، الصف 2 (activity_slug): معرّف غير صالح «bad slug»: حروف إنجليزية صغيرة وأرقام وشرطات فقط | Activities، الصف 3 (region): منطقة غير معروفة «mars» | Activities، الصف 4 (price): سعر غير مفهوم «abc» | Activities، الصف 5 (name_ar): الاسم ناقص (بالعربية أو الإنجليزية) | Activities، الصف 6 (min_guests): عدد أشخاص أو كمية غير ممكنة | Activities، الصف 7 (map_url): رابط الخريطة يجب أن يبدأ بـ https:// | Packages، الصف 8 (activity_slug): لا يوجد نشاط «missing-mw6v51kg2pc7» في الملف ولا في الاستوديو | Packages، الصف 9 (activity_slug): لا يوجد نشاط «bad-region-mw6v51kg2pc7» في الملف ولا في الاستوديو","project":"desktop","test":"bad rows → clear errors per row, nothing applied"}
+{"form":"bad file","case":"errors are in Arabic with row numbers","ok":true,"detail":"السطر 10: نوع صف غير معروف «unicorn» (activity أو package أو addon أو faq)","project":"desktop","test":"bad rows → clear errors per row, nothing applied"}
+{"form":"bad file","case":"apply disabled","ok":true,"detail":"","project":"desktop","test":"bad rows → clear errors per row, nothing applied"}
+{"form":"bad file","case":"nothing created","ok":true,"detail":"","project":"desktop","test":"bad rows → clear errors per row, nothing applied"}
+{"form":"studio sign-in","case":"admin reached dashboard (TOTP)","ok":true,"detail":"http://localhost:3000/studio-ci7?ok=%D8%AA%D9%85%20%D9%82%D8%A8%D9%88%D9%84%20%D8%A7%D9%84%D8%B1%D9%85%D8%B2.%20%D8%A3%D9%87%D9%84%D8%A7%D9%8B%20%D8%A8%D8%B9%D9%88%D8%AF%D8%AA%D9%83.","project":"desktop","test":"admin signed in to the Studio"}
+{"form":"studio /","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /"}
+{"form":"studio /inbox","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /inbox"}
+{"form":"studio /reports","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports"}
+{"form":"studio /help","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /help"}
+{"form":"studio /orders","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /orders"}
+{"form":"studio /orders form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /orders"}
+{"form":"studio /orders form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /orders"}
+{"form":"studio /payments","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payments"}
+{"form":"studio /payments form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payments"}
+{"form":"studio /payments form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payments"}
+{"form":"studio /leads","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads detail form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads detail form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads detail form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /leads detail form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /leads"}
+{"form":"studio /entitlements","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /entitlements form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /entitlements"}
+{"form":"studio /discounts","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /discounts"}
+{"form":"studio /discounts form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /discounts"}
+{"form":"studio /discounts form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /discounts"}
+{"form":"studio /guide","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /guide"}
+{"form":"studio /vehicles","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#4","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#4","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /vehicles form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /vehicles"}
+{"form":"studio /suppliers","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /suppliers"}
+{"form":"studio /suppliers form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /suppliers"}
+{"form":"studio /suppliers form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /suppliers"}
+{"form":"studio /payables","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payables"}
+{"form":"studio /payables form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payables"}
+{"form":"studio /payables form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /payables"}
+{"form":"studio /customers","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers detail form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers detail form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /customers detail form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /customers"}
+{"form":"studio /tasks","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /tasks"}
+{"form":"studio /tasks form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /tasks"}
+{"form":"studio /tasks form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /tasks"}
+{"form":"studio /tasks form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /tasks"}
+{"form":"studio /tasks form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /tasks"}
+{"form":"studio /support","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support detail form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /support detail form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /support"}
+{"form":"studio /assistant/conversations","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/conversations"}
+{"form":"studio /assistant/conversations form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/conversations"}
+{"form":"studio /assistant/conversations form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/conversations"}
+{"form":"studio /duplicates","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /duplicates"}
+{"form":"studio /itineraries","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /itineraries form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /itineraries form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /itineraries detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /itineraries detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /itineraries detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries"}
+{"form":"studio /activities","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio /activities form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio /activities form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=content","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=media","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=packages","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=included","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=addons","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=booking","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=availability","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio activity ?tab=faq","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities"}
+{"form":"studio /addons","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /addons"}
+{"form":"studio /addons form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /addons"}
+{"form":"studio /addons form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /addons"}
+{"form":"studio /packages","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /packages form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /packages form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /packages detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /packages detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /packages detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /packages"}
+{"form":"studio /places","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places"}
+{"form":"studio /places form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places"}
+{"form":"studio /places form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places"}
+{"form":"studio /places detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places"}
+{"form":"studio /articles","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /articles form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /articles form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /articles detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /articles detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /articles detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /articles"}
+{"form":"studio /landmarks","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /landmarks form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /landmarks form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /landmarks detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /landmarks detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /landmarks detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /landmarks"}
+{"form":"studio /reviews","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reviews"}
+{"form":"studio /reviews form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reviews"}
+{"form":"studio /reviews form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reviews"}
+{"form":"studio /taxonomy","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#4","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#4","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /taxonomy form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /taxonomy"}
+{"form":"studio /media","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#4","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /media form#4","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /media"}
+{"form":"studio /files","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /files"}
+{"form":"studio /archive","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /archive"}
+{"form":"studio /readiness","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /readiness"}
+{"form":"studio /home-content","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /home-content"}
+{"form":"studio /home-content form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /home-content"}
+{"form":"studio /home-content form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /home-content"}
+{"form":"studio /site-content","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /site-content"}
+{"form":"studio /site-content detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /site-content"}
+{"form":"studio /site-content detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /site-content"}
+{"form":"studio /site-content detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /site-content"}
+{"form":"studio /translations","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#4","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#4","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /translations form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /translations"}
+{"form":"studio /profit","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /profit"}
+{"form":"studio /reconciliation","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reconciliation"}
+{"form":"studio /plans","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans detail","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans detail form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans detail form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans"}
+{"form":"studio /plans/vip","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans/vip"}
+{"form":"studio /plans/vip form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans/vip"}
+{"form":"studio /plans/vip form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /plans/vip"}
+{"form":"studio /marketing","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /marketing"}
+{"form":"studio /marketing form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /marketing"}
+{"form":"studio /marketing form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /marketing"}
+{"form":"studio /notify","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /notify"}
+{"form":"studio /whatsapp","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /whatsapp"}
+{"form":"studio /whatsapp form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /whatsapp"}
+{"form":"studio /whatsapp form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /whatsapp"}
+{"form":"studio /whatsapp form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /whatsapp"}
+{"form":"studio /whatsapp form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /whatsapp"}
+{"form":"studio /map-analytics","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /map-analytics"}
+{"form":"studio /audit","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /audit"}
+{"form":"studio /audit form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /audit"}
+{"form":"studio /audit form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /audit"}
+{"form":"studio /protection/activity","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/activity"}
+{"form":"studio /protection/activity form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/activity"}
+{"form":"studio /protection/activity form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/activity"}
+{"form":"studio /protection","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection"}
+{"form":"studio /protection form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection"}
+{"form":"studio /protection form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection"}
+{"form":"studio /protection/alerts","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/alerts"}
+{"form":"studio /protection/sessions","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/sessions"}
+{"form":"studio /protection/sessions form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/sessions"}
+{"form":"studio /protection/sessions form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/sessions"}
+{"form":"studio /protection/devices","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/devices"}
+{"form":"studio /protection/devices form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/devices"}
+{"form":"studio /protection/devices form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /protection/devices"}
+{"form":"studio /config","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#3","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#3","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#4","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#4","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#5","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /config form#5","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /config"}
+{"form":"studio /assistant/settings","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/settings"}
+{"form":"studio /assistant/settings form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/settings"}
+{"form":"studio /assistant/settings form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /assistant/settings"}
+{"form":"studio /team","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /team"}
+{"form":"studio /team form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /team"}
+{"form":"studio /team form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /team"}
+{"form":"studio /team form#2","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /team"}
+{"form":"studio /team form#2","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /team"}
+{"form":"studio /integrations","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /integrations"}
+{"form":"studio /system","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /system"}
+{"form":"studio /itineraries/pricing","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries/pricing"}
+{"form":"studio /itineraries/pricing form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries/pricing"}
+{"form":"studio /itineraries/pricing form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /itineraries/pricing"}
+{"form":"studio /map","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /map"}
+{"form":"studio /map form#1","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /map"}
+{"form":"studio /map form#1","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"desktop","test":"studio fuzz /map"}
+{"form":"studio /places/audit","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places/audit"}
+{"form":"studio /places/google","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places/google"}
+{"form":"studio /places/free-photos","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /places/free-photos"}
+{"form":"studio /activities/images","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activities/images"}
+{"form":"studio /activity-import","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /activity-import"}
+{"form":"studio /reports/financial","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/financial"}
+{"form":"studio /reports/bookings","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/bookings"}
+{"form":"studio /reports/itineraries","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/itineraries"}
+{"form":"studio /reports/vip","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/vip"}
+{"form":"studio /reports/activities","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/activities"}
+{"form":"studio /reports/customers","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/customers"}
+{"form":"studio /reports/marketing","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/marketing"}
+{"form":"studio /reports/suppliers","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/suppliers"}
+{"form":"studio /reports/operations","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/operations"}
+{"form":"studio /reports/records","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/records"}
+{"form":"studio /reports/exports","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/exports"}
+{"form":"studio /reports/schedules","case":"page loads without errors","ok":true,"detail":"","project":"desktop","test":"studio fuzz /reports/schedules"}
+{"form":"studio taxonomy","case":"submit with XSS handled (no script ran)","ok":true,"detail":"","project":"desktop","test":"taxonomy: XSS category name is stored as text and never runs"}
+{"form":"studio taxonomy","case":"category count did not decrease","ok":true,"detail":"","project":"desktop","test":"taxonomy: XSS category name is stored as text and never runs"}
+{"form":"studio whatsapp","case":"test send handled (no provider in CI)","ok":true,"detail":"","project":"desktop","test":"whatsapp: test send without a provider fails gracefully"}
+{"form":"studio media","case":"tiny (1x1) image refused, no row","ok":true,"detail":"2 → 2","project":"desktop","test":"media: upload a small image"}
+{"form":"studio media","case":"upload stored a media row","ok":true,"detail":"2 → 3","project":"desktop","test":"media: upload a small image"}
+{"form":"studio media","case":"upload no crash","ok":true,"detail":"","project":"desktop","test":"media: upload a small image"}
+{"form":"studio media","case":"fake image refused gracefully","ok":true,"detail":"","project":"desktop","test":"media: upload a small image"}
+{"form":"studio activity-import","case":"junk CSV handled","ok":true,"detail":"","project":"desktop","test":"activity CSV import: junk file handled"}
+{"form":"studio activity-import","case":"template downloads","ok":true,"detail":"200","project":"desktop","test":"activity CSV import: junk file handled"}
+{"form":"studio permissions/anon","case":"GET /","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /inbox","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /help","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /orders","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /payments","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /leads","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /entitlements","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /discounts","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /guide","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /vehicles","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /suppliers","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /payables","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /customers","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /tasks","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /support","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant/conversations","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /duplicates","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /itineraries","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /activities","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /addons","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /packages","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /places","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /articles","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /landmarks","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reviews","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /taxonomy","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /media","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /files","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /archive","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /readiness","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /home-content","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /site-content","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /translations","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /profit","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reconciliation","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /plans","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /plans/vip","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /marketing","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /notify","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /whatsapp","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /map-analytics","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /audit","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection/activity","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection/alerts","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection/sessions","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection/devices","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /config","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant/settings","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /team","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /integrations","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /system","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /security","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /itineraries","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /itineraries/pricing","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /vehicles","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /places","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /map","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /places/audit","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /places/google","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /places/free-photos","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /activities","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /activities/images","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /activity-import","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/financial","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/bookings","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/itineraries","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/vip","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/activities","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/customers","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/marketing","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/suppliers","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/operations","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/records","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/exports","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /reports/schedules","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant/conversations","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /assistant/settings","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /orders/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /customers/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /leads/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /payments/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /profit/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /protection/activity/export","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"GET /activity-import/template","ok":true,"detail":"200 http://localhost:3000/en/account?signin=1","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/anon","case":"POST /api/studio-assistant","ok":true,"detail":"403","project":"desktop","test":"anonymous visitor is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /","ok":true,"detail":"404 http://localhost:3000/studio-ci7","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /inbox","ok":true,"detail":"404 http://localhost:3000/studio-ci7/inbox","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /help","ok":true,"detail":"404 http://localhost:3000/studio-ci7/help","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /orders","ok":true,"detail":"404 http://localhost:3000/studio-ci7/orders","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /payments","ok":true,"detail":"404 http://localhost:3000/studio-ci7/payments","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /leads","ok":true,"detail":"404 http://localhost:3000/studio-ci7/leads","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /entitlements","ok":true,"detail":"404 http://localhost:3000/studio-ci7/entitlements","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /discounts","ok":true,"detail":"404 http://localhost:3000/studio-ci7/discounts","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /guide","ok":true,"detail":"404 http://localhost:3000/studio-ci7/guide","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /vehicles","ok":true,"detail":"404 http://localhost:3000/studio-ci7/vehicles","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /suppliers","ok":true,"detail":"404 http://localhost:3000/studio-ci7/suppliers","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /payables","ok":true,"detail":"404 http://localhost:3000/studio-ci7/payables","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /customers","ok":true,"detail":"404 http://localhost:3000/studio-ci7/customers","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /tasks","ok":true,"detail":"404 http://localhost:3000/studio-ci7/tasks","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /support","ok":true,"detail":"404 http://localhost:3000/studio-ci7/support","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant/conversations","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant/conversations","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /duplicates","ok":true,"detail":"404 http://localhost:3000/studio-ci7/duplicates","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /itineraries","ok":true,"detail":"404 http://localhost:3000/studio-ci7/itineraries","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /activities","ok":true,"detail":"404 http://localhost:3000/studio-ci7/activities","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /addons","ok":true,"detail":"404 http://localhost:3000/studio-ci7/addons","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /packages","ok":true,"detail":"404 http://localhost:3000/studio-ci7/packages","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /places","ok":true,"detail":"404 http://localhost:3000/studio-ci7/places","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /articles","ok":true,"detail":"404 http://localhost:3000/studio-ci7/articles","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /landmarks","ok":true,"detail":"404 http://localhost:3000/studio-ci7/landmarks","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reviews","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reviews","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /taxonomy","ok":true,"detail":"404 http://localhost:3000/studio-ci7/taxonomy","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /media","ok":true,"detail":"404 http://localhost:3000/studio-ci7/media","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /files","ok":true,"detail":"404 http://localhost:3000/studio-ci7/files","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /archive","ok":true,"detail":"404 http://localhost:3000/studio-ci7/archive","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /readiness","ok":true,"detail":"404 http://localhost:3000/studio-ci7/readiness","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /home-content","ok":true,"detail":"404 http://localhost:3000/studio-ci7/home-content","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /site-content","ok":true,"detail":"404 http://localhost:3000/studio-ci7/site-content","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /translations","ok":true,"detail":"404 http://localhost:3000/studio-ci7/translations","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /profit","ok":true,"detail":"404 http://localhost:3000/studio-ci7/profit","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reconciliation","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reconciliation","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /plans","ok":true,"detail":"404 http://localhost:3000/studio-ci7/plans","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /plans/vip","ok":true,"detail":"404 http://localhost:3000/studio-ci7/plans/vip","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /marketing","ok":true,"detail":"404 http://localhost:3000/studio-ci7/marketing","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /notify","ok":true,"detail":"404 http://localhost:3000/studio-ci7/notify","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /whatsapp","ok":true,"detail":"404 http://localhost:3000/studio-ci7/whatsapp","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /map-analytics","ok":true,"detail":"404 http://localhost:3000/studio-ci7/map-analytics","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /audit","ok":true,"detail":"404 http://localhost:3000/studio-ci7/audit","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection/activity","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection/activity","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection/alerts","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection/alerts","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection/sessions","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection/sessions","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection/devices","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection/devices","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /config","ok":true,"detail":"404 http://localhost:3000/studio-ci7/config","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant/settings","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant/settings","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /team","ok":true,"detail":"404 http://localhost:3000/studio-ci7/team","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /integrations","ok":true,"detail":"404 http://localhost:3000/studio-ci7/integrations","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /system","ok":true,"detail":"404 http://localhost:3000/studio-ci7/system","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /security","ok":true,"detail":"404 http://localhost:3000/studio-ci7/security","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /itineraries","ok":true,"detail":"404 http://localhost:3000/studio-ci7/itineraries","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /itineraries/pricing","ok":true,"detail":"404 http://localhost:3000/studio-ci7/itineraries/pricing","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /vehicles","ok":true,"detail":"404 http://localhost:3000/studio-ci7/vehicles","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /places","ok":true,"detail":"404 http://localhost:3000/studio-ci7/places","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /map","ok":true,"detail":"404 http://localhost:3000/studio-ci7/map","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /places/audit","ok":true,"detail":"404 http://localhost:3000/studio-ci7/places/audit","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /places/google","ok":true,"detail":"404 http://localhost:3000/studio-ci7/places/google","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /places/free-photos","ok":true,"detail":"404 http://localhost:3000/studio-ci7/places/free-photos","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /activities","ok":true,"detail":"404 http://localhost:3000/studio-ci7/activities","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /activities/images","ok":true,"detail":"404 http://localhost:3000/studio-ci7/activities/images","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /activity-import","ok":true,"detail":"404 http://localhost:3000/studio-ci7/activity-import","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/financial","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/financial","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/bookings","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/bookings","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/itineraries","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/itineraries","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/vip","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/vip","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/activities","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/activities","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/customers","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/customers","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/marketing","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/marketing","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/suppliers","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/suppliers","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/operations","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/operations","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/records","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/records","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/exports","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/exports","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /reports/schedules","ok":true,"detail":"404 http://localhost:3000/studio-ci7/reports/schedules","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant/conversations","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant/conversations","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /assistant/settings","ok":true,"detail":"404 http://localhost:3000/studio-ci7/assistant/settings","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /orders/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/orders/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /customers/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/customers/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /leads/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/leads/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /payments/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/payments/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /profit/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/profit/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /protection/activity/export","ok":true,"detail":"404 http://localhost:3000/studio-ci7/protection/activity/export","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"GET /activity-import/template","ok":true,"detail":"404 http://localhost:3000/studio-ci7/activity-import/template","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/customer","case":"POST /api/studio-assistant","ok":true,"detail":"403","project":"desktop","test":"customer is denied every Studio page and handler"}
+{"form":"studio permissions/content_editor","case":"GET /team","ok":true,"detail":"404","project":"desktop","test":"content editor cannot open team or money pages"}
+{"form":"studio permissions/content_editor","case":"GET /payments","ok":true,"detail":"404","project":"desktop","test":"content editor cannot open team or money pages"}
+{"form":"studio permissions/content_editor","case":"GET /profit","ok":true,"detail":"404","project":"desktop","test":"content editor cannot open team or money pages"}
+{"form":"studio permissions/content_editor","case":"GET /config","ok":true,"detail":"404","project":"desktop","test":"content editor cannot open team or money pages"}
+{"form":"studio permissions/content_editor","case":"GET /whatsapp","ok":true,"detail":"404","project":"desktop","test":"content editor cannot open team or money pages"}
+{"form":"account profile","case":"name persisted verbatim","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار <script>alert(1)</script><img src=x onerror=alert(2)>","project":"mobile","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account profile","case":"empty name refused","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار <script>alert(1)</script><img src=x onerror=alert(2)>","project":"mobile","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account profile","case":"no crash / no script ran","ok":true,"detail":"","project":"mobile","test":"profile: name with XSS + Arabic/emoji saves and survives reload"}
+{"form":"account support","case":"ticket persisted","ok":true,"detail":"1","project":"mobile","test":"support ticket: valid ticket stored, empty refused"}
+{"form":"account support","case":"double submit → one ticket","ok":true,"detail":"1","project":"mobile","test":"support ticket: valid ticket stored, empty refused"}
+{"form":"account /en/account","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account"}
+{"form":"account /en/account/support","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/support"}
+{"form":"account /en/account/notifications","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/notifications"}
+{"form":"account /en/account/reviews","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/reviews"}
+{"form":"account /en/account/favorites","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/favorites"}
+{"form":"account /en/account/trip","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/trip"}
+{"form":"account /en/account/devices","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/devices"}
+{"form":"account /en/account/subscriptions","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/subscriptions"}
+{"form":"account /en/account/schedules","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /en/account/schedules"}
+{"form":"account /ar/account","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /ar/account"}
+{"form":"account /ar/account form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /ar/account"}
+{"form":"account /ar/account form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz signed-in /ar/account"}
+{"form":"contact","case":"valid submit shows success","ok":true,"detail":"","project":"mobile","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"persisted to contact_messages","ok":true,"detail":"","project":"mobile","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"XSS/Arabic/emoji stored verbatim","ok":true,"detail":"<script>alert(1)</script><img src=x onerror=alert(2)> رحلة بالي 🌴🏝️ اختبار","project":"mobile","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact","case":"no crash / no script ran","ok":true,"detail":"","project":"mobile","test":"valid message is stored; XSS + Arabic/emoji kept as text"}
+{"form":"contact/en","case":"html dir","ok":true,"detail":"ltr","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"required markers present","ok":true,"detail":"3","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"empty submit → required errors","ok":true,"detail":"","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/en","case":"bad email → email error","ok":true,"detail":"","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"html dir","ok":true,"detail":"rtl","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"required markers present","ok":true,"detail":"3","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"empty submit → required errors","ok":true,"detail":"","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact/ar","case":"bad email → email error","ok":true,"detail":"","project":"mobile","test":"empty and invalid input give translated errors (en + ar)"}
+{"form":"contact","case":"maxLength caps huge message","ok":true,"detail":"4000","project":"mobile","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"contact","case":"Enter submits the form","ok":true,"detail":"1","project":"mobile","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"contact","case":"double submit stores one row","ok":true,"detail":"1","project":"mobile","test":"huge text is capped; keyboard submit; double submit sends once"}
+{"form":"sign-up","case":"empty submit stays on page with errors","ok":true,"detail":"","project":"mobile","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"short password message","ok":true,"detail":"","project":"mobile","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"phone needs country code message","ok":true,"detail":"","project":"mobile","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"mismatch message","ok":true,"detail":"","project":"mobile","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"no account created on invalid input","ok":true,"detail":"","project":"mobile","test":"sign-up validation: empty, bad email, short password, mismatch, bad phone"}
+{"form":"sign-up","case":"account persisted with exact name","ok":true,"detail":"رحلة بالي 🌴🏝️ اختبار","project":"mobile","test":"sign-up with Arabic+emoji name persists; ar errors translated"}
+{"form":"sign-up/ar","case":"short password error in Arabic","ok":true,"detail":"","project":"mobile","test":"sign-up with Arabic+emoji name persists; ar errors translated"}
+{"form":"sign-in","case":"empty submit keeps dialog open","ok":true,"detail":"","project":"mobile","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"sign-in","case":"wrong credentials refused (dialog stays)","ok":true,"detail":"","project":"mobile","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"sign-in","case":"error shown","ok":true,"detail":"","project":"mobile","test":"sign-in: wrong password and empty fields are refused"}
+{"form":"forgot-password","case":"invalid identifier refused","ok":true,"detail":"","project":"mobile","test":"forgot password gives the neutral notice"}
+{"form":"forgot-password","case":"neutral notice for unknown address","ok":true,"detail":"","project":"mobile","test":"forgot password gives the neutral notice"}
+{"form":"search /en/search","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"mobile","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query % handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /en/search","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"mobile","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query % handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /ar/search","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /ar/search with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"mobile","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query % handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/blog","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/blog with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query <script>alert(1)</sc handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query رحلة بالي 🌴🏝️ اختب handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query بببببببببببببببببببب handled","ok":true,"detail":"431 ","project":"mobile","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query % handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"search /en/help","case":"query ' OR 1=1 -- handled","ok":true,"detail":"200 ","project":"mobile","test":"GET search /en/help with XSS/Arabic/huge query"}
+{"form":"api/search","case":"q=<script>alert(1","ok":true,"detail":"200","project":"mobile","test":"search API rejects junk without 5xx"}
+{"form":"api/search","case":"q=xxxxxxxxxxxxxxx","ok":true,"detail":"200","project":"mobile","test":"search API rejects junk without 5xx"}
+{"form":"api/search","case":"q=","ok":true,"detail":"200","project":"mobile","test":"search API rejects junk without 5xx"}
+{"form":"custom-trip","case":"empty request refused with errors","ok":true,"detail":"4","project":"mobile","test":"empty submit shows errors; full request is stored"}
+{"form":"custom-trip","case":"valid request persisted","ok":true,"detail":"1","project":"mobile","test":"empty submit shows errors; full request is stored"}
+{"form":"custom-trip","case":"no crash / no script ran","ok":true,"detail":"","project":"mobile","test":"empty submit shows errors; full request is stored"}
+{"form":"activity booking","case":"invalid/empty booking does not crash","ok":true,"detail":"","project":"mobile","test":"activity booking widget: invalid people count and missing date refused"}
+{"form":"activity booking","case":"cart query works","ok":true,"detail":"","project":"mobile","test":"activity booking widget: invalid people count and missing date refused"}
+{"form":"package add-ons","case":"add-on offered with a package that does not include it","ok":true,"detail":"","project":"mobile","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"package add-ons","case":"included add-on hidden; «included in the package» note shown","ok":true,"detail":"","project":"mobile","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"package add-ons","case":"no page errors","ok":true,"detail":"","project":"mobile","test":"package switch hides an add-on the package includes and drops it from the price"}
+{"form":"checkout coupon","case":"coupon field shown only with items (empty trip)","ok":true,"detail":"no coupon field on empty trip","project":"mobile","test":"checkout: invalid coupon is refused politely"}
+{"form":"public /en","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en"}
+{"form":"public /en form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en"}
+{"form":"public /en form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en"}
+{"form":"public /ar","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /ar"}
+{"form":"public /ar form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /ar"}
+{"form":"public /ar form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /ar"}
+{"form":"public /en/contact","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/contact"}
+{"form":"public /en/custom","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/custom"}
+{"form":"public /en/search","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/search"}
+{"form":"public /en/search form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/search"}
+{"form":"public /en/search form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/search"}
+{"form":"public /en/blog","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/blog"}
+{"form":"public /en/blog form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/blog"}
+{"form":"public /en/blog form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/blog"}
+{"form":"public /en/help","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/help"}
+{"form":"public /en/help form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/help"}
+{"form":"public /en/help form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/help"}
+{"form":"public /en/activities","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/activities"}
+{"form":"public /en/itineraries","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/itineraries"}
+{"form":"public /en/packages","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/packages"}
+{"form":"public /en/plans","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/plans"}
+{"form":"public /en/map","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/map"}
+{"form":"public /en/cart","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/cart"}
+{"form":"public /en/register","case":"page loads without errors","ok":true,"detail":"","project":"mobile","test":"fuzz /en/register"}
+{"form":"public /en/register form#0","case":"hostile submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/register"}
+{"form":"public /en/register form#0","case":"empty submit handled (no crash/5xx/XSS)","ok":true,"detail":"","project":"mobile","test":"fuzz /en/register"}

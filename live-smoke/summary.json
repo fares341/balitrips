@@ -1,0 +1,18 @@
+{
+  "sha": "5ed9a85a13b5bef4f6fc38618ab46006dc4a7ec2",
+  "forms": 14,
+  "formInstances": 14,
+  "cases": {
+    "total": 90,
+    "ok": 90,
+    "failed": 0
+  },
+  "tests": {
+    "passed": 32,
+    "failed": 0,
+    "flaky": 0,
+    "skipped": 0
+  },
+  "failedCases": [],
+  "failedTests": []
+}
