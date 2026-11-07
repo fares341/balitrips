@@ -1,0 +1,5 @@
+
+> bali-travels@0.1.0 typecheck /home/runner/work/balitrips/balitrips
+> tsc --noEmit
+
+typecheck exit 0

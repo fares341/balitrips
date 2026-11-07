@@ -1,0 +1,81 @@
+diff --git a/e2e/full/_support.ts b/e2e/full/_support.ts
+index 94c847b..016b1e1 100644
+--- a/e2e/full/_support.ts
++++ b/e2e/full/_support.ts
+@@ -86,7 +86,8 @@ export async function settle(page: Page, ms = 10_000): Promise<void> {
+   await page.waitForLoadState('networkidle', { timeout: ms }).catch(() => {})
+   // The cookie banner covers the lower-left of the page (and buttons on phones).
+   const necessary = page.getByRole('button', { name: /^(Necessary only|الضروري فقط)$/ })
+-  if (await necessary.isVisible().catch(() => false)) await necessary.click({ timeout: 3000 }).catch(() => {})
++  if (await necessary.isVisible().catch(() => false))
++    await necessary.click({ timeout: 3000 }).catch(() => {})
+ }
+ 
+ /** Unique, valid contact details per call. */
+diff --git a/src/app/[locale]/account/phone-actions.ts b/src/app/[locale]/account/phone-actions.ts
+index 2fa3506..484fd88 100644
+--- a/src/app/[locale]/account/phone-actions.ts
++++ b/src/app/[locale]/account/phone-actions.ts
+@@ -279,9 +279,7 @@ export async function verifyPhoneCodeAction(
+   // Locked check-and-count: parallel guesses (and resends) queue on the lock,
+   // so the five-attempt cap holds however many requests arrive at once.
+   type Outcome =
+-    | { kind: 'expired' }
+-    | { kind: 'wrong' }
+-    | { kind: 'ok'; phone: string; claim: boolean }
++    { kind: 'expired' } | { kind: 'wrong' } | { kind: 'ok'; phone: string; claim: boolean }
+   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+     await lockUser(tx, user.id)
+     const [row] = await tx
+diff --git a/src/app/[locale]/account/profile-form.tsx b/src/app/[locale]/account/profile-form.tsx
+index 96eb911..339be2d 100644
+--- a/src/app/[locale]/account/profile-form.tsx
++++ b/src/app/[locale]/account/profile-form.tsx
+@@ -27,7 +27,13 @@
+ import { useActionState, useState } from 'react'
+ import { useTranslations } from 'next-intl'
+ 
+-import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
++import {
++  FormError,
++  FormNotice,
++  SelectField,
++  TextField,
++  type CountryOption,
++} from '@/components/auth'
+ import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
+ import { Button } from '@/components/shared'
+ import { locales, localeConfig, type Locale } from '@/i18n/config'
+diff --git a/src/app/[locale]/account/signed-out-pane.tsx b/src/app/[locale]/account/signed-out-pane.tsx
+index accd458..7a2be21 100644
+--- a/src/app/[locale]/account/signed-out-pane.tsx
++++ b/src/app/[locale]/account/signed-out-pane.tsx
+@@ -74,17 +74,17 @@ export function SignedOutPane({
+         </p>
+       )}
+       <AuthModal
+-      variant="page"
+-      open
+-      onClose={() => undefined}
+-      initialMode={initialMode}
+-      callbackPath={next ?? ACCOUNT_HREF}
+-      socialProviders={providers}
+-      onAuthenticated={() => {
+-        // AuthModal has already refreshed the router; this carries the
+-        // visitor back to whatever they were doing when they were stopped.
+-        if (next !== null) router.replace(next)
+-      }}
++        variant="page"
++        open
++        onClose={() => undefined}
++        initialMode={initialMode}
++        callbackPath={next ?? ACCOUNT_HREF}
++        socialProviders={providers}
++        onAuthenticated={() => {
++          // AuthModal has already refreshed the router; this carries the
++          // visitor back to whatever they were doing when they were stopped.
++          if (next !== null) router.replace(next)
++        }}
+       />
+     </>
+   )

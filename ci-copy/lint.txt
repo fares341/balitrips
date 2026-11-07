@@ -1,0 +1,24 @@
+
+> bali-travels@0.1.0 lint /home/runner/work/balitrips/balitrips
+> eslint .
+
+
+/home/runner/work/balitrips/balitrips/src/app/(admin)/_ui/reports/line-chart.tsx
+  43:5  warning  React Hook useMemo has a missing dependency: 'block'. Either include it or remove the dependency array. Mutable values like 'block.current' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/home/runner/work/balitrips/balitrips/src/app/[locale]/activities/[slug]/detail-client.tsx
+  76:8  warning  Unused eslint-disable directive (no problems were reported from '@next/next/no-img-element')
+
+/home/runner/work/balitrips/balitrips/src/lib/assistant/limits.ts
+  135:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/home/runner/work/balitrips/balitrips/src/lib/assistant/links.ts
+  44:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+/home/runner/work/balitrips/balitrips/src/lib/security/ip.ts
+  91:3  warning  Unused eslint-disable directive (no problems were reported from 'no-control-regex')
+
+✖ 5 problems (0 errors, 5 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+
+lint exit 0

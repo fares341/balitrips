@@ -1,0 +1,25 @@
+{
+  "sha": "6d08dec76727845e0b74cc0f07ce32bfdab8361e",
+  "forms": 91,
+  "formInstances": 128,
+  "cases": {
+    "total": 641,
+    "ok": 641,
+    "failed": 0
+  },
+  "tests": {
+    "passed": 151,
+    "failed": 1,
+    "flaky": 0,
+    "skipped": 54
+  },
+  "failedCases": [],
+  "failedTests": [
+    {
+      "title": "studio fuzz /itineraries",
+      "file": "studio-forms.spec.ts",
+      "project": "desktop",
+      "error": "Error: page.goto: net::ERR_ABORTED at http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4\nCall log:\n  - navigating to \"http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4\", waiting until \"domcontentloaded\"\n"
+    }
+  ]
+}

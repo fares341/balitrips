@@ -1,0 +1,365 @@
+
+Running 206 tests using 1 worker
+
+  ✓    1 [desktop] › e2e/full/public-account.spec.ts:12:5 › profile: name with XSS + Arabic/emoji saves and survives reload (24.7s)
+  ✓    2 [desktop] › e2e/full/public-account.spec.ts:52:5 › support ticket: valid ticket stored, empty refused (5.7s)
+  ✓    3 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account (25.2s)
+  ✓    4 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/support (12.9s)
+  ✓    5 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/notifications (30.8s)
+  ✓    6 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/reviews (3.1s)
+  ✓    7 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/favorites (2.6s)
+  ✓    8 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/trip (12.9s)
+  ✓    9 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/devices (3.1s)
+  ✓   10 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/subscriptions (2.6s)
+  ✓   11 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/schedules (2.4s)
+  ✓   12 [desktop] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /ar/account (31.0s)
+  ✓   13 [desktop] › e2e/full/public-forms.spec.ts:30:7 › contact form › valid message is stored; XSS + Arabic/emoji kept as text (4.1s)
+  ✓   14 [desktop] › e2e/full/public-forms.spec.ts:63:7 › contact form › empty and invalid input give translated errors (en + ar) (15.4s)
+  ✓   15 [desktop] › e2e/full/public-forms.spec.ts:117:7 › contact form › huge text is capped; keyboard submit; double submit sends once (9.5s)
+  ✓   16 [desktop] › e2e/full/public-forms.spec.ts:149:7 › auth forms › sign-up validation: empty, bad email, short password, mismatch, bad phone (2.1s)
+  ✓   17 [desktop] › e2e/full/public-forms.spec.ts:195:7 › auth forms › sign-up with Arabic+emoji name persists; ar errors translated (3.9s)
+  ✓   18 [desktop] › e2e/full/public-forms.spec.ts:228:7 › auth forms › sign-in: wrong password and empty fields are refused (3.8s)
+  ✓   19 [desktop] › e2e/full/public-forms.spec.ts:248:7 › auth forms › forgot password gives the neutral notice (1.5s)
+  ✓   20 [desktop] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/search with XSS/Arabic/huge query (30.8s)
+  ✓   21 [desktop] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /ar/search with XSS/Arabic/huge query (30.8s)
+  ✓   22 [desktop] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/blog with XSS/Arabic/huge query (31.0s)
+  ✓   23 [desktop] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/help with XSS/Arabic/huge query (30.7s)
+  ✓   24 [desktop] › e2e/full/public-forms.spec.ts:295:7 › search forms › search API rejects junk without 5xx (404ms)
+  ✓   25 [desktop] › e2e/full/public-forms.spec.ts:304:7 › custom trip request › empty submit shows errors; full request is stored (17.7s)
+  ✓   26 [desktop] › e2e/full/public-forms.spec.ts:365:7 › booking and checkout › activity booking widget: invalid people count and missing date refused (1.4s)
+  ✓   27 [desktop] › e2e/full/public-forms.spec.ts:398:7 › booking and checkout › package switch hides an add-on the package includes and drops it from the price (2.0s)
+  ✓   28 [desktop] › e2e/full/public-forms.spec.ts:471:7 › booking and checkout › checkout: invalid coupon is refused politely (3.1s)
+  ✓   29 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en (24.8s)
+  ✓   30 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /ar (25.3s)
+  ✓   31 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/contact (11.3s)
+  ✓   32 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/custom (11.5s)
+  ✓   33 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/search (39.5s)
+  ✓   34 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/blog (39.7s)
+  ✓   35 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/help (30.8s)
+  ✓   36 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/activities (1.7s)
+  ✓   37 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/itineraries (1.3s)
+  ✓   38 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/packages (1.3s)
+  ✓   39 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/plans (1.3s)
+  ✓   40 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/map (1.9s)
+  ✓   41 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/cart (1.2s)
+  ✓   42 [desktop] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/register (31.0s)
+  ✓   43 [desktop] › e2e/full/public-google-photos.spec.ts:16:7 › google place photos (mocked) › the place page shows loaded Google photos with attribution (1.7s)
+  ✓   44 [desktop] › e2e/full/public-google-photos.spec.ts:35:7 › google place photos (mocked) › the photo route redirects, sets private cache headers and keeps the lock (333ms)
+  ✓   45 [desktop] › e2e/full/public-google-photos.spec.ts:49:7 › google place photos (mocked) › map cards and the list get the same ONE Google photo (10ms)
+  ✓   46 [desktop] › e2e/full/public-google-photos.spec.ts:61:7 › google place photos (mocked) › the photo credit API answers live attributions (14ms)
+  ✓   47 [desktop] › e2e/full/public-google-photos.spec.ts:70:7 › google place photos (mocked) › a locked (VIP) place answers 404 to a visitor, like the map APIs (11ms)
+  ✓   48 [desktop] › e2e/full/public-map.spec.ts:41:7 › map v3 › map-first landing: header, chips, cards, list toggle (2.6s)
+  ✓   49 [desktop] › e2e/full/public-map.spec.ts:62:7 › map v3 › filters change data without re-creating the map (3.0s)
+  ✓   50 [desktop] › e2e/full/public-map.spec.ts:93:7 › map v3 › a locked VIP type opens the paywall for a visitor (1.7s)
+  ✓   51 [desktop] › e2e/full/public-map.spec.ts:109:7 › map v3 › deep links: old category links and ?place= (6.1s)
+  ✓   52 [desktop] › e2e/full/public-map.spec.ts:134:7 › map v3 › locked places never leave the server (2.2s)
+  ✓   53 [desktop] › e2e/full/public-map.spec.ts:159:7 › map v3 › a card opens the sheet on the map; Back closes it (3.5s)
+  ✓   54 [desktop] › e2e/full/public-map.spec.ts:184:7 › map v3 › a pin tap opens the sheet and stays on /map (3.1s)
+  ✓   55 [desktop] › e2e/full/public-map.spec.ts:223:7 › map v3 › near me: distance only after the tap, from the mocked position (2.2s)
+  ✓   56 [desktop] › e2e/full/public-map.spec.ts:279:7 › map v3 — Tiqets feel › opens on the whole island: every place framed, almost no clusters (1.6s)
+  ✓   57 [desktop] › e2e/full/public-map.spec.ts:304:11 › map v3 — Tiqets feel › phone › cards are always visible above the tab bar (844px tall) (1.9s)
+  ✓   58 [desktop] › e2e/full/public-map.spec.ts:304:11 › map v3 — Tiqets feel › phone › cards are always visible above the tab bar (664px tall) (1.7s)
+  ✓   59 [desktop] › e2e/full/public-map.spec.ts:327:9 › map v3 — Tiqets feel › phone › swiping the cards eases the map to the place (2.3s)
+  ✓   60 [desktop] › e2e/full/public-map.spec.ts:343:9 › map v3 — Tiqets feel › phone › a filter change never leaves the cards hidden (4.8s)
+  ✓   61 [desktop] › e2e/full/studio-activity-lead.spec.ts:96:5 › Studio: set the earliest booking day to «after 2 days» (3.8s)
+  ✓   62 [desktop] › e2e/full/studio-activity-lead.spec.ts:135:5 › calendar disables today and tomorrow, and names the earliest day (5.8s)
+  ✓   63 [desktop] › e2e/full/studio-activity-lead.spec.ts:158:5 › the server refuses a forged date before the earliest day (10.6s)
+  ✓   64 [desktop] › e2e/full/studio-activity-new.spec.ts:127:5 › new activity: basic fields valid / empty / invalid (7.1s)
+  ✓   65 [desktop] › e2e/full/studio-activity-new.spec.ts:213:5 › new activity: every tab filled, saved, reloaded, persisted (44.1s)
+  ✓   66 [desktop] › e2e/full/studio-activity-new.spec.ts:616:5 › edit, publish / unpublish, duplicate, preview (39.5s)
+  ✓   67 [desktop] › e2e/full/studio-activity-sheet.spec.ts:95:5 › template downloads (.xlsx and .csv) with sheets, key row and dropdowns (5.1s)
+  ✓   68 [desktop] › e2e/full/studio-activity-sheet.spec.ts:158:5 › export → import unchanged = zero changes (xlsx and csv) (4.3s)
+  ✓   69 [desktop] › e2e/full/studio-activity-sheet.spec.ts:214:5 › edited export → expected updates, applied, idempotent (5.5s)
+  ✓   70 [desktop] › e2e/full/studio-activity-sheet.spec.ts:334:5 › bad rows → clear errors per row, nothing applied (2.4s)
+  ✓   71 [desktop] › e2e/full/studio-forms.spec.ts:111:5 › admin signed in to the Studio (3ms)
+  ✓   72 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz / (3.3s)
+  ✓   73 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /inbox (3.3s)
+  ✓   74 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports (1.9s)
+  ✓   75 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /orders (6.0s)
+  ✓   76 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /payments (5.8s)
+  ✓   77 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /leads (14.8s)
+  ✓   78 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /entitlements (12.6s)
+  ✓   79 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /discounts (5.7s)
+  ✓   80 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /guide (2.4s)
+  ✓   81 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /vehicles (16.7s)
+  ✓   82 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /suppliers (5.9s)
+  ✓   83 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /payables (5.7s)
+  ✓   84 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /customers (15.1s)
+  ✓   85 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /tasks (7.8s)
+  ✓   86 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /support (15.0s)
+  ✓   87 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /assistant/conversations (5.9s)
+  ✓   88 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /duplicates (2.4s)
+  ✘   89 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries (13.1s)
+  -   90 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activities
+  -   91 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /addons
+  -   92 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /packages
+  -   93 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places
+  -   94 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /articles
+  -   95 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /landmarks
+  -   96 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reviews
+  -   97 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /taxonomy
+  -   98 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /media
+  -   99 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /files
+  -  100 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /readiness
+  -  101 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /profit
+  -  102 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reconciliation
+  -  103 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /plans
+  -  104 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /plans/vip
+  -  105 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /marketing
+  -  106 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /notify
+  -  107 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /whatsapp
+  -  108 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /map-analytics
+  -  109 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /audit
+  -  110 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/activity
+  -  111 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection
+  -  112 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/alerts
+  -  113 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/sessions
+  -  114 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/devices
+  -  115 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /translations
+  -  116 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /config
+  -  117 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /assistant/settings
+  -  118 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /team
+  -  119 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /integrations
+  -  120 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /system
+  -  121 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries/pricing
+  -  122 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /map
+  -  123 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/audit
+  -  124 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/google
+  -  125 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/free-photos
+  -  126 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activities/images
+  -  127 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activity-import
+  -  128 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/financial
+  -  129 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/bookings
+  -  130 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/itineraries
+  -  131 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/vip
+  -  132 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/activities
+  -  133 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/customers
+  -  134 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/marketing
+  -  135 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/suppliers
+  -  136 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/operations
+  -  137 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/records
+  -  138 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/exports
+  -  139 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/schedules
+  -  140 [desktop] › e2e/full/studio-forms.spec.ts:136:5 › taxonomy: XSS category name is stored as text and never runs
+  -  141 [desktop] › e2e/full/studio-forms.spec.ts:172:5 › whatsapp: test send without a provider fails gracefully
+  -  142 [desktop] › e2e/full/studio-forms.spec.ts:197:5 › media: upload a small image
+  -  143 [desktop] › e2e/full/studio-forms.spec.ts:267:5 › activity CSV import: junk file handled
+  ✓  144 [desktop] › e2e/full/studio-forms.spec.ts:111:5 › admin signed in to the Studio (retry #1) (3ms)
+  ✓  145 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz / (retry #1) (3.2s)
+  ✓  146 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /inbox (retry #1) (3.3s)
+  ✓  147 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports (retry #1) (1.8s)
+  ✓  148 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /orders (retry #1) (5.9s)
+  ✓  149 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /payments (retry #1) (5.7s)
+  ✓  150 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /leads (retry #1) (15.0s)
+  ✓  151 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /entitlements (retry #1) (12.5s)
+  ✓  152 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /discounts (retry #1) (5.8s)
+  ✓  153 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /guide (retry #1) (2.5s)
+  ✓  154 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /vehicles (retry #1) (16.7s)
+  ✓  155 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /suppliers (retry #1) (5.9s)
+  ✓  156 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /payables (retry #1) (5.8s)
+  ✓  157 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /customers (retry #1) (14.1s)
+  ✓  158 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /tasks (retry #1) (8.8s)
+  ✓  159 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /support (retry #1) (15.0s)
+  ✓  160 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /assistant/conversations (retry #1) (5.8s)
+  ✓  161 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /duplicates (retry #1) (2.4s)
+  ✘  162 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries (retry #1) (13.0s)
+  -  163 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activities (retry #1)
+  -  164 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /addons (retry #1)
+  -  165 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /packages (retry #1)
+  -  166 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places (retry #1)
+  -  167 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /articles (retry #1)
+  -  168 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /landmarks (retry #1)
+  -  169 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reviews (retry #1)
+  -  170 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /taxonomy (retry #1)
+  -  171 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /media (retry #1)
+  -  172 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /files (retry #1)
+  -  173 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /readiness (retry #1)
+  -  174 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /profit (retry #1)
+  -  175 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reconciliation (retry #1)
+  -  176 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /plans (retry #1)
+  -  177 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /plans/vip (retry #1)
+  -  178 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /marketing (retry #1)
+  -  179 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /notify (retry #1)
+  -  180 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /whatsapp (retry #1)
+  -  181 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /map-analytics (retry #1)
+  -  182 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /audit (retry #1)
+  -  183 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/activity (retry #1)
+  -  184 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection (retry #1)
+  -  185 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/alerts (retry #1)
+  -  186 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/sessions (retry #1)
+  -  187 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /protection/devices (retry #1)
+  -  188 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /translations (retry #1)
+  -  189 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /config (retry #1)
+  -  190 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /assistant/settings (retry #1)
+  -  191 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /team (retry #1)
+  -  192 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /integrations (retry #1)
+  -  193 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /system (retry #1)
+  -  194 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries/pricing (retry #1)
+  -  195 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /map (retry #1)
+  -  196 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/audit (retry #1)
+  -  197 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/google (retry #1)
+  -  198 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /places/free-photos (retry #1)
+  -  199 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activities/images (retry #1)
+  -  200 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /activity-import (retry #1)
+  -  201 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/financial (retry #1)
+  -  202 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/bookings (retry #1)
+  -  203 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/itineraries (retry #1)
+  -  204 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/vip (retry #1)
+  -  205 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/activities (retry #1)
+  -  206 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/customers (retry #1)
+  -  207 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/marketing (retry #1)
+  -  208 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/suppliers (retry #1)
+  -  209 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/operations (retry #1)
+  -  210 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/records (retry #1)
+  -  211 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/exports (retry #1)
+  -  212 [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /reports/schedules (retry #1)
+  -  213 [desktop] › e2e/full/studio-forms.spec.ts:136:5 › taxonomy: XSS category name is stored as text and never runs (retry #1)
+  -  214 [desktop] › e2e/full/studio-forms.spec.ts:172:5 › whatsapp: test send without a provider fails gracefully (retry #1)
+  -  215 [desktop] › e2e/full/studio-forms.spec.ts:197:5 › media: upload a small image (retry #1)
+  -  216 [desktop] › e2e/full/studio-forms.spec.ts:267:5 › activity CSV import: junk file handled (retry #1)
+  ✓  217 [desktop] › e2e/full/studio-permissions.spec.ts:35:5 › anonymous visitor is denied every Studio page and handler (56.9s)
+  ✓  218 [desktop] › e2e/full/studio-permissions.spec.ts:56:5 › customer is denied every Studio page and handler (4.7s)
+  ✓  219 [desktop] › e2e/full/studio-permissions.spec.ts:79:5 › content editor cannot open team or money pages (2.9s)
+  ✓  220 [mobile] › e2e/full/public-account.spec.ts:12:5 › profile: name with XSS + Arabic/emoji saves and survives reload (25.1s)
+  ✓  221 [mobile] › e2e/full/public-account.spec.ts:52:5 › support ticket: valid ticket stored, empty refused (4.9s)
+  ✓  222 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account (31.0s)
+  ✓  223 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/support (12.7s)
+  ✓  224 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/notifications (30.9s)
+  ✓  225 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/reviews (2.9s)
+  ✓  226 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/favorites (2.5s)
+  ✓  227 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/trip (12.6s)
+  ✓  228 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/devices (2.4s)
+  ✓  229 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/subscriptions (2.4s)
+  ✓  230 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /en/account/schedules (2.5s)
+  ✓  231 [mobile] › e2e/full/public-account.spec.ts:82:7 › fuzz signed-in /ar/account (31.0s)
+  ✓  232 [mobile] › e2e/full/public-forms.spec.ts:30:7 › contact form › valid message is stored; XSS + Arabic/emoji kept as text (4.1s)
+  ✓  233 [mobile] › e2e/full/public-forms.spec.ts:63:7 › contact form › empty and invalid input give translated errors (en + ar) (15.3s)
+  ✓  234 [mobile] › e2e/full/public-forms.spec.ts:117:7 › contact form › huge text is capped; keyboard submit; double submit sends once (9.5s)
+  ✓  235 [mobile] › e2e/full/public-forms.spec.ts:149:7 › auth forms › sign-up validation: empty, bad email, short password, mismatch, bad phone (1.9s)
+  ✓  236 [mobile] › e2e/full/public-forms.spec.ts:195:7 › auth forms › sign-up with Arabic+emoji name persists; ar errors translated (4.4s)
+  ✓  237 [mobile] › e2e/full/public-forms.spec.ts:228:7 › auth forms › sign-in: wrong password and empty fields are refused (4.1s)
+  ✓  238 [mobile] › e2e/full/public-forms.spec.ts:248:7 › auth forms › forgot password gives the neutral notice (1.4s)
+  ✓  239 [mobile] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/search with XSS/Arabic/huge query (30.9s)
+  ✓  240 [mobile] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /ar/search with XSS/Arabic/huge query (30.9s)
+  ✓  241 [mobile] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/blog with XSS/Arabic/huge query (31.1s)
+  ✓  242 [mobile] › e2e/full/public-forms.spec.ts:277:9 › search forms › GET search /en/help with XSS/Arabic/huge query (30.9s)
+  ✓  243 [mobile] › e2e/full/public-forms.spec.ts:295:7 › search forms › search API rejects junk without 5xx (398ms)
+  ✓  244 [mobile] › e2e/full/public-forms.spec.ts:304:7 › custom trip request › empty submit shows errors; full request is stored (16.1s)
+  ✓  245 [mobile] › e2e/full/public-forms.spec.ts:365:7 › booking and checkout › activity booking widget: invalid people count and missing date refused (1.6s)
+  ✓  246 [mobile] › e2e/full/public-forms.spec.ts:398:7 › booking and checkout › package switch hides an add-on the package includes and drops it from the price (3.1s)
+  ✓  247 [mobile] › e2e/full/public-forms.spec.ts:471:7 › booking and checkout › checkout: invalid coupon is refused politely (2.9s)
+  ✓  248 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en (24.7s)
+  ✓  249 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /ar (24.9s)
+  ✓  250 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/contact (11.4s)
+  ✓  251 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/custom (11.8s)
+  ✓  252 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/search (39.6s)
+  ✓  253 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/blog (39.9s)
+  ✓  254 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/help (30.8s)
+  ✓  255 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/activities (1.7s)
+  ✓  256 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/itineraries (1.6s)
+  ✓  257 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/packages (1.4s)
+  ✓  258 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/plans (1.4s)
+  ✓  259 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/map (1.8s)
+  ✓  260 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/cart (1.2s)
+  ✓  261 [mobile] › e2e/full/public-forms.spec.ts:522:9 › generic fuzz of public pages › fuzz /en/register (31.0s)
+  ✓  262 [mobile] › e2e/full/public-google-photos.spec.ts:16:7 › google place photos (mocked) › the place page shows loaded Google photos with attribution (1.4s)
+  ✓  263 [mobile] › e2e/full/public-google-photos.spec.ts:35:7 › google place photos (mocked) › the photo route redirects, sets private cache headers and keeps the lock (340ms)
+  ✓  264 [mobile] › e2e/full/public-google-photos.spec.ts:49:7 › google place photos (mocked) › map cards and the list get the same ONE Google photo (10ms)
+  ✓  265 [mobile] › e2e/full/public-google-photos.spec.ts:61:7 › google place photos (mocked) › the photo credit API answers live attributions (13ms)
+  ✓  266 [mobile] › e2e/full/public-google-photos.spec.ts:70:7 › google place photos (mocked) › a locked (VIP) place answers 404 to a visitor, like the map APIs (12ms)
+  ✓  267 [mobile] › e2e/full/public-map.spec.ts:41:7 › map v3 › map-first landing: header, chips, cards, list toggle (2.8s)
+  ✓  268 [mobile] › e2e/full/public-map.spec.ts:62:7 › map v3 › filters change data without re-creating the map (2.8s)
+  ✓  269 [mobile] › e2e/full/public-map.spec.ts:93:7 › map v3 › a locked VIP type opens the paywall for a visitor (1.9s)
+  ✓  270 [mobile] › e2e/full/public-map.spec.ts:109:7 › map v3 › deep links: old category links and ?place= (6.2s)
+  ✓  271 [mobile] › e2e/full/public-map.spec.ts:134:7 › map v3 › locked places never leave the server (2.1s)
+  ✓  272 [mobile] › e2e/full/public-map.spec.ts:159:7 › map v3 › a card opens the sheet on the map; Back closes it (3.5s)
+  ✓  273 [mobile] › e2e/full/public-map.spec.ts:184:7 › map v3 › a pin tap opens the sheet and stays on /map (2.9s)
+  ✓  274 [mobile] › e2e/full/public-map.spec.ts:223:7 › map v3 › near me: distance only after the tap, from the mocked position (2.5s)
+  ✓  275 [mobile] › e2e/full/public-map.spec.ts:279:7 › map v3 — Tiqets feel › opens on the whole island: every place framed, almost no clusters (1.8s)
+  ✓  276 [mobile] › e2e/full/public-map.spec.ts:304:11 › map v3 — Tiqets feel › phone › cards are always visible above the tab bar (844px tall) (1.9s)
+  ✓  277 [mobile] › e2e/full/public-map.spec.ts:304:11 › map v3 — Tiqets feel › phone › cards are always visible above the tab bar (664px tall) (1.7s)
+  ✓  278 [mobile] › e2e/full/public-map.spec.ts:327:9 › map v3 — Tiqets feel › phone › swiping the cards eases the map to the place (2.5s)
+  ✓  279 [mobile] › e2e/full/public-map.spec.ts:343:9 › map v3 — Tiqets feel › phone › a filter change never leaves the cards hidden (4.8s)
+
+
+  1) [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries ────────────────────
+
+    Error: page.goto: net::ERR_ABORTED at http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4
+    Call log:
+      - navigating to "http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4", waiting until "domcontentloaded"
+
+
+       at _support.ts:307
+
+      305 |   for (let index = 0; index < max; index += 1) {
+      306 |     for (const mode of ['hostile', 'empty'] as const) {
+    > 307 |       await page.goto(path, { waitUntil: 'domcontentloaded' })
+          |                  ^
+      308 |       await settle(page)
+      309 |       const form = page.locator('form').nth(index)
+      310 |       if (!(await form.isVisible().catch(() => false))) break
+        at fuzzPage (/home/runner/work/balitrips/balitrips/e2e/full/_support.ts:307:18)
+        at /home/runner/work/balitrips/balitrips/e2e/full/studio-forms.spec.ts:131:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/error-context.md
+
+    Error Context: full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/error-context.md
+
+    attachment #5: trace (application/zip) ─────────────────────────────────────────────────────────
+    full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: page.goto: net::ERR_ABORTED at http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4
+    Call log:
+      - navigating to "http://localhost:3000/studio-ci7/itineraries/1620248b-5131-4bdd-9194-4823187143f4", waiting until "domcontentloaded"
+
+
+       at _support.ts:307
+
+      305 |   for (let index = 0; index < max; index += 1) {
+      306 |     for (const mode of ['hostile', 'empty'] as const) {
+    > 307 |       await page.goto(path, { waitUntil: 'domcontentloaded' })
+          |                  ^
+      308 |       await settle(page)
+      309 |       const form = page.locator('form').nth(index)
+      310 |       if (!(await form.isVisible().catch(() => false))) break
+        at fuzzPage (/home/runner/work/balitrips/balitrips/e2e/full/_support.ts:307:18)
+        at /home/runner/work/balitrips/balitrips/e2e/full/studio-forms.spec.ts:131:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop-retry1/error-context.md
+
+    Error Context: full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop-retry1/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace full-test-out/test-results/studio-forms-studio-fuzz-itineraries-desktop-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  Slow test file: [mobile] › e2e/full/public-forms.spec.ts (6.9m)
+  Slow test file: [desktop] › e2e/full/public-forms.spec.ts (6.8m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  1 failed
+    [desktop] › e2e/full/studio-forms.spec.ts:122:7 › studio fuzz /itineraries ─────────────────────
+  54 did not run
+  151 passed (28.9m)
