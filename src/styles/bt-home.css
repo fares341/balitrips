@@ -981,8 +981,10 @@
   min-height: 240px;
   max-height: 360px;
   display: block;
+  grid-row: 1;
 }
 .home-v3 .ct-copy {
+  grid-row: 2;
   padding: 32px 24px;
   display: flex;
   flex-direction: column;
@@ -1006,8 +1008,15 @@
   .home-v3 .ct > img,
   .home-v3 .ct > picture > img {
     max-height: none;
+    /* <picture> renders as display:contents here, so its <source> siblings
+       took a grid cell and pushed the photo and text onto a diagonal.
+       Place both explicitly: photo on one side, text beside it. */
+    grid-row: 1;
+    grid-column: 1;
   }
   .home-v3 .ct-copy {
+    grid-row: 1;
+    grid-column: 2;
     padding: 56px;
     justify-content: center;
   }
