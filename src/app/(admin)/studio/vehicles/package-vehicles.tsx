@@ -29,7 +29,7 @@ const ZONE_ROWS = 6
  * day happens in. Prices as on the client's sheets (SAR, IDR, USD); the site
  * sells in SAR, so USD is converted at the rate set here when no SAR is given.
  */
-export async function PackageVehiclesSection() {
+export async function PackageVehiclesSection({ canEditRate }: { canEditRate: boolean }) {
   const { t, intl, locale } = await getAdminI18n()
   const [setting, sarPerUsd, areaRows] = await Promise.all([
     readSetting('vehicles'),
@@ -74,9 +74,11 @@ export async function PackageVehiclesSection() {
               disabled
             />
           </Field>
-          <p className="a-hint">
-            <a href={adminHref('/config')}>{t('veh.sar_where')}</a>
-          </p>
+          {canEditRate ? (
+            <p className="a-hint">
+              <a href={adminHref('/config')}>{t('veh.sar_where')}</a>
+            </p>
+          ) : null}
         </div>
 
         {rows.map((vehicle, i) => {

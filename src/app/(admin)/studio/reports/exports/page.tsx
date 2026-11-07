@@ -39,9 +39,11 @@ export default async function ExportsPage({
         title={t('rp.exports_title')}
         description={t('rp.exports_description')}
         actions={
-          <Link className="a-btn ghost" href={adminHref('/reports')}>
-            {t('rp.back_to_reports')}
-          </Link>
+          can(session.role, 'reports.read') ? (
+            <Link className="a-btn ghost" href={adminHref('/reports')}>
+              {t('rp.back_to_reports')}
+            </Link>
+          ) : null
         }
       />
       <Flash searchParams={query} />

@@ -78,7 +78,7 @@ export default async function VehiclesAndDriverPage({
         <p className="a-hint">{t('vd.no_capacity')}</p>
       )}
 
-      {packages ? <PackageVehiclesSection /> : null}
+      {packages ? <PackageVehiclesSection canEditRate={can(session.role, 'config.write')} /> : null}
     </>
   )
 }
