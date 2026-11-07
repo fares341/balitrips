@@ -2,7 +2,7 @@ import { and, count, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
-import { cartReminders, coupons, LEAD_SOURCES, leadContacts } from '@/db/schema'
+import { cartReminders, coupons, LEAD_SOURCES, leadContacts, users } from '@/db/schema'
 import { locales } from '@/i18n/config'
 import { can, type Role } from '@/lib/auth/roles'
 import { leadOrdersSql } from '@/lib/leads/capture'
@@ -65,6 +65,8 @@ export async function PeopleTab({
         code: coupons.code,
         orders: leadOrdersSql,
         reminded: sql<boolean>`exists (select 1 from ${cartReminders} r where r.lead_id = ${leadContacts.id})`,
+        // Replied STOP on WhatsApp (an account with this number or user).
+        optedOutAt: sql<Date | null>`(select max(u.whatsapp_opted_out_at) from ${users} u where u.whatsapp_opted_out_at is not null and (u.id = ${leadContacts.userId} or (${leadContacts.phone} is not null and u.phone_normalized = ${leadContacts.phone})))`,
       })
       .from(leadContacts)
       .leftJoin(coupons, eq(coupons.id, leadContacts.couponId))
@@ -142,7 +144,7 @@ export async function PeopleTab({
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ lead, code, orders, reminded }) => (
+            {rows.map(({ lead, code, orders, reminded, optedOutAt }) => (
               <tr key={lead.id}>
                 <td>
                   <strong>{lead.name ?? t('leads.unnamed')}</strong>
@@ -163,6 +165,14 @@ export async function PeopleTab({
                   {reminded ? <div className="a-muted">{t('lc.reminded')}</div> : null}
                 </td>
                 <td>
+                  {optedOutAt ? (
+                    <div>
+                      <Pill tone="warn">{t('wstop.opted_out')}</Pill>{' '}
+                      <span className="a-muted">
+                        <When value={new Date(optedOutAt)} />
+                      </span>
+                    </div>
+                  ) : null}
                   {lead.whatsappConsent ? (
                     <div>
                       <Pill tone="good">{t('lc.ch_whatsapp')}</Pill>{' '}

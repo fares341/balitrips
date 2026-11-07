@@ -20,6 +20,7 @@ import { Link } from '@/i18n/routing'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
+import { pageView } from '@/lib/content/page-content-server'
 
 const ABOUT_HREF = '/about'
 
@@ -59,6 +60,8 @@ export default async function AboutPage({ params }: { params: PageParams }) {
 
   const locale = toLocale(raw)
   const t = await getTranslations({ locale })
+  // Studio → «محتوى الموقع» → من نحن: photos and hidden sections.
+  const { shown, image } = await pageView('about')
 
   const checks = (keys: readonly string[]) => (
     <ul className="ab-diff" role="list">
@@ -98,59 +101,67 @@ export default async function AboutPage({ params }: { params: PageParams }) {
             </div>
             <div className="ab-img">
               {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photo */}
-              <img src="/brand/temple-gate.webp" alt="" />
+              <img src={image('hero', '/brand/temple-gate.webp')} alt="" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="sec-tight">
-        <div className="wrap ab-vm">
-          <div>
-            <h2>{t('about_vision_t')}</h2>
-            <p>{t('ab4_vision')}</p>
+      {shown('vision') && (
+        <section className="sec-tight">
+          <div className="wrap ab-vm">
+            <div>
+              <h2>{t('about_vision_t')}</h2>
+              <p>{t('ab4_vision')}</p>
+            </div>
+            <div>
+              <h2>{t('about_mission_t')}</h2>
+              <p>{t('ab4_mission')}</p>
+            </div>
           </div>
-          <div>
-            <h2>{t('about_mission_t')}</h2>
-            <p>{t('ab4_mission')}</p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="sec">
-        <div className="wrap stack" style={{ gap: 22 }}>
-          <span className="eyebrow">{t('ab4_diff_eyebrow')}</span>
-          <h2 className="h2">{t('ab4_diff_title')}</h2>
-          {checks(DIFF)}
-        </div>
-      </section>
-
-      <section className="sec bg-ivory2">
-        <div className="wrap ab-why">
-          <div className="stack" style={{ gap: 14 }}>
-            <span className="eyebrow">{t('ab4_why_eyebrow')}</span>
-            <h2 className="h2">{t('ab4_why_title')}</h2>
-            <p className="muted">{t('ab4_why_b')}</p>
-            <Link className="link" href="/explore" style={{ alignSelf: 'flex-start' }}>
-              {t('ab4_why_link')}
-            </Link>
+      {shown('diff') && (
+        <section className="sec">
+          <div className="wrap stack" style={{ gap: 22 }}>
+            <span className="eyebrow">{t('ab4_diff_eyebrow')}</span>
+            <h2 className="h2">{t('ab4_diff_title')}</h2>
+            {checks(DIFF)}
           </div>
-          <div className="ph">
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
-            <img src="/brand/rice-walk.webp" alt="" loading="lazy" />
-            {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
-            <img src="/brand/kelingking.webp" alt="" loading="lazy" />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="sec">
-        <div className="wrap stack" style={{ gap: 18 }}>
-          <span className="eyebrow">{t('ab4_trust_eyebrow')}</span>
-          <h2 className="h2">{t('ab4_trust_title')}</h2>
-          {checks(TRUST)}
-        </div>
-      </section>
+      {shown('why') && (
+        <section className="sec bg-ivory2">
+          <div className="wrap ab-why">
+            <div className="stack" style={{ gap: 14 }}>
+              <span className="eyebrow">{t('ab4_why_eyebrow')}</span>
+              <h2 className="h2">{t('ab4_why_title')}</h2>
+              <p className="muted">{t('ab4_why_b')}</p>
+              <Link className="link" href="/explore" style={{ alignSelf: 'flex-start' }}>
+                {t('ab4_why_link')}
+              </Link>
+            </div>
+            <div className="ph">
+              {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
+              <img src={image('why_1', '/brand/rice-walk.webp')} alt="" loading="lazy" />
+              {/* eslint-disable-next-line @next/next/no-img-element -- fixed brand photos */}
+              <img src={image('why_2', '/brand/kelingking.webp')} alt="" loading="lazy" />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {shown('trust') && (
+        <section className="sec">
+          <div className="wrap stack" style={{ gap: 18 }}>
+            <span className="eyebrow">{t('ab4_trust_eyebrow')}</span>
+            <h2 className="h2">{t('ab4_trust_title')}</h2>
+            {checks(TRUST)}
+          </div>
+        </section>
+      )}
     </main>
   )
 }

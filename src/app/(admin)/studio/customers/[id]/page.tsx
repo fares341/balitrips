@@ -308,7 +308,14 @@ export default async function CustomerPage({
           </dd>
           <dt className="a-muted">WhatsApp</dt>
           <dd style={{ margin: 0 }}>
-            {account.whatsappOptIn ? (
+            {account.whatsappOptedOutAt ? (
+              <>
+                <Pill tone="warn">{t('wstop.opted_out')}</Pill>{' '}
+                <span className="a-muted">
+                  <When value={account.whatsappOptedOutAt} />
+                </span>
+              </>
+            ) : account.whatsappOptIn ? (
               <Pill tone="good">{t('customers.whatsapp_opted_in')}</Pill>
             ) : (
               <Pill tone="neutral">{t('customers.whatsapp_not_opted_in')}</Pill>

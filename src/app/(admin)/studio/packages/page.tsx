@@ -1,4 +1,4 @@
-import { and, count, desc, eq, ilike, isNull, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, count, desc, eq, ilike, isNull, or, sql, type SQL } from 'drizzle-orm'
 import Link from 'next/link'
 
 import { db } from '@/db'
@@ -14,7 +14,8 @@ import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
 import { getAdminI18n } from '../../_lib/i18n'
-import { setPackageStatus } from './actions'
+import { SortableList } from '../../_ui/sortable'
+import { reorderPackages, setPackageStatus } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +56,21 @@ export default async function PackagesPage({
     db.select({ value: count() }).from(packages).where(where),
   ])
 
+  // «ترتيب العرض»: the public /packages order, dragged here (unfiltered list only).
+  const canOrder = can(session.role, 'content.write') && !q && !status && page === 1
+  const ordered = canOrder
+    ? await db
+        .select({
+          id: packages.id,
+          name: packages.name,
+          slug: packages.slug,
+          status: packages.status,
+        })
+        .from(packages)
+        .where(isNull(packages.deletedAt))
+        .orderBy(asc(packages.sortOrder), asc(packages.priceMinor))
+    : []
+
   return (
     <>
       <PageHead
@@ -92,6 +108,28 @@ export default async function PackagesPage({
           </Link>
         </div>
       </form>
+
+      {ordered.length > 1 ? (
+        <details className="a-card">
+          <summary>
+            <b>{t('pkord.title')}</b>
+          </summary>
+          <SortableList
+            hint={t('pkord.hint')}
+            onSave={reorderPackages}
+            rows={ordered.map((row) => ({
+              id: row.id,
+              label: pick(row.name, locale, row.slug),
+              content: (
+                <span className="a-inc-row">
+                  <b>{pick(row.name, locale, row.slug)}</b>
+                  <PublishPill status={row.status} />
+                </span>
+              ),
+            }))}
+          />
+        </details>
+      ) : null}
 
       {rows.length === 0 ? (
         <Empty>{t('packages.empty')}</Empty>

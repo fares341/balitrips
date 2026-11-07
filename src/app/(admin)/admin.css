@@ -3869,3 +3869,57 @@ ul.a-ocards {
   justify-content: space-between;
   gap: 8px;
 }
+
+/* ---- «محتوى الموقع» + live «الترجمات» (Nov 2026) ---- */
+.sc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+.sc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+}
+.sc-card:hover {
+  border-color: #26552e;
+}
+.sc-videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+.sc-video {
+  width: 100%;
+  max-height: 360px;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #0d1f12;
+}
+.tr2-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.tr2-diff {
+  margin-block-start: 10px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.tr2-diff > summary {
+  cursor: pointer;
+  color: #26552e;
+  font-weight: 700;
+}
+.tr2-diff del {
+  background: #fde2e1;
+  color: #8a1c1c;
+}
+.tr2-diff ins {
+  background: #ddf3e1;
+  color: #1d4a25;
+  text-decoration: none;
+}

@@ -28,11 +28,12 @@ import { PlainHead } from '../_ui/plain-head'
 import { ContactForm } from './contact-form'
 import { getContact } from '@/components/layout/contact-server'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
+import { DEFAULT_OFFICES, localeTextOr } from '@/lib/content/page-content'
+import { pageView } from '@/lib/content/page-content-server'
 
 const CONTACT_HREF = '/contact'
 
 /** Office lines, in the design's order. */
-const OFFICES = ['Seminyak, Bali · Indonesia', 'Jeddah · Saudi Arabia']
 
 type PageParams = Promise<{ locale: string }>
 
@@ -66,6 +67,11 @@ export default async function ContactPage({ params }: { params: PageParams }) {
   const locale = toLocale(raw)
   const t = await getTranslations({ locale })
   const contact = await getContact()
+  // Studio → «محتوى الموقع» → اتصل بنا: office lines and hidden cards.
+  const { content, shown } = await pageView('contact')
+  const OFFICES = content.offices
+    ? content.offices.map((line) => localeTextOr(line, locale)).filter((line) => line !== '')
+    : DEFAULT_OFFICES
   const PHONE = contact.whatsappDisplay ?? ''
   const EMAIL = contact.email
 
@@ -152,22 +158,26 @@ export default async function ContactPage({ params }: { params: PageParams }) {
               </span>
             </div>
 
-            <Link href="/faq" className="bt-contact-card">
-              <span className="bt-contact-ic" style={{ background: 'var(--palm-soft)' }}>
-                <Icon name="info" size={22} color="var(--forest)" />
-              </span>
-              <span style={{ flex: 1 }}>
-                <span className="bt-contact-t">{t('co4_quick_t')}</span>
-                <span className="bt-contact-b muted">{t('co4_quick_b')}</span>
-              </span>
-              <Icon name="chevronr" size={18} className="flip" />
-            </Link>
+            {shown('quick') && (
+              <Link href="/faq" className="bt-contact-card">
+                <span className="bt-contact-ic" style={{ background: 'var(--palm-soft)' }}>
+                  <Icon name="info" size={22} color="var(--forest)" />
+                </span>
+                <span style={{ flex: 1 }}>
+                  <span className="bt-contact-t">{t('co4_quick_t')}</span>
+                  <span className="bt-contact-b muted">{t('co4_quick_b')}</span>
+                </span>
+                <Icon name="chevronr" size={18} className="flip" />
+              </Link>
+            )}
           </div>
 
-          <div className="card card-pad">
-            <h2 style={{ fontSize: 21, marginBottom: 18 }}>{t('co_form_t')}</h2>
-            <ContactForm />
-          </div>
+          {shown('form') && (
+            <div className="card card-pad">
+              <h2 style={{ fontSize: 21, marginBottom: 18 }}>{t('co_form_t')}</h2>
+              <ContactForm />
+            </div>
+          )}
         </div>
       </section>
     </main>

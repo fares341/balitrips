@@ -78,7 +78,268 @@ const HERO_FIELD = {
   ] as L3,
 }
 
+const SC_TEXT_STEP: L3 = [
+  'الحقول تبدأ بالنص الظاهر الآن في الموقع. عدّل العربية ثم الإنجليزية ثم الإندونيسية. الحقل الذي تتركه كما هو أو تمسحه يبقى بالنص الأصلي.',
+  'Fields start with the text the site shows now. Edit Arabic, then English, then Indonesian. A field left as it is (or cleared) keeps the original text.',
+  'Kolom berisi teks yang tampil sekarang. Ubah Arab, Inggris, lalu Indonesia. Kolom yang tidak diubah (atau dikosongkan) tetap memakai teks asli.',
+]
+const SC_SHOW_STEP: L3 = [
+  'لإخفاء قسم أزل علامة «إظهار هذا القسم» ثم احفظ.',
+  'To hide a section, untick “Show this section”, then save.',
+  'Untuk menyembunyikan bagian, hapus centang “Tampilkan bagian ini”, lalu simpan.',
+]
+const SC_PREVIEW_STEP: L3 = [
+  'اضغط «حفظ» ثم «عرض الصفحة» لترى التغيير في الموقع (يظهر خلال ثوانٍ).',
+  'Press “Save”, then “View the page” to see the change on the site (within seconds).',
+  'Tekan “Simpan”, lalu “Lihat halaman” untuk melihat perubahan (dalam hitungan detik).',
+]
+const SC_BRACES_MISTAKE: L3 = [
+  'لا تحذف أو تغيّر الكلمات بين الأقواس مثل {n} أو {name}: الموقع يضع مكانها رقماً أو اسماً.',
+  'Do not delete or change words in braces like {n} or {name}: the site fills them with a number or a name.',
+  'Jangan hapus atau ubah kata dalam kurung seperti {n} atau {name}: situs mengisinya dengan angka atau nama.',
+]
+
+/** One guide per «محتوى الموقع» screen (pages with their own parts first). */
+const SITE_CONTENT_HELP: readonly HelpEntry[] = [
+  {
+    id: 'site-content-contact',
+    match: /^\/site-content\/contact/,
+    href: '/site-content/contact',
+    title: ['اتصل بنا', 'Contact us', 'Hubungi kami'],
+    purpose: [
+      'رقم واتساب والبريد والمكاتب ونصوص صفحة اتصل بنا. الرقم والبريد يُستخدمان في كل الموقع (الفوتر وزر واتساب والسياسات).',
+      'The WhatsApp number, email, offices and texts of the contact page. The number and email are used across the site (footer, WhatsApp button, policies).',
+      'Nomor WhatsApp, email, kantor, dan teks halaman kontak. Nomor dan email dipakai di seluruh situs.',
+    ],
+    steps: [
+      [
+        'رقم واتساب بالأرقام فقط مع رمز الدولة (مثل 9665…)، ثم الرقم كما تريد أن يظهر.',
+        'WhatsApp number in digits with the country code (e.g. 9665…), then the number as you want it shown.',
+        'Nomor WhatsApp berupa angka dengan kode negara (mis. 9665…), lalu nomor seperti yang ingin ditampilkan.',
+      ],
+      [
+        'المكاتب: سطر لكل مكتب، ويمكن ترتيبها بالسحب.',
+        'Offices: one line per office; drag to reorder.',
+        'Kantor: satu baris per kantor; seret untuk mengurutkan.',
+      ],
+      SC_TEXT_STEP,
+      SC_PREVIEW_STEP,
+    ],
+    fields: [
+      {
+        name: ['رقم واتساب', 'WhatsApp number', 'Nomor WhatsApp'],
+        where: [
+          'زر واتساب العائم، الفوتر، صفحة اتصل بنا، السياسات.',
+          'Floating WhatsApp button, footer, contact page, policies.',
+          'Tombol WhatsApp, footer, halaman kontak, kebijakan.',
+        ],
+      },
+    ],
+    mistakes: [
+      [
+        'لا تكتب + أو مسافات في «رقم واتساب»؛ اكتبها في «الرقم كما يظهر».',
+        'No + or spaces in “WhatsApp number”; put them in “Number as shown”.',
+        'Tanpa + atau spasi di “Nomor WhatsApp”; tulis di “Nomor yang ditampilkan”.',
+      ],
+    ],
+  },
+  {
+    id: 'site-content-faq',
+    match: /^\/site-content\/faq/,
+    href: '/site-content/faq',
+    title: ['الأسئلة الشائعة', 'FAQ', 'FAQ'],
+    purpose: [
+      'أسئلة صفحة الأسئلة الشائعة: أضف سؤالاً، عدّل، احذف، رتّب بالسحب، أو أخفِ سؤالاً دون حذفه.',
+      'The questions of the FAQ page: add, edit, delete, drag to reorder, or hide one without deleting it.',
+      'Pertanyaan halaman FAQ: tambah, ubah, hapus, seret untuk mengurutkan, atau sembunyikan.',
+    ],
+    steps: [
+      [
+        '«+ إضافة سؤال» ← اكتب السؤال والجواب بالعربية ثم الإنجليزية ثم الإندونيسية ← اختر المجموعة.',
+        '“+ Add a question” → write the question and answer in Arabic, English, Indonesian → pick the group.',
+        '“+ Tambah pertanyaan” → tulis pertanyaan dan jawaban → pilih grup.',
+      ],
+      [
+        'للعودة للأسئلة الأصلية ضع علامة «الرجوع للأسئلة الأصلية» ثم احفظ.',
+        'To go back to the original questions, tick “Go back to the original questions” and save.',
+        'Untuk kembali ke pertanyaan asli, centang “Kembali ke pertanyaan asli” lalu simpan.',
+      ],
+      SC_PREVIEW_STEP,
+    ],
+    fields: [],
+    mistakes: [LANG_MISTAKE],
+  },
+  {
+    id: 'site-content-header',
+    match: /^\/site-content\/header/,
+    href: '/site-content/header',
+    title: ['الهيدر', 'Header', 'Header'],
+    purpose: [
+      'روابط القائمة أعلى كل صفحة (وفي قائمة الجوال) وزر «ابدأ التخطيط».',
+      'The menu links at the top of every page (and in the phone menu) and the “Start planning” button.',
+      'Tautan menu di atas setiap halaman (dan menu ponsel) serta tombol “Mulai merencanakan”.',
+    ],
+    steps: [
+      [
+        'كل رابط: العنوان (مثل /activities) والاسم بثلاث لغات. اسحب لإعادة الترتيب، × للحذف.',
+        'Each link: the address (like /activities) and its label in three languages. Drag to reorder, × to remove.',
+        'Setiap tautan: alamat (mis. /activities) dan label tiga bahasa. Seret untuk mengurutkan, × untuk menghapus.',
+      ],
+      SC_TEXT_STEP,
+      SC_PREVIEW_STEP,
+    ],
+    fields: [],
+    mistakes: [
+      [
+        'الروابط الخارجية يجب أن تبدأ بـ https://',
+        'External links must start with https://',
+        'Tautan luar harus diawali https://',
+      ],
+    ],
+  },
+  {
+    id: 'site-content-footer',
+    match: /^\/site-content\/footer/,
+    href: '/site-content/footer',
+    title: ['الفوتر', 'Footer', 'Footer'],
+    purpose: [
+      'أعمدة وروابط أسفل الموقع، وحسابات التواصل الاجتماعي، والنبذة وسطر الحقوق.',
+      'The footer columns and links, social accounts, the about text and the legal line.',
+      'Kolom dan tautan footer, akun sosial, teks tentang, dan baris hak cipta.',
+    ],
+    steps: [
+      [
+        'رتّب أو عدّل روابط «روابط سريعة» و«العمود العام»، أو أخفِ عموداً كاملاً.',
+        'Reorder or edit the “Quick links” and “General” links, or hide a whole column.',
+        'Urutkan atau ubah tautan, atau sembunyikan satu kolom.',
+      ],
+      [
+        'حسابات التواصل: ألصق الرابط الكامل؛ الحساب الفارغ لا يظهر.',
+        'Social accounts: paste the full link; empty ones are not shown.',
+        'Akun sosial: tempel tautan lengkap; yang kosong tidak tampil.',
+      ],
+      SC_SHOW_STEP,
+      SC_PREVIEW_STEP,
+    ],
+    fields: [],
+    mistakes: [SC_BRACES_MISTAKE],
+  },
+  {
+    id: 'site-content-videos',
+    match: /^\/site-content\/videos/,
+    href: '/site-content/videos',
+    title: ['فيديوهات الواجهة', 'Hero videos', 'Video hero'],
+    purpose: [
+      'استبدال الفيديوهات الثلاثة أعلى الصفحة الرئيسية وصور الغلاف.',
+      'Replace the three videos at the top of the home page and their posters.',
+      'Ganti tiga video di atas beranda dan gambar sampulnya.',
+    ],
+    steps: [
+      [
+        'اختر ملف MP4 (أو WebM) حتى 24 ميغابايت ← «رفع الفيديو». يظهر في الموقع فوراً.',
+        'Choose an MP4 (or WebM) file up to 24 MB → “Upload video”. It shows on the site straight away.',
+        'Pilih file MP4 (atau WebM) maks 24 MB → “Unggah video”.',
+      ],
+      [
+        '«إرجاع الفيديو الأصلي» يعيد الفيديو المدمج.',
+        '“Back to the original video” restores the built-in clip.',
+        '“Kembalikan video asli” memulihkan video bawaan.',
+      ],
+      IMG_STEP,
+    ],
+    fields: [],
+    mistakes: [
+      [
+        'استخدم فيديو طولياً قصيراً بلا صوت تملك حقوقه؛ الفيديو الطويل يبطئ الصفحة.',
+        'Use a short, silent portrait clip you own the rights to; long videos slow the page down.',
+        'Gunakan klip potret pendek tanpa suara yang Anda miliki haknya.',
+      ],
+    ],
+  },
+  ...(
+    [
+      ['about', 'من نحن', 'About us', 'Tentang kami'],
+      ['services', 'الخدمات', 'Services', 'Layanan'],
+      ['custom', 'صمّم رحلتك', 'Design your trip', 'Rancang perjalanan'],
+      ['help', 'مركز المساعدة', 'Help centre', 'Pusat bantuan'],
+      [
+        'platform-use',
+        'سياسة استخدام المنصة',
+        'Platform use policy',
+        'Kebijakan penggunaan platform',
+      ],
+      ['map-use', 'سياسة استخدام الخريطة', 'Map use policy', 'Kebijakan penggunaan peta'],
+      ['payment-methods', 'طرق الدفع', 'Payment methods', 'Metode pembayaran'],
+      ['credits', 'حقوق الصور', 'Image credits', 'Kredit gambar'],
+    ] as const
+  ).map(([id, ar, en, idn]): HelpEntry => ({
+    id: `site-content-${id}`,
+    match: new RegExp(`^/site-content/${id}`),
+    href: `/site-content/${id}`,
+    title: [ar, en, idn],
+    purpose: [
+      `نصوص وصور وأقسام صفحة «${ar}» في الموقع.`,
+      `The texts, photos and sections of the “${en}” page.`,
+      `Teks, foto, dan bagian halaman “${idn}”.`,
+    ],
+    steps: [SC_TEXT_STEP, IMG_STEP, SC_SHOW_STEP, SC_PREVIEW_STEP],
+    fields: [],
+    mistakes: [SC_BRACES_MISTAKE, LANG_MISTAKE],
+  })),
+  {
+    id: 'site-content',
+    match: /^\/site-content/,
+    href: '/site-content',
+    title: ['صفحات الموقع', 'Site pages', 'Halaman situs'],
+    purpose: [
+      'كل صفحات الموقع في مكان واحد: اختر صفحة لتعديل نصوصها وصورها وأقسامها.',
+      'Every page of the site in one place: pick a page to edit its texts, photos and sections.',
+      'Semua halaman situs: pilih halaman untuk mengubah teks, foto, dan bagiannya.',
+    ],
+    steps: [
+      [
+        'اضغط على بطاقة الصفحة لفتح شاشتها.',
+        'Press a page card to open its screen.',
+        'Tekan kartu halaman untuk membukanya.',
+      ],
+      [
+        'أي نص آخر غير موجود هنا تجده في «الترجمات» بالبحث.',
+        'Any other text not here is in “Translations”, with search.',
+        'Teks lain ada di “Terjemahan”, dengan pencarian.',
+      ],
+    ],
+    fields: [],
+    mistakes: [],
+  },
+  {
+    id: 'translations',
+    match: /^\/translations/,
+    href: '/translations',
+    title: ['الترجمات', 'Translations', 'Terjemahan'],
+    purpose: [
+      'كل نصوص الموقع بثلاث لغات. أي تعديل هنا يظهر مباشرة في الموقع.',
+      'Every text of the site in three languages. A change here shows on the site straight away.',
+      'Semua teks situs dalam tiga bahasa. Perubahan langsung tampil di situs.',
+    ],
+    steps: [
+      [
+        'ابحث بكلمة من النص (بأي لغة) أو بالمفتاح، أو اختر «المعدّلة فقط».',
+        'Search a word of the text (any language) or the key, or pick “Edited only”.',
+        'Cari kata dari teks (bahasa apa pun) atau kuncinya, atau pilih “Yang diubah saja”.',
+      ],
+      [
+        'عدّل النص ثم «حفظ». «عرض الفرق» يبيّن ما تغيّر عن الأصل، و«إرجاع للنص الأصلي» يلغي التعديل.',
+        'Edit the text, then “Save”. “Show the difference” shows what changed; “Back to the original text” undoes it.',
+        'Ubah teks lalu “Simpan”. “Tampilkan perbedaan” menunjukkan perubahan; “Kembali ke teks asli” membatalkannya.',
+      ],
+    ],
+    fields: [],
+    mistakes: [SC_BRACES_MISTAKE],
+  },
+]
+
 export const HELP: readonly HelpEntry[] = [
+  ...SITE_CONTENT_HELP,
   {
     id: 'media',
     match: /^\/media/,
@@ -328,6 +589,11 @@ export const HELP: readonly HelpEntry[] = [
         'أضف الفعاليات وحدّد يوم كل منها، ورتّبها بالسحب.',
         'Add the activities, set the day of each, drag to order.',
         'Tambah aktivitas, atur harinya, seret untuk mengurutkan.',
+      ],
+      [
+        'ترتيب الباقات في الموقع: في القائمة افتح «ترتيب العرض» واسحب الباقات؛ يُحفظ تلقائياً.',
+        'Order on the site: in the list open “Order on the site” and drag the packages; it saves by itself.',
+        'Urutan di situs: di daftar buka “Urutan di situs” dan seret paketnya; tersimpan otomatis.',
       ],
       IMG_STEP,
       ARCHIVE_STEP,

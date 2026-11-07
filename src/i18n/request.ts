@@ -4,6 +4,8 @@ import { hasLocale } from 'next-intl'
 import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 import { applyTextOverrides } from '@/lib/content/home-content'
 import { readHomeContent } from '@/lib/content/home-content-server'
+import { applyMessageOverrides } from '@/lib/content/message-overrides'
+import { readMessageOverrides } from '@/lib/content/message-overrides-server'
 
 import { routing } from './routing'
 
@@ -13,11 +15,17 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    // Studio overrides (home page texts) laid over the bundled strings; blank
-    // overrides keep the bundled text, so nothing changes until edited.
-    messages: applyTextOverrides(
-      (await import(`../../messages/${locale}.json`)).default,
-      await readHomeContent(),
+    // Studio overrides laid over the bundled strings: first the legacy home
+    // page layer (homeContent setting), then every text edited in Studio
+    // (message_overrides — «الترجمات» and «محتوى الموقع»). Blank overrides
+    // keep the bundled text, so nothing changes until edited.
+    messages: applyMessageOverrides(
+      applyTextOverrides(
+        (await import(`../../messages/${locale}.json`)).default,
+        await readHomeContent(),
+        locale,
+      ),
+      await readMessageOverrides(),
       locale,
     ),
 

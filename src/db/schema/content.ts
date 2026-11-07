@@ -859,6 +859,9 @@ export const packages = pgTable('packages', {
     onDelete: 'set null',
   }),
 
+  /** Studio drag order of the public listing (migration 0052); lower first. */
+  sortOrder: integer('sort_order').notNull().default(0),
+
   ...publishing,
   ...timestamps,
   ...softDelete,
@@ -1133,6 +1136,20 @@ export const reviews = pgTable(
 // UI translations — the 597 keys, editable in admin
 // ---------------------------------------------------------------------------
 
+/**
+ * Studio «الترجمات» overrides of the bundled site messages (migration 0051).
+ * One row per message key; `values` holds only the languages the owner
+ * changed. `i18n/request.ts` lays them over messages/{ar,en,id}.json, so a
+ * key with no row (or a blank language) shows the bundled text.
+ */
+export const messageOverrides = pgTable('message_overrides', {
+  key: varchar('key', { length: 160 }).primaryKey(),
+  values: jsonb('values').$type<Partial<Record<'en' | 'ar' | 'id', string>>>().notNull(),
+  updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
+  ...timestamps,
+})
+
+/** Legacy (pre-0051) copy of the catalogues; the public site never read it. */
 export const translations = pgTable('translations', {
   id: uuid('id').primaryKey().defaultRandom(),
   key: varchar('key', { length: 128 }).notNull().unique(),

@@ -1265,7 +1265,8 @@ export async function listPackages(): Promise<PackageSummary[]> {
     .from(packages)
     .leftJoin(media, eq(media.id, packages.heroImageId))
     .where(LIVE_PACKAGE)
-    .orderBy(asc(packages.priceMinor), asc(packages.days))
+    // Studio drag order (migration 0052 backfilled the old price/length order).
+    .orderBy(asc(packages.sortOrder), asc(packages.priceMinor), asc(packages.days))
 
   return toPackageSummaries(rows)
 }

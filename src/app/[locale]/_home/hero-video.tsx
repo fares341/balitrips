@@ -37,8 +37,9 @@ import { HERO_STEP_MS } from './hero-media'
 
 export type HeroVideoClip = {
   id: string
-  webm: string
-  mp4: string
+  /** Null when the Studio replacement is MP4 only. */
+  webm: string | null
+  mp4: string | null
   poster: string
   /** Resolved: "Nusa Penida · Kelingking". */
   label: string
@@ -270,8 +271,8 @@ export function HeroVideo({
                   }
                   tabIndex={-1}
                 >
-                  <source src={clip.webm} type="video/webm" />
-                  <source src={clip.mp4} type="video/mp4" />
+                  {clip.webm ? <source src={clip.webm} type="video/webm" /> : null}
+                  {clip.mp4 ? <source src={clip.mp4} type="video/mp4" /> : null}
                 </video>
                 <span className="hv-cap">{clip.short}</span>
               </div>

@@ -15,7 +15,7 @@
  * with a country code. Otherwise the row is logged as `skipped`.
  */
 
-import { and, eq, inArray, lt, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, lt, or, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { customTripRequests, orderItems, orders, users, whatsappMessages } from '@/db/schema'
@@ -43,6 +43,22 @@ import {
 } from './settings'
 
 const MAX_ATTEMPTS = 5
+
+/** Whether this person (account or number) replied STOP and has not restarted. */
+async function isOptedOut(phone: string | null, userId: string | null): Promise<boolean> {
+  const digits = (phone ?? '').replace(/\D/g, '')
+  const conditions = [
+    ...(userId ? [eq(users.id, userId)] : []),
+    ...(digits.length >= 8 ? [eq(users.phoneNormalized, `+${digits}`)] : []),
+  ]
+  if (conditions.length === 0) return false
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(or(...conditions), isNotNull(users.whatsappOptedOutAt)))
+    .limit(1)
+  return row !== undefined
+}
 
 function origin(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
@@ -511,8 +527,10 @@ export async function triggerContactAutomation(
   try {
     const settings = await readWhatsappSettings()
     if (!isAutomationOn(settings, key)) return false
-    await queueMessage(settings, key, dedupeKey, recipient, vars, null)
-    return recipient.consent
+    // A number that replied STOP gets nothing, whatever the lead row says.
+    const optedOut = await isOptedOut(recipient.phone, recipient.userId)
+    await queueMessage(settings, key, dedupeKey, { ...recipient, optedOut }, vars, null)
+    return recipient.consent && !optedOut
   } catch (error) {
     console.error('[whatsapp] contact trigger failed', { key, error })
     return false

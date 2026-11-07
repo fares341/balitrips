@@ -11,7 +11,7 @@ import {
   packages,
   reviews,
 } from '@/db/schema'
-import { suppliers } from '@/db/schema'
+import { plans, suppliers } from '@/db/schema'
 
 /**
  * «المحذوفات» — every Studio "delete" of catalogue content is an archive
@@ -30,6 +30,7 @@ export const ARCHIVE_KINDS = [
   'reviews',
   'addons',
   'suppliers',
+  'plans',
 ] as const
 export type ArchiveKind = (typeof ARCHIVE_KINDS)[number]
 
@@ -98,6 +99,13 @@ export const ARCHIVE_REGISTRY: Record<ArchiveKind, KindDef> = {
     deletedAt: suppliers.deletedAt,
     label: sql<string>`${suppliers.name}`,
     section: 'suppliers',
+  },
+  plans: {
+    table: plans,
+    id: plans.id,
+    deletedAt: plans.deletedAt,
+    label: sql<string>`coalesce(nullif(${plans.name} ->> 'ar', ''), ${plans.name} ->> 'en', ${plans.slug})`,
+    section: 'plans',
   },
 }
 

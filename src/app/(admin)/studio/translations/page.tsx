@@ -1,32 +1,57 @@
-import { and, asc, count, ilike, or, sql, type SQL } from 'drizzle-orm'
 import Link from 'next/link'
 
-import { db } from '@/db'
-import { translations } from '@/db/schema'
-import { localeConfig, locales } from '@/i18n/config'
+import { localeConfig } from '@/i18n/config'
+import { BUNDLED_MESSAGES } from '@/lib/content/home-content-bundled'
+import { MESSAGE_LOCALES, wordDiff, type MessageLocale } from '@/lib/content/message-overrides'
 
 import { adminHref } from '../../_lib/admin-path'
 import { getAdminI18n } from '../../_lib/i18n'
 import { pageParam, param } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
+import { loadSiteTexts } from '../../_lib/site-texts'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { Empty, Pager, Pill, Table } from '../../_ui/table'
-import { createTranslation, importBundledKeys, saveTranslation } from './actions'
+import { resetSiteTextAction, saveSiteText } from './actions'
 import { contentTranslationGaps } from './missing'
 
 export const dynamic = 'force-dynamic'
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 30
 const LIST = adminHref('/translations')
 
+const BUNDLED = BUNDLED_MESSAGES as Record<MessageLocale, Record<string, unknown>>
+const ALL_KEYS: readonly string[] = [
+  ...new Set(MESSAGE_LOCALES.flatMap((locale) => Object.keys(BUNDLED[locale] ?? {}))),
+].sort()
+
+function bundled(key: string, locale: MessageLocale): string {
+  const value = BUNDLED[locale]?.[key]
+  return typeof value === 'string' ? value : ''
+}
+
+/** Lower-case, no Arabic diacritics/tatweel: search matches what people type. */
+function fold(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u064B-\u065F\u0670\u0640\u0300-\u036f]/g, '')
+    .replace(/[\u0622\u0623\u0625]/g, '\u0627')
+}
+
+/**
+ * «الترجمات» — every text of the public site (the bundled message
+ * catalogues), editable per language. A save is live on the site within
+ * seconds; «إرجاع للأصل» drops the change. Untouched keys follow the shipped
+ * copy, so the site looks identical until something is edited here.
+ */
 export default async function TranslationsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const session = await requireCapability('translations.write')
-  const { t, intl, locale } = await getAdminI18n()
+  await requireCapability('translations.write')
+  const { t, intl } = await getAdminI18n()
   const num = new Intl.NumberFormat(intl)
   const label = (prefix: string, value: string) => {
     const key = `${prefix}${value.toLowerCase().replace(/\s+/g, '_')}`
@@ -35,65 +60,46 @@ export default async function TranslationsPage({
   }
   const params = await searchParams
 
-  const q = param(params, 'q')
-  const only = param(params, 'only')
+  const q = (param(params, 'q') ?? '').trim()
+  const only = param(params, 'only') ?? ''
   const page = pageParam(params)
 
-  const filters: SQL[] = []
-  if (q) {
-    const like = `%${q}%`
-    const match = or(
-      ilike(translations.key, like),
-      sql`${translations.values} ->> 'en' ilike ${like}`,
-      sql`${translations.values} ->> 'ar' ilike ${like}`,
+  const [overrides, gaps] = await Promise.all([loadSiteTexts(), contentTranslationGaps()])
+  const current = (key: string, locale: MessageLocale) =>
+    overrides[key]?.[locale] ?? bundled(key, locale)
+
+  const needle = fold(q)
+  const matches = ALL_KEYS.filter((key) => {
+    if (only === 'edited' && !overrides[key]) return false
+    if (only === 'missing' && MESSAGE_LOCALES.every((locale) => current(key, locale) !== '')) {
+      return false
+    }
+    if (needle === '') return true
+    if (key.toLowerCase().includes(needle)) return true
+    return MESSAGE_LOCALES.some(
+      (locale) =>
+        fold(bundled(key, locale)).includes(needle) ||
+        fold(overrides[key]?.[locale] ?? '').includes(needle),
     )
-    if (match) filters.push(match)
-  }
-  if (only === 'ar' || only === 'id') {
-    filters.push(sql`coalesce(${translations.values} ->> ${only}, '') = ''`)
-  }
-  if (only === 'any') {
-    filters.push(
-      sql`coalesce(${translations.values} ->> 'ar', '') = '' or coalesce(${translations.values} ->> 'id', '') = ''`,
-    )
-  }
+  })
+  const rows = matches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const editedCount = Object.keys(overrides).length
 
-  const where = filters.length > 0 ? and(...filters) : undefined
-
-  const [rows, [totalRow], [allRow], [gapRow], gaps] = await Promise.all([
-    db
-      .select()
-      .from(translations)
-      .where(where)
-      .orderBy(asc(translations.key))
-      .limit(PAGE_SIZE)
-      .offset((page - 1) * PAGE_SIZE),
-    db.select({ value: count() }).from(translations).where(where),
-    db.select({ value: count() }).from(translations),
-    db
-      .select({ value: count() })
-      .from(translations)
-      .where(
-        sql`coalesce(${translations.values} ->> 'ar', '') = '' or coalesce(${translations.values} ->> 'id', '') = ''`,
-      ),
-    contentTranslationGaps(),
-  ])
-
-  const total = totalRow?.value ?? 0
-  const allKeys = allRow?.value ?? 0
-  const incompleteKeys = gapRow?.value ?? 0
+  const query = new URLSearchParams()
+  if (q) query.set('q', q)
+  if (only) query.set('only', only)
+  if (page > 1) query.set('page', String(page))
+  const back = query.size > 0 ? `${LIST}?${query}` : LIST
 
   return (
     <>
       <PageHead
         title={t('translations.title')}
-        description={t('translations.description')}
+        description={t('tr2.description')}
         actions={
-          <form className="a-inline-form" action={importBundledKeys}>
-            <button className="a-btn ghost" type="submit">
-              {t('translations.import_btn')}
-            </button>
-          </form>
+          <a className="a-btn ghost" href="/" target="_blank" rel="noreferrer">
+            {t('hc.view_site')}
+          </a>
         }
       />
       <Flash searchParams={params} />
@@ -101,19 +107,17 @@ export default async function TranslationsPage({
       <div className="a-grid">
         <div className="a-stat">
           <span>{t('translations.stat_keys')}</span>
-          <b>{num.format(allKeys)}</b>
+          <b>{num.format(ALL_KEYS.length)}</b>
         </div>
         <div className="a-stat">
-          <span>{t('translations.stat_incomplete')}</span>
-          <b>{num.format(incompleteKeys)}</b>
+          <span>{t('tr2.stat_edited')}</span>
+          <b>{num.format(editedCount)}</b>
         </div>
         <div className="a-stat">
           <span>{t('translations.stat_matching')}</span>
-          <b>{num.format(total)}</b>
+          <b>{num.format(matches.length)}</b>
         </div>
       </div>
-
-      {allKeys === 0 ? <div className="a-flash warn">{t('translations.empty_db')}</div> : null}
 
       <form className="a-row a-card" method="get" action={LIST}>
         <div className="a-field">
@@ -122,17 +126,16 @@ export default async function TranslationsPage({
             className="a-input"
             id="q"
             name="q"
-            defaultValue={q ?? ''}
-            placeholder={t('translations.search_placeholder')}
+            defaultValue={q}
+            placeholder={t('tr2.search_placeholder')}
           />
         </div>
         <div className="a-field">
           <label htmlFor="only">{t('translations.show')}</label>
-          <select className="a-select" id="only" name="only" defaultValue={only ?? ''}>
+          <select className="a-select" id="only" name="only" defaultValue={only}>
             <option value="">{t('translations.show_all')}</option>
-            <option value="any">{t('translations.show_any')}</option>
-            <option value="ar">{t('translations.show_ar')}</option>
-            <option value="id">{t('translations.show_id')}</option>
+            <option value="edited">{t('tr2.show_edited')}</option>
+            <option value="missing">{t('translations.show_any')}</option>
           </select>
         </div>
         <div className="a-actions">
@@ -148,97 +151,98 @@ export default async function TranslationsPage({
       {rows.length === 0 ? (
         <Empty>{t('translations.empty')}</Empty>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {rows.map((row) => (
-            <form className="a-day" key={row.id} action={saveTranslation.bind(null, row.id)}>
-              <div className="a-day-head">
-                <div className="a-day-no">
-                  <span dir="auto">{headingOf(row.values, locale) ?? row.key}</span>
-                  {session.role === 'admin' ? (
-                    <details className="a-hint a-text-code">
-                      <summary>{t('translations.key')}</summary>
-                      <span className="a-mono" dir="ltr">
-                        {row.key}
+        <div className="tr2-list">
+          {rows.map((key) => {
+            const edited = overrides[key]
+            return (
+              <div className="a-day" key={key}>
+                <form action={saveSiteText.bind(null, key)}>
+                  <input type="hidden" name="back" value={back} />
+                  <div className="a-day-head">
+                    <div className="a-day-no">
+                      <span dir="auto">{headingOf(current(key, 'ar') || current(key, 'en'))}</span>
+                      <span className="a-hint a-mono" dir="ltr" style={{ marginInlineStart: 8 }}>
+                        {key}
                       </span>
-                    </details>
-                  ) : null}
-                </div>
-                <div className="a-actions">
-                  {locales
-                    .filter((locale) => (row.values?.[locale] ?? '') === '')
-                    .map((locale) => (
-                      <Pill tone="warn" key={locale}>
-                        {t('translations.missing_locale', {
-                          locale: t(`translations.lang_${locale}`),
-                        })}
-                      </Pill>
-                    ))}
-                  <button className="a-btn ghost small" type="submit">
-                    {t('translations.save')}
-                  </button>
-                </div>
-              </div>
-              <div className="a-l10n">
-                {locales.map((locale) => (
-                  <div className="a-field" key={locale}>
-                    <label htmlFor={`t-${row.id}-${locale}`}>
-                      {t(`translations.lang_${locale}`)}
-                    </label>
-                    <textarea
-                      className="a-textarea"
-                      id={`t-${row.id}-${locale}`}
-                      name={`values_${locale}`}
-                      rows={2}
-                      defaultValue={row.values?.[locale] ?? ''}
-                      lang={locale}
-                      dir={localeConfig[locale].dir}
-                    />
+                    </div>
+                    <div className="a-actions">
+                      {edited ? <Pill tone="info">{t('tr2.edited_pill')}</Pill> : null}
+                      {MESSAGE_LOCALES.filter((locale) => current(key, locale) === '').map(
+                        (locale) => (
+                          <Pill tone="warn" key={locale}>
+                            {t('translations.missing_locale', {
+                              locale: t(`translations.lang_${locale}`),
+                            })}
+                          </Pill>
+                        ),
+                      )}
+                      <button className="a-btn primary small" type="submit">
+                        {t('translations.save')}
+                      </button>
+                    </div>
                   </div>
-                ))}
+                  <div className="a-l10n">
+                    {MESSAGE_LOCALES.map((locale) => (
+                      <div className="a-field" key={locale}>
+                        <label htmlFor={`t-${key}-${locale}`}>
+                          {t(`translations.lang_${locale}`)}
+                          {edited?.[locale] !== undefined ? ' ●' : ''}
+                        </label>
+                        <textarea
+                          className="a-textarea"
+                          id={`t-${key}-${locale}`}
+                          name={`t__${key}__${locale}`}
+                          rows={current(key, locale).length > 90 ? 4 : 2}
+                          defaultValue={current(key, locale)}
+                          lang={locale}
+                          dir={localeConfig[locale].dir}
+                          maxLength={4000}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </form>
+                {edited ? (
+                  <details className="tr2-diff">
+                    <summary>{t('tr2.diff')}</summary>
+                    {MESSAGE_LOCALES.filter((locale) => edited[locale] !== undefined).map(
+                      (locale) => (
+                        <p key={locale} dir={localeConfig[locale].dir} lang={locale}>
+                          <b>{t(`translations.lang_${locale}`)}: </b>
+                          {wordDiff(bundled(key, locale), edited[locale] ?? '').map(
+                            (part, index) =>
+                              part.op === 'eq' ? (
+                                <span key={index}>{part.text}</span>
+                              ) : part.op === 'del' ? (
+                                <del key={index}>{part.text}</del>
+                              ) : (
+                                <ins key={index}>{part.text}</ins>
+                              ),
+                          )}
+                        </p>
+                      ),
+                    )}
+                    <form action={resetSiteTextAction.bind(null, key)}>
+                      <input type="hidden" name="back" value={back} />
+                      <button className="a-btn ghost small" type="submit">
+                        {t('tr2.reset_key')}
+                      </button>
+                    </form>
+                  </details>
+                ) : null}
               </div>
-            </form>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      <Pager basePath={LIST} searchParams={params} page={page} pageSize={PAGE_SIZE} total={total} />
-
-      <form className="a-card" action={createTranslation}>
-        <h2>{t('translations.add_title')}</h2>
-        <div className="a-row">
-          <div className="a-field">
-            <label htmlFor="new-key">{t('translations.key')}</label>
-            <input
-              className="a-input"
-              id="new-key"
-              name="key"
-              required
-              placeholder="nav_something"
-            />
-          </div>
-        </div>
-        <div className="a-l10n">
-          {locales.map((locale) => (
-            <div className="a-field" key={locale}>
-              <label htmlFor={`new-t-${locale}`}>{t(`translations.lang_${locale}`)}</label>
-              <textarea
-                className="a-textarea"
-                id={`new-t-${locale}`}
-                name={`values_${locale}`}
-                rows={2}
-                lang={locale}
-                dir={localeConfig[locale].dir}
-                required={locale === 'en'}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="a-actions" style={{ marginBlockStart: 12 }}>
-          <button className="a-btn accent" type="submit">
-            {t('translations.add_btn')}
-          </button>
-        </div>
-      </form>
+      <Pager
+        basePath={LIST}
+        searchParams={params}
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={matches.length}
+      />
 
       <div className="a-card">
         <h2>{t('translations.gaps_title')}</h2>
@@ -282,9 +286,8 @@ export default async function TranslationsPage({
   )
 }
 
-/** The text itself, in the Studio language (English when missing), shortened for a heading. */
-function headingOf(values: Partial<Record<string, string>> | null, locale: string): string | null {
-  const text = (values?.[locale] ?? '').trim() || (values?.en ?? '').trim()
-  if (text === '') return null
-  return text.length > 90 ? `${text.slice(0, 90)}…` : text
+/** The text itself, shortened for a heading. */
+function headingOf(text: string): string {
+  const clean = text.trim()
+  return clean.length > 90 ? `${clean.slice(0, 90)}…` : clean
 }
