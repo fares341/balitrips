@@ -7,6 +7,12 @@
  * guide, edit its text here; nothing else needs to change.
  */
 
+import {
+  ITINERARY_HELP,
+  ITINERARY_HELP_TABS,
+  type ItineraryHelpTab,
+} from '../studio/itineraries/_help'
+
 export type HelpLocale = 'ar' | 'en' | 'id'
 export const HELP_LOCALES: readonly HelpLocale[] = ['ar', 'en', 'id']
 
@@ -27,6 +33,15 @@ export interface HelpEntry {
   mistakes: readonly L3[]
   /** Set for a screen another team owns; it fills the text in later. */
   placeholder?: true
+}
+
+/** One itinerary-editor guide topic as a single step: «title: step · step …». */
+function itineraryTopic(tab: ItineraryHelpTab | 'delete'): L3 {
+  const one = (locale: HelpLocale) => {
+    const topic = ITINERARY_HELP[locale][tab]
+    return `${topic.title}: ${topic.steps.join(' ')}`
+  }
+  return [one('ar'), one('en'), one('id')]
 }
 
 export function pickL3(value: L3, locale: HelpLocale): string {
@@ -315,7 +330,7 @@ const SITE_CONTENT_HELP: readonly HelpEntry[] = [
     id: 'translations',
     match: /^\/translations/,
     href: '/translations',
-    title: ['الترجمات', 'Translations', 'Terjemahan'],
+    title: ['نصوص الموقع', 'Website texts', 'Teks situs'],
     purpose: [
       'كل نصوص الموقع بثلاث لغات. أي تعديل هنا يظهر مباشرة في الموقع.',
       'Every text of the site in three languages. A change here shows on the site straight away.',
@@ -476,15 +491,15 @@ export const HELP: readonly HelpEntry[] = [
     id: 'activities',
     match: /^\/activities/,
     href: '/activities',
-    title: ['الفعاليات', 'Activities', 'Aktivitas'],
+    title: ['الأنشطة', 'Activities', 'Aktivitas'],
     purpose: [
-      'إضافة الفعاليات والجولات وتعديل أسعارها وصورها وباقاتها.',
+      'إضافة الأنشطة والجولات وتعديل أسعارها وصورها وباقاتها.',
       'Add tours and activities, and edit their prices, photos and options.',
       'Tambah tur/aktivitas, ubah harga, foto, dan opsi.',
     ],
     steps: [
       [
-        'إضافة: «فعالية جديدة» ← اكتب الاسم والمنطقة ← «حفظ».',
+        'إضافة: «نشاط جديد» ← اكتب الاسم والمنطقة ← «حفظ».',
         'Add: “New activity” → name and region → “Save”.',
         'Tambah: “Aktivitas baru” → nama dan wilayah → “Simpan”.',
       ],
@@ -495,7 +510,7 @@ export const HELP: readonly HelpEntry[] = [
       ],
       IMG_STEP,
       [
-        'الترتيب: اسحب الفعاليات في القائمة أو استخدم أسهم الترتيب.',
+        'الترتيب: اسحب الأنشطة في القائمة أو استخدم أسهم الترتيب.',
         'Order: drag activities in the list or use the order arrows.',
         'Urutan: seret di daftar atau pakai panah urutan.',
       ],
@@ -508,7 +523,7 @@ export const HELP: readonly HelpEntry[] = [
       {
         name: ['معرض الصور', 'Gallery', 'Galeri'],
         where: [
-          'الصور المتحركة في صفحة الفعالية، بالترتيب الذي تختاره.',
+          'الصور المتحركة في صفحة النشاط، بالترتيب الذي تختاره.',
           'The photo slider on the activity page, in your order.',
           'Slider foto di halaman aktivitas sesuai urutan Anda.',
         ],
@@ -516,7 +531,7 @@ export const HELP: readonly HelpEntry[] = [
     ],
     mistakes: [
       [
-        'نشر فعالية بلا سعر أو بلا صورة: تظهر ناقصة. راجع «الجاهزية» قبل النشر.',
+        'نشر نشاط بلا سعر أو بلا صورة: يظهر ناقصاً. راجع «الجاهزية» قبل النشر.',
         'Publishing without a price or photo looks broken. Check “Readiness” first.',
         'Menerbitkan tanpa harga/foto terlihat rusak. Cek “Kesiapan”.',
       ],
@@ -527,7 +542,7 @@ export const HELP: readonly HelpEntry[] = [
     id: 'places',
     match: /^\/places/,
     href: '/places',
-    title: ['الأماكن (الخريطة)', 'Places (map)', 'Tempat (peta)'],
+    title: ['أماكن الخريطة', 'Map places', 'Tempat di peta'],
     purpose: [
       'أماكن الخريطة التفاعلية: مطاعم، معالم، مستشفيات، مساجد…',
       'Places on the interactive map: restaurants, sights, hospitals, mosques…',
@@ -575,7 +590,7 @@ export const HELP: readonly HelpEntry[] = [
     href: '/packages',
     title: ['الباقات', 'Packages', 'Paket'],
     purpose: [
-      'باقات تجمع عدة فعاليات بأيام وسعر واحد.',
+      'باقات تجمع عدة أنشطة بأيام وسعر واحد.',
       'Bundles of several activities over days at one price.',
       'Paket beberapa aktivitas dalam beberapa hari, satu harga.',
     ],
@@ -586,7 +601,7 @@ export const HELP: readonly HelpEntry[] = [
         '“Paket baru” → nama, harga → “Simpan”.',
       ],
       [
-        'أضف الفعاليات وحدّد يوم كل منها، ورتّبها بالسحب.',
+        'أضف الأنشطة وحدّد يوم كل منها، ورتّبها بالسحب.',
         'Add the activities, set the day of each, drag to order.',
         'Tambah aktivitas, atur harinya, seret untuk mengurutkan.',
       ],
@@ -605,7 +620,7 @@ export const HELP: readonly HelpEntry[] = [
     id: 'articles',
     match: /^\/articles/,
     href: '/articles',
-    title: ['المقالات (المدونة)', 'Articles (blog)', 'Artikel (blog)'],
+    title: ['المقالات', 'Articles', 'Artikel'],
     purpose: [
       'مقالات المدونة ونصائح السفر.',
       'Blog posts and travel tips.',
@@ -657,7 +672,7 @@ export const HELP: readonly HelpEntry[] = [
     href: '/reviews',
     title: ['التقييمات', 'Reviews', 'Ulasan'],
     purpose: [
-      'آراء العملاء التي تظهر في الصفحة الرئيسية وصفحات الفعاليات.',
+      'آراء العملاء التي تظهر في الصفحة الرئيسية وصفحات الأنشطة.',
       'Customer reviews shown on the home page and activity pages.',
       'Ulasan pelanggan di beranda dan halaman aktivitas.',
     ],
@@ -689,7 +704,7 @@ export const HELP: readonly HelpEntry[] = [
     href: '/taxonomy',
     title: ['التصنيفات والمناطق', 'Categories & regions', 'Kategori & wilayah'],
     purpose: [
-      'تصنيفات الفعاليات والأماكن، والمناطق، والوسوم، وصورها.',
+      'تصنيفات الأنشطة والأماكن، والمناطق، والوسوم، وصورها.',
       'Categories of activities and places, regions, tags and their photos.',
       'Kategori, wilayah, tag dan fotonya.',
     ],
@@ -733,9 +748,9 @@ export const HELP: readonly HelpEntry[] = [
     id: 'addons',
     match: /^\/addons/,
     href: '/addons',
-    title: ['الإضافات', 'Add-ons', 'Tambahan'],
+    title: ['الخدمات الإضافية', 'Extras', 'Tambahan'],
     purpose: [
-      'إضافات تُباع مع الفعاليات (تصوير، وجبة…).',
+      'إضافات تُباع مع الأنشطة (تصوير، وجبة…).',
       'Extras sold with activities (photos, meal…).',
       'Tambahan yang dijual dengan aktivitas.',
     ],
@@ -755,7 +770,7 @@ export const HELP: readonly HelpEntry[] = [
     id: 'discounts',
     match: /^\/discounts/,
     href: '/discounts',
-    title: ['أكواد الخصم', 'Discount codes', 'Kode diskon'],
+    title: ['الخصومات والقسائم', 'Discounts & coupons', 'Diskon & kupon'],
     purpose: [
       'إنشاء أكواد الخصم وإيقافها.',
       'Create and switch off discount codes.',
@@ -853,16 +868,16 @@ export const HELP: readonly HelpEntry[] = [
     id: 'itineraries',
     match: /^\/itineraries/,
     href: '/itineraries',
-    title: ['البرامج السياحية', 'Itineraries', 'Itinerary'],
+    title: ['الجداول السياحية', 'Itineraries', 'Itinerary'],
     purpose: [
-      'سيُكتب هذا الدليل مع محرّر البرامج الجديد.',
-      'This guide will be written with the new itinerary editor.',
-      'Panduan ini akan ditulis bersama editor itinerary baru.',
+      'الجداول السياحية الجاهزة: الصفحة العامة قبل الشراء، والأيام والأماكن الخاصة بالمشتري، والأسعار وملف PDF.',
+      'Ready-made itineraries: the public page before purchase, the buyer-only days and places, pricing and the PDF.',
+      'Itinerary siap pakai: halaman publik sebelum membeli, hari dan tempat khusus pembeli, harga dan PDF.',
     ],
-    steps: [],
+    // One step per editor tab, from the editor's own «؟ دليل» (studio/itineraries/_help.ts).
+    steps: ITINERARY_HELP_TABS.map((tab) => itineraryTopic(tab)),
     fields: [],
-    mistakes: [],
-    placeholder: true,
+    mistakes: [itineraryTopic('delete')],
   },
   {
     id: 'help',
@@ -888,7 +903,7 @@ export const HELP: readonly HelpEntry[] = [
     id: 'dashboard',
     match: /^\/?$/,
     href: '',
-    title: ['الرئيسية', 'Dashboard', 'Dasbor'],
+    title: ['الرئيسية', 'Home', 'Beranda'],
     purpose: [
       'ملخص اليوم: الطلبات الجديدة والمهام والتنبيهات.',
       'Today at a glance: new orders, tasks and alerts.',

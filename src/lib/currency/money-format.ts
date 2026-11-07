@@ -13,7 +13,9 @@ export function formatMoneyText(amount: number, currency: string, locale: string
   var value = amount
   if (code === 'IDR') {
     value = amount >= 10000 ? Math.round(amount / 1000) * 1000 : Math.round(amount)
-  } else if (whole[code] === 1 || amount >= 100) {
+  } else if (whole[code] === 1 || (amount >= 100 && code !== 'SAR')) {
+    // SAR is the charged currency: shown exactly (246.90, not 247). Only the
+    // «≈» conversions are rounded for readability.
     value = Math.round(amount)
   } else {
     value = Math.round(amount * 100) / 100

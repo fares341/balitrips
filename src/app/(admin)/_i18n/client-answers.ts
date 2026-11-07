@@ -7,10 +7,9 @@ import type { Section } from './types'
  */
 const section: Section = {
   en: {
-    'nav.vehicles': 'Vehicles & driver prices',
-    'veh.title': 'Vehicles & driver prices',
+    'veh.title': 'Vehicles & driver',
     'veh.description':
-      'Every package includes a driver. A package day costs the chosen vehicle’s day price for the zone the day is in. Prices as on the client’s sheets; the site sells in USD.',
+      'Every package includes a driver. A package day costs the chosen vehicle’s day price for the zone the day is in. Prices as on the client’s sheets; the site sells in SAR (a zone with only a USD price is converted at the Studio rate).',
     'veh.rate': 'Exchange rate',
     'veh.sar_per_usd': 'SAR per 1 USD',
     'veh.sar_hint': 'Used when a zone has no USD price: USD = SAR ÷ this rate.',
@@ -63,10 +62,9 @@ const section: Section = {
       'Opens this one place to everyone on the map (for example Sekumpul waterfall), whatever its category.',
   },
   ar: {
-    'nav.vehicles': 'السيارات وأسعار السائق',
-    'veh.title': 'السيارات وأسعار السائق',
+    'veh.title': 'السيارات والسائق',
     'veh.description':
-      'كل الباقات تشمل سائقًا. يوم الباقة يكلّف سعر يوم السيارة المختارة حسب منطقة ذلك اليوم. الأسعار كما في كشوف العميل، والموقع يبيع بالدولار.',
+      'كل الباقات تشمل سائقًا. يوم الباقة يكلّف سعر يوم السيارة المختارة حسب منطقة ذلك اليوم. الأسعار كما في كشوف العميل، والموقع يبيع بالريال السعودي (المنطقة التي لها سعر بالدولار فقط تُحوَّل بسعر الصرف في الاستوديو).',
     'veh.rate': 'سعر الصرف',
     'veh.sar_per_usd': 'ريال سعودي لكل 1 دولار',
     'veh.sar_hint': 'يُستخدم حين لا يوجد سعر بالدولار للمنطقة: الدولار = الريال ÷ هذا السعر.',

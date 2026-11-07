@@ -68,8 +68,8 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     'هذه الصورة مستخدمة في {count} أماكن. هل تريد أرشفتها؟ (الصور المستخدمة في صفحات منشورة لا تُؤرشف حتى تستبدلها.)',
   ],
   'mc.delete_unused': [
-    'This image is not used anywhere. Archive it? You can restore it later.',
-    'هذه الصورة غير مستخدمة في أي مكان. أرشفتها؟ يمكنك استرجاعها لاحقاً.',
+    'This image is not used anywhere. Archive it? You can restore it later from “Archive bin”.',
+    'هذه الصورة غير مستخدمة في أي مكان. أرشفتها؟ يمكنك استرجاعها لاحقاً من «المحذوفات».',
   ],
 
   // Quick tour (media library)
@@ -122,7 +122,7 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'hc.slot_hero_rice': ['Hero video cover — rice terraces', 'غلاف فيديو الواجهة — مدرجات الأرز'],
   'hc.slot_hero_uluwatu': ['Hero video cover — Uluwatu', 'غلاف فيديو الواجهة — أولواتو'],
   'hc.slot_svc_map': ['Card photo — Interactive map', 'صورة بطاقة — الخريطة التفاعلية'],
-  'hc.slot_svc_act': ['Card photo — Activities', 'صورة بطاقة — الفعاليات'],
+  'hc.slot_svc_act': ['Card photo — Activities', 'صورة بطاقة — الأنشطة'],
   'hc.slot_svc_itin': ['Card photo — Itineraries', 'صورة بطاقة — البرامج'],
   'hc.slot_svc_pkg': ['Card photo — Packages', 'صورة بطاقة — الباقات'],
   'hc.slot_svc_cust': ['Card photo — Custom trip', 'صورة بطاقة — رحلة مخصّصة'],
@@ -146,7 +146,7 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'hc.sec_mr': ['Most requested activities', 'الأكثر طلباً'],
   'hc.sec_mr_hint': [
     'Section texts. The activities are the ones marked “show on home” in Activities.',
-    'نصوص القسم. الفعاليات هي المحددة «إظهار في الرئيسية» داخل الفعاليات.',
+    'نصوص القسم. الأنشطة هي المحددة «إظهار في الرئيسية» داخل الأنشطة.',
   ],
   'hc.sec_about': ['Who we are', 'من نحن'],
   'hc.sec_about_hint': [
@@ -191,6 +191,7 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
   'arc.kind_addons': ['Add-on', 'إضافة'],
   'arc.kind_suppliers': ['Supplier', 'مورد'],
   'arc.kind_plans': ['Access plan', 'باقة وصول'],
+  'arc.kind_media': ['Image', 'صورة'],
 
   // Guides
   'help.button': ['Guide for this screen', 'دليل هذه الشاشة'],

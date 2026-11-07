@@ -27,7 +27,7 @@ const ZONE_ROWS = 6
  * «السيارات وأسعار السائق» (client, Oct 2026). Every package includes a
  * driver; a package day costs the chosen vehicle's day price for the zone the
  * day happens in. Prices as on the client's sheets (SAR, IDR, USD); the site
- * sells in USD, so SAR is converted at the rate set here when no USD is given.
+ * sells in SAR, so USD is converted at the rate set here when no SAR is given.
  */
 export async function PackageVehiclesSection() {
   const { t, intl, locale } = await getAdminI18n()

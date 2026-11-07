@@ -6,7 +6,7 @@ import { HELP, helpText, type HelpLocale, pickL3 } from '../../_help/registry'
 import { useAdminT } from '../../_ui/i18n-provider'
 import { HelpBody, HelpLangSwitch } from '../../_ui/help-panel'
 
-export function GuidesList({ base }: { base: string }) {
+export function GuidesList({ base, openable }: { base: string; openable: readonly string[] }) {
   const { t } = useAdminT()
   const [q, setQ] = useState('')
   const [lang, setLang] = useState<HelpLocale>('ar')
@@ -35,9 +35,11 @@ export function GuidesList({ base }: { base: string }) {
             <b>{pickL3(entry.title, lang)}</b>
           </summary>
           <HelpBody entry={entry} locale={lang} />
-          <a className="a-btn small" href={`${base}${entry.href}`}>
-            {t('help.open_screen')}
-          </a>
+          {openable.includes(entry.id) ? (
+            <a className="a-btn small" href={`${base}${entry.href}`}>
+              {t('help.open_screen')}
+            </a>
+          ) : null}
         </details>
       ))}
     </>

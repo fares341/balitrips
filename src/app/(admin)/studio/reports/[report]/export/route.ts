@@ -6,6 +6,7 @@ import { buildReport, isReportId, mayOpen } from '@/lib/reports/catalog'
 import { rangeLabel } from '@/lib/reports/builders/helpers'
 import { reportCsv } from '@/lib/reports/export'
 import { filterParams, parseReportFilters } from '@/lib/reports/filters'
+import { localRedirect } from '@/lib/http/local-redirect'
 
 import { adminHref } from '../../../../_lib/admin-path'
 import { writeAudit } from '../../../../_lib/audit'
@@ -61,11 +62,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ repo
       const { enqueueReportPdf } = await import('@/worker/queues')
       await enqueueReportPdf(row.id)
     }
-    return NextResponse.redirect(
-      new URL(
-        withOutcome(adminHref('/reports/exports'), { ok: encodeMessage('rp.ok_queued') }),
-        request.url,
-      ),
+    return localRedirect(
+      withOutcome(adminHref('/reports/exports'), { ok: encodeMessage('rp.ok_queued') }),
       303,
     )
   }

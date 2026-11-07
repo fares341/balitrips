@@ -249,24 +249,26 @@ export default async function ConfigPage({
         ) : (
           <>
             <p className="a-hint">{t('cur.health_bad', { n: nonSar.length })}</p>
-            <table className="a-table">
-              <thead>
-                <tr>
-                  <th>{t('cur.health_col_kind')}</th>
-                  <th>{t('cur.health_col_item')}</th>
-                  <th>{t('cur.health_col_cur')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {nonSar.map((row) => (
-                  <tr key={`${row.kind}:${row.id}`}>
-                    <td>{row.kind}</td>
-                    <td dir="auto">{row.name}</td>
-                    <td dir="ltr">{row.currency}</td>
+            <div className="a-table-wrap">
+              <table className="a-table">
+                <thead>
+                  <tr>
+                    <th>{t('cur.health_col_kind')}</th>
+                    <th>{t('cur.health_col_item')}</th>
+                    <th>{t('cur.health_col_cur')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {nonSar.map((row) => (
+                    <tr key={`${row.kind}:${row.id}`}>
+                      <td>{row.kind}</td>
+                      <td dir="auto">{row.name}</td>
+                      <td dir="ltr">{row.currency}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </div>

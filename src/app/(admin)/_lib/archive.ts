@@ -8,6 +8,7 @@ import {
   articles,
   landmarks,
   mapPlaces,
+  media,
   packages,
   reviews,
 } from '@/db/schema'
@@ -31,6 +32,7 @@ export const ARCHIVE_KINDS = [
   'addons',
   'suppliers',
   'plans',
+  'media',
 ] as const
 export type ArchiveKind = (typeof ARCHIVE_KINDS)[number]
 
@@ -41,6 +43,14 @@ interface KindDef {
   label: SQL<string>
   /** Studio section of the edit screen. */
   section: string
+  /** Kinds with no per-record edit screen link here instead (e.g. the media library's archived view). */
+  listHref?: string
+}
+
+/** Studio path (relative to the admin base) that opens an archived record. */
+export function archivedHref(kind: ArchiveKind, id: string): string {
+  const def = ARCHIVE_REGISTRY[kind]
+  return def.listHref ?? `/${def.section}/${id}`
 }
 
 export const ARCHIVE_REGISTRY: Record<ArchiveKind, KindDef> = {
@@ -106,6 +116,14 @@ export const ARCHIVE_REGISTRY: Record<ArchiveKind, KindDef> = {
     deletedAt: plans.deletedAt,
     label: sql<string>`coalesce(nullif(${plans.name} ->> 'ar', ''), ${plans.name} ->> 'en', ${plans.slug})`,
     section: 'plans',
+  },
+  media: {
+    table: media,
+    id: media.id,
+    deletedAt: media.deletedAt,
+    label: sql<string>`coalesce(nullif(${media.name}, ''), ${media.objectKey})`,
+    section: 'media',
+    listHref: '/media?state=archived',
   },
 }
 

@@ -1,8 +1,9 @@
 /**
  * «؟ دليل» — the itinerary editor guide, one topic per tab (owner, Nov 2026:
  * «دليل لكل شيء»). Pure data in the shared-registry shape
- * `{ id, title, steps[] }` per locale, so it can move into
- * `src/app/(admin)/_help/` once that registry is on main.
+ * `{ id, title, steps[] }` per locale. The Studio guide registry
+ * (`src/app/(admin)/_help/registry.ts`) builds its «الجداول السياحية» entry
+ * from this file, so edit the text here only.
  */
 
 export type HelpLocale = 'ar' | 'en' | 'id'
