@@ -12,16 +12,12 @@
  *    driver fields on `driver_vehicles`.
  */
 
-import { randomUUID } from 'node:crypto'
-
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { itineraries, itineraryDays, itineraryDocuments, siteSettings } from '@/db/schema'
-import { isLocale } from '@/i18n/config'
 import { can } from '@/lib/auth/roles'
-import { cleanDownloadFilename, isPdfMime, looksLikePdf } from '@/lib/itineraries/publish-gate'
 import {
   DRIVER_SETTINGS_KEY,
   ISO_DATE,
@@ -31,7 +27,6 @@ import {
 } from '@/lib/itineraries/sales-settings'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import { parseMoneyInput } from '@/lib/money-input'
-import { isPrivateStorageAvailable, uploadPrivate } from '@/lib/storage'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
@@ -48,12 +43,13 @@ import {
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
-import { notifyItineraryHolders } from './notify-holders'
+import { uploadPdfCore } from './pdf-upload'
 import { PREVIEW_STAT_ROWS } from './phase1-shared'
 
 type Outcome = { ok: string } | { err: string }
 
-const editor = (id: string) => adminHref(`/itineraries/${id}`)
+const editor = (id: string, tab?: string) =>
+  adminHref(`/itineraries/${id}${tab ? `?tab=${tab}` : ''}`)
 const PRICING = adminHref('/itineraries/pricing')
 const DRIVER = adminHref('/vehicles')
 
@@ -99,7 +95,7 @@ export async function saveBuyerPageSettings(id: string, form: FormData): Promise
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(id), outcome))
+  redirect(withOutcome(editor(id, 'pricing'), outcome))
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +147,8 @@ export async function saveItineraryPreview(id: string, form: FormData): Promise<
       isPopular: fbool(form, 'isPopular'),
       seoTitle: flocalizedOrNull(form, 'seoTitle'),
       seoDescription: flocalizedOrNull(form, 'seoDescription'),
-      faq: faqRows.length > 0 ? faqRows : null,
+      // The editor's «الأسئلة الشائعة» tab saves the FAQ on its own form.
+      ...(form.has('faq__json') ? { faq: faqRows.length > 0 ? faqRows : null } : {}),
     }
     await db.update(itineraries).set(values).where(eq(itineraries.id, id))
     await writeAudit({
@@ -167,7 +164,7 @@ export async function saveItineraryPreview(id: string, form: FormData): Promise<
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(id), outcome))
+  redirect(withOutcome(editor(id, 'content'), outcome))
 }
 
 export async function saveDayTeasers(id: string, form: FormData): Promise<void> {
@@ -207,7 +204,7 @@ export async function saveDayTeasers(id: string, form: FormData): Promise<void> 
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(id), outcome))
+  redirect(withOutcome(editor(id, 'content'), outcome))
 }
 
 // ---------------------------------------------------------------------------
@@ -220,114 +217,8 @@ export async function saveDayTeasers(id: string, form: FormData): Promise<void> 
  * versions stay as archived rows, never deleted.
  */
 export async function uploadItineraryPdfVersion(id: string, form: FormData): Promise<void> {
-  const session = await requireCapability('content.write')
-  const { t } = await getAdminI18n()
-  let outcome: Outcome
-  try {
-    const rawLocale = fstr(form, 'locale') ?? ''
-    if (!isLocale(rawLocale)) throw new Error(t('itineraries.err_pdf_language'))
-    const file = form.get('file')
-    if (!(file instanceof File) || file.size === 0)
-      throw new Error(t('itineraries.err_pdf_missing'))
-    const settings = await readItinerarySales()
-    if (file.size > settings.maxUploadMb * 1024 * 1024) {
-      throw new Error(t('ip1.err_pdf_size', { mb: settings.maxUploadMb }))
-    }
-    if (!isPdfMime(file.type)) throw new Error(t('itineraries.err_pdf_not_pdf'))
-    if (!isPrivateStorageAvailable() && process.env.NODE_ENV === 'production') {
-      throw new Error(t('itineraries.err_pdf_storage'))
-    }
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    if (!looksLikePdf(bytes)) throw new Error(t('itineraries.err_pdf_not_pdf'))
-
-    const [before] = await db.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
-    if (!before) throw new Error(t('itineraries.err_gone'))
-
-    const notify = fbool(form, 'notifyBuyers')
-    const downloadFilename =
-      cleanDownloadFilename(fstr(form, 'downloadFilename')) ??
-      cleanDownloadFilename(file.name) ??
-      `${before.slug}-${rawLocale}.pdf`
-
-    // An unguessable key: the original is never exposed (delivered stamped).
-    const objectKey = `itineraries/${id}/uploaded/${rawLocale}-${randomUUID()}.pdf`
-    if (isPrivateStorageAvailable()) {
-      await uploadPrivate({ key: objectKey, body: bytes, contentType: 'application/pdf' })
-    } else {
-      // Local development only (production without storage is refused above).
-      const { mkdir, writeFile } = await import('node:fs/promises')
-      const path = await import('node:path')
-      const target = path.join(process.cwd(), 'public', objectKey)
-      await mkdir(path.dirname(target), { recursive: true })
-      await writeFile(target, bytes)
-    }
-
-    const keys = { ...(before.uploadedPdfKeys ?? {}), [rawLocale]: objectKey }
-    const fileVersion = await db.transaction(async (tx) => {
-      // Serialise uploads of the same itinerary so versions never collide.
-      await tx.execute(sql`select 1 from ${itineraries} where ${itineraries.id} = ${id} for update`)
-      const [last] = await tx
-        .select({ v: itineraryDocuments.fileVersion })
-        .from(itineraryDocuments)
-        .where(
-          and(
-            eq(itineraryDocuments.itineraryId, id),
-            eq(itineraryDocuments.locale, rawLocale),
-            eq(itineraryDocuments.source, 'uploaded'),
-          ),
-        )
-        .orderBy(desc(itineraryDocuments.fileVersion))
-        .limit(1)
-      const next = (last?.v ?? 0) + 1
-      await tx
-        .update(itineraryDocuments)
-        .set({ isCurrent: false })
-        .where(
-          and(
-            eq(itineraryDocuments.itineraryId, id),
-            eq(itineraryDocuments.locale, rawLocale),
-            eq(itineraryDocuments.source, 'uploaded'),
-          ),
-        )
-      await tx.insert(itineraryDocuments).values({
-        itineraryId: id,
-        // 0 = never an itinerary version, so generated-file readers skip it.
-        version: 0,
-        locale: rawLocale,
-        objectKey,
-        bytes: bytes.byteLength,
-        source: 'uploaded',
-        fileVersion: next,
-        isCurrent: true,
-        downloadFilename,
-        notifyBuyers: notify,
-        uploadedById: session.userId,
-      })
-      await tx.update(itineraries).set({ uploadedPdfKeys: keys }).where(eq(itineraries.id, id))
-      return next
-    })
-
-    await writeAudit({
-      actor: session,
-      action: 'itinerary.pdf_upload',
-      entityType: 'itinerary',
-      entityId: id,
-      before: { uploadedPdfKeys: before.uploadedPdfKeys },
-      after: { uploadedPdfKeys: keys, bytes: bytes.byteLength, fileVersion, downloadFilename },
-    })
-    const notified = notify ? await notifyItineraryHolders(before, rawLocale, keys) : 0
-    outcome = {
-      ok:
-        t('ip1.ok_pdf_version', {
-          version: fileVersion,
-          locale: t(`translations.lang_${rawLocale}`),
-        }) + (notified > 0 ? ` ${t('itineraries.ok_pdf_notified', { count: notified })}` : ''),
-    }
-  } catch (error) {
-    if (isRedirectError(error)) throw error
-    outcome = { err: errorMessage(error) }
-  }
-  redirect(withOutcome(editor(id), outcome))
+  const outcome = await uploadPdfCore(id, form)
+  redirect(withOutcome(editor(id, 'pdf'), outcome))
 }
 
 /** Make an archived uploaded version current again (no new upload, no notice). */
@@ -382,7 +273,7 @@ export async function restoreItineraryPdfVersion(id: string, form: FormData): Pr
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(id), outcome))
+  redirect(withOutcome(editor(id, 'pdf'), outcome))
 }
 
 // ---------------------------------------------------------------------------

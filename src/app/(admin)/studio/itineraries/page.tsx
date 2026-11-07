@@ -2,9 +2,10 @@ import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql, type SQL } 
 import Link from 'next/link'
 
 import { db } from '@/db'
-import { itineraries, itineraryDays } from '@/db/schema'
+import { itineraries, itineraryDays, media } from '@/db/schema'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
+import { mediaUrl } from '@/lib/content/queries'
 import { studioMoney as formatMoney } from '@/lib/currency/studio'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -13,10 +14,14 @@ import { requireCapability } from '../../_lib/session'
 import { Flash } from '../../_ui/flash'
 import { PageHead } from '../../_ui/shell'
 import { getAdminI18n } from '../../_lib/i18n'
-import { Empty, Pager, Pill, PublishPill, Table, When } from '../../_ui/table'
+import { Empty, Pager, Pill, When } from '../../_ui/table'
 import { PdfStatusPill } from './[id]/phase1-cards'
 import { itineraryKpis, salesByItinerary } from './list-stats'
 import { pdfStatusMany } from './pdf-facts'
+import { ConfirmSubmit } from '../../_ui/confirm-submit'
+import { deleteItinerary } from './actions'
+import { duplicateItinerary, setItineraryVisibility } from './editor-actions'
+import './editor.css'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,14 +45,20 @@ export default async function ItinerariesPage({
 
   if (q) {
     const like = `%${q}%`
-    const match = or(ilike(itineraries.slug, like), sql`${itineraries.name} ->> 'en' ilike ${like}`)
+    const match = or(
+      ilike(itineraries.slug, like),
+      sql`${itineraries.name} ->> 'en' ilike ${like}`,
+      sql`${itineraries.name} ->> 'ar' ilike ${like}`,
+    )
     if (match) filters.push(match)
   }
-  if (status === 'draft' || status === 'published') {
+  if (status === 'draft' || status === 'published' || status === 'hidden') {
     filters.push(eq(itineraries.status, status))
   }
 
   const where = and(...filters)
+  const mayWrite = can(session.role, 'content.write')
+  const mayPublish = can(session.role, 'content.publish')
 
   const [rows, [totalRow]] = await Promise.all([
     db
@@ -63,8 +74,10 @@ export default async function ItinerariesPage({
         updatedAt: itineraries.updatedAt,
         uploadedPdfKeys: itineraries.uploadedPdfKeys,
         isPopular: itineraries.isPopular,
+        cover: media.objectKey,
       })
       .from(itineraries)
+      .leftJoin(media, eq(media.id, itineraries.heroImageId))
       .where(where)
       .orderBy(desc(itineraries.updatedAt), asc(itineraries.slug))
       .limit(PAGE_SIZE)
@@ -119,7 +132,7 @@ export default async function ItinerariesPage({
           <>
             {can(session.role, 'content.write') ? (
               <Link className="a-btn" href={adminHref('/itineraries/new')}>
-                {t('itineraries.new')}
+                {t('ie.new')}
               </Link>
             ) : null}
           </>
@@ -157,7 +170,7 @@ export default async function ItinerariesPage({
             id="q"
             name="q"
             defaultValue={q ?? ''}
-            placeholder={t('itineraries.search_placeholder')}
+            placeholder={t('ie.search_ph')}
           />
         </div>
         <div className="a-field">
@@ -166,6 +179,7 @@ export default async function ItinerariesPage({
             <option value="">{t('common.all')}</option>
             <option value="draft">{t('common.draft')}</option>
             <option value="published">{t('common.published')}</option>
+            <option value="hidden">{t('ie.filter_hidden')}</option>
           </select>
         </div>
         <div className="a-field">
@@ -190,61 +204,104 @@ export default async function ItinerariesPage({
       {shown.length === 0 ? (
         <Empty>{t('itineraries.empty')}</Empty>
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <th>{t('common.name')}</th>
-              <th>{t('common.status')}</th>
-              <th className="num">{t('itineraries.days')}</th>
-              <th className="num">{t('itineraries.version')}</th>
-              <th>{t('ip1.col_pdf')}</th>
-              <th className="num">{t('ip1.col_sales')}</th>
-              <th className="num">{t('common.price')}</th>
-              <th>{t('common.updated')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((row) => {
-              const authoredDays = authoredByItinerary.get(row.id) ?? 0
-              return (
-                <tr key={row.id}>
-                  <td>
-                    <Link href={adminHref(`/itineraries/${row.id}`)}>
-                      {pick(row.name, locale, row.slug)}
-                    </Link>
-                    {row.isPopular ? (
-                      <>
-                        {' '}
-                        <Pill tone="info">{t('ip1.is_popular')}</Pill>
-                      </>
-                    ) : null}
-                  </td>
-                  <td>
-                    <PublishPill status={row.status} />
-                  </td>
-                  <td className="num">
-                    {authoredDays}
-                    {authoredDays !== row.days ? (
-                      <>
-                        {' '}
-                        <Pill tone="warn">{t('itineraries.stored_days', { days: row.days })}</Pill>
-                      </>
-                    ) : null}
-                  </td>
-                  <td className="num">v{row.version}</td>
-                  <td>
+        <div className="ie-cards">
+          {shown.map((row) => {
+            const authoredDays = authoredByItinerary.get(row.id) ?? 0
+            const sold = sales.get(row.id) ?? 0
+            const edit = adminHref(`/itineraries/${row.id}`)
+            const tone =
+              row.status === 'published' ? 'good' : row.status === 'hidden' ? 'warn' : 'neutral'
+            return (
+              <article className="ie-card" key={row.id}>
+                <Link
+                  href={edit}
+                  className="ie-card-cover"
+                  style={
+                    row.cover ? { backgroundImage: `url("${mediaUrl(row.cover)}")` } : undefined
+                  }
+                  aria-label={pick(row.name, locale, row.slug)}
+                >
+                  {row.cover ? null : <span>{t('ie.no_cover')}</span>}
+                </Link>
+                <div className="ie-card-body">
+                  <Link href={edit} className="ie-card-title">
+                    {pick(row.name, locale, row.slug)}
+                  </Link>
+                  <div className="ie-card-meta">
+                    <Pill tone={tone}>
+                      {t(
+                        `ie.status_${row.status === 'hidden' ? 'hidden' : row.status === 'published' ? 'published' : 'draft'}`,
+                      )}
+                    </Pill>
+                    {row.isPopular ? <Pill tone="info">{t('ip1.is_popular')}</Pill> : null}
                     <PdfStatusPill status={pdfStatuses.get(row.id) ?? { kind: 'none' }} t={t} />
-                  </td>
-                  <td className="num">{sales.get(row.id) ?? 0}</td>
-                  <td className="num">{formatMoney(row.priceMinor, row.currency, intl)}</td>
-                  <td>
+                  </div>
+                  <div className="ie-card-meta a-muted">
+                    <span>
+                      {t('itineraries.days')}: {authoredDays}
+                    </span>
+                    {authoredDays !== row.days ? (
+                      <Pill tone="warn">{t('itineraries.stored_days', { days: row.days })}</Pill>
+                    ) : null}
+                    <span>· {formatMoney(row.priceMinor, row.currency, intl)}</span>
+                    <span>· {t('ie.sales_n', { count: sold })}</span>
+                    <span>· v{row.version}</span>
+                  </div>
+                  <span className="a-muted" style={{ fontSize: '0.8rem' }}>
                     <When value={row.updatedAt} />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </Table>
+                  </span>
+                </div>
+                <div className="ie-card-actions">
+                  <Link className="a-btn small" href={edit}>
+                    {t('ie.open')}
+                  </Link>
+                  {row.status === 'published' ? (
+                    <a
+                      className="a-btn ghost small"
+                      href={`/ar/itineraries/${row.slug}`}
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      {t('ie.view')}
+                    </a>
+                  ) : null}
+                  {mayWrite ? (
+                    <form className="a-inline-form" action={duplicateItinerary.bind(null, row.id)}>
+                      <button className="a-btn ghost small" type="submit">
+                        {t('ie.duplicate')}
+                      </button>
+                    </form>
+                  ) : null}
+                  {mayPublish && row.status === 'published' ? (
+                    <form
+                      className="a-inline-form"
+                      action={setItineraryVisibility.bind(null, row.id)}
+                    >
+                      <input type="hidden" name="visibility" value="hidden" />
+                      <input type="hidden" name="back" value="list" />
+                      <button className="a-btn ghost small" type="submit">
+                        {t('ie.hide')}
+                      </button>
+                    </form>
+                  ) : null}
+                  {mayWrite ? (
+                    sold > 0 ? (
+                      <span className="a-hint">{t('ie.delete_blocked', { count: sold })}</span>
+                    ) : (
+                      <form className="a-inline-form" action={deleteItinerary.bind(null, row.id)}>
+                        <ConfirmSubmit
+                          className="a-btn danger small"
+                          label={t('ie.delete')}
+                          title={t('ie.delete_title')}
+                        />
+                      </form>
+                    )
+                  ) : null}
+                </div>
+              </article>
+            )
+          })}
+        </div>
       )}
 
       <Pager basePath={LIST} searchParams={params} page={page} pageSize={PAGE_SIZE} total={total} />

@@ -678,6 +678,13 @@ export const itineraries = pgTable('itineraries', {
    * page («فعاليات جدولي»). Null = `itinerarySales.allActivitiesDiscountPct`.
    */
   bundleDiscountPct: integer('bundle_discount_pct'),
+  /**
+   * Migration 0049: every block of the public page, per language, from the
+   * Studio editor («محتوى الصفحة»). Shape and cleaning in
+   * `@/lib/itineraries/page-content`; a blank text = the site default.
+   * Pre-purchase copy only — never a day's content or a place name.
+   */
+  pageContent: jsonb('page_content').$type<Record<string, unknown>>(),
 
   ...publishing,
   ...timestamps,

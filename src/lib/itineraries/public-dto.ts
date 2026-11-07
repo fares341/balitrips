@@ -15,6 +15,8 @@
 import { isIconName, type IconName } from '@/components/ui/icon'
 import type { LocalizedText } from '@/lib/content/localize'
 
+import type { PageContent } from './page-content'
+
 /** The audiences the list filters on (spec §0: fixed to these three). */
 export const AUDIENCE_KEYS = ['youth', 'couples', 'family'] as const
 export type AudienceKey = (typeof AUDIENCE_KEYS)[number]
@@ -77,6 +79,8 @@ export interface PublicItineraryDetail extends PublicItinerarySummary {
   seoDescription: Partial<Record<string, string>> | null
   /** «أسئلة شائعة عن هذا الجدول» from Studio; empty = the generic questions. */
   faq: PublicFaq[]
+  /** Studio «محتوى الصفحة» (0049): texts, lists, section order. Copy only. */
+  page: PageContent
 }
 
 export interface PublicFaq {
@@ -209,4 +213,5 @@ export const PUBLIC_DETAIL_KEYS = [
   'seoTitle',
   'seoDescription',
   'faq',
+  'page',
 ] as const

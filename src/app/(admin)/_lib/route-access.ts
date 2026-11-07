@@ -82,6 +82,9 @@ const ROUTES: readonly Rule[] = [
   // Itineraries phase 1 (owner, Nov 2026): pricing and driver settings
   // (before /itineraries/[id]).
   [/^\/itineraries\/pricing$/, ['content.read']],
+  // Editor «ملف PDF» tab: staff preview (GET, read); the upload (POST) checks
+  // `content.write` itself.
+  [/^\/itineraries\/[^/]+\/pdf$/, ['content.read']],
 
   // v2: bulk import of activities (CSV) and its template.
   [/^\/activity-import(\/template|\/export)?$/, ['content.write']],
