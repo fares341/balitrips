@@ -19,6 +19,7 @@ import {
   toPublicStats,
   type PublicItineraryDetail,
 } from './public-dto'
+import { normalisePageContent } from './page-content'
 import { ITINERARY_SALES_DEFAULT } from './sales-settings'
 
 const ROOT = join(__dirname, '..', '..', '..')
@@ -56,6 +57,10 @@ describe('public itinerary DTO', () => {
     seoTitle: null,
     seoDescription: null,
     faq: [{ q: { ar: 'س' }, a: { ar: 'ج' } }],
+    page: normalisePageContent({
+      texts: { daysTitle: { ar: 'أيامك' } },
+      benefits: [{ icon: 'pin', label: { ar: 'خريطة' }, text: { ar: 'نص' } }],
+    }),
   }
 
   it('carries only allow-listed keys', () => {

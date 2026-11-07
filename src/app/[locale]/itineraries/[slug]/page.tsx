@@ -15,7 +15,7 @@
  * opens the existing checkout, which charges the server price again.
  */
 
-import { cache } from 'react'
+import { cache, Fragment } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
@@ -38,6 +38,13 @@ import {
   listPublicItineraries,
   loadMapBundleOffer,
 } from '@/lib/itineraries/public'
+import {
+  pageText,
+  pickL10n,
+  visibleSections,
+  type PageSectionKey,
+  type PageTextKey,
+} from '@/lib/itineraries/page-content'
 import type { PublicImage } from '@/lib/itineraries/public-dto'
 import { holdsMapAccess } from '@/lib/itineraries/queries'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
@@ -209,7 +216,34 @@ export default async function ItineraryPage({
     { icon: 'tip', key: 'itd_b_tips' },
     { icon: 'phone', key: 'itd_b_pdf' },
   ]
-  const how = ['itd_how1', 'itd_how2', 'itd_how3'] as const
+  const howKeys = ['itd_how1', 'itd_how2', 'itd_how3'] as const
+  // Studio «محتوى الصفحة»: a typed text wins; blank = the site default.
+  const page = itinerary.page
+  const text = (key: PageTextKey, fallback: string) => pageText(page, key, locale) ?? fallback
+  const benefitRows =
+    page.benefits !== null
+      ? page.benefits.map((row, index) => ({
+          key: `c${index}`,
+          icon: row.icon,
+          label: pickL10n(row.label, locale),
+          text: pickL10n(row.text, locale),
+        }))
+      : benefits.map((benefit) => ({
+          key: benefit.key,
+          icon: benefit.icon,
+          label: t(`${benefit.key}_t`),
+          text: t(`${benefit.key}_b`, benefit.values ?? {}),
+        }))
+  const howRows =
+    page.how !== null
+      ? page.how.map((row, index) => ({
+          key: `c${index}`,
+          label: pickL10n(row.label, locale),
+          text: pickL10n(row.text, locale),
+        }))
+      : howKeys.map((key) => ({ key, label: t(`${key}_t`), text: t(`${key}_b`) }))
+  const order = visibleSections(page)
+  const shows = (key: PageSectionKey) => order.includes(key)
 
   return (
     <main className="itp">
@@ -253,206 +287,255 @@ export default async function ItineraryPage({
           </h1>
           {blurb !== null && <p className="itp-lede">{blurb}</p>}
           <p className="itp-from">
-            <span>{t('it_price_from')}</span> <strong className="bt-money">{planPrice}</strong>
+            <span>{text('heroFrom', t('it_price_from'))}</span>{' '}
+            <strong className="bt-money">{planPrice}</strong>
           </p>
         </div>
       </section>
 
       <div className="wrap itp-grid">
         <div className="itp-main">
-          {(intro !== null || itinerary.stats.length > 0) && (
-            <section className="itp-card" aria-labelledby="itp-about">
-              <h2 className="itp-h" id="itp-about">
-                {t('itd_about_t')}
-              </h2>
-              {intro !== null && <p className="itp-intro">{intro}</p>}
-              {itinerary.stats.length > 0 && (
-                <ul className="itp-stats" role="list">
-                  {itinerary.stats.slice(0, 4).map((stat) => (
-                    <li key={`${stat.icon}-${stat.value}`}>
-                      <b dir="ltr">{stat.value}</b>
-                      <span>{pick(stat.label, locale)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          )}
-
-          <section className="itp-card" aria-labelledby="itp-get">
-            <h2 className="itp-h" id="itp-get">
-              {t('itd_get_t')}
-            </h2>
-            <ul className="itp-benefits" role="list">
-              {benefits.map((benefit) => (
-                <li key={benefit.key}>
-                  <span className="itp-bi">
-                    <BaliIcon name={benefit.icon} size={24} />
-                  </span>
-                  <span>
-                    <b>{t(`${benefit.key}_t`)}</b>
-                    <small>{t(`${benefit.key}_b`, benefit.values ?? {})}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {gallery.length > 0 && (
-            <section className="itp-card" aria-labelledby="itp-gal">
-              <h2 className="itp-h" id="itp-gal">
-                {t('itp_shots_t')}
-              </h2>
-              <ul className={`itp-gallery is-${Math.min(gallery.length, 5)}`} role="list">
-                {gallery.map((image, index) => {
-                  const text = caption(image, locale)
-                  return (
-                    <li key={image.url}>
-                      <figure>
-                        <Photo
-                          src={image.url}
-                          srcSetAvif={image.srcSetAvif}
-                          srcSetWebp={image.srcSetWebp}
-                          sizes={
-                            index === 0
-                              ? '(max-width: 620px) 100vw, 420px'
-                              : '(max-width: 620px) 50vw, 220px'
-                          }
-                          alt={text ?? name}
-                        />
-                        {text !== null && <figcaption>{text}</figcaption>}
-                      </figure>
-                    </li>
-                  )
-                })}
-              </ul>
-            </section>
-          )}
-
-          {itinerary.teaserDays.length > 0 && (
-            <section className="itp-card" aria-labelledby="itp-days">
-              <h2 className="itp-h" id="itp-days">
-                {t('itd_days_t')}
-              </h2>
-              <ol className="itp-days" role="list">
-                {itinerary.teaserDays.map((day) => (
-                  <li key={day.dayNumber} className="itp-day">
-                    {day.image !== null ? (
-                      <Photo
-                        src={day.image.url}
-                        srcSetAvif={day.image.srcSetAvif}
-                        srcSetWebp={day.image.srcSetWebp}
-                        sizes="(max-width: 620px) 50vw, 200px"
-                        alt=""
-                      />
-                    ) : (
-                      <span className="itp-day-fallback" aria-hidden="true">
-                        <Logo variant="light" onLight={false} height={26} alt="" />
-                      </span>
+          {order.map((key) => {
+            switch (key) {
+              case 'about':
+                return (
+                  <Fragment key={key}>
+                    {(intro !== null || itinerary.stats.length > 0) && (
+                      <section className="itp-card" aria-labelledby="itp-about">
+                        <h2 className="itp-h" id="itp-about">
+                          {text('aboutTitle', t('itd_about_t'))}
+                        </h2>
+                        {intro !== null && <p className="itp-intro">{intro}</p>}
+                        {itinerary.stats.length > 0 && (
+                          <ul className="itp-stats" role="list">
+                            {itinerary.stats.slice(0, 4).map((stat) => (
+                              <li key={`${stat.icon}-${stat.value}`}>
+                                <b dir="ltr">{stat.value}</b>
+                                <span>{pick(stat.label, locale)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </section>
                     )}
-                    <span className="itp-day-shine" aria-hidden="true" />
-                    <span className="itp-day-lock">
-                      <BaliIcon name="lock" size={22} title={t('itd_day_locked')} />
-                    </span>
-                    <span className="itp-day-n">
-                      <b dir="ltr">{String(day.dayNumber).padStart(2, '0')}</b>
-                      <span>{t('itd_day_ord', { n: String(day.dayNumber) })}</span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-              <p className="itp-note">
-                <span className="itp-note-ic">
-                  <BaliIcon name="unlock" size={18} />
-                </span>
-                {t('itd_days_note')}
-              </p>
-            </section>
-          )}
-
-          {audience.length > 0 && (
-            <section className="itp-card" aria-labelledby="itp-fit">
-              <h2 className="itp-h" id="itp-fit">
-                {t('itd_fit_t')}
-              </h2>
-              <ul className="itp-fit" role="list">
-                {audience.map((entry) => (
-                  <li key={entry}>
-                    <BaliIcon name="family" size={18} />
-                    {entry}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <section className="itp-card" aria-labelledby="itp-how">
-            <h2 className="itp-h" id="itp-how">
-              {t('itd_how_t')}
-            </h2>
-            <ol className="itp-how" role="list">
-              {how.map((key, index) => (
-                <li key={key}>
-                  <span className="itp-how-n" dir="ltr" aria-hidden="true">
-                    {index + 1}
-                  </span>
-                  <b>{t(`${key}_t`)}</b>
-                  <small>{t(`${key}_b`)}</small>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <section className="itp-card" aria-labelledby="itp-faq">
-            <h2 className="itp-h" id="itp-faq">
-              {t('itd_faq_t')}
-            </h2>
-            <div className="itp-faq">
-              {faq.map((row, index) => (
-                <details key={`${index}-${row.q}`} open={index === 0}>
-                  <summary>{row.q}</summary>
-                  <p>{row.a}</p>
-                </details>
-              ))}
-            </div>
-          </section>
+                  </Fragment>
+                )
+              case 'get':
+                return (
+                  <Fragment key={key}>
+                    {
+                      <section className="itp-card" aria-labelledby="itp-get">
+                        <h2 className="itp-h" id="itp-get">
+                          {text('getTitle', t('itd_get_t'))}
+                        </h2>
+                        <ul className="itp-benefits" role="list">
+                          {benefitRows.map((benefit) => (
+                            <li key={benefit.key}>
+                              <span className="itp-bi">
+                                <BaliIcon name={benefit.icon} size={24} />
+                              </span>
+                              <span>
+                                <b>{benefit.label}</b>
+                                {benefit.text !== '' && <small>{benefit.text}</small>}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    }
+                  </Fragment>
+                )
+              case 'gallery':
+                return (
+                  <Fragment key={key}>
+                    {gallery.length > 0 && (
+                      <section className="itp-card" aria-labelledby="itp-gal">
+                        <h2 className="itp-h" id="itp-gal">
+                          {text('galleryTitle', t('itp_shots_t'))}
+                        </h2>
+                        <ul className={`itp-gallery is-${Math.min(gallery.length, 5)}`} role="list">
+                          {gallery.map((image, index) => {
+                            const text = caption(image, locale)
+                            return (
+                              <li key={image.url}>
+                                <figure>
+                                  <Photo
+                                    src={image.url}
+                                    srcSetAvif={image.srcSetAvif}
+                                    srcSetWebp={image.srcSetWebp}
+                                    sizes={
+                                      index === 0
+                                        ? '(max-width: 620px) 100vw, 420px'
+                                        : '(max-width: 620px) 50vw, 220px'
+                                    }
+                                    alt={text ?? name}
+                                  />
+                                  {text !== null && <figcaption>{text}</figcaption>}
+                                </figure>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </section>
+                    )}
+                  </Fragment>
+                )
+              case 'days':
+                return (
+                  <Fragment key={key}>
+                    {itinerary.teaserDays.length > 0 && (
+                      <section className="itp-card" aria-labelledby="itp-days">
+                        <h2 className="itp-h" id="itp-days">
+                          {text('daysTitle', t('itd_days_t'))}
+                        </h2>
+                        <ol className="itp-days" role="list">
+                          {itinerary.teaserDays.map((day) => (
+                            <li key={day.dayNumber} className="itp-day">
+                              {day.image !== null ? (
+                                <Photo
+                                  src={day.image.url}
+                                  srcSetAvif={day.image.srcSetAvif}
+                                  srcSetWebp={day.image.srcSetWebp}
+                                  sizes="(max-width: 620px) 50vw, 200px"
+                                  alt=""
+                                />
+                              ) : (
+                                <span className="itp-day-fallback" aria-hidden="true">
+                                  <Logo variant="light" onLight={false} height={26} alt="" />
+                                </span>
+                              )}
+                              <span className="itp-day-shine" aria-hidden="true" />
+                              <span className="itp-day-lock">
+                                <BaliIcon name="lock" size={22} title={t('itd_day_locked')} />
+                              </span>
+                              <span className="itp-day-n">
+                                <b dir="ltr">{String(day.dayNumber).padStart(2, '0')}</b>
+                                <span>{t('itd_day_ord', { n: String(day.dayNumber) })}</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ol>
+                        <p className="itp-note">
+                          <span className="itp-note-ic">
+                            <BaliIcon name="unlock" size={18} />
+                          </span>
+                          {text('daysNote', t('itd_days_note'))}
+                        </p>
+                      </section>
+                    )}
+                  </Fragment>
+                )
+              case 'fit':
+                return (
+                  <Fragment key={key}>
+                    {audience.length > 0 && (
+                      <section className="itp-card" aria-labelledby="itp-fit">
+                        <h2 className="itp-h" id="itp-fit">
+                          {text('fitTitle', t('itd_fit_t'))}
+                        </h2>
+                        <ul className="itp-fit" role="list">
+                          {audience.map((entry) => (
+                            <li key={entry}>
+                              <BaliIcon name="family" size={18} />
+                              {entry}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </Fragment>
+                )
+              case 'how':
+                return (
+                  <Fragment key={key}>
+                    {
+                      <section className="itp-card" aria-labelledby="itp-how">
+                        <h2 className="itp-h" id="itp-how">
+                          {text('howTitle', t('itd_how_t'))}
+                        </h2>
+                        <ol className="itp-how" role="list">
+                          {howRows.map((row, index) => (
+                            <li key={row.key}>
+                              <span className="itp-how-n" dir="ltr" aria-hidden="true">
+                                {index + 1}
+                              </span>
+                              <b>{row.label}</b>
+                              {row.text !== '' && <small>{row.text}</small>}
+                            </li>
+                          ))}
+                        </ol>
+                      </section>
+                    }
+                  </Fragment>
+                )
+              case 'faq':
+                return (
+                  <Fragment key={key}>
+                    {
+                      <section className="itp-card" aria-labelledby="itp-faq">
+                        <h2 className="itp-h" id="itp-faq">
+                          {text('faqTitle', t('itd_faq_t'))}
+                        </h2>
+                        <div className="itp-faq">
+                          {faq.map((row, index) => (
+                            <details key={`${index}-${row.q}`} open={index === 0}>
+                              <summary>{row.q}</summary>
+                              <p>{row.a}</p>
+                            </details>
+                          ))}
+                        </div>
+                      </section>
+                    }
+                  </Fragment>
+                )
+              default:
+                return null
+            }
+          })}
         </div>
 
-        <aside className="itp-aside" id="it-buy" aria-label={t('itp_box_t')}>
+        <aside className="itp-aside" id="it-buy" aria-label={text('boxTitle', t('itp_box_t'))}>
           <PackageBox
             slug={itinerary.slug}
-            title={t('itp_box_t')}
+            title={text('boxTitle', t('itp_box_t'))}
             options={options}
             tiers={tiers.map((one) => ({
               key: one.key,
               label: t(BUDGET_TIER_LABEL[one.key]),
               price: <Money minor={one.priceMinor} currency={itinerary.currency} />,
             }))}
-            footnote={t('itp_digital')}
+            footnote={text('boxFootnote', t('itp_digital'))}
+            trust={{
+              pay: text('trustPay', t('itd_trust_pay')),
+              fast: text('trustFast', t('itd_trust_fast')),
+              acts: text('actsLine', t('itp_acts_line')),
+            }}
           />
         </aside>
       </div>
 
-      <section className="wrap itp-custom-wrap" aria-labelledby="itp-custom">
-        <div className="itp-custom">
-          <span className="itp-custom-art" aria-hidden="true">
-            <BaliIcon name="map" size={40} />
-          </span>
-          <span className="itp-custom-text">
-            <b id="itp-custom">{t('itd_custom_t')}</b>
-            <span>{t('itd_custom_b')}</span>
-          </span>
-          <Link href={CUSTOM_HREF} className="btn btn-primary itp-custom-cta">
-            {t('itd_custom_cta')} <span aria-hidden="true">←</span>
-          </Link>
-        </div>
-      </section>
+      {shows('custom') && (
+        <section className="wrap itp-custom-wrap" aria-labelledby="itp-custom">
+          <div className="itp-custom">
+            <span className="itp-custom-art" aria-hidden="true">
+              <BaliIcon name="map" size={40} />
+            </span>
+            <span className="itp-custom-text">
+              <b id="itp-custom">{text('customTitle', t('itd_custom_t'))}</b>
+              <span>{text('customBody', t('itd_custom_b'))}</span>
+            </span>
+            <Link href={CUSTOM_HREF} className="btn btn-primary itp-custom-cta">
+              {text('customCta', t('itd_custom_cta'))} <span aria-hidden="true">←</span>
+            </Link>
+          </div>
+        </section>
+      )}
 
-      {others.length > 0 && (
+      {shows('others') && others.length > 0 && (
         <section className="sec bg-ivory2" aria-labelledby="it-others">
           <div className="wrap">
             <h2 className="h2" id="it-others" style={{ marginBottom: 20 }}>
-              {t('it4_others')}
+              {text('othersTitle', t('it4_others'))}
             </h2>
             <div className="grid pk-grid">
               {others.map((other) => (

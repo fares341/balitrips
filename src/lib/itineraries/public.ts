@@ -27,6 +27,7 @@ import {
   type PublicItineraryDetail,
   type PublicItinerarySummary,
 } from './public-dto'
+import { normalisePageContent } from './page-content'
 import { readItinerarySales } from './sales-settings-store'
 import type { ItinerarySalesSettings } from './sales-settings'
 import { normaliseTierPrices } from './tiers'
@@ -123,6 +124,7 @@ export async function getPublicItinerary(slug: string): Promise<PublicItineraryD
       seoTitle: itineraries.seoTitle,
       seoDescription: itineraries.seoDescription,
       faq: itineraries.faq,
+      pageContent: itineraries.pageContent,
     })
     .from(itineraries)
     .where(and(LIVE, eq(itineraries.slug, slug)))
@@ -167,6 +169,7 @@ export async function getPublicItinerary(slug: string): Promise<PublicItineraryD
     seoTitle: cleanLocalized(row.seoTitle),
     seoDescription: cleanLocalized(row.seoDescription),
     faq: toPublicFaq(row.faq),
+    page: normalisePageContent(row.pageContent),
   }
 }
 

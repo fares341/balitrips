@@ -43,7 +43,9 @@ export function PreviewCard({
   itinerary,
   mediaList,
   t,
+  withFaq = true,
 }: {
+  withFaq?: boolean
   itinerary: {
     id: string
     previewStats: { icon: string; value: string; label: Localized }[] | null
@@ -153,9 +155,13 @@ export function PreviewCard({
           ))
         )}
 
-        <h3>{t('ip1.faq_t')}</h3>
-        <p className="a-hint">{t('ip1.faq_hint')}</p>
-        <FaqRepeater entries={(itinerary.faq ?? []) as unknown as FaqRepeaterEntry[]} />
+        {withFaq ? (
+          <>
+            <h3>{t('ip1.faq_t')}</h3>
+            <p className="a-hint">{t('ip1.faq_hint')}</p>
+            <FaqRepeater entries={(itinerary.faq ?? []) as unknown as FaqRepeaterEntry[]} />
+          </>
+        ) : null}
 
         <h3>{t('ip1.seo_t')}</h3>
         <p className="a-hint">{t('ip1.seo_hint', { path: `/itineraries/${itinerary.slug}` })}</p>
@@ -250,7 +256,12 @@ export function PdfCard({
   maxUploadMb,
   t,
   uiLocale,
+  withUploadForm = true,
+  docHref,
 }: {
+  withUploadForm?: boolean
+  /** Staff preview / download link for one stored file. */
+  docHref?: (docId: string) => string
   itinerary: { id: string; slug: string; name: Localized; uploadedPdfKeys: Localized }
   docs: PdfDocRow[]
   statusByLocale: Record<string, PdfStatus>
@@ -290,57 +301,59 @@ export function PdfCard({
         })}
       </ul>
 
-      <form
-        className="a-row"
-        action={uploadItineraryPdfVersion.bind(null, itinerary.id)}
-        style={{ marginBlockStart: 12 }}
-      >
-        <Field label={t('itineraries.pdf_language')} htmlFor="pdf-locale">
-          <select className="a-select" id="pdf-locale" name="locale" defaultValue="ar">
-            {locales.map((locale) => (
-              <option key={locale} value={locale}>
-                {localeConfig[locale].label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label={t('itineraries.pdf_file')}
-          htmlFor="pdf-file"
-          hint={t('ip1.pdf_limit', { mb: maxUploadMb })}
+      {withUploadForm ? (
+        <form
+          className="a-row"
+          action={uploadItineraryPdfVersion.bind(null, itinerary.id)}
+          style={{ marginBlockStart: 12 }}
         >
-          <input
-            className="a-input"
-            id="pdf-file"
-            name="file"
-            type="file"
-            accept="application/pdf"
-            required
+          <Field label={t('itineraries.pdf_language')} htmlFor="pdf-locale">
+            <select className="a-select" id="pdf-locale" name="locale" defaultValue="ar">
+              {locales.map((locale) => (
+                <option key={locale} value={locale}>
+                  {localeConfig[locale].label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label={t('itineraries.pdf_file')}
+            htmlFor="pdf-file"
+            hint={t('ip1.pdf_limit', { mb: maxUploadMb })}
+          >
+            <input
+              className="a-input"
+              id="pdf-file"
+              name="file"
+              type="file"
+              accept="application/pdf"
+              required
+            />
+          </Field>
+          <Field
+            label={t('ip1.download_filename')}
+            htmlFor="pdf-name"
+            hint={t('ip1.download_filename_hint')}
+          >
+            <TextInput
+              id="pdf-name"
+              name="downloadFilename"
+              maxLength={150}
+              placeholder={`${pick(itinerary.name as never, isLocale(uiLocale) ? uiLocale : 'ar', itinerary.slug)}.pdf`}
+            />
+          </Field>
+          <Checkbox
+            name="notifyBuyers"
+            label={t('ip1.notify_buyers')}
+            hint={t('ip1.notify_buyers_hint')}
           />
-        </Field>
-        <Field
-          label={t('ip1.download_filename')}
-          htmlFor="pdf-name"
-          hint={t('ip1.download_filename_hint')}
-        >
-          <TextInput
-            id="pdf-name"
-            name="downloadFilename"
-            maxLength={150}
-            placeholder={`${pick(itinerary.name as never, isLocale(uiLocale) ? uiLocale : 'ar', itinerary.slug)}.pdf`}
-          />
-        </Field>
-        <Checkbox
-          name="notifyBuyers"
-          label={t('ip1.notify_buyers')}
-          hint={t('ip1.notify_buyers_hint')}
-        />
-        <div className="a-actions">
-          <button className="a-btn accent" type="submit">
-            {t('itineraries.pdf_upload')}
-          </button>
-        </div>
-      </form>
+          <div className="a-actions">
+            <button className="a-btn accent" type="submit">
+              {t('itineraries.pdf_upload')}
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       <h3>{t('ip1.history_t')}</h3>
       {uploads.length === 0 ? (
@@ -381,6 +394,16 @@ export function PdfCard({
                     )}
                   </td>
                   <td>
+                    {docHref ? (
+                      <a
+                        className="a-btn ghost small"
+                        href={docHref(doc.id)}
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        {t('ie.pdf_open')}
+                      </a>
+                    ) : null}{' '}
                     {doc.isCurrent ? null : (
                       <form
                         className="a-inline-form"

@@ -33,6 +33,13 @@ const nextConfig: NextConfig = {
        */
       bodySizeLimit: '25mb',
     },
+    /**
+     * The proxy (src/proxy.ts) buffers every request body, 10 MB by default;
+     * a bigger body is cut off, so a 12 MB itinerary PDF (limit: 24 MB in
+     * the pricing settings) arrived truncated and the upload failed. Same
+     * ceiling as the server actions.
+     */
+    proxyClientMaxBodySize: '25mb',
   },
 
   // Images are pre-generated into Spaces and served through the CDN.

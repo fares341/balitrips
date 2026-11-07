@@ -5,6 +5,7 @@ import { ITINERARY_TIERS, normaliseTierPrices, type TierPrices } from '@/lib/iti
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { arabicPdfFacts } from './pdf-facts'
+import { salesByItinerary } from './list-stats'
 import { publishBlock } from '@/lib/itineraries/publish-gate'
 import { redirect } from 'next/navigation'
 
@@ -35,7 +36,7 @@ import {
   fintOrNull,
   flocalizedList,
   flocalizedOrNull,
-  flocalizedRequired,
+  flocalizedAny,
   fenum,
   fmoney,
   fmoneyOrNull,
@@ -52,7 +53,12 @@ import { requireCapability } from '../../_lib/session'
 import { assertSlug } from '../../_lib/slug'
 
 const LIST = adminHref('/itineraries')
-const editor = (id: string) => adminHref(`/itineraries/${id}`)
+const editor = (id: string, tab?: string | null) =>
+  adminHref(`/itineraries/${id}${tab ? `?tab=${encodeURIComponent(tab)}` : ''}`)
+const tabOf = (form: FormData) => {
+  const tab = form.get('_tab')
+  return typeof tab === 'string' && /^[a-z]{2,12}$/.test(tab) ? tab : null
+}
 
 type Outcome = { ok: string } | { err: string }
 
@@ -70,48 +76,67 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
   const session = await requireCapability('content.write')
   const { t } = await getAdminI18n()
 
-  let target = id === 'new' ? LIST : editor(id)
+  let target = id === 'new' ? editor('new') : editor(id, tabOf(form))
   let outcome: Outcome
 
   try {
-    const mapAccess = fenum(form, 'mapAccess', MAP_ACCESS, 'free_only')
-    // Levels (client, Oct 2026): a blank price = that level is not on sale.
-    const tierPrices = tierPricesOrNull(
-      Object.fromEntries(
-        ITINERARY_TIERS.map((key) => [
-          key,
-          fmoneyOrNull(form, `tier_${key}`, BASE_CURRENCY, t(`itineraries.tier_${key}`)),
-        ]),
-      ),
-    )
-    const values = {
-      slug: assertSlug(freq(form, 'slug', t('itineraries.f_slug'))),
-      legacyId: fstr(form, 'legacyId'),
-      name: flocalizedRequired(form, 'name', t('itineraries.f_name')),
-      blurb: flocalizedOrNull(form, 'blurb'),
-      spots: fintOrNull(form, 'spots', t('itineraries.f_spots')),
-      tripType: flocalizedOrNull(form, 'tripType'),
-      audience: flocalizedList(form, 'audience'),
-      priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
-      currency: BASE_CURRENCY,
-      tierPrices,
-      heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
-      // الوثيقة 4.2
-      detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
-      // Phase 3: the map rule decides; the legacy flags follow it.
-      mapAccess,
-      ...legacyFlagsFor(mapAccess),
-      vipPlanId: fuuidOrNull(form, 'vipPlanId', t('p3.vip_plan')),
-      saleDigital: fbool(form, 'saleDigital'),
-      saleWithActivities: fbool(form, 'saleWithActivities'),
-      saleWithPackages: fbool(form, 'saleWithPackages'),
-      saleCustomRequest: fbool(form, 'saleCustomRequest'),
-      internalNotes: fstr(form, 'internalNotes')?.slice(0, 5000) ?? null,
-      galleryImageIds: fmulti(form, 'galleryImageIds').filter(isUuid).slice(0, 24),
-      linkedPlaceIds: fmulti(form, 'linkedPlaceIds').filter(isUuid).slice(0, 100),
-    }
+    /**
+     * Studio editor tabs (Nov 2026): each tab posts only its own fields and
+     * names them in `_sections` (`basics`, `pricing`). A field of a section
+     * that was not posted is left as stored. No `_sections` = every field,
+     * as the single long form always posted.
+     */
+    const posted = new Set(fmulti(form, '_sections'))
+    const has = (part: 'basics' | 'pricing') => posted.size === 0 || posted.has(part)
 
-    const regionIds = fmulti(form, 'regionIds')
+    const basics = has('basics')
+      ? {
+          slug: assertSlug(freq(form, 'slug', t('itineraries.f_slug'))),
+          legacyId: fstr(form, 'legacyId'),
+          name: flocalizedAny(form, 'name', t('itineraries.f_name')),
+          blurb: flocalizedOrNull(form, 'blurb'),
+          spots: fintOrNull(form, 'spots', t('itineraries.f_spots')),
+          tripType: flocalizedOrNull(form, 'tripType'),
+          audience: flocalizedList(form, 'audience'),
+          heroImageId: fuuidOrNull(form, 'heroImageId', t('itineraries.hero_image')),
+          // الوثيقة 4.2
+          detailedDescription: flocalizedOrNull(form, 'detailedDescription'),
+          internalNotes: fstr(form, 'internalNotes')?.slice(0, 5000) ?? null,
+          galleryImageIds: fmulti(form, 'galleryImageIds').filter(isUuid).slice(0, 24),
+          linkedPlaceIds: fmulti(form, 'linkedPlaceIds').filter(isUuid).slice(0, 100),
+        }
+      : {}
+
+    let pricing: Record<string, unknown> = {}
+    if (has('pricing')) {
+      const mapAccess = fenum(form, 'mapAccess', MAP_ACCESS, 'free_only')
+      // Levels (client, Oct 2026): a blank price = that level is not on sale.
+      const tierPrices = tierPricesOrNull(
+        Object.fromEntries(
+          ITINERARY_TIERS.map((key) => [
+            key,
+            fmoneyOrNull(form, `tier_${key}`, BASE_CURRENCY, t(`itineraries.tier_${key}`)),
+          ]),
+        ),
+      )
+      pricing = {
+        priceMinor: fmoney(form, 'priceMinor', BASE_CURRENCY, t('common.price')),
+        currency: BASE_CURRENCY,
+        tierPrices,
+        // Phase 3: the map rule decides; the legacy flags follow it.
+        mapAccess,
+        ...legacyFlagsFor(mapAccess),
+        vipPlanId: fuuidOrNull(form, 'vipPlanId', t('p3.vip_plan')),
+        saleDigital: fbool(form, 'saleDigital'),
+        saleWithActivities: fbool(form, 'saleWithActivities'),
+        saleWithPackages: fbool(form, 'saleWithPackages'),
+        saleCustomRequest: fbool(form, 'saleCustomRequest'),
+      }
+    }
+    const values = { ...basics, ...pricing } as Partial<typeof itineraries.$inferInsert>
+    if (id === 'new' && !has('basics')) throw new Error(t('ie.err_basics_first'))
+
+    const regionIds = has('basics') ? fmulti(form, 'regionIds') : null
 
     const savedId = await db.transaction(async (tx) => {
       const before =
@@ -122,20 +147,23 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
 
       if (id !== 'new' && !before) throw new Error(t('itineraries.err_gone'))
       // Phase 6: without `prices.write` the price must come back as stored.
-      assertPriceChangeAllowed(
-        session.role,
-        before ? { ...before, tierPrices: tierPricesOrNull(before.tierPrices) } : null,
-        values,
-        before ? ['priceMinor', 'currency', 'tierPrices'] : ['priceMinor', 'tierPrices'],
-        t('team.err_prices'),
-      )
+      if (has('pricing')) {
+        assertPriceChangeAllowed(
+          session.role,
+          before ? { ...before, tierPrices: tierPricesOrNull(before.tierPrices) } : null,
+          values as Record<string, unknown>,
+          before ? ['priceMinor', 'currency', 'tierPrices'] : ['priceMinor', 'tierPrices'],
+          t('team.err_prices'),
+        )
+      }
 
       const [row] =
         id === 'new'
           ? await tx
               .insert(itineraries)
               .values({
-                ...values,
+                ...({ priceMinor: 0, currency: BASE_CURRENCY } as const),
+                ...(values as typeof itineraries.$inferInsert),
                 // Length is derived from the authored day plan, never typed
                 // in — a mismatch between the two is precisely the bug that
                 // produced uneditable "free day" filler.
@@ -147,8 +175,10 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
 
       if (!row) throw new Error(t('itineraries.err_save_failed'))
 
-      await tx.delete(itineraryRegions).where(eq(itineraryRegions.itineraryId, row.id))
-      if (regionIds.length > 0) {
+      if (regionIds !== null) {
+        await tx.delete(itineraryRegions).where(eq(itineraryRegions.itineraryId, row.id))
+      }
+      if (regionIds !== null && regionIds.length > 0) {
         await tx
           .insert(itineraryRegions)
           .values(regionIds.map((regionId) => ({ itineraryId: row.id, regionId })))
@@ -169,7 +199,7 @@ export async function saveItinerary(id: string, form: FormData): Promise<void> {
       return row.id
     })
 
-    target = editor(savedId)
+    target = editor(savedId, tabOf(form))
     outcome = { ok: t('itineraries.ok_saved') }
   } catch (error) {
     if (isRedirectError(error)) throw error
@@ -299,6 +329,10 @@ export async function deleteItinerary(id: string): Promise<void> {
     await db.transaction(async (tx) => {
       const [before] = await tx.select().from(itineraries).where(eq(itineraries.id, id)).limit(1)
       if (!before) throw new Error(t('itineraries.err_gone'))
+      // Buyers open their files and pages through the row: deleting it would
+      // take them away. Such an itinerary can only be hidden («إخفاء»).
+      const buyers = (await salesByItinerary([id])).get(id) ?? 0
+      if (buyers > 0) throw new Error(t('ie.err_has_buyers', { count: buyers }))
 
       await tx
         .update(itineraries)
@@ -390,7 +424,7 @@ export async function addItineraryDay(itineraryId: string, form: FormData): Prom
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'days'), outcome))
 }
 
 export async function saveItineraryDay(
@@ -412,7 +446,7 @@ export async function saveItineraryDay(
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'days'), outcome))
 }
 
 /**
@@ -481,7 +515,7 @@ export async function moveItineraryDay(
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'days'), outcome))
 }
 
 export async function removeItineraryDay(itineraryId: string, dayId: string): Promise<void> {
@@ -533,7 +567,7 @@ export async function removeItineraryDay(itineraryId: string, dayId: string): Pr
     outcome = { err: errorMessage(error) }
   }
 
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'days'), outcome))
 }
 
 // ---------------------------------------------------------------------------
@@ -684,7 +718,7 @@ export async function removeItineraryPdf(id: string, form: FormData): Promise<vo
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(id), outcome))
+  redirect(withOutcome(editor(id, 'pdf'), outcome))
 }
 
 // ---------------------------------------------------------------------------
@@ -847,7 +881,7 @@ export async function addItineraryPackageLink(itineraryId: string, form: FormDat
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'pricing'), outcome))
 }
 
 export async function saveItineraryPackageLink(
@@ -915,7 +949,7 @@ export async function saveItineraryPackageLink(
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'pricing'), outcome))
 }
 
 export async function removeItineraryPackageLink(
@@ -952,7 +986,7 @@ export async function removeItineraryPackageLink(
     if (isRedirectError(error)) throw error
     outcome = { err: errorMessage(error) }
   }
-  redirect(withOutcome(editor(itineraryId), outcome))
+  redirect(withOutcome(editor(itineraryId, 'pricing'), outcome))
 }
 
 /** New order of the linked packages (ids, first = shown first). */

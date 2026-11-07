@@ -45,12 +45,15 @@ export function PackageBox({
   tiers = [],
   title,
   footnote,
+  trust,
 }: {
   slug: string
   options: readonly PackageOption[]
   tiers?: readonly PackageTier[]
   title: string
   footnote: ReactNode
+  /** Studio texts for the trust lines (blank = default). */
+  trust?: { pay: string; fast: string; acts: string }
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -169,14 +172,14 @@ export function PackageBox({
         <p className="itp-digital">{footnote}</p>
         <ul className="itp-trust" role="list">
           <li>
-            <BaliIcon name="shield" size={20} /> {t('itd_trust_pay')}
+            <BaliIcon name="shield" size={20} /> {trust?.pay ?? t('itd_trust_pay')}
           </li>
           <li>
-            <BaliIcon name="bolt" size={20} /> {t('itd_trust_fast')}
+            <BaliIcon name="bolt" size={20} /> {trust?.fast ?? t('itd_trust_fast')}
           </li>
         </ul>
         <p className="itp-after">
-          <BaliIcon name="ticket" size={24} /> {t('itp_acts_line')}
+          <BaliIcon name="ticket" size={24} /> {trust?.acts ?? t('itp_acts_line')}
         </p>
       </div>
 
