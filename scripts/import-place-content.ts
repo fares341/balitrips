@@ -3,7 +3,7 @@
  * map places. Run inside the production worker container:
  *
  *   node_modules/.bin/tsx scripts/import-place-content.ts --dir=/tmp/places-content \
- *     [--apply] [--only=slug,slug] [--overwrite-descriptions] [--replace-unique]
+ *     [--apply] [--only=slug,slug] [--limit=N] [--pause-ms=1500] [--overwrite-descriptions] [--replace-unique]
  *
  * Dry run by default (reads the DB and validates every file, writes nothing).
  *
@@ -22,6 +22,7 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
@@ -54,6 +55,11 @@ const only = value('only')
   ?.split(',')
   .map((s) => s.trim())
   .filter(Boolean)
+/** Process at most N places this run (after --only); re-run to continue. */
+const limit = Number(value('limit') ?? '0') || 0
+/** Pause between images so the live site keeps its CPU (default 1500 ms). */
+const pauseMs = Math.max(0, Number(value('pause-ms') ?? '1500') || 0)
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const options = {
   replaceUnique: flag('replace-unique'),
   overwriteDescriptions: flag('overwrite-descriptions'),
@@ -85,6 +91,21 @@ async function main(): Promise<number> {
     console.error('usage: import-place-content.ts --dir=<folder> [--apply] [--only=a,b] ...')
     return 2
   }
+  // Small server, live site on the same box: one libvips thread, no cache.
+  try {
+    const require_ = createRequire(import.meta.url)
+    const sharpMod: unknown = require_('sharp')
+    const sh = (
+      typeof sharpMod === 'function' ? sharpMod : (sharpMod as { default?: unknown }).default
+    ) as {
+      concurrency?: (n: number) => void
+      cache?: (v: boolean) => void
+    }
+    sh.concurrency?.(1)
+    sh.cache?.(false)
+  } catch {
+    // no sharp: the pipeline reports it per image
+  }
   const root = resolve(dir)
   const manifestPath = join(root, 'manifest.csv')
   const descPath = join(root, 'descriptions.csv')
@@ -107,6 +128,7 @@ async function main(): Promise<number> {
 
   let slugs = [...new Set([...grouped.bySlug.keys(), ...descBySlug.keys()])].sort()
   if (only) slugs = slugs.filter((s) => only.includes(s))
+  if (limit > 0) slugs = slugs.slice(0, limit)
 
   console.log(
     `\n  ${apply ? 'APPLY' : 'DRY RUN'} — ${root}\n  ${manifest.images.length} manifest rows, ${descs.rows.length} description rows, ${slugs.length} slugs in scope` +
@@ -240,6 +262,7 @@ async function main(): Promise<number> {
             sha256: createHash('sha256').update(file.bytes).digest('hex'),
           })
           totals.ingested++
+          if (pauseMs > 0) await sleep(pauseMs)
           console.log(
             `        + ${importMediaName(img)} ${result.width}x${result.height} ${result.driver} ${result.optimised ? `${result.derivatives.length} derivatives` : 'NO derivatives (sharp missing)'}`,
           )
