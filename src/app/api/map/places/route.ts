@@ -84,7 +84,8 @@ export async function GET(request: NextRequest) {
     reviews: place.reviewCount,
     desc: shortText(place.description ? pick(place.description, locale) : null),
     thumb: place.heroThumbUrl,
-    images: cardImages(place.heroImageUrl, place.gallery),
+    // One photo on the map (owner, Nov 2026); the gallery is for /places pages.
+    images: cardImages(place.heroImageUrl, []),
     priceMinor: place.fromPriceMinor,
     currency: place.fromCurrency,
     activitySlug: place.activitySlug,

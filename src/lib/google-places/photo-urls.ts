@@ -61,7 +61,11 @@ export interface OwnImage {
 export interface ResolvedImages {
   heroImageUrl: string | null
   heroThumbUrl: string | null
-  /** Always empty: a place shows exactly one photo (owner, Nov 2026). */
+  /**
+   * Extra photos for the place PAGE only (owner, 9 Nov 2026): the place's
+   * other own photos used by fewer than WIDELY_SHARED places. Empty when the
+   * hero is Google's or the glyph. Map cards / the sheet still show one.
+   */
   gallery: string[]
   /** Where the one photo came from (null = the category glyph). */
   source: 'own' | 'google' | 'free' | 'shared' | null
@@ -99,7 +103,9 @@ export function resolvePlaceImages(input: {
   const pick = (image: OwnImage, source: ResolvedImages['source']): ResolvedImages => ({
     heroImageUrl: image.url,
     heroThumbUrl: image.thumb ?? image.url,
-    gallery: [],
+    gallery: candidates
+      .filter((other) => other !== image && uses(other) < WIDELY_SHARED)
+      .map((other) => other.url),
     source,
   })
 
