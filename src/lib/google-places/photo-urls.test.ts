@@ -64,7 +64,7 @@ describe('the ONE photo of a place (owner, Nov 2026, final)', () => {
     expect(out).toEqual({
       heroImageUrl: '/media/h/1280.webp',
       heroThumbUrl: '/t.webp',
-      gallery: [],
+      gallery: ['/media/g1/1280.webp'],
       source: 'own',
     })
   })
@@ -128,8 +128,17 @@ describe('the ONE photo of a place (owner, Nov 2026, final)', () => {
     expect(resolvePlaceImages({ ...base, google: false }).heroImageUrl).toBeNull()
   })
 
-  it('exactly one photo: never a gallery, never a second Google photo', () => {
-    const many = Array.from({ length: 20 }, (_, i) => img(`g${i}`))
+  it('place-page gallery: own photos only, never widely shared, never a second Google photo', () => {
+    const out = resolvePlaceImages({
+      ...base,
+      placesUsing: uses({ g2: 3 }),
+      hero: img('h'),
+      gallery: [img('g1'), img('g2'), img('g3')],
+      google: true,
+    })
+    expect(out.heroImageUrl).toBe('/media/h/1280.webp')
+    expect(out.gallery).toEqual(['/media/g1/1280.webp', '/media/g3/1280.webp'])
+    const many = Array.from({ length: 20 }, (_, i) => free(`f${i}`))
     expect(resolvePlaceImages({ ...base, gallery: many, google: true }).gallery).toEqual([])
     expect(resolvePlaceImages({ ...base, google: true }).gallery).toEqual([])
     expect(GOOGLE_PHOTO_MAX).toBe(1)
