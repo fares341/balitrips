@@ -11,7 +11,7 @@ import { loadPlansById } from '@/lib/entitlements/plans'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** True when the plan was added; false for an unknown or not-for-sale plan. */
-export async function addPlanToCart(raw: unknown): Promise<boolean> {
+export async function addPlanToCart(raw: unknown, devices?: unknown): Promise<boolean> {
   const planId = typeof raw === 'string' && UUID.test(raw) ? raw : null
   const [plan] = planId === null ? [] : await loadPlansById([planId])
   // Phase 3: standalone VIP can be switched off in Studio → VIP settings.
@@ -20,6 +20,8 @@ export async function addPlanToCart(raw: unknown): Promise<boolean> {
     plan.entitlementKind === 'vip' &&
     !(await readSetting('vip')).sellStandalone
   if (plan === undefined || standaloneOff) return false
-  await addItem({ kind: 'plan', refId: plan.id })
+  // The count is clamped to the plan's range and priced on the server.
+  const n = typeof devices === 'string' || typeof devices === 'number' ? Number(devices) : NaN
+  await addItem({ kind: 'plan', refId: plan.id, devices: Number.isFinite(n) ? n : null })
   return true
 }

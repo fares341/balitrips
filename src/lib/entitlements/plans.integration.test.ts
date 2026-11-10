@@ -26,7 +26,7 @@ const orderIds: string[] = []
 const userIds: string[] = []
 const planIds: string[] = []
 
-async function seed(durationDays: number | null, deviceLimit: number) {
+async function seed(durationDays: number | null, deviceLimit: number, devices?: number) {
   const user = await createTestUser()
   userIds.push(user.id)
 
@@ -71,6 +71,7 @@ async function seed(durationDays: number | null, deviceLimit: number) {
     unitPriceMinor: 1900,
     quantity: 1,
     lineTotalMinor: 1900,
+    options: devices === undefined ? null : { devices },
   })
 
   const providerPaymentId = `sbx_${fixtureId().slice(0, 40)}`
@@ -135,6 +136,16 @@ describe('plan purchase', () => {
     expect(permissions.entitlements.has('map_access')).toBe(true)
     // This plan excludes My Trip.
     expect(permissions.canUseTrip).toBe(false)
+  })
+
+  it('grants the device count bought, not the plan limit (owner, Nov 2026)', async () => {
+    const { orderId, providerPaymentId } = await seed(90, 1, 3)
+    await processWebhookEvent('sandbox', paid(providerPaymentId))
+    const [grant] = await db
+      .select()
+      .from(entitlements)
+      .where(eq(entitlements.grantedByOrderId, orderId))
+    expect(grant?.deviceLimit).toBe(3)
   })
 
   it('does not grant twice when the provider redelivers', async () => {

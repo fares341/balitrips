@@ -2989,5 +2989,12 @@
   "notif_cart_reminder_t": "Keranjang Anda menunggu",
   "notif_cart_reminder_b": "Ada beberapa pengalaman yang tertinggal di keranjang Bali Trips Anda. Keranjang tersimpan — selesaikan pemesanan kapan saja. Untuk berhenti menerima penawaran, balas email ini.",
   "pol_pr11_t": "Penawaran, nomor WhatsApp, dan pengingat keranjang",
-  "pol_pr11_b": "Jika Anda memilih meminta diskon “pemesanan pertama”, kami menyimpan nama dan nomor WhatsApp Anda (serta email jika diisi) dan mengirimkan kodenya. Jika Anda masuk dengan Google, kami hanya menerima nama dan email Anda. Saat checkout kami menyimpan nama dan nomor Anda untuk mengirim konfirmasi dan jadwal pemesanan. Kami mengirim penawaran, atau satu pengingat tentang keranjang yang Anda tinggalkan (paling banyak satu per keranjang), hanya kepada orang yang mencentang persetujuan sendiri, dan kami mencatat waktu serta kalimat persetujuannya. Anda dapat menarik persetujuan kapan saja dengan membalas STOP atau menulis ke {email}."
+  "pol_pr11_b": "Jika Anda memilih meminta diskon “pemesanan pertama”, kami menyimpan nama dan nomor WhatsApp Anda (serta email jika diisi) dan mengirimkan kodenya. Jika Anda masuk dengan Google, kami hanya menerima nama dan email Anda. Saat checkout kami menyimpan nama dan nomor Anda untuk mengirim konfirmasi dan jadwal pemesanan. Kami mengirim penawaran, atau satu pengingat tentang keranjang yang Anda tinggalkan (paling banyak satu per keranjang), hanya kepada orang yang mencentang persetujuan sendiri, dan kami mencatat waktu serta kalimat persetujuannya. Anda dapat menarik persetujuan kapan saja dengan membalas STOP atau menulis ke {email}.",
+  "pl_devices_label": "Jumlah perangkat",
+  "pl_devices_less": "Kurangi satu perangkat",
+  "pl_devices_more": "Tambah satu perangkat",
+  "pl_devices_extra": "+<price></price> per perangkat tambahan",
+  "pl_devices_count": "{count, plural, other {# perangkat}}",
+  "pl_devices_from": "{count, plural, other {Termasuk # perangkat}} — tambah hingga {max}",
+  "cart_plan_devices": "{count, plural, other {# perangkat}}"
 }

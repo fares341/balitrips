@@ -410,6 +410,10 @@ export default async function OrderPage({
               } else if (isDigitalKind(line.kind)) {
                 meta.push(t('co_digital'))
               }
+              // Plans sold per device (owner, Nov 2026): the devices paid for.
+              if (line.kind === 'plan' && line.options?.devices) {
+                meta.push(t('cart_plan_devices', { count: line.options.devices }))
+              }
               return (
                 <article key={line.id} className="oi">
                   {display?.imageUrl ? (

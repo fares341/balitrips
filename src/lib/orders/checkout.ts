@@ -691,6 +691,10 @@ function orderItemOptions(
   if (line.coveredBy !== undefined) return { coveredByCartLine: true }
   const audience = item?.options?.audience
   const tier = item?.options?.tier
+  if (line.kind === 'plan' && line.devices !== undefined) {
+    // The clamped count the buyer paid for; the grant copies it.
+    return { devices: line.devices.count }
+  }
   const chosen = { ...(audience ? { audience } : {}), ...(tier ? { tier } : {}) }
   if (!line.breakdown) return audience || tier ? chosen : null
   return {

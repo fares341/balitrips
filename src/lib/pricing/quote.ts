@@ -18,6 +18,7 @@ import {
 } from '@/lib/booking/price'
 import type { SeasonalPrice } from '@/lib/booking/seasonal'
 import { checkAvailability, type AvailabilityRules } from '@/lib/availability/rules'
+import { planTotalMinor } from './plan-devices'
 
 /**
  * Server-authoritative pricing.
@@ -85,6 +86,8 @@ export interface QuoteRequestItem {
     tier?: string
     /** «فعاليات جدولي»: the bought itinerary this activity line belongs to (never priced here). */
     itineraryBundle?: string
+    /** Plan: devices chosen. Clamped to the plan's range and priced here. */
+    devices?: number
   } | null
 }
 
@@ -185,6 +188,11 @@ export interface CatalogSnapshot {
        * currency as `priceMinor`, from `itinerarySales`). Absent = no bundle.
        */
       withItineraryMinor?: number
+      /** Devices the base price covers (owner, Nov 2026). Absent = 1, not sold per device. */
+      deviceLimit?: number
+      /** Each device above `deviceLimit`. NULL/0 = extras not sold. */
+      extraDevicePriceMinor?: number | null
+      maxDevices?: number | null
     }
   >
   /**
@@ -253,6 +261,11 @@ export interface QuoteLine {
    * («الجدول + الخريطة»). `savingMinor` = full price − charged price.
    */
   mapBundle?: { itineraryItemId: string; fullMinor: number; savingMinor: number }
+  /**
+   * Plan lines: devices bought (clamped server-side) and what the devices
+   * above the plan's own limit added to `unitPriceMinor`.
+   */
+  devices?: { count: number; extraMinor: number }
 }
 
 export type QuoteIssueCode =
@@ -476,8 +489,12 @@ export function applyCoverage(lines: QuoteLine[], catalog: CatalogSnapshot): voi
   if (bundleItinerary) {
     for (const line of lines) {
       if (line.kind !== 'plan' || line.refId === null || line.coveredBy !== undefined) continue
-      const bundle = catalog.plans.get(line.refId)?.withItineraryMinor
-      if (bundle === undefined || bundle < 0 || bundle >= line.unitPriceMinor) continue
+      const base = catalog.plans.get(line.refId)?.withItineraryMinor
+      // The bundle price replaces the base; extra devices are still added.
+      const extras = line.devices?.extraMinor ?? 0
+      if (base === undefined || base < 0) continue
+      const bundle = base + extras
+      if (bundle >= line.unitPriceMinor) continue
       const fullMinor = line.unitPriceMinor
       line.unitPriceMinor = bundle
       line.lineTotalMinor = bundle
@@ -643,15 +660,19 @@ function pricePlan(
     issues.push({ itemId: item.id, code: 'unknown_item' })
     return
   }
-  // باقة واحدة لكل طلب؛ الكمية لا معنى لها.
+  // باقة واحدة لكل طلب؛ الكمية لا معنى لها. عدد الأجهزة يُقصّ لمدى الباقة
+  // ويُسعَّر هنا — لا يُقبل مجموع من العميل.
+  const facts = { ...plan, deviceLimit: plan.deviceLimit ?? 1 }
+  const { devices, extraMinor, totalMinor } = planTotalMinor(facts, item.options?.devices)
   lines.push({
     itemId: item.id,
     kind: 'plan',
     refId: item.refId,
-    unitPriceMinor: plan.priceMinor,
+    unitPriceMinor: totalMinor,
     quantity: 1,
-    lineTotalMinor: plan.priceMinor,
+    lineTotalMinor: totalMinor,
     currency: plan.currency,
+    ...(plan.deviceLimit === undefined ? {} : { devices: { count: devices, extraMinor } }),
   })
 }
 

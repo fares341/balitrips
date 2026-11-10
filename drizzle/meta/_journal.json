@@ -374,6 +374,13 @@
       "breakpoints": true
     },
     {
+      "idx": 53,
+      "version": "7",
+      "when": 1794900000000,
+      "tag": "0053_plan_extra_devices",
+      "breakpoints": true
+    },
+    {
       "idx": 54,
       "version": "7",
       "when": 1795000000000,
