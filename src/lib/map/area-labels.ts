@@ -116,6 +116,8 @@ export const AREA_LABELS: readonly AreaLabel[] = [
 
 export interface AreaLabelPoint {
   name: string
+  /** English name shown small under the local one (empty on English pages). */
+  sub: string
   lat: number
   lon: number
   minZoom: number
@@ -136,6 +138,7 @@ export function areaLabelPoints(
     const db = centres.get(label.key)
     return {
       name: label.name[lang],
+      sub: lang === 'en' ? '' : label.name.en,
       lat: db?.lat ?? label.lat,
       lon: db?.lon ?? label.lon,
       minZoom: label.minZoom,

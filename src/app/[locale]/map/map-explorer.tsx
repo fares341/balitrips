@@ -1401,7 +1401,7 @@ function addLayers(
       type: 'FeatureCollection',
       features: labels.map((one) => ({
         type: 'Feature',
-        properties: { n: one.name, z: one.minZoom },
+        properties: { n: one.name, s: one.sub, z: one.minZoom },
         geometry: { type: 'Point', coordinates: [one.lon, one.lat] },
       })),
     },
@@ -1415,13 +1415,21 @@ function addLayers(
       minzoom: z,
       filter: ['==', ['get', 'z'], z],
       layout: {
-        'text-field': ['get', 'n'],
-        // Light labels (owner, Nov 2026, option D, then a touch stronger): small,
-        // white on the green/blue map with a darker halo, so they read
-        // without covering the map.
+        // Owner pick A (Nov 2026): local name bold and white, the English name
+        // small and spaced underneath, a dark halo so both read on the green map.
+        'text-field': [
+          'format',
+          ['get', 'n'],
+          {},
+          '\n',
+          {},
+          ['upcase', ['get', 's']],
+          { 'font-scale': 0.6, 'text-font': ['literal', ['Noto Sans Regular']] },
+        ],
         'text-font': ['Noto Sans Bold'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 11, 12, 14],
-        'text-letter-spacing': 0.02,
+        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 13, 12, 17],
+        'text-letter-spacing': 0.04,
+        'text-line-height': 1.15,
         'text-anchor': 'top',
         'text-offset': [0, 0.5],
         'text-padding': 2,
