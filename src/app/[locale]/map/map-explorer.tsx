@@ -72,7 +72,7 @@ import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/s
 
 import { CategoryGlyph } from './category-glyph'
 import { MapWatermark, protectionHandlers } from './map-protect'
-import { attributionsFor, LIGHT, REAL_MAX_ZOOM, type MapSettings } from './map-style'
+import { attributionsFor, REAL_MAX_ZOOM, type MapSettings } from './map-style'
 import { loadMapLibre, type MapLike } from './maplibre-loader'
 import { FavoriteHeart } from './place-actions'
 import { drawPin, PinGlyph } from './pin-glyph'
@@ -1416,17 +1416,21 @@ function addLayers(
       filter: ['==', ['get', 'z'], z],
       layout: {
         'text-field': ['get', 'n'],
-        'text-font': ['Noto Sans Bold'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 12, 12, 16],
-        'text-letter-spacing': 0.03,
+        // Light labels (owner, Nov 2026, option D): small, regular weight,
+        // white on the green/blue map with a soft dark halo, so they read
+        // without covering the map.
+        'text-font': ['Noto Sans Regular'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 8, 11, 12, 14],
+        'text-letter-spacing': 0.02,
         'text-anchor': 'top',
         'text-offset': [0, 0.5],
         'text-padding': 2,
       },
       paint: {
-        'text-color': LIGHT.areaText,
-        'text-halo-color': 'rgba(255,255,255,0.95)',
-        'text-halo-width': 1.8,
+        'text-color': 'rgba(255,255,255,0.92)',
+        'text-halo-color': 'rgba(16,40,22,0.45)',
+        'text-halo-width': 1,
+        'text-halo-blur': 0.6,
       },
     })
   }
