@@ -4,7 +4,11 @@ import { notFound } from 'next/navigation'
 
 import { db } from '@/db'
 import { plans } from '@/db/schema'
+import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
+import { formatMoneyInput } from '@/lib/money-input'
+import { DEFAULT_MAX_DEVICES } from '@/lib/pricing/plan-devices'
+import { MAX_DEVICE_LIMIT } from '@/lib/security/config'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { isUuid } from '../../../_lib/form'
@@ -16,6 +20,7 @@ import {
   LocalizedField,
   LocalizedListField,
   MoneyField,
+  priceInputProps,
   Select,
   StatusField,
   TextInput,
@@ -34,8 +39,10 @@ export default async function PlanEditPage({
   params: Promise<{ id: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireCapability('config.write')
+  const session = await requireCapability('config.write')
   const { t, locale } = await getAdminI18n()
+  // Phase 6: without `prices.write` the price fields are read-only.
+  const lockPrices = !can(session.role, 'prices.write')
   const { id } = await params
   const query = await searchParams
   const isNew = id === 'new'
@@ -103,7 +110,11 @@ export default async function PlanEditPage({
         <div className="a-card">
           <h2>{t('plans.price_access')}</h2>
           <div className="a-row">
-            <MoneyField minor={plan?.priceMinor} currency={plan?.currency ?? 'SAR'} />
+            <MoneyField
+              minor={plan?.priceMinor}
+              currency={plan?.currency ?? 'SAR'}
+              locked={lockPrices}
+            />
             <Field
               label={t('plans.map_access')}
               htmlFor="entitlementKind"
@@ -141,6 +152,42 @@ export default async function PlanEditPage({
                 name="deviceLimit"
                 inputMode="numeric"
                 defaultValue={String(plan?.deviceLimit ?? 2)}
+              />
+            </Field>
+            <Field
+              label={t('plans.extra_device_price')}
+              htmlFor="extraDevicePriceMinor"
+              hint={lockPrices ? t('team.prices_locked') : t('plans.extra_device_price_hint')}
+            >
+              <TextInput
+                id="extraDevicePriceMinor"
+                name="extraDevicePriceMinor"
+                inputMode="decimal"
+                dir="ltr"
+                placeholder="0"
+                defaultValue={
+                  plan?.extraDevicePriceMinor
+                    ? formatMoneyInput(plan.extraDevicePriceMinor, 'SAR')
+                    : ''
+                }
+                {...priceInputProps(lockPrices)}
+              />
+            </Field>
+            <Field
+              label={t('plans.max_devices')}
+              htmlFor="maxDevices"
+              hint={t('plans.max_devices_hint', { n: DEFAULT_MAX_DEVICES, max: MAX_DEVICE_LIMIT })}
+            >
+              <TextInput
+                id="maxDevices"
+                name="maxDevices"
+                inputMode="numeric"
+                placeholder={String(DEFAULT_MAX_DEVICES)}
+                defaultValue={
+                  plan?.maxDevices === null || plan?.maxDevices === undefined
+                    ? ''
+                    : String(plan.maxDevices)
+                }
               />
             </Field>
             <Field label={t('plans.members')} htmlFor="maxMembers" hint={t('plans.members_hint')}>

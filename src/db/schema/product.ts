@@ -56,6 +56,14 @@ export const plans = pgTable(
     /** NULL = مدى الحياة. */
     durationDays: integer('duration_days'),
     deviceLimit: integer('device_limit').notNull().default(2),
+    /**
+     * Sold per device (owner, Nov 2026): `priceMinor` covers `deviceLimit`
+     * devices; each extra device the buyer picks adds this (same currency).
+     * NULL/0 = extra devices are not sold.
+     */
+    extraDevicePriceMinor: integer('extra_device_price_minor'),
+    /** The most devices a buyer can choose at purchase. NULL = MAX_DEVICE_LIMIT. */
+    maxDevices: integer('max_devices'),
     canUseTrip: boolean('can_use_trip').notNull().default(true),
     canSaveFavorites: boolean('can_save_favorites').notNull().default(true),
     /** الوثيقة 13.2: "هل يستطيع تحميل PDF؟" — false = عرض داخل الموقع فقط. */

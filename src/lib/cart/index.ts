@@ -72,6 +72,9 @@ import {
 import { confirmationPromise, type ConfirmationPromise } from '@/lib/suppliers/assign'
 import { loadOffers } from '@/lib/suppliers/offers'
 
+import { loadPlansById } from '@/lib/entitlements/plans'
+import { planTotalMinor } from '@/lib/pricing/plan-devices'
+
 import { displayKey, loadCartCatalog, snapshotUnitPrice } from './catalog'
 import { getSessionUser } from './session'
 
@@ -438,6 +441,11 @@ export interface AddItemInput {
   audience?: string | null
   /** Itinerary only: the level (economy / mid / luxury); must be priced on the row. */
   tier?: string | null
+  /**
+   * Plan only: devices chosen (owner, Nov 2026). Clamped to the plan's range
+   * here and again by `buildQuote`, which prices it.
+   */
+  devices?: number | null
 }
 
 export interface MutationResult {
@@ -489,8 +497,19 @@ function sameBooking(row: CartItemRow, input: AddItemInput): boolean {
     // A line booked through the activity booking box (package, add-ons) is
     // its own booking; a bare "add to trip" never merges into it. An
     // itinerary is bought once whatever audience was picked.
-    (row.options === null || row.kind === 'itinerary')
+    (row.options === null || row.kind === 'itinerary' || row.kind === 'plan')
   )
+}
+
+/** A plan's device choice, clamped and priced (display snapshot only). */
+async function checkedPlanDevices(
+  planId: string | null,
+  requested: number | null | undefined,
+): Promise<{ devices: number; totalMinor: number } | null> {
+  if (planId === null) return null
+  const [plan] = await loadPlansById([planId])
+  if (!plan) return null
+  return planTotalMinor(plan, requested)
 }
 
 /**
@@ -585,13 +604,17 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   const audience = input.kind === 'itinerary' ? await checkedAudience(refId, input.audience) : null
   const tier = input.kind === 'itinerary' ? await checkedTier(refId, input.tier) : null
   if (tier !== null) price.priceMinor = tier.priceMinor
+  const planDevices = input.kind === 'plan' ? await checkedPlanDevices(refId, input.devices) : null
+  if (planDevices !== null) price.priceMinor = planDevices.totalMinor
   const lineOptions =
-    audience === null && tier === null
-      ? null
-      : {
-          ...(audience === null ? {} : { audience }),
-          ...(tier === null ? {} : { tier: tier.tier }),
-        }
+    planDevices !== null
+      ? { devices: planDevices.devices }
+      : audience === null && tier === null
+        ? null
+        : {
+            ...(audience === null ? {} : { audience }),
+            ...(tier === null ? {} : { tier: tier.tier }),
+          }
 
   let itemId: string
   if (existing) {
@@ -606,7 +629,7 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
         guests: input.kind === 'activity' ? next : (input.guests ?? existing.guests),
         unitPriceMinor: price.priceMinor,
         // A new audience choice replaces the old one on the same plan.
-        ...(input.kind === 'itinerary' ? { options: lineOptions } : {}),
+        ...(input.kind === 'itinerary' || input.kind === 'plan' ? { options: lineOptions } : {}),
       })
       .where(eq(cartItems.id, existing.id))
     itemId = existing.id
@@ -1227,6 +1250,8 @@ export interface CartLineView {
   audience: string | null
   /** Itinerary lines: the level bought (economy / mid / luxury), or null. */
   tier: string | null
+  /** Plan lines sold per device: the devices priced (server-clamped), or null. */
+  devices: number | null
   /**
    * Phase 3: another line of this trip already pays for this one (an
    * itinerary inside a package, VIP that comes with something) — its name.
@@ -1404,6 +1429,10 @@ export async function getCartWithTotals(): Promise<CartView | null> {
       infants: row.options?.infants ?? 0,
       audience: row.options?.audience ?? null,
       tier: row.options?.tier ?? null,
+      devices:
+        row.kind === 'plan' && line?.devices !== undefined && line.devices.count > 1
+          ? line.devices.count
+          : null,
       coveredByName: (() => {
         if (line?.coveredBy === undefined) return null
         const by = rows.find((other) => other.id === line.coveredBy)

@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation'
 import { db } from '@/db'
 import { plans } from '@/db/schema'
 import { ENTITLEMENT_KINDS } from '@/lib/entitlements'
+import { planDeviceSettingsError } from '@/lib/pricing/plan-devices'
 import { MAX_DEVICE_LIMIT } from '@/lib/security/config'
 import { assertPriceChangeAllowed } from '@/lib/auth/price-guard'
 
@@ -22,6 +23,7 @@ import {
   flocalizedOrNull,
   flocalizedRequired,
   fmoney,
+  fmoneyOrNull,
   freq,
   fstr,
 } from '../../_lib/form'
@@ -59,6 +61,24 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
     if (deviceLimit < 1 || deviceLimit > MAX_DEVICE_LIMIT) {
       throw new Error(t('plans.err_device_limit', { max: MAX_DEVICE_LIMIT }))
     }
+    // Sold per device (owner, Nov 2026): blank/0 = extra devices not sold.
+    const extraRaw = fmoneyOrNull(
+      form,
+      'extraDevicePriceMinor',
+      BASE_CURRENCY,
+      t('plans.extra_device_price'),
+    )
+    const maxDevices = fintOrNull(form, 'maxDevices', t('plans.max_devices'))
+    const deviceError = planDeviceSettingsError({
+      deviceLimit,
+      extraDevicePriceMinor: extraRaw,
+      maxDevices,
+    })
+    if (deviceError === 'extra_price') throw new Error(t('plans.err_extra_device_price'))
+    if (deviceError === 'max_devices') {
+      throw new Error(t('plans.err_max_devices', { min: deviceLimit, max: MAX_DEVICE_LIMIT }))
+    }
+    const extraDevicePriceMinor = extraRaw === null || extraRaw === 0 ? null : extraRaw
     const status = form.get('status') === 'published' ? 'published' : 'draft'
 
     const values = {
@@ -72,6 +92,8 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
       entitlementKind: fenum(form, 'entitlementKind', ENTITLEMENT_KINDS, 'map_access'),
       durationDays,
       deviceLimit,
+      extraDevicePriceMinor,
+      maxDevices,
       maxMembers,
       canUseTrip: fbool(form, 'canUseTrip'),
       canSaveFavorites: fbool(form, 'canSaveFavorites'),
@@ -92,7 +114,9 @@ export async function savePlan(id: string, form: FormData): Promise<void> {
         session.role,
         before,
         values,
-        before ? ['priceMinor', 'currency'] : ['priceMinor'],
+        before
+          ? ['priceMinor', 'currency', 'extraDevicePriceMinor']
+          : ['priceMinor', 'extraDevicePriceMinor'],
         t('team.err_prices'),
       )
 

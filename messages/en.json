@@ -2986,5 +2986,12 @@
   "notif_cart_reminder_t": "Your cart is waiting",
   "notif_cart_reminder_b": "You left a few experiences in your Bali Trips cart. It is saved — finish your booking whenever you like. To stop offer messages, reply to this email.",
   "pol_pr11_t": "Offers, WhatsApp numbers and cart reminders",
-  "pol_pr11_b": "If you choose to ask for the “first booking” discount, we keep your name and WhatsApp number (and your email if you enter one) and send you the code. If you sign in with Google, we receive only your name and email. At checkout we keep your name and number to send your booking confirmation and schedule. We send offers, or one reminder about a cart you left (at most one per cart), only to people who ticked the consent box themselves, and we record when they agreed and the wording they saw. You can withdraw your consent at any time by replying STOP or writing to {email}."
+  "pol_pr11_b": "If you choose to ask for the “first booking” discount, we keep your name and WhatsApp number (and your email if you enter one) and send you the code. If you sign in with Google, we receive only your name and email. At checkout we keep your name and number to send your booking confirmation and schedule. We send offers, or one reminder about a cart you left (at most one per cart), only to people who ticked the consent box themselves, and we record when they agreed and the wording they saw. You can withdraw your consent at any time by replying STOP or writing to {email}.",
+  "pl_devices_label": "Number of devices",
+  "pl_devices_less": "One device fewer",
+  "pl_devices_more": "One more device",
+  "pl_devices_extra": "+<price></price> for each extra device",
+  "pl_devices_count": "{count, plural, one {# device} other {# devices}}",
+  "pl_devices_from": "{count, plural, one {# device included} other {# devices included}} — add up to {max}",
+  "cart_plan_devices": "{count, plural, one {# device} other {# devices}}"
 }
