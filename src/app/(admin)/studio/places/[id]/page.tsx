@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { mapViewSettings } from '@/app/[locale]/map/map-style'
 import { db } from '@/db'
-import { mapPlaces, placeTags, tags } from '@/db/schema'
+import { categories, mapPlaceSubcategories, mapPlaces, placeTags, tags } from '@/db/schema'
 import { pick } from '@/lib/content/localize'
 
 import { adminHref } from '../../../_lib/admin-path'
@@ -87,6 +87,23 @@ export default async function PlaceEditorPage({
         .where(isNull(mapPlaces.deletedAt)),
     ])
   const chosenTags = new Set(placeTagRows.map((row) => row.tagId))
+  // Restaurant sections (migration 0054): the children of the saved category.
+  const [sectionList, sectionRows] = await Promise.all([
+    place?.categoryId
+      ? db
+          .select({ id: categories.id, key: categories.key, label: categories.label })
+          .from(categories)
+          .where(eq(categories.parentId, place.categoryId))
+          .orderBy(asc(categories.sortOrder), asc(categories.key))
+      : [],
+    place
+      ? db
+          .select({ id: mapPlaceSubcategories.categoryId })
+          .from(mapPlaceSubcategories)
+          .where(eq(mapPlaceSubcategories.placeId, place.id))
+      : [],
+  ])
+  const chosenSections = new Set(sectionRows.map((row) => row.id))
   const others = all
     .filter((row) => row.id !== place?.id)
     .map((row) => ({
@@ -411,6 +428,26 @@ export default async function PlaceEditorPage({
               )}
             </div>
           </div>
+          {sectionList.length > 0 ? (
+            <div className="a-field">
+              <label>{t('places.sections')}</label>
+              <input type="hidden" name="sectionsField" value="1" />
+              <div className="a-row" style={{ gap: 12 }}>
+                {sectionList.map((one) => (
+                  <label key={one.id} className="a-check">
+                    <input
+                      type="checkbox"
+                      name="sectionIds"
+                      value={one.id}
+                      defaultChecked={chosenSections.has(one.id)}
+                    />
+                    {pick(one.label, locale, one.key)}
+                  </label>
+                ))}
+              </div>
+              <span className="a-hint">{t('places.sections_hint')}</span>
+            </div>
+          ) : null}
           <OptionChecklist
             name="subCategoryIds"
             label={t('places.sub_categories')}

@@ -292,6 +292,8 @@ export interface ResultPlace {
   currency: string | null
   activitySlug: string | null
   canFavorite: boolean
+  /** Restaurant section keys (`restaurants-arabic`…), open places only. */
+  sections: string[]
 }
 
 // ---------------------------------------------------------------------------

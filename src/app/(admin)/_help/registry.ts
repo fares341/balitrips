@@ -560,6 +560,11 @@ export const HELP: readonly HelpEntry[] = [
         '“Free” shows the place to everyone; otherwise subscribers only.',
         '“Gratis” tampil untuk semua; selain itu hanya pelanggan.',
       ],
+      [
+        'أقسام المطاعم (عربية، برجر…): ضع علامة على كل ما ينطبق بعد حفظ التصنيف؛ تظهر صفاً ثانياً في الخريطة.',
+        'Restaurant sections (Arabic, Burgers…): tick all that apply once the category is saved; they show as a second row on the map.',
+        'Bagian restoran (Arab, Burger…): centang semua yang sesuai setelah kategori disimpan; tampil sebagai baris kedua di peta.',
+      ],
       SAVE_STEP,
       ARCHIVE_STEP,
     ],
@@ -719,6 +724,11 @@ export const HELP: readonly HelpEntry[] = [
         'الحذف يُرفض إذا كان التصنيف مستخدماً؛ انقل العناصر أولاً.',
         'Delete is refused while a category is in use; move the items first.',
         'Hapus ditolak bila masih dipakai; pindahkan dulu.',
+      ],
+      [
+        'الأقسام: «قسم من» يجعل التصنيف قسماً من تصنيف رئيسي (مثل عربية تحت المطاعم). مستوى واحد فقط.',
+        'Sections: “Section of” makes a category a section of a main one (e.g. Arabic under Restaurants). One level only.',
+        'Bagian: “Bagian dari” menjadikan kategori bagian dari kategori utama (mis. Arab di bawah Restoran). Satu tingkat saja.',
       ],
     ],
     fields: [],

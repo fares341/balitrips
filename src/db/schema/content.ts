@@ -62,6 +62,14 @@ export const categories = pgTable('categories', {
   key: varchar('key', { length: 64 }).notNull().unique(),
   label: localized('label').notNull(),
   description: localized('description'),
+  /**
+   * Sections (migration 0054): a child category of a top-level one — the 11
+   * restaurant sections live under `restaurants`. One level only: a parent
+   * is always top-level and a section has no children (Studio enforces it).
+   */
+  parentId: uuid('parent_id').references((): AnyPgColumn => categories.id, {
+    onDelete: 'set null',
+  }),
   /** active | inactive (الوثيقة: الحالة). */
   status: varchar('status', { length: 16 }).notNull().default('active'),
   /** Icon name from the design's ~45-glyph set. */
@@ -1042,6 +1050,26 @@ export const mapPlaces = pgTable(
     index('map_places_free_idx').on(t.isFree),
     index('map_places_coords_idx').on(t.lat, t.lon),
     index('map_places_region_idx').on(t.regionId),
+  ],
+)
+
+/**
+ * Restaurant sections (migration 0054): which child categories (sections of
+ * the place's main category) a place belongs to. A place can be in several.
+ */
+export const mapPlaceSubcategories = pgTable(
+  'map_place_subcategories',
+  {
+    placeId: uuid('place_id')
+      .notNull()
+      .references(() => mapPlaces.id, { onDelete: 'cascade' }),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.placeId, t.categoryId] }),
+    index('map_place_subcategories_category_idx').on(t.categoryId),
   ],
 )
 

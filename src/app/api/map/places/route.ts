@@ -1,7 +1,8 @@
 /**
  * Map results: the open places of the chosen area, categories, traveler
  * types and durations (`?area=&cat=a,b&traveler=&dur=&locale=`), in one
- * compact response. No `cat` = every map category.
+ * compact response. Each open place carries its restaurant section keys;
+ * the section pills filter client-side. No `cat` = every map category.
  *
  * The redaction is the same rule as everywhere else (`canSeePlace` via the
  * place's own `isFree` / `requiredEntitlement`): a place the viewer cannot
@@ -90,6 +91,8 @@ export async function GET(request: NextRequest) {
     currency: place.fromCurrency,
     activitySlug: place.activitySlug,
     canFavorite: place.canFavorite,
+    // Sections ride with open places only: a locked place is a count above.
+    sections: place.sectionKeys,
   }))
 
   return NextResponse.json(

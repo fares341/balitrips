@@ -12,7 +12,8 @@ import { cleanTravelerTypes } from '@/lib/map/explore'
 import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
-import { categories, mapPlaces, placeTags, tags } from '@/db/schema'
+import { categories, mapPlaceSubcategories, mapPlaces, placeTags, tags } from '@/db/schema'
+import { cleanSectionIds } from '@/lib/map/sections'
 import { freeOnMap } from '@/lib/content/map-access'
 
 import { adminHref } from '../../_lib/admin-path'
@@ -174,6 +175,35 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
 
       if (!row) throw new Error(t('places.err_save_failed'))
 
+      // Restaurant sections (migration 0054): only when the editor showed the
+      // group, and only sections of the place's (new) main category.
+      const sectionsBefore = (
+        await tx
+          .select({ id: mapPlaceSubcategories.categoryId })
+          .from(mapPlaceSubcategories)
+          .where(eq(mapPlaceSubcategories.placeId, row.id))
+      ).map((one) => one.id)
+      let sectionsAfter = sectionsBefore
+      if (form.get('sectionsField') === '1') {
+        const allowed =
+          row.categoryId === null
+            ? []
+            : (
+                await tx
+                  .select({ id: categories.id })
+                  .from(categories)
+                  .where(eq(categories.parentId, row.categoryId))
+              ).map((one) => one.id)
+        sectionsAfter = cleanSectionIds(fmulti(form, 'sectionIds'), allowed)
+        await tx.delete(mapPlaceSubcategories).where(eq(mapPlaceSubcategories.placeId, row.id))
+        if (sectionsAfter.length > 0) {
+          await tx
+            .insert(mapPlaceSubcategories)
+            .values(sectionsAfter.map((categoryId) => ({ placeId: row.id, categoryId })))
+            .onConflictDoNothing()
+        }
+      }
+
       // Tags: the place_tags rows are the source of truth; the legacy jsonb
       // column is rewritten from them (English labels) so pin colours and
       // anything still reading it stay in step.
@@ -202,8 +232,8 @@ export async function savePlace(id: string, form: FormData): Promise<void> {
           action: id === 'new' ? 'map_place.create' : 'map_place.update',
           entityType: 'map_place',
           entityId: row.id,
-          before,
-          after: row,
+          before: before === null ? null : { ...before, sectionIds: [...sectionsBefore].sort() },
+          after: { ...row, sectionIds: [...sectionsAfter].sort() },
         },
         tx,
       )

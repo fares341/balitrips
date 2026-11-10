@@ -51,7 +51,14 @@ interface TaxonomyRow {
 
 /** حقول إضافية: الوصف والحالة (تصنيف ومنطقة)، والأب والمركز ونصف القطر (منطقة). */
 type Extra =
-  | { kind: 'category'; images: readonly { id: string; label: string }[] }
+  | {
+      kind: 'category'
+      images: readonly { id: string; label: string }[]
+      /** Top-level categories (a section's parent is always top-level). */
+      parents: readonly { id: string; label: string }[]
+      /** Categories that already have sections (they cannot become one). */
+      withChildren: ReadonlySet<string>
+    }
   | { kind: 'region'; parents: { id: string; label: string }[] }
 
 export default async function TaxonomyPage({
@@ -77,6 +84,7 @@ export default async function TaxonomyPage({
         mapOrder: categories.mapOrder,
         mapColor: categories.mapColor,
         imageId: categories.imageId,
+        parentId: categories.parentId,
       })
       .from(categories)
       .orderBy(asc(categories.sortOrder), asc(categories.key)),
@@ -117,6 +125,17 @@ export default async function TaxonomyPage({
     label: `${item.objectKey.split('/').pop() ?? item.objectKey}${isPlaceholder(item.credit) ? ' (placeholder)' : ''}`,
   }))
 
+  // Sections (migration 0054): one level under a top-level category.
+  const withChildren = new Set(
+    categoryRows.flatMap((row) => (row.parentId === null ? [] : [row.parentId])),
+  )
+  const categoryParents = categoryRows
+    .filter((row) => row.parentId === null)
+    .map((row) => ({
+      id: row.id,
+      label: `${row.label.ar || row.label.en || row.key} (${row.key})`,
+    }))
+
   return (
     <>
       <PageHead title={t('taxonomy.title')} description={t('taxonomy.description')} />
@@ -129,7 +148,7 @@ export default async function TaxonomyPage({
         withIcon
         save={saveCategory}
         remove={deleteCategory}
-        extra={{ kind: 'category', images }}
+        extra={{ kind: 'category', images, parents: categoryParents, withChildren }}
       />
       <TaxonomySection
         t={t}
@@ -190,6 +209,32 @@ function ExtraFields({
         </div>
         {extra.kind === 'category' ? (
           <>
+            {row === undefined || !extra.withChildren.has(row.id) ? (
+              <div className="a-field">
+                <label htmlFor={`${idPrefix}-cparent`}>{t('taxonomy.category_parent')}</label>
+                <select
+                  className="a-input"
+                  id={`${idPrefix}-cparent`}
+                  name="parentId"
+                  defaultValue={row?.parentId ?? ''}
+                  aria-describedby={`${idPrefix}-cparent-hint`}
+                >
+                  <option value="">{t('taxonomy.category_parent_none')}</option>
+                  {extra.parents
+                    .filter((parent) => parent.id !== row?.id)
+                    .map((parent) => (
+                      <option key={parent.id} value={parent.id}>
+                        {parent.label}
+                      </option>
+                    ))}
+                </select>
+                <p className="a-hint" id={`${idPrefix}-cparent-hint`}>
+                  {t('taxonomy.category_parent_hint')}
+                </p>
+              </div>
+            ) : (
+              <p className="a-hint">{t('taxonomy.category_has_sections')}</p>
+            )}
             <div className="a-field">
               <label htmlFor={`${idPrefix}-tier`}>{t('taxonomy.map_tier')}</label>
               <select

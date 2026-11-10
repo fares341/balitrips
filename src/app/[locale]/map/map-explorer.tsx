@@ -69,6 +69,14 @@ import {
   SYMBOL_FADE_MS,
 } from '@/lib/map/map-feel'
 import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
+import {
+  filterBySection,
+  parseSection,
+  sectionParentFor,
+  sectionsWithPlaces,
+  withSection,
+  type SectionItem,
+} from '@/lib/map/sections'
 
 import { CategoryGlyph } from './category-glyph'
 import { MapWatermark, protectionHandlers } from './map-protect'
@@ -116,6 +124,10 @@ interface Props {
   counts: CountRow[]
   categories: CategoryItem[]
   initial: Selection
+  /** Restaurant sections (child categories), labelled for this locale. */
+  sections: SectionItem[]
+  /** `?sec=` from the link (already checked against `sections`). */
+  initialSection: string | null
   initialFacts: { travelers: TravelerType[]; durations: DurationBucket[] }
   travelerOptions: TravelerType[]
   durationOptions: DurationBucket[]
@@ -176,7 +188,7 @@ function useDesktop(): boolean {
 export function MapExplorer(props: Props) {
   const t = useTranslations()
   const router = useRouter()
-  const { areas, categories, counts } = props
+  const { areas, categories, counts, sections } = props
 
   const areaKeys = useMemo(() => new Set(areas.map((one) => one.key)), [areas])
   const catKeys = useMemo(() => new Set(categories.map((one) => one.key)), [categories])
@@ -184,6 +196,9 @@ export function MapExplorer(props: Props) {
   const areaByKey = useMemo(() => new Map(areas.map((one) => [one.key, one])), [areas])
 
   const [applied, setApplied] = useState<Selection>(props.initial)
+  const [section, setSection] = useState<string | null>(props.initialSection)
+  const sectionRef = useRef(props.initialSection)
+  const sectionKeys = useMemo(() => new Set(sections.map((one) => one.key)), [sections])
   const [facts, setFacts] = useState<FactFilter>(props.initialFacts)
   const [sheet, setSheet] = useState<SheetKind | null>(null)
   const [paywall, setPaywall] = useState<CategoryItem | null>(null)
@@ -202,12 +217,24 @@ export function MapExplorer(props: Props) {
   // ---- URL ------------------------------------------------------------------
 
   /** Filters replace the URL (the back button leaves the map, like the reference). */
-  const apply = useCallback((next: Selection, nextFacts: FactFilter) => {
-    setApplied(next)
-    setFacts(nextFacts)
-    const url = `${window.location.pathname}${mapQuery(next, nextFacts)}`
-    window.history.replaceState(window.history.state, '', url)
-  }, [])
+  const apply = useCallback(
+    (next: Selection, nextFacts: FactFilter, nextSection?: string | null) => {
+      // A section survives only while its parent is the one chosen category.
+      const parent = sectionParentFor(next.categories, sections)
+      const wanted = nextSection === undefined ? sectionRef.current : nextSection
+      const sec =
+        wanted !== null && sections.some((one) => one.key === wanted && one.parentKey === parent)
+          ? wanted
+          : null
+      sectionRef.current = sec
+      setSection(sec)
+      setApplied(next)
+      setFacts(nextFacts)
+      const url = `${window.location.pathname}${withSection(mapQuery(next, nextFacts), sec)}`
+      window.history.replaceState(window.history.state, '', url)
+    },
+    [sections],
+  )
 
   useEffect(() => {
     const onPop = () => {
@@ -218,6 +245,9 @@ export function MapExplorer(props: Props) {
         catKeys,
       )
       setApplied({ area: next.area ?? ALL_AREA, categories: next.categories })
+      const sec = parseSection(params.get('sec'), sectionKeys)
+      sectionRef.current = sec
+      setSection(sec)
       setFacts(parseFactFilter({ traveler: params.get('traveler'), dur: params.get('dur') }))
       setSheet(null)
       setPaywall(null)
@@ -229,7 +259,7 @@ export function MapExplorer(props: Props) {
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [areaKeys, catKeys])
+  }, [areaKeys, catKeys, sectionKeys])
 
   // ---- Results ----------------------------------------------------------------
 
@@ -279,10 +309,20 @@ export function MapExplorer(props: Props) {
     return () => controller.abort()
   }, [resultKey, props.locale, attempt])
 
-  const places = useMemo(
-    () => (userPos ? byDistance(results.places, userPos) : results.places),
-    [results.places, userPos],
+  // Restaurant sections: a second pill row under Restaurants alone, built
+  // from the sections the current results really use; filtered client-side.
+  const sectionParent = sectionParentFor(applied.categories, sections)
+  const sectionPills = useMemo(
+    () =>
+      sectionParent === null ? [] : sectionsWithPlaces(sections, sectionParent, results.places),
+    [sections, sectionParent, results.places],
   )
+  const activeSection =
+    section !== null && sectionPills.some((one) => one.key === section) ? section : null
+  const places = useMemo(() => {
+    const base = filterBySection(results.places, activeSection)
+    return userPos ? byDistance(base, userPos) : base
+  }, [results.places, userPos, activeSection])
   const placeById = useMemo(() => new Map(places.map((one) => [one.id, one])), [places])
   const fresh = results.key === resultKey
 
@@ -589,6 +629,33 @@ export function MapExplorer(props: Props) {
             <span>{geo === 'asking' ? t('mx4_locating') : t('mx4_near_me')}</span>
           </button>
         </div>
+        {sectionPills.length > 0 && (
+          <div className="mx3-chips mx5-secs" role="toolbar" aria-label={t('mx5_sections')}>
+            <button
+              type="button"
+              className={activeSection === null ? 'mx3-chip mx5-sec is-on' : 'mx3-chip mx5-sec'}
+              aria-pressed={activeSection === null}
+              onClick={() => apply(applied, facts, null)}
+              data-sec="all"
+            >
+              <span>{t('mx5_section_all')}</span>
+            </button>
+            {sectionPills.map((one) => (
+              <button
+                key={one.key}
+                type="button"
+                className={
+                  activeSection === one.key ? 'mx3-chip mx5-sec is-on' : 'mx3-chip mx5-sec'
+                }
+                aria-pressed={activeSection === one.key}
+                onClick={() => apply(applied, facts, activeSection === one.key ? null : one.key)}
+                data-sec={one.key}
+              >
+                <span>{one.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mx3-progress" aria-hidden="true" />
       </header>
 

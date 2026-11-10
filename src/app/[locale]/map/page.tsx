@@ -41,7 +41,12 @@ import { checkSecureAccess } from '@/lib/security/guard'
 import '@/styles/bt-map.css'
 
 import { areaLabelPoints } from '@/lib/map/area-labels'
-import { listMapCategoriesCached, listMapPlacesCached } from '@/lib/map/cached'
+import {
+  listMapCategoriesCached,
+  listMapPlacesCached,
+  listMapSectionsCached,
+} from '@/lib/map/cached'
+import { parseSection } from '@/lib/map/sections'
 import { centroid } from '@/lib/map/distance'
 import {
   ALL_AREA,
@@ -154,13 +159,14 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   preload(MAPLIBRE_JS, { as: 'script', crossOrigin: 'anonymous' })
   preload(MAPLIBRE_CSS, { as: 'style', crossOrigin: 'anonymous' })
 
-  const [places, held, taxonomy, categories, plans, settings] = await Promise.all([
+  const [places, held, taxonomy, categories, plans, settings, sections] = await Promise.all([
     listMapPlacesCached(),
     loadEntitlements(userId),
     listMapTaxonomy(),
     listMapCategoriesCached(),
     listPublishedPlans(),
     readSetting('map'),
+    listMapSectionsCached(),
   ])
 
   // Public, aggregate data only: counts per (region, category). The places
@@ -263,6 +269,16 @@ export default async function MapPage({ params, searchParams }: PageProps) {
         icon: one.icon,
       }))}
       initial={selection}
+      sections={sections.map((one) => ({
+        key: one.key,
+        parentKey: one.parentKey,
+        label: pick(one.label, lang, one.key),
+      }))}
+      initialSection={
+        initialPlace !== null
+          ? null
+          : parseSection(firstValue(query.sec), new Set(sections.map((one) => one.key)))
+      }
       initialFacts={{ travelers: [...facts.travelers], durations: [...facts.durations] }}
       travelerOptions={facets.travelers}
       durationOptions={facets.durations}

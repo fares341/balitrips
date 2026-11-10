@@ -13,7 +13,7 @@ import { unstable_cache } from 'next/cache'
 
 import { listMapPlaces } from '@/lib/content/queries'
 
-import { listMapCategories } from './queries'
+import { listMapCategories, listMapSections } from './queries'
 
 import { MAP_PLACES_TAG } from './tags'
 
@@ -25,6 +25,11 @@ export const listMapPlacesCached = unstable_cache(listMapPlaces, ['map-places-v3
 })
 
 export const listMapCategoriesCached = unstable_cache(listMapCategories, ['map-categories-v3'], {
+  tags: [MAP_PLACES_TAG],
+  revalidate: 60,
+})
+
+export const listMapSectionsCached = unstable_cache(listMapSections, ['map-sections-v1'], {
   tags: [MAP_PLACES_TAG],
   revalidate: 60,
 })
