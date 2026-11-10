@@ -44,6 +44,7 @@ import {
   itineraryRegions,
   landmarks,
   mapPlaces,
+  mapPlaceSubcategories,
   media,
   packageActivities,
   packageRegions,
@@ -1630,6 +1631,32 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
               rows.map((row) => row.place.id),
             ),
           )
+  // Restaurant sections (migration 0054): active child categories only.
+  const sectionRows =
+    rows.length === 0
+      ? []
+      : await db
+          .select({ placeId: mapPlaceSubcategories.placeId, key: categories.key })
+          .from(mapPlaceSubcategories)
+          .innerJoin(
+            categories,
+            and(
+              eq(categories.id, mapPlaceSubcategories.categoryId),
+              eq(categories.status, 'active'),
+            ),
+          )
+          .where(
+            inArray(
+              mapPlaceSubcategories.placeId,
+              rows.map((row) => row.place.id),
+            ),
+          )
+  const sectionsByPlace = new Map<string, string[]>()
+  for (const row of sectionRows) {
+    const list = sectionsByPlace.get(row.placeId) ?? []
+    list.push(row.key)
+    sectionsByPlace.set(row.placeId, list)
+  }
   const tagsByPlace = new Map<string, { key: string; label: LocalizedText }[]>()
   for (const row of tagRows) {
     const list = tagsByPlace.get(row.placeId) ?? []
@@ -1763,6 +1790,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         priority: place.priority,
         sortOrder: place.sortOrder,
         popularity: popularity.get(place.id) ?? 0,
+        sectionKeys: (sectionsByPlace.get(place.id) ?? []).sort(),
       }
     },
   )
@@ -1784,6 +1812,8 @@ export type MapPlaceRecord = FullMapPlace & {
   /** Map filters (migration 0039). */
   travelerTypes: string[]
   durationMinutes: number | null
+  /** Restaurant section keys (`restaurants-arabic`…; migration 0054). */
+  sectionKeys: string[]
   /** الترتيب اليدوي من لوحة التحكم (الأقل أولاً). */
   sortOrder: number
   /** "الأكثر مشاهدة أو حفظاً": مفضلة + رحلتي + مشاهدات (آخر سنة). */

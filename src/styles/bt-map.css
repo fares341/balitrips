@@ -1915,6 +1915,15 @@
 .mx3-chips::-webkit-scrollbar {
   display: none;
 }
+/* Restaurant sections: a second, lighter pill row (horizontal scroll). */
+.mx5-secs {
+  padding-top: 0;
+}
+.mx5-sec {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
 .mx3-chip {
   flex: none;
   display: inline-flex;

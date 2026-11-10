@@ -419,6 +419,11 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     'Extra categories this place also belongs to (filters and search).',
     'تصنيفات إضافية ينتمي إليها المكان أيضاً (للفلاتر والبحث).',
   ],
+  'places.sections': ['Sections', 'الأقسام'],
+  'places.sections_hint': [
+    'Sections of this place’s category (e.g. Arabic, Burgers). Tick all that apply: they are the second row of pills on the map. Change the category and save first to see its sections.',
+    'أقسام تصنيف هذا المكان (مثل عربية، برجر). اختر كل ما ينطبق: تظهر صفاً ثانياً من الأزرار في الخريطة. إذا غيّرت التصنيف احفظ أولاً لتظهر أقسامه.',
+  ],
   'places.gallery': ['Gallery images', 'صور المعرض'],
   'places.gallery_hint': [
     'Shown in the place panel after the hero image. Upload photos in the Media library.',
@@ -583,6 +588,28 @@ const PAIRS: Record<string, readonly [en: string, ar: string]> = {
     '«{icon}» ليست من الأيقونات المتاحة.',
   ],
   'taxonomy.err_category_gone': ['That category no longer exists', 'هذا التصنيف لم يعد موجوداً'],
+  'taxonomy.category_parent': ['Section of', 'قسم من'],
+  'taxonomy.category_parent_none': ['— Main category —', '— تصنيف رئيسي —'],
+  'taxonomy.category_parent_hint': [
+    'Pick a main category to make this one of its sections (e.g. Arabic under Restaurants). Sections show as a second row of pills on the map once a place uses them.',
+    'اختر تصنيفاً رئيسياً ليصبح هذا قسماً منه (مثل عربية تحت المطاعم). تظهر الأقسام صفاً ثانياً في الخريطة متى استخدمها مكان.',
+  ],
+  'taxonomy.category_has_sections': [
+    'This category has sections, so it stays a main category.',
+    'لهذا التصنيف أقسام، لذلك يبقى تصنيفاً رئيسياً.',
+  ],
+  'taxonomy.err_parent_self': [
+    'A category cannot be a section of itself',
+    'لا يكون التصنيف قسماً من نفسه',
+  ],
+  'taxonomy.err_parent_not_top_level': [
+    'Pick a main category: a section cannot hold sections',
+    'اختر تصنيفاً رئيسياً: القسم لا يحتوي أقساماً',
+  ],
+  'taxonomy.err_parent_has_children': [
+    'This category has sections, so it cannot become a section',
+    'لهذا التصنيف أقسام، فلا يصبح قسماً',
+  ],
   'taxonomy.err_category_in_use': [
     'Activities still using this category: {count}. Reassign them first.',
     'أنشطة ما زالت تستخدم هذا التصنيف: {count}. انقلها إلى تصنيف آخر أولاً.',

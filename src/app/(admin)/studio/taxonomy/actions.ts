@@ -1,6 +1,7 @@
 'use server'
 
 import { isHexColor } from '@/lib/map/explore'
+import { checkCategoryParent } from '@/lib/map/sections'
 import { count, eq, sql } from 'drizzle-orm'
 import { revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -96,9 +97,35 @@ export async function saveCategory(id: string, form: FormData): Promise<void> {
         ? String(form.get('mapColor')).toLowerCase()
         : null,
       imageId: fuuidOrNull(form, 'imageId'),
+      parentId: fuuidOrNull(form, 'parentId'),
     }
 
     await db.transaction(async (tx) => {
+      // Sections (migration 0054): one level under a top-level category.
+      if (values.parentId !== null) {
+        const [parent] = await tx
+          .select({ parentId: categories.parentId })
+          .from(categories)
+          .where(eq(categories.id, values.parentId))
+          .limit(1)
+        if (!parent) throw new Error(t('taxonomy.err_category_gone'))
+        const [child] =
+          id === 'new'
+            ? []
+            : await tx
+                .select({ id: categories.id })
+                .from(categories)
+                .where(eq(categories.parentId, id))
+                .limit(1)
+        const problem = checkCategoryParent({
+          id: id === 'new' ? null : id,
+          parentId: values.parentId,
+          parentOfParent: parent.parentId,
+          hasChildren: child !== undefined,
+        })
+        if (problem !== null) throw new Error(t(`taxonomy.err_parent_${problem}`))
+      }
+
       const before =
         id === 'new'
           ? null

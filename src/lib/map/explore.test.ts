@@ -262,6 +262,7 @@ describe('map v3 helpers', () => {
         currency: null,
         activitySlug: null,
         canFavorite: false,
+        sections: [],
       },
     ])
     expect(fc.features[0]).toEqual({
