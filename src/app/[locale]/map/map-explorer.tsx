@@ -1416,10 +1416,10 @@ function addLayers(
       filter: ['==', ['get', 'z'], z],
       layout: {
         'text-field': ['get', 'n'],
-        // Light labels (owner, Nov 2026, option D): small, regular weight,
-        // white on the green/blue map with a soft dark halo, so they read
+        // Light labels (owner, Nov 2026, option D, then a touch stronger): small,
+        // white on the green/blue map with a darker halo, so they read
         // without covering the map.
-        'text-font': ['Noto Sans Regular'],
+        'text-font': ['Noto Sans Bold'],
         'text-size': ['interpolate', ['linear'], ['zoom'], 8, 11, 12, 14],
         'text-letter-spacing': 0.02,
         'text-anchor': 'top',
@@ -1427,10 +1427,10 @@ function addLayers(
         'text-padding': 2,
       },
       paint: {
-        'text-color': 'rgba(255,255,255,0.92)',
-        'text-halo-color': 'rgba(16,40,22,0.45)',
-        'text-halo-width': 1,
-        'text-halo-blur': 0.6,
+        'text-color': '#ffffff',
+        'text-halo-color': 'rgba(12,32,18,0.65)',
+        'text-halo-width': 1.2,
+        'text-halo-blur': 0.5,
       },
     })
   }
