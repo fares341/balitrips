@@ -344,6 +344,9 @@ export default async function CheckoutPage({
                 })}
               </small>
             )}
+            {line.devices !== null && (
+              <small className="muted">{t('cart_plan_devices', { count: line.devices })}</small>
+            )}
             {line.audience !== null && (
               <small className="muted">{t('it_aud_line', { audience: line.audience })}</small>
             )}

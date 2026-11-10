@@ -21,7 +21,7 @@ import { markCustomRequestsPaid } from '@/lib/orders/custom-request'
 
 import { isEntitlementKind, makeEntitlementSet, type EntitlementSet } from './redaction'
 import { carryOverFamily } from './family'
-import { grantablePlanLines } from './grant-rules'
+import { grantablePlanLines, purchasedDeviceLimit } from './grant-rules'
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
@@ -55,7 +55,16 @@ export async function loadPlansById(ids: readonly string[]): Promise<PlanRow[]> 
 
 export function planPriceMap(rows: readonly PlanRow[]) {
   return new Map(
-    rows.map((row) => [row.id, { priceMinor: row.priceMinor, currency: row.currency }]),
+    rows.map((row) => [
+      row.id,
+      {
+        priceMinor: row.priceMinor,
+        currency: row.currency,
+        deviceLimit: row.deviceLimit,
+        extraDevicePriceMinor: row.extraDevicePriceMinor,
+        maxDevices: row.maxDevices,
+      },
+    ]),
   )
 }
 
@@ -76,7 +85,7 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
   await markCustomRequestsPaid(tx, orderId)
 
   const planLines = await tx
-    .select({ plan: plans, parentItemId: orderItems.parentItemId })
+    .select({ plan: plans, parentItemId: orderItems.parentItemId, options: orderItems.options })
     .from(orderItems)
     .innerJoin(plans, eq(plans.id, orderItems.refId))
     .where(and(eq(orderItems.orderId, orderId), eq(orderItems.kind, 'plan')))
@@ -125,7 +134,7 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
   if (!owner?.userId) return 0
 
   let granted = 0
-  for (const { plan } of lines) {
+  for (const { plan, options } of lines) {
     if (already.has(plan.id)) continue
     if (!isEntitlementKind(plan.entitlementKind)) continue
     // تجديد باقة بمدة قبل انتهائها: المدة الجديدة تبدأ من نهاية الحالية،
@@ -157,7 +166,9 @@ export async function grantOrderPlans(tx: Tx, orderId: string, now = new Date())
         planId: plan.id,
         startsAt,
         expiresAt: planExpiry(plan.durationDays, startsAt),
-        deviceLimit: plan.deviceLimit,
+        // The devices bought (owner, Nov 2026), frozen on the order line at
+        // checkout; older lines without it keep the plan's own limit.
+        deviceLimit: purchasedDeviceLimit(plan, options),
       })
       .returning()
     // باقة عائلية مجدَّدة: الأفراد ينتقلون مع الصاحب.

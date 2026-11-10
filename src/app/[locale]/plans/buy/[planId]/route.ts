@@ -16,12 +16,14 @@ export const dynamic = 'force-dynamic'
 const NO_STORE = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ locale: string; planId: string }> },
 ) {
   const { locale: raw, planId } = await params
   const locale = isLocale(raw) ? raw : defaultLocale
-  const added = await addPlanToCart(planId)
+  // `?devices=3` from the stepper; clamped and priced on the server.
+  const devices = new URL(request.url).searchParams.get('devices')
+  const added = await addPlanToCart(planId, devices)
   if (added) revalidatePath('/[locale]/my-trip', 'page')
   return localRedirect(getPathname({ href: added ? '/my-trip' : '/plans', locale }), {
     status: 303,

@@ -17,7 +17,7 @@ import { addPlanToCart } from './plan-cart'
 
 export async function buyPlan(form: FormData): Promise<void> {
   const locale = await getLocale()
-  if (!(await addPlanToCart(form.get('planId')))) {
+  if (!(await addPlanToCart(form.get('planId'), form.get('devices')))) {
     redirect({ href: '/plans', locale })
     return
   }

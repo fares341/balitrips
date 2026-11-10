@@ -2,6 +2,22 @@
  * Grant rules that need no database — pure, unit-tested (phase 3).
  */
 
+import { MAX_DEVICE_LIMIT } from '@/lib/security/config'
+
+/**
+ * Devices on the entitlement: the count frozen on the order line (already
+ * clamped and priced by checkout), never below the plan's own limit nor
+ * above the absolute ceiling. A line without one keeps `plan.deviceLimit`.
+ */
+export function purchasedDeviceLimit(
+  plan: { deviceLimit: number },
+  options: { devices?: number } | null | undefined,
+): number {
+  const bought = options?.devices
+  if (typeof bought !== 'number' || !Number.isInteger(bought)) return plan.deviceLimit
+  return Math.min(MAX_DEVICE_LIMIT, Math.max(plan.deviceLimit, bought))
+}
+
 /**
  * Which plan lines of a paid order grant access — pure. One grant per plan
  * (a plan never counts twice in one order), none for a plan line under an

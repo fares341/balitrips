@@ -407,6 +407,9 @@ export default async function OrderDetailPage({
                     {line.vehicleClass ? ` · ${line.vehicleClass}` : ''}
                     {line.options?.audience ? ` · ${line.options.audience}` : ''}
                     {line.options?.tier ? ` · ${line.options.tier}` : ''}
+                    {line.kind === 'plan' && line.options?.devices
+                      ? ` · ${t('customers.devices', { count: line.options.devices })}`
+                      : ''}
                   </div>
                 </td>
                 <td className="a-mono">

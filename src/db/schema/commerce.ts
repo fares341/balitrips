@@ -50,6 +50,12 @@ export interface BookingOptions {
    * server (`@/lib/itineraries/bundle-server`) for the itinerary's owner only.
    */
   itineraryBundle?: string
+  /**
+   * Plan line: how many devices the buyer chose (owner, Nov 2026). The
+   * server clamps it to the plan's range and prices it; the grant copies
+   * the clamped count onto the entitlement.
+   */
+  devices?: number
 }
 
 /** One line between subtotal and total, frozen on the order (phase 4). */

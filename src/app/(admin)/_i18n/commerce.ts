@@ -247,6 +247,14 @@ const section: Section = {
     'plans.err_duration': 'Duration must be 1–3650 days, or blank for lifetime.',
     'plans.err_members': 'People on the plan must be 1–10.',
     'plans.err_device_limit': 'Device limit must be 1–{max}.',
+    'plans.extra_device_price': 'Price per extra device',
+    'plans.extra_device_price_hint':
+      'In SAR. The plan price covers the device limit above; each extra device the buyer picks adds this. Blank or 0 = extra devices are not sold.',
+    'plans.max_devices': 'Most devices a buyer can choose',
+    'plans.max_devices_hint':
+      'Blank = {n}. Used only when extra devices are sold; from the device limit up to {max}.',
+    'plans.err_extra_device_price': 'The extra-device price cannot be negative.',
+    'plans.err_max_devices': 'Most devices must be {min}–{max}.',
     'plans.err_gone': 'That plan no longer exists.',
     'plans.err_save_failed': 'Couldn’t save. Please try again.',
     'plans.ok_saved':
@@ -567,6 +575,14 @@ const section: Section = {
     'plans.err_duration': 'يجب أن تكون المدة بين 1 و3650 يوماً، أو فارغة لمدى الحياة.',
     'plans.err_members': 'يجب أن يكون عدد الأشخاص في الباقة بين 1 و10.',
     'plans.err_device_limit': 'يجب أن يكون حد الأجهزة بين 1 و{max}.',
+    'plans.extra_device_price': 'سعر كل جهاز إضافي',
+    'plans.extra_device_price_hint':
+      'بالريال. سعر الباقة يشمل حد الأجهزة أعلاه، وكل جهاز إضافي يختاره العميل يضيف هذا المبلغ. فارغ أو 0 = لا تُباع أجهزة إضافية.',
+    'plans.max_devices': 'أقصى عدد أجهزة يختاره العميل',
+    'plans.max_devices_hint':
+      'فارغ = {n}. يُستخدم فقط عند بيع أجهزة إضافية؛ من حد الأجهزة حتى {max}.',
+    'plans.err_extra_device_price': 'لا يمكن أن يكون سعر الجهاز الإضافي سالباً.',
+    'plans.err_max_devices': 'يجب أن يكون أقصى عدد أجهزة بين {min} و{max}.',
     'plans.err_gone': 'هذه الباقة لم تعد موجودة.',
     'plans.err_save_failed': 'تعذّر الحفظ. حاول مرة أخرى.',
     'plans.ok_saved': 'تم حفظ الباقة. يحتفظ العملاء الحاليون بالمدة وحد الأجهزة اللذين اشتروهما.',

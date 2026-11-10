@@ -60,6 +60,8 @@ import { PageBanner } from '../_ui/page-banner'
 import { MONEY_SLOT, withMoney } from '@/components/currency/with-money'
 import { Money } from '@/components/currency/currency-context'
 import { currentUserId } from '../_viewer/session'
+import { planDeviceRange, sellsExtraDevices } from '@/lib/pricing/plan-devices'
+import { DevicePicker } from './device-picker'
 import { PLAN_TIERS } from './tiers'
 
 const PLANS_HREF = '/plans'
@@ -297,6 +299,12 @@ function PlanGrid({
         const description = plan.description ? pickOptional(plan.description, locale) : null
 
         const mapLine = kind === 'vip' ? 'sub_vip_f2' : 'sub_map_f2'
+        // Sold per device (owner, Nov 2026): a stepper replaces the fixed price.
+        const perDevice = sellsExtraDevices(plan)
+        const buyHref = getPathname({
+          href: `/plans/buy/${encodeURIComponent(plan.id)}`,
+          locale,
+        })
         const facts: { icon: IconName; text: string }[] = [
           {
             icon: 'clock',
@@ -314,7 +322,12 @@ function PlanGrid({
               ? t(plan.canDownloadPdf ? 'sub_basic_pdf' : 'sub_basic_pdf_view')
               : t(mapLine),
           },
-          { icon: 'phone', text: t('sub_devices', { count: plan.deviceLimit }) },
+          {
+            icon: 'phone',
+            text: perDevice
+              ? t('pl_devices_from', { count: plan.deviceLimit, max: planDeviceRange(plan).max })
+              : t('sub_devices', { count: plan.deviceLimit }),
+          },
         ]
 
         // The facts box already states the map level (or, for a map-less plan,
@@ -358,14 +371,16 @@ function PlanGrid({
                 ))}
               </ul>
 
-              <p className="bt-ptier-price">
-                <strong className="bt-money">
-                  <Money minor={plan.priceMinor} currency={plan.currency} />
-                </strong>
-                {/* The duration is the first fact above; the price line only
-                    says how it is paid. */}
-                <span>/ {t('sub_once')}</span>
-              </p>
+              {!perDevice && (
+                <p className="bt-ptier-price">
+                  <strong className="bt-money">
+                    <Money minor={plan.priceMinor} currency={plan.currency} />
+                  </strong>
+                  {/* The duration is the first fact above; the price line only
+                      says how it is paid. */}
+                  <span>/ {t('sub_once')}</span>
+                </p>
+              )}
               <p className="muted" style={{ fontSize: 12.5, margin: '0 0 6px' }}>
                 {plan.durationDays === null
                   ? t('sub_lifetime_note')
@@ -408,15 +423,30 @@ function PlanGrid({
                 >
                   <Icon name="check" size={16} color="#fff" /> {t('sub_active')}
                 </Button>
+              ) : perDevice ? (
+                // Sold per device: the stepper shows the live total and the
+                // link carries only the count; checkout clamps and prices it.
+                <DevicePicker
+                  plan={{
+                    priceMinor: plan.priceMinor,
+                    deviceLimit: plan.deviceLimit,
+                    extraDevicePriceMinor: plan.extraDevicePriceMinor,
+                    maxDevices: plan.maxDevices,
+                  }}
+                  currency={plan.currency}
+                  buyHref={buyHref}
+                  ctaLabel={t('sub_choose')}
+                  ctaClassName={buttonClass(
+                    { variant: plan.featured ? 'orange' : 'ghost', block: true },
+                    'bt-ptier-cta',
+                  )}
+                />
               ) : (
                 // The only thing that grants this plan is a settled payment; the
                 // link puts the plan in the cart (a real href — list H12; no
                 // prefetch, it is not a page), and checkout prices it server-side.
                 <a
-                  href={getPathname({
-                    href: `/plans/buy/${encodeURIComponent(plan.id)}`,
-                    locale,
-                  })}
+                  href={buyHref}
                   rel="nofollow"
                   className={buttonClass(
                     { variant: plan.featured ? 'orange' : 'ghost', block: true },

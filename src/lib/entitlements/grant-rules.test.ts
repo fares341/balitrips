@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { extendedExpiry } from './extend'
-import { grantablePlanLines, isLineLive } from './grant-rules'
+import { MAX_DEVICE_LIMIT } from '@/lib/security/config'
+
+import { grantablePlanLines, isLineLive, purchasedDeviceLimit } from './grant-rules'
 
 /**
  * VIP as an extra line (phase 3): granted once, only from a paid order (the
@@ -91,5 +93,21 @@ describe('extend by N days', () => {
   it('restarts an ended grant from now', () => {
     const ended = new Date('2026-10-01T00:00:00Z')
     expect(extendedExpiry(ended, 7, now).toISOString()).toBe('2026-10-27T12:00:00.000Z')
+  })
+})
+
+describe('devices on the granted entitlement', () => {
+  it('uses the count bought on the order line', () => {
+    expect(purchasedDeviceLimit({ deviceLimit: 1 }, { devices: 3 })).toBe(3)
+  })
+
+  it('keeps the plan limit for a line without a count (older orders)', () => {
+    expect(purchasedDeviceLimit({ deviceLimit: 2 }, null)).toBe(2)
+    expect(purchasedDeviceLimit({ deviceLimit: 2 }, {})).toBe(2)
+  })
+
+  it('never goes below the plan limit nor above the ceiling', () => {
+    expect(purchasedDeviceLimit({ deviceLimit: 2 }, { devices: 1 })).toBe(2)
+    expect(purchasedDeviceLimit({ deviceLimit: 1 }, { devices: 10_000 })).toBe(MAX_DEVICE_LIMIT)
   })
 })

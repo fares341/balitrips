@@ -669,6 +669,59 @@ h2.section-title {
   color: var(--forest-deep);
 }
 
+.bt-pdev {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+}
+
+.bt-pdev-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.bt-pdev-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bt-pdev-step button {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
+  background: transparent;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bt-pdev-step button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bt-pdev-step output {
+  min-width: 26px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-pdev-note {
+  grid-column: 1 / -1;
+  font-size: 12.5px;
+}
+
 .bt-ptier-upsell {
   display: flex;
   align-items: center;
