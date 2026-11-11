@@ -13,6 +13,13 @@ export function PageViewBeacon() {
 
   useEffect(() => {
     if (!pathname) return
+    // تحقق من وجود جلسة دخول لتجنب إرسال Beacons للمتصفح في الوضع المجهول
+    const hasSession =
+      typeof document !== 'undefined' &&
+      (document.cookie.includes('better-auth.session_token') ||
+        document.cookie.includes('bt_session'))
+    if (!hasSession) return
+
     const body = JSON.stringify({ path: pathname })
     try {
       if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
