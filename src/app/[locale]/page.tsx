@@ -69,6 +69,7 @@ import { HeroSearch } from './_home/hero-search'
 import { HeroVideo } from './_home/hero-video'
 import { CUSTOM_TRIP_PHOTO } from './_home/media'
 import { SvcCards } from './_home/svc-cards'
+import { CustomTripPrices } from './_ui/custom-trip-prices'
 import { CUSTOM_HREF } from './_ui/routes-extra'
 import { JsonLd } from '@/components/seo/json-ld'
 import { getContact } from '@/components/layout/contact-server'
@@ -702,6 +703,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   {t('hv3_ct_title')}
                 </h2>
                 <p>{t('hv3_ct_body')}</p>
+                <CustomTripPrices />
                 <div className="row">
                   <LinkButton href={CUSTOM_HREF}>{t('hv3_ct_request')}</LinkButton>
                   <LinkButton href="/contact" variant="glass">

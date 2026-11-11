@@ -40,6 +40,13 @@ import { BUDGET_TIER_LABEL, BUDGET_TIERS, type BudgetTier } from '@/lib/budget-t
 import { FEATURES } from '@/lib/features'
 import { todayInBali } from '@/lib/booking-rules'
 import { Calendar } from '@/components/booking/calendar'
+import { Money } from '@/components/currency/currency-context'
+import {
+  sortedTiers,
+  tierForDays,
+  tripLength,
+  type CustomTripTier,
+} from '@/lib/itineraries/custom-tiers'
 
 import { submitCustomTrip } from './actions'
 import {
@@ -110,6 +117,8 @@ export type CustomTripFormProps = {
   areas: readonly AreaOption[]
   /** Which of them start selected. Server-chosen, so it is a real key. */
   defaultInterests: readonly string[]
+  /** Custom itinerary price tiers (Studio): the price for the picked length shows live. */
+  priceTiers?: readonly CustomTripTier[]
 }
 
 /** One-line description under each budget category. */
@@ -119,7 +128,12 @@ const BUDGET_TIER_HINT: Record<BudgetTier, string> = {
   luxury: 'bud_luxury_b',
 }
 
-export function CustomTripForm({ interests, areas, defaultInterests }: CustomTripFormProps) {
+export function CustomTripForm({
+  interests,
+  areas,
+  defaultInterests,
+  priceTiers = [],
+}: CustomTripFormProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
   const router = useRouter()
@@ -141,6 +155,10 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
   const [pickedAreas, setPickedAreas] = useState<string[]>([])
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  // Trip length from the picked dates (both days count) → the matching tier.
+  const tripDays = tripLength(start, end)
+  const tripTier = tripDays === null ? null : tierForDays(priceTiers, tripDays)
+  const lastTierDays = sortedTiers(priceTiers).at(-1)?.maxDays ?? 0
 
   /**
    * Which proposal the traveller has dismissed with "Start over".
@@ -341,6 +359,20 @@ export function CustomTripForm({ interests, areas, defaultInterests }: CustomTri
             )}
             {errors.dates !== undefined && (
               <FieldError id={`${baseId}-dates-err`}>{t(errors.dates)}</FieldError>
+            )}
+            {tripDays !== null && priceTiers.length > 0 && (
+              <p className="ct-live-price" aria-live="polite">
+                {tripTier !== null
+                  ? t.rich('ct_tier_live', {
+                      days: tripDays,
+                      price: () => (
+                        <b className="bt-money">
+                          <Money minor={tripTier.priceMinor} currency="SAR" />
+                        </b>
+                      ),
+                    })
+                  : t('ct_tier_over', { days: lastTierDays })}
+              </p>
             )}
           </div>
         </fieldset>

@@ -686,6 +686,135 @@ export const P = {
       ),
       'afternoon',
     ),
+  // ---- 10-day programmes (Nov 2026) ----
+  hutCafe: (url: string) => stop('HUT Cafe Bali', url, 'cafe', BREAKFAST, 'morning'),
+  alasHarumRice: (url: string) =>
+    stop(
+      'Alas Harum Bali',
+      url,
+      'activity',
+      L(
+        'مزارع الأرز وفيها بعض الفعاليات: زيبلاين والسكاي بايك',
+        'The rice terraces, with activities such as the zipline and the sky bike',
+        'Sawah terasering dengan aktivitas seperti zipline dan sky bike',
+      ),
+    ),
+  cretyaLunch: (url: string) =>
+    stop(
+      'Cretya Ubud',
+      url,
+      'restaurant',
+      L(
+        'الغداء في المطعم داخل حدائق الأرز',
+        'Lunch at the restaurant inside the rice terraces',
+        'Makan siang di restoran di tengah sawah',
+      ),
+      'midday',
+    ),
+  secretGardenCare: (url: string) =>
+    stop(
+      'Secret Garden Village',
+      url,
+      'attraction',
+      L(
+        'مزار جميل وحديقة فيها منتجات عناية ومناطق قهوة',
+        'A pretty stop: a garden with care products and coffee corners',
+        'Tempat cantik: taman dengan produk perawatan dan sudut kopi',
+      ),
+    ),
+  mrSmashBackToCentre: (url: string) =>
+    stop(
+      'Mr.Smash Burger - Ubud',
+      url,
+      'restaurant',
+      L(
+        'العودة إلى سنتر أوبود والعشاء في مطعم برجر',
+        'Back to central Ubud for dinner at a burger restaurant',
+        'Kembali ke pusat Ubud untuk makan malam di restoran burger',
+      ),
+      'evening',
+    ),
+  osteriaBackToCentre: (url: string) =>
+    stop(
+      "L'Osteria Pizza e Cucina Ubud",
+      url,
+      'restaurant',
+      L(
+        'العودة إلى سنتر أوبود والعشاء في المطعم الإيطالي',
+        'Back to central Ubud for dinner at the Italian restaurant',
+        'Kembali ke pusat Ubud untuk makan malam di restoran Italia',
+      ),
+      'evening',
+    ),
+  sevenAm: (url: string) => stop('7AM Bakers | 7PM Diners Ubud', url, 'cafe', BREAKFAST, 'morning'),
+  siraVillage: (url: string, then?: L3) =>
+    stop(
+      'Sira Village Grand Outlet Bali',
+      url,
+      'shopping',
+      L(
+        'الاتجاه إلى أولواتو، وفي الطريق زيارة أحدث مولات بالي',
+        'Head to Uluwatu, with a visit on the way to the newest mall in Bali',
+        'Menuju Uluwatu, dengan mampir di mal terbaru di Bali',
+      ),
+      undefined,
+      then,
+    ),
+  bb52: (url: string) =>
+    stop(
+      'BB52 Burgers Uluwatu',
+      url,
+      'restaurant',
+      L(
+        'العشاء في مطعم البرجر',
+        'Dinner at the burger restaurant',
+        'Makan malam di restoran burger',
+      ),
+      'evening',
+    ),
+  singleFin: (url: string) =>
+    stop(
+      'Single Fin Bali',
+      url,
+      'restaurant',
+      L('العشاء في هذا المطعم', 'Dinner at this restaurant', 'Makan malam di restoran ini'),
+      'evening',
+    ),
+  balicopter: (url: string) =>
+    stop(
+      'Balicopter - Helicopter Tour And Transfer',
+      url,
+      'activity',
+      L(
+        'اقتراح هذا اليوم: تجربة الهيلوكبتر في بالي',
+        'Suggested for today: a helicopter ride over Bali',
+        'Saran hari ini: naik helikopter di atas Bali',
+      ),
+    ),
+  koral: (url: string) =>
+    stop(
+      'Koral: Bali’s First Aquarium Restaurant',
+      url,
+      'restaurant',
+      L(
+        'الغداء في المطعم البحري الفاخر في فندق كمبينسكي (يحتاج حجزًا)',
+        'Lunch at the fine seafood restaurant in the Kempinski hotel (booking needed)',
+        'Makan siang di restoran seafood mewah di hotel Kempinski (perlu reservasi)',
+      ),
+      'midday',
+    ),
+  bollywood: (url: string) =>
+    stop(
+      'Bollywood Indian Cuisine Seminyak',
+      url,
+      'restaurant',
+      L(
+        'العشاء في المطعم الهندي',
+        'Dinner at the Indian restaurant',
+        'Makan malam di restoran India',
+      ),
+      'evening',
+    ),
 }
 
 /* ---------------- Day notes and areas from the source ---------------- */
@@ -767,6 +896,21 @@ export const NOTE = {
     'Last day: rest and an easy pace.',
     'Hari terakhir: santai dan ringan.',
   ),
+  activityDayClothes: L(
+    'يوم فعاليات، ويُفضَّل أخذ ملابس غيار.',
+    'An activity day — bring a change of clothes.',
+    'Hari aktivitas — bawa baju ganti.',
+  ),
+  toUluwatuLong: L(
+    'تسجيل الخروج من فندق أوبود باتجاه أولواتو. يُفضَّل أن تكون السيارة مريحة لأن الطريق طويل (قرابة 3 ساعات)، والأفضل أن يكون الغداء فقط في منتصف الطريق.',
+    'Check out of the Ubud hotel and head to Uluwatu. Make sure the car is comfortable: the drive is long (about 3 hours), and it is best to stop only for lunch halfway.',
+    'Check-out dari hotel Ubud menuju Uluwatu. Pastikan mobil nyaman: perjalanannya jauh (sekitar 3 jam), dan sebaiknya hanya berhenti untuk makan siang di tengah jalan.',
+  ),
+  helicopterShopping: L(
+    'يوم هيلوكبتر وتسوّق.',
+    'A helicopter and shopping day.',
+    'Hari helikopter dan belanja.',
+  ),
   noActivitiesFirstDay: L(
     'بما أنه اليوم الأول فلا فعاليات فيه.',
     'As it is the first day, there are no activities.',
@@ -795,6 +939,12 @@ export const STAY_8 = L(
   'Tiga area menginap: Seminyak 3 hari, lalu Ubud 3 hari, lalu Uluwatu 2 hari.',
 )
 
+export const STAY_10 = L(
+  'السكن في ثلاث مناطق: سيمنياك 4 أيام، ثم أوبود 4 أيام، ثم أولواتو يومان.',
+  'Three bases: Seminyak for 4 days, then Ubud for 4 days, then Uluwatu for 2 days.',
+  'Tiga area menginap: Seminyak 4 hari, lalu Ubud 4 hari, lalu Uluwatu 2 hari.',
+)
+
 export const ACT = {
   rafting: [
     'BMW Rafting BMW (Bali Mesari Wisata) Rafting',
@@ -806,4 +956,5 @@ export const ACT = {
   themePark: ['Trans Studio Theme Park Bali', 'Trans Studio Bali', 'Trans Studio'],
   waterbom: ['Waterbom Bali', 'Waterbom'],
   rice: ['Alas Harum Bali', 'Alas Harum'],
+  helicopter: ['Balicopter - Helicopter Tour And Transfer', 'Balicopter', 'Bali Helicopter Tour'],
 } as const

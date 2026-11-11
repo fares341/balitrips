@@ -152,7 +152,11 @@ export const HONEYMOON_6_DAYS: ItinerarySeed = {
   audienceKind: 'honeymoon',
   sourceDocument: 'جداول سياحية 6 أيام - بالي شباب - شهر عسل - عوائل.pdf',
   sourcePages: '6–12 («جدول شهر عسل»)',
-  priceMinor: null,
+  priceMinor: 10_000,
+  areas: [
+    { key: 'ubud', nights: 3 },
+    { key: 'seminyak', nights: 3 },
+  ],
   currency: 'SAR',
   stay: STAY_6,
   departure: DEPARTURE_6,

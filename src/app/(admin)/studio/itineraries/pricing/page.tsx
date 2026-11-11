@@ -28,6 +28,7 @@ import { saveItinerarySales } from '../phase1-actions'
 export const dynamic = 'force-dynamic'
 
 const DEFAULT_PRICE_ROWS = 12
+const CUSTOM_TIER_ROWS = 6
 
 /** Studio → Itineraries → Packages & prices (`itinerarySales`, spec §5/§6/§6.1). */
 export default async function ItineraryPricingPage({
@@ -238,6 +239,38 @@ export default async function ItineraryPricingPage({
                     <TextInput
                       id={`dp${i}Price`}
                       name={`dp${i}Price`}
+                      inputMode="decimal"
+                      dir="ltr"
+                      defaultValue={row ? formatMoneyInput(row.priceMinor, settings.currency) : ''}
+                      {...priceInputProps(pricesLocked)}
+                    />
+                  </Field>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="a-card">
+            <h2>{t('ip1.custom_tiers_t')}</h2>
+            <p className="a-hint">{t('ip1.custom_tiers_hint', { currency: settings.currency })}</p>
+            {Array.from({ length: CUSTOM_TIER_ROWS }, (_, i) => {
+              const row = settings.customTripTiers[i]
+              return (
+                <div className="a-row" key={i}>
+                  <Field label={t('ip1.ct_days')} htmlFor={`ct${i}Days`}>
+                    <TextInput
+                      id={`ct${i}Days`}
+                      name={`ct${i}Days`}
+                      inputMode="numeric"
+                      dir="ltr"
+                      defaultValue={row ? String(row.maxDays) : ''}
+                      {...priceInputProps(pricesLocked)}
+                    />
+                  </Field>
+                  <Field label={t('ip1.dp_price')} htmlFor={`ct${i}Price`}>
+                    <TextInput
+                      id={`ct${i}Price`}
+                      name={`ct${i}Price`}
                       inputMode="decimal"
                       dir="ltr"
                       defaultValue={row ? formatMoneyInput(row.priceMinor, settings.currency) : ''}

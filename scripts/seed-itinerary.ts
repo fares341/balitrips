@@ -17,18 +17,36 @@
  * stays in the private day text with its original Google Maps link.
  *
  * What a re-run never overwrites (the owner's Studio work): the price and
- * levels, the status (unless --publish), images, the page-content document
- * once it exists, internal notes and the map / VIP settings.
+ * levels once set, the status (unless --publish), a cover or gallery already
+ * there, the areas and the page-content document once they exist, internal
+ * notes and the map / VIP settings.
  *
- * Prices: the sources have none. A new row is written with price 0 as a
- * DRAFT; 0 is never sellable (Studio publish and the checkout quote both
- * refuse it). Set the price in Studio, then publish there or with --publish.
+ * Prices (owner, Nov 2026): 6 days 100, 8 days 150, 10 days 180 SAR — from
+ * the seed, written on create or while the stored price is still 0. A new
+ * itinerary is always a DRAFT; publish it in Studio (or with --publish).
+ *
+ * Images: `scripts/assets/itineraries/<audience><days>-cover.webp` and
+ * `-galleryN.webp` go through the Studio media pipeline (`ingestImage`) with
+ * deterministic media ids, and are attached only when the itinerary has no
+ * cover (resp. no gallery) yet.
  */
+
+import { createHash } from 'node:crypto'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import { and, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
 
+import { ingestImage } from '@/app/(admin)/_lib/image/pipeline'
 import { db } from '@/db'
-import { activities, itineraries, itineraryDayPlaces, itineraryDays, mapPlaces } from '@/db/schema'
+import {
+  activities,
+  itineraries,
+  itineraryDayPlaces,
+  itineraryDays,
+  mapPlaces,
+  media,
+} from '@/db/schema'
 import { BOOKABLE_STATUSES } from '@/lib/content/activity-status'
 import { matchCatalog, type CatalogRow } from '@/lib/itineraries/seeds/family-4-days'
 import {
@@ -44,6 +62,65 @@ const args = process.argv.slice(2)
 const apply = args.includes('--apply')
 const publish = args.includes('--publish')
 const slug = args.find((a) => a.startsWith('--slug='))?.slice('--slug='.length) ?? ''
+
+const ASSETS = join(process.cwd(), 'scripts', 'assets', 'itineraries')
+
+/** Same derivation as the data jobs: a stable UUID per file, so re-runs reuse the row. */
+function stableMediaId(name: string): string {
+  const hex = createHash('sha1').update(`bali-trips/itinerary-seed/${name}`).digest('hex')
+  const variant = ((parseInt(hex.slice(16, 18), 16) & 0x3f) | 0x80).toString(16)
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-${variant}${hex.slice(18, 20)}-${hex.slice(20, 32)}`
+}
+
+/** The committed cover and gallery files for a seed, in order. */
+function imageFiles(prefix: string): { cover: string | null; gallery: string[] } {
+  if (!existsSync(ASSETS)) return { cover: null, gallery: [] }
+  const files = readdirSync(ASSETS)
+  const n = (f: string) => Number(/gallery(\d+)\.webp$/.exec(f)?.[1] ?? 0)
+  return {
+    cover: files.includes(`${prefix}-cover.webp`) ? `${prefix}-cover.webp` : null,
+    gallery: files
+      .filter((f) => f.startsWith(`${prefix}-gallery`) && f.endsWith('.webp'))
+      .sort((a, b) => n(a) - n(b)),
+  }
+}
+
+async function ingestFile(
+  file: string,
+  alt: { ar: string; en: string; id: string },
+): Promise<string> {
+  const mediaId = stableMediaId(file)
+  const [have] = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(and(eq(media.id, mediaId), isNull(media.deletedAt)))
+    .limit(1)
+  if (have) return mediaId
+  const result = await ingestImage({
+    mediaId,
+    bytes: new Uint8Array(readFileSync(join(ASSETS, file))),
+    declaredMime: 'image/webp',
+    declaredName: file,
+  })
+  const values = {
+    objectKey: result.objectKey,
+    mimeType: result.mimeType,
+    width: result.width,
+    height: result.height,
+    bytes: result.bytes,
+    alt,
+    name: file,
+    credit: 'Bali Trips',
+  }
+  await db
+    .insert(media)
+    .values({ id: mediaId, ...values })
+    .onConflictDoUpdate({
+      target: media.id,
+      set: { ...values, deletedAt: null, updatedAt: new Date() },
+    })
+  return mediaId
+}
 
 const namesOf = (name: unknown): string[] =>
   name && typeof name === 'object'
@@ -72,12 +149,23 @@ async function main(): Promise<number> {
       tierPrices: itineraries.tierPrices,
       status: itineraries.status,
       pageContent: itineraries.pageContent,
+      areas: itineraries.areas,
+      heroImageId: itineraries.heroImageId,
+      galleryImageIds: itineraries.galleryImageIds,
     })
     .from(itineraries)
     .where(eq(itineraries.slug, seed.slug))
     .limit(1)
 
-  const effectivePrice = seed.priceMinor ?? existing?.priceMinor ?? 0
+  const priceUnset =
+    !existing || (existing.priceMinor === 0 && !hasSellablePrice(0, existing.tierPrices))
+  const writesPrice = seed.priceMinor !== null && priceUnset
+  const effectivePrice = writesPrice ? seed.priceMinor! : (existing?.priceMinor ?? 0)
+  const seedAreas = { showNights: false, items: seed.areas.map((a) => ({ ...a })) }
+  const writesAreas = !existing || existing.areas == null
+  const images = imageFiles(`${seed.audienceKind}${seed.days.length}`)
+  const writesCover = images.cover !== null && !existing?.heroImageId
+  const writesGallery = images.gallery.length > 0 && (existing?.galleryImageIds ?? []).length === 0
   if (publish && !hasSellablePrice(effectivePrice, existing?.tierPrices)) {
     console.error(
       `REFUSED: «${seed.slug}» has no price (> 0). Set the price in Studio first — it is never published or sold at 0.`,
@@ -153,8 +241,19 @@ async function main(): Promise<number> {
   )
   console.log(
     existing
-      ? `exists: ${existing.id} (${existing.status}), price ${existing.priceMinor / 100} SAR — price and status kept`
-      : 'new: will be created as a DRAFT with no price (0 = not sellable)',
+      ? `exists: ${existing.id} (${existing.status}) — status kept`
+      : 'new: will be created as a DRAFT',
+  )
+  console.log(
+    writesPrice
+      ? `price: ${effectivePrice / 100} SAR (set now)`
+      : `price: ${effectivePrice / 100} SAR (kept — already priced, never overwritten)`,
+  )
+  console.log(
+    `areas: ${seed.areas.map((a) => `${a.key} ${a.nights ?? '–'}`).join(' · ')} — ${writesAreas ? 'written (nights hidden)' : 'kept (already set)'}`,
+  )
+  console.log(
+    `images: cover ${images.cover ?? 'none'} — ${writesCover ? 'attached' : 'kept / none'}; gallery ${images.gallery.length} — ${writesGallery ? 'attached' : 'kept / none'}`,
   )
   for (const line of found) console.log(`  ✓ ${line}`)
   console.log(
@@ -166,6 +265,12 @@ async function main(): Promise<number> {
   for (const line of linkIssues) console.log(`  ⚠ link ${line}`)
 
   if (!apply) return 0
+
+  // Media first (storage writes are not transactional); ids are deterministic.
+  const alt = { ar: seed.public.name.ar, en: seed.public.name.en, id: seed.public.name.id }
+  const coverId = writesCover ? await ingestFile(images.cover!, alt) : null
+  const galleryIds: string[] = []
+  if (writesGallery) for (const file of images.gallery) galleryIds.push(await ingestFile(file, alt))
 
   await db.transaction(async (tx) => {
     const p = seed.public
@@ -190,8 +295,11 @@ async function main(): Promise<number> {
         .update(itineraries)
         .set({
           ...copy,
-          ...(seed.priceMinor !== null ? { priceMinor: seed.priceMinor } : {}),
+          ...(writesPrice ? { priceMinor: seed.priceMinor! } : {}),
           ...(existing.pageContent == null ? { pageContent: pageContentFor(seed) } : {}),
+          ...(writesAreas ? { areas: seedAreas } : {}),
+          ...(coverId ? { heroImageId: coverId } : {}),
+          ...(galleryIds.length > 0 ? { galleryImageIds: galleryIds } : {}),
           ...publishing,
           version: sql`${itineraries.version} + 1`,
           updatedAt: new Date(),
@@ -216,7 +324,10 @@ async function main(): Promise<number> {
           isPopular: false,
           bundleDiscountPct: null,
           pageContent: pageContentFor(seed),
-          internalNotes: `Seeded from «${seed.sourceDocument}» pages ${seed.sourcePages}. No price in the source.`,
+          areas: seedAreas,
+          heroImageId: coverId,
+          galleryImageIds: galleryIds.length > 0 ? galleryIds : null,
+          internalNotes: `Seeded from «${seed.sourceDocument}» pages ${seed.sourcePages}. Price per the owner's Nov 2026 list.`,
           ...publishing,
         })
         .returning({ id: itineraries.id })

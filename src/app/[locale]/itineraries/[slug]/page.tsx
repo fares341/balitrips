@@ -45,12 +45,13 @@ import {
   type PageSectionKey,
   type PageTextKey,
 } from '@/lib/itineraries/page-content'
-import type { PublicImage } from '@/lib/itineraries/public-dto'
+import { publicAreasLine, type PublicImage } from '@/lib/itineraries/public-dto'
 import { holdsMapAccess } from '@/lib/itineraries/queries'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import { fromPrice, pricedTiers } from '@/lib/itineraries/tiers'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
+import { CustomTripPrices } from '../../_ui/custom-trip-prices'
 import { CUSTOM_HREF } from '../../_ui/routes-extra'
 import { alternates } from '../_meta'
 import { toCardItinerary } from '../_ui/card-props'
@@ -135,6 +136,8 @@ export default async function ItineraryPage({
   const name = itineraryTitle(itinerary.name, itinerary.slug, itinerary.days, locale, t)
   const blurb = pickOptional(itinerary.blurb, locale)
   const intro = pickOptional(itinerary.intro, locale)
+  // Area names only (owner, Nov 2026); nights when Studio shows them.
+  const areas = publicAreasLine(itinerary.areas, locale)
   const audience = itineraryAudience(itinerary.name, itinerary.audience, locale, t)
   const tiers = pricedTiers(itinerary.tierPrices)
   const planMinor = fromPrice(itinerary.priceMinor, itinerary.tierPrices)
@@ -286,6 +289,13 @@ export default async function ItineraryPage({
             {name}
           </h1>
           {blurb !== null && <p className="itp-lede">{blurb}</p>}
+          {areas !== '' && (
+            <p className="itp-areas">
+              <BaliIcon name="pin" size={18} />
+              <span className="itp-areas-k">{t('itp_areas_t')}</span>
+              <b>{areas}</b>
+            </p>
+          )}
           <p className="itp-from">
             <span>{text('heroFrom', t('it_price_from'))}</span>{' '}
             <strong className="bt-money">{planPrice}</strong>
@@ -523,6 +533,7 @@ export default async function ItineraryPage({
             <span className="itp-custom-text">
               <b id="itp-custom">{text('customTitle', t('itd_custom_t'))}</b>
               <span>{text('customBody', t('itd_custom_b'))}</span>
+              <CustomTripPrices />
             </span>
             <Link href={CUSTOM_HREF} className="btn btn-primary itp-custom-cta">
               {text('customCta', t('itd_custom_cta'))} <span aria-hidden="true">←</span>
@@ -539,7 +550,11 @@ export default async function ItineraryPage({
             </h2>
             <div className="grid pk-grid">
               {others.map((other) => (
-                <ItineraryCard key={other.id} itinerary={toCardItinerary(other)} />
+                <ItineraryCard
+                  key={other.id}
+                  itinerary={toCardItinerary(other)}
+                  areas={publicAreasLine(other.areas, locale)}
+                />
               ))}
             </div>
           </div>

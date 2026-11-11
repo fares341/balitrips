@@ -10,11 +10,12 @@ import { readFx } from '@/lib/currency/fx-store'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/db'
-import { itineraries, itineraryDays, media, plans } from '@/db/schema'
+import { itineraries, itineraryDays, media, plans, regions } from '@/db/schema'
 import { toMedia } from '@/lib/content/queries'
 import { entityHref } from '@/lib/content/types'
 import type { LocalizedText } from '@/lib/content/localize'
 
+import { areaName, normaliseAreas, type AreaNames } from './areas'
 import { mapBundleOffer, type MapBundleOffer } from './map-bundle'
 import {
   audienceKeysOf,
@@ -24,6 +25,7 @@ import {
   toPublicFaq,
   toPublicStats,
   type MediaLike,
+  type PublicArea,
   type PublicItineraryDetail,
   type PublicItinerarySummary,
 } from './public-dto'
@@ -49,6 +51,7 @@ const SUMMARY_COLUMNS = {
   isPopular: itineraries.isPopular,
   heroImageId: itineraries.heroImageId,
   previewStats: itineraries.previewStats,
+  areas: itineraries.areas,
 }
 
 type SummaryRow = Pick<typeof itineraries.$inferSelect, keyof typeof SUMMARY_COLUMNS>
@@ -75,12 +78,33 @@ async function mediaById(
   return out
 }
 
+/** Region labels by key (the names the public page may show for areas). */
+async function areaNames(): Promise<AreaNames> {
+  const rows = await db.select({ key: regions.key, label: regions.label }).from(regions)
+  return new Map(rows.map((row) => [row.key, (row.label ?? {}) as Partial<Record<string, string>>]))
+}
+
+function toPublicAreas(raw: unknown, names: AreaNames): PublicArea[] {
+  const areas = normaliseAreas(raw)
+  return areas.items.map((item) => ({
+    key: item.key,
+    name: Object.fromEntries(
+      (['ar', 'en', 'id'] as const).map((l) => [l, areaName(item.key, l, names)]),
+    ),
+    nights: areas.showNights ? item.nights : null,
+  }))
+}
+
 const localizedList = (raw: unknown): LocalizedText[] =>
   Array.isArray(raw)
     ? raw.filter((entry): entry is LocalizedText => entry !== null && typeof entry === 'object')
     : []
 
-function toSummary(row: SummaryRow, images: Map<string, MediaLike>): PublicItinerarySummary {
+function toSummary(
+  row: SummaryRow,
+  images: Map<string, MediaLike>,
+  names: AreaNames,
+): PublicItinerarySummary {
   const audience = localizedList(row.audience)
   const name = (row.name ?? {}) as LocalizedText
   return {
@@ -100,6 +124,7 @@ function toSummary(row: SummaryRow, images: Map<string, MediaLike>): PublicItine
     isPopular: row.isPopular === true,
     hero: toPublicImage(images.get(row.heroImageId ?? '')),
     stats: toPublicStats(row.previewStats),
+    areas: toPublicAreas(row.areas, names),
   }
 }
 
@@ -109,8 +134,11 @@ export async function listPublicItineraries(): Promise<PublicItinerarySummary[]>
     .from(itineraries)
     .where(LIVE)
     .orderBy(asc(itineraries.days), asc(itineraries.priceMinor))
-  const images = await mediaById(rows.map((row) => row.heroImageId))
-  return rows.map((row) => toSummary(row, images))
+  const [images, names] = await Promise.all([
+    mediaById(rows.map((row) => row.heroImageId)),
+    areaNames(),
+  ])
+  return rows.map((row) => toSummary(row, images, names))
 }
 
 export async function getPublicItinerary(slug: string): Promise<PublicItineraryDetail | null> {
@@ -154,7 +182,7 @@ export async function getPublicItinerary(slug: string): Promise<PublicItineraryD
   const captions = (row.galleryCaptions ?? {}) as Record<string, unknown>
 
   return {
-    ...toSummary(row, images),
+    ...toSummary(row, images, await areaNames()),
     intro: (row.detailedDescription as LocalizedText | null) ?? null,
     gallery: galleryIds.flatMap((id) => {
       const image = toPublicImage(images.get(id), cleanLocalized(captions[id]))
