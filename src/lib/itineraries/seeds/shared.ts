@@ -4,7 +4,8 @@
  *
  * PUBLIC fields (name, blurb, intro, hero line, audience, stats, day moods,
  * benefits, steps, FAQ, SEO) say WHAT the buyer gets — never a place, an
- * area, a city or an activity. Everything under `days` is PRIVATE: only the
+ * area, a city or an activity. The one exception is `areas` (region keys
+ * only), rendered from the region taxonomy in its own block. Everything under `days` is PRIVATE: only the
  * buyer sees it, after purchase.
  *
  * Source rule: every stop, its Google Maps link (verbatim) and its order come
@@ -16,6 +17,8 @@
 import type { L3 } from './family-4-days'
 
 export type { L3 }
+
+export type SeedAreaKey = 'seminyak' | 'ubud' | 'uluwatu'
 
 export const L = (ar: string, en: string, id: string): L3 => ({ ar, en, id })
 
@@ -120,8 +123,18 @@ export interface ItinerarySeed {
   sourceDocument: string
   sourcePages: string
   public: SeedPublic
-  /** Null = no price in the source: the itinerary stays a draft until the owner sets one. */
+  /**
+   * Owner's price (Nov 2026: 6 days 100, 8 days 150, 10 days 180 SAR).
+   * Written on create, or when the stored price is still 0 — never over a
+   * price the owner set in Studio. Null = no price: a draft until one is set.
+   */
   priceMinor: number | null
+  /**
+   * PUBLIC (the one exception, client Nov 2026): the areas the trip stays
+   * in, in order, with nights — region keys only (`regions.key`). Written
+   * to `itineraries.areas` with nights hidden, only when the field is empty.
+   */
+  areas: readonly { key: SeedAreaKey; nights: number | null }[]
   currency: 'SAR'
   /** Private: the stay plan as the source gives it. */
   stay: L3

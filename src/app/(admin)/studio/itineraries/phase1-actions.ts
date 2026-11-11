@@ -326,6 +326,18 @@ export async function saveItinerarySales(form: FormData): Promise<void> {
             priceMinor: ((r) => (r.ok ? r.value : -1))(parseMoneyInput(row.raw ?? '', currency)),
           }))
       : current.defaultPrices
+    const customTripTiers = mayPrice
+      ? Array.from({ length: 6 }, (_, i) => ({
+          maxDays: Number(fstr(form, `ct${i}Days`) ?? ''),
+          raw: fstr(form, `ct${i}Price`),
+        }))
+          .filter((row) => Number.isInteger(row.maxDays) && row.maxDays > 0 && row.raw !== null)
+          .map((row) => ({
+            maxDays: row.maxDays,
+            priceMinor: ((r) => (r.ok ? r.value : -1))(parseMoneyInput(row.raw ?? '', currency)),
+          }))
+          .sort((a, b) => a.maxDays - b.maxDays)
+      : current.customTripTiers
     const candidate = {
       ...current,
       options: {
@@ -358,6 +370,7 @@ export async function saveItinerarySales(form: FormData): Promise<void> {
               current.allActivitiesDiscountPct,
             ),
             defaultPrices,
+            customTripTiers,
           }
         : {}),
     }

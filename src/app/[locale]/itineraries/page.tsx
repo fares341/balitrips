@@ -27,10 +27,16 @@ import { isLocale, locales } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { listPublicItineraries, loadMapBundleOffer } from '@/lib/itineraries/public'
-import { AUDIENCE_KEYS, isAudienceKey, type AudienceKey } from '@/lib/itineraries/public-dto'
+import {
+  AUDIENCE_KEYS,
+  isAudienceKey,
+  publicAreasLine,
+  type AudienceKey,
+} from '@/lib/itineraries/public-dto'
 import { readItinerarySales } from '@/lib/itineraries/sales-settings-store'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
+import { CustomTripPrices } from '../_ui/custom-trip-prices'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { alternates } from './_meta'
 import { toCardItinerary } from './_ui/card-props'
@@ -231,6 +237,7 @@ export default async function ItinerariesPage({
                     label: pick(stat.label, locale),
                   }))}
                   extra={itinerary.includesMap ? null : mapLine}
+                  areas={publicAreasLine(itinerary.areas, locale)}
                 />
               ))}
             </div>
@@ -242,6 +249,7 @@ export default async function ItinerariesPage({
                 {t('itl_custom_t')}
               </b>
               <span className="muted">{t('itl_custom_b')}</span>
+              <CustomTripPrices />
             </span>
             <LinkButton href={CUSTOM_HREF} variant="forest">
               {t('itl_custom_cta')}

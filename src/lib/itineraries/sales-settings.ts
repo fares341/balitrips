@@ -18,6 +18,8 @@
 
 import { z } from 'zod'
 
+import { DEFAULT_CUSTOM_TRIP_TIERS } from './custom-tiers'
+
 export const ITINERARY_SALES_KEY = 'itinerarySales'
 export const DRIVER_SETTINGS_KEY = 'driver'
 
@@ -76,6 +78,19 @@ export const itinerarySalesSchema = z.object({
     .array(z.object({ days: z.number().int().min(1).max(60), priceMinor: minor }))
     .max(30)
     .default([]),
+  /**
+   * Custom itinerary price tiers shown where the custom trip is offered
+   * (`./custom-tiers`). Display only; SAR minor units.
+   */
+  customTripTiers: z
+    .array(
+      z.object({
+        maxDays: z.number().int().min(1).max(90),
+        priceMinor: minor.refine((v) => v > 0),
+      }),
+    )
+    .max(6)
+    .default(DEFAULT_CUSTOM_TRIP_TIERS.map((tier) => ({ ...tier }))),
   /** «احجز كل الفعاليات»: percent off the itinerary's linked activities. */
   allActivitiesDiscountPct: z.number().int().min(0).max(90).default(10),
   /** Whether the private driver counts toward the bundle discount. */

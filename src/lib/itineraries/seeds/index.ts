@@ -9,6 +9,7 @@ import { FAMILY_6_DAYS } from './family-6-days'
 import { FAMILY_8_DAYS } from './family-8-days'
 import { HONEYMOON_6_DAYS } from './honeymoon-6-days'
 import { HONEYMOON_8_DAYS } from './honeymoon-8-days'
+import { HONEYMOON_10_DAYS } from './honeymoon-10-days'
 import {
   PERIOD_LABEL,
   STOP_TYPE_LABEL,
@@ -19,6 +20,7 @@ import {
 } from './shared'
 import { YOUTH_6_DAYS } from './youth-6-days'
 import { YOUTH_8_DAYS } from './youth-8-days'
+import { YOUTH_10_DAYS } from './youth-10-days'
 
 export const ITINERARY_SEEDS: readonly ItinerarySeed[] = [
   YOUTH_6_DAYS,
@@ -27,6 +29,8 @@ export const ITINERARY_SEEDS: readonly ItinerarySeed[] = [
   YOUTH_8_DAYS,
   HONEYMOON_8_DAYS,
   FAMILY_8_DAYS,
+  YOUTH_10_DAYS,
+  HONEYMOON_10_DAYS,
 ]
 
 export function seedBySlug(slug: string): ItinerarySeed | undefined {

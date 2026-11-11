@@ -189,7 +189,12 @@ export const YOUTH_8_DAYS: ItinerarySeed = {
   audienceKind: 'youth',
   sourceDocument: 'جدول سياحي 8 أيام - بالي شباب - شهر عسل - عوائل.pdf',
   sourcePages: '1–8 («جدول سياحي شباب»)',
-  priceMinor: null,
+  priceMinor: 15_000,
+  areas: [
+    { key: 'seminyak', nights: 3 },
+    { key: 'ubud', nights: 3 },
+    { key: 'uluwatu', nights: 2 },
+  ],
   currency: 'SAR',
   stay: STAY_8,
   departure: DEPARTURE_8,

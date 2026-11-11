@@ -50,6 +50,7 @@ describe('public itinerary DTO', () => {
       srcSetWebp: null,
     }),
     stats: toPublicStats([{ icon: 'pin', value: '52', label: { ar: 'مكان' } }]),
+    areas: [{ key: 'ubud', name: { ar: 'أوبود' }, nights: null }],
     intro: null,
     gallery: [],
     teaserDays: [{ dayNumber: 1, image: null, mood: { ar: 'هدوء' } }],

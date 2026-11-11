@@ -151,7 +151,11 @@ export const YOUTH_6_DAYS: ItinerarySeed = {
   audienceKind: 'youth',
   sourceDocument: 'جداول سياحية 6 أيام - بالي شباب - شهر عسل - عوائل.pdf',
   sourcePages: '1–6 («جدول شباب»)',
-  priceMinor: null,
+  priceMinor: 10_000,
+  areas: [
+    { key: 'ubud', nights: 3 },
+    { key: 'seminyak', nights: 3 },
+  ],
   currency: 'SAR',
   stay: STAY_6,
   departure: DEPARTURE_6,

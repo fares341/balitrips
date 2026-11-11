@@ -693,6 +693,15 @@ export const itineraries = pgTable('itineraries', {
    * Pre-purchase copy only — never a day's content or a place name.
    */
   pageContent: jsonb('page_content').$type<Record<string, unknown>>(),
+  /**
+   * Migration 0056: the AREAS the trip covers, in order, with nights
+   * (`@/lib/itineraries/areas`). The only names the public page may show:
+   * region keys, never a place. `showNights` = Studio «إظهار عدد الليالي».
+   */
+  areas: jsonb('areas').$type<{
+    showNights: boolean
+    items: { key: string; nights: number | null }[]
+  }>(),
 
   ...publishing,
   ...timestamps,

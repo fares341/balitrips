@@ -48,6 +48,11 @@ export type ItineraryCardProps = {
   stats?: readonly { icon: IconName; value: string; label: string }[]
   badge?: string | null
   extra?: ReactNode
+  /**
+   * «سمينياك · أوبود · أولواتو» — the areas the trip covers (owner, Nov
+   * 2026): region names only, prepared on the server. Shown in both modes.
+   */
+  areas?: string
 }
 
 export function ItineraryCard({
@@ -57,6 +62,7 @@ export function ItineraryCard({
   stats,
   badge = null,
   extra,
+  areas = '',
 }: ItineraryCardProps) {
   const t = useTranslations()
   const locale = useLocale() as Locale
@@ -115,6 +121,9 @@ export function ItineraryCard({
           </div>
         )}
         {blurb !== null && <CardText>{blurb}</CardText>}
+        {stats !== undefined && areas !== '' && (
+          <CardMeta items={[{ icon: 'pin', label: areas }]} />
+        )}
         {stats !== undefined ? (
           stats.length > 0 && (
             <ul className="it-card-stats" role="list">

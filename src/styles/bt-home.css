@@ -1511,3 +1511,22 @@ html[dir='ltr'] .home-v3 .rm-track > li {
 .home-v3 .mq-clone {
   display: contents;
 }
+
+/* Custom itinerary price tiers (owner, Nov 2026) — home card, itinerary pages, /custom. */
+.ct-prices {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: inherit;
+}
+.ct-prices .bt-money {
+  white-space: nowrap;
+}
+.ct-tier {
+  white-space: normal;
+}
+.ct-live-price {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--forest);
+}

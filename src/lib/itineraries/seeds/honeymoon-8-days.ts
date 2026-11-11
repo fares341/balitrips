@@ -195,7 +195,12 @@ export const HONEYMOON_8_DAYS: ItinerarySeed = {
   audienceKind: 'honeymoon',
   sourceDocument: 'جدول سياحي 8 أيام - بالي شباب - شهر عسل - عوائل.pdf',
   sourcePages: '8–15 («جدول شهر عسل»)',
-  priceMinor: null,
+  priceMinor: 15_000,
+  areas: [
+    { key: 'seminyak', nights: 3 },
+    { key: 'ubud', nights: 3 },
+    { key: 'uluwatu', nights: 2 },
+  ],
   currency: 'SAR',
   stay: STAY_8,
   departure: DEPARTURE_8,

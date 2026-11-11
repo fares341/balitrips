@@ -58,6 +58,8 @@ import {
   TextInput,
 } from '../../../_ui/field'
 import { FaqRepeater, type FaqRepeaterEntry } from '../../../_ui/faq-repeater'
+import { AreasCard, areaChoices } from './areas-card'
+import { normaliseAreas } from '@/lib/itineraries/areas'
 import { Flash } from '../../../_ui/flash'
 import { loadPickerMedia, MediaPicker } from '../../../_ui/media-picker'
 import { OptionChecklist } from '../../../_ui/select-field'
@@ -76,6 +78,7 @@ import {
 } from '../actions'
 import {
   duplicateItinerary,
+  saveItineraryAreas,
   saveItineraryFaq,
   savePageContent,
   setItineraryVisibility,
@@ -574,6 +577,12 @@ export default async function ItineraryEditorPage({
         )
         return (
           <>
+            <AreasCard
+              action={saveItineraryAreas.bind(null, itinerary.id)}
+              areas={normaliseAreas(itinerary.areas)}
+              choices={await areaChoices()}
+              t={t}
+            />
             <PageContentEditor
               initial={normalisePageContent(itinerary.pageContent)}
               defaults={defaults}

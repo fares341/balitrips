@@ -89,6 +89,27 @@
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.92);
 }
+.itp-areas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 100%;
+}
+.itp-areas-k {
+  opacity: 0.85;
+}
+.itp-areas b {
+  font-weight: 700;
+}
 .itp-from {
   display: inline-flex;
   align-items: baseline;

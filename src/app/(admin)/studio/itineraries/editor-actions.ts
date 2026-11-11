@@ -12,11 +12,12 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { itineraries, itineraryDayPlaces, itineraryDays, itineraryRegions } from '@/db/schema'
+import { MAX_AREAS, normaliseAreas } from '@/lib/itineraries/areas'
 import { normalisePageContent } from '@/lib/itineraries/page-content'
 
 import { adminHref } from '../../_lib/admin-path'
 import { writeAudit } from '../../_lib/audit'
-import { ffaqRows, fstr } from '../../_lib/form'
+import { fbool, ffaqRows, fstr } from '../../_lib/form'
 import { getAdminI18n } from '../../_lib/i18n'
 import { errorMessage, isRedirectError, withOutcome } from '../../_lib/result'
 import { requireCapability } from '../../_lib/session'
@@ -105,6 +106,47 @@ export async function saveItineraryFaq(id: string, form: FormData): Promise<void
     outcome = { err: errorMessage(error) }
   }
   redirect(withOutcome(editor(id, 'faq'), outcome))
+}
+
+/**
+ * «المناطق» (owner, Nov 2026): the ordered areas the trip covers, with
+ * nights, and whether the public page shows the nights (off by default).
+ * Rows `area{i}Key` / `area{i}Nights`, top to bottom; a blank key is skipped.
+ */
+export async function saveItineraryAreas(id: string, form: FormData): Promise<void> {
+  const session = await requireCapability('content.write')
+  const { t } = await getAdminI18n()
+  let outcome: Outcome
+  try {
+    const [before] = await db
+      .select({ id: itineraries.id, areas: itineraries.areas })
+      .from(itineraries)
+      .where(and(eq(itineraries.id, id), isNull(itineraries.deletedAt)))
+      .limit(1)
+    if (!before) throw new Error(t('itineraries.err_gone'))
+    const cleaned = normaliseAreas({
+      showNights: fbool(form, 'areasShowNights'),
+      items: Array.from({ length: MAX_AREAS }, (_, i) => ({
+        key: fstr(form, `area${i}Key`) ?? '',
+        nights: fstr(form, `area${i}Nights`),
+      })),
+    })
+    const areas = cleaned.items.length > 0 || cleaned.showNights ? cleaned : null
+    await db.update(itineraries).set({ areas }).where(eq(itineraries.id, id))
+    await writeAudit({
+      actor: session,
+      action: 'itinerary.areas',
+      entityType: 'itinerary',
+      entityId: id,
+      before: { areas: before.areas },
+      after: { areas },
+    })
+    outcome = { ok: t('ie.ok_areas', { count: cleaned.items.length }) }
+  } catch (error) {
+    if (isRedirectError(error)) throw error
+    outcome = { err: errorMessage(error) }
+  }
+  redirect(withOutcome(editor(id, 'content'), outcome))
 }
 
 /** A free slug: `<slug>-copy`, then `-copy-2`, `-copy-3`… */

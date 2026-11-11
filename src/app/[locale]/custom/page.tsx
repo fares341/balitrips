@@ -38,6 +38,7 @@ import { pageMetadata } from '../_meta'
 import { PageBanner } from '../_ui/page-banner'
 import { CUSTOM_HREF } from '../_ui/routes-extra'
 import { pageView } from '@/lib/content/page-content-server'
+import { CustomTripPrices, loadCustomTripTiers } from '../_ui/custom-trip-prices'
 import { CustomTripForm } from './custom-trip-form'
 import type { InterestOption } from './types'
 
@@ -102,6 +103,7 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
   ])
   const areas = regionRows.map((row) => ({ key: row.key, label: pick(row.label, locale, row.key) }))
 
+  const priceTiers = await loadCustomTripTiers()
   const interests = interestOptions(categories, locale)
   const available = new Set(interests.map((one) => one.key))
   const defaults = DEFAULT_INTERESTS.filter((key) => available.has(key))
@@ -134,13 +136,19 @@ export default async function CustomPage({ params }: { params: Promise<{ locale:
                   ))}
                 </ol>
               </div>
+              <CustomTripPrices className="ct-prices panel" tiers={priceTiers} />
               <p className="alert alert-info ct-note">
                 <Icon name="info" size={18} />
                 <span>{t('cp4_note')}</span>
               </p>
             </aside>
           )}
-          <CustomTripForm interests={interests} areas={areas} defaultInterests={defaults} />
+          <CustomTripForm
+            interests={interests}
+            areas={areas}
+            defaultInterests={defaults}
+            priceTiers={priceTiers}
+          />
         </div>
       </section>
     </main>

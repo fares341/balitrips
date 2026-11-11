@@ -15,6 +15,7 @@
 import { isIconName, type IconName } from '@/components/ui/icon'
 import type { LocalizedText } from '@/lib/content/localize'
 
+import { nightsLabel } from './areas'
 import type { PageContent } from './page-content'
 
 /** The audiences the list filters on (spec §0: fixed to these three). */
@@ -65,6 +66,18 @@ export interface PublicItinerarySummary {
   isPopular: boolean
   hero: PublicImage | null
   stats: PublicStat[]
+  /**
+   * The areas the trip covers, in order (migration 0056) — region names
+   * only, resolved on the server. `nights` is null unless the itinerary
+   * shows nights («إظهار عدد الليالي»).
+   */
+  areas: PublicArea[]
+}
+
+export interface PublicArea {
+  key: string
+  name: Partial<Record<string, string>>
+  nights: number | null
 }
 
 export interface PublicItineraryDetail extends PublicItinerarySummary {
@@ -206,6 +219,7 @@ export const PUBLIC_DETAIL_KEYS = [
   'isPopular',
   'hero',
   'stats',
+  'areas',
   'intro',
   'gallery',
   'teaserDays',
@@ -215,3 +229,13 @@ export const PUBLIC_DETAIL_KEYS = [
   'faq',
   'page',
 ] as const
+
+/** «سمينياك · أوبود · أولواتو» (nights only when the DTO carries them); '' = none. */
+export function publicAreasLine(areas: readonly PublicArea[], locale: string): string {
+  return areas
+    .map((area) => {
+      const name = area.name[locale] ?? area.name.en ?? area.key
+      return area.nights === null ? name : `${name} ${nightsLabel(area.nights, locale)}`
+    })
+    .join(' · ')
+}

@@ -135,6 +135,10 @@ const section: Section = {
     'ip1.bundle_pct': 'Discount %',
     'ip1.uses_per_purchase': 'Uses per bought itinerary',
     'ip1.discount_includes_driver': 'The discount includes the private driver',
+    'ip1.custom_tiers_t': 'Custom itinerary prices',
+    'ip1.custom_tiers_hint':
+      'Shown on the custom-trip card, the request form and the «Customize your plan» card ({currency}): a plan of up to N days costs this much. Empty rows are ignored.',
+    'ip1.ct_days': 'Up to (days)',
     'ip1.default_prices_t': 'Default price per length',
     'ip1.default_prices_hint':
       'Suggested price ({currency}) for an itinerary of that many days. Empty rows are ignored.',
@@ -321,6 +325,10 @@ const section: Section = {
     'ip1.bundle_pct': 'نسبة الخصم %',
     'ip1.uses_per_purchase': 'عدد مرات الاستخدام لكل جدول مشترى',
     'ip1.discount_includes_driver': 'الخصم يشمل السائق الخاص',
+    'ip1.custom_tiers_t': 'أسعار الجدول المخصص',
+    'ip1.custom_tiers_hint':
+      'تظهر في بطاقة الرحلة المخصصة ونموذج الطلب وبطاقة «خصّص جدولك» ({currency}): جدول حتى N يوم بهذا السعر. الصفوف الفارغة تُتجاهل.',
+    'ip1.ct_days': 'حتى (أيام)',
     'ip1.default_prices_t': 'السعر الافتراضي لكل مدة',
     'ip1.default_prices_hint':
       'سعر مقترح ({currency}) لجدول بهذا العدد من الأيام. الصفوف الفارغة تُتجاهل.',
