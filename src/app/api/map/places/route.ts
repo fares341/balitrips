@@ -23,6 +23,7 @@ import {
   matchesFacts,
   parseFactFilter,
   parseSelection,
+  safeMapUrl,
   selectPlaces,
   shortText,
   type ResultPlace,
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
     priceMinor: place.fromPriceMinor,
     currency: place.fromCurrency,
     activitySlug: place.activitySlug,
+    mapUrl: safeMapUrl(place.activityMapUrl ?? null),
     canFavorite: place.canFavorite,
     // Sections ride with open places only: a locked place is a count above.
     sections: place.sectionKeys,

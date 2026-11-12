@@ -247,7 +247,9 @@ export function PlaceSheet({
         ? [p.thumb]
         : []
   const description = info?.description ?? p.desc
-  const directions = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`
+  // An activity marker uses the activity's own map link; others route to the pin.
+  const directions =
+    p.mapUrl ?? `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}`
 
   return (
     <div
@@ -344,6 +346,12 @@ export function PlaceSheet({
             <Icon name="map" size={16} />
             {t('mx4_directions')}
           </a>
+          {p.activitySlug && (
+            <Link className="mx4-btn" href={`/activities/${p.activitySlug}`}>
+              <Icon name="bolt" size={16} />
+              {t('mx4_details')}
+            </Link>
+          )}
           {p.canFavorite && (
             <span className="mx4-btn is-heart">
               <FavoriteHeart placeId={p.id} active={open} />

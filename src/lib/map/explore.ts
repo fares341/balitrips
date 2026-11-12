@@ -299,6 +299,8 @@ export interface ResultPlace {
   priceMinor: number | null
   currency: string | null
   activitySlug: string | null
+  /** The linked activity's map link for «directions» (null = from lat/lon). */
+  mapUrl?: string | null
   canFavorite: boolean
   /** Restaurant section keys (`restaurants-arabic`…), open places only. */
   sections: string[]
@@ -639,4 +641,20 @@ export function mapQuery(selection: Selection, facts: FactFilter): string {
   if (facts.durations.length > 0) params.set('dur', facts.durations.join(','))
   const query = params.toString().replace(/%2C/g, ',')
   return query === '' ? '' : `?${query}`
+}
+
+/**
+ * An activity's map link, safe to hand to the client as a «directions»
+ * href: https only (no `javascript:` or plain http). Anything else → null,
+ * and the card falls back to directions from the pin's lat/lon.
+ */
+export function safeMapUrl(value: string | null | undefined): string | null {
+  const text = (value ?? '').trim()
+  if (text === '') return null
+  try {
+    const url = new URL(text)
+    return url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
 }

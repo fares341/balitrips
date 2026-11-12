@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ALL_AREA,
+  safeMapUrl,
   areaOptions,
   cardImages,
   categoryCounts,
@@ -298,5 +299,18 @@ describe('map v3 helpers', () => {
       properties: { id: 'p1', i: 0, s: 8.4, k: 'beaches' },
       geometry: { type: 'Point', coordinates: [115.1, -8.4] },
     })
+  })
+})
+
+describe('safeMapUrl', () => {
+  it('keeps https links and drops anything else', () => {
+    expect(safeMapUrl('https://www.google.com/maps/search/?api=1&query=-8.75,115.21')).toBe(
+      'https://www.google.com/maps/search/?api=1&query=-8.75,115.21',
+    )
+    expect(safeMapUrl(' http://maps.example/x ')).toBeNull()
+    expect(safeMapUrl('javascript:alert(1)')).toBeNull()
+    expect(safeMapUrl('not a url')).toBeNull()
+    expect(safeMapUrl('')).toBeNull()
+    expect(safeMapUrl(null)).toBeNull()
   })
 })
