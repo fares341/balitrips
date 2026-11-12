@@ -48,12 +48,12 @@ import {
   listGuideCategories,
   listHomeActivities,
   listArticles,
-  listMapPlaces,
   listMapTaxonomy,
   mediaUrlById,
   mediaUrlsByIds,
   reviewsForActivity,
 } from '@/lib/content/queries'
+import { listMapPlacesCached } from '@/lib/map/cached'
 import { getBaliWeather } from '@/lib/weather/bali'
 import { readSetting, SETTING_DEFAULTS } from '@/app/(admin)/_lib/settings'
 import type { ActivitySummary, ArticleSummary, ReviewDto } from '@/lib/content/types'
@@ -213,7 +213,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     sections,
   ] = await Promise.all([
     listActivities({ sort: 'top', limit: CATALOGUE_LIMIT, locale }),
-    listMapPlaces(),
+    listMapPlacesCached(),
     listMapTaxonomy(),
     listArticles({ limit: BLOG_COUNT, locale }),
     listActivities({ sort: 'top', limit: SUGGEST_ACTIVITY_LIMIT, locale }),

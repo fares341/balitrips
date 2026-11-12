@@ -151,6 +151,9 @@ export default async function ItinerariesPage({
           src={bannerSrc}
           alt=""
           priority
+          srcSetAvif={itineraries[0]?.hero?.srcSetAvif}
+          srcSetWebp={itineraries[0]?.hero?.srcSetWebp}
+          sizes="100vw"
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
         />
         <div className="bt-banner-veil" />

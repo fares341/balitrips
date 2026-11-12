@@ -18,7 +18,8 @@ import { Icon, Photo } from '@/components/ui'
 import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
-import { listActivities, listMapPlaces } from '@/lib/content/queries'
+import { listActivities } from '@/lib/content/queries'
+import { listMapPlacesCached } from '@/lib/map/cached'
 import { loadEntitlements, redactPlace } from '@/lib/entitlements'
 import { haversineKm } from '@/lib/geo'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale, slug } = await params
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
   const t = await getTranslations({ locale: lang })
-  const place = (await listMapPlaces()).find((entry) => entry.slug === slug)
+  const place = (await listMapPlacesCached()).find((entry) => entry.slug === slug)
   // Only a free place is named here: metadata is not per-viewer.
   if (place === undefined || !place.isFree)
     return { title: t('mp3_pl_locked_t'), robots: { index: false } }
@@ -90,13 +91,20 @@ export default async function PlacePage({ params }: PageProps) {
   setRequestLocale(locale)
   const lang: Locale = isLocale(locale) ? locale : defaultLocale
 
-  const access = await checkSecureAccess(`place:${slug}`)
-  const [t, places, held, mapSettings, activities] = await Promise.all([
+  // The viewer-independent reads start before the access check resolves
+  // instead of waiting behind it; only the entitlements need the user.
+  const shared = Promise.all([
     getTranslations(),
-    listMapPlaces(),
-    loadEntitlements(access.ok ? access.user.id : null),
+    listMapPlacesCached(),
     readSetting('map'),
     listActivities({ locale: lang, limit: 200 }),
+  ])
+  // If the access check throws first, `shared` is still awaited nowhere.
+  shared.catch(() => undefined)
+  const access = await checkSecureAccess(`place:${slug}`)
+  const [[t, places, mapSettings, activities], held] = await Promise.all([
+    shared,
+    loadEntitlements(access.ok ? access.user.id : null),
   ])
   const full = places.find((entry) => entry.slug === slug)
   if (full === undefined) notFound()
@@ -178,7 +186,7 @@ export default async function PlacePage({ params }: PageProps) {
             <ul className="pl-gallery" aria-label={t('mp5_gallery')}>
               {photos.slice(1, 9).map((src) => (
                 <li key={src}>
-                  <Photo src={src} alt="" />
+                  <Photo src={src} alt="" sizes="(min-width: 700px) 220px, 50vw" />
                 </li>
               ))}
             </ul>

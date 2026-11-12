@@ -55,3 +55,23 @@ export function imageCandidates(src: string | null | undefined): string[] {
   }
   return out
 }
+
+/**
+ * A WebP `srcset` for a bare ladder-rung URL (`/media/<id>/1280.webp`), so a
+ * caller that only has the URL string still lets a phone take a smaller rung.
+ *
+ * Capped at the rung in the URL: it never offers anything larger than what
+ * was rendered before. Only WebP, and only rungs below the given one -- those
+ * always exist when the given one does (see the note above); AVIF may not.
+ * Returns null for anything that is not a local WebP rung.
+ */
+export function rungSrcSet(src: string | null | undefined): string | null {
+  if (typeof src !== 'string') return null
+  const match = RUNG.exec(src.trim())
+  if (!match || match[3]!.toLowerCase() !== 'webp' || match[4]) return null
+  const base = match[1]!
+  const width = Number(match[2])
+  const rungs = [...WIDTH_LADDER].filter((rung) => rung < width)
+  if (rungs.length === 0) return null
+  return [...rungs, width].map((rung) => `${base}${rung}.webp ${rung}w`).join(', ')
+}

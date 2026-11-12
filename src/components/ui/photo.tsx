@@ -25,6 +25,7 @@ import Image from 'next/image'
 import type { CSSProperties, ReactNode } from 'react'
 
 import { mediaIdFromUrl } from '@/lib/free-photos/attribution'
+import { rungSrcSet } from '@/lib/media/fallback'
 import { isGooglePhotoUrl } from '@/lib/google-places/photo-urls'
 
 import { FreePhotoCredit } from './free-photo-credit'
@@ -170,6 +171,13 @@ export function Photo({
     )
   }
 
+  // A bare ladder URL still gets the smaller WebP rungs below it, so a phone
+  // is not handed the 1280px rung for a 140px thumbnail. Never larger than
+  // the URL itself; dropped once a load failed (`current` then carries the
+  // retry query or a smaller rung chosen by the fallback walk).
+  const derivedSrcSet =
+    !degraded && !srcSetAvif && !srcSetWebp && current === src ? rungSrcSet(current) : null
+
   // No intrinsic size to hand next/image; see the note at the top of the file.
   const img = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -178,6 +186,7 @@ export function Photo({
       ref={attach}
       src={current}
       alt={alt}
+      {...(derivedSrcSet ? { srcSet: derivedSrcSet } : {})}
       {...(sizes ? { sizes } : {})}
       loading={priority ? 'eager' : 'lazy'}
       fetchPriority={priority ? 'high' : 'auto'}

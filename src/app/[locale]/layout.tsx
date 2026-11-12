@@ -25,6 +25,7 @@ import { moneyRuntimeScript } from '@/lib/currency/money-runtime'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
 import { fontVariables } from '@/styles/fonts'
+import { pickClientMessages } from '@/i18n/client-messages'
 import { DEFAULT_SHARE_IMAGE, SHARE_ORIGIN } from '@/lib/seo/site-origin'
 
 // Order matters: tokens define the custom properties everything else reads,
@@ -113,7 +114,7 @@ export default async function LocaleLayout({
         />
       </head>
       <body>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <ContactProvider value={contact}>
             <CurrencyProvider rates={fx.rates} supported={fx.presentment}>
               {/*

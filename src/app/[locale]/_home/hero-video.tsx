@@ -98,6 +98,12 @@ export function HeroVideo({
   const phoneReadyRef = useRef(false)
   /** Which posters to set: the first always; on phones the others only when next up. */
   const [wideView, setWideView] = useState(false)
+  /**
+   * The next clip's poster waits for the window `load` event, so on a slow
+   * phone it does not compete with the first poster (the LCP) and the page's
+   * own CSS/JS. It is still in place long before the first 7 s rotation.
+   */
+  const [pageLoaded, setPageLoaded] = useState(false)
   const currentRef = useRef(0)
   const pausedRef = useRef(false)
 
@@ -166,6 +172,7 @@ export function HeroVideo({
       ready()
     }
     const arm = () => {
+      setPageLoaded(true)
       INTERACTIONS.forEach((name) =>
         window.addEventListener(name, onInteract, { once: true, passive: true }),
       )
@@ -174,13 +181,16 @@ export function HeroVideo({
         else ready()
       }, 6000)
     }
+    const onLoad = () => setPageLoaded(true)
     if (!frugal) {
       if (document.readyState === 'complete') arm()
       else window.addEventListener('load', arm, { once: true })
-    }
+    } else if (document.readyState === 'complete') onLoad()
+    else window.addEventListener('load', onLoad, { once: true })
     return () => {
       wide.removeEventListener('change', syncWide)
       window.removeEventListener('load', arm)
+      window.removeEventListener('load', onLoad)
       INTERACTIONS.forEach((name) => window.removeEventListener(name, onInteract))
       if (timer !== undefined) window.clearTimeout(timer)
       if (idleId !== undefined && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId)
@@ -265,7 +275,7 @@ export function HeroVideo({
                     index === 0 ||
                     wideView ||
                     index === current ||
-                    index === (current + 1) % clips.length
+                    (pageLoaded && index === (current + 1) % clips.length)
                       ? clip.poster
                       : undefined
                   }
