@@ -307,6 +307,30 @@ async function main(): Promise<number> {
     seo.set(slug, s)
   }
 
+  // List cells: drop empty items (« | X» would never match what is stored, so
+  // every re-run would «change» it) and the researcher's provenance notes
+  // («External Public 2026 – Supplier confirmation pending»), which are
+  // internal and must not show on the page as package features.
+  const INTERNAL = /supplier confirmation|external public/i
+  let droppedNotes = 0
+  for (const row of rows) {
+    for (const [key, cell] of Object.entries(row.cells)) {
+      if (!/_(ar|en)$/.test(key) || !(cell ?? '').includes('|')) continue
+      const items = cell.split('|').map((x) => x.trim())
+      const kept = items.filter((x) => x !== '' && !INTERNAL.test(x))
+      droppedNotes += items.filter((x) => INTERNAL.test(x)).length
+      row.cells[key] = kept.join(' | ')
+    }
+    for (const key of ['features_en', 'features_ar']) {
+      const cell = row.cells[key] ?? ''
+      if (INTERNAL.test(cell) && !cell.includes('|')) {
+        row.cells[key] = ''
+        droppedNotes += 1
+      }
+    }
+  }
+  if (droppedNotes > 0) log(`left out ${droppedNotes} internal provenance note(s) from list cells`)
+
   // Sheet rows → the Studio import, adjusted.
   for (const row of rows) {
     if (row.sheet !== 'activities') continue
