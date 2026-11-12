@@ -82,6 +82,8 @@ export interface FullMapPlace {
   tags: string[] | null
   heroImageUrl: string | null
   activitySlug: string | null
+  /** The linked live activity's own map link («directions»); null = use lat/lon. */
+  activityMapUrl?: string | null
   isFree: boolean
   requiredEntitlement: MapEntitlementKind
   /** Hidden Gem: يتطلب VIP دائماً (انظر `placeAccess`). */

@@ -1598,6 +1598,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
       place: mapPlaces,
       hero: media,
       activitySlug: activities.slug,
+      activityMapUrl: activities.meetingMapUrl,
       activityPriceMinor: activities.priceMinor,
       activityCurrency: activities.currency,
       activityReviewCount: activities.reviewCount,
@@ -1729,6 +1730,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
     ({
       place,
       activitySlug,
+      activityMapUrl,
       activityPriceMinor,
       activityCurrency,
       activityReviewCount,
@@ -1761,6 +1763,7 @@ export async function listMapPlaces(): Promise<MapPlaceRecord[]> {
         heroImageUrl: images.heroImageUrl,
         heroThumbUrl: images.heroThumbUrl,
         activitySlug,
+        activityMapUrl: activitySlug !== null ? (activityMapUrl ?? null) : null,
         // A live linked activity only (the join filters the rest out).
         fromPriceMinor:
           activitySlug !== null && (activityPriceMinor ?? 0) > 0 ? activityPriceMinor : null,
