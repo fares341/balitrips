@@ -189,13 +189,19 @@ export function inArea(place: PlaceKeys, area: string): boolean {
 /** One aggregate row: how many places of a category sit in a region. */
 export type CountRow = [regionKey: string, parentKey: string | null, categoryKey: string, n: number]
 
+/**
+ * Region key of the count row for places that sit in no region yet (e.g. a
+ * fresh import). They count toward the whole island (`ALL_AREA`) only, so
+ * the "all" chip equals what `/api/map/places?area=all` returns.
+ */
+export const NO_REGION = ''
+
 /** Counts per (region, category) — the only thing the step screens need. */
 export function countRows(places: readonly PlaceKeys[]): CountRow[] {
   const map = new Map<string, CountRow>()
   for (const place of places) {
     if (place.categoryKey === null) continue
-    const region = place.regionKey ?? place.parentRegionKey
-    if (region === null) continue
+    const region = place.regionKey ?? place.parentRegionKey ?? NO_REGION
     const parent = place.regionKey === null ? null : place.parentRegionKey
     const id = `${region}|${parent ?? ''}|${place.categoryKey}`
     const row = map.get(id)
@@ -209,7 +215,9 @@ export function countRows(places: readonly PlaceKeys[]): CountRow[] {
 export function categoryCounts(rows: readonly CountRow[], area: string): Map<string, number> {
   const out = new Map<string, number>()
   for (const [region, parent, category, n] of rows) {
-    if (area !== ALL_AREA && region !== area && parent !== area) continue
+    if (area !== ALL_AREA && (region === NO_REGION || (region !== area && parent !== area))) {
+      continue
+    }
     out.set(category, (out.get(category) ?? 0) + n)
   }
   return out

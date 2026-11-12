@@ -8,6 +8,7 @@ import {
   categoryStyle,
   clusterPoints,
   countRows,
+  areaTotal,
   byDistance,
   cleanTravelerTypes,
   defaultCategoryStyle,
@@ -120,6 +121,32 @@ describe('counts and areas', () => {
       ['beaches', 'restaurants', 'malls'],
     )
     expect(options.map((one) => one.key)).toEqual(['south', 'central', 'seminyak'])
+    expect(options[0]?.count).toBe(3)
+  })
+  it('counts region-less places toward the whole island only', () => {
+    const withOrphans = countRows([
+      ...PLACES,
+      { regionKey: null, parentRegionKey: null, categoryKey: 'mosques' },
+      { regionKey: null, parentRegionKey: null, categoryKey: 'mosques' },
+      { regionKey: null, parentRegionKey: null, categoryKey: 'restaurants' },
+    ])
+    expect(categoryCounts(withOrphans, ALL_AREA).get('mosques')).toBe(2)
+    expect(categoryCounts(withOrphans, ALL_AREA).get('restaurants')).toBe(3)
+    expect(areaTotal(withOrphans, ALL_AREA)).toBe(PLACES.filter((p) => p.categoryKey).length + 3)
+    expect(categoryCounts(withOrphans, 'south').get('mosques')).toBeUndefined()
+    expect(Object.fromEntries(categoryCounts(withOrphans, 'seminyak'))).toEqual({
+      beaches: 1,
+      restaurants: 1,
+    })
+    const options = areaOptions(
+      [
+        { key: 'south', label: { en: 'South' }, parentKey: null },
+        { key: '', label: { en: 'x' }, parentKey: null },
+      ],
+      withOrphans,
+      ['beaches', 'restaurants', 'malls', 'mosques'],
+    )
+    expect(options.map((one) => one.key)).toEqual(['south'])
     expect(options[0]?.count).toBe(3)
   })
   it('carries no place identity', () => {
