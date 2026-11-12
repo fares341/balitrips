@@ -165,7 +165,10 @@
 	@buildAsset path /_next/static/*
 
 	# Files served straight out of /public. Not content-hashed.
-	@publicAsset path_regexp pubasset \.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf|webmanifest|map)$
+	# mp4/webm: the home hero clips (1-1.2 MB each) were missing here, fell
+	# through to the HTML rule and were revalidated on every visit. A day,
+	# not immutable: Studio can replace a clip under the same name.
+	@publicAsset path_regexp pubasset \.(?:ico|png|jpe?g|gif|svg|webp|avif|woff2?|ttf|otf|webmanifest|map|mp4|webm)$
 
 	# The 3D island's data files.
 	#

@@ -16,7 +16,8 @@ import { PlaceCard } from '@/components/cards'
 import { Icon } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import { pick } from '@/lib/content/localize'
-import { listMapPlaces, listMapTaxonomy } from '@/lib/content/queries'
+import { listMapTaxonomy } from '@/lib/content/queries'
+import { listMapPlacesCached } from '@/lib/map/cached'
 import { buildMapPayload, loadEntitlements } from '@/lib/entitlements'
 import type { MapPlaceForClient } from '@/lib/entitlements/redaction'
 import { getUser } from '@/lib/auth/session'
@@ -70,7 +71,7 @@ export default async function ShoppingPage({ params, searchParams }: PageProps) 
 
   const user = await getUser().catch(() => null)
   const [places, held, taxonomy] = await Promise.all([
-    listMapPlaces(),
+    listMapPlacesCached(),
     loadEntitlements(user?.id ?? null),
     listMapTaxonomy(),
   ])
