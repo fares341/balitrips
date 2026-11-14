@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  DRAG_SLOP,
   SHEET_CLOSED,
+  dragIntent,
   scrollsInside,
   sheetReducer,
   snapAfterDrag,
@@ -74,5 +76,28 @@ describe('sheet state machine', () => {
     expect(scrollsInside('full')).toBe(true)
     expect(scrollsInside('half')).toBe(false)
     expect(scrollsInside('peek')).toBe(false)
+  })
+})
+
+describe('dragIntent', () => {
+  it('waits inside the slop', () => {
+    expect(dragIntent({ from: 'half', inBody: true, dx: 2, dy: 3 })).toBe('pending')
+  })
+  it('a vertical move on a peek / half sheet drags it, wherever it began', () => {
+    expect(dragIntent({ from: 'peek', inBody: true, dx: 1, dy: 30 })).toBe('drag')
+    expect(dragIntent({ from: 'half', inBody: true, dx: 2, dy: -30 })).toBe('drag')
+    expect(dragIntent({ from: 'half', inBody: false, dx: 0, dy: DRAG_SLOP })).toBe('drag')
+  })
+  it('a sideways move belongs to the photo / nearby rows', () => {
+    expect(dragIntent({ from: 'half', inBody: true, dx: 20, dy: 4 })).toBe('release')
+  })
+  it('up inside the full sheet scrolls its content at once', () => {
+    expect(dragIntent({ from: 'full', inBody: true, dx: 0, dy: -1 })).toBe('release')
+  })
+  it('down at the top of the full sheet pulls the sheet (not the page)', () => {
+    expect(dragIntent({ from: 'full', inBody: true, dx: 1, dy: 12 })).toBe('drag')
+  })
+  it('the full sheet handle drags both ways', () => {
+    expect(dragIntent({ from: 'full', inBody: false, dx: 0, dy: -12 })).toBe('drag')
   })
 })

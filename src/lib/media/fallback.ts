@@ -75,3 +75,15 @@ export function rungSrcSet(src: string | null | undefined): string | null {
   if (rungs.length === 0) return null
   return [...rungs, width].map((rung) => `${base}${rung}.webp ${rung}w`).join(', ')
 }
+
+/**
+ * The smallest rung (320px WebP) of a local ladder URL, for a quick preview
+ * behind the large photo while it loads; null for anything else. The 320
+ * rung always exists when a larger one does (see the note above).
+ */
+export function smallestRung(src: string | null | undefined): string | null {
+  if (typeof src !== 'string') return null
+  const match = RUNG.exec(src.trim())
+  if (!match || match[4]) return null
+  return `${match[1]!}${WIDTH_LADDER[0]}.webp`
+}

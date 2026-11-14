@@ -38,11 +38,13 @@ const ANY_TARGET = `${HEADS}, ${GROUPS.split(', ')
   .map((group) => `${group} > *`)
   .join(', ')}`
 const STAGGER_MS = 70
+/** Entering above this share of the screen height = scrolled past fast. */
+const LATE_FRACTION = 0.6
 const MAX_STAGGER = 5
-const HIDDEN: Keyframe = { opacity: 0, transform: 'translate3d(0, 18px, 0)' }
+const HIDDEN: Keyframe = { opacity: 0, transform: 'translate3d(0, 12px, 0)' }
 const SHOWN: Keyframe = { opacity: 1, transform: 'translate3d(0, 0, 0)' }
 const TIMING: KeyframeAnimationOptions = {
-  duration: 540,
+  duration: 460,
   easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
   // Holds the hidden first frame while paused and during the stagger delay.
   fill: 'backwards',
@@ -103,11 +105,22 @@ export function Motion() {
               ra.top - rb.top || (document.dir === 'rtl' ? rb.left - ra.left : ra.left - rb.left)
             )
           })
-        entering.forEach((el, i) => {
+        // A block that is already well inside the screen when it is first
+        // seen was scrolled past quickly (a flick, a jump): it just shows.
+        // Fading text in under a moving finger read as doubled, ghosted
+        // lines on the owner's iPhone recording (Nov 2026).
+        const late = window.innerHeight * LATE_FRACTION
+        let n = 0
+        entering.forEach((el) => {
           observer.unobserve(el)
           const animation = armed.get(el)
           armed.delete(el)
           if (animation === undefined) return
+          if (el.getBoundingClientRect().top < late) {
+            animation.cancel()
+            return
+          }
+          const i = n++
           animation.effect?.updateTiming({ delay: Math.min(i, MAX_STAGGER) * STAGGER_MS })
           animation.play()
           animation.finished.then(

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { Photo } from '@/components/ui/photo'
 import { SafeImg } from '@/components/ui/safe-img'
 
-import { imageCandidates, RETRY_PARAM } from './fallback'
+import { imageCandidates, RETRY_PARAM, smallestRung } from './fallback'
 import { rungsFor } from './ladder'
 
 const ID = '7d2ccd38-ad60-52df-ae72-77d992f62c00'
@@ -88,5 +88,19 @@ describe('rendering', () => {
       createElement(Photo, { src: '', alt: '', placeholder: createElement('i', { id: 'glyph' }) }),
     )
     expect(html).toContain('<i id="glyph"></i>')
+  })
+})
+
+describe('smallestRung', () => {
+  it('is the 320 WebP of a local rung', () => {
+    expect(smallestRung(`/media/${ID}/1280.webp`)).toBe(`/media/${ID}/320.webp`)
+    expect(smallestRung(`https://cdn.example/media/${ID}/960.avif`)).toBe(
+      `https://cdn.example/media/${ID}/320.webp`,
+    )
+  })
+  it('is null for anything else', () => {
+    expect(smallestRung('https://lh3.googleusercontent.com/p/x')).toBeNull()
+    expect(smallestRung(`/media/${ID}/1280.webp?img-retry=1`)).toBeNull()
+    expect(smallestRung(null)).toBeNull()
   })
 })

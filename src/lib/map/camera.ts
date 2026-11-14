@@ -114,25 +114,6 @@ export function planPinMove(input: {
 }
 
 /**
- * New results from a filter. An area pick frames its area; otherwise the view
- * stays while any result is already on screen (no jump to the whole island).
- */
-export function shouldFrameResults(input: {
-  points: readonly Point[]
-  view: Size
-  insets: Insets
-  areaChanged: boolean
-}): boolean {
-  const { points, view, insets, areaChanged } = input
-  if (points.length === 0) return false
-  if (areaChanged) return true
-  const area = openArea(view, insets)
-  return !points.some(
-    (p) => p.x >= area.left && p.x <= area.right && p.y >= area.top && p.y <= area.bottom,
-  )
-}
-
-/**
  * How much of the map box's bottom the phone sheet covers at `stop`, or null
  * at `full` (the map is out of sight: don't move it). The sheet is fixed to
  * the viewport bottom and also covers the tab bar under the map box.
@@ -148,4 +129,67 @@ export function sheetCover(stop: SheetStop, viewportH: number, mapBottom: number
 /** The area key of a results key (`area|cats|travelers|durations`). */
 export function areaOfKey(resultKey: string): string {
   return resultKey.split('|')[0] ?? ''
+}
+
+export interface FilterItem {
+  id: string
+  /** The pin's tip in map-box pixels (`map.project`). */
+  point: Point
+}
+
+export interface FilterPlan {
+  /** Fit the camera to all the new results. */
+  frame: boolean
+  /** The place the cards (and the selected pin) should show; null: no results. */
+  selectId: string | null
+}
+
+/**
+ * New results from a filter, and which card goes with them (owner video, Nov
+ * 2026: after picking a category the cards still showed a place whose pin was
+ * off screen). The camera stays put whenever it can; the card always names a
+ * pin the visitor can see:
+ *
+ *   - an area pick frames its area (keeping the selected place if it is there);
+ *   - nothing on screen: frame the results (same rule for the card);
+ *   - the selected place is still a result and on screen: nothing changes;
+ *   - otherwise the card moves to the visible result nearest the middle of
+ *     the open area, and the camera does not move at all.
+ */
+export function planFilterView(input: {
+  items: readonly FilterItem[]
+  selectedId: string | null
+  view: Size
+  insets: Insets
+  areaChanged: boolean
+}): FilterPlan {
+  const { items, selectedId, view, insets, areaChanged } = input
+  if (items.length === 0) return { frame: false, selectId: null }
+  const kept = selectedId !== null && items.some((one) => one.id === selectedId)
+  const fallback = kept ? selectedId : items[0]!.id
+  if (areaChanged) return { frame: true, selectId: fallback }
+  const area = openArea(view, insets)
+  const inside = items.filter(
+    (one) =>
+      one.point.x >= area.left &&
+      one.point.x <= area.right &&
+      one.point.y >= area.top &&
+      one.point.y <= area.bottom,
+  )
+  if (inside.length === 0) return { frame: true, selectId: fallback }
+  if (kept && inside.some((one) => one.id === selectedId)) {
+    return { frame: false, selectId: selectedId }
+  }
+  const cx = (area.left + area.right) / 2
+  const cy = (area.top + area.bottom) / 2
+  let best = inside[0]!
+  let bestD = Infinity
+  for (const one of inside) {
+    const d = (one.point.x - cx) ** 2 + (one.point.y - cy) ** 2
+    if (d < bestD) {
+      bestD = d
+      best = one
+    }
+  }
+  return { frame: false, selectId: best.id }
 }
