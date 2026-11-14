@@ -166,7 +166,12 @@ export default async function EventsPage({ params }: PageProps) {
                         tabIndex={-1}
                         aria-hidden="true"
                       >
-                        <Photo src={place.heroImageUrl} alt="" style={{ height: 160 }} />
+                        <Photo
+                          src={place.heroImageUrl}
+                          alt=""
+                          sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+                          style={{ height: 160 }}
+                        />
                         {place.isFree && <span className="bt-card-badge">{t('mp_free')}</span>}
                       </Link>
                       <div className="card-pad" style={{ display: 'grid', gap: 6 }}>

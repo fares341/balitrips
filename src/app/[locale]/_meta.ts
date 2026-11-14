@@ -47,6 +47,8 @@ export type PageMetaInput = {
    * title already carries the brand.
    */
   absoluteTitle?: boolean
+  /** The page's own share image (a place or region photo); the site default otherwise. */
+  image?: { url: string; alt: string } | null
 }
 
 export function pageMetadata({
@@ -55,11 +57,13 @@ export function pageMetadata({
   title,
   description,
   absoluteTitle = false,
+  image = null,
 }: PageMetaInput): Metadata {
   const url = absoluteUrl(path, locale)
+  const share = image ? { url: image.url, alt: image.alt } : DEFAULT_SHARE_IMAGE
 
-  // `x-default` points at the authoring locale: it is what a crawler serves a
-  // user whose language matches none of the three.
+  // `x-default` points at the main language (Arabic): it is what a crawler
+  // serves a user whose language matches none of the three.
   const languages: Record<string, string> = { 'x-default': absoluteUrl(path, defaultLocale) }
   for (const alternate of locales) {
     languages[alternate] = absoluteUrl(path, alternate)
@@ -76,8 +80,8 @@ export function pageMetadata({
       siteName: 'Bali Trips',
       locale,
       type: 'website',
-      images: [DEFAULT_SHARE_IMAGE],
+      images: [share],
     },
-    twitter: { card: 'summary_large_image', title, description, images: [DEFAULT_SHARE_IMAGE.url] },
+    twitter: { card: 'summary_large_image', title, description, images: [share.url] },
   }
 }

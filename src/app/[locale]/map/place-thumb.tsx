@@ -16,6 +16,7 @@ export function PlaceThumb({
   className,
   priority = false,
   size = 22,
+  sizes,
 }: {
   src: string | null | undefined
   categoryKey: string | null | undefined
@@ -24,6 +25,8 @@ export function PlaceThumb({
   priority?: boolean
   /** Glyph size of the placeholder. */
   size?: number
+  /** Laid-out width (`sizes`), so a small slot is not handed the largest file. */
+  sizes?: string
 }) {
   if (src) {
     return (
@@ -32,6 +35,7 @@ export function PlaceThumb({
           src={src}
           alt={alt}
           priority={priority}
+          sizes={sizes}
           placeholder={<CategoryGlyph categoryKey={categoryKey} size={size} />}
         />
       </span>

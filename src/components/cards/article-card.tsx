@@ -42,6 +42,7 @@ export function ArticleCard({ article, compact = false, priority = false }: Arti
           src={article.hero?.url}
           alt=""
           radius={10}
+          sizes="64px"
           style={{ width: 64, height: 64, flexShrink: 0 }}
         />
         <span style={{ textAlign: 'start' }}>

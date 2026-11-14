@@ -47,11 +47,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Only a free place is named here: metadata is not per-viewer.
   if (place === undefined || !place.isFree)
     return { title: t('mp3_pl_locked_t'), robots: { index: false } }
+  const name = pick(place.name, lang, place.slug)
+  const description = placeDescription(place, lang, t)
   return pageMetadata({
     locale: lang,
     path: `/places/${place.slug}`,
-    title: pick(place.name, lang, place.slug),
-    description: placeDescription(place, lang, t),
+    title: name,
+    // Several places share one description (five hospitals, one sentence):
+    // the place's name makes each meta description its own.
+    description: description.includes(name) ? description : `${name} — ${description}`,
+    image:
+      place.heroImageUrl && !place.heroImageUrl.endsWith('.svg')
+        ? { url: place.heroImageUrl, alt: name }
+        : null,
   })
 }
 
@@ -180,13 +188,18 @@ export default async function PlacePage({ params }: PageProps) {
             alt={photos[0] ? name : t('mp5_no_photo')}
             categoryKey={place.categoryKey}
             size={56}
+            sizes="(min-width: 1024px) 760px, 100vw"
             priority
           />
           {photos.length > 1 && (
             <ul className="pl-gallery" aria-label={t('mp5_gallery')}>
-              {photos.slice(1, 9).map((src) => (
+              {photos.slice(1, 9).map((src, index) => (
                 <li key={src}>
-                  <Photo src={src} alt="" sizes="(min-width: 700px) 220px, 50vw" />
+                  <Photo
+                    src={src}
+                    alt={t('mp5_photo_n', { name, n: index + 2 })}
+                    sizes="(min-width: 1024px) 220px, (min-width: 600px) 25vw, 45vw"
+                  />
                 </li>
               ))}
             </ul>
@@ -250,6 +263,7 @@ export default async function PlacePage({ params }: PageProps) {
                           className="mp-res-img"
                           src={entry.heroImageUrl}
                           categoryKey={entry.categoryKey}
+                          sizes="64px"
                         />
                         <span className="mp-res-meta">
                           <span className="mp-res-name">{pick(entry.name, lang, entry.slug)}</span>
