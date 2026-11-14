@@ -52,6 +52,8 @@ import '@/styles/bt-home.css'
 import '@/styles/bt-assistant.css'
 // Phone polish: safe areas, footer, floating buttons, press feedback, reveal.
 import '@/styles/bt-mobile.css'
+// «Bali Trips» preloader overlay (first page of a visit; see the component).
+import '@/styles/bt-preloader.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
