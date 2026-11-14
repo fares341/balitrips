@@ -12,6 +12,7 @@ import { Tracking } from '@/components/analytics/tracking'
 import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { FabScroll } from '@/components/layout/fab-scroll'
+import { Motion } from '@/components/layout/motion'
 import { PreloaderHead, PreloaderHost } from '@/components/layout/preloader'
 import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
@@ -172,6 +173,7 @@ export default async function LocaleLayout({
                 <WhatsAppFab />
                 <AssistantLauncher />
                 <FabScroll />
+                <Motion />
                 <PageViewBeacon />
                 {/* Phase 5: cookie choice, then first-party analytics and (only
                 with consent) the marketing tags. Both render nothing on the
