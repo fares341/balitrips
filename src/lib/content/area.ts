@@ -10,13 +10,13 @@
 
 import type { Locale } from '@/i18n/config'
 
-import { pick, pickOptional, type LocalizedText } from './localize'
+import { pick, pickOptional, type LocalizedInput } from './localize'
 
 const ARABIC_LETTER = /[؀-ۿ]/
 
 export function placeLine(
-  area: LocalizedText | null | undefined,
-  region: { label: LocalizedText; key?: string } | null | undefined,
+  area: LocalizedInput,
+  region: { label: LocalizedInput; key?: string } | null | undefined,
   locale: Locale,
 ): string | null {
   const regionName = region ? pick(region.label, locale, region.key ?? '') : ''
