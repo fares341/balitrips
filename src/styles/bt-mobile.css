@@ -1,0 +1,101 @@
+/*
+ * Phone polish (mobile audit, Nov 2026). Loaded last by the locale layout.
+ *
+ * Site-wide rules only; page-specific fixes stay with their page's sheet.
+ * Logical properties wherever the side matters, so Arabic is a true mirror.
+ */
+
+/* ---------- Safe areas -------------------------------------------------
+   The viewport now has `viewport-fit=cover` (layout.tsx), so on a notched
+   iPhone held sideways the page runs under the notch: keep text clear. */
+.wrap {
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+.tabbar {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 1023px) {
+  /* ---------- Room for the page's own bottom bar ----------------------
+     The activity book bar and the itinerary buy bar sit on top of the tab
+     bar and lift the floating buttons by `--fab-lift`. The page itself was
+     not lifted, so the last footer lines (copyright) stayed under the bar. */
+  body:has(> .tabbar) {
+    padding-bottom: calc(var(--tabbar-h) + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ---------- iOS zooms into any field under 16px when it is focused ---- */
+  .currency-select,
+  .drawer-pref .currency-select {
+    font-size: 16px;
+  }
+
+  /* ---------- Floating buttons step aside while reading ---------------
+     `data-fab-scroll="down"` on <body> (components/layout/fab-scroll.tsx)
+     while the visitor scrolls down; they come back on the first scroll up.
+     Same slide as `data-fab='aside'` (bt.css). */
+  body[data-fab-scroll='down'] .wa-fab,
+  body[data-fab-scroll='down'] .ai-fab {
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  [dir='ltr'] body[data-fab-scroll='down'] .wa-fab,
+  [dir='ltr'] body[data-fab-scroll='down'] .ai-fab {
+    transform: translateX(calc(100% + 24px));
+  }
+
+  /* ---------- Breadcrumbs: 44px touch height, same look ---------------- */
+  .crumbs a {
+    position: relative;
+  }
+  .crumbs a::after {
+    content: '';
+    position: absolute;
+    inset: -10px -4px;
+  }
+}
+
+@media (max-width: 719px) {
+  /* ---------- Footer: link lists in two columns -----------------------
+     One column made the phone footer about 1,600px long. */
+  .ftr nav ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+  }
+  .ftr nav ul a {
+    line-height: 1.35;
+  }
+  .ftr-grid {
+    gap: 28px;
+  }
+}
+
+/* ---------- Press feedback -------------------------------------------
+   A short, soft "give" under the finger on buttons and cards. Touch screens
+   have no hover, so this is the only sign a tap registered before the next
+   page arrives. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tabbar a {
+    transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .btn:active,
+  .chip:active,
+  .icon-btn:active {
+    transform: scale(0.96);
+  }
+  .card:active,
+  .ncard:active,
+  .gcard:active {
+    transform: scale(0.985);
+  }
+  .tabbar a:active {
+    transform: scale(0.92);
+  }
+}

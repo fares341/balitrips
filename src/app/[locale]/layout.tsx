@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
@@ -11,6 +11,7 @@ import { LeadOffer } from '@/components/leads/lead-offer'
 import { Tracking } from '@/components/analytics/tracking'
 import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
+import { FabScroll } from '@/components/layout/fab-scroll'
 import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
 import { hiddenHrefs } from '@/lib/content/public-sections'
@@ -47,6 +48,8 @@ import '@/styles/bt.css'
 import '@/styles/bt-home.css'
 // Website assistant (floating button + chat panel).
 import '@/styles/bt-assistant.css'
+// Phone polish: safe areas, footer, floating buttons, press feedback, reveal.
+import '@/styles/bt-mobile.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -62,6 +65,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(SHARE_ORIGIN),
   openGraph: { siteName: 'Bali Trips', type: 'website', images: [DEFAULT_SHARE_IMAGE] },
   twitter: { card: 'summary_large_image', images: [DEFAULT_SHARE_IMAGE.url] },
+}
+
+/**
+ * `viewport-fit=cover`: without it iOS reports every `env(safe-area-inset-*)`
+ * as 0, so the tab bar, the book bar and the sheets sat on the iPhone home
+ * indicator even though their CSS already reserves the inset.
+ * `themeColor` tints the phone browser bar in the site's ivory.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#fffbf8',
 }
 
 export default async function LocaleLayout({
@@ -101,7 +117,17 @@ export default async function LocaleLayout({
   const { dir } = localeConfig[locale as Locale]
 
   return (
-    <html lang={locale} dir={dir} className={fontVariables} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={dir}
+      className={fontVariables}
+      // bt.css sets `scroll-behavior: smooth` for in-page anchors. Next 16 no
+      // longer turns it off during a route change unless asked to, so every
+      // link animated a 1-2 s scroll through the new page (from the old
+      // scroll position to the top). This attribute restores instant jumps.
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <head>
         {/* Display currency before first paint (see lib/currency/money-runtime). */}
         <script
@@ -141,6 +167,7 @@ export default async function LocaleLayout({
                 <Footer hidden={hidden} />
                 <WhatsAppFab />
                 <AssistantLauncher />
+                <FabScroll />
                 <PageViewBeacon />
                 {/* Phase 5: cookie choice, then first-party analytics and (only
                 with consent) the marketing tags. Both render nothing on the
