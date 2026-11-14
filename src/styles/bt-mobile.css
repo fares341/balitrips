@@ -47,6 +47,18 @@
     transform: translateX(calc(100% + 24px));
   }
 
+  /* ---------- Short screens (iPhone SE, landscape): the two floating
+     buttons sit side by side instead of stacked, so together they are one
+     button tall and do not cover the hero search and its button. */
+  @media (max-height: 640px) {
+    .ai-fab:not(.is-solo) {
+      bottom: calc(
+        var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px)
+      );
+      inset-inline-end: calc(16px + 52px + 10px);
+    }
+  }
+
   /* ---------- Breadcrumbs: 44px touch height, same look ---------------- */
   .crumbs a {
     position: relative;

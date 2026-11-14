@@ -1552,9 +1552,14 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   width: 100%;
   min-width: 0;
 }
-@media (max-width: 1023px) {
+@media (max-width: 999px) {
   /* The hero fills the screen between the header and the bottom tab bar, so
-     the clip tabs and the pause button are not hidden under the tab bar. */
+     the clip tabs and the pause button are not hidden under the tab bar.
+     A shorter top padding keeps its copy inside that space on a 664px-tall
+     iPhone screen (Safari with its toolbars). */
+  .home-v3 .hv-copy {
+    padding-top: 56px;
+  }
   .home-v3 .hv-grid {
     min-height: max(
       500px,
