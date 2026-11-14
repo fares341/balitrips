@@ -69,7 +69,16 @@ import {
   PIN_W_ON,
   SYMBOL_FADE_MS,
 } from '@/lib/map/map-feel'
-import { SHEET_CLOSED, PEEK_PX, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
+import {
+  areaOfKey,
+  moveDuration,
+  planPinMove,
+  sheetCover,
+  shouldFrameResults,
+  SIDE_PX,
+  type Insets,
+} from '@/lib/map/camera'
+import { SHEET_CLOSED, sheetReducer, type SheetStop } from '@/lib/map/sheet-state'
 import {
   filterBySection,
   parseSection,
@@ -174,6 +183,15 @@ function writeGeo(value: 'granted' | 'denied') {
   }
 }
 
+/** The visitor asked for less motion (the map then jumps instead of easing). */
+function reducedMotion(): boolean {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  } catch {
+    return false
+  }
+}
+
 function useDesktop(): boolean {
   const [desktop, setDesktop] = useState(false)
   useEffect(() => {
@@ -215,6 +233,10 @@ export function MapExplorer(props: Props) {
     sheetOpenRef.current = sheetOpen
   })
   const desktop = useDesktop()
+  const desktopRef = useRef(desktop)
+  useLayoutEffect(() => {
+    desktopRef.current = desktop
+  })
 
   // ---- URL ------------------------------------------------------------------
 
@@ -237,31 +259,6 @@ export function MapExplorer(props: Props) {
     },
     [sections],
   )
-
-  useEffect(() => {
-    const onPop = () => {
-      const params = new URLSearchParams(window.location.search)
-      const next = parseSelection(
-        { area: params.get('area'), region: params.get('region'), cat: params.get('cat') },
-        areaKeys,
-        catKeys,
-      )
-      setApplied({ area: next.area ?? ALL_AREA, categories: next.categories })
-      const sec = parseSection(params.get('sec'), sectionKeys)
-      sectionRef.current = sec
-      setSection(sec)
-      setFacts(parseFactFilter({ traveler: params.get('traveler'), dur: params.get('dur') }))
-      setSheet(null)
-      setPaywall(null)
-      // Back closes the place sheet before it leaves the page.
-      if (sheetOpenRef.current) {
-        sheetOpenRef.current = false
-        dispatchSheet({ type: 'close' })
-      }
-    }
-    window.addEventListener('popstate', onPop)
-    return () => window.removeEventListener('popstate', onPop)
-  }, [areaKeys, catKeys, sectionKeys])
 
   // ---- Results ----------------------------------------------------------------
 
@@ -326,6 +323,43 @@ export function MapExplorer(props: Props) {
     return userPos ? byDistance(base, userPos) : base
   }, [results.places, userPos, activeSection])
   const placeById = useMemo(() => new Map(places.map((one) => [one.id, one])), [places])
+  const placeIdsRef = useRef<ReadonlyMap<string, ResultPlace>>(placeById)
+  useLayoutEffect(() => {
+    placeIdsRef.current = placeById
+  })
+
+  // Back / forward (filters replace the URL; the place sheet pushes one entry).
+  useEffect(() => {
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search)
+      const next = parseSelection(
+        { area: params.get('area'), region: params.get('region'), cat: params.get('cat') },
+        areaKeys,
+        catKeys,
+      )
+      setApplied({ area: next.area ?? ALL_AREA, categories: next.categories })
+      const sec = parseSection(params.get('sec'), sectionKeys)
+      sectionRef.current = sec
+      setSection(sec)
+      setFacts(parseFactFilter({ traveler: params.get('traveler'), dur: params.get('dur') }))
+      setSheet(null)
+      setPaywall(null)
+      // Forward onto a sheet entry reopens its place (the camera only moves
+      // if that pin is hidden); Back closes the sheet before it leaves the page.
+      const state = window.history.state as { mxSheet?: boolean; mxPlace?: unknown } | null
+      const back = typeof state?.mxPlace === 'string' ? state.mxPlace : null
+      if (state?.mxSheet && back !== null && placeIdsRef.current.has(back)) {
+        sheetOpenRef.current = true
+        setSelectedId(back)
+        dispatchSheet({ type: 'open', id: back, stop: 'peek' })
+      } else if (sheetOpenRef.current) {
+        sheetOpenRef.current = false
+        dispatchSheet({ type: 'close' })
+      }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [areaKeys, catKeys, sectionKeys])
   const fresh = results.key === resultKey
 
   // Deep link `?place=` selects that place once it arrives.
@@ -358,9 +392,13 @@ export function MapExplorer(props: Props) {
 
   /** Opens (or swaps) the place sheet. One history entry per opening. */
   const openSheet = useCallback((id: string, stop: 'peek' | 'half') => {
+    const entry = { ...window.history.state, mxSheet: true, mxPlace: id }
     if (!sheetOpenRef.current) {
-      window.history.pushState({ ...window.history.state, mxSheet: true }, '', window.location.href)
+      window.history.pushState(entry, '', window.location.href)
       sheetOpenRef.current = true
+    } else if ((window.history.state as { mxSheet?: boolean } | null)?.mxSheet) {
+      // A swap keeps the one entry, now naming the place on screen.
+      window.history.replaceState(entry, '', window.location.href)
     }
     setSelectedId(id)
     carouselApi.current?.scrollToId(id, 'instant')
@@ -385,38 +423,42 @@ export function MapExplorer(props: Props) {
     if (sheetOpen && places.length > 0 && sheetPlace === null) closeSheet()
   }, [sheetOpen, sheetPlace, places, closeSheet])
 
-  /** A pin was tapped: the sheet opens at peek (or swaps its place). */
-  const onPin = useCallback(
+  /**
+   * A pin was tapped: the sheet opens at peek (or swaps its place). The
+   * camera is moved once, by the sheet effect below (not here as well: two
+   * eases in a row used to cancel each other mid-way).
+   */
+  const onPin = useCallback((id: string) => openSheet(id, 'peek'), [openSheet])
+
+  /**
+   * The carousel settled on a card: select it and ease the map to its pin.
+   * Phone: only while the cards are on screen (under an open sheet they are
+   * hidden, and a settle there is our own scroll, never a swipe). Desktop: the
+   * cards stay beside the open panel, so a new card swaps the panel to it.
+   */
+  const onCard = useCallback(
     (id: string) => {
-      openSheet(id, 'peek')
-      mapApi.current?.reveal(id)
+      if (sheetOpenRef.current) {
+        if (desktopRef.current) openSheet(id, 'peek')
+        return
+      }
+      setSelectedId((prev) => {
+        if (prev !== id) mapApi.current?.glide(id)
+        return id
+      })
     },
     [openSheet],
   )
 
-  /** The carousel settled on a card: select it and ease the map to its pin. */
-  const onCard = useCallback((id: string) => {
-    setSelectedId((prev) => {
-      if (prev !== id) mapApi.current?.glide(id)
-      return id
-    })
-  }, [])
-
   /** A card was tapped: the sheet opens at half. */
   const onCardOpen = useCallback((id: string) => openSheet(id, 'half'), [openSheet])
 
-  // Keep the place in the visible part of the map as the sheet moves.
+  // The one camera move for a selection: the sheet's place stays in the
+  // visible part of the map as it opens, swaps or changes stop. The map
+  // decides whether it needs to move at all (`planPinMove`).
   useEffect(() => {
     if (!sheetOpen || sheetState.placeId === null) return
-    const rtl = document.documentElement.dir === 'rtl'
-    const pad = desktop
-      ? { bottom: 40, [rtl ? 'right' : 'left']: PANEL_W + 24 }
-      : sheetState.stop === 'peek'
-        ? { bottom: PEEK_PX + 24 }
-        : sheetState.stop === 'half'
-          ? { bottom: Math.round(window.innerHeight * 0.55) + 16 }
-          : null
-    if (pad) mapApi.current?.focus(sheetState.placeId, pad)
+    mapApi.current?.show(sheetState.placeId)
   }, [sheetOpen, sheetState.placeId, sheetState.stop, desktop])
 
   // ---- Actions ----------------------------------------------------------------
@@ -681,6 +723,8 @@ export function MapExplorer(props: Props) {
         resultKey={results.key}
         initialSlug={props.initialPlace}
         selectedId={current?.id ?? null}
+        sheetStop={sheetVisible ? sheetState.stop : 'closed'}
+        desktop={desktop}
         userPos={userPos}
         labels={props.areaLabels}
         onPin={onPin}
@@ -743,10 +787,10 @@ export function MapExplorer(props: Props) {
                     setSelectedId(place.id)
                     setView('map')
                     openSheet(place.id, 'half')
-                    // After the list closes: the carousel and the map follow.
+                    // After the list closes the carousel follows (the map is
+                    // moved by the sheet effect).
                     requestAnimationFrame(() => {
                       carouselApi.current?.scrollToId(place.id, 'instant')
-                      mapApi.current?.focus(place.id)
                     })
                   }}
                 >
@@ -1250,15 +1294,49 @@ function Carousel({
     return Math.round(Math.abs(el.scrollLeft) / s)
   }, [])
 
+  /** A jump to a card outside the rendered window waits for that window. */
+  const pending = useRef<{ i: number; behavior: ScrollBehavior; quiet: boolean } | null>(null)
+  const centerRef = useRef(center)
+  useLayoutEffect(() => {
+    centerRef.current = center
+  })
+
   /** Scroll to card `i`. `quiet`: its settle is ours, so it must not echo back. */
-  const scrollToIndex = useCallback((i: number, behavior: ScrollBehavior, quiet: boolean) => {
+  const scrollNow = useCallback((i: number, behavior: ScrollBehavior, quiet: boolean) => {
     const el = box.current
     if (!el) return
     const left = i * (latest.current.cardW + GAP) * (rtl() ? -1 : 1)
     if (Math.abs(el.scrollLeft - left) < 2) return
     driving.current = quiet ? (latest.current.places[i]?.id ?? null) : null
-    el.scrollTo({ left, behavior })
+    el.scrollTo({ left, behavior: behavior === 'smooth' && reducedMotion() ? 'instant' : behavior })
   }, [])
+
+  /**
+   * Only the window around the current card is rendered, and scroll-snap is
+   * mandatory: a jump into the spacer (no snap points there) used to snap to
+   * the nearest rendered card instead — a different place, which then
+   * «settled» and moved the map to it. Far jumps render the window first.
+   */
+  const scrollToIndex = useCallback(
+    (i: number, behavior: ScrollBehavior, quiet: boolean) => {
+      const [from, to] = windowRange(latest.current.places.length, centerRef.current, WINDOW)
+      if (i >= from && i < to) {
+        scrollNow(i, behavior, quiet)
+        return
+      }
+      pending.current = { i, behavior, quiet }
+      setCenter(i)
+    },
+    [scrollNow],
+  )
+
+  // The window around a far card is rendered: now jump to it.
+  useLayoutEffect(() => {
+    const job = pending.current
+    if (job === null) return
+    pending.current = null
+    scrollNow(job.i, job.behavior, job.quiet)
+  })
 
   useImperativeHandle(
     ref,
@@ -1266,7 +1344,6 @@ function Carousel({
       scrollToId(id, behavior = 'smooth') {
         const i = latest.current.places.findIndex((one) => one.id === id)
         if (i < 0) return
-        setCenter(i)
         scrollToIndex(i, behavior, true)
       },
     }),
@@ -1289,9 +1366,11 @@ function Carousel({
 
   // New results: start at the selected card without animating.
   useLayoutEffect(() => {
+    const [from, to] = windowRange(places.length, centerRef.current, WINDOW)
     // eslint-disable-next-line react-hooks/set-state-in-effect -- re-centre the window on new data
     setCenter(index)
-    scrollToIndex(index, 'instant', true)
+    if (index >= from && index < to) scrollNow(index, 'instant', true)
+    else pending.current = { i: index, behavior: 'instant', quiet: true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [places, cardW])
 
@@ -1306,10 +1385,11 @@ function Carousel({
       setCenter(i)
       const place = latest.current.places[i]
       if (!place) return
+      // Our own scroll never echoes back to the map, even if it ended a
+      // card off (a programmatic jump is not the visitor choosing a card).
       if (driving.current !== null) {
-        const target = driving.current
         driving.current = null
-        if (target === place.id) return
+        return
       }
       latest.current.onSettle(place.id)
     }
@@ -1467,15 +1547,15 @@ const Card = memo(function Card({
 // The map (MapLibre draws the pins: GeoJSON source, clustered)
 // ---------------------------------------------------------------------------
 
-type Pad = Partial<Record<'top' | 'bottom' | 'left' | 'right', number>>
-
 interface ResultsMapHandle {
-  /** Ease the map so the pin sits in the open area (above the cards, or beside the sheet). */
-  focus(id: string, pad?: Pad): void
+  /**
+   * The sheet's place: keep its pin in the open area (above the cards or the
+   * sheet, beside the desktop panel). Moves only when the pin is hidden or the
+   * map is far out, never zooms out (`planPinMove`).
+   */
+  show(id: string): void
   /** Card swipe (Tiqets): ease the pin to the centre, keeping the zoom. */
   glide(id: string): void
-  /** Only move when the pin is hidden under the chrome. */
-  reveal(id: string): void
   /** The MapLibre instance (tests assert it survives filter changes). */
   instance(): MapLike | null
 }
@@ -1670,7 +1750,7 @@ function onMapClick(
   event: unknown,
   onPin: (id: string) => void,
   onEmpty: () => void,
-  padding: () => { top: number; bottom: number; left: number; right: number },
+  insets: () => Insets | null,
 ) {
   const point = (event as { point?: { x: number; y: number } } | undefined)?.point
   if (!point || !map.queryRenderedFeatures) return
@@ -1685,9 +1765,15 @@ function onMapClick(
     onEmpty()
     return
   }
+  // The selected pin's larger copy is drawn on top of its twin: on a tie (two
+  // places on one spot) the other pin wins, so it can still be opened.
+  const ordered = [
+    ...hits.filter((hit) => hit.layer?.id !== L_ON),
+    ...hits.filter((hit) => hit.layer?.id === L_ON),
+  ]
   let best: Feature | null = null
   let bestD = Infinity
-  for (const hit of hits) {
+  for (const hit of ordered) {
     const coords = hit.geometry?.coordinates
     if (!coords) continue
     const p = map.project(coords)
@@ -1708,15 +1794,18 @@ function onMapClick(
     if (!source || !coords || !Number.isFinite(clusterId)) return
     void source
       .getClusterExpansionZoom(clusterId)
-      .then((zoom) =>
+      .then((zoom) => {
+        const from = map.getZoom()
+        // Just past the split zoom, so the group opens up at once.
+        const to = Math.min(REAL_MAX_ZOOM, Math.max(from + 1, zoom + 0.5))
+        const pad = insets()
         map.easeTo({
           center: coords,
-          // Just past the split zoom, so the group opens up at once.
-          zoom: Math.min(REAL_MAX_ZOOM, Math.max(map.getZoom() + 1, zoom + 0.5)),
-          padding: padding(),
-          duration: 450,
-        }),
-      )
+          zoom: to,
+          ...(pad ? { padding: pad } : {}),
+          duration: moveDuration(0, to - from, reducedMotion()),
+        })
+      })
       .catch(() => undefined)
     return
   }
@@ -1732,6 +1821,8 @@ function ResultsMap({
   resultKey,
   initialSlug,
   selectedId,
+  sheetStop,
+  desktop,
   userPos,
   labels,
   onPin,
@@ -1745,6 +1836,9 @@ function ResultsMap({
   /** `?place=` deep link: open close on that place instead of framing all. */
   initialSlug: string | null
   selectedId: string | null
+  /** Where the place sheet is (closed while it shows no place). */
+  sheetStop: SheetStop
+  desktop: boolean
   userPos: LatLon | null
   labels: AreaLabelPoint[]
   onPin: (id: string) => void
@@ -1755,24 +1849,56 @@ function ResultsMap({
   const mapRef = useRef<MapLike | null>(null)
   const [styled, setStyled] = useState(false)
   const [failed, setFailed] = useState(false)
-  const latest = useRef({ places, selectedId, onPin, onEmpty, labels })
+  const latest = useRef({ places, selectedId, onPin, onEmpty, labels, sheetStop, desktop })
   useLayoutEffect(() => {
-    latest.current = { places, selectedId, onPin, onEmpty, labels }
+    latest.current = { places, selectedId, onPin, onEmpty, labels, sheetStop, desktop }
   })
 
-  /** Room the floating chrome takes (header + chips on top, cards at the bottom). */
-  const padding = useCallback(() => {
+  /**
+   * Room the chrome takes over the map box: the header on top; at the bottom
+   * the cards, or the place sheet at the stop it is going to (not where its
+   * slide happens to be); on desktop the side panel at the inline start.
+   * Null while the full sheet hides the map. One measure for every move, so
+   * MapLibre's (sticky) padding never differs between two moves.
+   */
+  const insets = useCallback((): Insets | null => {
     const el = box.current
-    const main = el?.closest('.mx3')
-    const head = main?.querySelector('.mx3-head')?.getBoundingClientRect()
-    const bottom = main?.querySelector('.mx3-bottom')?.getBoundingClientRect()
     const rect = el?.getBoundingClientRect()
-    if (!rect) return { top: 120, bottom: 200, left: 40, right: 40 }
-    const top = head ? Math.max(0, head.bottom - rect.top) + 24 : 24
-    const bot = bottom ? Math.max(0, rect.bottom - bottom.top) + 36 : 36
-    // Narrow sides: the island fills the phone's width (Tiqets).
-    return { top, bottom: Math.min(bot, rect.height * 0.55), left: 16, right: 16 }
+    if (!el || !rect || rect.height === 0) return null
+    const main = el.closest('.mx3')
+    const head = main?.querySelector('.mx3-head')?.getBoundingClientRect()
+    const top = (head ? Math.max(0, head.bottom - rect.top) : 0) + 12
+    const { sheetStop: stop, desktop: wide } = latest.current
+    let bottom: number
+    if (!wide && stop !== 'closed') {
+      const cover = sheetCover(stop, window.innerHeight, rect.bottom)
+      if (cover === null) return null
+      bottom = cover + 12
+    } else {
+      const cards = main?.querySelector('.mx3-bottom')?.getBoundingClientRect()
+      bottom = (cards && cards.height > 0 ? Math.max(0, rect.bottom - cards.top) : 0) + 12
+    }
+    const panel = wide && stop !== 'closed' ? PANEL_W + 12 + SIDE_PX : SIDE_PX
+    const rtl = document.documentElement.dir === 'rtl'
+    return {
+      top,
+      bottom: Math.round(Math.min(bottom, rect.height * 0.7)),
+      left: rtl ? SIDE_PX : panel,
+      right: rtl ? panel : SIDE_PX,
+    }
   }, [])
+
+  /** One camera move at a time: a new one replaces the one in flight. */
+  const moveTo = useCallback(
+    (center: [number, number], zoom: number | undefined, duration: number, pad: Insets) => {
+      const map = mapRef.current
+      if (!map) return
+      if (duration === 0)
+        map.jumpTo({ center, ...(zoom === undefined ? {} : { zoom }), padding: pad })
+      else map.easeTo({ center, ...(zoom === undefined ? {} : { zoom }), padding: pad, duration })
+    },
+    [],
+  )
 
   const placeById = useCallback(
     (id: string) => latest.current.places.find((one) => one.id === id) ?? null,
@@ -1782,38 +1908,39 @@ function ResultsMap({
   useImperativeHandle(
     ref,
     () => ({
-      focus(id, pad) {
+      show(id) {
         const map = mapRef.current
         const place = placeById(id)
-        if (!map || !place) return
-        map.easeTo({
-          center: [place.lon, place.lat],
-          zoom: Math.max(map.getZoom(), 11),
-          padding: pad ? { ...padding(), left: 40, right: 40, ...pad } : padding(),
-          duration: 450,
+        const el = box.current
+        const pad = insets()
+        if (!map || !place || !el || !pad) return
+        const { width, height } = el.getBoundingClientRect()
+        const move = planPinMove({
+          point: map.project([place.lon, place.lat]),
+          zoom: map.getZoom(),
+          maxZoom: REAL_MAX_ZOOM,
+          view: { width, height },
+          insets: pad,
+          reducedMotion: reducedMotion(),
         })
+        if (move) moveTo([place.lon, place.lat], move.zoom, move.duration, pad)
       },
       glide(id) {
         const map = mapRef.current
         const place = placeById(id)
-        if (!map || !place) return
-        map.easeTo({ center: [place.lon, place.lat], padding: padding(), duration: 450 })
-      },
-      reveal(id) {
-        const map = mapRef.current
-        const place = placeById(id)
         const el = box.current
-        if (!map || !place || !el) return
+        const pad = insets()
+        if (!map || !place || !el || !pad) return
         const p = map.project([place.lon, place.lat])
-        const pad = padding()
         const { width, height } = el.getBoundingClientRect()
-        if (p.x < 24 || p.x > width - 24 || p.y < pad.top || p.y > height - pad.bottom) {
-          map.easeTo({ center: [place.lon, place.lat], padding: pad, duration: 450 })
-        }
+        const cx = (pad.left + width - pad.right) / 2
+        const cy = (pad.top + height - pad.bottom) / 2
+        const ms = moveDuration(Math.hypot(p.x - cx, p.y - cy), 0, reducedMotion())
+        moveTo([place.lon, place.lat], undefined, ms, pad)
       },
       instance: () => mapRef.current,
     }),
-    [padding, placeById],
+    [insets, moveTo, placeById],
   )
 
   // Create the map once. Locale / settings are fixed for the page's life.
@@ -1852,7 +1979,7 @@ function ResultsMap({
             event,
             (id) => latest.current.onPin(id),
             () => latest.current.onEmpty(),
-            padding,
+            insets,
           ),
         )
         for (const id of [L_PIN, L_ON, L_CLUSTER]) {
@@ -1891,19 +2018,37 @@ function ResultsMap({
     }
     if (framedKey.current === resultKey || places.length === 0) return
     const first = framedKey.current === null
+    const areaChanged = !first && areaOfKey(framedKey.current ?? '') !== areaOfKey(resultKey)
     framedKey.current = resultKey
+    const pad = insets() ?? { top: 12, bottom: 12, left: SIDE_PX, right: SIDE_PX }
     const deep =
       first && initialSlug !== null ? places.find((one) => one.slug === initialSlug) : undefined
     if (deep) {
-      map.jumpTo({ center: [deep.lon, deep.lat], zoom: 14, padding: padding() })
+      map.jumpTo({ center: [deep.lon, deep.lat], zoom: 14, padding: pad })
       return
     }
     const bounds = boundsOf(places)
-    if (bounds) {
-      // Whole island first; a filter change eases to its own pins.
-      map.fitBounds(bounds, { padding: padding(), maxZoom: 14, duration: first ? 0 : FIT_MS })
+    if (!bounds) return
+    if (first) {
+      // Whole island first, without animating.
+      map.fitBounds(bounds, { padding: pad, maxZoom: 14, duration: 0 })
+      return
     }
-  }, [styled, places, resultKey, padding, initialSlug])
+    // A filter change keeps the view while any new pin is already on screen
+    // (it used to re-frame every time: the jump back to the whole island).
+    const el = box.current
+    const rect = el?.getBoundingClientRect()
+    if (!rect) return
+    const frame = shouldFrameResults({
+      points: places.map((one) => map.project([one.lon, one.lat])),
+      view: { width: rect.width, height: rect.height },
+      insets: pad,
+      areaChanged,
+    })
+    if (frame) {
+      map.fitBounds(bounds, { padding: pad, maxZoom: 14, duration: reducedMotion() ? 0 : FIT_MS })
+    }
+  }, [styled, places, resultKey, insets, initialSlug])
 
   // Selected pin: its own one-feature source, drawn above the clusters.
   const sentOn = useRef<string | null>(null)
@@ -1943,13 +2088,12 @@ function ResultsMap({
       properties: {},
       geometry: { type: 'Point', coordinates: [userPos.lon, userPos.lat] },
     })
-    map.flyTo({
-      center: [userPos.lon, userPos.lat],
-      zoom: Math.max(map.getZoom(), 13),
-      padding: padding(),
-      duration: 700,
-    })
-  }, [styled, userPos, padding])
+    const pad = insets()
+    if (!pad) return
+    const from = map.getZoom()
+    const to = Math.max(from, 13)
+    moveTo([userPos.lon, userPos.lat], to, moveDuration(400, to - from, reducedMotion()), pad)
+  }, [styled, userPos, insets, moveTo])
 
   return (
     <div className="mx-map mx3-map">
