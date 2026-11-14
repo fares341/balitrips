@@ -1846,6 +1846,8 @@
   "nav_home": "Home",
   "nav_map": "Map",
   "nav_menu": "Menu",
+  "nav_lang": "Language",
+  "nav_currency": "Currency",
   "nav_packages": "Tour packages",
   "nav_places": "Places",
   "nav_services": "Services",
