@@ -23,6 +23,8 @@ import { CART_CHANGED_EVENT, CART_COUNT_COOKIE } from '@/components/layout/route
 import { useRouter } from '@/i18n/routing'
 import type { PaymentState } from '@/lib/orders/booking-status'
 
+import { clearContactDraft } from '../../contact-draft'
+
 /** 3s between polls, 20 polls: one minute of patience, then a message. */
 const POLL_INTERVAL_MS = 3000
 const MAX_ATTEMPTS = 20
@@ -42,6 +44,8 @@ export function OrderStatusWatcher({ state }: OrderStatusWatcherProps) {
     if (state !== 'success' && state !== 'authorized') return
     document.cookie = `${CART_COUNT_COOKIE}=0; path=/; max-age=${60 * 60 * 24 * 60}; samesite=lax`
     window.dispatchEvent(new Event(CART_CHANGED_EVENT))
+    // The contact details kept for the checkout form have done their job.
+    clearContactDraft()
   }, [state])
 
   useEffect(() => {

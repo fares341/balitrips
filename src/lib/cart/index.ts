@@ -76,6 +76,7 @@ import { loadPlansById } from '@/lib/entitlements/plans'
 import { planTotalMinor } from '@/lib/pricing/plan-devices'
 
 import { displayKey, loadCartCatalog, snapshotUnitPrice } from './catalog'
+import { isSellable } from './sellable'
 import { getSessionUser } from './session'
 
 export { CART_CHANGED_EVENT, CART_COUNT_COOKIE }
@@ -458,7 +459,7 @@ export interface MutationResult {
  * stable code the caller can map to a message.
  */
 export class CartRejectedError extends Error {
-  constructor(readonly code: 'custom_not_payable' | 'sign_in_required') {
+  constructor(readonly code: 'custom_not_payable' | 'sign_in_required' | 'not_for_sale') {
     super(`Cart refused the item: ${code}`)
     this.name = 'CartRejectedError'
   }
@@ -606,6 +607,8 @@ export async function addItem(rawInput: AddItemInput): Promise<AddItemResult> {
   if (tier !== null) price.priceMinor = tier.priceMinor
   const planDevices = input.kind === 'plan' ? await checkedPlanDevices(refId, input.devices) : null
   if (planDevices !== null) price.priceMinor = planDevices.totalMinor
+  // Nothing to charge for it: not something a trip can hold to be paid.
+  if (!isSellable(input.kind, price.priceMinor)) throw new CartRejectedError('not_for_sale')
   const lineOptions =
     planDevices !== null
       ? { devices: planDevices.devices }
@@ -878,6 +881,11 @@ export async function addActivityBooking(
   }
 
   const bookingLine = quote.lines.find((line) => line.itemId === 'booking')
+  // A booking that comes to zero has nothing to pay for (an activity without
+  // a price): refused here, rather than sitting in the trip as "no cost".
+  if (!bookingLine || bookingLine.lineTotalMinor <= 0) {
+    return { ok: false, issues: [{ code: 'package_unavailable' }] }
+  }
   const cart = await getOrCreateCart()
   const rows = await db.select().from(cartItems).where(eq(cartItems.cartId, cart.id))
   const key = JSON.stringify(addons)

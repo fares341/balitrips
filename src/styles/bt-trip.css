@@ -213,6 +213,11 @@
   padding-block: 3px;
   font-size: 13.5px;
 }
+.ti details summary span {
+  display: inline-grid;
+  vertical-align: middle;
+  transition: transform var(--d-fast, 160ms) var(--ease);
+}
 @media (max-width: 560px) {
   .ti {
     grid-template-columns: 76px minmax(0, 1fr);
@@ -223,8 +228,66 @@
     width: 76px;
     height: 76px;
   }
+  /* The price on its own line under the name: beside it, a long name was
+     squeezed into a few words per line and the price drifted to the edge. */
+  .ti .ttop {
+    flex-direction: column;
+    gap: 6px;
+  }
   .ti .tprice {
-    font-size: 17px;
+    font-size: 18px;
+  }
+}
+
+/* Nothing to charge: why, and where to go. */
+.trip-nopay {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--ivory-2);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.trip-nopay b {
+  color: var(--forest);
+}
+.trip-charge {
+  color: var(--forest);
+  font-weight: 700;
+}
+
+/* Phones: total + "complete booking" pinned above the tab bar. */
+.trip-paybar {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .trip-paybar {
+    position: fixed;
+    z-index: 56;
+    inset-inline: 0;
+    bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--white);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -10px 24px -16px rgba(0, 0, 0, 0.3);
+  }
+  .trip-paybar > span {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+  }
+  .trip-paybar b {
+    font: 800 19px var(--f-en);
+    color: var(--forest);
+  }
+  /* Room for the bar, so the last panel scrolls clear of it. */
+  .trip-page.has-paybar .trip-grid {
+    padding-block-end: 140px;
   }
 }
 
