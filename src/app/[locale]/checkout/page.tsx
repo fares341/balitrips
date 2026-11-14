@@ -28,8 +28,7 @@ import { randomUUID } from 'node:crypto'
 import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
-import { Breadcrumbs, LinkButton } from '@/components/bt'
-import { formatMoney } from '@/lib/money'
+import { Breadcrumbs, formatPrice, LinkButton } from '@/components/bt'
 import { CART_HREF, HOME_HREF } from '@/components/layout/routes'
 import { TRIP_KIND_ICON } from '@/components/trip'
 import { PriceBreakdown } from '@/components/trip/price-breakdown'
@@ -51,12 +50,12 @@ import { pick, pickOptional } from '@/lib/content/localize'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { holdsVip, vipPlanOffer } from '@/lib/itineraries/queries'
 import { needsAccount, tripIncludesVip } from '@/lib/packages/account'
-import { splitPhone } from '@/lib/orders/contact'
+import { phoneDefaults } from '@/lib/orders/contact'
 import { FEATURES } from '@/lib/features'
 import { adjustmentLabel, adjustmentSign } from '@/lib/finance/labels'
 
 import { toLocale } from '../_seo-hreflang'
-import { applyCouponAction, beginSignInAction } from './actions'
+import { applyCouponAction } from './actions'
 import { CheckoutFlow, type DriverOffer } from './checkout-flow'
 import { VipUpsellButton } from './vip-upsell'
 import { ACCOUNT_ONLY_KINDS } from './constants'
@@ -100,7 +99,10 @@ export default async function CheckoutPage({
 }) {
   const { locale: raw } = await params
   // Phase 6: too many discount codes tried in a short time (see applyCouponAction).
-  const couponLimited = (await searchParams).coupon === 'limited'
+  const couponParam = (await searchParams).coupon
+  const couponLimited = couponParam === 'limited'
+  // "Apply" pressed with nothing typed (audit L8).
+  const couponEmpty = couponParam === 'empty'
   const locale = toLocale(raw)
   setRequestLocale(locale)
 
@@ -162,13 +164,27 @@ export default async function CheckoutPage({
   const lines = cart?.groups.flatMap((group) => group.lines) ?? []
   const payable = lines.filter((line) => line.lineTotalMinor !== null && line.lineTotalMinor > 0)
   if (cart === null || payable.length === 0) {
+    // Nothing to charge. Say why and what to do next (audit H2): an empty
+    // trip and a trip of saved places / unavailable items are different
+    // situations, and neither is helped by a lone "back" button.
+    const empty = lines.length === 0
     return notice(
       'suitcase',
-      t('co_nothing_t'),
-      t('co_nothing_b'),
-      <LinkButton href={CART_HREF} variant="forest">
-        {t('co_back_trip')}
-      </LinkButton>,
+      t(empty ? 'co_empty_t' : 'co_nothing_t'),
+      t(empty ? 'co_empty_b' : 'co_nothing_b'),
+      <div className="row" style={{ justifyContent: 'center' }}>
+        <LinkButton href="/activities" variant="primary">
+          {t('trip_browse_act')}
+        </LinkButton>
+        <LinkButton href="/itineraries" variant="ghost">
+          {t('trip_ready_itin')}
+        </LinkButton>
+        {!empty && (
+          <LinkButton href={CART_HREF} variant="ghost">
+            {t('co_back_trip')}
+          </LinkButton>
+        )}
+      </div>,
     )
   }
   if (!cart.ok) {
@@ -182,8 +198,10 @@ export default async function CheckoutPage({
     )
   }
 
-  // Exact SAR at checkout (what is charged), never a rounded or converted figure.
-  const money = (minor: number, currency: string) => formatMoney(minor, currency, locale)
+  // Exact SAR at checkout (what is charged), never a rounded or converted
+  // figure — written the way the trip and every other page write it
+  // ("200 ر.س.", "1,022.50 ر.س."), not "200.00" on this page alone.
+  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
 
   // The card is always debited in SAR (the base currency). Say so plainly,
   // with the visitor's «≈» approximation under it when they browse in another currency.
@@ -191,11 +209,6 @@ export default async function CheckoutPage({
     try {
       const sarPerUsd = await readSarPerUsd()
       const charge = toChargeMinor(cart.totalMinor, cart.currency, sarPerUsd)
-      if (locale === 'ar') {
-        const sar = charge.amountMinor / 100
-        const digits = Number.isInteger(sar) ? 0 : 2
-        return `${new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(sar)} ر.س`
-      }
       return money(charge.amountMinor, charge.currency)
     } catch {
       return money(cart.totalMinor, cart.currency)
@@ -247,11 +260,12 @@ export default async function CheckoutPage({
   })
 
   // ---- Contact defaults ----
-  const phone = splitPhone(user?.phone ?? null)
+  // The account's saved phone prefills the field, in its own country.
+  const phone = phoneDefaults(user?.phone ?? null)
   const defaults = {
     name: user?.name ?? '',
     email: user === null || isPlaceholderEmail(user.email) ? '' : user.email,
-    dialCode: phone.dialCode,
+    phoneCountry: phone.country,
     phone: phone.phone,
   }
   // Phase 3: a package that comes with an itinerary or VIP needs an account too.
@@ -282,15 +296,6 @@ export default async function CheckoutPage({
     surcharge: t('adj_surcharge'),
     tax: t('adj_tax'),
   }
-
-  const signIn = (
-    <form action={beginSignInAction} className="ck-signin">
-      <input type="hidden" name="locale" value={locale} />
-      <button type="submit" className="link">
-        {t('co_log_in')}
-      </button>
-    </form>
-  )
 
   const review = (
     <div className="stack ck-review">
@@ -427,14 +432,6 @@ export default async function CheckoutPage({
           </span>
         </div>
       ))}
-      {cart.adjustments.every((line) => line.kind === 'discount') && (
-        <div className="sum-row">
-          <span>{t('co_fees')}</span>
-          <span className="price" dir="ltr">
-            {money(0, cart.currency)}
-          </span>
-        </div>
-      )}
       <div className="sum-total">
         <span>{t('co_final_total')}</span>
         <b className="price" dir="ltr">
@@ -442,7 +439,9 @@ export default async function CheckoutPage({
         </b>
       </div>
       {chargeNote}
-      <small className="muted">{t('cur_checkout_note')}</small>
+      {/* Only for a visitor browsing in another currency: for a SAR visitor
+          there is no conversion to explain (hidden by `html[data-cur]`). */}
+      <small className="muted cur-foreign-only">{t('cur_checkout_note')}</small>
       <form action={applyCouponAction} className="ck-coupon stack" style={{ gap: 8 }}>
         <input type="hidden" name="locale" value={locale} />
         <label htmlFor="ck-coupon-code" className="muted" style={{ fontSize: 13 }}>
@@ -478,6 +477,11 @@ export default async function CheckoutPage({
             {t(`co_coupon_err_${cart.couponError}`)}
           </small>
         )}
+        {couponEmpty && cart.couponCode === null && (
+          <small role="alert" className="err">
+            {t('co_coupon_empty')}
+          </small>
+        )}
         {couponLimited && (
           <small role="alert" className="err">
             {t('co_coupon_rate_limited')}
@@ -490,8 +494,10 @@ export default async function CheckoutPage({
   return shell(
     <CheckoutFlow
       signedInAs={user === null ? null : (user.name ?? defaults.email ?? '')}
+      userId={user?.id ?? null}
       guestAllowed={guestAllowed}
       defaults={defaults}
+      hasDigital={lines.some((line) => ACCOUNT_ONLY_KINDS.includes(line.kind))}
       expectedTotalMinor={cart.totalMinor}
       totalLabel={chargeLabel}
       chargeNote={chargeNote}
@@ -501,7 +507,6 @@ export default async function CheckoutPage({
       review={review}
       summary={summary}
       driverOffers={driverOffers}
-      signIn={signIn}
       authorizeOnly={captureModeFor(lines.map((line) => line.kind)) === 'manual'}
     />,
   )

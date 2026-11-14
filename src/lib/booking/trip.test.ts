@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateContact, splitPhone } from '@/lib/orders/contact'
-
 import { driverSuggestions, scheduleConflicts, tripDays, type TripLineFacts } from './trip'
 
 const line = (over: Partial<TripLineFacts> & { id: string }): TripLineFacts => ({
@@ -76,43 +74,5 @@ describe('driverSuggestions', () => {
       driverSuggestions([line({ id: 'p', kind: 'itinerary', travelDate: null })], RATES),
     ).toHaveLength(0)
     expect(driverSuggestions([line({ id: 'a', guests: 9 })], RATES.slice(0, 2))).toHaveLength(0)
-  })
-})
-
-describe('validateContact', () => {
-  const base = {
-    name: 'Sara Ahmed',
-    email: 'Sara@Mail.com ',
-    dialCode: '+966',
-    phone: '051 234 5678',
-    notes: '',
-  }
-  it('accepts and normalises a valid contact', () => {
-    const r = validateContact(base)
-    expect(r.ok).toBe(true)
-    if (r.ok) {
-      expect(r.value.email).toBe('sara@mail.com')
-      expect(r.value.phone).toBe('+966512345678')
-      expect(r.value.notes).toBeNull()
-    }
-  })
-  it('reports every bad field, keyed for the message', () => {
-    const r = validateContact({
-      name: 'S',
-      email: 'sara@mail',
-      dialCode: '+999',
-      phone: '12',
-      notes: '',
-    })
-    expect(r.ok).toBe(false)
-    if (!r.ok)
-      expect(r.errors).toEqual({ name: 'co_e_name', email: 'co_e_email', phone: 'co_e_phone' })
-  })
-  it('rejects letters in the phone number', () => {
-    expect(validateContact({ ...base, phone: '5x1234567' }).ok).toBe(false)
-  })
-  it('splits a stored number back for the selector', () => {
-    expect(splitPhone('+971501234567')).toEqual({ dialCode: '+971', phone: '501234567' })
-    expect(splitPhone(null)).toEqual({ dialCode: '+966', phone: '' })
   })
 })

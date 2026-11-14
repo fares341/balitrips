@@ -335,17 +335,128 @@
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
 }
-.ck-phone {
-  display: flex;
+/* The WhatsApp number: where the schedule and the confirmation go, so it
+   stands out. Holds the registration phone field (`.bt-field`). */
+.ck-wa-box {
+  display: grid;
   gap: 8px;
+  border: 1.5px solid var(--orange, #ff9000);
+  background: var(--orange-soft, #ffebd1);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-block: 6px;
 }
-.ck-phone .select {
-  width: 120px;
+.ck-wa-note {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ck-wa-note svg {
   flex-shrink: 0;
+  margin-block-start: 3px;
 }
-.ck-phone .input {
-  flex: 1;
+/* A guest whose trip needs an account: the two ways in, nothing else. */
+.ck-need-account {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 22px 16px;
+  border-radius: 16px;
+  background: var(--ivory-2);
+  border: 1px solid var(--line-soft);
+}
+.ck-need-account > b {
+  color: var(--forest);
+  font-size: 17px;
+}
+.ck-need-account p {
+  max-width: 46ch;
+  margin: 0;
+}
+.ck-need-ill {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--white);
+  color: var(--forest);
+}
+.ck-need-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-block: 6px 2px;
+}
+@media (max-width: 560px) {
+  .ck-need-cta {
+    flex-direction: column;
+    align-self: stretch;
+    justify-self: stretch;
+  }
+}
+/* Step 2: the traveller's own details, read back before paying. */
+.ck-contact {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+.ck-contact-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--forest);
+}
+.ck-contact-h .link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ck-contact dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 10px 18px;
+  margin: 0;
+}
+.ck-contact dl > div {
   min-width: 0;
+}
+.ck-contact dt {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.ck-contact dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--forest);
+  overflow-wrap: anywhere;
+}
+.ck-contact-notes {
+  grid-column: 1 / -1;
+}
+.ck-contact-notes dd {
+  font-weight: 500;
+  white-space: pre-line;
+}
+/* Shown only to a visitor browsing in a currency other than the one charged
+   (the money runtime sets `data-cur` on <html> before first paint). */
+html[data-cur='SAR'] .cur-foreign-only {
+  display: none;
 }
 .ck-nav {
   display: flex;
@@ -354,19 +465,8 @@
   gap: 12px;
   flex-wrap: wrap;
 }
-.ck-guest .link,
-.ck-signin .link {
+.ck-guest .link {
   font-weight: 700;
-}
-.ck-signin {
-  display: inline;
-}
-.ck-signin button {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
 }
 .ck-review {
   gap: 12px;

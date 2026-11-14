@@ -23,8 +23,12 @@ export const CART_RETURN_HREF = '/my-trip'
 export const CHECKOUT_RETURN_HREF = '/checkout/return'
 export const CONFIRMATION_HREF = '/checkout/confirmation'
 
-/** Where an unauthenticated visitor is sent to sign in. */
-export const SIGN_IN_HREF = '/account'
+/**
+ * Where a traveller signs in or creates an account mid-checkout. Both take
+ * `?next=/checkout` and come back here with the trip intact.
+ */
+export const SIGN_IN_PAGE_HREF = '/login'
+export const SIGN_UP_PAGE_HREF = '/register'
 
 /** Public origin, no trailing slash. */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(
