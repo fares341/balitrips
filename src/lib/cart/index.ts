@@ -47,7 +47,7 @@ import {
 } from '@/lib/itineraries/tiers'
 import { randomBytes } from 'node:crypto'
 
-import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 
 import { db } from '@/db'
@@ -76,6 +76,7 @@ import { loadPlansById } from '@/lib/entitlements/plans'
 import { planTotalMinor } from '@/lib/pricing/plan-devices'
 
 import { displayKey, loadCartCatalog, snapshotUnitPrice } from './catalog'
+import { supersededLineIds } from './merge-lines'
 import { isSellable } from './sellable'
 import { getSessionUser } from './session'
 
@@ -384,6 +385,19 @@ export async function mergeAnonymousCart(
     }
 
     if (owned.id === anon.id) return owned
+
+    // The same thing in both carts — the itinerary they added last week and
+    // again just now, before signing in — must not be charged twice. The line
+    // from this visit wins (it carries today's choices: level, devices,
+    // party); the account's older copy goes, with any driver linked to it.
+    const [ownedLines, anonLines] = await Promise.all([
+      tx.select().from(cartItems).where(eq(cartItems.cartId, owned.id)),
+      tx.select().from(cartItems).where(eq(cartItems.cartId, anon.id)),
+    ])
+    const superseded = supersededLineIds(ownedLines, anonLines)
+    if (superseded.length > 0) {
+      await tx.delete(cartItems).where(inArray(cartItems.id, superseded))
+    }
 
     await tx.update(cartItems).set({ cartId: owned.id }).where(eq(cartItems.cartId, anon.id))
     await tx.delete(carts).where(eq(carts.id, anon.id))

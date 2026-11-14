@@ -178,17 +178,23 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   )
   const [ipCountry, setIpCountry] = useState<string | null>(null)
   useVisitorCountry(setIpCountry)
+  // A draft only holds what was actually typed: a field left empty in it
+  // falls back to the account's value (a guest who typed a name, then signed
+  // in, gets their account's e-mail and phone — not two blanks).
+  const draftPhone = stored?.phone ? stored : null
   const contact: ContactDraft = {
-    name: edits.name ?? stored?.name ?? props.defaults.name,
-    email: edits.email ?? stored?.email ?? props.defaults.email,
-    phone: edits.phone ?? stored?.phone ?? props.defaults.phone,
+    name: edits.name ?? (stored?.name || props.defaults.name),
+    email: edits.email ?? (stored?.email || props.defaults.email),
+    phone: edits.phone ?? draftPhone?.phone ?? props.defaults.phone,
     notes: edits.notes ?? stored?.notes ?? '',
-    // The picker: a choice made here, the saved number's country, then the
-    // same default as registration (the last pick, else where the visitor is).
+    // The picker: a choice made here; the country a drafted number was typed
+    // under; the saved number's own country; then the same default as
+    // registration (the last pick, else where the visitor is).
     phoneCountry:
       edits.phoneCountry ??
-      stored?.phoneCountry ??
+      draftPhone?.phoneCountry ??
       props.defaults.phoneCountry ??
+      stored?.phoneCountry ??
       (hydrated
         ? hasSavedCountry()
           ? defaultCountry(locale)
@@ -205,8 +211,13 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   })
 
   function edit(name: keyof ContactDraft, value: string) {
-    setEdits((current) => ({ ...current, [name]: value }))
-    writeContactDraft({ ...contact, [name]: value }, props.userId)
+    // A number is typed under the country showing at that moment: pin it, so
+    // a default that arrives later (the visitor's country) cannot re-read it.
+    const change: Partial<ContactDraft> =
+      name === 'phone' ? { phone: value, phoneCountry: contact.phoneCountry } : { [name]: value }
+    setEdits((current) => ({ ...current, ...change }))
+    // Kept: only what the traveller typed or chose — never a default.
+    writeContactDraft({ ...stored, ...edits, ...change }, props.userId)
     clearError(name === 'phoneCountry' ? 'phone' : name)
   }
 

@@ -61,7 +61,7 @@ export function readContactDraft(userId: string | null): Partial<ContactDraft> |
   return draft
 }
 
-export function writeContactDraft(draft: ContactDraft, userId: string | null): void {
+export function writeContactDraft(draft: Partial<ContactDraft>, userId: string | null): void {
   try {
     window.sessionStorage.setItem(KEY, JSON.stringify({ ...draft, user: userId }))
   } catch {
