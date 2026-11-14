@@ -88,3 +88,33 @@ export function snapAfterDrag(
 
 /** Only the full sheet scrolls its content; the others drag. */
 export const scrollsInside = (stop: SheetStop) => stop === 'full'
+
+/** Movement (px) before a touch on the sheet counts as a gesture. */
+export const DRAG_SLOP = 6
+
+export type DragIntent = 'pending' | 'drag' | 'release'
+
+/**
+ * What a touch that began on the sheet is doing (owner video, Nov 2026: a
+ * pull on the open sheet ended up scrolling the page or the map instead).
+ *
+ *   - sideways: it belongs to a photo strip / nearby row (`release`);
+ *   - up inside the full sheet's content: it scrolls that content (`release`);
+ *   - anything else vertical: it moves the sheet (`drag`), including a pull
+ *     down on the full sheet's content when it is already at its top.
+ */
+export function dragIntent(input: {
+  from: SheetStop
+  inBody: boolean
+  dx: number
+  dy: number
+}): DragIntent {
+  const { from, inBody, dx, dy } = input
+  const scrolling = scrollsInside(from) && inBody
+  // Up inside the scrolling content: hand it over at once, before the slop,
+  // so the browser's own scroll is never held back.
+  if (scrolling && dy < 0 && Math.abs(dy) >= Math.abs(dx)) return 'release'
+  if (Math.abs(dx) < DRAG_SLOP && Math.abs(dy) < DRAG_SLOP) return 'pending'
+  if (Math.abs(dx) > Math.abs(dy)) return 'release'
+  return 'drag'
+}

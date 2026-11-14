@@ -15,13 +15,27 @@
  * `/api/map/places/[slug]`, which applies the same lock rule as the list.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from 'react'
 import { useTranslations } from 'next-intl'
 
 import { Icon, Photo, SafeImg } from '@/components/ui'
 import { Link } from '@/i18n/routing'
 import type { ResultPlace } from '@/lib/map/explore'
-import { scrollsInside, snapAfterDrag, stopOffsets, type SheetStop } from '@/lib/map/sheet-state'
+import { smallestRung } from '@/lib/media/fallback'
+import {
+  dragIntent,
+  scrollsInside,
+  snapAfterDrag,
+  stopOffsets,
+  type SheetStop,
+} from '@/lib/map/sheet-state'
 
 import { FavoriteHeart } from './place-actions'
 import { PinGlyph } from './pin-glyph'
@@ -40,6 +54,11 @@ interface Detail {
 /** Only our own media paths and plain https URLs go into a CSS `url()`. */
 function cssUrlSafe(url: string): boolean {
   return /^(\/|https:\/\/)[^"'()\\\s]+$/.test(url)
+}
+
+/** A slot's preview as a CSS background (our own safe URLs only). */
+function previewStyle(url: string | null): CSSProperties | undefined {
+  return url !== null && cssUrlSafe(url) ? { backgroundImage: `url("${url}")` } : undefined
 }
 
 /** Details per slug for this page's life (a re-open does not refetch). */
@@ -78,6 +97,7 @@ export function PlaceSheet({
   // The last place stays rendered while the sheet slides away.
   const [shown, setShown] = useState<ResultPlace | null>(place)
   if (place !== null && place !== shown) setShown(place)
+  const hasShown = shown !== null
 
   useLayoutEffect(() => {
     const measure = () => setViewport(window.innerHeight)
@@ -136,8 +156,13 @@ export function PlaceSheet({
   const info = detail !== null && detail.slug === slug ? detail.data : null
 
   // ---- drag -------------------------------------------------------------------
+  // Owner video (Nov 2026, iPhone): a pull on the open sheet scrolled the page
+  // (the map header slid away) and could leave the map moving. Every touch
+  // that starts on the sheet now ends on the sheet: it moves the sheet, scrolls
+  // the sheet's own content or a photo row, and nothing else.
   const drag = useRef<{
     id: number
+    startX: number
     startY: number
     lastY: number
     lastT: number
@@ -145,6 +170,8 @@ export function PlaceSheet({
     moved: boolean
     from: SheetStop
     inBody: boolean
+    /** Began on a button / link: a tap there is that control's, not ours. */
+    onControl: boolean
   } | null>(null)
 
   const setTransform = (px: number | null) => {
@@ -162,21 +189,22 @@ export function PlaceSheet({
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (desktop || !open || event.button > 0) return
     const target = event.target as HTMLElement
-    if (target.closest('button, a, input, [data-no-drag]')) return
-    // Full: the content scrolls; only the handle (or a pull at the top) drags.
-    if (scrollsInside(stop) && body.current?.contains(target) && body.current.scrollTop > 0) return
+    if (target.closest('input, textarea, select')) return
+    const inBody = body.current?.contains(target) ?? false
+    // Full: the content scrolls; a pull only drags once it is at its top.
+    if (scrollsInside(stop) && inBody && (body.current?.scrollTop ?? 0) > 0) return
     drag.current = {
       id: event.pointerId,
+      startX: event.clientX,
       startY: event.clientY,
       lastY: event.clientY,
       lastT: performance.now(),
       v: 0,
       moved: false,
       from: stop,
-      inBody: body.current?.contains(target) ?? false,
+      inBody,
+      onControl: target.closest('button, a') !== null,
     }
-    // Moves keep coming here even when the pointer leaves the sheet (mouse).
-    sheet.current?.setPointerCapture?.(event.pointerId)
   }
 
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -184,14 +212,21 @@ export function PlaceSheet({
     if (!d || d.id !== event.pointerId) return
     const dy = event.clientY - d.startY
     if (!d.moved) {
-      if (Math.abs(dy) < 6) return
-      // Pulling up inside a full sheet is a scroll, not a drag.
-      if (scrollsInside(d.from) && dy < 0 && d.inBody) {
+      const intent = dragIntent({
+        from: d.from,
+        inBody: d.inBody,
+        dx: event.clientX - d.startX,
+        dy,
+      })
+      if (intent === 'pending') return
+      if (intent === 'release') {
         drag.current = null
-        sheet.current?.releasePointerCapture?.(event.pointerId)
         return
       }
       d.moved = true
+      // Captured only now: capturing on press would send a button's click to
+      // the sheet instead (mouse; touch is captured by the browser anyway).
+      sheet.current?.setPointerCapture?.(event.pointerId)
     }
     const now = performance.now()
     d.v = (event.clientY - d.lastY) / Math.max(1, now - d.lastT)
@@ -206,8 +241,8 @@ export function PlaceSheet({
     if (!d || d.id !== event.pointerId) return
     setTransform(null)
     if (!d.moved) {
-      // A tap on the card grows it to half.
-      if (stop === 'peek') onSnap('half')
+      // A tap on the card (not on one of its buttons) grows it to half.
+      if (stop === 'peek' && !d.onControl) onSnap('half')
       return
     }
     const next = snapAfterDrag(d.from, offsets[d.from] + (event.clientY - d.startY), d.v, offsets)
@@ -219,6 +254,43 @@ export function PlaceSheet({
     drag.current = null
     setTransform(null)
   }
+
+  // While the sheet follows a finger, the browser must not scroll anything
+  // (the page, the sheet's content at its top) under it. Pointer events run
+  // before touch events, so the decision above is already made here.
+  useEffect(() => {
+    const el = sheet.current
+    if (!el || desktop) return
+    let x0 = 0
+    let y0 = 0
+    const onStart = (event: TouchEvent) => {
+      const touch = event.touches[0]
+      if (touch) {
+        x0 = touch.clientX
+        y0 = touch.clientY
+      }
+    }
+    const onMove = (event: TouchEvent) => {
+      const d = drag.current
+      if (d === null || !event.cancelable) return
+      if (d.moved) {
+        event.preventDefault()
+        return
+      }
+      // Still deciding: a pull down at the top of the full sheet's content is
+      // ours (the browser would only bounce the page with it).
+      const touch = event.touches[0]
+      if (!touch) return
+      const dy = touch.clientY - y0
+      if (d.inBody && dy > 0 && dy >= Math.abs(touch.clientX - x0)) event.preventDefault()
+    }
+    el.addEventListener('touchstart', onStart, { passive: true })
+    el.addEventListener('touchmove', onMove, { passive: false })
+    return () => {
+      el.removeEventListener('touchstart', onStart)
+      el.removeEventListener('touchmove', onMove)
+    }
+  }, [desktop, hasShown])
 
   // ---- share ------------------------------------------------------------------
   const [copied, setCopied] = useState(false)
@@ -355,24 +427,21 @@ export function PlaceSheet({
         </div>
 
         {images.length > 0 && (
-          <div className="mx4-gallery" data-no-drag aria-roledescription="carousel">
+          <div className="mx4-gallery" aria-roledescription="carousel">
             {images.map((src, i) => (
               <figure
                 key={src}
                 className="mx4-shot"
                 aria-label={t('mx4_photo', { i: i + 1, n: images.length })}
-                // The card's small photo is already loaded: it fills the slot
-                // until the large one arrives, so the slot is never empty.
-                style={
-                  i === 0 && p.thumb && cssUrlSafe(p.thumb)
-                    ? { backgroundImage: `url("${p.thumb}")` }
-                    : undefined
-                }
+                // A small preview fills every slot until the large photo
+                // arrives (the second slot used to sit empty and grey): the
+                // card's photo for the first, the 320px rung for the others.
+                style={previewStyle(i === 0 ? (p.thumb ?? smallestRung(src)) : smallestRung(src))}
               >
                 <Photo
                   src={src}
                   alt={images.length > 1 ? `${p.name} — ${i + 1}` : p.name}
-                  sizes="(min-width: 1024px) 360px, 80vw"
+                  sizes="(min-width: 1024px) 360px, 78vw"
                   // Lazy loading inside this horizontal strip can leave the
                   // visible photo unloaded (WebKit): the two in view load now.
                   loading={i < 2 ? 'eager' : 'lazy'}
@@ -400,7 +469,7 @@ export function PlaceSheet({
         {nearby.length > 0 && (
           <section className="mx4-sec">
             <h3>{t('mx4_nearby')}</h3>
-            <ul className="mx4-near" data-no-drag>
+            <ul className="mx4-near">
               {nearby.map(({ place: one, distance: d }) => (
                 <li key={one.id}>
                   <button type="button" onClick={() => onOpen(one.id)} data-near={one.slug}>

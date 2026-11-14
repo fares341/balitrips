@@ -12,7 +12,7 @@ import {
   pinVisible,
   planPinMove,
   sheetCover,
-  shouldFrameResults,
+  planFilterView,
 } from './camera'
 import { PEEK_PX } from './sheet-state'
 
@@ -106,29 +106,58 @@ describe('moveDuration', () => {
   })
 })
 
-describe('shouldFrameResults', () => {
+describe('planFilterView', () => {
   const insets = { top: 24, bottom: 180, left: 16, right: 16 }
-  it('keeps the view while a result is on screen', () => {
-    const points = [
-      { x: 200, y: 150 },
-      { x: 3000, y: 150 },
-    ]
-    expect(shouldFrameResults({ points, view, insets, areaChanged: false })).toBe(false)
+  const at = (id: string, x: number, y: number) => ({ id, point: { x, y } })
+
+  it('keeps the view and the card while the selected place is on screen', () => {
+    const items = [at('a', 3000, 150), at('b', 200, 150)]
+    expect(planFilterView({ items, selectedId: 'b', view, insets, areaChanged: false })).toEqual({
+      frame: false,
+      selectId: 'b',
+    })
   })
-  it('frames when every result is off screen', () => {
-    const points = [
-      { x: -50, y: 150 },
-      { x: 200, y: 460 },
-    ]
-    expect(shouldFrameResults({ points, view, insets, areaChanged: false })).toBe(true)
+
+  it('moves the card (not the camera) to the visible pin nearest the middle', () => {
+    // The owner's video: «Markets» picked while the card showed a place
+    // whose pin was off screen.
+    const items = [at('sel', 200, 900), at('edge', 30, 40), at('mid', 210, 150)]
+    expect(planFilterView({ items, selectedId: 'sel', view, insets, areaChanged: false })).toEqual({
+      frame: false,
+      selectId: 'mid',
+    })
   })
+
+  it('picks a visible pin when the selected place left the results', () => {
+    const items = [at('x', 200, 150)]
+    expect(planFilterView({ items, selectedId: 'gone', view, insets, areaChanged: false })).toEqual(
+      { frame: false, selectId: 'x' },
+    )
+  })
+
+  it('frames when every result is off screen, keeping the selected place', () => {
+    const items = [at('a', -50, 150), at('b', 200, 460)]
+    expect(planFilterView({ items, selectedId: 'b', view, insets, areaChanged: false })).toEqual({
+      frame: true,
+      selectId: 'b',
+    })
+    expect(planFilterView({ items, selectedId: 'gone', view, insets, areaChanged: false })).toEqual(
+      { frame: true, selectId: 'a' },
+    )
+  })
+
   it('always frames a new area', () => {
-    expect(
-      shouldFrameResults({ points: [{ x: 200, y: 150 }], view, insets, areaChanged: true }),
-    ).toBe(true)
+    const items = [at('a', 200, 150)]
+    expect(planFilterView({ items, selectedId: 'a', view, insets, areaChanged: true })).toEqual({
+      frame: true,
+      selectId: 'a',
+    })
   })
+
   it('does nothing without results', () => {
-    expect(shouldFrameResults({ points: [], view, insets, areaChanged: true })).toBe(false)
+    expect(planFilterView({ items: [], selectedId: 'a', view, insets, areaChanged: true })).toEqual(
+      { frame: false, selectId: null },
+    )
   })
 })
 

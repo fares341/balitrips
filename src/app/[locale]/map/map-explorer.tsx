@@ -73,8 +73,8 @@ import {
   areaOfKey,
   moveDuration,
   planPinMove,
+  planFilterView,
   sheetCover,
-  shouldFrameResults,
   SIDE_PX,
   type Insets,
 } from '@/lib/map/camera'
@@ -450,6 +450,16 @@ export function MapExplorer(props: Props) {
     [openSheet],
   )
 
+  /**
+   * New results picked the card to show (the old one left the results or its
+   * pin is off screen). An open sheet keeps its own place.
+   */
+  const onResultsSelect = useCallback((id: string) => {
+    if (sheetOpenRef.current) return
+    setSelectedId(id)
+    carouselApi.current?.scrollToId(id, 'instant')
+  }, [])
+
   /** A card was tapped: the sheet opens at half. */
   const onCardOpen = useCallback((id: string) => openSheet(id, 'half'), [openSheet])
 
@@ -729,6 +739,7 @@ export function MapExplorer(props: Props) {
         labels={props.areaLabels}
         onPin={onPin}
         onEmpty={closeSheet}
+        onSelect={onResultsSelect}
       />
 
       <MapTools onLocate={locate} geo={geo} />
@@ -812,7 +823,20 @@ export function MapExplorer(props: Props) {
       )}
 
       {sheet === 'cats' && (
-        <Sheet title={t('mx3_categories')} onClose={() => setSheet(null)}>
+        <Sheet
+          title={t('mx3_categories')}
+          onClose={() => setSheet(null)}
+          foot={
+            <SheetFoot
+              onClear={
+                applied.categories.length > 0
+                  ? () => apply({ area: applied.area, categories: [] }, facts)
+                  : null
+              }
+              onDone={() => setSheet(null)}
+            />
+          }
+        >
           <ul className="mx3-opts">
             {categories
               .filter((one) => (countsHere.get(one.key) ?? 0) > 0)
@@ -863,19 +887,24 @@ export function MapExplorer(props: Props) {
                 )
               })}
           </ul>
-          <SheetFoot
-            onClear={
-              applied.categories.length > 0
-                ? () => apply({ area: applied.area, categories: [] }, facts)
-                : null
-            }
-            onDone={() => setSheet(null)}
-          />
         </Sheet>
       )}
 
       {sheet === 'traveler' && (
-        <Sheet title={t('mx3_traveler')} onClose={() => setSheet(null)}>
+        <Sheet
+          title={t('mx3_traveler')}
+          onClose={() => setSheet(null)}
+          foot={
+            <SheetFoot
+              onClear={
+                facts.travelers.length > 0
+                  ? () => apply(applied, { ...facts, travelers: [] })
+                  : null
+              }
+              onDone={() => setSheet(null)}
+            />
+          }
+        >
           <ul className="mx3-opts">
             {props.travelerOptions.map((key) => (
               <li key={key}>
@@ -887,17 +916,24 @@ export function MapExplorer(props: Props) {
               </li>
             ))}
           </ul>
-          <SheetFoot
-            onClear={
-              facts.travelers.length > 0 ? () => apply(applied, { ...facts, travelers: [] }) : null
-            }
-            onDone={() => setSheet(null)}
-          />
         </Sheet>
       )}
 
       {sheet === 'dur' && (
-        <Sheet title={t('mx3_duration')} onClose={() => setSheet(null)}>
+        <Sheet
+          title={t('mx3_duration')}
+          onClose={() => setSheet(null)}
+          foot={
+            <SheetFoot
+              onClear={
+                facts.durations.length > 0
+                  ? () => apply(applied, { ...facts, durations: [] })
+                  : null
+              }
+              onDone={() => setSheet(null)}
+            />
+          }
+        >
           <ul className="mx3-opts">
             {props.durationOptions.map((key) => (
               <li key={key}>
@@ -909,17 +945,15 @@ export function MapExplorer(props: Props) {
               </li>
             ))}
           </ul>
-          <SheetFoot
-            onClear={
-              facts.durations.length > 0 ? () => apply(applied, { ...facts, durations: [] }) : null
-            }
-            onDone={() => setSheet(null)}
-          />
         </Sheet>
       )}
 
       {sheet === 'area' && (
-        <Sheet title={t('mx3_area')} onClose={() => setSheet(null)}>
+        <Sheet
+          title={t('mx3_area')}
+          onClose={() => setSheet(null)}
+          foot={<SheetFoot onClear={null} onDone={() => setSheet(null)} />}
+        >
           <AreaPicker
             areas={areas}
             value={area}
@@ -935,7 +969,6 @@ export function MapExplorer(props: Props) {
               )
             }}
           />
-          <SheetFoot onClear={null} onDone={() => setSheet(null)} />
         </Sheet>
       )}
 
@@ -1049,11 +1082,14 @@ function Sheet({
   title,
   onClose,
   children,
+  foot,
   className,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
+  /** Buttons pinned under the scrolling list (never scrolled over). */
+  foot?: ReactNode
   className?: string
 }) {
   const t = useTranslations()
@@ -1093,6 +1129,7 @@ function Sheet({
           </button>
         </div>
         <div className="mx-sheet-body">{children}</div>
+        {foot}
       </div>
     </div>
   )
@@ -1827,6 +1864,7 @@ function ResultsMap({
   labels,
   onPin,
   onEmpty,
+  onSelect,
 }: {
   ref: Ref<ResultsMapHandle>
   locale: string
@@ -1843,15 +1881,26 @@ function ResultsMap({
   labels: AreaLabelPoint[]
   onPin: (id: string) => void
   onEmpty: () => void
+  /** After new results: the card to show (a pin that is on screen). */
+  onSelect: (id: string) => void
 }) {
   const t = useTranslations()
   const box = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLike | null>(null)
   const [styled, setStyled] = useState(false)
   const [failed, setFailed] = useState(false)
-  const latest = useRef({ places, selectedId, onPin, onEmpty, labels, sheetStop, desktop })
+  const latest = useRef({
+    places,
+    selectedId,
+    onPin,
+    onEmpty,
+    onSelect,
+    labels,
+    sheetStop,
+    desktop,
+  })
   useLayoutEffect(() => {
-    latest.current = { places, selectedId, onPin, onEmpty, labels, sheetStop, desktop }
+    latest.current = { places, selectedId, onPin, onEmpty, onSelect, labels, sheetStop, desktop }
   })
 
   /**
@@ -2035,18 +2084,23 @@ function ResultsMap({
       return
     }
     // A filter change keeps the view while any new pin is already on screen
-    // (it used to re-frame every time: the jump back to the whole island).
+    // (it used to re-frame every time: the jump back to the whole island),
+    // and the card follows to a pin that can be seen (`planFilterView`).
     const el = box.current
     const rect = el?.getBoundingClientRect()
     if (!rect) return
-    const frame = shouldFrameResults({
-      points: places.map((one) => map.project([one.lon, one.lat])),
+    const plan = planFilterView({
+      items: places.map((one) => ({ id: one.id, point: map.project([one.lon, one.lat]) })),
+      selectedId: latest.current.selectedId,
       view: { width: rect.width, height: rect.height },
       insets: pad,
       areaChanged,
     })
-    if (frame) {
+    if (plan.frame) {
       map.fitBounds(bounds, { padding: pad, maxZoom: 14, duration: reducedMotion() ? 0 : FIT_MS })
+    }
+    if (plan.selectId !== null && plan.selectId !== latest.current.selectedId) {
+      latest.current.onSelect(plan.selectId)
     }
   }, [styled, places, resultKey, insets, initialSlug])
 
