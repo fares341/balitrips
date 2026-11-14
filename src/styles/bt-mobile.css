@@ -23,7 +23,7 @@
      bar and lift the floating buttons by `--fab-lift`. The page itself was
      not lifted, so the last footer lines (copyright) stayed under the bar. */
   body:has(> .tabbar) {
-    padding-bottom: calc(var(--tabbar-h) + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--tabbar-h) + var(--fab-lift, 0px) + var(--safe-b));
   }
 
   /* ---------- iOS zooms into any field under 16px when it is focused ---- */
@@ -52,9 +52,7 @@
      button tall and do not cover the hero search and its button. */
   @media (max-height: 640px) {
     .ai-fab:not(.is-solo) {
-      bottom: calc(
-        var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px)
-      );
+      bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + var(--safe-b));
       inset-inline-end: calc(16px + 52px + 10px);
     }
   }
