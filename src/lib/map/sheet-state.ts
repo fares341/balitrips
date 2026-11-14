@@ -57,30 +57,40 @@ export function stopOffsets(viewport: number): Record<SheetStop, number> {
 export const FLICK = 0.5
 
 /**
+ * The stops a phone sheet uses (owner, Nov 2026: one surface at a time). The
+ * cards are the «peek»: a card tap opens the sheet at half, a pull goes to
+ * full, a pull down or ✕ closes it and the cards come back.
+ */
+export const PHONE_STOPS: readonly SheetStop[] = ['full', 'half', 'closed']
+
+/**
  * Where a drag ends. A flick goes to the next stop past the release point in
- * its direction (so a long fast pull from peek can reach full); a slow
- * release goes to the nearest stop. `from` is where the drag began.
+ * its direction (so a long fast pull from half can reach full); a slow
+ * release goes to the nearest stop. `from` is where the drag began; `stops`
+ * are the stops it may end on.
  */
 export function snapAfterDrag(
   from: SheetStop,
   y: number,
   velocity: number,
   offsets: Record<SheetStop, number>,
+  stops: readonly SheetStop[] = ORDER,
 ): SheetStop {
+  const order = ORDER.filter((stop) => stops.includes(stop))
   if (Math.abs(velocity) > FLICK) {
     if (velocity < 0) {
       // Up: the closest stop above the release point (or full).
       let best: SheetStop = 'full'
-      for (const stop of ORDER) if (offsets[stop] < y && offsets[stop] > offsets[best]) best = stop
-      return best === from && from !== 'full' ? ORDER[Math.max(0, ORDER.indexOf(from) - 1)]! : best
+      for (const stop of order) if (offsets[stop] < y && offsets[stop] > offsets[best]) best = stop
+      return best === from && from !== 'full' ? order[Math.max(0, order.indexOf(from) - 1)]! : best
     }
     // Down: the closest stop below the release point (or closed).
     let best: SheetStop = 'closed'
-    for (const stop of ORDER) if (offsets[stop] > y && offsets[stop] < offsets[best]) best = stop
+    for (const stop of order) if (offsets[stop] > y && offsets[stop] < offsets[best]) best = stop
     return best
   }
   let best: SheetStop = 'full'
-  for (const stop of ORDER) {
+  for (const stop of order) {
     if (Math.abs(offsets[stop] - y) < Math.abs(offsets[best] - y)) best = stop
   }
   return best

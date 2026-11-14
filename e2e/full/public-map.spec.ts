@@ -40,7 +40,9 @@ async function mapTag(page: Page) {
 test.describe('map v3', () => {
   test('map-first landing: header, chips, cards, list toggle', async ({ page }) => {
     await openMap(page)
-    await expect(page.getByRole('heading', { level: 1, name: 'Bali' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Bali Interactive Map' }),
+    ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Back' })).toBeVisible()
     await expect(page.locator('[data-chip=cats]')).toHaveText(/Categories/)
     const card = page.locator('.mx3-card').first()
@@ -181,7 +183,9 @@ test.describe('map v3', () => {
     await expect(page).toHaveURL(/\/en\/map/)
   })
 
-  test('a pin tap opens the sheet and stays on /map', async ({ page }) => {
+  test('a pin tap selects its card on phones (the panel on desktop), stays on /map', async ({
+    page,
+  }) => {
     await openMap(page)
     await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
     await page.waitForSelector('[data-map-ready]', { timeout: 60_000 })
@@ -209,11 +213,18 @@ test.describe('map v3', () => {
       if (!hit) return null
       const p = map.project(hit.geometry.coordinates)
       const box = el.getBoundingClientRect()
-      return { x: box.left + p.x, y: box.top + p.y - 14 }
+      return { x: box.left + p.x, y: box.top + p.y - 14, id: hit.properties.id }
     })
     test.skip(point === null, 'no pin rendered')
     await page.mouse.click(point!.x, point!.y)
     const sheet = page.locator('.mx4-sheet:not([data-stop=closed])')
+    const phone = (page.viewportSize()?.width ?? 1280) < 1024
+    if (phone) {
+      // One surface at a time: the tap selects the card, no sheet on top of it.
+      await expect(page.locator('.mx3-card.is-on')).toHaveAttribute('data-id', point!.id)
+      await expect(sheet).toHaveCount(0)
+      await page.locator('.mx3-card.is-on button.mx3-card-link').click()
+    }
     await expect(sheet).toBeVisible()
     await expect(page).toHaveURL(/\/en\/map/)
     await page.goBack()
@@ -254,7 +265,17 @@ async function mapCounts(page: Page) {
     if (map.isMoving() || !map.loaded()) await new Promise<void>((r) => map.once('idle', () => r()))
     const all = map.queryRenderedFeatures({ layers: ['mx-pins', 'mx-pin-on', 'mx-clusters'] })
     const clusters = all.filter((one) => one.layer.id === 'mx-clusters')
+    type P = { layer: { id: string }; geometry: { coordinates: [number, number] } }
+    const project = (map as unknown as { project(c: [number, number]): { x: number; y: number } })
+      .project
+    const singles = (all as unknown as P[])
+      .filter((one) => one.layer.id === 'mx-pins')
+      .map((one) => project.call(map, one.geometry.coordinates))
+    const piled = singles.filter(
+      (a) => singles.filter((b) => b !== a && Math.hypot(a.x - b.x, a.y - b.y) < 8).length >= 2,
+    ).length
     return {
+      piled,
       // The selected pin is drawn on its own layer (and may also sit in a cluster).
       selected: all.filter((one) => one.layer.id === 'mx-pin-on').length,
       pins: all.length - clusters.length,
@@ -265,18 +286,8 @@ async function mapCounts(page: Page) {
   })
 }
 
-async function mapCenter(page: Page) {
-  return page.evaluate(() => {
-    type M = { getCenter(): { lng: number; lat: number } }
-    const c = (
-      document.querySelector('.mx-canvas') as HTMLElement & { __map?: M }
-    ).__map!.getCenter()
-    return [c.lng, c.lat] as const
-  })
-}
-
 test.describe('map v3 — Tiqets feel', () => {
-  test('opens on the whole island: every place framed, almost no clusters', async ({ page }) => {
+  test('opens on the whole island: every place framed, no piles of pins', async ({ page }) => {
     await openMap(page)
     await expect(page.locator('.mx3-card').first()).toBeVisible({ timeout: 30_000 })
     await page.waitForSelector('[data-map-ready]', { timeout: 60_000 })
@@ -288,10 +299,10 @@ test.describe('map v3 — Tiqets feel', () => {
     // fitBounds on all pins: every place is drawn, as a pin or inside a cluster.
     expect(c.pins + c.inClusters).toBeGreaterThanOrEqual(total)
     expect(c.pins + c.inClusters).toBeLessThanOrEqual(total + c.selected)
-    // Only true overlaps merge: most places are their own pin (the old
-    // 40px / zoom-14 clustering hid 58 of 60 places in 8 clusters here).
-    expect(c.pins).toBeGreaterThan(c.inClusters)
-    expect(c.clusters).toBeLessThanOrEqual(Math.max(1, Math.ceil(total / 8)))
+    // Owner, Nov 2026: no piles of pins. Three pins on one spot merge into a
+    // numbered bubble, so no single pin has two others right on top of it.
+    expect(c.piled).toBe(0)
+    expect(c.clusters).toBeLessThanOrEqual(Math.max(1, Math.ceil(total / 4)))
   })
 
   test.describe('phone', () => {
@@ -324,20 +335,42 @@ test.describe('map v3 — Tiqets feel', () => {
       })
     }
 
-    test('swiping the cards eases the map to the place', async ({ page }) => {
+    test('swiping the cards selects the next place; its pin is in view', async ({ page }) => {
       await openMap(page)
       await expect(page.locator('.mx3-card.is-on')).toBeVisible({ timeout: 30_000 })
       test.skip((await page.locator('.mx3-card').count()) < 2, 'one place only')
       await page.waitForSelector('[data-map-ready]', { timeout: 60_000 })
       await mapCounts(page)
-      const before = await mapCenter(page)
       const first = await page.locator('.mx3-card.is-on').getAttribute('data-id')
       await page.locator('.mx3-carousel').evaluate((el) => {
         const dir = getComputedStyle(el).direction === 'rtl' ? -1 : 1
         el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'instant' })
       })
       await expect(page.locator('.mx3-card.is-on')).not.toHaveAttribute('data-id', first ?? '')
-      await expect.poll(() => mapCenter(page)).not.toEqual(before)
+      // The map stays still while the next pin is already in view, else it
+      // pans to it; either way the selected pin ends up on screen, and a
+      // swipe never zooms in.
+      const zoom = (await mapCounts(page)).zoom
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            type M = {
+              queryRenderedFeatures(o: { layers: string[] }): {
+                geometry: { coordinates: [number, number] }
+              }[]
+              project(c: [number, number]): { x: number; y: number }
+              getCanvas(): HTMLCanvasElement
+            }
+            const m = (document.querySelector('.mx-canvas') as HTMLElement & { __map?: M }).__map!
+            const on = m.queryRenderedFeatures({ layers: ['mx-pin-on'] })[0]
+            if (!on) return false
+            const p = m.project(on.geometry.coordinates)
+            const c = m.getCanvas()
+            return p.x >= 0 && p.y >= 0 && p.x <= c.clientWidth && p.y <= c.clientHeight
+          }),
+        )
+        .toBe(true)
+      expect((await mapCounts(page)).zoom).toBeLessThanOrEqual(zoom + 0.01)
     })
 
     test('a filter change never leaves the cards hidden', async ({ page }) => {

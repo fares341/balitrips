@@ -44,9 +44,10 @@ describe('map feel (Tiqets reference)', () => {
     expect(ratio).toBeLessThanOrEqual(1.4)
   })
 
-  it('clusters only merge true overlaps, and stop before street zoom', () => {
-    expect(CLUSTER_RADIUS).toBeGreaterThanOrEqual(12)
-    expect(CLUSTER_RADIUS).toBeLessThanOrEqual(18)
+  it('clusters merge pins that overlap (about a pin wide), and stop before street zoom', () => {
+    // A pin is ~21px wide on the island: a 12px radius left them piled up.
+    expect(CLUSTER_RADIUS).toBeGreaterThanOrEqual(PIN_W * 0.7)
+    expect(CLUSTER_RADIUS).toBeLessThanOrEqual(40)
     expect(CLUSTER_MAX_ZOOM).toBeLessThanOrEqual(12)
     expect(CLUSTER_MIN_POINTS).toBeGreaterThanOrEqual(2)
   })

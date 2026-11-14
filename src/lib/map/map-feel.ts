@@ -11,9 +11,14 @@
 export const PIN_W = 28
 export const PIN_W_ON = 38
 export const PIN_SIZE_BY_ZOOM: unknown[] = ['interpolate', ['linear'], ['zoom'], 9, 0.75, 12, 1]
-/** Only true overlaps merge: 3+ pins within ~12px, none past zoom 11. */
-export const CLUSTER_RADIUS = 12
-export const CLUSTER_MAX_ZOOM = 11
+/**
+ * Owner, Nov 2026 (iPhone video): at island zoom dozens of pins sat on top of
+ * each other in the south. Pins closer than about a pin's width (20px) merge into
+ * a numbered bubble (3+ of them); from zoom 12 every pin stands alone. Tap a
+ * bubble to open it up.
+ */
+export const CLUSTER_RADIUS = 20
+export const CLUSTER_MAX_ZOOM = 12
 export const CLUSTER_MIN_POINTS = 3
 /** Filter change → ease to the new pins (only when none is on screen). */
 export const FIT_MS = 500
