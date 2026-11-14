@@ -32,18 +32,14 @@ import { POLICY_ROUTES } from '@/components/layout/routes'
 import { Icon } from '@/components/ui'
 import type { Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
+import { listPublishedPlans } from '@/lib/entitlements/plans'
 
 import { alternatesFor } from '../_seo-hreflang'
+import { formatPrice } from '../_ui/price'
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo/site-origin'
 
 export type PolicyId =
-  | 'terms'
-  | 'privacy'
-  | 'refund'
-  | 'payment'
-  | 'cookies'
-  | 'platform-use'
-  | 'map-use'
+  'terms' | 'privacy' | 'refund' | 'payment' | 'cookies' | 'platform-use' | 'map-use'
 
 type PolicyCopy = {
   /** Message key for the page title. Shared with the footer's link label. */
@@ -179,16 +175,42 @@ export async function policyMetadata(id: PolicyId, locale: Locale): Promise<Meta
 export async function PolicyPage({ id, locale }: { id: PolicyId; locale: Locale }) {
   const copy = POLICIES[id]
 
-  const [t, format, contact] = await Promise.all([
+  const [t, format, contact, plans] = await Promise.all([
     getTranslations({ locale }),
     getFormatter({ locale }),
     getContact(),
+    // A policy must still render if the plans cannot be read.
+    listPublishedPlans().catch(() => []),
   ])
+  // The VIP map prices quoted in the texts are the published plans' real
+  // prices (site audit, Nov 2026: the texts said «$19 / $60 lifetime» while
+  // the plans were 150 SAR for 3 months and 300 SAR for a year).
+  const vipParts = plans
+    .filter((plan) => plan.entitlementKind === 'map_access' || plan.entitlementKind === 'vip')
+    .sort((a, b) => a.priceMinor - b.priceMinor)
+    .map((plan) => {
+      // Isolated so «SAR 150» / «150 ر.س.» keeps its order inside the sentence.
+      const price = `\u2068${formatPrice(plan.priceMinor, plan.currency, locale)}\u2069`
+      const days = plan.durationDays
+      if (days === null) return t('pol_vip_plan_life', { price })
+      const term =
+        days === 365 || days === 366
+          ? t('mx_term_year')
+          : days % 30 === 0
+            ? t('mx_term_months', { n: days / 30 })
+            : t('mx_term_days', { n: days })
+      return t('pol_vip_plan', { price, term })
+    })
+  const vipPlans =
+    vipParts.length === 0
+      ? t('pol_vip_plans_none')
+      : new Intl.ListFormat(locale, { style: 'long', type: 'disjunction' }).format(vipParts)
   // Contact details in the texts come from Studio → Configuration → Contact.
   const contactValues = {
     email: contact.email,
     // Isolated left-to-right so «+966 …» keeps its order inside Arabic text.
     whatsapp: contact.whatsappDisplay ? `\u2066${contact.whatsappDisplay}\u2069` : '',
+    vipPlans,
   }
 
   const title = t(copy.titleKey)
