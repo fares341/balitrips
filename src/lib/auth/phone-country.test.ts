@@ -54,3 +54,9 @@ describe('digits count per country', () => {
     expect(toE164('050123456', 'SA')).toBeNull()
   })
 })
+
+describe('number typed like the placeholder', () => {
+  it('accepts a leading bracket', () => {
+    expect(toE164('(201) 555-0123', 'US')).toBe('+12015550123')
+  })
+})

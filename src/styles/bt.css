@@ -3955,6 +3955,10 @@ html {
 }
 .auth-form-in .bt-modal-body {
   padding: 0;
+  /* As a page the form scrolls with the page. The dialog's own height cap
+     and inner scrollbar hid «تأكيد كلمة المرور» and the submit button. */
+  max-height: none;
+  overflow: visible;
 }
 /* Phone: the form starts right under the header instead of being centred
    in a full-screen box (it pushed the first field half a screen down). */
