@@ -179,7 +179,12 @@ export type BookingData = {
   /** Activity-level facts the package panel and the four boxes show. */
   info: BookingInfo
   /** Child age band (e.g. 4–11); younger = infant, free. Null = no child pricing. */
-  childAges: { min: number; max: number } | null
+  /**
+   * `explicit: false` = the site default band, not set for this activity: the
+   * steppers then name no ages (the activity's own age rules are on the page),
+   * so «children 3–11» never contradicts «children 2–12 pay the child price».
+   */
+  childAges: { min: number; max: number; explicit?: boolean } | null
 }
 
 export type BookingInfo = {
@@ -984,9 +989,11 @@ export function PartyLimitLines() {
 /** "Adults (12+)": the age after the child band. */
 function adultsLabel(
   t: ReturnType<typeof useTranslations>,
-  ages: { min: number; max: number } | null,
+  ages: { min: number; max: number; explicit?: boolean } | null,
 ): string {
-  return ages ? t('act_s_adults_from', { min: ages.max + 1 }) : t('act_s_adults')
+  return ages && ages.explicit !== false
+    ? t('act_s_adults_from', { min: ages.max + 1 })
+    : t('act_s_adults')
 }
 
 /** Children and infants steppers (child-priced packages). */
@@ -997,11 +1004,16 @@ function ChildSteppers() {
   if (!ages) return null
   const adults = state.people - state.children - state.infants
   const room = Math.max(0, cap - state.people)
+  const named = ages.explicit !== false
+  const childrenLabel = named
+    ? t('act_s_children', { min: ages.min, max: ages.max })
+    : t('act_s_children_plain')
+  const infantsLabel = named ? t('act_s_infants', { min: ages.min }) : t('act_s_infants_plain')
   return (
     <div className="stack" style={{ gap: 8 }}>
       <div className="row between" style={{ flexWrap: 'nowrap' }}>
         <small>
-          <b>{t('act_s_children', { min: ages.min, max: ages.max })}</b>
+          <b>{childrenLabel}</b>
           {pkgInfo?.childPriceMinor !== null && pkgInfo?.childPriceMinor !== undefined ? (
             <>
               <br />
@@ -1017,7 +1029,7 @@ function ChildSteppers() {
           onChange={(value) => setParty(adults, value, state.infants)}
           min={0}
           max={state.children + room}
-          label={t('act_s_children', { min: ages.min, max: ages.max })}
+          label={childrenLabel}
           decreaseLabel={t('c_qty_dec')}
           increaseLabel={t('c_qty_inc')}
         />
@@ -1025,7 +1037,7 @@ function ChildSteppers() {
       {ages.min > 0 ? (
         <div className="row between" style={{ flexWrap: 'nowrap' }}>
           <small>
-            <b>{t('act_s_infants', { min: ages.min })}</b>
+            <b>{infantsLabel}</b>
             <br />
             <span className="muted">{t('act_infants_free')}</span>
           </small>
@@ -1035,12 +1047,13 @@ function ChildSteppers() {
             onChange={(value) => setParty(adults, state.children, value)}
             min={0}
             max={state.infants + room}
-            label={t('act_s_infants', { min: ages.min })}
+            label={infantsLabel}
             decreaseLabel={t('c_qty_dec')}
             increaseLabel={t('c_qty_inc')}
           />
         </div>
       ) : null}
+      {named ? null : <small className="muted">{t('act_ages_note')}</small>}
     </div>
   )
 }

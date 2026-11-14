@@ -250,7 +250,7 @@ export interface ActivityDetail extends ActivitySummary {
   freeCancellationHours: number | null
   minGuests: number
   /** Child age band (phase 2); younger = infant, free. Null = no child pricing. */
-  childAges: { min: number; max: number } | null
+  childAges: { min: number; max: number; explicit?: boolean } | null
   /** Portrait hero for phones, when one is set. */
   mobileHero: MediaDto | null
   video: ParsedVideo | null

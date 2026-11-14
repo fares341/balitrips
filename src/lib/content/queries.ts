@@ -925,7 +925,12 @@ export async function getActivityBySlug(
         : null,
     minGuests: Math.max(1, a.minGuests),
     // Default band 3–11 (infants under 3 free, 12+ adult) unless set per activity.
-    childAges: resolveChildAges(a.childAgeMin, a.childAgeMax),
+    childAges: {
+      ...resolveChildAges(a.childAgeMin, a.childAgeMax),
+      // False = the site-wide default band, not one the owner set for this
+      // activity: the page then names no ages (its own typed rules do).
+      explicit: a.childAgeMin !== null || a.childAgeMax !== null,
+    },
     mobileHero: toMedia(mobileHero),
     video: parseVideoUrl(a.videoUrl),
     tags: tagRows,
