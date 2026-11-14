@@ -25,7 +25,7 @@
  * remember to do it.
  */
 
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -292,15 +292,32 @@ export function rememberCountry(iso: string): void {
 const flag = (iso: string) =>
   String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 
+const subscribeNothing = () => () => undefined
+
+/**
+ * Country names for the picker. They come from the runtime's CLDR data,
+ * which differs between Node and the browser (a handful of Arabic names are
+ * spelt differently), so a server-rendered list of them never matched the
+ * client's and React reported a hydration error on every load of /register
+ * and checkout (audit M12). Null until hydrated: the server and the first
+ * client render list the ISO codes, the names follow at once — the list is
+ * closed at that point, so nothing visible changes.
+ */
 function useRegionNames() {
   const locale = useLocale()
+  const hydrated = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  )
   return useMemo(() => {
+    if (!hydrated) return null
     try {
       return new Intl.DisplayNames([locale], { type: 'region' })
     } catch {
       return null
     }
-  }, [locale])
+  }, [locale, hydrated])
 }
 
 /** «🇸🇦 +966 ▾» مضغوط وهو مغلق، وقائمة كل الدول بأسمائها وهو مفتوح. */
