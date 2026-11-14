@@ -4277,3 +4277,57 @@ html {
     display: none;
   }
 }
+
+/* --- Events page: a short list sits beside a note; suggestions fill the rest --- */
+.ev-few {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+@media (min-width: 760px) {
+  .ev-few {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .ev-few {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* One event: the note takes the two columns the card leaves. */
+  .ev-few > .ev-more:nth-child(2) {
+    grid-column: 2 / -1;
+  }
+}
+.ev-more {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--palm-soft);
+  border: 0;
+}
+.ev-more h3 {
+  margin: 0;
+  color: var(--forest);
+}
+.ev-more p {
+  margin: 0 0 6px;
+  max-width: 52ch;
+  line-height: 1.8;
+}
+.ev-more-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--white);
+  color: var(--forest);
+}
+.ev-suggest {
+  margin-top: 44px;
+  display: grid;
+  gap: 18px;
+}
