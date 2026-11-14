@@ -11,6 +11,11 @@
  * no fee is added later, and a discount — when the quote carries one — is
  * shown here, before payment.
  *
+ * Amounts are `<Money>`: the visitor's chosen display currency («≈ 24.53 €»),
+ * like the activity, itinerary and plans pages they came from (audit M4).
+ * The charge is in SAR, so a visitor browsing in another currency also sees
+ * the exact SAR total under the converted one.
+ *
  * Not in this page, on purpose:
  *  - the prototype's promo-code box (there is no promotion engine; a box that
  *    accepts "BALI10" would be an invented price);
@@ -26,6 +31,7 @@ import type { Metadata } from 'next'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Breadcrumbs, formatPrice, LinkButton } from '@/components/bt'
+import { Money } from '@/components/currency/currency-context'
 import { HOME_HREF } from '@/components/layout/routes'
 import { PriceBreakdown } from '@/components/trip/price-breakdown'
 import { TRIP_KIND_ICON } from '@/components/trip'
@@ -103,7 +109,6 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
       month: 'short',
       timeZone: 'UTC',
     })
-  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
   const titleOf = (line: CartLineView) => lineTitle(line, locale, t(`ct2_grp_${line.kind}`))
 
   const head = (
@@ -162,9 +167,12 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
   const days = tripDays(lines)
   const payable = lines.filter((line) => line.lineTotalMinor !== null && line.lineTotalMinor > 0)
   const blocked = !cart.ok || conflicts.length > 0 || payable.length === 0 || !open
+  // Nothing to charge although the trip is not empty: saved places only, or
+  // items that are not on sale. Said in words, with the way forward (audit H2).
+  const nothingPayable = cart.ok && open && conflicts.length === 0 && payable.length === 0
 
   return (
-    <main className="trip-page">
+    <main className={blocked ? 'trip-page' : 'trip-page has-paybar'}>
       <div className="wrap">
         {head}
 
@@ -280,7 +288,10 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
                 <div key={line.id} className="sum-row">
                   <span className="minw0 trip-sum-name">{titleOf(line)}</span>
                   <span className="price" dir="ltr">
-                    {money(line.lineTotalMinor ?? 0, line.currency ?? cart.currency)}
+                    <Money
+                      minor={line.lineTotalMinor ?? 0}
+                      currency={line.currency ?? cart.currency}
+                    />
                   </span>
                 </div>
               ))}
@@ -300,18 +311,40 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
                   </span>
                   <span className="price" dir="ltr">
                     {adjustmentSign(line)}
-                    {money(line.amountMinor, cart.currency)}
+                    <Money minor={line.amountMinor} currency={cart.currency} />
                   </span>
                 </div>
               ))}
               <div className="sum-total">
                 <span>{t('c_total')}</span>
                 <b className="price" dir="ltr">
-                  {money(cart.totalMinor, cart.currency)}
+                  <Money minor={cart.totalMinor} currency={cart.currency} />
                 </b>
               </div>
+              {/* Browsing in another currency: the exact amount the card is
+                  charged, in SAR (hidden for SAR visitors by `html[data-cur]`). */}
+              {payable.length > 0 && (
+                <small className="trip-charge cur-foreign-only">
+                  {t('pay_charge_sar', {
+                    amount: formatPrice(cart.totalMinor, cart.currency, locale),
+                  })}
+                </small>
+              )}
               <small className="muted">{t('trip_final_note')}</small>
-              {blocked ? (
+              {nothingPayable ? (
+                <div className="trip-nopay" role="note">
+                  <b>{t('trip_nothing_payable_t')}</b>
+                  <span>{t('trip_nothing_payable')}</span>
+                  <div className="row">
+                    <LinkButton href="/activities" variant="primary" size="sm">
+                      {t('trip_browse_act')}
+                    </LinkButton>
+                    <LinkButton href="/itineraries" variant="ghost" size="sm">
+                      {t('trip_ready_itin')}
+                    </LinkButton>
+                  </div>
+                </div>
+              ) : blocked ? (
                 <button type="button" className="btn btn-primary btn-lg btn-block" disabled>
                   {t('ct2_complete')}
                 </button>
@@ -324,8 +357,6 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
                 <small className="trip-why">{t('bk_closed_b')}</small>
               ) : conflicts.length > 0 ? (
                 <small className="trip-why">{t('trip_conflict_first')}</small>
-              ) : payable.length === 0 ? (
-                <small className="muted">{t('trip_nothing_payable')}</small>
               ) : null}
             </div>
             <div className="panel panel-ivory stack trip-after">
@@ -337,6 +368,21 @@ export default async function MyTripPage({ params }: { params: PageParams }) {
           </aside>
         </div>
       </div>
+      {/* Phones: the total and the way on stay in reach above the tab bar,
+          instead of sitting under the whole list (audit UX 51). */}
+      {!blocked && (
+        <div className="trip-paybar">
+          <span className="minw0">
+            <small className="muted">{t('c_total')}</small>
+            <b className="price" dir="ltr">
+              <Money minor={cart.totalMinor} currency={cart.currency} />
+            </b>
+          </span>
+          <LinkButton href={CHECKOUT_HREF} variant="primary">
+            {t('ct2_complete')}
+          </LinkButton>
+        </div>
+      )}
     </main>
   )
 }
@@ -356,7 +402,6 @@ async function TripItem({
 }) {
   const t = await getTranslations({ locale })
   const format = await getFormatter({ locale })
-  const money = (minor: number, currency: string) => formatPrice(minor, currency, locale)
 
   const priced = line.lineTotalMinor !== null && line.currency !== null
   const free = priced && line.lineTotalMinor === 0
@@ -416,6 +461,16 @@ async function TripItem({
                 </span>
               )}
             </div>
+            {/* Who the people are: an infant is counted but travels free. */}
+            {guests !== null && line.children + line.infants > 0 && (
+              <small className="muted">
+                {t('trip_party_split', {
+                  adults: guests - line.children - line.infants,
+                  children: line.children,
+                  infants: line.infants,
+                })}
+              </small>
+            )}
           </div>
           <div className="tprice">
             {!priced ? (
@@ -423,7 +478,9 @@ async function TripItem({
             ) : free ? (
               <span className="tag tag-palm">{t('trip_no_cost')}</span>
             ) : (
-              <span dir="ltr">{money(line.lineTotalMinor ?? 0, line.currency ?? 'USD')}</span>
+              <span dir="ltr">
+                <Money minor={line.lineTotalMinor ?? 0} currency={line.currency ?? 'USD'} />
+              </span>
             )}
           </div>
         </div>
@@ -431,12 +488,16 @@ async function TripItem({
         {priced && line.breakdown !== null && line.breakdown.length > 0 && (
           <details>
             <summary>
-              {t('trip_price_details')} <span aria-hidden="true">▾</span>
+              {t('trip_price_details')}{' '}
+              <span aria-hidden="true">
+                <Icon name="chevron" size={14} />
+              </span>
             </summary>
             <PriceBreakdown
               parts={line.breakdown}
               currency={line.currency ?? 'USD'}
               locale={locale}
+              convert
             />
           </details>
         )}
@@ -447,15 +508,20 @@ async function TripItem({
           (line.pricedQuantity ?? 1) > 1 && (
             <details>
               <summary>
-                {t('trip_price_details')} <span aria-hidden="true">▾</span>
+                {t('trip_price_details')}{' '}
+                <span aria-hidden="true">
+                  <Icon name="chevron" size={14} />
+                </span>
               </summary>
               <div className="sum-row trip-unit">
                 <span>
-                  <span dir="ltr">{money(line.unitPriceMinor, line.currency ?? 'USD')}</span> ×{' '}
-                  {format.number(line.pricedQuantity ?? 1)}
+                  <span dir="ltr">
+                    <Money minor={line.unitPriceMinor} currency={line.currency ?? 'USD'} />
+                  </span>{' '}
+                  × {format.number(line.pricedQuantity ?? 1)}
                 </span>
                 <span className="price" dir="ltr">
-                  {money(line.lineTotalMinor ?? 0, line.currency ?? 'USD')}
+                  <Money minor={line.lineTotalMinor ?? 0} currency={line.currency ?? 'USD'} />
                 </span>
               </div>
             </details>
@@ -492,7 +558,9 @@ async function TripItem({
         {line.creditMinor !== null && line.creditMinor > 0 && (
           <small className="tag tag-palm" style={{ alignSelf: 'flex-start' }}>
             <Icon name="check" size={13} />{' '}
-            {t('p3_credit', { amount: money(line.creditMinor, line.currency ?? 'USD') })}
+            {t('p3_credit', {
+              amount: formatPrice(line.creditMinor, line.currency ?? 'USD', locale),
+            })}
           </small>
         )}
 

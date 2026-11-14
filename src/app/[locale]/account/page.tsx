@@ -27,7 +27,7 @@ import { toLocale } from '../_seo-hreflang'
 import { accountMetadata } from './_lib/meta'
 import { listFavorites, listSchedules, listTripDays } from './_lib/queries'
 import { ProfileForm } from './profile-form'
-import { reasonFor } from './sign-in-reason'
+import { reasonFor, safeNext } from './sign-in-reason'
 import { SignedOutPane } from './signed-out-pane'
 import { VerifyEmailNotice } from './verify-email-notice'
 import { VerifyPhoneNotice } from './verify-phone-notice'
@@ -40,20 +40,6 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
   // H18: a signed-out visitor sees the sign-in pane, so the tab says so.
   const user = await getUser()
   return accountMetadata(toLocale(raw), user === null ? 'acct_signin_cta' : 'acct_nav_profile')
-}
-
-/**
- * Where to go after signing in.
- *
- * Only ever an internal path. A `?next=` that a link can set is a redirect a
- * phishing page can aim at its own domain, so anything with a scheme or a
- * protocol-relative `//` is discarded rather than sanitised.
- */
-function safeNext(value: string | string[] | undefined): string | null {
-  if (typeof value !== 'string') return null
-  // `/\evil.com` يطبّعه المتصفح إلى `//evil.com`.
-  if (!/^\/(?![/\\])/.test(value)) return null
-  return value
 }
 
 export default async function AccountProfilePage({

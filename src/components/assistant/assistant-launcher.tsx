@@ -34,6 +34,13 @@ const NO_WHATSAPP = ['/map', '/checkout']
 
 const AUTH_PAGES = ['/login', '/register', '/forgot-password']
 
+/**
+ * My Trip and checkout: on a phone the launcher sat on the corner of the pay
+ * button and over the price summary, and a tap near the button's edge opened
+ * the assistant instead of paying (audit M8). Nothing floats over the money.
+ */
+const PAYING_PAGES = ['/my-trip', '/checkout']
+
 export function AssistantLauncher() {
   const t = useTranslations()
   const locale = useLocale()
@@ -76,6 +83,8 @@ export function AssistantLauncher() {
 
   // Auth pages: the launcher would cover the form fields on a phone.
   if (AUTH_PAGES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null
+  // Exact paths: the order page after payment (/checkout/confirmation/…) keeps its help.
+  if (PAYING_PAGES.includes(pathname) || pathname.startsWith('/plans/buy/')) return null
 
   return (
     <>

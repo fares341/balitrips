@@ -43,7 +43,15 @@ export async function buyItineraryAction(input: {
       ? input.tier
       : null
 
-  await addItem({ kind: 'itinerary', refId: itinerary.id, tier })
+  try {
+    await addItem({ kind: 'itinerary', refId: itinerary.id, tier })
+  } catch (error) {
+    // An itinerary without a price is not for sale; anything else is a fault.
+    if (error instanceof Error && error.name === 'CartRejectedError') {
+      return { ok: false, reason: 'invalid' }
+    }
+    throw error
+  }
 
   if (input.withMap === true && !itinerary.includesMap) {
     const user = await getUser()

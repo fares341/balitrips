@@ -33,7 +33,7 @@ export interface CartActionResult {
   ok: boolean
   itemCount: number
   /** Set when the refusal has a reason worth showing the traveller. */
-  reason?: 'bookings_closed'
+  reason?: 'bookings_closed' | 'not_for_sale'
 }
 
 /**
@@ -100,7 +100,16 @@ export async function addToCartAction(input: AddItemInput): Promise<CartActionRe
     }
   }
 
-  const result = await addItem(input)
+  let result
+  try {
+    result = await addItem(input)
+  } catch (error) {
+    // A product with no price is not for sale (matched by name: bundles).
+    if (error instanceof Error && error.name === 'CartRejectedError') {
+      return { ok: false, itemCount: 0, reason: 'not_for_sale' }
+    }
+    throw error
+  }
   revalidateCartRoutes()
   return { ok: true, itemCount: result.itemCount }
 }

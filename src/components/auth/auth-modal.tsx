@@ -402,7 +402,10 @@ export function AuthModal({
     // حساب بالجوال وحده: الرقم لم يُثبت بعد. نأخذه مباشرة لصفحة الحساب حيث
     // إشعار التحقق برمز واتساب — رقم غير مؤكَّد لا يستعيد كلمة المرور، وقد
     // يُسحب منه إن أثبت صاحبه الحقيقي ملكيته (انظر verifyPhoneCodeAction).
-    if (email.trim() === '') router.push('/account')
+    // …unless they were sent here mid-task (checkout's `?next=`): then
+    // `onAuthenticated` has already taken them back, and the notice waits in
+    // their account. Pushing /account here used to drop the checkout.
+    if (email.trim() === '' && callbackPath === DEFAULT_CALLBACK_PATH) router.push('/account')
     else router.refresh()
   }
 
