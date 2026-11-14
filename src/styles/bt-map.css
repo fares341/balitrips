@@ -3143,3 +3143,53 @@ ul.mx4-near small {
     transition: none;
   }
 }
+
+/* ---- phone on its side: the map keeps room to be seen ------------------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mx3-bar {
+    min-height: 44px;
+    padding-block: 2px 0;
+  }
+  .mx6-sub {
+    display: none;
+  }
+  .mx3 .mx3-title {
+    font-size: 15px;
+  }
+  .mx3 .mx3-back,
+  .mx6-view {
+    height: 36px;
+  }
+  .mx3 .mx3-back {
+    width: 36px;
+  }
+  .mx3 .mx3-back::before,
+  .mx6-view::before {
+    inset: -4px;
+  }
+  .mx3-chips {
+    padding-block: 2px 6px;
+  }
+  .mx3-chip {
+    min-height: 34px;
+  }
+  .mx3-card {
+    height: 92px;
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .mx3-card .mx3-thumb {
+    width: 80px;
+  }
+  .mx3-card-body {
+    padding-block: 6px;
+  }
+  .mx3-card-desc {
+    -webkit-line-clamp: 1;
+  }
+  .mx3-skeleton {
+    height: 92px;
+  }
+  .mx3-bottom {
+    padding-bottom: 6px;
+  }
+}
