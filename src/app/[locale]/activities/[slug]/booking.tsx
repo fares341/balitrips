@@ -1514,8 +1514,11 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
   }
   const image = pkgInfo?.imageUrl ?? info.heroUrl
   const text = pkgInfo?.description ?? pkgInfo?.tagline ?? null
+  // Price, stepper, «Book now» and the cancellation rule: nothing floats over them.
+  const panelRef = useRef<HTMLElement>(null)
+  useFabAside(panelRef)
   return (
-    <section className="selpkg panel" aria-labelledby="tdetail-h" id="pkg-detail">
+    <section ref={panelRef} className="selpkg panel" aria-labelledby="tdetail-h" id="pkg-detail">
       <div className="selpkg-top">
         {image ? (
           <figure className="selpkg-img">

@@ -2009,10 +2009,12 @@ body:has(> .tabbar) {
     bottom var(--d-base) var(--ease),
     opacity var(--d-fast) var(--ease);
 }
-/* Phones: while a form that needs the whole width is being filled in (the
-   activity booking box sets `data-fab="aside"` on <body>), the floating
-   buttons slide off the edge rather than sit on prices and steppers. */
-@media (max-width: 1023px) {
+/* While a block that needs its whole width is on screen (the activity booking
+   box, the package cards, the comparison: `data-fab="aside"` on <body>, see
+   components/layout/fab-aside.ts), the floating buttons slide off the edge
+   rather than sit on prices and steppers. Up to the width where the buttons
+   clear the 1160px content column on their own. */
+@media (max-width: 1559px) {
   body[data-fab='aside'] .wa-fab,
   body[data-fab='aside'] .ai-fab {
     transform: translateX(calc(-100% - 24px));
