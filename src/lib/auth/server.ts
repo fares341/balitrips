@@ -45,7 +45,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { betterAuthRateLimitStorage } from '@/lib/rate-limit'
 import { db } from '@/db'
@@ -67,7 +67,14 @@ import {
 import { DEVICE_COOKIE, describeAgent, deviceIdentity } from '@/lib/security/fingerprint'
 import { clientIp, requestCity, requestCountry } from '@/lib/security/ip'
 
-import { isPlaceholderEmail, looksLikeEmail, normalizePhone, placeholderEmailFor } from './phone'
+import {
+  isPlaceholderEmail,
+  isValidE164,
+  looksLikeEmail,
+  normalizePhone,
+  phoneLookupCandidates,
+  placeholderEmailFor,
+} from './phone'
 
 import { sendPasswordResetEmail, sendVerificationEmail, toMailLocale } from './email'
 
@@ -652,7 +659,10 @@ export const auth = betterAuth({
 
           // الوثيقة 3.1: الجوال من بيانات التسجيل، وهو مفتاح دخول — فريد ودولي.
           const phoneNormalized = typeof rawPhone === 'string' ? normalizePhone(rawPhone) : null
-          if (ctx?.path === '/sign-up/email' && phoneNormalized === null) {
+          if (
+            ctx?.path === '/sign-up/email' &&
+            (phoneNormalized === null || !isValidE164(phoneNormalized))
+          ) {
             throw APIError.from('BAD_REQUEST', {
               message: 'A mobile number in international format is required.',
               code: 'PHONE_REQUIRED',
@@ -889,14 +899,14 @@ export const auth = betterAuth({
       const body = (ctx.body ?? {}) as Record<string, unknown>
       const identifier = typeof body.email === 'string' ? body.email.trim() : ''
       if (identifier === '' || looksLikeEmail(identifier)) return
-      const normalized = normalizePhone(identifier)
+      const candidates = phoneLookupCandidates(identifier)
       const [owner] =
-        normalized === null
+        candidates.length === 0
           ? []
           : await db
               .select({ email: users.email })
               .from(users)
-              .where(and(eq(users.phoneNormalized, normalized), isNull(users.deletedAt)))
+              .where(and(inArray(users.phoneNormalized, candidates), isNull(users.deletedAt)))
               .limit(1)
       // نعيد الجزء المتغيّر فقط: Better Auth يدمج `context` المُعاد مع السياق الحالي.
       return { context: { body: { ...body, email: owner?.email ?? PHONE_NOT_FOUND_EMAIL } } }

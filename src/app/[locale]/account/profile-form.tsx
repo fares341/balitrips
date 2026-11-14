@@ -27,7 +27,15 @@
 import { useActionState, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
-import { FormError, FormNotice, SelectField, TextField, type CountryOption } from '@/components/auth'
+import {
+  FormError,
+  FormNotice,
+  SelectField,
+  TextField,
+  type CountryOption,
+} from '@/components/auth'
+import { PhoneField } from '@/components/auth/fields'
+import { countryOfE164, isCountry, toE164 } from '@/lib/auth/phone'
 import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH } from '@/components/auth/schemas'
 import { Button } from '@/components/shared'
 import { locales, localeConfig, type Locale } from '@/i18n/config'
@@ -60,6 +68,9 @@ export function ProfileForm({ initial, countries }: ProfileFormProps) {
 
   const [name, setName] = useState(initial.name)
   const [phone, setPhone] = useState(initial.phone)
+  const [phoneCountry, setPhoneCountry] = useState<string>(
+    () => countryOfE164(initial.phone) ?? (isCountry(initial.country) ? initial.country : 'SA'),
+  )
   const [country, setCountry] = useState(initial.country)
   const [locale, setLocale] = useState<string>(initial.locale)
 
@@ -91,7 +102,11 @@ export function ProfileForm({ initial, countries }: ProfileFormProps) {
       <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* The controlled values, as the form fields the action actually reads. */}
         <input type="hidden" name="name" value={name} />
-        <input type="hidden" name="phone" value={phone} />
+        <input
+          type="hidden"
+          name="phone"
+          value={phone.trim() === '' ? '' : (toE164(phone, phoneCountry) ?? phone)}
+        />
         <input type="hidden" name="country" value={country} />
         <input type="hidden" name="locale" value={locale} />
 
@@ -135,15 +150,12 @@ export function ProfileForm({ initial, countries }: ProfileFormProps) {
             </p>
           </div>
 
-          <TextField
+          <PhoneField
             label={t('auth_phone')}
-            optionalLabel={t('co_optional')}
-            type="tel"
-            inputMode="tel"
             value={phone}
             onChange={edit(setPhone, 'phone')}
-            placeholder="+62 ···"
-            autoComplete="tel"
+            country={phoneCountry}
+            onCountryChange={setPhoneCountry}
             maxLength={MAX_PHONE_LENGTH}
             error={errorFor('phone')}
             disabled={pending}

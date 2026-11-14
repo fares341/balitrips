@@ -707,6 +707,8 @@
   "auth_identifier": "Email atau nomor ponsel",
   "auth_identifier_ph": "you@email.com atau 081234567890",
   "auth_dial_code": "Kode negara",
+  "auth_err_phone_invalid": "Nomor tidak valid. Pilih negara Anda dari daftar dan ketik nomor seperti biasa, mis. 081234567890.",
+  "auth_phone_check": "Ini bukan nomor ponsel yang valid di {country}. Periksa negara dan nomornya.",
   "auth_phone_as": "Nomor yang dipakai:",
   "auth_in_btn": "Masuk",
   "auth_language": "Bahasa pilihan",

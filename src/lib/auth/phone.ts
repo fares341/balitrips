@@ -4,11 +4,19 @@
  * الوثيقة 3.1/3.2: التسجيل والدخول برقم الجوال + كلمة المرور. الرقم يجب أن يبدأ
  * بـ `+` أو `00` — رقم محلي بلا رمز الدولة لا يمكن تمييزه بين بلدين، فلا نخمّن.
  *
- * بلا استيرادات: يُستخدم في المتصفح (النماذج) والخادم (Better Auth).
+ * يُستخدم في المتصفح (النماذج) والخادم (Better Auth). التحقق حسب الدولة من
+ * `libphonenumber-js/min` (بيانات أطوال وبدايات الأرقام لكل دولة).
  */
+import {
+  getCountries,
+  getCountryCallingCode,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from 'libphonenumber-js/min'
+
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null
-  const trimmed = raw.trim()
+  const trimmed = toAsciiDigits(raw).trim()
   if (!trimmed.startsWith('+') && !trimmed.startsWith('00')) return null
   if (!/^[+0-9][0-9 ()./-]*$/.test(trimmed)) return null
   const digits = trimmed.replace(/\D/g, '')
@@ -91,31 +99,129 @@ export function formatIntl(e164: string, dial: string): string {
   return `+${cc} ${groups.filter(Boolean).join(' ')}`
 }
 
-/** مفاتيح الدول في قائمة الاختيار (الخليج أولاً، ثم أكثر الأسواق؛ أي دولة أخرى تُكتب بـ + أو 00). */
-export const DIAL_CODES: readonly { iso: string; dial: string }[] = [
-  { iso: 'SA', dial: '966' },
-  { iso: 'AE', dial: '971' },
-  { iso: 'KW', dial: '965' },
-  { iso: 'QA', dial: '974' },
-  { iso: 'BH', dial: '973' },
-  { iso: 'OM', dial: '968' },
-  { iso: 'EG', dial: '20' },
-  { iso: 'JO', dial: '962' },
-  { iso: 'IQ', dial: '964' },
-  { iso: 'LB', dial: '961' },
-  { iso: 'MA', dial: '212' },
-  { iso: 'DZ', dial: '213' },
-  { iso: 'TN', dial: '216' },
-  { iso: 'ID', dial: '62' },
-  { iso: 'MY', dial: '60' },
-  { iso: 'SG', dial: '65' },
-  { iso: 'TR', dial: '90' },
-  { iso: 'PK', dial: '92' },
-  { iso: 'IN', dial: '91' },
-  { iso: 'GB', dial: '44' },
-  { iso: 'DE', dial: '49' },
-  { iso: 'FR', dial: '33' },
-  { iso: 'NL', dial: '31' },
-  { iso: 'US', dial: '1' },
-  { iso: 'AU', dial: '61' },
+/** الدول الأكثر استخداماً أولاً في قائمة الاختيار (الخليج، ثم أكثر الأسواق). */
+const PRIORITY: readonly CountryCode[] = [
+  'SA',
+  'AE',
+  'KW',
+  'QA',
+  'BH',
+  'OM',
+  'EG',
+  'JO',
+  'IQ',
+  'LB',
+  'MA',
+  'DZ',
+  'TN',
+  'ID',
+  'MY',
+  'SG',
+  'TR',
+  'PK',
+  'IN',
+  'GB',
+  'DE',
+  'FR',
+  'NL',
+  'US',
+  'AU',
 ]
+
+/** كل دول العالم مع مفتاحها، الأكثر استخداماً أولاً ثم الباقي أبجدياً بالرمز. */
+export const DIAL_CODES: readonly { iso: CountryCode; dial: string }[] = [
+  ...PRIORITY,
+  ...getCountries()
+    .filter((c) => !PRIORITY.includes(c))
+    .sort(),
+].map((iso) => ({ iso, dial: getCountryCallingCode(iso) }))
+
+export function isCountry(value: string | null | undefined): value is CountryCode {
+  return typeof value === 'string' && (getCountries() as string[]).includes(value)
+}
+
+export function dialOf(iso: string): string {
+  return isCountry(iso) ? getCountryCallingCode(iso) : ''
+}
+
+/**
+ * رقم كما كتبه الزائر + الدولة المختارة ⇒ ‎+E.164 إن كان رقماً صحيحاً لتلك
+ * الدولة (أو لأي دولة إن كتبه بـ + أو 00)، وإلا null.
+ *
+ * يقبل: 0501234567 أو 50 123 4567 مع السعودية، 966501234567 بلا +، ‎+966…،
+ * 00966…، وأرقاماً عربية/فارسية (٠٥٠…).
+ */
+export function toE164(raw: string | null | undefined, iso: string): string | null {
+  if (!raw) return null
+  const t = toAsciiDigits(raw).trim()
+  if (t === '' || !/^[+0-9][0-9 ()./-]*$/.test(t)) return null
+  const intl = t.startsWith('00') ? `+${t.slice(2)}` : t
+  const country = isCountry(iso) ? iso : undefined
+  const parsed = parsePhoneNumberFromString(intl, country)
+  if (parsed?.isValid()) return parsed.number
+  // The country code typed without "+": 966501234567.
+  if (!intl.startsWith('+')) {
+    const withPlus = parsePhoneNumberFromString(`+${intl.replace(/\D/g, '')}`)
+    if (withPlus?.isValid()) return withPlus.number
+  }
+  return null
+}
+
+/** هل الرقم الدولي صحيح فعلاً (طول وبداية صحيحان لدولته)؟ */
+export function isValidE164(value: string): boolean {
+  return parsePhoneNumberFromString(toAsciiDigits(value).trim())?.isValid() === true
+}
+
+/** دولة رقم دولي، إن عُرفت. */
+export function countryOfE164(value: string): CountryCode | undefined {
+  return parsePhoneNumberFromString(value)?.country
+}
+
+/** للعرض: ‎+966 50 123 4567. */
+export function formatE164(value: string): string {
+  return parsePhoneNumberFromString(value)?.formatInternational() ?? value
+}
+
+/** خانة الدخول: بريد كما هو، وجوال ⇒ E.164 حسب الدولة (أو الطريقة القديمة لحسابات قديمة). */
+export function withCountry(raw: string, iso: string): string {
+  const t = toAsciiDigits(raw).trim()
+  if (!isPhoneLike(t)) return raw.trim()
+  return toE164(t, iso) ?? withDialCode(t, dialOf(iso))
+}
+
+/** ٠١٢٣ / ۰۱۲۳ ⇒ 0123. */
+export function toAsciiDigits(value: string): string {
+  return value
+    .replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[\u06f0-\u06f9]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+}
+
+/** الدولة الافتراضية: منطقة المتصفح (ar-SA ⇒ SA)، وإلا حسب لغة الصفحة. */
+export function guessCountry(locale: string, browserLanguages?: readonly string[]): CountryCode {
+  for (const tag of browserLanguages ?? []) {
+    const region = tag.split(/[-_]/)[1]?.toUpperCase()
+    if (isCountry(region)) return region
+  }
+  return locale === 'id' ? 'ID' : 'SA'
+}
+
+/**
+ * الأشكال التي قد يكون الرقم محفوظاً بها في حسابات قديمة، للبحث عند الدخول:
+ * كما كُتب، وبصيغته الصحيحة، وبصفر محلي زائد بعد رمز الدولة (+9660501234567)،
+ * وهو ما كان يقبله التسجيل القديم.
+ */
+export function phoneLookupCandidates(identifier: string): string[] {
+  const out = new Set<string>()
+  const loose = normalizePhone(identifier)
+  if (loose) out.add(loose)
+  const parsed = parsePhoneNumberFromString(toAsciiDigits(identifier).trim())
+  if (parsed?.isValid()) {
+    out.add(parsed.number)
+    out.add(`+${parsed.countryCallingCode}0${parsed.nationalNumber}`)
+  } else if (loose) {
+    // +9660501234567 typed today: also find the account under +966501234567.
+    const fixed = parsePhoneNumberFromString(loose.replace(/^(\+\d{1,3}?)0/, '$1'))
+    if (fixed?.isValid()) out.add(fixed.number)
+  }
+  return [...out]
+}

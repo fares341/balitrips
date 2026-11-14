@@ -29,7 +29,16 @@ import { useId, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
-import { DIAL_CODES, formatIntl, hasIntlPrefix, isPhoneLike, withDialCode } from '@/lib/auth/phone'
+import {
+  DIAL_CODES,
+  dialOf,
+  formatE164,
+  guessCountry,
+  hasIntlPrefix,
+  isPhoneLike,
+  toE164,
+  withCountry,
+} from '@/lib/auth/phone'
 
 type BaseProps = {
   label: string
@@ -204,21 +213,100 @@ export function TextField({
   )
 }
 
-/** مفتاح الدولة الافتراضي حسب لغة الصفحة (الإندونيسية ⇒ ‎+62، غيرها ⇒ السعودية ‎+966). */
-export const defaultDial = (locale: string) => (locale === 'id' ? '62' : '966')
+/** الدولة الافتراضية لخانة الجوال: آخر اختيار، ثم منطقة المتصفح، ثم لغة الصفحة. */
+export function defaultCountry(locale: string): string {
+  if (typeof window === 'undefined') return locale === 'id' ? 'ID' : 'SA'
+  try {
+    const saved = window.localStorage.getItem('bt-phone-country')
+    if (saved && DIAL_CODES.some((c) => c.iso === saved)) return saved
+  } catch {
+    /* storage blocked */
+  }
+  return guessCountry(locale, window.navigator.languages ?? [window.navigator.language])
+}
+
+/** يحفظ اختيار الدولة لزيارة قادمة (راحة فقط). */
+export function rememberCountry(iso: string): void {
+  try {
+    window.localStorage.setItem('bt-phone-country', iso)
+  } catch {
+    /* storage blocked */
+  }
+}
 
 const flag = (iso: string) =>
   String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+
+function useRegionNames() {
+  const locale = useLocale()
+  return useMemo(() => {
+    try {
+      return new Intl.DisplayNames([locale], { type: 'region' })
+    } catch {
+      return null
+    }
+  }, [locale])
+}
+
+/** «🇸🇦 +966 ▾» مضغوط وهو مغلق، وقائمة كل الدول بأسمائها وهو مفتوح. */
+function CountryCodePicker({
+  iso,
+  onChange,
+  disabled,
+}: {
+  iso: string
+  onChange: (iso: string) => void
+  disabled?: boolean
+}) {
+  const t = useTranslations()
+  const names = useRegionNames()
+  return (
+    <span
+      className="bt-input"
+      dir="ltr"
+      style={{
+        position: 'relative',
+        flex: '0 0 auto',
+        width: 'auto',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        paddingInline: 12,
+        fontWeight: 700,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {flag(iso)} +{dialOf(iso)}
+      <Icon name="chevron" size={14} />
+      <select
+        aria-label={t('auth_dial_code')}
+        value={iso}
+        onChange={(event) => {
+          onChange(event.target.value)
+          rememberCountry(event.target.value)
+        }}
+        disabled={disabled}
+        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
+      >
+        {DIAL_CODES.map((c) => (
+          <option key={c.iso} value={c.iso}>
+            {flag(c.iso)} +{c.dial} {names?.of(c.iso) ?? c.iso}
+          </option>
+        ))}
+      </select>
+    </span>
+  )
+}
 
 /**
  * خانة الدخول: بريد إلكتروني أو رقم جوال في نفس المربع.
  *
  *  - فيها حرف أو @ ⇒ بريد، تُرسل كما هي.
- *  - أرقام فقط ⇒ جوال: يظهر اختيار مفتاح الدولة بجانب الرقم، ويُضاف تلقائياً
+ *  - أرقام فقط ⇒ جوال: يظهر اختيار الدولة بجانب الرقم، ويُكمَّل الرقم حسبها
  *    (صفر البداية المحلي يُحذف). من يكتب + أو 00 يكتب الرمز بنفسه فيختفي الاختيار.
  *  - تحت الخانة: الرقم كما سيُرسل (‎+966 50 123 4567) ليتأكد منه الزائر.
  *
- * القيمة المرسلة تُحسب بـ `withDialCode(value, dial)` عند الإرسال.
+ * القيمة المرسلة تُحسب بـ `withCountry(value, country)` عند الإرسال.
  */
 export function IdentifierField({
   label,
@@ -226,39 +314,28 @@ export function IdentifierField({
   disabled = false,
   value,
   onChange,
-  dial,
-  onDialChange,
+  country,
+  onCountryChange,
   placeholder,
   autoFocus = false,
   maxLength,
 }: BaseProps & {
   value: string
   onChange: (value: string) => void
-  dial: string
-  onDialChange: (dial: string) => void
+  country: string
+  onCountryChange: (iso: string) => void
   placeholder?: string
   autoFocus?: boolean
   maxLength?: number
 }) {
   const t = useTranslations()
-  const locale = useLocale()
   const phone = isPhoneLike(value)
   const needsCode = phone && !hasIntlPrefix(value)
-  const preview = phone ? withDialCode(value, dial) : null
+  const preview = phone ? withCountry(value, country) : null
   const valid = preview !== null && preview.startsWith('+')
-  const hint = phone
-    ? valid
-      ? `${t('auth_phone_as')} \u2066${formatIntl(preview!, hasIntlPrefix(value) ? '' : dial)}\u2069`
-      : undefined
-    : undefined
+  const hint =
+    phone && valid ? `${t('auth_phone_as')} \u2066${formatE164(preview!)}\u2069` : undefined
   const { id, errorId, hintId, describedBy } = useFieldIds(error, hint)
-  const names = useMemo(() => {
-    try {
-      return new Intl.DisplayNames([locale], { type: 'region' })
-    } catch {
-      return null
-    }
-  }, [locale])
 
   return (
     <div className="bt-field" style={{ marginBottom: 0 }}>
@@ -267,45 +344,7 @@ export function IdentifierField({
       </label>
       <div dir="ltr" style={{ display: 'flex', gap: 8 }}>
         {needsCode && (
-          // Closed: a compact "🇸🇦 +966" chip. Open: the native list with the
-          // country names (the real <select> sits on top, transparent).
-          <span
-            className="bt-input"
-            dir="ltr"
-            style={{
-              position: 'relative',
-              flex: '0 0 auto',
-              width: 'auto',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              paddingInline: 12,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {flag(DIAL_CODES.find((c) => c.dial === dial)?.iso ?? 'SA')} +{dial}
-            <Icon name="chevron" size={14} />
-            <select
-              aria-label={t('auth_dial_code')}
-              value={dial}
-              onChange={(event) => onDialChange(event.target.value)}
-              disabled={disabled}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                opacity: 0,
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              {DIAL_CODES.map((c) => (
-                <option key={c.iso} value={c.dial}>
-                  {flag(c.iso)} +{c.dial} {names?.of(c.iso) ?? c.iso}
-                </option>
-              ))}
-            </select>
-          </span>
+          <CountryCodePicker iso={country} onChange={onCountryChange} disabled={disabled} />
         )}
         <input
           id={id}
@@ -324,6 +363,68 @@ export function IdentifierField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           dir={phone || value === '' ? 'ltr' : 'auto'}
+          style={{ flex: 1, minWidth: 0 }}
+        />
+      </div>
+      <FieldMessage error={error} errorId={errorId} hint={hint} hintId={hintId} />
+    </div>
+  )
+}
+
+/**
+ * خانة رقم الجوال (التسجيل والحساب): اختيار الدولة دائماً ظاهر بجانب الرقم،
+ * والزائر يكتب رقمه المحلي كما يعرفه (0501234567). تحت الخانة: الرقم الدولي
+ * كما سيُحفظ، أو تنبيه إن لم يكن رقماً صحيحاً لتلك الدولة.
+ *
+ * القيمة المرسلة: `toE164(value, country)`.
+ */
+export function PhoneField({
+  label,
+  error,
+  disabled = false,
+  value,
+  onChange,
+  country,
+  onCountryChange,
+  maxLength,
+}: BaseProps & {
+  value: string
+  onChange: (value: string) => void
+  country: string
+  onCountryChange: (iso: string) => void
+  maxLength?: number
+}) {
+  const t = useTranslations()
+  const names = useRegionNames()
+  const e164 = value.trim() === '' ? null : toE164(value, country)
+  const hint =
+    value.trim() === ''
+      ? undefined
+      : e164
+        ? `${t('auth_phone_as')} \u2066${formatE164(e164)}\u2069`
+        : t('auth_phone_check', { country: names?.of(country) ?? country })
+  const { id, errorId, hintId, describedBy } = useFieldIds(error, hint)
+
+  return (
+    <div className="bt-field" style={{ marginBottom: 0 }}>
+      <label className="bt-flabel" htmlFor={id} style={{ display: 'block' }}>
+        {label}
+      </label>
+      <div dir="ltr" style={{ display: 'flex', gap: 8 }}>
+        <CountryCodePicker iso={country} onChange={onCountryChange} disabled={disabled} />
+        <input
+          id={id}
+          className={error ? 'bt-input bt-input-err' : 'bt-input'}
+          type="tel"
+          inputMode="tel"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete="tel-national"
+          maxLength={maxLength}
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          dir="ltr"
           style={{ flex: 1, minWidth: 0 }}
         />
       </div>

@@ -707,6 +707,8 @@
   "auth_identifier": "Email or mobile number",
   "auth_identifier_ph": "you@email.com or 0501234567",
   "auth_dial_code": "Country code",
+  "auth_err_phone_invalid": "That number isn't valid. Pick your country from the list and type your number as you use it, e.g. 0501234567.",
+  "auth_phone_check": "This isn't a valid mobile number in {country}. Check the country and the number.",
   "auth_phone_as": "Number used:",
   "auth_in_btn": "Sign in",
   "auth_language": "Preferred language",

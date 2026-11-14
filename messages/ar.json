@@ -707,6 +707,8 @@
   "auth_identifier": "البريد الإلكتروني أو رقم الجوال",
   "auth_identifier_ph": "you@email.com أو 0501234567",
   "auth_dial_code": "مفتاح الدولة",
+  "auth_err_phone_invalid": "الرقم غير صحيح. اختر دولتك من القائمة واكتب رقمك كما تستخدمه، مثل 0501234567.",
+  "auth_phone_check": "هذا ليس رقم جوال صحيحاً في {country}. تأكد من الدولة والرقم.",
   "auth_phone_as": "سيُستخدم الرقم:",
   "auth_in_btn": "تسجيل الدخول",
   "auth_language": "اللغة المفضلة",
