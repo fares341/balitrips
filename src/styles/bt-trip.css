@@ -287,7 +287,7 @@
   }
   /* Room for the bar, so the last panel scrolls clear of it. */
   .trip-page.has-paybar .trip-grid {
-    padding-block-end: 140px;
+    padding-block-end: 96px;
   }
 }
 
