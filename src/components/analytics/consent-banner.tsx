@@ -51,9 +51,14 @@ export function ConsentBanner() {
     return () => window.removeEventListener(CONSENT_OPEN_EVENT, open)
   }, [])
 
-  // Server render and first paint: undefined → render nothing.
-  if (raw === undefined) return null
-  if (stored !== null && !reopened) return null
+  // Server render and hydration (`raw` undefined): the compact banner is in
+  // the HTML, hidden by CSS unless the inline head script found no stored
+  // choice (`<html data-consent="ask">`, see consentBootScript). It used to
+  // appear only after hydration — seconds after the page — and, being the
+  // largest text block on a text page, it WAS that page's LCP (3–4.5 s on a
+  // phone). Now it paints with the page.
+  const pending = raw === undefined
+  if (!pending && stored !== null && !reopened) return null
 
   const save = (next: { analytics: boolean; marketing: boolean }) => {
     writeConsent(next, stored)
@@ -64,6 +69,7 @@ export function ConsentBanner() {
   return (
     <section
       className="bt-consent"
+      data-pending={pending || undefined}
       role="region"
       aria-labelledby={titleId}
       dir={locale === 'ar' ? 'rtl' : 'ltr'}
@@ -74,11 +80,7 @@ export function ConsentBanner() {
         </h2>
         <p className="bt-consent-body">
           {choosing ? s.body : s.short}{' '}
-          <Link
-            href={policyLink('/cookies', locale)}
-            className="bt-consent-link"
-            prefetch={false}
-          >
+          <Link href={policyLink('/cookies', locale)} className="bt-consent-link" prefetch={false}>
             {s.policy}
           </Link>
         </p>

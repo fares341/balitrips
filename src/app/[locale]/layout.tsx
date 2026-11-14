@@ -22,6 +22,7 @@ import { ToastProvider } from '@/components/shared'
 import { CurrencyProvider } from '@/components/currency/currency-context'
 import { readFx } from '@/lib/currency/fx-store'
 import { moneyRuntimeScript } from '@/lib/currency/money-runtime'
+import { consentBootScript } from '@/lib/analytics/consent'
 import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { routing } from '@/i18n/routing'
 import { fontVariables } from '@/styles/fonts'
@@ -112,6 +113,8 @@ export default async function LocaleLayout({
             }),
           }}
         />
+        {/* Cookie banner before first paint, for visitors with no stored choice. */}
+        <script dangerouslySetInnerHTML={{ __html: consentBootScript() }} />
       </head>
       <body>
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
