@@ -74,7 +74,11 @@ export function ConsentBanner() {
         </h2>
         <p className="bt-consent-body">
           {choosing ? s.body : s.short}{' '}
-          <Link href={policyLink('/cookies', locale)} className="bt-consent-link" prefetch={false}>
+          <Link
+            href={policyLink('/cookies', locale)}
+            className="bt-consent-link"
+            prefetch={false}
+          >
             {s.policy}
           </Link>
         </p>
