@@ -3,11 +3,6 @@
 /**
  * Checkout server actions.
  *
- *  - `beginSignInAction` records where to come back to and sends the visitor
- *    to sign in. The intent is carried twice, in the `?next=` parameter and in
- *    an httpOnly cookie, so it survives whatever the auth screen does with the
- *    query string.
- *
  *  - `startCheckoutAction` is the real one (v3 checkout, steps 1–3). It
  *    validates the lead traveller's contact details, re-reads the cart,
  *    compares the freshly computed total against the total the browser
@@ -43,7 +38,6 @@ import {
   getSessionUser,
   mergeAnonymousCartOnSignIn,
   setCartCouponCode,
-  setPendingCheckout,
 } from '@/lib/cart'
 import { bookingsOpen } from '@/lib/bookings-open'
 import { needsAccount } from '@/lib/packages/account'
@@ -60,7 +54,6 @@ import {
   ACCOUNT_ONLY_KINDS,
   CHECKOUT_HREF,
   CONFIRMATION_HREF,
-  SIGN_IN_HREF,
   SITE_URL,
   TERMS_VERSION,
   type CheckoutState,
@@ -98,21 +91,6 @@ function followProvider(nextAction: unknown, locale: Locale, orderNumber: string
   redirect(getPathname({ href: `${CONFIRMATION_HREF}/${orderNumber}`, locale }))
 }
 
-/**
- * Send the visitor to sign in, remembering that they were mid-checkout.
- *
- * A form action rather than a link precisely so the cookie is written: a
- * Server Component render cannot set cookies, and losing the intent is the
- * bug this exists to fix.
- */
-export async function beginSignInAction(formData: FormData): Promise<never> {
-  const locale = localeOf(formData.get('locale'))
-  await setPendingCheckout(CHECKOUT_HREF)
-  redirect(
-    getPathname({ href: { pathname: SIGN_IN_HREF, query: { next: CHECKOUT_HREF } }, locale }),
-  )
-}
-
 export async function startCheckoutAction(
   _previous: CheckoutState,
   formData: FormData,
@@ -129,8 +107,10 @@ export async function startCheckoutAction(
   const contact = validateContact({
     name: text(formData, 'name'),
     email: text(formData, 'email'),
-    dialCode: text(formData, 'dialCode'),
+    phoneCountry: text(formData, 'phoneCountry'),
     phone: text(formData, 'phone'),
+    // A tab opened before the phone field changed still posts this.
+    dialCode: text(formData, 'dialCode'),
     notes: text(formData, 'notes'),
   })
   if (!contact.ok) return { error: 'contact', fields: contact.errors }
@@ -372,6 +352,11 @@ export async function applyCouponAction(formData: FormData): Promise<never> {
   const locale = localeOf(formData.get('locale'))
   const intent = text(formData, 'intent')
   const code = text(formData, 'code').trim()
+  // "Apply" with nothing typed: say so, rather than reload in silence.
+  if (intent !== 'remove' && code === '') {
+    await setCartCouponCode(null)
+    redirect(getPathname({ href: { pathname: CHECKOUT_HREF, query: { coupon: 'empty' } }, locale }))
+  }
   // Phase 6: guessing codes is limited per IP and per account (shared counter).
   if (intent !== 'remove' && code !== '') {
     const user = await getSessionUser()

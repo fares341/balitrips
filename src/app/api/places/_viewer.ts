@@ -1,4 +1,4 @@
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { emptyEntitlements, loadEntitlements, type EntitlementSet } from '@/lib/entitlements'
 import { checkSecureAccess } from '@/lib/security/guard'
 
@@ -23,7 +23,7 @@ export async function viewer(resource: string): Promise<{
 }
 
 export function localeOf(value: string | null): Locale {
-  return value !== null && isLocale(value) ? value : defaultLocale
+  return value !== null && isLocale(value) ? value : fallbackLocale
 }
 
 export const NO_STORE = { 'Cache-Control': 'private, no-store' } as const

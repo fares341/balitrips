@@ -230,6 +230,13 @@ const GLYPHS = {
   phone: (
     <path d="M5 4h3.5l1.5 4.5-2 1.5a12 12 0 0 0 6 6l1.5-2L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5C10.5 20 4 13.5 3.5 5.6A1.5 1.5 0 0 1 5 4Z" />
   ),
+  // A handset device (wallets, "devices" on a plan) — `phone` is a call.
+  mobile: (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.6" />
+      <path d="M10.5 18.2h3" />
+    </>
+  ),
   mail: (
     <>
       <rect x="3" y="5" width="18" height="14" rx="2.5" />

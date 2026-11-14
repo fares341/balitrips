@@ -49,13 +49,21 @@ export type LanguageSwitcherProps = {
 }
 
 /**
- * The code on the header's language pill (v3 package: globe + "ع" / "EN").
- * The accessible name is the full endonym from `localeConfig`.
+ * The header's language pill: the full endonym where there is room, a short
+ * code on phones (v3 package: globe + "EN"), where the full name ran over the
+ * logo. Both are in the markup and CSS picks one (`.hdr .lang-btn .lbl-*`),
+ * so the server and the client render the same HTML. The accessible name is
+ * the full endonym from `localeConfig`.
  */
 const PILL_LABEL: Record<Locale, string> = {
   en: 'English',
   ar: 'عربي',
   id: 'Bahasa Indonesia',
+}
+const PILL_SHORT: Record<Locale, string> = {
+  en: 'EN',
+  ar: 'عربي',
+  id: 'ID',
 }
 
 function menuItems(menu: HTMLElement | null): HTMLAnchorElement[] {
@@ -232,7 +240,12 @@ export function LanguageSwitcher({ className, variant = 'segmented' }: LanguageS
         onKeyDown={onTriggerKeyDown}
       >
         <Icon name="globe" size={16} />
-        <span aria-hidden="true">{PILL_LABEL[activeLocale]}</span>
+        <span aria-hidden="true" className="lbl lbl-full">
+          {PILL_LABEL[activeLocale]}
+        </span>
+        <span aria-hidden="true" className="lbl lbl-short">
+          {PILL_SHORT[activeLocale]}
+        </span>
       </button>
 
       {open && (

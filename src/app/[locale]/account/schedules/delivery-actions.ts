@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { orderItems, orders } from '@/db/schema'
-import { isLocale, defaultLocale } from '@/i18n/config'
+import { isLocale, fallbackLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { resendItineraryDelivery } from '@/lib/itineraries/delivery'
 import { consumeKey } from '@/lib/rate-limit'
@@ -21,7 +21,7 @@ const RESEND_RULE = { window: 60 * 60, max: 3 }
 
 export async function resendScheduleAction(form: FormData): Promise<void> {
   const rawLocale = String(form.get('locale') ?? '')
-  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const locale = isLocale(rawLocale) ? rawLocale : fallbackLocale
   const itemId = String(form.get('itemId') ?? '')
   const back = (sent: string) =>
     redirect(getPathname({ href: { pathname: '/account/schedules', query: { sent } }, locale }))

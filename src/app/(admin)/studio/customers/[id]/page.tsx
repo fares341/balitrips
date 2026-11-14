@@ -15,7 +15,7 @@ import {
   sessions,
   users,
 } from '@/db/schema'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { contactLabel, isPlaceholderEmail } from '@/lib/auth/phone'
 import { can, isElevated, isRole, ROLES } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
@@ -84,7 +84,7 @@ export default async function CustomerPage({
   if (!account) notFound()
 
   const now = new Date()
-  const accountLocale = isLocale(account.locale) ? account.locale : defaultLocale
+  const accountLocale = isLocale(account.locale) ? account.locale : fallbackLocale
 
   const [
     sessionRows,

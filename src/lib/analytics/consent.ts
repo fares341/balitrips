@@ -29,6 +29,16 @@ export interface Consent {
   at: number
 }
 
+/**
+ * Inline <head> script: marks `<html data-consent="ask">` before first paint
+ * when no valid choice is stored, so the server-rendered banner shows with
+ * the page instead of after hydration. Same test as `parseConsent`. Pages
+ * stay static: the decision is made in the browser.
+ */
+export function consentBootScript(): string {
+  return `(function(){try{var m=document.cookie.match(/(?:^|; )${CONSENT_COOKIE}=([^;]*)/);if(!m||!/^1\\.a[01]\\.m[01]\\.\\d{1,12}$/.test(decodeURIComponent(m[1]).trim()))document.documentElement.setAttribute('data-consent','ask')}catch(e){}})();`
+}
+
 export function serializeConsent(consent: Consent): string {
   return `${VERSION}.a${consent.analytics ? 1 : 0}.m${consent.marketing ? 1 : 0}.${Math.floor(consent.at)}`
 }

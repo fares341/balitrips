@@ -20,7 +20,7 @@ import { NextResponse } from 'next/server'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { db } from '@/db'
 import { activityLog, customTripDocuments, customTripRequests } from '@/db/schema'
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { contactLabel } from '@/lib/auth/phone'
 import { loadPermissions } from '@/lib/entitlements/plans'
@@ -171,7 +171,7 @@ export async function deliverSchedule(
   mode: DeliveryMode,
   kind: 'itinerary' | 'custom' = 'itinerary',
 ): Promise<Response> {
-  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const locale = isLocale(rawLocale) ? rawLocale : fallbackLocale
   const resource = `${kind === 'custom' ? 'custom' : 'schedule'}:${itemId}`
 
   const access = await checkSecureAccess(resource)
@@ -329,7 +329,7 @@ export async function deliverScheduleByToken(
   rawLocale: string,
   token: string,
 ): Promise<Response> {
-  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const locale = isLocale(rawLocale) ? rawLocale : fallbackLocale
   const { redeemDownloadToken, refundDownloadUse } =
     await import('@/lib/itineraries/download-tokens')
   const refused = () => toAccountRedirect(request, locale, { doc: 'link-expired' })

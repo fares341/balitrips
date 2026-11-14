@@ -51,7 +51,7 @@ import { betterAuthRateLimitStorage } from '@/lib/rate-limit'
 import { db } from '@/db'
 import { accounts, sessions, users, verifications } from '@/db/schema'
 import { notifyUser } from '@/lib/notify'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 
 import { logActivity } from '@/lib/security/activity'
 import { findActiveBan, type BanReason } from '@/lib/security/bans'
@@ -405,7 +405,7 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         returned: true,
-        defaultValue: defaultLocale,
+        defaultValue: fallbackLocale,
       },
       phone: { type: 'string', required: false, returned: true },
       /** يُحسب في الخطاف أدناه من `phone`؛ لا يقبله أحد من جسم الطلب. */
@@ -701,7 +701,7 @@ export const auth = betterAuth({
               name: typeof user.name === 'string' ? user.name.trim().slice(0, 128) : user.name,
               phoneNormalized: keepPhone ? phoneNormalized : null,
               locale:
-                typeof rawLocale === 'string' && isLocale(rawLocale) ? rawLocale : defaultLocale,
+                typeof rawLocale === 'string' && isLocale(rawLocale) ? rawLocale : fallbackLocale,
               phone:
                 keepPhone && typeof rawPhone === 'string' && rawPhone.trim() !== ''
                   ? rawPhone.trim().slice(0, 32)
@@ -772,7 +772,7 @@ export const auth = betterAuth({
           if (typeof raw.name === 'string') data.name = raw.name.trim().slice(0, 128)
           if ('locale' in raw) {
             data.locale =
-              typeof raw.locale === 'string' && isLocale(raw.locale) ? raw.locale : defaultLocale
+              typeof raw.locale === 'string' && isLocale(raw.locale) ? raw.locale : fallbackLocale
           }
           if ('phone' in raw) {
             data.phone =

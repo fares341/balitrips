@@ -292,17 +292,21 @@ export function rememberCountry(iso: string): void {
 const flag = (iso: string) =>
   String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 
-const noSubscription = () => () => undefined
+const subscribeNothing = () => () => undefined
 
 /**
- * Country names from the browser's own data. Null until hydration is done:
- * Node and the browser spell some regions differently, and a different
- * <option> text between the two is a hydration error.
+ * Country names for the picker. They come from the runtime's CLDR data,
+ * which differs between Node and the browser (a handful of Arabic names are
+ * spelt differently), so a server-rendered list of them never matched the
+ * client's and React reported a hydration error on every load of /register
+ * and checkout (audit M12). Null until hydrated: the server and the first
+ * client render list the ISO codes, the names follow at once — the list is
+ * closed at that point, so nothing visible changes.
  */
 function useRegionNames() {
   const locale = useLocale()
   const hydrated = useSyncExternalStore(
-    noSubscription,
+    subscribeNothing,
     () => true,
     () => false,
   )

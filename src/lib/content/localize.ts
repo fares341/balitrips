@@ -28,7 +28,7 @@
  * Components, route handlers and the worker.
  */
 
-import { defaultLocale, locales, type Locale } from '@/i18n/config'
+import { fallbackLocale, locales, type Locale } from '@/i18n/config'
 
 /** A fully populated localized field, as the DTOs expose it. */
 export type LocalizedText = Record<Locale, string>
@@ -60,7 +60,7 @@ export function pick(value: LocalizedInput, locale: Locale, fallback = ''): stri
     const requested = value[locale]
     if (usable(requested)) return requested
 
-    const english = value[defaultLocale]
+    const english = value[fallbackLocale]
     if (usable(english)) return english
 
     for (const candidate of locales) {
@@ -126,6 +126,6 @@ export function pickList(
  */
 export function searchableText(value: LocalizedInput, locale: Locale): string {
   if (!value) return ''
-  const parts = [value[locale], value[defaultLocale]].filter(usable)
+  const parts = [value[locale], value[fallbackLocale]].filter(usable)
   return parts.join(' ').toLowerCase()
 }

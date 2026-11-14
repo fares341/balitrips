@@ -6,7 +6,7 @@
  *                : per_couple ? ceil(people / 2) × price     // "للزوجين"
  *                : fixed      ? price                        // one price, any party
  *                :              people × price
- *   addonCost    = per_person ? price × people
+ *   addonCost    = per_person ? price × paying people (free infants excluded)
  *                : per_qty    ? price × min(qty, max_qty)
  *                : per_hour   ? price × min(hours, max_qty)
  *                : tiered     ? tierPrice(qty) × min(qty, max_qty)
@@ -32,7 +32,8 @@
  *     (`kind: 'child'` line). `per_group` / `per_couple` packages price the
  *     whole party by units and ignore the split — a family boat for four is
  *     one price whoever is on it. Without a child price everyone is an adult.
- *     Add-ons priced per person count every guest, children included.
+ *     Add-ons priced per person count every paying guest, children included;
+ *     free infants are not counted (`payingPartySize`).
  *
  * Used by three callers so they cannot disagree:
  *   - `buildQuote` (cart + checkout) — the copy that decides what is charged;
@@ -511,6 +512,24 @@ export function hasChildPricing(pkg: PackageRule, day?: string | null): boolean 
   )
 }
 
+/**
+ * The party members who pay: everyone, minus the infants of a child-priced
+ * package (they are free there, and nowhere else is an infant a notion).
+ * The one place this is decided — the package line, per-person add-ons, the
+ * booking box, the cart and checkout all read it from `priceBooking`.
+ */
+export function payingPartySize(
+  pkg: PackageRule,
+  people: number,
+  party: { travelDate?: string | null; children?: number; infants?: number },
+): number {
+  assertPeople(people)
+  if (!hasChildPricing(pkg, party.travelDate)) return people
+  const children = Math.min(count(party.children), people - 1)
+  const infants = Math.min(count(party.infants), people - 1 - children)
+  return people - infants
+}
+
 export function priceBooking(input: BookingPriceInput): BookingPrice {
   const { pkg, people } = input
   assertPeople(people)
@@ -523,6 +542,10 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
   const lines: PriceLine[] = []
   let packageMinor: number
   const splitChildren = pkg.pricing === 'per_person' && effective.childPriceMinor !== null
+  // People a per-person add-on is charged for. Infants exist only on a
+  // child-priced package, where they travel free: an extra "per person" must
+  // not bill them either (2 adults + 1 infant + a boat = 2 × the boat).
+  const payingPeople = payingPartySize(pkg, people, input)
   if (splitChildren) {
     // At least one adult; anything beyond the party is ignored, never charged.
     const children = Math.min(count(input.children), people - 1)
@@ -590,7 +613,7 @@ export function priceBooking(input: BookingPriceInput): BookingPrice {
   for (const pick of resolution.accepted) {
     const addon = byId.get(pick.id)
     if (!addon) continue
-    const quantity = addonUnits(addon, people, pick.qty)
+    const quantity = addonUnits(addon, payingPeople, pick.qty)
     const unitMinor = addonUnitPriceMinor(addon, quantity)
     const totalMinor = unitMinor * quantity
     addonsMinor += totalMinor

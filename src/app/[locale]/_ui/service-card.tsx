@@ -53,7 +53,13 @@ export function ServiceCard({
         content and an `h3` inside one is invalid markup.
       */}
       <div className="bt-card-media" style={{ width: '100%' }}>
-        <Photo src={image?.url} alt="" priority={priority} style={{ height: 150 }} />
+        <Photo
+          src={image?.url}
+          alt=""
+          priority={priority}
+          sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+          style={{ height: 150 }}
+        />
         <span className="bt-svc-icon">
           <Icon name={icon} size={22} color="var(--ivory)" />
         </span>

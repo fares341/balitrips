@@ -12,7 +12,9 @@ import { defaultLocale, locales } from './config'
  * port for a business that lives on organic search.
  *
  * `always` prefixes every locale: /en/activities, /ar/activities,
- * /id/activities, with `/` redirecting to `/en`.
+ * /id/activities. A path without a prefix (`/`, `/activities`) is redirected
+ * by src/proxy.ts to the visitor's chosen language, else Arabic (the main
+ * language, `defaultLocale`), so every unprefixed URL lands the same way.
  *
  * This was `as-needed` (English at the bare path). Under next-intl 4.13 that
  * mode broke every unprefixed route on the built server: `GET /` answered
@@ -29,6 +31,10 @@ export const routing = defineRouting({
   locales,
   defaultLocale,
   localePrefix: 'always',
+  // Every page declares its own hreflang set in <head> (canonical, three
+  // languages, x-default → Arabic). next-intl's `Link` response header
+  // repeated it with x-default on the unprefixed URL, which only redirects.
+  alternateLinks: false,
 })
 
 export const { Link, redirect, usePathname, useRouter, getPathname } = createNavigation(routing)

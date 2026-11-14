@@ -145,8 +145,7 @@ export function formatInCurrency(
     const sar = toSarMinor(minor, from, rates)
     return formatDisplay((sar ?? minor) / 100, BASE_CURRENCY, locale)
   }
-  const text = formatDisplay(amount, target, locale)
-  return target === BASE_CURRENCY ? text : `≈ ${text}`
+  return formatMoneyText(amount, target, locale, target !== BASE_CURRENCY)
 }
 
 /** The SAR text for a stored amount (what the server renders, and what is charged). */

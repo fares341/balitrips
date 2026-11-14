@@ -9,6 +9,7 @@ import {
   categoryStyle,
   clusterPoints,
   countRows,
+  lockedCounts,
   areaTotal,
   byDistance,
   cleanTravelerTypes,
@@ -123,6 +124,27 @@ describe('counts and areas', () => {
     )
     expect(options.map((one) => one.key)).toEqual(['south', 'central', 'seminyak'])
     expect(options[0]?.count).toBe(3)
+  })
+  it('locked counts per category add up to what the results API reports', () => {
+    const canOpen = (place: { categoryKey: string | null }) => place.categoryKey !== 'restaurants'
+    const withLocks = countRows(PLACES, canOpen)
+    for (const area of [ALL_AREA, 'south', 'seminyak']) {
+      const perCategory = lockedCounts(withLocks, area)
+      let sum = 0
+      for (const n of perCategory.values()) sum += n
+      const { lockedCount } = selectPlaces(
+        PLACES.map((place) => ({ ...place, lat: 0, lon: 0 })),
+        { area, categories: [...categoryCounts(withLocks, ALL_AREA).keys()] },
+        canOpen,
+      )
+      expect(sum).toBe(lockedCount)
+      expect(perCategory.get('restaurants')).toBe(
+        categoryCounts(withLocks, area).get('restaurants'),
+      )
+      expect(perCategory.has('beaches')).toBe(false)
+    }
+    // Without a viewer rule the rows carry no locked number at all.
+    expect(lockedCounts(countRows(PLACES), ALL_AREA).size).toBe(0)
   })
   it('counts region-less places toward the whole island only', () => {
     const withOrphans = countRows([

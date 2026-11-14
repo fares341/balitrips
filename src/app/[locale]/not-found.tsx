@@ -3,22 +3,40 @@
  *
  * Rendered inside the [locale] layout (header, footer, tab bar) for any
  * `notFound()` in a public page and for unknown paths (`[...rest]`).
- * The <title> is set here (React hoists it into <head>), because a
- * not-found boundary has no generateMetadata of its own.
+ * Unknown paths and missing public records are answered by the proxy with
+ * this same UI as a server-rendered page and a 404 status (see
+ * ./not-found-page and src/proxy.ts).
  */
 
+import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 
 import { LinkButton } from '@/components/bt'
+import { hiddenHrefs } from '@/lib/content/public-sections'
+import { loadPublicSections } from '@/lib/content/public-sections-server'
 
 import { PopularLinks } from './_ui/popular-links'
 
-export default async function LocaleNotFound() {
+/**
+ * The 404's own <head>: Next uses this boundary's metadata for a not-found
+ * response, including the bare shell it sends when `notFound()` is thrown
+ * while a dynamic page renders. The locale comes from the request (the proxy
+ * sets it for every prefixed path); there are no route params here.
+ */
+export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
+  return {
+    title: t('nf5_meta'),
+    description: t('nf4_body'),
+    robots: { index: false, follow: true },
+  }
+}
+
+export default async function LocaleNotFound() {
+  const [t, sections] = await Promise.all([getTranslations(), loadPublicSections()])
 
   return (
     <main className="nf">
-      <title>{`${t('nf5_meta')} · Bali Trips`}</title>
       <div className="arc" aria-hidden="true" />
       <div className="stack nf-in">
         <div className="nf-num" aria-hidden="true" dir="ltr">
@@ -35,7 +53,7 @@ export default async function LocaleNotFound() {
             {t('nf4_search')}
           </LinkButton>
         </div>
-        <PopularLinks headingId="nf-pop-h" />
+        <PopularLinks headingId="nf-pop-h" hidden={hiddenHrefs(sections)} />
       </div>
     </main>
   )

@@ -13,6 +13,7 @@ import type { Localized } from '@/db/schema/_shared'
 import type { Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { formatPrice } from '@/components/bt/card'
+import { Money } from '@/components/currency/currency-context'
 
 export type BreakdownPart = {
   kind: 'package' | 'child' | 'addon' | 'driver' | 'included'
@@ -28,10 +29,16 @@ export async function PriceBreakdown({
   parts,
   currency,
   locale,
+  convert = false,
 }: {
   parts: readonly BreakdownPart[]
   currency: string
   locale: Locale
+  /**
+   * Show amounts in the visitor's display currency («≈»), as the trip page
+   * does. Checkout and the order page leave it off: they state the charge.
+   */
+  convert?: boolean
 }) {
   const t = await getTranslations({ locale })
   const shown = parts.filter((part) => part.kind !== 'driver')
@@ -73,7 +80,13 @@ export async function PriceBreakdown({
               ) : null}
             </span>
             <span dir="ltr" style={{ whiteSpace: 'nowrap' }}>
-              {part.included ? t('act_included') : formatPrice(part.totalMinor, currency, locale)}
+              {part.included ? (
+                t('act_included')
+              ) : convert ? (
+                <Money minor={part.totalMinor} currency={currency} />
+              ) : (
+                formatPrice(part.totalMinor, currency, locale)
+              )}
             </span>
           </li>
         )

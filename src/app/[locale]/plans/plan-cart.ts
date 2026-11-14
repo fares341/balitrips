@@ -22,6 +22,12 @@ export async function addPlanToCart(raw: unknown, devices?: unknown): Promise<bo
   if (plan === undefined || standaloneOff) return false
   // The count is clamped to the plan's range and priced on the server.
   const n = typeof devices === 'string' || typeof devices === 'number' ? Number(devices) : NaN
-  await addItem({ kind: 'plan', refId: plan.id, devices: Number.isFinite(n) ? n : null })
+  try {
+    await addItem({ kind: 'plan', refId: plan.id, devices: Number.isFinite(n) ? n : null })
+  } catch (error) {
+    // A plan without a price is not for sale; anything else is a fault.
+    if (error instanceof Error && error.name === 'CartRejectedError') return false
+    throw error
+  }
   return true
 }

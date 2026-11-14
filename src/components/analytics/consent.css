@@ -11,6 +11,15 @@
   pointer-events: none;
 }
 
+/* In the server HTML for every visitor; shown before hydration only when the
+   head script found no stored choice (consentBootScript). */
+.bt-consent[data-pending] {
+  display: none;
+}
+html[data-consent='ask'] .bt-consent[data-pending] {
+  display: flex;
+}
+
 /* Desktop: a compact card in the start corner, clear of the hero and of the
    assistant button (which sits in the end corner). */
 @media (min-width: 1024px) {

@@ -47,7 +47,7 @@ import {
   regions,
 } from '@/db/schema'
 import type { Localized } from '@/db/schema/_shared'
-import { defaultLocale, locales, type Locale } from '@/i18n/config'
+import { fallbackLocale, locales, type Locale } from '@/i18n/config'
 import { mediaUrl } from '@/lib/content/queries'
 import { entityHref } from '@/lib/content/types'
 import { canSeePlace, loadEntitlements } from '@/lib/entitlements'
@@ -481,10 +481,10 @@ export async function listSchedules(userId: string, locale: Locale): Promise<Sch
       // PDF رفعته الإدارة يُسلَّم قبل المولَّد (انظر resolveScheduleDocument).
       documentReady:
         Boolean(
-          itinerary?.uploadedPdfKeys?.[locale] ?? itinerary?.uploadedPdfKeys?.[defaultLocale],
+          itinerary?.uploadedPdfKeys?.[locale] ?? itinerary?.uploadedPdfKeys?.[fallbackLocale],
         ) ||
         documentKeys.has(`${itineraryId}:${version}:${locale}`) ||
-        documentKeys.has(`${itineraryId}:${version}:${defaultLocale}`),
+        documentKeys.has(`${itineraryId}:${version}:${fallbackLocale}`),
       purchasedAt: placedAt ?? createdAt,
     }
   })
@@ -533,7 +533,7 @@ export async function resolveScheduleDocument(
   // One rule with the Studio «ملف PDF» tab: `@/lib/itineraries/delivered-pdf`.
   const uploaded = row.itinerary?.uploadedPdfKeys ?? null
   const docs =
-    uploaded?.[locale] || uploaded?.[defaultLocale]
+    uploaded?.[locale] || uploaded?.[fallbackLocale]
       ? []
       : await db
           .select({ objectKey: itineraryDocuments.objectKey, locale: itineraryDocuments.locale })
@@ -551,7 +551,7 @@ export async function resolveScheduleDocument(
     locale,
     uploadedKeys: uploaded,
     generated: docs,
-    fallbackLocale: defaultLocale,
+    fallbackLocale: fallbackLocale,
   })
 
   // Entitled, but the publish step has not produced the file yet. Distinct

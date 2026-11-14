@@ -335,6 +335,18 @@ export function Header(props: {
             <Icon name="cross" size={22} />
           </button>
         </div>
+        {/* Language and currency first: a visitor priced in the wrong currency
+            finds the switch without scrolling the whole menu. */}
+        <div className="drawer-prefs">
+          <div className="drawer-pref">
+            <span className="drawer-pref-l">{t('nav_lang')}</span>
+            <LanguageSwitcher variant="menu" />
+          </div>
+          <div className="drawer-pref">
+            <span className="drawer-pref-l">{t('nav_currency')}</span>
+            <CurrencySwitcher />
+          </div>
+        </div>
         <nav aria-label={t('bt_main_nav')}>
           {drawerItems.map((route) => (
             <Link
@@ -365,8 +377,6 @@ export function Header(props: {
           >
             {favorites.signedIn ? t('nav_account') : t('bt_login')}
           </LinkButton>
-          <LanguageSwitcher />
-          <CurrencySwitcher />
         </div>
       </aside>
     </>

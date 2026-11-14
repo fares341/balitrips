@@ -4,6 +4,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { ADMIN_ROBOTS_TAG, isAdminPath, toInternalAdminPath } from './app/(admin)/_lib/admin-path'
 import { routing } from './i18n/routing'
 import { withGeoCurrency } from './lib/currency/geo-cookie'
+import {
+  detailTarget,
+  ExistsCache,
+  NOT_FOUND_PAGE,
+  type DetailKind,
+} from './lib/seo/not-found-routing'
 
 /**
  * Locale negotiation and redirects.
@@ -21,7 +27,52 @@ import { withGeoCurrency } from './lib/currency/geo-cookie'
  */
 const localeProxy = createMiddleware(routing)
 
-export default function proxy(request: NextRequest) {
+const existsCache = new ExistsCache()
+
+/**
+ * Does this public detail URL name a real record? Asked of the app itself
+ * (`/api/exists`, the same lookups the pages use) over the loopback, with a
+ * short memory. `null` = could not tell (timeout, error): the page then
+ * renders and decides as before — a real page is never turned into a 404
+ * because the check failed.
+ */
+async function recordExists(
+  request: NextRequest,
+  target: { kind: DetailKind; key: string },
+): Promise<boolean | null> {
+  const id = `${target.kind}:${target.key}`
+  const now = Date.now()
+  const known = existsCache.get(id, now)
+  if (known !== null) return known
+  try {
+    const port = process.env.PORT || request.nextUrl.port || '3000'
+    const url = `http://127.0.0.1:${port}/api/exists?kind=${target.kind}&key=${encodeURIComponent(target.key)}`
+    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(1500) })
+    if (!response.ok) return null
+    const body = (await response.json()) as { exists?: unknown }
+    if (typeof body.exists !== 'boolean') return null
+    existsCache.set(id, body.exists, now)
+    return body.exists
+  } catch {
+    return null
+  }
+}
+
+/** The localized not-found page, rendered on the server, with status 404. */
+function notFoundResponse(request: NextRequest, locale: string): NextResponse {
+  const url = request.nextUrl.clone()
+  url.pathname = `/${locale}/${NOT_FOUND_PAGE}`
+  url.search = ''
+  // next-intl reads the request locale from this header (its own proxy sets
+  // it; this response does not pass through it).
+  const headers = new Headers(request.headers)
+  headers.set('X-NEXT-INTL-LOCALE', locale)
+  const response = NextResponse.rewrite(url, { status: 404, request: { headers } })
+  response.headers.set('X-Robots-Tag', 'noindex')
+  return withGeoCurrency(request, response)
+}
+
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   /**
@@ -63,15 +114,36 @@ export default function proxy(request: NextRequest) {
    * URL, which is what that rotation is actually for.
    */
 
-  // H20: the bare domain opens the Arabic site. A visitor who already picked a
-  // language (next-intl's NEXT_LOCALE cookie) keeps it; Accept-Language is
-  // deliberately not consulted here, so balitrips.co always lands on /ar.
-  if (pathname === '/') {
+  // H20: the bare domain opens the Arabic site, and so does every other path
+  // without a locale prefix (site audit, Nov 2026: `/` went to /ar while
+  // `/activities` went to /en). A visitor who already picked a language
+  // (next-intl's NEXT_LOCALE cookie) keeps it; Accept-Language is deliberately
+  // not consulted, so an unprefixed link always lands on the main language.
+  const first = pathname.split('/')[1] ?? ''
+  if (!(routing.locales as readonly string[]).includes(first)) {
     const chosen = request.cookies.get('NEXT_LOCALE')?.value
-    const target = chosen && (routing.locales as readonly string[]).includes(chosen) ? chosen : 'ar'
+    const target =
+      chosen && (routing.locales as readonly string[]).includes(chosen)
+        ? chosen
+        : routing.defaultLocale
     const url = request.nextUrl.clone()
-    url.pathname = `/${target}`
+    url.pathname = pathname === '/' ? `/${target}` : `/${target}${pathname}`
     return NextResponse.redirect(url)
+  }
+
+  // Server-rendered 404s (see lib/seo/not-found-routing.ts). Documents only:
+  // a client-side navigation keeps Next's own not-found boundary.
+  if (
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    !request.headers.has('rsc') &&
+    !request.headers.has('next-router-prefetch')
+  ) {
+    // The 404 page's own address is a 404 too.
+    if (pathname === `/${first}/${NOT_FOUND_PAGE}`) return notFoundResponse(request, first)
+    const target = detailTarget(pathname)
+    if (target !== null && (await recordExists(request, target)) === false) {
+      return notFoundResponse(request, first)
+    }
   }
 
   return withGeoCurrency(request, localeProxy(request))

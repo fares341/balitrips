@@ -10,8 +10,8 @@
  * Hidden when:
  *  - `NEXT_PUBLIC_WHATSAPP_NUMBER` is not configured (a button that opens a
  *    chat with nobody is worse than none);
- *  - on the map and checkout, where the bottom of the screen belongs to the
- *    place sheet and the pay button.
+ *  - on the map, My Trip and checkout, where the bottom of the screen belongs
+ *    to the place sheet, the trip total and the pay button.
  *
  * Positioned with `inset-inline-end`, so it sits bottom-right in English and
  * bottom-left in Arabic. On phones it floats above the bottom tab bar
@@ -26,7 +26,17 @@ import { usePathname } from '@/i18n/routing'
 import { useWhatsappLink } from './contact-context'
 
 // Sign-in / sign-up / reset: on a phone the buttons sit on top of the form fields.
-const HIDDEN_ON = ['/map', '/checkout', '/login', '/register', '/forgot-password']
+// My Trip: they sat on the item prices and the total (audit M8).
+// /plans/buy/<id>: one plan and its "add" button, nothing over it.
+const HIDDEN_ON = [
+  '/map',
+  '/checkout',
+  '/my-trip',
+  '/plans/buy',
+  '/login',
+  '/register',
+  '/forgot-password',
+]
 
 export function WhatsAppFab() {
   const t = useTranslations()

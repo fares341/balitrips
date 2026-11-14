@@ -17,7 +17,7 @@
 
 import { createTranslator } from 'next-intl'
 
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 
 import ar from '../../../messages/ar.json'
@@ -42,7 +42,7 @@ export function translator(locale: Locale): Translator {
  * behind. Falling back to English beats rendering "undefined".
  */
 export function toMailLocale(value: unknown): Locale {
-  return typeof value === 'string' && isLocale(value) ? value : defaultLocale
+  return typeof value === 'string' && isLocale(value) ? value : fallbackLocale
 }
 
 /* --------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import { createRequire } from 'node:module'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 
+import { encodeWithinBudget } from '@/lib/media/budget'
 import { isStorageConfigured, uploadPublic } from '@/lib/storage'
 import {
   DERIVATIVE_FORMATS,
@@ -126,6 +127,8 @@ interface SharpInstance {
   resize(options: { width: number; withoutEnlargement: boolean; fit: 'inside' }): SharpInstance
   avif(options: { quality: number; effort: number }): SharpInstance
   webp(options: { quality: number; effort: number }): SharpInstance
+  /** A copy of the pipeline, so one resize can be encoded more than once. */
+  clone(): SharpInstance
   toBuffer(): Promise<Buffer>
 }
 
@@ -244,7 +247,11 @@ export async function ingestImage(input: IngestInput): Promise<IngestResult> {
         const encoded =
           format === 'avif'
             ? await pipeline.avif({ quality: 55, effort: 4 }).toBuffer()
-            : await pipeline.webp({ quality: 78, effort: 4 }).toBuffer()
+            : // A tall (portrait) rung can run to several hundred kB at the
+              // normal quality: stepped down until it fits the budget.
+              await encodeWithinBudget((quality) =>
+                pipeline.clone().webp({ quality, effort: 4 }).toBuffer(),
+              )
 
         const key = derivativeKey(input.mediaId, rung, format)
         await store(key, encoded, `image/${format}`)

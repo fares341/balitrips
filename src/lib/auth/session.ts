@@ -31,7 +31,7 @@ import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { redirect } from '@/i18n/routing'
 import { AuthorizationError, can, isRole, type Capability, type Role } from '@/lib/auth/roles'
 
@@ -94,7 +94,7 @@ function toUser(raw: Record<string, unknown>): SessionUser {
     image: asString(raw.image),
     // See rule 3 in the header: unknown roles get nothing.
     role: typeof role === 'string' && isRole(role) ? role : 'customer',
-    locale: typeof locale === 'string' && isLocale(locale) ? locale : defaultLocale,
+    locale: typeof locale === 'string' && isLocale(locale) ? locale : fallbackLocale,
     phone: asString(raw.phone),
     country: asString(raw.country),
     emailVerified: raw.emailVerified === true,

@@ -55,16 +55,17 @@ const nextConfig: NextConfig = {
 
   /**
    * Arabic per-policy pages now live as sections of /ar/policies (owner's
-   * policies document, Nov 2026). Temporary (307) while en/id still use the
-   * old pages; keep in step with POLICY_ANCHORS in components/layout/routes.ts.
+   * policies document, Nov 2026). Permanent (308): the Arabic per-policy
+   * pages are not coming back. Keep in step with POLICY_ANCHORS in
+   * components/layout/routes.ts.
    */
   async redirects() {
     return [
-      { source: '/ar/terms', destination: '/ar/policies#terms', permanent: false },
-      { source: '/ar/privacy', destination: '/ar/policies#privacy', permanent: false },
-      { source: '/ar/refund', destination: '/ar/policies#cancellation', permanent: false },
-      { source: '/ar/payment-policy', destination: '/ar/policies#payment', permanent: false },
-      { source: '/ar/cookies', destination: '/ar/policies#cookies', permanent: false },
+      { source: '/ar/terms', destination: '/ar/policies#terms', permanent: true },
+      { source: '/ar/privacy', destination: '/ar/policies#privacy', permanent: true },
+      { source: '/ar/refund', destination: '/ar/policies#cancellation', permanent: true },
+      { source: '/ar/payment-policy', destination: '/ar/policies#payment', permanent: true },
+      { source: '/ar/cookies', destination: '/ar/policies#cookies', permanent: true },
     ]
   },
 

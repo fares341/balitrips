@@ -39,7 +39,7 @@ import { and, eq, gt, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { customTripRequests, users } from '@/db/schema'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { redirect } from '@/i18n/routing'
 import { BUDGET_TIERS, type BudgetTier } from '@/lib/budget-tier'
 import { addItem, CartRejectedError } from '@/lib/cart'
@@ -230,7 +230,7 @@ export async function submitCustomTrip(
    * authoring locale rather than being trusted.
    */
   const posted = formData.get('locale')
-  const locale = typeof posted === 'string' && isLocale(posted) ? posted : defaultLocale
+  const locale = typeof posted === 'string' && isLocale(posted) ? posted : fallbackLocale
 
   const activities = await listActivities({ locale, limit: CANDIDATE_LIMIT })
 

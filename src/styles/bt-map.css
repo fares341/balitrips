@@ -1134,6 +1134,14 @@
   border: 2px solid var(--mx-forest);
   color: var(--mx-forest);
 }
+/* Paywall plan button: «3 months – 150 SAR», the amount kept on one line. */
+.mx-cta.mx-plan {
+  gap: 8px;
+  padding-inline: 14px;
+}
+.mx-cta.mx-plan bdi {
+  white-space: nowrap;
+}
 .mx-link {
   min-height: 44px;
   border: 0;
@@ -1915,6 +1923,18 @@
 .mx3-chips::-webkit-scrollbar {
   display: none;
 }
+/* Phones: the row scrolls sideways; a soft fade at the far edge says so
+   («Near me» sat half off-screen with nothing to hint at it). */
+@media (max-width: 1023px) {
+  .mx3-chips {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  }
+  [dir='rtl'] .mx3-chips {
+    -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+  }
+}
 /* Restaurant sections: a second, lighter pill row (horizontal scroll). */
 .mx5-secs {
   padding-top: 0;
@@ -2616,7 +2636,12 @@
   border-radius: 14px;
   overflow: hidden;
   scroll-snap-align: center;
-  background: #dfe7da;
+  background: #dfe7da center / cover no-repeat;
+}
+/* The photo box itself is see-through until its image paints (Photo's own
+   ivory fill would hide the small preview behind it). */
+.mx4-shot .photo {
+  background: transparent !important;
 }
 .mx4-shot:only-child {
   width: 100%;

@@ -184,6 +184,13 @@
 	# it, `immutable` would strand every returning visitor on the old island.
 	@islandAsset path_regexp island ^/map/island-[a-z]+\.(?:gz|json|webp)$
 
+	# Uploaded photos (site audit, Nov 2026): /media/<media id>/<width>.<fmt>.
+	# The id and the width are in the name and a re-upload gets a new id, so a
+	# browser may keep them for a month instead of the one day of other
+	# /public files. Not `immutable`: scripts/reencode-heavy-media.mjs may
+	# write a smaller file under the same name.
+	@uploadedMedia path_regexp upmedia ^/media/[0-9a-f-]+/[0-9]+\.(?:webp|avif)$
+
 	# API routes, auth callbacks, payment webhooks — and the admin, whose
 	# path is configuration (ADMIN_BASE_PATH) and must match what the app and
 	# src/proxy.ts were given. If it is rotated, rotate it here too.
@@ -260,6 +267,16 @@
 				Cloudflare-CDN-Cache-Control "public, max-age=31536000, immutable"
 			}
 			header ?Cache-Tag "island"
+		}
+
+		# 3c. Uploaded photo rungs: a month in the browser and at the edge.
+		handle @uploadedMedia {
+			header {
+				defer
+				Cache-Control "public, max-age=2592000"
+				Cloudflare-CDN-Cache-Control "public, max-age=2592000, stale-while-revalidate=86400"
+			}
+			header ?Cache-Tag "asset"
 		}
 
 		# 4. /public assets: a day in the browser, a month at the edge,

@@ -27,6 +27,12 @@
     sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/* English and Indonesian: the Latin face first, a tighter line. */
+.page:lang(en),
+.page:lang(id) {
+  font-family: var(--font-latin), system-ui, sans-serif;
+  line-height: 1.7;
+}
 
 .page * {
   box-sizing: border-box;

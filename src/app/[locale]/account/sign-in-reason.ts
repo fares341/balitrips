@@ -8,6 +8,20 @@
 
 export type SignInReason = 'favorites' | 'account' | 'trip'
 
+/**
+ * Where to go after signing in (`?next=`).
+ *
+ * Only ever an internal path. A `?next=` that a link can set is a redirect a
+ * phishing page can aim at its own domain, so anything with a scheme or a
+ * protocol-relative `//` is discarded rather than sanitised.
+ */
+export function safeNext(value: string | string[] | undefined): string | null {
+  if (typeof value !== 'string') return null
+  // `/\evil.com` يطبّعه المتصفح إلى `//evil.com`.
+  if (!/^\/(?![/\\])/.test(value)) return null
+  return value
+}
+
 /** The reason implied by where the visitor was going (an internal path). */
 export function reasonFor(next: string | null): SignInReason {
   if (next === null) return 'account'

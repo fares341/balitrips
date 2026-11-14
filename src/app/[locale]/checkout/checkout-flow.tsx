@@ -15,26 +15,60 @@
  * linked driver line on each activity over its own dates — the server prices
  * it — and the page re-renders with the new total before payment.
  *
+ * The steps are browser-history entries (`?step=2`, `?step=3`), so Back and
+ * Forward move between them instead of leaving checkout (audit M2). What the
+ * traveller typed in step 1 is kept in sessionStorage (`./contact-draft`), so
+ * it survives leaving the page, a reload and the sign-in round trip. Only the
+ * contact fields are kept — there are no card fields on this site at all.
+ *
+ * The phone field is the registration one (`PhoneField`): every country,
+ * mobile numbers only; the server checks it again (`@/lib/orders/contact`).
+ *
  * Nothing here computes a price. `expectedTotalMinor` is the total the page
  * displayed; the action refuses to charge a different one.
  */
 
-import { startTransition, useActionState, useId, useRef, useState, useTransition } from 'react'
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from 'react'
 import type { ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
-import { Field, Input, Select, Textarea, fieldDescribedBy } from '@/components/bt/field'
+import {
+  PhoneField,
+  defaultCountry,
+  hasSavedCountry,
+  useVisitorCountry,
+} from '@/components/auth/fields'
+import { Field, Input, Textarea, fieldDescribedBy } from '@/components/bt/field'
 import { CART_CHANGED_EVENT, CART_HREF, policyLink } from '@/components/layout/routes'
 import { Modal } from '@/components/shared/modal'
 import { useToast } from '@/components/shared/toast'
 import { Icon } from '@/components/ui/icon'
 import type { Locale } from '@/i18n/config'
 import { Link, useRouter } from '@/i18n/routing'
-import { DIAL_CODES, validateContact, type ContactField } from '@/lib/orders/contact'
+import { formatE164 } from '@/lib/auth/phone'
+import { contactPhone, validateContact, type ContactField } from '@/lib/orders/contact'
 
 import { addDriversAction } from '../my-trip/actions'
 import { startCheckoutAction } from './actions'
-import { INITIAL_CHECKOUT_STATE, type CheckoutErrorCode, type CheckoutState } from './constants'
+import {
+  CHECKOUT_HREF,
+  INITIAL_CHECKOUT_STATE,
+  SIGN_IN_PAGE_HREF,
+  SIGN_UP_PAGE_HREF,
+  type CheckoutErrorCode,
+  type CheckoutState,
+} from './constants'
+import { readContactDraft, writeContactDraft, type ContactDraft } from './contact-draft'
 
 export type DriverOffer = {
   itemId: string
@@ -48,9 +82,17 @@ export type DriverOffer = {
 export type CheckoutFlowProps = {
   /** Signed-in traveller's display name, or null for a guest. */
   signedInAs: string | null
+  /** Signed-in traveller's id, or null: whose contact draft may be restored. */
+  userId: string | null
   /** False when the trip holds account-only products and nobody is signed in. */
   guestAllowed: boolean
-  defaults: { name: string; email: string; dialCode: string; phone: string }
+  /**
+   * From the account. `phoneCountry` is the saved number's own country, or
+   * null to start from where the visitor is (as registration does).
+   */
+  defaults: { name: string; email: string; phoneCountry: string | null; phone: string }
+  /** The trip holds a digital product (itinerary file, map access). */
+  hasDigital: boolean
   expectedTotalMinor: number
   /** The pay button's amount, formatted by the server (the SAR charge). */
   totalLabel: string
@@ -62,8 +104,6 @@ export type CheckoutFlowProps = {
   /** Server-rendered order summary (the aside). */
   summary: ReactNode
   driverOffers: DriverOffer[]
-  /** Sign-in form (server action), rendered by the server. */
-  signIn: ReactNode
   /** The card is only held until the supplier confirms (bookings). */
   authorizeOnly?: boolean
 }
@@ -81,6 +121,23 @@ const SERVER_ERROR: Record<Exclude<CheckoutErrorCode, 'contact' | 'terms'>, stri
   unknown: 'c_error',
 }
 
+const subscribeNothing = () => () => undefined
+const isClient = () => true
+const isServer = () => false
+
+function stepInUrl(): Step {
+  const value = new URLSearchParams(window.location.search).get('step')
+  return value === '2' ? 2 : value === '3' ? 3 : 1
+}
+
+/** This page's URL for a step; step 1 is the bare /checkout. */
+function urlForStep(step: Step): string {
+  const url = new URL(window.location.href)
+  if (step === 1) url.searchParams.delete('step')
+  else url.searchParams.set('step', String(step))
+  return `${url.pathname}${url.search}`
+}
+
 function reducedMotion(): boolean {
   return (
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -94,15 +151,81 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   const { toast } = useToast()
   const uid = useId()
   const id = (name: string) => `${uid}-${name}`
+  const blockedGuest = !props.guestAllowed && props.signedInAs === null
 
-  const [step, setStep] = useState<Step>(1)
+  // null until the traveller moves; until then the step is the URL's (a
+  // reload or Forward into `?step=2`), as far as the form allows it.
+  const [movedTo, setStep] = useState<Step | null>(null)
   const [errors, setErrors] = useState<Partial<Record<ContactField | 'terms', string>>>({})
   const [driverAsked, setDriverAsked] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [addingDriver, startDriver] = useTransition()
+  const hydrated = useSyncExternalStore(subscribeNothing, isClient, isServer)
   const formRef = useRef<HTMLFormElement>(null)
   const topRef = useRef<HTMLOListElement>(null)
   const addRef = useRef<HTMLButtonElement>(null)
+  /** Step entries this visit pushed that lie behind the current one. */
+  const depth = useRef(0)
+  /** A field to focus once Back has landed on its step. */
+  const focusAfterPop = useRef<string | undefined>(undefined)
+
+  // ---- Step 1 values: typed now, else this tab's draft, else the account ----
+  const [edits, setEdits] = useState<Partial<ContactDraft>>({})
+  // sessionStorage does not exist on the server: read once hydrated.
+  const stored = useMemo(
+    () => (hydrated ? readContactDraft(props.userId) : null),
+    [hydrated, props.userId],
+  )
+  const [ipCountry, setIpCountry] = useState<string | null>(null)
+  useVisitorCountry(setIpCountry)
+  // A draft only holds what was actually typed: a field left empty in it
+  // falls back to the account's value (a guest who typed a name, then signed
+  // in, gets their account's e-mail and phone — not two blanks).
+  const draftPhone = stored?.phone ? stored : null
+  const contact: ContactDraft = {
+    name: edits.name ?? (stored?.name || props.defaults.name),
+    email: edits.email ?? (stored?.email || props.defaults.email),
+    phone: edits.phone ?? draftPhone?.phone ?? props.defaults.phone,
+    notes: edits.notes ?? stored?.notes ?? '',
+    // The picker: a choice made here; the country a drafted number was typed
+    // under; the saved number's own country; then the same default as
+    // registration (the last pick, else where the visitor is).
+    phoneCountry:
+      edits.phoneCountry ??
+      draftPhone?.phoneCountry ??
+      props.defaults.phoneCountry ??
+      stored?.phoneCountry ??
+      (hydrated
+        ? hasSavedCountry()
+          ? defaultCountry(locale)
+          : (ipCountry ?? defaultCountry(locale))
+        : locale === 'id'
+          ? 'ID'
+          : 'SA'),
+  }
+  const e164 = contactPhone(contact)
+  // For the popstate listener, which outlives any one render.
+  const latest = useRef({ contact, blockedGuest })
+  useEffect(() => {
+    latest.current = { contact, blockedGuest }
+  })
+
+  function edit(name: keyof ContactDraft, value: string) {
+    // A number is typed under the country showing at that moment: pin it, so
+    // a default that arrives later (the visitor's country) cannot re-read it.
+    const change: Partial<ContactDraft> =
+      name === 'phone' ? { phone: value, phoneCountry: contact.phoneCountry } : { [name]: value }
+    setEdits((current) => ({ ...current, ...change }))
+    // Kept: only what the traveller typed or chose — never a default.
+    writeContactDraft({ ...stored, ...edits, ...change }, props.userId)
+    clearError(name === 'phoneCountry' ? 'phone' : name)
+  }
+
+  // A later step only shows over a valid step 1 (and never to a guest who
+  // must sign in). The terms tick is not restored, so a reload stops at 2.
+  const urlStep: Step =
+    hydrated && !blockedGuest && stepInUrl() > 1 && validateContact(contact).ok ? 2 : 1
+  const step: Step = movedTo ?? urlStep
 
   const [state, formAction, pending] = useActionState(
     async (previous: CheckoutState, formData: FormData): Promise<CheckoutState> => {
@@ -122,40 +245,90 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   )
 
   function field(name: string): HTMLInputElement | HTMLTextAreaElement | null {
-    return formRef.current?.querySelector<HTMLInputElement>(`[name="${name}"]`) ?? null
+    // The phone's own input belongs to PhoneField; `phone` is a hidden copy.
+    const selector = name === 'phone' ? '[data-step="1"] input[type="tel"]' : `[name="${name}"]`
+    return formRef.current?.querySelector<HTMLInputElement>(selector) ?? null
   }
 
-  function value(name: string): string {
-    return field(name)?.value ?? ''
-  }
+  const termsAccepted = () => (field('terms') as HTMLInputElement | null)?.checked === true
 
-  /** Show `next`, then bring the first error (or the step's top) into view. */
-  function goTo(next: Step, focusField?: string) {
-    setStep(next)
+  /** Bring the first error (or the step's top) into view. */
+  function focusStep(shown: Step, focusField?: string) {
     const behavior: ScrollBehavior = reducedMotion() ? 'auto' : 'smooth'
+    if (focusField !== undefined) {
+      const target = field(focusField)
+      target?.scrollIntoView({ behavior, block: 'center' })
+      target?.focus({ preventScroll: true })
+      return
+    }
+    topRef.current?.scrollIntoView({ behavior, block: 'start' })
+    formRef.current
+      ?.querySelector<HTMLElement>(`[data-step="${shown}"] h2`)
+      ?.focus({ preventScroll: true })
+  }
+
+  // A reload on `?step=3`, or a guest who must sign in: the URL says a step
+  // the form cannot show yet. Put the URL back in step with the page.
+  useEffect(() => {
+    if (hydrated && movedTo === null && stepInUrl() !== step) {
+      window.history.replaceState(null, '', urlForStep(step))
+    }
+    // Once, when the draft has been read.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated])
+
+  // Browser Back / Forward: the URL says which step, the form says whether
+  // it may be shown (Forward into payment after un-ticking the terms may not).
+  useEffect(() => {
+    const onPop = () => {
+      const wanted = stepInUrl()
+      const now = latest.current
+      const valid = !now.blockedGuest && validateContact(now.contact).ok
+      const allowed: Step =
+        wanted === 1 || !valid ? 1 : wanted === 3 && !termsAccepted() ? 2 : wanted
+      if (allowed !== wanted) window.history.replaceState(null, '', urlForStep(allowed))
+      setStep((current) => {
+        depth.current = Math.max(0, depth.current + allowed - (current ?? allowed))
+        return allowed
+      })
+      setModalOpen(false)
+      const focusField = focusAfterPop.current
+      focusAfterPop.current = undefined
+      requestAnimationFrame(() => focusStep(allowed, focusField))
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+    // Mounted once: everything it reads is a ref, the DOM or the URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /**
+   * Show `next`. Forward adds a history entry; going back returns to the
+   * entry already there, so the browser's Back and the page's "Back" button
+   * do the same thing and Forward still works afterwards.
+   */
+  function goTo(next: Step, focusField?: string) {
+    const delta = next - step
+    if (delta < 0 && depth.current >= -delta) {
+      // The popstate listener shows the step.
+      focusAfterPop.current = focusField
+      window.history.go(delta)
+      return
+    }
+    if (delta > 0) {
+      window.history.pushState(null, '', urlForStep(next))
+      depth.current += delta
+    } else if (delta < 0) {
+      // Arrived by reload or Forward: no entry of this visit to go back to.
+      window.history.replaceState(null, '', urlForStep(next))
+    }
+    setStep(next)
     // After React commits the new step.
-    requestAnimationFrame(() => {
-      if (focusField !== undefined) {
-        const target = field(focusField)
-        target?.scrollIntoView({ behavior, block: 'center' })
-        target?.focus({ preventScroll: true })
-        return
-      }
-      topRef.current?.scrollIntoView({ behavior, block: 'start' })
-      formRef.current
-        ?.querySelector<HTMLElement>(`[data-step="${next}"] h2`)
-        ?.focus({ preventScroll: true })
-    })
+    requestAnimationFrame(() => focusStep(next, focusField))
   }
 
   function validateStep1(): boolean {
-    const result = validateContact({
-      name: value('name'),
-      email: value('email'),
-      dialCode: value('dialCode'),
-      phone: value('phone'),
-      notes: value('notes'),
-    })
+    const result = validateContact(contact)
     if (result.ok) {
       setErrors({})
       return true
@@ -167,8 +340,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   }
 
   function validateStep2(): boolean {
-    const accepted = (field('terms') as HTMLInputElement | null)?.checked === true
-    if (accepted) {
+    if (termsAccepted()) {
       setErrors((e) => ({ ...e, terms: undefined }))
       return true
     }
@@ -179,7 +351,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
 
   function next(from: Step) {
     if (from === 1) {
-      if (!props.guestAllowed && props.signedInAs === null) return
+      if (blockedGuest) return
       if (validateStep1()) goTo(2)
       return
     }
@@ -233,7 +405,8 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
   const busy = pending || addingDriver
   const stepClass = (n: Step) => `ck-step panel${step === n ? ' on' : ''}`
   const stepState = (n: Step) => (n < step ? 'done' : n === step ? 'cur' : undefined)
-  const blockedGuest = !props.guestAllowed && props.signedInAs === null
+  const signInHref = { pathname: SIGN_IN_PAGE_HREF, query: { next: CHECKOUT_HREF } }
+  const signUpHref = { pathname: SIGN_UP_PAGE_HREF, query: { next: CHECKOUT_HREF } }
 
   return (
     <>
@@ -291,122 +464,115 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
               <div className="alert alert-info ck-guest">
                 <Icon name="info" size={18} />
                 <span>
-                  {t('co_have_account')} {props.signIn} {t('co_or_guest')}
+                  {t('co_have_account')}{' '}
+                  <Link className="link" href={signInHref}>
+                    {t('co_log_in')}
+                  </Link>{' '}
+                  {t('co_or_guest')}
                 </span>
               </div>
             ) : (
-              <div className="alert alert-warn ck-guest">
-                <Icon name="lock" size={18} />
-                <span>
-                  <b>{t('co_account_needed_t')}</b>
-                  {t('co_account_needed_b')} {props.signIn}
+              // The trip holds something that lives in an account (an itinerary
+              // file, map access). Plain links, not a form: a <form> inside the
+              // checkout form is invalid HTML — the browser drops it, so the old
+              // button did nothing (audit C1). The trip stays in the cart and is
+              // folded into the account when the traveller comes back here.
+              <div className="ck-need-account">
+                <span className="ck-need-ill" aria-hidden="true">
+                  <Icon name="lock" size={26} />
                 </span>
+                <b>{t('co_account_needed_t')}</b>
+                <p className="muted">{t('co_account_needed_b')}</p>
+                <div className="ck-need-cta">
+                  <Link className="btn btn-primary btn-lg" href={signInHref}>
+                    {t('co_log_in')}
+                  </Link>
+                  <Link className="btn btn-ghost btn-lg" href={signUpHref}>
+                    {t('co_sign_up')}
+                  </Link>
+                </div>
+                <small className="muted">{t('co_account_needed_keep')}</small>
               </div>
             )}
 
-            <div className="two">
-              <Field id={id('name')} label={t('co_name_l')} error={err('name')}>
-                <Input
-                  id={id('name')}
-                  name="name"
-                  autoComplete="name"
-                  defaultValue={props.defaults.name}
-                  invalid={errors.name !== undefined}
-                  aria-describedby={fieldDescribedBy(id('name'), { error: err('name') })}
-                  onInput={() => clearError('name')}
-                />
-              </Field>
-              <Field id={id('email')} label={t('co_email_l')} error={err('email')}>
-                <Input
-                  id={id('email')}
-                  name="email"
-                  type="email"
-                  dir="ltr"
-                  autoComplete="email"
-                  inputMode="email"
-                  defaultValue={props.defaults.email}
-                  invalid={errors.email !== undefined}
-                  aria-describedby={fieldDescribedBy(id('email'), { error: err('email') })}
-                  onInput={() => clearError('email')}
-                />
-              </Field>
-            </div>
-
-            {/* Lead capture: the WhatsApp number is where the schedule and the
-                confirmation go — made prominent, validation unchanged. */}
-            <div
-              className="ck-wa-box"
-              style={{
-                border: '1.5px solid var(--orange, #ff9000)',
-                background: 'var(--orange-soft, #ffebd1)',
-                borderRadius: 14,
-                padding: '12px 14px 4px',
-                marginBlock: 6,
-              }}
-            >
-              <Field
-                id={id('phone')}
-                label={t('co_phone_l')}
-                hint={t('co_phone_hint')}
-                error={err('phone')}
-              >
-                <div className="ck-phone">
-                  <Select
-                    name="dialCode"
-                    aria-label={t('co_dial')}
-                    dir="ltr"
-                    defaultValue={props.defaults.dialCode}
-                    onChange={() => clearError('phone')}
-                  >
-                    {DIAL_CODES.map((code) => (
-                      <option key={code} value={code}>
-                        {code}
-                      </option>
-                    ))}
-                  </Select>
-                  <Input
-                    id={id('phone')}
-                    name="phone"
-                    type="tel"
-                    inputMode="tel"
-                    dir="ltr"
-                    autoComplete="tel-national"
-                    defaultValue={props.defaults.phone}
-                    invalid={errors.phone !== undefined}
-                    aria-describedby={fieldDescribedBy(id('phone'), {
-                      hint: t('co_phone_hint'),
-                      error: err('phone'),
-                    })}
-                    onInput={() => clearError('phone')}
-                  />
+            {/* A guest who must sign in first gets no fields to fill in vain
+                (audit L10); the account's details prefill them afterwards. */}
+            {!blockedGuest && (
+              <>
+                <div className="two">
+                  <Field id={id('name')} label={t('co_name_l')} error={err('name')}>
+                    <Input
+                      id={id('name')}
+                      name="name"
+                      autoComplete="name"
+                      maxLength={120}
+                      value={contact.name}
+                      onChange={(event) => edit('name', event.target.value)}
+                      invalid={errors.name !== undefined}
+                      aria-describedby={fieldDescribedBy(id('name'), { error: err('name') })}
+                    />
+                  </Field>
+                  <Field id={id('email')} label={t('co_email_l')} error={err('email')}>
+                    <Input
+                      id={id('email')}
+                      name="email"
+                      type="email"
+                      dir="ltr"
+                      autoComplete="email"
+                      inputMode="email"
+                      maxLength={200}
+                      value={contact.email}
+                      onChange={(event) => edit('email', event.target.value)}
+                      invalid={errors.email !== undefined}
+                      aria-describedby={fieldDescribedBy(id('email'), { error: err('email') })}
+                    />
+                  </Field>
                 </div>
-              </Field>
-            </div>
 
-            <Field id={id('notes')} label={t('co_notes_l')} error={err('notes')}>
-              <Textarea
-                id={id('notes')}
-                name="notes"
-                maxLength={500}
-                placeholder={t('co_notes_ph')}
-                invalid={errors.notes !== undefined}
-                aria-describedby={fieldDescribedBy(id('notes'), { error: err('notes') })}
-                onInput={() => clearError('notes')}
-              />
-            </Field>
+                {/* Lead capture: the WhatsApp number is where the schedule and
+                    the confirmation go — made prominent. The same field and the
+                    same rules as registration; the server checks it again. */}
+                <div className="ck-wa-box">
+                  <PhoneField
+                    label={t('co_phone_l')}
+                    value={contact.phone}
+                    onChange={(value) => edit('phone', value)}
+                    country={contact.phoneCountry}
+                    onCountryChange={(iso) => edit('phoneCountry', iso)}
+                    error={errors.phone ?? null}
+                    maxLength={32}
+                  />
+                  <input type="hidden" name="phone" value={contact.phone} />
+                  <input type="hidden" name="phoneCountry" value={contact.phoneCountry} />
+                  <small className="muted ck-wa-note">
+                    <Icon name="whatsapp" size={15} /> {t('co_phone_hint')}
+                  </small>
+                </div>
+
+                <Field id={id('notes')} label={t('co_notes_l')} error={err('notes')}>
+                  <Textarea
+                    id={id('notes')}
+                    name="notes"
+                    maxLength={500}
+                    placeholder={t('co_notes_ph')}
+                    value={contact.notes}
+                    onChange={(event) => edit('notes', event.target.value)}
+                    invalid={errors.notes !== undefined}
+                    aria-describedby={fieldDescribedBy(id('notes'), { error: err('notes') })}
+                  />
+                </Field>
+              </>
+            )}
 
             <div className="ck-nav">
               <Link className="btn btn-ghost" href={CART_HREF}>
                 {t('co_back_trip')}
               </Link>
-              <button
-                type="button"
-                className="btn btn-primary btn-lg"
-                disabled={blockedGuest}
-                onClick={() => next(1)}
-              >
-                {t('co_to_review')}
-              </button>
+              {!blockedGuest && (
+                <button type="button" className="btn btn-primary btn-lg" onClick={() => next(1)}>
+                  {t('co_to_review')}
+                </button>
+              )}
             </div>
           </section>
 
@@ -420,24 +586,56 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
             <h2 className="h3" id={id('s2')} tabIndex={-1}>
               {t('co_s2_t')}
             </h2>
-            {props.review}
-            <div className="alert alert-warn">
-              <Icon name="info" size={18} />
-              <span>
-                <b>{t('co_policies_t')}</b>
-                {t('co_policies_b')}{' '}
-                <Link className="link" href={policyLink('/refund', locale)}>
-                  {t('co_policy_read')}
-                </Link>
-              </span>
+            {/* What step 1 collected, read back before paying: a typo in the
+                WhatsApp number is caught here, not after the charge (audit M11). */}
+            <div className="ck-contact" role="group" aria-labelledby={id('rc')}>
+              <div className="ck-contact-h">
+                <b id={id('rc')}>{t('co_rev_contact_t')}</b>
+                <button type="button" className="link" onClick={() => goTo(1)}>
+                  <Icon name="edit" size={14} /> {t('co_rev_edit')}
+                </button>
+              </div>
+              <dl>
+                <div>
+                  <dt>{t('co_name_l')}</dt>
+                  <dd>
+                    <bdi>{contact.name.trim()}</bdi>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t('co_email_l')}</dt>
+                  <dd>
+                    <bdi dir="ltr">{contact.email.trim().toLowerCase()}</bdi>
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t('co_phone_l')}</dt>
+                  <dd>
+                    <bdi dir="ltr">{e164 === null ? contact.phone : formatE164(e164)}</bdi>
+                  </dd>
+                </div>
+                {contact.notes.trim() !== '' && (
+                  <div className="ck-contact-notes">
+                    <dt>{t('co_rev_notes')}</dt>
+                    <dd>{contact.notes.trim()}</dd>
+                  </div>
+                )}
+              </dl>
+              <small className="muted">{t('co_rev_contact_hint')}</small>
             </div>
-            {/* Client, Oct 2026: the site-wide cancellation policy, and how
-                a booking is paid, stated before the customer agrees. */}
+            {props.review}
+            {/* One statement of the policy (audit L9): the site-wide
+                cancellation terms (client, Oct 2026) and, when the trip holds
+                one, the digital-product rule — no second box saying otherwise. */}
             <div className="alert alert-info">
               <Icon name="shield" size={18} />
               <span>
                 <b>{t('chk_cancel_policy_t')}: </b>
                 {t('cancel_default')}
+                {props.hasDigital ? ` ${t('co_policies_digital')}` : ''}{' '}
+                <Link className="link" href={policyLink('/refund', locale)}>
+                  {t('co_policy_read')}
+                </Link>
               </span>
             </div>
             {props.authorizeOnly === true && (
@@ -553,7 +751,7 @@ export function CheckoutFlow(props: CheckoutFlowProps) {
                 </span>
               </li>
               <li>
-                <Icon name="phone" size={22} />
+                <Icon name="mobile" size={22} />
                 <span>
                   <b dir="ltr">Apple Pay · Google Pay</b>
                   <small className="muted">{t('co_pm_wallet')}</small>

@@ -41,6 +41,7 @@ import {
   boundsOf,
   byDistance,
   categoryCounts,
+  lockedCounts,
   mapQuery,
   nearestChain,
   parseFactFilter,
@@ -201,7 +202,8 @@ export function MapExplorer(props: Props) {
   const sectionKeys = useMemo(() => new Set(sections.map((one) => one.key)), [sections])
   const [facts, setFacts] = useState<FactFilter>(props.initialFacts)
   const [sheet, setSheet] = useState<SheetKind | null>(null)
-  const [paywall, setPaywall] = useState<CategoryItem | null>(null)
+  /** The paywall sheet: one locked category, or `all` (the «N VIP places» chip). */
+  const [paywall, setPaywall] = useState<CategoryItem | 'all' | null>(null)
   const [view, setView] = useState<'map' | 'list'>('map')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [userPos, setUserPos] = useState<LatLon | null>(null)
@@ -419,18 +421,6 @@ export function MapExplorer(props: Props) {
 
   // ---- Actions ----------------------------------------------------------------
 
-  const toggleCat = (category: CategoryItem) => {
-    if (category.locked) {
-      setPaywall(category)
-      return
-    }
-    const has = applied.categories.includes(category.key)
-    const next = has
-      ? applied.categories.filter((one) => one !== category.key)
-      : [...applied.categories, category.key]
-    apply({ area: applied.area, categories: next }, facts)
-  }
-
   const toggleTraveler = (value: TravelerType) => {
     const list = facts.travelers
     const next = list.includes(value) ? list.filter((one) => one !== value) : [...list, value]
@@ -487,6 +477,26 @@ export function MapExplorer(props: Props) {
   const area = applied.area ?? ALL_AREA
   const title = area === ALL_AREA ? t('mx3_bali') : (areaByKey.get(area)?.label ?? t('mx3_bali'))
   const countsHere = useMemo(() => categoryCounts(counts, area), [counts, area])
+  const lockedHere = useMemo(() => lockedCounts(counts, area), [counts, area])
+
+  /** Nothing of this type can be opened here by this viewer. */
+  const lockedInArea = (category: CategoryItem): boolean => {
+    if (props.unlocked) return false
+    const n = countsHere.get(category.key) ?? 0
+    return category.locked || (n > 0 && (lockedHere.get(category.key) ?? 0) >= n)
+  }
+
+  const toggleCat = (category: CategoryItem) => {
+    if (lockedInArea(category)) {
+      setPaywall(category)
+      return
+    }
+    const has = applied.categories.includes(category.key)
+    const next = has
+      ? applied.categories.filter((one) => one !== category.key)
+      : [...applied.categories, category.key]
+    apply({ area: applied.area, categories: next }, facts)
+  }
 
   // Distance: from the viewer (opted in), else from the chosen area's centre,
   // else none. Never a made-up origin.
@@ -610,8 +620,12 @@ export function MapExplorer(props: Props) {
               type="button"
               className="mx3-chip is-vip"
               onClick={() => {
-                const vip = categories.find((one) => one.locked)
-                if (vip) setPaywall(vip)
+                // One chosen type holds every locked place here: name it.
+                const withLocked = applied.categories.filter(
+                  (key) => (lockedHere.get(key) ?? 0) > 0,
+                )
+                const only = withLocked.length === 1 ? catByKey.get(withLocked[0]!) : undefined
+                setPaywall(only ?? 'all')
               }}
             >
               <Icon name="lock" size={14} />
@@ -761,19 +775,31 @@ export function MapExplorer(props: Props) {
               .map((cat) => {
                 const on = applied.categories.includes(cat.key)
                 const n = countsHere.get(cat.key) ?? 0
+                // Same rule as the «N VIP places» chip, so the badges add up to it.
+                const lockedN = props.unlocked ? 0 : Math.min(n, lockedHere.get(cat.key) ?? 0)
+                const isLocked = lockedInArea(cat)
+                const badge = isLocked
+                  ? t('mx_vip_n', { n })
+                  : lockedN > 0
+                    ? t('mx_mixed_n', { free: n - lockedN, locked: lockedN })
+                    : cat.tier === 'vip' && !props.unlocked
+                      ? t('mx_free_n', { n })
+                      : cat.tier === 'vip'
+                        ? t('mx_vip_n', { n })
+                        : t('mx_free_n', { n })
                 return (
                   <li key={cat.key}>
                     <button
                       type="button"
-                      role={cat.locked ? undefined : 'checkbox'}
-                      aria-checked={cat.locked ? undefined : on}
-                      aria-haspopup={cat.locked ? 'dialog' : undefined}
-                      className={`mx-cat${on ? ' is-on' : ''}${cat.locked ? ' is-locked' : ''}`}
+                      role={isLocked ? undefined : 'checkbox'}
+                      aria-checked={isLocked ? undefined : on}
+                      aria-haspopup={isLocked ? 'dialog' : undefined}
+                      className={`mx-cat${on ? ' is-on' : ''}${isLocked ? ' is-locked' : ''}`}
                       onClick={() => toggleCat(cat)}
                       data-cat={cat.key}
                     >
                       <span className="mx-check" aria-hidden="true">
-                        {cat.locked ? (
+                        {isLocked ? (
                           <Icon name="lock" size={16} />
                         ) : on ? (
                           <Icon name="check" size={16} stroke={2.6} />
@@ -781,10 +807,13 @@ export function MapExplorer(props: Props) {
                       </span>
                       <PinGlyph categoryKey={cat.key} size={30} className="mx-caticon" />
                       <span className="mx-catname">{cat.label}</span>
-                      <span className={cat.tier === 'vip' ? 'mx-badge is-vip' : 'mx-badge'}>
-                        {cat.tier === 'vip' ? t('mx_vip_n', { n }) : t('mx_free_n', { n })}
+                      <span
+                        className={isLocked || lockedN > 0 ? 'mx-badge is-vip' : 'mx-badge'}
+                        data-locked={lockedN}
+                      >
+                        {badge}
                       </span>
-                      {cat.locked && <span className="sr-only">{t('mx_locked_aria')}</span>}
+                      {isLocked && <span className="sr-only">{t('mx_locked_aria')}</span>}
                     </button>
                   </li>
                 )
@@ -880,7 +909,15 @@ export function MapExplorer(props: Props) {
       />
 
       {paywall !== null && (
-        <Paywall category={paywall} plans={props.plans} onClose={() => setPaywall(null)} />
+        <Paywall
+          category={paywall === 'all' ? null : paywall}
+          lockedNames={categories
+            .filter((one) => (lockedHere.get(one.key) ?? 0) > 0)
+            .map((one) => one.label)}
+          locale={props.locale}
+          plans={props.plans}
+          onClose={() => setPaywall(null)}
+        />
       )}
     </main>
   )
@@ -1019,10 +1056,16 @@ function Sheet({
 
 function Paywall({
   category,
+  lockedNames,
+  locale,
   plans,
   onClose,
 }: {
-  category: CategoryItem
+  /** The locked type that was tapped; null for the general «N VIP places» chip. */
+  category: CategoryItem | null
+  /** Every type with locked places here (what the subscription opens). */
+  lockedNames: string[]
+  locale: string
   plans: PlanItem[]
   onClose: () => void
 }) {
@@ -1030,29 +1073,52 @@ function Paywall({
   const term = (plan: PlanItem) =>
     plan.durationDays === null
       ? t('mx_term_life')
-      : plan.durationDays % 30 === 0
-        ? t('mx_term_months', { n: plan.durationDays / 30 })
-        : t('mx_term_days', { n: plan.durationDays })
+      : plan.durationDays === 365 || plan.durationDays === 366
+        ? t('mx_term_year')
+        : plan.durationDays % 30 === 0
+          ? t('mx_term_months', { n: plan.durationDays / 30 })
+          : t('mx_term_days', { n: plan.durationDays })
+  // The duration is the label (said once). Two plans of the same length are
+  // told apart by their names instead.
+  const terms = plans.map(term)
+  const label = (index: number) =>
+    terms.indexOf(terms[index]!) === terms.lastIndexOf(terms[index]!)
+      ? terms[index]!
+      : plans[index]!.name
+  const title =
+    category === null ? t('mx_vip_title_all') : t('mx_vip_title', { name: category.label })
+  let names = ''
+  if (lockedNames.length > 0) {
+    try {
+      names = new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(
+        lockedNames,
+      )
+    } catch {
+      names = lockedNames.join(locale === 'ar' ? '، ' : ', ')
+    }
+  }
   return (
-    <Sheet
-      title={t('mx_vip_title', { name: category.label })}
-      onClose={onClose}
-      className="is-paywall"
-    >
+    <Sheet title={title} onClose={onClose} className="is-paywall">
       <div className="mx-pw">
         <span className="mx-pw-lock" aria-hidden="true">
           <Icon name="lock" size={24} />
         </span>
-        <h2 className="mx-h3">{t('mx_vip_title', { name: category.label })}</h2>
-        <p className="mx-sub">{t('mx_vip_body')}</p>
+        <h2 className="mx-h3">{title}</h2>
+        <p className="mx-sub">
+          {names === '' ? t('mx_vip_body_plain') : t('mx_vip_body', { names })}
+        </p>
         {plans.map((plan, index) => (
           <a
             key={plan.id}
             href={plan.href}
             rel="nofollow"
-            className={index === 0 ? 'mx-cta is-orange' : 'mx-cta is-ghost'}
+            className={index === 0 ? 'mx-cta is-orange mx-plan' : 'mx-cta is-ghost mx-plan'}
+            title={plan.name}
+            data-plan-days={plan.durationDays ?? ''}
           >
-            {plan.name} — <Money minor={plan.priceMinor} currency={plan.currency} /> {term(plan)}
+            <span>{label(index)}</span>
+            <span aria-hidden="true">–</span>
+            <Money minor={plan.priceMinor} currency={plan.currency} />
           </a>
         ))}
         {plans.length === 0 && (
