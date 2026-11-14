@@ -4,12 +4,15 @@
  * Site motion, in one place (mobile audit, Nov 2026).
  *
  * 1. Reveal on scroll. Section heads (`.sec-head`) and the cards of every
- *    `.grid` (plus a few home-page blocks, see HEADS / GROUPS) fade up gently (about half a second) as they enter the screen;
- *    cards that enter together are staggered. Only blocks that are still
- *    BELOW the fold when the page opens are touched, so nothing on screen
- *    blinks; content is visible by default, so without JavaScript (or with
- *    an error here) everything simply shows. Opacity and transform only: no
- *    layout shift. CSS: `[data-rv]` in bt-mobile.css.
+ *    `.grid` (plus a few home-page blocks, see HEADS / GROUPS) fade up gently
+ *    (about half a second) as they enter the screen; cards that enter
+ *    together are staggered. Only blocks that are still BELOW the fold when
+ *    the page opens are touched, so nothing on screen blinks; content is
+ *    visible by default, so without JavaScript (or with an error here)
+ *    everything simply shows. Opacity and transform only: no layout shift.
+ *    Done with the Web Animations API, not classes or attributes, so the
+ *    server HTML is never touched (no hydration mismatch in parts of the page
+ *    that are still streaming in) and nothing is left behind afterwards.
  * 2. A short fade of the page content after each in-app navigation (opacity
  *    only, so fixed bars inside the page are not displaced). Not on the first
  *    load, which the preloader covers.
@@ -26,13 +29,24 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import { usePathname } from '@/i18n/routing'
 
 /** Blocks that rise on their own: section heads, and the home page's own heads and panels. */
-const HEADS = 'main .sec-head, main .svc-head, main .about-media, main .about-copy, main .ct'
+const HEADS =
+  'main .sec-head, main.home-v3 .svc-head, main.home-v3 .about-media, main.home-v3 .about-copy, main.home-v3 .wrap > .ct'
 /** Blocks whose children rise one by one (staggered): every card grid. */
 const GROUPS = 'main .grid, main .guide-grid'
+/** Any element animated by the rules above (to skip blocks nested inside one). */
+const ANY_TARGET = `${HEADS}, ${GROUPS.split(', ')
+  .map((group) => `${group} > *`)
+  .join(', ')}`
 const STAGGER_MS = 70
 const MAX_STAGGER = 5
-/** After this, the attribute goes, so the card's own hover transitions return. */
-const CLEANUP_MS = 700 + STAGGER_MS * MAX_STAGGER
+const HIDDEN: Keyframe = { opacity: 0, transform: 'translate3d(0, 18px, 0)' }
+const SHOWN: Keyframe = { opacity: 1, transform: 'translate3d(0, 0, 0)' }
+const TIMING: KeyframeAnimationOptions = {
+  duration: 540,
+  easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
+  // Holds the hidden first frame while paused and during the stagger delay.
+  fill: 'backwards',
+}
 
 /** Paths that keep their own motion (the map is a full-screen app). */
 function isExcluded(pathname: string): boolean {
@@ -66,29 +80,21 @@ export function Motion() {
 
   // Reveal on scroll.
   useEffect(() => {
-    if (isExcluded(pathname) || reducedMotion() || typeof IntersectionObserver === 'undefined') {
+    if (
+      isExcluded(pathname) ||
+      reducedMotion() ||
+      typeof IntersectionObserver === 'undefined' ||
+      typeof Element.prototype.animate !== 'function'
+    ) {
       return
     }
-    const armed = new Set<HTMLElement>()
-    const timers: number[] = []
-
-    const show = (el: HTMLElement, delay: number) => {
-      el.style.setProperty('--rv-delay', `${delay}ms`)
-      el.dataset.rv = '1'
-      armed.delete(el)
-      timers.push(
-        window.setTimeout(() => {
-          delete el.dataset.rv
-          el.style.removeProperty('--rv-delay')
-        }, CLEANUP_MS + delay),
-      )
-    }
+    const armed = new Map<Element, Animation>()
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entering = entries
           .filter((entry) => entry.isIntersecting)
-          .map((entry) => entry.target as HTMLElement)
+          .map((entry) => entry.target)
           // Reading order: top to bottom, then along the row.
           .sort((a, b) => {
             const ra = a.getBoundingClientRect()
@@ -99,7 +105,15 @@ export function Motion() {
           })
         entering.forEach((el, i) => {
           observer.unobserve(el)
-          show(el, Math.min(i, MAX_STAGGER) * STAGGER_MS)
+          const animation = armed.get(el)
+          armed.delete(el)
+          if (animation === undefined) return
+          animation.effect?.updateTiming({ delay: Math.min(i, MAX_STAGGER) * STAGGER_MS })
+          animation.play()
+          animation.finished.then(
+            () => animation.cancel(),
+            () => {},
+          )
         })
       },
       { rootMargin: '0px 0px -8% 0px', threshold: 0.01 },
@@ -107,27 +121,29 @@ export function Motion() {
 
     // Below the fold now? Measured once, before anything is hidden.
     const fold = window.innerHeight
-    const candidates: HTMLElement[] = []
-    document.querySelectorAll<HTMLElement>(HEADS).forEach((el) => candidates.push(el))
-    document.querySelectorAll<HTMLElement>(GROUPS).forEach((grid) => {
-      for (const child of grid.children) candidates.push(child as HTMLElement)
+    const candidates = new Set<Element>(document.querySelectorAll(HEADS))
+    document.querySelectorAll(GROUPS).forEach((grid) => {
+      for (const child of grid.children) candidates.add(child)
     })
-    const below = candidates.filter((el) => {
-      if (el.closest('[data-no-motion]') !== null || el.dataset.rv !== undefined) return false
+    for (const el of candidates) {
+      if (el.closest('[data-no-motion]') !== null) continue
+      // One animation per area: a block inside another candidate rides with it.
+      if (el.parentElement?.closest(ANY_TARGET)) continue
       const r = el.getBoundingClientRect()
-      return r.height > 0 && r.top > fold
-    })
-    for (const el of below) {
-      el.dataset.rv = '0'
-      armed.add(el)
+      if (r.height === 0 || r.top <= fold) continue
+      const animation = el.animate([HIDDEN, SHOWN], TIMING)
+      animation.pause()
+      armed.set(el, animation)
       observer.observe(el)
     }
 
+    // Printing or leaving: show everything that never came into view.
+    const showAll = () => armed.forEach((animation) => animation.cancel())
+    window.addEventListener('beforeprint', showAll)
     return () => {
       observer.disconnect()
-      timers.forEach((t) => window.clearTimeout(t))
-      // Leave nothing hidden behind (route change, unmount).
-      for (const el of armed) delete el.dataset.rv
+      window.removeEventListener('beforeprint', showAll)
+      showAll()
     }
   }, [pathname])
 
