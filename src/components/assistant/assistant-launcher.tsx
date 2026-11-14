@@ -11,7 +11,11 @@
  * depends on it.
  *
  * Position: bottom inline-end, stacked above the WhatsApp button where that
- * is shown, above the phone tab bar, and on the map above its Map/List bar.
+ * is shown, above the phone tab bar.
+ *
+ * Not on the map: the map owns the whole screen there (pins at the edges,
+ * its own controls and the place sheet), and on a phone the button sat on
+ * the pins (mobile audit, Nov 2026). The WhatsApp button is hidden there too.
  */
 
 import dynamic from 'next/dynamic'
@@ -51,7 +55,6 @@ export function AssistantLauncher() {
   const button = useRef<HTMLButtonElement>(null)
 
   const waHref = useWhatsappLink()
-  const onMap = pathname === '/map' || pathname.startsWith('/map/')
   const solo =
     waHref === null ||
     NO_WHATSAPP.some((path) => pathname === path || pathname.startsWith(`${path}/`))
@@ -81,6 +84,7 @@ export function AssistantLauncher() {
     requestAnimationFrame(() => button.current?.focus())
   }
 
+  if (pathname === '/map' || pathname.startsWith('/map/')) return null
   // Auth pages: the launcher would cover the form fields on a phone.
   if (AUTH_PAGES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null
   // Exact paths: the order page after payment (/checkout/confirmation/…) keeps its help.
@@ -91,7 +95,7 @@ export function AssistantLauncher() {
       <button
         ref={button}
         type="button"
-        className={`ai-fab${solo ? ' is-solo' : ''}${onMap ? ' is-map' : ''}`}
+        className={`ai-fab${solo ? ' is-solo' : ''}`}
         hidden={open}
         onClick={openPanel}
         aria-haspopup="dialog"

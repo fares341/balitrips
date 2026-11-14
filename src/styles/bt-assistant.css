@@ -45,19 +45,6 @@
 .ai-fab.is-solo {
   bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
 }
-@media (max-width: 1023px) {
-  /* Map: above the Map / List bar (10px + ~56px), and out of the way while a
-     place card is open. */
-  .ai-fab.is-map {
-    bottom: calc(var(--tabbar-h) + 80px + env(safe-area-inset-bottom, 0px));
-    inset-inline-end: 12px;
-    width: 46px;
-    height: 46px;
-  }
-  body:has(.mp-mcard) .ai-fab.is-map {
-    display: none;
-  }
-}
 @media (min-width: 1024px) {
   .ai-fab {
     bottom: 88px;
@@ -76,19 +63,6 @@
   }
   .ai-fab.is-solo {
     bottom: 24px;
-  }
-  /* Desktop map: the zoom buttons and the unlock bar own the corner. */
-  .ai-fab.is-map {
-    bottom: 300px;
-    inset-inline-end: 14px;
-    width: 46px;
-    height: 46px;
-    padding: 0;
-    justify-content: center;
-    border-radius: 14px;
-  }
-  .ai-fab.is-map .ai-fab-label {
-    display: none;
   }
 }
 
