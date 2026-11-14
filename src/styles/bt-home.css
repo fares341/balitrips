@@ -1541,3 +1541,54 @@ html[dir='ltr'] .home-v3 .rm-track > li {
   font-size: 15px;
   color: var(--forest);
 }
+
+/* ---------- Phone polish (mobile audit, Nov 2026) ---------- */
+/* Guide cards: with `height: 100%`, `min-height: 230px` and `aspect-ratio`,
+   the card took its WIDTH from its height (230 × 4/5 = 184px), wider than its
+   157px column, so two columns needed 382px and the whole home page scrolled
+   sideways (and Chrome zoomed it out) on every phone at 375px and narrower.
+   A definite width keeps the card in its column. */
+.home-v3 .gcard {
+  width: 100%;
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  /* The hero fills the screen between the header and the bottom tab bar, so
+     the clip tabs and the pause button are not hidden under the tab bar. */
+  .home-v3 .hv-grid {
+    min-height: max(
+      500px,
+      calc(100svh - var(--hdr-h) - var(--tabbar-h) - env(safe-area-inset-bottom, 0px))
+    );
+  }
+  /* Clip tabs stop short of the floating chat buttons' column. */
+  .home-v3 .hv-tabs {
+    inset-inline-end: calc(16px + 52px + 10px);
+  }
+  /* 44px touch targets without changing the look: the hit area grows. */
+  .home-v3 .hv-tab,
+  .home-v3 .hv-pause,
+  .home-v3 .hv-link {
+    position: relative;
+  }
+  .home-v3 .hv-tab::after,
+  .home-v3 .hv-pause::after,
+  .home-v3 .hv-link::after {
+    content: '';
+    position: absolute;
+    inset: -8px -3px;
+  }
+  .home-v3 .hv-pause {
+    width: 34px;
+    height: 34px;
+  }
+}
+@media (max-width: 560px) {
+  /* «Plan your trip» and the info chips: always two rows on phones. With the
+     fallback font they fitted on one row and wrapped only once Almarai had
+     loaded, which pushed the hero copy up by 38px (CLS 0.04 on every visit). */
+  .home-v3 .hv-foot {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
