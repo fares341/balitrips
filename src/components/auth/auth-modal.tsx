@@ -40,16 +40,19 @@ import { localeConfig, locales, type Locale } from '@/i18n/config'
 import { getPathname, Link, useRouter } from '@/i18n/routing'
 import type { SocialProviderId } from '@/lib/auth/server'
 
-import { withDialCode } from '@/lib/auth/phone'
+import { isCountry, toE164, withCountry } from '@/lib/auth/phone'
 
 import { authClient, authErrorAction, authErrorKey } from './client'
 import { countryOptions } from './countries'
 import { prepareDeviceCookie } from './device-fingerprint'
 import {
-  defaultDial,
+  defaultCountry,
+  hasSavedCountry,
+  useVisitorCountry,
   FormError,
   FormNotice,
   IdentifierField,
+  PhoneField,
   SelectField,
   TextField,
 } from './fields'
@@ -191,7 +194,34 @@ export function AuthModal({
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [rememberMe, setRememberMe] = useState(true)
-  const [dial, setDial] = useState(() => defaultDial(locale))
+  // null = not picked: the visitor's last choice / browser region after
+  // hydration, the page locale's default before it (no localStorage on the server).
+  const [pickedPhoneCountry, setPhoneCountry] = useState<string | null>(null)
+  const [phoneCountryTouched, setPhoneCountryTouched] = useState(false)
+  const phoneHydrated = useSyncExternalStore(subscribeNothing, isClient, isServer)
+  // The country the visitor is browsing from (IP) is the default, unless
+  // they already picked one themselves (saved) — then that one stays.
+  const [ipCountry, setIpCountry] = useState<string | null>(null)
+  useVisitorCountry((iso) => {
+    setIpCountry(iso)
+    // The country box too, so the visitor sees one consistent answer.
+    setForm((current) => (current.country === '' ? { ...current, country: iso } : current))
+  })
+  const phoneCountry =
+    pickedPhoneCountry ??
+    (phoneHydrated
+      ? hasSavedCountry()
+        ? defaultCountry(locale)
+        : (ipCountry ?? defaultCountry(locale))
+      : locale === 'id'
+        ? 'ID'
+        : 'SA')
+  const pickPhoneCountry = (iso: string) => {
+    setPhoneCountry(iso)
+    setPhoneCountryTouched(true)
+    // No country chosen yet: the phone's country is the best guess.
+    setForm((current) => (current.country === '' ? { ...current, country: iso } : current))
+  }
   /** موافقة واتساب (الوثيقة 19.3/20.1) — اختيارية وغير محددة افتراضياً. */
   const [whatsappOptIn, setWhatsappOptIn] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(false)
@@ -265,7 +295,7 @@ export function AuthModal({
     if (busy) return
 
     const parsed = signInSchema.safeParse({
-      email: withDialCode(form.email, dial),
+      email: withCountry(form.email, phoneCountry),
       password: form.password,
       rememberMe,
     })
@@ -322,8 +352,11 @@ export function AuthModal({
     const parsed = signUpSchema.safeParse({
       name: form.name,
       email: form.email,
-      phone: form.phone,
-      country: form.country,
+      // A valid number for the chosen country ⇒ +E.164; otherwise what was
+      // typed, so the schema reports it under the box.
+      phone: toE164(form.phone, phoneCountry) ?? form.phone,
+      // Left empty: the phone's country is a fair answer.
+      country: form.country === '' ? phoneCountry : form.country,
       locale: form.language === '' ? undefined : form.language,
       password: form.password,
       password2: form.password2,
@@ -387,7 +420,7 @@ export function AuthModal({
     event.preventDefault()
     if (busy) return
 
-    const parsed = forgotPasswordSchema.safeParse({ email: withDialCode(form.email, dial) })
+    const parsed = forgotPasswordSchema.safeParse({ email: withCountry(form.email, phoneCountry) })
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error))
       setFormError(null)
@@ -496,8 +529,8 @@ export function AuthModal({
         label={t('auth_identifier')}
         value={form.email}
         onChange={update('email')}
-        dial={dial}
-        onDialChange={setDial}
+        country={phoneCountry}
+        onCountryChange={setPhoneCountry}
         placeholder={t('auth_identifier_ph')}
         maxLength={MAX_EMAIL_LENGTH}
         error={errors.email}
@@ -630,36 +663,37 @@ export function AuthModal({
         disabled={busy}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <TextField
-          label={t('auth_phone')}
-          type="tel"
-          inputMode="tel"
-          value={form.phone}
-          onChange={update('phone')}
-          placeholder="+62 ···"
-          autoComplete="tel"
-          maxLength={MAX_PHONE_LENGTH}
-          error={errors.phone}
-          disabled={busy}
-        />
-        {/*
+      {/* Country first: it sets the phone's country code below it. */}
+
+      {/*
           A select, not the handoff's free-text box whose placeholder was
           "UAE" — `users.country` is varchar(2), so three characters was a
           guaranteed 500. Labels come from the browser's own CLDR data.
         */}
-        <SelectField
-          label={t('auth_country')}
-          optionalLabel={t('co_optional')}
-          value={form.country}
-          onChange={update('country')}
-          placeholder={t('auth_country_ph')}
-          options={countries.map((option) => ({ value: option.code, label: option.label }))}
-          autoComplete="country"
-          error={errors.country}
-          disabled={busy}
-        />
-      </div>
+      <SelectField
+        label={t('auth_country')}
+        optionalLabel={t('co_optional')}
+        value={form.country}
+        onChange={(value) => {
+          update('country')(value)
+          if (!phoneCountryTouched && isCountry(value)) setPhoneCountry(value)
+        }}
+        placeholder={t('auth_country_ph')}
+        options={countries.map((option) => ({ value: option.code, label: option.label }))}
+        autoComplete="country"
+        error={errors.country}
+        disabled={busy}
+      />
+      <PhoneField
+        label={t('auth_phone')}
+        value={form.phone}
+        onChange={update('phone')}
+        country={phoneCountry}
+        onCountryChange={pickPhoneCountry}
+        maxLength={MAX_PHONE_LENGTH}
+        error={errors.phone}
+        disabled={busy}
+      />
 
       <SelectField
         label={t('auth_language')}
@@ -788,8 +822,8 @@ export function AuthModal({
             label={t('auth_identifier')}
             value={form.email}
             onChange={update('email')}
-            dial={dial}
-            onDialChange={setDial}
+            country={phoneCountry}
+            onCountryChange={setPhoneCountry}
             placeholder={t('auth_identifier_ph')}
             maxLength={MAX_EMAIL_LENGTH}
             error={errors.email}

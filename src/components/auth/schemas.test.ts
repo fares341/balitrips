@@ -18,8 +18,7 @@ import {
 
 function errorsFor(schema: { safeParse: (input: unknown) => unknown }, input: unknown) {
   const result = schema.safeParse(input) as
-    | { success: true }
-    | { success: false; error: Parameters<typeof fieldErrors>[0] }
+    { success: true } | { success: false; error: Parameters<typeof fieldErrors>[0] }
   if (result.success) return null
   return fieldErrors(result.error)
 }
@@ -105,10 +104,10 @@ describe('signUpSchema', () => {
 
   it('rejects a phone that is not international', () => {
     expect(errorsFor(signUpSchema, { ...valid, phone: 'call me' })).toEqual({
-      phone: 'auth_err_phone_intl',
+      phone: 'auth_err_phone_invalid',
     })
     expect(errorsFor(signUpSchema, { ...valid, phone: '0812 3456 789' })).toEqual({
-      phone: 'auth_err_phone_intl',
+      phone: 'auth_err_phone_invalid',
     })
   })
 

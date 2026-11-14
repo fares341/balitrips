@@ -32,6 +32,8 @@ const AssistantPanel = dynamic(
 /** Where the WhatsApp button hides (whatsapp-fab.tsx): the assistant takes its spot. */
 const NO_WHATSAPP = ['/map', '/checkout']
 
+const AUTH_PAGES = ['/login', '/register', '/forgot-password']
+
 export function AssistantLauncher() {
   const t = useTranslations()
   const locale = useLocale()
@@ -71,6 +73,9 @@ export function AssistantLauncher() {
     // Back to where the visitor was.
     requestAnimationFrame(() => button.current?.focus())
   }
+
+  // Auth pages: the launcher would cover the form fields on a phone.
+  if (AUTH_PAGES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null
 
   return (
     <>

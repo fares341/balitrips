@@ -20,7 +20,7 @@
 import { z } from 'zod'
 
 import { locales } from '@/i18n/config'
-import { looksLikeEmail, normalizePhone } from '@/lib/auth/phone'
+import { isValidE164, looksLikeEmail, normalizePhone } from '@/lib/auth/phone'
 
 /** Mirrors `emailAndPassword.minPasswordLength` in @/lib/auth/server. */
 export const MIN_PASSWORD_LENGTH = 8
@@ -48,7 +48,7 @@ const phoneField = z
   .trim()
   .min(1, 'co_err_required')
   .max(MAX_PHONE_LENGTH, 'co_err_long')
-  .refine((value) => normalizePhone(value) !== null, 'auth_err_phone_intl')
+  .refine((value) => normalizePhone(value) !== null && isValidE164(value), 'auth_err_phone_invalid')
 
 /** خانة الدخول: بريد أو جوال دولي (الوثيقة 3.2). */
 const identifierField = z

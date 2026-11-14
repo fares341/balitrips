@@ -25,7 +25,8 @@ import { usePathname } from '@/i18n/routing'
 
 import { useWhatsappLink } from './contact-context'
 
-const HIDDEN_ON = ['/map', '/checkout']
+// Sign-in / sign-up / reset: on a phone the buttons sit on top of the form fields.
+const HIDDEN_ON = ['/map', '/checkout', '/login', '/register', '/forgot-password']
 
 export function WhatsAppFab() {
   const t = useTranslations()
