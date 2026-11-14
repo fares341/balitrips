@@ -30,7 +30,7 @@ export interface MoneyRuntimeConfig {
 /* eslint-disable no-var */
 function runtime(
   cfg: MoneyRuntimeConfig & { base: string; cookie: string; geoCookie: string },
-  fmt: (amount: number, currency: string, locale: string) => string,
+  fmt: (amount: number, currency: string, locale: string, approx?: boolean) => string,
 ) {
   var doc = document
   var root = doc.documentElement
@@ -66,7 +66,8 @@ function runtime(
     if (!fromRate || !toRate) return null
     var sarMajor = minor / Math.pow(10, exp(from)) / fromRate
     if (cur === cfg.base) return mode === 'approx' ? '' : fmt(sarMajor, cfg.base, lang)
-    return '≈ ' + fmt(sarMajor * toRate, cur, lang)
+    // «≈» goes inside the amount's own direction run (see formatMoneyText).
+    return fmt(sarMajor * toRate, cur, lang, true)
   }
   function apply(el: HTMLElement) {
     var want = text(el)
