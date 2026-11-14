@@ -39,3 +39,18 @@ describe('phone number by country', () => {
     expect(guessCountry('ar', ['ar'])).toBe('SA')
   })
 })
+
+describe('digits count per country', () => {
+  it('blocks typing past the longest mobile number', async () => {
+    const { isTooLong, exampleLocal } = await import('./phone')
+    expect(isTooLong('0501234567', 'SA')).toBe(false)
+    expect(isTooLong('01012345678', 'EG')).toBe(false)
+    expect(isTooLong('010123456789', 'EG')).toBe(true)
+    expect(isTooLong('+9665012345678', 'SA')).toBe(false)
+    expect(exampleLocal('SA')).toMatch(/\d/)
+  })
+  it('landlines and short numbers are rejected (WhatsApp needs a mobile)', () => {
+    expect(toE164('0112345678', 'SA')).toBeNull()
+    expect(toE164('050123456', 'SA')).toBeNull()
+  })
+})

@@ -32,7 +32,9 @@ import { Icon } from '@/components/ui'
 import {
   DIAL_CODES,
   dialOf,
+  exampleLocal,
   formatE164,
+  isTooLong,
   guessCountry,
   hasIntlPrefix,
   isPhoneLike,
@@ -477,9 +479,22 @@ export function PhoneField({
           inputMode="tel"
           value={value}
           onChange={(event) => {
-            onChange(event.target.value)
+            // More digits than any mobile number in this country: ignore
+            // the keystroke instead of letting a wrong number through.
+            const next = event.target.value
+            if (isTooLong(next, country)) return
+            // Already a complete number and one more digit would break it:
+            // the number is full (SA: 9 digits after the 0), stop there.
+            if (
+              e164 !== null &&
+              next.replace(/\D/g, '').length > value.replace(/\D/g, '').length &&
+              toE164(next, country) === null
+            )
+              return
+            onChange(next)
             setLeft(false)
           }}
+          placeholder={exampleLocal(country)}
           onBlur={() => setLeft(true)}
           autoComplete="tel-national"
           maxLength={maxLength}

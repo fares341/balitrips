@@ -5,14 +5,18 @@
  * بـ `+` أو `00` — رقم محلي بلا رمز الدولة لا يمكن تمييزه بين بلدين، فلا نخمّن.
  *
  * يُستخدم في المتصفح (النماذج) والخادم (Better Auth). التحقق حسب الدولة من
- * `libphonenumber-js/min` (بيانات أطوال وبدايات الأرقام لكل دولة).
+ * `libphonenumber-js/mobile`: أرقام الجوال فقط (واتساب)، بعدد أرقامها
+ * وبداياتها الصحيحة لكل دولة — رقم أرضي أو ناقص أو زائد يُرفض.
  */
 import {
   getCountries,
   getCountryCallingCode,
+  getExampleNumber,
   parsePhoneNumberFromString,
+  validatePhoneNumberLength,
   type CountryCode,
-} from 'libphonenumber-js/min'
+} from 'libphonenumber-js/mobile'
+import examples from 'libphonenumber-js/mobile/examples'
 
 export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null
@@ -224,4 +228,26 @@ export function phoneLookupCandidates(identifier: string): string[] {
     if (fixed?.isValid()) out.add(fixed.number)
   }
   return [...out]
+}
+
+/** مثال لرقم جوال في الدولة بالصيغة المحلية (للـ placeholder): 050 123 4567. */
+export function exampleLocal(iso: string): string {
+  if (!isCountry(iso)) return ''
+  return getExampleNumber(iso, examples)?.formatNational() ?? ''
+}
+
+/**
+ * هل يتجاوز ما كُتب أطول رقم جوال ممكن في هذه الدولة؟ يُستخدم لمنع كتابة رقم
+ * زائد أصلاً. ما يبدأ بـ + أو 00 لا يُقيَّد هنا (دولته من الرمز نفسه).
+ */
+export function isTooLong(raw: string, iso: string): boolean {
+  const t = toAsciiDigits(raw).trim()
+  if (!isCountry(iso) || hasIntlPrefix(t)) return false
+  const digits = t.replace(/\D/g, '')
+  if (digits === '') return false
+  // Typed with the country code but no "+" (966…): judge it as international.
+  const code = getCountryCallingCode(iso)
+  if (digits.startsWith(code) && digits.length > code.length + 6)
+    return validatePhoneNumberLength(`+${digits}`) === 'TOO_LONG'
+  return validatePhoneNumberLength(digits, iso) === 'TOO_LONG'
 }
