@@ -2468,7 +2468,7 @@
   "trip_ok_b_noemail": "Your order is {order}. You'll find it in your account.",
   "trip_ok_t": "Payment successful",
   "trip_open": "Open",
-  "trip_party_split": "{adults} adults, {children} children, {infants} infants",
+  "trip_party_split": "{adults, plural, one {# adult} other {# adults}}, {children, plural, =0 {no children} one {# child} other {# children}}, {infants, plural, =0 {no infants} one {# infant (free)} other {# infants (free)}}",
   "trip_people_n": "{n, plural, one {# person} other {# people}}",
   "trip_place_note": "A saved place for planning your day — no booking needed.",
   "trip_price_details": "Price details",

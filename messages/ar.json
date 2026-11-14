@@ -2468,7 +2468,7 @@
   "trip_ok_b_noemail": "رقم طلبك {order}. ستجده في حسابك.",
   "trip_ok_t": "تم الدفع بنجاح",
   "trip_open": "افتح",
-  "trip_party_split": "{adults} بالغ، {children} طفل، {infants} رضيع",
+  "trip_party_split": "{adults, plural, one {بالغ واحد} two {بالغان} few {# بالغين} many {# بالغًا} other {# بالغ}}، {children, plural, =0 {بلا أطفال} one {طفل واحد} two {طفلان} few {# أطفال} many {# طفلًا} other {# طفل}}، {infants, plural, =0 {بلا رضّع} one {رضيع واحد (مجانًا)} two {رضيعان (مجانًا)} few {# رضّع (مجانًا)} many {# رضيعًا (مجانًا)} other {# رضيع (مجانًا)}}",
   "trip_people_n": "{n, plural, zero {لا أحد} one {شخص واحد} two {شخصان} few {# أشخاص} many {# شخصًا} other {# شخص}}",
   "trip_place_note": "مكان محفوظ لتخطيط يومك — لا يحتاج حجزًا.",
   "trip_price_details": "تفاصيل السعر",
