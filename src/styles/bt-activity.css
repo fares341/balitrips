@@ -833,7 +833,7 @@
   position: fixed;
   z-index: 56;
   inset-inline: 0;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + var(--safe-b));
   display: flex;
   justify-content: space-between;
   align-items: center;
