@@ -1230,6 +1230,7 @@ async function toItinerarySummaries(
     version: itinerary.version,
     hero: toMedia(hero),
     tierPrices: normaliseTierPrices(itinerary.tierPrices),
+    includesMap: itinerary.includesMap,
   }))
 }
 

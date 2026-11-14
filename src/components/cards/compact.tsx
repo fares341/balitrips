@@ -162,7 +162,11 @@ export function ItineraryCompact({
         itinerary.priceMinor > 0
           ? {
               label:
-                pricedTiers(itinerary.tierPrices).length > 0 ? t('it_price_from') : t('bt_pdf_map'),
+                pricedTiers(itinerary.tierPrices).length > 0
+                  ? t('it_price_from')
+                  : itinerary.includesMap === true
+                    ? t('bt_pdf_map')
+                    : t('bt_pdf_only'),
               amount: (
                 <Money
                   minor={fromPrice(itinerary.priceMinor, itinerary.tierPrices)}

@@ -172,7 +172,7 @@ export default async function ItinerariesPage({
           <p className="bt-banner-sub">{t('itl_sub')}</p>
           {itineraries.length > 0 && (
             <p className="itl-count-hero">
-              <b dir="ltr">{itineraries.length}</b> {t('itl_ready')}
+              <b dir="ltr">{itineraries.length}</b> {t('itl_ready', { n: itineraries.length })}
             </p>
           )}
         </div>

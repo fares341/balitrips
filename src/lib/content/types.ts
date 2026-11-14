@@ -330,6 +330,11 @@ export interface ItinerarySummary {
   hero: MediaDto | null
   /** Priced levels only (economy / mid / luxury), minor units. */
   tierPrices: Partial<Record<'economy' | 'mid' | 'luxury', number>>
+  /**
+   * The price shown already includes the interactive map. Cards label the
+   * price «PDF + map» only then (optional: read as false when absent).
+   */
+  includesMap?: boolean
 }
 
 /**
