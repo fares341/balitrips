@@ -3005,7 +3005,7 @@
   "lead_e_off": "Penawaran ini sedang tidak tersedia.",
   "lead_e_failed": "Gagal mengirim — coba lagi.",
   "notif_lead_code_t": "Diskon {percent}% untuk pemesanan pertama",
-  "notif_lead_code_b": "Ini kode untuk pemesanan pertama Anda di Bali Trips: {code}. Masukkan di keranjang saat checkout. Berlaku sekali.",
+  "notif_lead_code_b": "Ini kode untuk pemesanan pertama Anda di Bali Trips: {code}. Masukkan di kolom kode diskon saat checkout. Berlaku sekali.",
   "notif_cart_reminder_t": "Keranjang Anda menunggu",
   "notif_cart_reminder_b": "Ada beberapa pengalaman yang tertinggal di keranjang Bali Trips Anda. Keranjang tersimpan — selesaikan pemesanan kapan saja. Untuk berhenti menerima penawaran, balas email ini.",
   "pol_pr11_t": "Penawaran, nomor WhatsApp, dan pengingat keranjang",

@@ -3004,7 +3004,7 @@
   "lead_e_off": "This offer is not available right now.",
   "lead_e_failed": "Could not send — please try again.",
   "notif_lead_code_t": "{percent}% off your first booking",
-  "notif_lead_code_b": "Here is your code for your first Bali Trips booking: {code}. Enter it in your cart at checkout. It works once.",
+  "notif_lead_code_b": "Here is your code for your first Bali Trips booking: {code}. Enter it in the discount code box at checkout. It works once.",
   "notif_cart_reminder_t": "Your cart is waiting",
   "notif_cart_reminder_b": "You left a few experiences in your Bali Trips cart. It is saved — finish your booking whenever you like. To stop offer messages, reply to this email.",
   "pol_pr11_t": "Offers, WhatsApp numbers and cart reminders",
