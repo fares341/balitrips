@@ -405,6 +405,14 @@
   font-weight: 600;
   opacity: 0.95;
 }
+.itp-day-mood {
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--palm, #c9f2b0);
+}
 .itp-note {
   display: flex;
   align-items: center;
@@ -731,6 +739,13 @@
 }
 .itp-mbar[hidden] {
   display: none;
+}
+/* The floating chat buttons ride above the buy bar while it shows, so the
+   bar's price and «Continue» button are never under them. */
+@media (max-width: 1023px) {
+  body:has(.itp-mbar:not([hidden])) {
+    --fab-lift: 68px;
+  }
 }
 .itp-mbar .btn {
   min-height: 44px;

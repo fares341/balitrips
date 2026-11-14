@@ -37,5 +37,6 @@ export function toCardItinerary(itinerary: PublicItinerarySummary): ItinerarySum
             srcSetWebp: itinerary.hero.srcSetWebp,
           },
     tierPrices: itinerary.tierPrices,
+    includesMap: itinerary.includesMap,
   }
 }

@@ -4,7 +4,9 @@
  * Image 4:3 with the first category as a glass chip and the heart; a meta row
  * (area, duration) with the real rating at the end (hidden when there is
  * none); the title; one short line cut from the description (`cardLine`);
- * then "From $X / person" and the actions.
+ * then "From $X / unit" (the unit of the package the price comes from: person,
+ * two people, group, booking — or «price on request» when nothing is on sale)
+ * and the actions.
  *
  * The whole card opens the activity (stretched title link). `action` replaces
  * the default "+ Trip" button — pages pass their add-to-trip control there.
@@ -33,10 +35,13 @@ import {
 import { Tag } from '@/components/bt/chip'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
+import { placeLine } from '@/lib/content/area'
 import { cardLine } from '@/lib/content/card-line'
 import { pick, pickAlt, pickOptional } from '@/lib/content/localize'
 import { markdownToPlain } from '@/lib/content/markdown'
 import type { ActivitySummary } from '@/lib/content/types'
+
+import { fromUnit } from './from-unit'
 
 export type ActivityCardProps = {
   activity: ActivitySummary
@@ -51,7 +56,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
   const locale = useLocale() as Locale
 
   const name = pick(activity.name, locale, activity.slug)
-  const area = pickOptional(activity.area, locale)
+  const area = placeLine(activity.area, activity.region, locale)
   const duration = pickOptional(activity.duration, locale)
   // The card shows the short description written for it, else a short line
   // cut from the full description (which may carry markdown).
@@ -79,7 +84,7 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
   if (duration !== null) meta.push({ icon: 'clock', label: duration })
 
   return (
-    <Card>
+    <Card className="act-card">
       <CardMedia
         src={activity.hero?.url}
         alt={pickAlt(activity.hero?.alt, locale, name)}
@@ -97,25 +102,33 @@ export function ActivityCard({ activity, action, priority = false }: ActivityCar
         <CardTitle href={activity.href}>{name}</CardTitle>
         {blurb !== null && <CardText>{blurb}</CardText>}
         <CardFoot>
-          <PriceFrom
-            label={t('bt_from')}
-            amount={formatPrice(activity.priceMinor, activity.currency, locale)}
-            minor={activity.priceMinor}
-            currency={activity.currency}
-            unit={t('bt_per_person')}
-          />
+          {activity.priceMinor > 0 ? (
+            <PriceFrom
+              label={t('bt_from')}
+              amount={formatPrice(activity.priceMinor, activity.currency, locale)}
+              minor={activity.priceMinor}
+              currency={activity.currency}
+              unit={fromUnit(t, activity.from)}
+            />
+          ) : (
+            // Nothing to sell yet: never «from 0».
+            <div className="from from-ask">
+              <b>{t('bt_price_on_request')}</b>
+            </div>
+          )}
           <CardActions>
-            {action ?? (
-              <LinkButton
-                href={`${activity.href}#book`}
-                variant="ghost"
-                size="sm"
-                icon="plus"
-                aria-label={t('bt_add_trip')}
-              >
-                {t('bt_trip_short')}
-              </LinkButton>
-            )}
+            {action ??
+              (activity.priceMinor > 0 && activity.unavailable !== true ? (
+                <LinkButton
+                  href={`${activity.href}#book`}
+                  variant="ghost"
+                  size="sm"
+                  icon="plus"
+                  aria-label={t('bt_add_trip')}
+                >
+                  {t('bt_trip_short')}
+                </LinkButton>
+              ) : null)}
             <LinkButton
               href={activity.href}
               variant="secondary"

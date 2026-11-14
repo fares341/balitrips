@@ -57,6 +57,8 @@ import { emailGuest } from '@/lib/notify/guest'
 import { logActivity } from '@/lib/security/activity'
 
 import { currentUserId } from '../_viewer/session'
+import { isValidE164, toAsciiDigits } from '@/lib/auth/phone'
+
 import { rankActivities } from './match'
 import {
   AREAS_MAX,
@@ -167,7 +169,10 @@ export async function submitCustomTrip(
   let endDate: string | null = null
   let days: number | null = null
 
-  if (input.startDate !== '' || input.endDate !== '') {
+  // The dates are the brief: the plan's length (and its price) comes from
+  // them, so a request without them is asked to pick them.
+  if (input.startDate === '' && input.endDate === '') fields.dates = 'cp_err_dates'
+  else if (input.startDate !== '' || input.endDate !== '') {
     if (!hasStart || !hasEnd) fields.dates = 'cp_err_dates'
     else if (isPastInBali(input.startDate) || isPastInBali(input.endDate)) {
       fields.dates = 'cp_err_past'
@@ -179,6 +184,16 @@ export async function submitCustomTrip(
       days = daysBetweenInclusive(startDate, endDate)
     }
   }
+
+  // -------------------------------------------------------------------
+  // Phone: optional, but a real number when given (the same rule as sign-up)
+  // -------------------------------------------------------------------
+
+  const typedPhone = toAsciiDigits(input.phone)
+    .replace(/[\s().-]/g, '')
+    .replace(/^00/, '+')
+  const phone = typedPhone === '' ? null : typedPhone
+  if (phone !== null && !isValidE164(phone)) fields.phone = 'cp_err_phone'
 
   // -------------------------------------------------------------------
   // Interests, against the real taxonomy
@@ -235,7 +250,6 @@ export async function submitCustomTrip(
   // The lead
   // -------------------------------------------------------------------
 
-  const phone = input.phone === '' ? null : input.phone
   const notes = input.notes
 
   try {

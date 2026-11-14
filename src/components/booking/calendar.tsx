@@ -57,7 +57,9 @@ export function Calendar(props: CalendarProps) {
   const { today, isUnavailable = () => false, months = 1, label, id, invalid } = props
   const t = useTranslations()
   const locale = useLocale()
-  const intlLocale = locale === 'ar' ? 'ar-EG' : locale
+  // Western digits, like every price and stepper on the site (audit, Nov 2026:
+  // «نوفمبر ٢٠٢٦» in the calendar beside «2026» everywhere else).
+  const intlLocale = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale
   const rtl = locale === 'ar'
 
   const [a, b]: CalendarRange =

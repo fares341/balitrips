@@ -23,6 +23,7 @@
 import type { Metadata } from 'next'
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { EmptyState } from '@/components/bt'
 import { ActivityCard } from '@/components/cards'
 import { LinkButton } from '@/components/shared'
 import { Icon, Photo } from '@/components/ui'
@@ -36,7 +37,7 @@ import {
   isEventOver,
 } from '@/lib/content/extra-queries'
 import { pick } from '@/lib/content/localize'
-import { listActivities } from '@/lib/content/queries'
+import { listActivities, listHomeActivities } from '@/lib/content/queries'
 import { BALI_TIME_ZONE } from '@/lib/booking-rules'
 import { emptyEntitlements, loadEntitlements } from '@/lib/entitlements'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -47,6 +48,10 @@ import { PageBanner } from '../_ui/page-banner'
 
 const EVENTS_PATH = '/events'
 const PLANS_HREF = '/plans'
+/** Up to this many events, the list is laid out beside a note instead of a sparse grid. */
+const FEW_EVENTS = 2
+/** Year-round activities offered under a short (or empty) list. */
+const SUGGESTIONS = 3
 
 export const dynamic = 'force-dynamic'
 
@@ -113,6 +118,20 @@ export default async function EventsPage({ params }: PageProps) {
   }
 
   const nothing = activities.length === 0 && places.visible.length === 0
+  // A short list (one show and nothing else) used to leave most of the page
+  // blank: it now sits beside a note on when events are added, and activities
+  // bookable all year fill the rest. Never an event twice.
+  const shown = activities.length + places.visible.length
+  const few = shown <= FEW_EVENTS
+  const eventIds = new Set(activities.map((entry) => entry.activity.id))
+  const suggestions =
+    few && places.lockedCount === 0
+      ? await listHomeActivities({
+          limit: SUGGESTIONS,
+          locale,
+          exclude: (activity) => eventIds.has(activity.id) || activity.priceMinor <= 0,
+        })
+      : []
 
   return (
     <main>
@@ -130,9 +149,9 @@ export default async function EventsPage({ params }: PageProps) {
             <>
               <h2 style={{ fontSize: 24, marginBottom: 6 }}>{t('evp_bookable')}</h2>
               <p className="muted" style={{ fontSize: 13.5, fontWeight: 600, margin: '0 0 18px' }}>
-                {format.number(activities.length)} {t('ah_count')}
+                {t('evp_count', { n: activities.length })}
               </p>
-              <div className="grid bt-grid-3auto">
+              <div className={few ? 'ev-few' : 'grid bt-grid-3auto'}>
                 {activities.map(({ activity, startsAt, endsAt }, index) => {
                   const when = eventWhen(startsAt, endsAt)
                   return when === null ? (
@@ -144,6 +163,23 @@ export default async function EventsPage({ params }: PageProps) {
                     </div>
                   )
                 })}
+                {few && (
+                  <aside className="panel ev-more">
+                    <span className="ev-more-ic" aria-hidden="true">
+                      <Icon name="cal" size={22} />
+                    </span>
+                    <h3 className="h3">{t('evp_more_t')}</h3>
+                    <p className="muted">{t('evp_more_b')}</p>
+                    <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                      <LinkButton href="/activities" variant="forest" size="sm">
+                        {t('ha_all')}
+                      </LinkButton>
+                      <LinkButton href="/custom" variant="ghost" size="sm">
+                        {t('itl_custom_cta')}
+                      </LinkButton>
+                    </div>
+                  </aside>
+                )}
               </div>
             </>
           )}
@@ -209,12 +245,43 @@ export default async function EventsPage({ params }: PageProps) {
           )}
 
           {nothing && places.lockedCount === 0 && (
-            <div className="center" style={{ padding: '40px 0' }}>
-              <p className="muted">{t('evp_none')}</p>
-              <LinkButton href="/activities" variant="forest">
-                {t('ha_all')}
-              </LinkButton>
-            </div>
+            <EmptyState
+              as="h2"
+              icon="cal"
+              title={t('evp_none_t')}
+              text={t('evp_none')}
+              action={
+                <div
+                  className="row"
+                  style={{ justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}
+                >
+                  <LinkButton href="/activities" variant="forest">
+                    {t('ha_all')}
+                  </LinkButton>
+                  <LinkButton href="/custom" variant="ghost">
+                    {t('itl_custom_cta')}
+                  </LinkButton>
+                </div>
+              }
+            />
+          )}
+
+          {suggestions.length > 0 && (
+            <section className="ev-suggest" aria-labelledby="ev-suggest-h">
+              <div className="row between" style={{ gap: 12, flexWrap: 'wrap' }}>
+                <h2 id="ev-suggest-h" style={{ fontSize: 24, margin: 0 }}>
+                  {t('evp_suggest_t')}
+                </h2>
+                <LinkButton href="/activities" variant="ghost" size="sm">
+                  {t('ha_all')}
+                </LinkButton>
+              </div>
+              <div className="grid bt-grid-3auto">
+                {suggestions.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </section>

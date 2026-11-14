@@ -3,7 +3,7 @@
  * (drafts, in review). Everything shown is read from the database.
  */
 
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { getTranslations } from 'next-intl/server'
 
 import { Breadcrumbs, LinkButton, Tag } from '@/components/bt'
@@ -14,7 +14,8 @@ import type { Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { Markdown } from '@/components/shared/markdown'
 import { showsGroupSize } from '@/lib/content/activity-status'
-import { pick, pickAlt, pickList, pickOptional } from '@/lib/content/localize'
+import { placeLine } from '@/lib/content/area'
+import { pick, pickList, pickOptional } from '@/lib/content/localize'
 import {
   itinerariesWithActivity,
   listDriverVehicles,
@@ -31,9 +32,12 @@ import {
   InfoBoxes,
   MobileBookBar,
   PackageCards,
+  PartyLimitLines,
+  PartySizeText,
   TierDetail,
   type BookingData,
 } from './booking'
+import { partyRange } from './party'
 import { Gallery, InfoTabs, RelatedRow, SaveButton, SectionNav, ShareButton } from './detail-client'
 import { dedupeImages } from '@/lib/content/image-dedupe'
 import { Money } from '@/components/currency/currency-context'
@@ -68,9 +72,7 @@ export async function ActivityView({
   ])
 
   const name = pick(activity.name, lang, activity.slug)
-  const area = pickOptional(activity.area, lang)
-  const regionName = activity.region ? pick(activity.region.label, lang) : null
-  const place = area ?? regionName
+  const place = placeLine(activity.area, activity.region, lang)
   const duration = pickOptional(activity.duration, lang)
   const description = pickOptional(activity.description, lang)
   const headline = pickOptional(activity.headline, lang)
@@ -92,12 +94,17 @@ export async function ActivityView({
     .filter((entry) => entry.q !== '' && entry.a !== '')
 
   const timeSlots = activity.timeSlots.filter((slot) => /^\d{2}:\d{2}$/.test(slot))
-  const schedule = timeSlots.length > 0 ? timeSlots.join(' · ') : meetingTime
+  // The «schedule» fact is a time, not a sentence: the opening hours found in
+  // the meeting note («… 09:00 – 16:00»), the note itself when it is short, or
+  // nothing (the whole note is in the meeting-point card either way).
+  const schedule = timeSlots.length > 0 ? timeSlots.join(' · ') : shortSchedule(meetingTime)
+  const scheduleIsTime = schedule !== null && /^[\d:·–\s]+$/.test(schedule)
 
   const booking: BookingData = {
     activityId: activity.id,
     name,
     bookable: activity.bookable,
+    from: activity.from ?? null,
     currency: activity.currency,
     basePriceMinor: activity.priceMinor,
     maxGuests: activity.maxGuests,
@@ -180,11 +187,12 @@ export async function ActivityView({
       suitableFor: scoped(activity.suitableFor),
       importantNotes: scoped(activity.importantNotes),
       heroUrl: activity.hero?.url ?? null,
-      // The activity's own policy, first line, as the short note on the package card.
+      // The activity's own policy, first line, in full: a rule cut mid-word
+      // («no refund when cancel…») above «Book now» reads as hiding something.
       cancelShort: (() => {
         const own = pickOptional(activity.cancellationPolicy, lang)
         const first = own?.split(/\r?\n/)[0]?.trim() ?? ''
-        return first === '' ? null : first.length > 60 ? `${first.slice(0, 57)}…` : first
+        return first === '' ? null : first
       })(),
     },
   }
@@ -196,28 +204,28 @@ export async function ActivityView({
 
   // Quick facts beside the gallery: location, group size, schedule, duration.
   // A fact without data is left out (never «flexible» made up for it).
-  const min = Math.max(1, activity.minGuests)
+  // The party a booking holds, from the packages on sale: the same numbers
+  // the booking box enforces (never the activity's column beside a package's).
+  const party = partyRange(activity, booking.packages)
+  const min = party.min
   const quick: {
     icon: 'pin' | 'users' | 'cal' | 'clock'
     label: string
-    value: string
+    value: ReactNode
     ltr?: boolean
   }[] = []
   if (place) quick.push({ icon: 'pin', label: t('act_qf_location'), value: place })
   // A cap left at the column default is not a fact the owner gave: not shown.
-  if (showsGroupSize(activity.maxGuests, min)) {
-    quick.push({
-      icon: 'users',
-      label: t('act_qf_group'),
-      value: t('act_qf_group_v', { min, max: activity.maxGuests }),
-    })
+  if (showsGroupSize(party.max, min)) {
+    // Follows the chosen package (client), like the booking box under it.
+    quick.push({ icon: 'users', label: t('act_qf_group'), value: <PartySizeText /> })
   }
   if (schedule) {
     quick.push({
       icon: 'cal',
       label: t('act_qf_schedule'),
       value: schedule,
-      ltr: timeSlots.length > 0,
+      ltr: scheduleIsTime,
     })
   }
   if (duration) quick.push({ icon: 'clock', label: t('act_qf_duration'), value: duration })
@@ -228,20 +236,18 @@ export async function ActivityView({
   // ages & conditions, what to bring, meeting point. Empty cards are left out.
   const moreInfo = [
     ...(activity.leadTimeHours > 0 ? [t('act_info_lead', { n: activity.leadTimeHours })] : []),
-    ...(min > 1 ? [t('act_info_min', { n: min })] : []),
-    ...(showsGroupSize(activity.maxGuests, min)
-      ? [t('act_info_max', { n: activity.maxGuests })]
-      : []),
   ]
+  const showsParty = showsGroupSize(party.max, min)
   const hasMeeting =
     meetingAddress !== null || meetingTime !== null || activity.meeting.mapUrl !== null
   const infoCards: { key: string; icon: IconName; title: string; body: ReactElement }[] = []
-  if (moreInfo.length > 0) {
+  if (moreInfo.length > 0 || showsParty) {
     infoCards.push({
       key: 'more',
       icon: 'info',
       title: t('act_more_info_t'),
-      body: <CheckList items={moreInfo} />,
+      // The party limits are the chosen package's, as in the booking box.
+      body: <CheckList items={moreInfo}>{showsParty ? <PartyLimitLines /> : null}</CheckList>,
     })
   }
   if (ageConditions.length > 0) {
@@ -370,10 +376,12 @@ export async function ActivityView({
   ].filter((tab): tab is { id: string; title: string; content: ReactElement } => tab !== null)
 
   // Each picture once (merged activities gathered every source's photos).
-  const galleryImages = dedupeImages(activity.gallery).map((image) => ({
+  // A photo without its own description is named after the activity and its
+  // place in the gallery («Bali Zoo — photo 3»), never left without alt text.
+  const galleryImages = dedupeImages(activity.gallery).map((image, index) => ({
     id: image.id,
     url: image.url,
-    alt: pickAlt(image.alt, lang, name),
+    alt: ownAlt(image.alt, lang) ?? t('act_gal_alt', { name, n: index + 1 }),
     srcSetAvif: image.srcSetAvif,
     srcSetWebp: image.srcSetWebp,
   }))
@@ -392,6 +400,11 @@ export async function ActivityView({
   // claimed unless real published reviews exist.
   const ldDescription =
     pickOptional(activity.shortDescription, lang) ?? pickOptional(activity.headline, lang) ?? name
+  const ldSar =
+    activity.priceMinor > 0
+      ? toSarMinor(activity.priceMinor, activity.currency, DEFAULT_FX.rates)
+      : null
+  const ldPriceMinor = ldSar !== null && ldSar > 0 ? ldSar : null
   const productLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': ['Product', 'TouristTrip'],
@@ -400,15 +413,21 @@ export async function ActivityView({
     url: shareUrl(getPathname({ href: `${HUB_PATH}/${activity.slug}`, locale: lang })),
     ...(activity.hero ? { image: shareUrl(activity.hero.url) } : {}),
     brand: { '@type': 'Brand', name: 'Bali Trips' },
-    offers: {
-      '@type': 'Offer',
-      // SAR: the base currency, and what is charged (never the visitor's ≈ price).
-      price: (toSarMinor(activity.priceMinor, activity.currency, DEFAULT_FX.rates) ?? 0) / 100,
-      priceCurrency: 'SAR',
-      availability: activity.bookable
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-    },
+    // An activity with nothing to sell carries no offer at all: never a
+    // price of 0, never InStock.
+    ...(ldPriceMinor !== null
+      ? {
+          offers: {
+            '@type': 'Offer',
+            // SAR: the base currency, and what is charged (never the visitor's ≈ price).
+            price: ldPriceMinor / 100,
+            priceCurrency: 'SAR',
+            availability: activity.bookable
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/OutOfStock',
+          },
+        }
+      : {}),
     ...(reviewAverage !== null
       ? {
           aggregateRating: {
@@ -445,87 +464,90 @@ export async function ActivityView({
           </div>
         ) : null}
 
-        <section className="ahero">
-          <header className="ahero-info">
-            {activity.mostPopular ? (
-              <Tag variant="sun" icon="star">
-                {t('act_badge_popular')}
-              </Tag>
-            ) : null}
-            <h1 className="h1">{name}</h1>
-            {place ? (
-              <p className="ahero-place">
-                <Icon name="pin" size={16} /> {place}
-              </p>
-            ) : null}
-            {reviewAverage !== null ? (
-              <p className="ahero-rating">
-                <Icon name="star" size={16} />
-                <b dir="ltr">{reviewAverage.toFixed(1)}</b>
-                <span className="muted">{t('act_rev_count_paren', { n: reviews.length })}</span>
-              </p>
-            ) : null}
-            {lede ? <p className="lede act-lede">{lede}</p> : null}
-            {quick.length > 0 ? (
-              <ul className={`qfacts2 n${quick.length}`} aria-label={t('act_sec_details')}>
-                {quick.map((fact) => (
-                  <li key={fact.label}>
-                    <Icon name={fact.icon} size={22} />
-                    <b className={fact.ltr ? 'num' : undefined} dir={fact.ltr ? 'ltr' : undefined}>
-                      {fact.value}
-                    </b>
-                    <small className="muted">{fact.label}</small>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <div className="row ahero-actions">
-              <ShareButton />
-              <SaveButton activityId={activity.id} />
-            </div>
-          </header>
-          <div className="ahero-gal">
-            <Gallery
-              images={galleryImages}
-              mobileHero={
-                activity.mobileHero
-                  ? {
-                      id: activity.mobileHero.id,
-                      url: activity.mobileHero.url,
-                      alt: '',
-                      srcSetAvif: activity.mobileHero.srcSetAvif,
-                      srcSetWebp: activity.mobileHero.srcSetWebp,
-                    }
-                  : null
-              }
-              video={
-                activity.video
-                  ? { provider: activity.video.provider, embedUrl: activity.video.embedUrl }
-                  : null
-              }
-            />
-          </div>
-        </section>
-
-        {!activity.bookable ? (
-          <div className="alert alert-warn act-off" role="status">
-            <Icon name="info" size={18} />
-            <span>
-              <b>{t('act_unavailable_t')}</b> {t('act_unavailable_b')}
-            </span>
-          </div>
-        ) : null}
-
-        <SectionNav
-          label={t('act_sections')}
-          sections={[
-            ...(hasPackages ? [{ id: 'packages', label: t('act_nav_packages') }] : []),
-            { id: 'overview', label: t('act_sec_overview') },
-            ...(infoTabs.length > 0 ? [{ id: 'details', label: t('act_sec_details') }] : []),
-          ]}
-        />
-
         <BookingProvider data={booking}>
+          <section className="ahero">
+            <header className="ahero-info">
+              {activity.mostPopular ? (
+                <Tag variant="sun" icon="star">
+                  {t('act_badge_popular')}
+                </Tag>
+              ) : null}
+              <h1 className="h1">{name}</h1>
+              {place ? (
+                <p className="ahero-place">
+                  <Icon name="pin" size={16} /> {place}
+                </p>
+              ) : null}
+              {reviewAverage !== null ? (
+                <p className="ahero-rating">
+                  <Icon name="star" size={16} />
+                  <b dir="ltr">{reviewAverage.toFixed(1)}</b>
+                  <span className="muted">{t('act_rev_count_paren', { n: reviews.length })}</span>
+                </p>
+              ) : null}
+              {lede ? <p className="lede act-lede">{lede}</p> : null}
+              {quick.length > 0 ? (
+                <ul className={`qfacts2 n${quick.length}`} aria-label={t('act_sec_details')}>
+                  {quick.map((fact) => (
+                    <li key={fact.label}>
+                      <Icon name={fact.icon} size={22} />
+                      <b
+                        className={fact.ltr ? 'num' : undefined}
+                        dir={fact.ltr ? 'ltr' : undefined}
+                      >
+                        {fact.value}
+                      </b>
+                      <small className="muted">{fact.label}</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className="row ahero-actions">
+                <ShareButton />
+                <SaveButton activityId={activity.id} />
+              </div>
+            </header>
+            <div className="ahero-gal">
+              <Gallery
+                images={galleryImages}
+                mobileHero={
+                  activity.mobileHero
+                    ? {
+                        id: activity.mobileHero.id,
+                        url: activity.mobileHero.url,
+                        alt: ownAlt(activity.mobileHero.alt, lang) ?? name,
+                        srcSetAvif: activity.mobileHero.srcSetAvif,
+                        srcSetWebp: activity.mobileHero.srcSetWebp,
+                      }
+                    : null
+                }
+                video={
+                  activity.video
+                    ? { provider: activity.video.provider, embedUrl: activity.video.embedUrl }
+                    : null
+                }
+              />
+            </div>
+          </section>
+
+          {!activity.bookable ? (
+            <div className="alert alert-warn act-off" role="status">
+              <Icon name="info" size={18} />
+              <span>
+                <b>{t('act_unavailable_t')}</b> {t('act_unavailable_b')}
+              </span>
+            </div>
+          ) : null}
+
+          <SectionNav
+            label={t('act_sections')}
+            sections={[
+              ...(hasPackages ? [{ id: 'packages', label: t('act_nav_packages') }] : []),
+              { id: 'overview', label: t('act_sec_overview') },
+              ...(infoTabs.length > 0 ? [{ id: 'details', label: t('act_sec_details') }] : []),
+            ]}
+          />
+
           {hasPackages ? (
             <section className="blk3" id="packages">
               <PackageCards />
@@ -583,9 +605,7 @@ export async function ActivityView({
                 id: other.id,
                 href: other.href,
                 name: pick(other.name, lang, other.slug),
-                area:
-                  pickOptional(other.area, lang) ??
-                  (other.region ? pick(other.region.label, lang) : null),
+                area: placeLine(other.area, other.region, lang),
                 price:
                   other.priceMinor > 0 ? (
                     <Money minor={other.priceMinor} currency={other.currency} />
@@ -701,8 +721,31 @@ export async function ActivityView({
   )
 }
 
+/** Longest meeting note that still reads as a quick fact. */
+const SCHEDULE_FACT_MAX = 28
+
+/** A time range out of a meeting note, the note when short, else nothing. */
+function shortSchedule(note: string | null): string | null {
+  if (note === null) return null
+  const range = /(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})/.exec(note)
+  if (range) {
+    const [, h1 = '', m1 = '', h2 = '', m2 = ''] = range
+    return `${h1.padStart(2, '0')}:${m1} – ${h2.padStart(2, '0')}:${m2}`
+  }
+  return note.trim().length <= SCHEDULE_FACT_MAX ? note.trim() : null
+}
+
+/** The alt text written for this language, when there is one (no English fallback). */
+function ownAlt(
+  alt: Partial<Record<Locale, string>> | null | undefined,
+  lang: Locale,
+): string | null {
+  const own = alt?.[lang]
+  return typeof own === 'string' && own.trim() !== '' ? own.trim() : null
+}
+
 /** A list with green ticks (the information cards). */
-function CheckList({ items }: { items: string[] }) {
+function CheckList({ items, children }: { items: string[]; children?: ReactNode }) {
   return (
     <ul className="clist">
       {items.map((line) => (
@@ -711,6 +754,7 @@ function CheckList({ items }: { items: string[] }) {
           <span>{line}</span>
         </li>
       ))}
+      {children}
     </ul>
   )
 }
