@@ -833,7 +833,14 @@ export async function getActivityBySlug(
   return {
     ...summary,
     status: activityStatus(a.status),
-    bookable: visibility.bookable,
+    // Nothing to sell (no priced, available package and no base price):
+    // the page shows the «ask us» panel instead of a 0 total and a live
+    // «Book now» button.
+    bookable:
+      visibility.bookable &&
+      (tierRows.length > 0
+        ? tierRows.some((tier) => tier.available && (tier.priceMinor ?? 0) > 0)
+        : (a.priceMinor ?? 0) > 0),
     description: a.description,
     headline: a.headline,
     highlights: toLocalizedList(a.highlights),

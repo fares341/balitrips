@@ -22,7 +22,7 @@ export function normalizePhone(raw: string | null | undefined): string | null {
   if (!raw) return null
   const trimmed = toAsciiDigits(raw).trim()
   if (!trimmed.startsWith('+') && !trimmed.startsWith('00')) return null
-  if (!/^[+0-9][0-9 ()./-]*$/.test(trimmed)) return null
+  if (!/^[+0-9(][0-9 ()./-]*$/.test(trimmed)) return null
   const digits = trimmed.replace(/\D/g, '')
   const national = trimmed.startsWith('00') ? digits.slice(2) : digits
   if (national.length < 8 || national.length > 15 || national.startsWith('0')) return null
@@ -67,7 +67,7 @@ export function contactLabel(user: { email: string; phone?: string | null }): st
  */
 export function isPhoneLike(value: string): boolean {
   const t = value.trim()
-  return t !== '' && !looksLikeEmail(t) && /^[+0-9][0-9 ()./-]*$/.test(t)
+  return t !== '' && !looksLikeEmail(t) && /^[+0-9(][0-9 ()./-]*$/.test(t)
 }
 
 export function hasIntlPrefix(value: string): boolean {
@@ -158,7 +158,7 @@ export function dialOf(iso: string): string {
 export function toE164(raw: string | null | undefined, iso: string): string | null {
   if (!raw) return null
   const t = toAsciiDigits(raw).trim()
-  if (t === '' || !/^[+0-9][0-9 ()./-]*$/.test(t)) return null
+  if (t === '' || !/^[+0-9(][0-9 ()./-]*$/.test(t)) return null
   const intl = t.startsWith('00') ? `+${t.slice(2)}` : t
   const country = isCountry(iso) ? iso : undefined
   const parsed = parsePhoneNumberFromString(intl, country)
