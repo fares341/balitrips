@@ -9,6 +9,7 @@ import {
   includedAddons,
   offeredAddons,
   isValidParty,
+  payingPartySize,
   priceBooking,
   resolveAddons,
   tierPricing,
@@ -410,6 +411,64 @@ describe('child prices (phase 2)', () => {
       children: 1,
     })
     expect(price.addonsMinor).toBe(1500 * 3)
+  })
+
+  // Audit M10: 2 adults + 1 infant + a per-person boat was charged 3 × the boat.
+  it('per-person add-ons do not count free infants', () => {
+    const price = priceBooking({
+      pkg: kids,
+      addons: [banana],
+      picks: [{ id: 'banana', qty: 1 }],
+      people: 3,
+      infants: 1,
+    })
+    const line = price.lines.find((l) => l.kind === 'addon')
+    expect(line?.quantity).toBe(2)
+    expect(price.addonsMinor).toBe(1500 * 2)
+    expect(price.totalMinor).toBe(10000 * 2 + 1500 * 2)
+  })
+
+  it('adults, a child and an infant: the add-on is charged for the two who pay a ticket and the child', () => {
+    const price = priceBooking({
+      pkg: kids,
+      addons: [banana],
+      picks: [{ id: 'banana', qty: 1 }],
+      people: 4,
+      children: 1,
+      infants: 1,
+    })
+    expect(price.addonsMinor).toBe(1500 * 3)
+    expect(payingPartySize(kids, 4, { children: 1, infants: 1 })).toBe(3)
+  })
+
+  it('infants are only free where the package has a child price', () => {
+    // No child price: nobody is an infant, everyone pays the package and the add-on.
+    const price = priceBooking({
+      pkg: basic,
+      addons: [banana],
+      picks: [{ id: 'banana', qty: 1 }],
+      people: 3,
+      infants: 1,
+    })
+    expect(price.addonsMinor).toBe(1500 * 3)
+    expect(payingPartySize(basic, 3, { infants: 1 })).toBe(3)
+  })
+
+  it('never drops below one paying person, whatever the client sends', () => {
+    expect(payingPartySize(kids, 2, { infants: 9 })).toBe(1)
+    expect(payingPartySize(kids, 3, { children: 2, infants: 9 })).toBe(3)
+  })
+
+  it('per-booking and quantity add-ons are unaffected by infants', () => {
+    const boat = addon({ id: 'boat', pricing: 'per_booking', priceMinor: 5000 })
+    const price = priceBooking({
+      pkg: kids,
+      addons: [boat],
+      picks: [{ id: 'boat', qty: 1 }],
+      people: 3,
+      infants: 1,
+    })
+    expect(price.addonsMinor).toBe(5000)
   })
 })
 
