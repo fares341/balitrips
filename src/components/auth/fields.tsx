@@ -25,7 +25,7 @@
  * remember to do it.
  */
 
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -213,16 +213,69 @@ export function TextField({
   )
 }
 
-/** الدولة الافتراضية لخانة الجوال: آخر اختيار، ثم منطقة المتصفح، ثم لغة الصفحة. */
+/**
+ * الدولة الافتراضية لخانة الجوال، بالترتيب: آخر دولة اختارها الزائر بنفسه،
+ * ثم البلد الذي يدخل منه (من عنوان IP عبر `/api/currency`، محفوظ للجلسة)،
+ * ثم منطقة المتصفح، ثم لغة الصفحة.
+ */
 export function defaultCountry(locale: string): string {
   if (typeof window === 'undefined') return locale === 'id' ? 'ID' : 'SA'
-  try {
-    const saved = window.localStorage.getItem('bt-phone-country')
-    if (saved && DIAL_CODES.some((c) => c.iso === saved)) return saved
-  } catch {
-    /* storage blocked */
+  for (const [store, key] of [
+    [window.localStorage, 'bt-phone-country'],
+    [window.sessionStorage, 'bt-ip-country'],
+  ] as const) {
+    try {
+      const saved = store.getItem(key)
+      if (saved && DIAL_CODES.some((c) => c.iso === saved)) return saved
+    } catch {
+      /* storage blocked */
+    }
   }
   return guessCountry(locale, window.navigator.languages ?? [window.navigator.language])
+}
+
+/**
+ * يسأل الخادم مرة واحدة في الجلسة عن بلد الزائر (IP) ويستدعي `onCountry`
+ * إن عُرف. لا شيء إن فشل الطلب: يبقى التخمين من المتصفح.
+ */
+export function useVisitorCountry(onCountry: (iso: string) => void): void {
+  useEffect(() => {
+    let cached: string | null = null
+    try {
+      cached = window.sessionStorage.getItem('bt-ip-country')
+    } catch {
+      /* storage blocked */
+    }
+    if (cached !== null) return
+    let alive = true
+    fetch('/api/currency', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { country?: string | null } | null) => {
+        const iso = data?.country?.toUpperCase()
+        if (!alive || !iso || !DIAL_CODES.some((c) => c.iso === iso)) return
+        try {
+          window.sessionStorage.setItem('bt-ip-country', iso)
+        } catch {
+          /* storage blocked */
+        }
+        onCountry(iso)
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+    // Once per mount; the callback only sets state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+}
+
+/** هل اختار الزائر دولة بنفسه في زيارة سابقة؟ */
+export function hasSavedCountry(): boolean {
+  try {
+    return window.localStorage.getItem('bt-phone-country') !== null
+  } catch {
+    return false
+  }
 }
 
 /** يحفظ اختيار الدولة لزيارة قادمة (راحة فقط). */
@@ -396,13 +449,18 @@ export function PhoneField({
 }) {
   const t = useTranslations()
   const names = useRegionNames()
+  // The "not valid" note waits until the visitor leaves the box, so it does
+  // not shout at them while they are still typing.
+  const [left, setLeft] = useState(false)
   const e164 = value.trim() === '' ? null : toE164(value, country)
   const hint =
     value.trim() === ''
       ? undefined
       : e164
         ? `${t('auth_phone_as')} \u2066${formatE164(e164)}\u2069`
-        : t('auth_phone_check', { country: names?.of(country) ?? country })
+        : left
+          ? t('auth_phone_check', { country: names?.of(country) ?? country })
+          : undefined
   const { id, errorId, hintId, describedBy } = useFieldIds(error, hint)
 
   return (
@@ -418,7 +476,11 @@ export function PhoneField({
           type="tel"
           inputMode="tel"
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onChange(event.target.value)
+            setLeft(false)
+          }}
+          onBlur={() => setLeft(true)}
           autoComplete="tel-national"
           maxLength={maxLength}
           disabled={disabled}

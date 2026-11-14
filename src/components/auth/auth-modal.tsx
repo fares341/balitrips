@@ -47,6 +47,8 @@ import { countryOptions } from './countries'
 import { prepareDeviceCookie } from './device-fingerprint'
 import {
   defaultCountry,
+  hasSavedCountry,
+  useVisitorCountry,
   FormError,
   FormNotice,
   IdentifierField,
@@ -197,8 +199,23 @@ export function AuthModal({
   const [pickedPhoneCountry, setPhoneCountry] = useState<string | null>(null)
   const [phoneCountryTouched, setPhoneCountryTouched] = useState(false)
   const phoneHydrated = useSyncExternalStore(subscribeNothing, isClient, isServer)
+  // The country the visitor is browsing from (IP) is the default, unless
+  // they already picked one themselves (saved) — then that one stays.
+  const [ipCountry, setIpCountry] = useState<string | null>(null)
+  useVisitorCountry((iso) => {
+    setIpCountry(iso)
+    // The country box too, so the visitor sees one consistent answer.
+    setForm((current) => (current.country === '' ? { ...current, country: iso } : current))
+  })
   const phoneCountry =
-    pickedPhoneCountry ?? (phoneHydrated ? defaultCountry(locale) : locale === 'id' ? 'ID' : 'SA')
+    pickedPhoneCountry ??
+    (phoneHydrated
+      ? hasSavedCountry()
+        ? defaultCountry(locale)
+        : (ipCountry ?? defaultCountry(locale))
+      : locale === 'id'
+        ? 'ID'
+        : 'SA')
   const pickPhoneCountry = (iso: string) => {
     setPhoneCountry(iso)
     setPhoneCountryTouched(true)
@@ -338,7 +355,8 @@ export function AuthModal({
       // A valid number for the chosen country ⇒ +E.164; otherwise what was
       // typed, so the schema reports it under the box.
       phone: toE164(form.phone, phoneCountry) ?? form.phone,
-      country: form.country,
+      // Left empty: the phone's country is a fair answer.
+      country: form.country === '' ? phoneCountry : form.country,
       locale: form.language === '' ? undefined : form.language,
       password: form.password,
       password2: form.password2,
