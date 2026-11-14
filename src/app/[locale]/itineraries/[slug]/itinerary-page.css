@@ -732,6 +732,13 @@
 .itp-mbar[hidden] {
   display: none;
 }
+/* The floating chat buttons ride above the buy bar while it shows, so the
+   bar's price and «Continue» button are never under them. */
+@media (max-width: 1023px) {
+  body:has(.itp-mbar:not([hidden])) {
+    --fab-lift: 68px;
+  }
+}
 .itp-mbar .btn {
   min-height: 44px;
   padding-inline: 26px;

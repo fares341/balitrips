@@ -31,6 +31,8 @@ export type GalleryImage = {
 export type GalleryVideo = { provider: 'youtube' | 'vimeo'; embedUrl: string }
 
 const SIZES = '(max-width: 1023px) 100vw, 62vw'
+/** Thumbnails are 84px wide (about 150px on a desktop): the browser takes the smallest rung, not the 1280px file. */
+const THUMB_SIZES = '(min-width: 1024px) 160px, 84px'
 
 /** One photo as a <picture>; the first may carry a portrait version for phones. */
 function Picture({
@@ -104,6 +106,7 @@ export function Gallery({
   // A real video leads, on its own poster with a play button (client design).
   const [active, setActive] = useState<number | 'video'>(video && images.length > 0 ? 'video' : 0)
   const swipe = useRef<{ x: number; y: number } | null>(null)
+  const lbSwipe = useRef<{ x: number; y: number } | null>(null)
   const [playing, setPlaying] = useState(false)
   const closeRef = useRef<HTMLButtonElement>(null)
 
@@ -209,14 +212,20 @@ export function Gallery({
                 key={image.id}
                 type="button"
                 aria-pressed={active === i}
-                aria-label={`${t('act_gal_view')} ${i + 1}`}
                 onClick={() => {
                   setActive(i)
                   setPlaying(false)
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- CMS thumbnail */}
-                <img src={image.url} alt="" loading="lazy" decoding="async" />
+                <img
+                  src={image.url}
+                  srcSet={image.srcSetWebp ?? undefined}
+                  sizes={image.srcSetWebp ? THUMB_SIZES : undefined}
+                  alt={image.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
               </button>
             ))}
             {video ? (
@@ -228,7 +237,14 @@ export function Gallery({
               >
                 {poster ? (
                   // eslint-disable-next-line @next/next/no-img-element -- CMS thumbnail
-                  <img src={poster.url} alt="" loading="lazy" decoding="async" />
+                  <img
+                    src={poster.url}
+                    srcSet={poster.srcSetWebp ?? undefined}
+                    sizes={poster.srcSetWebp ? THUMB_SIZES : undefined}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : null}
                 <span>
                   <Icon name="play" size={18} /> {t('act_video_label')}
@@ -250,12 +266,42 @@ export function Gallery({
           role="dialog"
           aria-modal="true"
           aria-label={t('act_gal_title')}
+          // A tap anywhere that is not the photo or a button closes it (on a
+          // phone the photo's box fills the screen, so «the backdrop itself»
+          // was never what the finger landed on).
           onClick={(event) => {
-            if (event.target === event.currentTarget) setOpen(null)
+            if (!(event.target as HTMLElement).closest('img, button')) setOpen(null)
+          }}
+          onTouchStart={(event) => {
+            const touch = event.touches[0]
+            lbSwipe.current = touch ? { x: touch.clientX, y: touch.clientY } : null
+          }}
+          onTouchEnd={(event) => {
+            const start = lbSwipe.current
+            const touch = event.changedTouches[0]
+            lbSwipe.current = null
+            if (!start || !touch) return
+            const dx = touch.clientX - start.x
+            const dy = touch.clientY - start.y
+            // Swipe down closes; swipe sideways turns the page.
+            if (dy > 70 && Math.abs(dy) > Math.abs(dx)) {
+              setOpen(null)
+            } else if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) && images.length > 1) {
+              const rtl = document.documentElement.dir === 'rtl'
+              const step = dx < 0 !== rtl ? 1 : -1
+              setOpen((i) => (i === null ? i : (i + step + images.length) % images.length))
+            }
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- full-size CMS photo */}
-          <img src={current.url} alt={current.alt} />
+          <div className="lb-frame">
+            {/* eslint-disable-next-line @next/next/no-img-element -- full-size CMS photo */}
+            <img
+              src={current.url}
+              srcSet={current.srcSetWebp ?? undefined}
+              sizes={current.srcSetWebp ? '100vw' : undefined}
+              alt={current.alt}
+            />
+          </div>
           <button
             ref={closeRef}
             type="button"

@@ -27,6 +27,7 @@ import { Stepper } from '@/components/shared/stepper'
 import { Modal } from '@/components/shared/modal'
 import { useToast } from '@/components/shared/toast'
 import { CART_CHANGED_EVENT, CART_HREF } from '@/components/layout/routes'
+import { useFabAside } from '@/components/layout/fab-aside'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { useContact, useWhatsappLink } from '@/components/layout/contact-context'
 import type { Locale } from '@/i18n/config'
@@ -41,6 +42,8 @@ import {
 } from '@/lib/booking-rules'
 import { FEATURES } from '@/lib/features'
 import { showsGroupSize } from '@/lib/content/activity-status'
+import type { FromPrice } from '@/lib/content/from-price'
+import { compareRows, normalizeFeature, withoutRepeats } from '@/lib/booking/compare'
 import {
   addonState,
   driverDays,
@@ -68,6 +71,7 @@ import {
 import { bookActivityAction, loadBookingFactsAction, loadTripBookingAction } from './actions'
 import { alertPrefillAction, subscribeAlertAction } from './alert-actions'
 import type { BookingFacts, BookingField } from './booking-contract'
+import { capFor, isPriced, minFor } from './party'
 
 // ---------------------------------------------------------------------------
 // Data handed over by the server (already localized)
@@ -164,6 +168,11 @@ export type BookingData = {
   bookable: boolean
   /** Activity name, for the WhatsApp message of an unavailable activity. */
   name: string
+  /**
+   * The «from» price with its unit, by the one rule cards and structured data
+   * use too (lib/content/from-price). Null = nothing to sell.
+   */
+  from: Pick<FromPrice, 'priceMinor' | 'pricing' | 'groupMax'> | null
   packages: BookingPackage[]
   addons: BookingAddon[]
   vehicles: BookingVehicle[]
@@ -185,7 +194,7 @@ export type BookingInfo = {
   importantNotes: ScopedLine[]
   /** Hero picture: the selected-package card's picture when the package has none. */
   heroUrl: string | null
-  /** Short cancellation line for the package card (null = none set). */
+  /** First line of the activity's own cancellation rule, in full (null = none set). */
   cancelShort: string | null
 }
 
@@ -372,20 +381,46 @@ export function forPackage(lines: readonly ScopedLine[], pkg: string | null): st
 /** Drop every pick the rules no longer allow (package change, prerequisite off). */
 function prune(state: State, data: BookingData): State {
   const pkgInfo = data.packages.find((p) => p.id === state.pkg) ?? null
-  const picks = Object.entries(state.addons).map(([id, qty]) => ({ id, qty }))
+  const picks = Object.entries(state.addons)
+    .map(([id, qty]) => ({ id, qty }))
+    // Named in the package's own text: part of it, never charged on top.
+    .filter((pick) => {
+      const addon = data.addons.find((a) => a.id === pick.id)
+      return !addon || !coveredByText(pkgInfo, addon)
+    })
   const { accepted } = resolveAddons(addonRules(data), toRule(pkgInfo, data), picks)
   return { ...state, addons: Object.fromEntries(accepted.map((p) => [p.id, p.qty])) }
 }
 
-function capFor(pkg: BookingPackage | null, data: BookingData): number {
-  const cap = Math.max(1, Math.min(pkg?.maxGuests ?? data.maxGuests, data.maxGuests))
-  // A couples package sells whole couples.
-  return pkg?.pricing === 'per_couple' ? Math.max(2, cap - (cap % 2)) : cap
+/**
+ * Extras the chosen package already contains: ticked on it in the Studio, or
+ * named in its own «includes» text (an extra typed as text is not sold again).
+ */
+function coveredByText(pkg: BookingPackage | null, addon: BookingAddon): boolean {
+  if (!pkg || pkg.includes.length === 0) return false
+  return withoutRepeats([addon.name], pkg.includes).length === 0
 }
 
-function minFor(pkg: BookingPackage | null, data: BookingData): number {
-  const min = Math.max(1, pkg?.minGuests ?? data.minGuests)
-  return pkg?.pricing === 'per_couple' ? Math.max(2, min + (min % 2)) : min
+/** The extras offered with a package, and the ones it already contains. */
+function packageExtras(data: BookingData, pkg: BookingPackage | null) {
+  const typed = data.addons.filter((addon) => coveredByText(pkg, addon))
+  const typedIds = new Set(typed.map((addon) => addon.id))
+  const ticked = includedAddons(data.addons, pkg)
+  const tickedIds = new Set(ticked.map((addon) => addon.id))
+  return {
+    offered: offeredAddons(data.addons, pkg).filter((addon) => !typedIds.has(addon.id)),
+    included: [...ticked, ...typed.filter((addon) => !tickedIds.has(addon.id))],
+  }
+}
+
+/** «2–6 people», or «2 people» when a booking is always that many. */
+function partyText(
+  t: ReturnType<typeof useTranslations>,
+  range: { min: number; max: number },
+): string {
+  return range.min >= range.max
+    ? t('act_qf_group_one', { n: range.max })
+    : t('act_qf_group_v', { min: range.min, max: range.max })
 }
 
 /** People within the package's bounds (and even for a couples package). */
@@ -423,6 +458,63 @@ function priceOf(state: State, data: BookingData) {
   })
 }
 
+const storeKey = (activityId: string) => `bt:booking:${activityId}`
+
+/**
+ * The selection saved for this activity in this tab, checked against today's
+ * data: a package no longer on sale, a past date, a slot or an extra that is
+ * gone are dropped rather than restored.
+ */
+function readSaved(data: BookingData): Partial<State> | null {
+  let raw: unknown
+  try {
+    raw = JSON.parse(window.sessionStorage.getItem(storeKey(data.activityId)) ?? 'null')
+  } catch {
+    return null
+  }
+  if (typeof raw !== 'object' || raw === null) return null
+  const saved = raw as Partial<Record<keyof State, unknown>>
+  const out: Partial<State> = {}
+  const pkg = data.packages.find((p) => p.id === saved.pkg && p.available && isPriced(p)) ?? null
+  if (data.packages.length > 0 && !pkg) return null
+  if (pkg) out.pkg = pkg.id
+  const isDate = (value: unknown): value is string =>
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= todayInBali()
+  if (isDate(saved.date)) {
+    out.date = saved.date
+    if (data.multiDay && isDate(saved.endDate) && saved.endDate >= saved.date) {
+      out.endDate = saved.endDate
+    }
+    if (typeof saved.time === 'string' && data.timeSlots.includes(saved.time)) {
+      out.time = saved.time
+    }
+  }
+  const whole = (value: unknown) =>
+    typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : 0
+  const people = whole(saved.people)
+  if (people > 0) {
+    out.people = clampPeople(people, pkg, data)
+    out.children = Math.min(whole(saved.children), Math.max(0, out.people - 1))
+    out.infants = Math.min(whole(saved.infants), Math.max(0, out.people - 1 - out.children))
+  }
+  if (typeof saved.addons === 'object' && saved.addons !== null) {
+    const known = new Set(data.addons.map((a) => a.id))
+    out.addons = Object.fromEntries(
+      Object.entries(saved.addons as Record<string, unknown>)
+        .filter(([id, qty]) => known.has(id) && whole(qty) > 0)
+        .map(([id, qty]) => [id, whole(qty)]),
+    )
+  }
+  if (typeof saved.included === 'object' && saved.included !== null) {
+    out.included = Object.fromEntries(
+      Object.entries(saved.included as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    )
+  }
+  return out
+}
+
 export function BookingProvider({ data, children }: { data: BookingData; children: ReactNode }) {
   const t = useTranslations()
   const locale = useLocale() as Locale
@@ -430,8 +522,8 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   const { toast } = useToast()
 
   const firstPkg =
-    data.packages.find((p) => p.available && p.popular) ??
-    data.packages.find((p) => p.available) ??
+    data.packages.find((p) => p.available && isPriced(p) && p.popular) ??
+    data.packages.find((p) => p.available && isPriced(p)) ??
     null
   const [state, setState] = useState<State>(() => ({
     pkg: firstPkg?.id ?? null,
@@ -511,6 +603,27 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read once from the URL after mount
     setState((current) => ({ ...current, date }))
   }, [])
+
+  // The choices survive a trip to checkout and back (flow audit L18: «Book
+  // now» → Back used to reset the date and the party). Kept for this tab only,
+  // per activity; an edit link (`?edit=`) or a dated link (`?date=`) wins.
+  const [restored, setRestored] = useState(false)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const saved = params.get('edit') || params.get('date') ? null : readSaved(data)
+    /* eslint-disable react-hooks/set-state-in-effect -- read once from sessionStorage after mount */
+    if (saved) setState((current) => prune({ ...current, ...saved }, data))
+    setRestored(true)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [data])
+  useEffect(() => {
+    if (!restored) return
+    try {
+      window.sessionStorage.setItem(storeKey(data.activityId), JSON.stringify(state))
+    } catch {
+      // Private mode or a full store: the form simply starts fresh next time.
+    }
+  }, [restored, state, data.activityId])
 
   const pkgInfo = data.packages.find((p) => p.id === state.pkg) ?? null
   const pkg = toRule(pkgInfo, data)
@@ -661,8 +774,10 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   function submit(mode: 'trip' | 'book') {
     const next = validate()
     if (Object.keys(next).length > 0) {
+      // The step that is missing says so itself and is scrolled into view; no
+      // generic «date, time and travelers» toast naming fields this activity
+      // may not even have.
       showErrors(next)
-      toast(t('act_err_required'), { error: true })
       return
     }
     setErrors({})
@@ -678,7 +793,11 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
   function notifyDropped(nextPkg: string) {
     if (nextPkg === state.pkg) return
     const kept = prune({ ...state, pkg: nextPkg }, data).addons
-    const nextIncludes = data.packages.find((p) => p.id === nextPkg)?.includesAddons ?? []
+    const nextInfo = data.packages.find((p) => p.id === nextPkg) ?? null
+    const nextIncludes = [
+      ...(nextInfo?.includesAddons ?? []),
+      ...data.addons.filter((a) => coveredByText(nextInfo, a)).map((a) => a.id),
+    ]
     const gone = Object.keys(state.addons).filter((id) => kept[id] === undefined)
     const label = (ids: string[]) =>
       ids
@@ -724,13 +843,13 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
     editing: editing !== null,
     choosePackage: (id, people) => {
       const target = data.packages.find((p) => p.id === id)
-      if (!target || !target.available) return
+      if (!target || !target.available || !isPriced(target)) return
       notifyDropped(id)
       update({ pkg: id, people }, 'people')
     },
     setPackage: (id, el) => {
       const target = data.packages.find((p) => p.id === id)
-      if (!target || !target.available) return
+      if (!target || !target.available || !isPriced(target)) return
       notifyDropped(id)
       update({ pkg: id }, 'package')
       if (el && typeof el.animate === 'function' && !reducedMotion()) {
@@ -778,7 +897,10 @@ export function BookingProvider({ data, children }: { data: BookingData; childre
 // Packages (main column)
 // ---------------------------------------------------------------------------
 
-function perLabel(t: ReturnType<typeof useTranslations>, pkg: BookingPackage) {
+function perLabel(
+  t: ReturnType<typeof useTranslations>,
+  pkg: Pick<BookingPackage, 'pricing' | 'groupMax'>,
+) {
   if (pkg.pricing === 'per_couple') return t('act_per_couple')
   if (pkg.pricing === 'fixed') return t('act_per_fixed')
   return pkg.pricing === 'per_group'
@@ -824,6 +946,38 @@ export function PartyStepper({ size = 'md' }: { size?: 'sm' | 'md' }) {
       decreaseLabel={t('c_qty_dec')}
       increaseLabel={t('c_qty_inc')}
     />
+  )
+}
+
+/**
+ * The party size of the chosen package, wherever the page states it outside
+ * the booking box (the fact beside the title): the same numbers the steppers
+ * enforce, so the header can never say «2–20» above a box that says «2».
+ */
+export function PartySizeText() {
+  const t = useTranslations()
+  const { cap, min } = useBooking()
+  return <>{partyText(t, { min, max: cap })}</>
+}
+
+/** «Minimum / maximum per booking» lines of the information card, same source. */
+export function PartyLimitLines() {
+  const t = useTranslations()
+  const { cap, min } = useBooking()
+  if (!showsGroupSize(cap, min)) return null
+  return (
+    <>
+      {min > 1 ? (
+        <li>
+          <Icon name="check" size={15} stroke={2.4} />
+          <span>{t('act_info_min', { n: min })}</span>
+        </li>
+      ) : null}
+      <li>
+        <Icon name="check" size={15} stroke={2.4} />
+        <span>{t('act_info_max', { n: cap })}</span>
+      </li>
+    </>
   )
 }
 
@@ -891,9 +1045,21 @@ function ChildSteppers() {
   )
 }
 
-/** Short list on a package card: its feature chips, then its inclusions. */
+/**
+ * The ticked list of a package: what it includes. Its «features» are short
+ * conditions («per person», «minimum two») and show as chips, never as ticks.
+ * A package with no inclusions typed falls back to its features.
+ */
 function cardChecks(p: BookingPackage): string[] {
-  return [...new Set([...p.features, ...p.includes])]
+  return [...new Set(p.includes.length > 0 ? p.includes : p.features)]
+}
+
+/** The condition chips of a package (empty when they already serve as its ticks). */
+function cardChips(p: BookingPackage, unit: string): string[] {
+  if (p.includes.length === 0) return []
+  // «Per person» typed as a feature repeats the unit under the price.
+  const said = normalizeFeature(unit)
+  return [...new Set(p.features)].filter((line) => normalizeFeature(line) !== said)
 }
 
 /** Head icon of a package card: a heart for couples, then a fixed ladder. */
@@ -927,6 +1093,13 @@ function PackagePrice({ p }: { p: BookingPackage }) {
   const { money } = useBooking()
   const compare = p.compareAtPriceMinor
   const off = compare !== null && compare > p.priceMinor ? compare - p.priceMinor : 0
+  if (!isPriced(p)) {
+    return (
+      <p className="pprice">
+        <b className="price price-ask">{t('act_price_on_request')}</b>
+      </p>
+    )
+  }
   return (
     <p className="pprice">
       <b className="price" dir="ltr">
@@ -986,11 +1159,42 @@ function CardStepper({ p }: { p: BookingPackage }) {
 
 export function PackageCards() {
   const t = useTranslations()
-  const { data, state, setPackage, money } = useBooking()
+  const { data, state, setPackage } = useBooking()
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const [compare, setCompare] = useState(false)
+  const cmpRef = useRef<HTMLDivElement>(null)
+  useFabAside(cmpRef, compare)
+  // The cards run edge to edge on a phone: the chat buttons would sit on them.
+  const railRef = useRef<HTMLDivElement>(null)
+  useFabAside(railRef)
 
-  const features = [...new Set(data.packages.flatMap((p) => [...p.includes, ...p.excludes]))]
+  const rows = useMemo(
+    () =>
+      compareRows(
+        data.packages.map((p) => ({
+          id: p.id,
+          includes: [
+            ...p.includes,
+            ...data.info.included.filter((l) => l.pkg === p.id).map((l) => l.text),
+          ],
+          includesAddons: p.includesAddons,
+        })),
+        data.addons.map((a) => ({ id: a.id, name: a.name })),
+        data.info.included.filter((l) => l.pkg === null).map((l) => l.text),
+      ),
+    [data],
+  )
+
+  // The table opens where the customer tapped: it is brought into view (it
+  // sits below the cards, which can be a screen and a half away on a phone).
+  useEffect(() => {
+    if (!compare) return
+    cmpRef.current?.scrollIntoView({
+      behavior: reducedMotion() ? 'auto' : 'smooth',
+      block: 'start',
+    })
+    cmpRef.current?.focus({ preventScroll: true })
+  }, [compare])
 
   return (
     <>
@@ -999,26 +1203,29 @@ export function PackageCards() {
           <h2>{t('act_choose_t')}</h2>
           <p className="muted">{t('act_choose_sub')}</p>
         </div>
-        {data.packages.length > 1 && features.length > 0 ? (
+        {data.packages.length > 1 && rows.length > 0 ? (
           <button
             type="button"
-            className="btn btn-ghost btn-sm"
+            className="btn btn-ghost btn-sm cmp-toggle"
             aria-expanded={compare}
             aria-controls="act-cmp"
             onClick={() => setCompare((value) => !value)}
           >
-            <Icon name="list" size={16} /> {t('act_pkgs_compare')}
+            <Icon name="list" size={16} /> {compare ? t('act_cmp_hide') : t('act_pkgs_compare')}
           </button>
         ) : null}
       </div>
       <div
+        ref={railRef}
         className={`pcards n${Math.min(data.packages.length, 4)}`}
         role="list"
         aria-label={t('act_pkgs_label')}
       >
         {data.packages.map((p, index) => {
           const on = state.pkg === p.id
+          const sellable = p.available && isPriced(p)
           const checks = cardChecks(p)
+          const chips = cardChips(p, perLabel(t, p))
           const extra =
             checks.length > TIER_CHECKS ||
             p.excludes.length + p.highlights.length + p.details.length + p.notes.length > 0 ||
@@ -1029,7 +1236,7 @@ export function PackageCards() {
             <div
               key={p.id}
               role="listitem"
-              className={`pcard${on ? ' on' : ''}${p.available ? '' : ' off'}`}
+              className={`pcard${on ? ' on' : ''}${sellable ? '' : ' off'}`}
               aria-label={p.name}
             >
               <PackageBadge p={p} />
@@ -1040,7 +1247,14 @@ export function PackageCards() {
                 <h3 className="tname">{p.name}</h3>
               </header>
               <PackagePrice p={p} />
-              <small className="punit">{perLabel(t, p)}</small>
+              {isPriced(p) ? <small className="punit">{perLabel(t, p)}</small> : null}
+              {chips.length > 0 ? (
+                <ul className="pchips" aria-label={t('act_pkg_terms')}>
+                  {chips.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              ) : null}
               {p.tagline ? <p className="ptag">{p.tagline}</p> : null}
               {checks.length > 0 && !expanded ? (
                 <ul className="pchecks">
@@ -1069,13 +1283,15 @@ export function PackageCards() {
                 </button>
               ) : null}
               <div className="pfoot">
-                {p.available && data.bookable ? <CardStepper p={p} /> : null}
+                {sellable && data.bookable ? <CardStepper p={p} /> : null}
                 <button
                   type="button"
                   className={on ? 'btn btn-primary pchoose' : 'btn btn-outline pchoose'}
                   aria-pressed={on}
-                  disabled={!p.available}
-                  onClick={(event) => setPackage(p.id, event.currentTarget.closest('article'))}
+                  disabled={!sellable}
+                  onClick={(event) =>
+                    setPackage(p.id, event.currentTarget.closest<HTMLElement>('.pcard'))
+                  }
                 >
                   {on ? (
                     <>
@@ -1086,68 +1302,90 @@ export function PackageCards() {
                   )}
                 </button>
               </div>
-              {!p.available ? <span className="why">{t('act_pkg_unavailable')}</span> : null}
+              {!sellable ? <span className="why">{t('act_pkg_unavailable')}</span> : null}
             </div>
           )
         })}
       </div>
-      {compare ? (
-        <div id="act-cmp" className="stack" style={{ gap: 8 }}>
-          <div className="cmp-wrap">
-            <table className="cmp">
-              <thead>
-                <tr>
-                  <th scope="col">{t('act_cmp_feature')}</th>
-                  {data.packages.map((p) => (
-                    <th key={p.id} scope="col">
-                      {p.name}
-                      <br />
-                      <span className="num" dir="ltr">
-                        {money(p.priceMinor)}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {features.map((feature) => {
-                  const has = data.packages.map((p) => p.includes.includes(feature))
-                  const diff = has.some(Boolean) && has.some((x) => !x)
-                  return (
-                    <tr key={feature} className={diff ? 'diff' : undefined}>
-                      <td>{feature}</td>
-                      {has.map((yes, i) => (
-                        <td key={i} className={yes ? 'y' : 'n'}>
-                          <Icon name={yes ? 'check' : 'minus'} size={18} stroke={2.4} />
-                          <span className="sr-only">
-                            {yes ? t('act_included') : t('act_not_included')}
-                          </span>
-                        </td>
-                      ))}
-                    </tr>
-                  )
-                })}
-                <tr>
-                  <td>{t('act_cmp_pricing')}</td>
-                  {data.packages.map((p) => (
-                    <td key={p.id}>
-                      {p.pricing === 'per_group'
-                        ? t('act_cmp_group')
-                        : p.pricing === 'per_couple'
-                          ? t('act_cmp_couple')
-                          : p.pricing === 'fixed'
-                            ? t('act_cmp_fixed')
-                            : t('act_cmp_person')}
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <small className="muted">{t('act_cmp_hint')}</small>
-        </div>
-      ) : null}
+      {compare ? <CompareTable ref={cmpRef} rows={rows} /> : null}
     </>
+  )
+}
+
+/**
+ * The comparison table. It scrolls sideways inside its own box (the page
+ * never grows wider than the screen) with the feature column pinned, so on a
+ * phone every tick is still read against its feature.
+ */
+function CompareTable({
+  rows,
+  ref,
+}: {
+  rows: ReturnType<typeof compareRows>
+  ref: React.Ref<HTMLDivElement>
+}) {
+  const t = useTranslations()
+  const { data, money, state } = useBooking()
+  const differs = rows.some((row) => row.differs)
+  return (
+    <div
+      id="act-cmp"
+      ref={ref}
+      className="cmp-box"
+      tabIndex={-1}
+      role="region"
+      aria-label={t('act_pkgs_compare')}
+    >
+      <div className="cmp-wrap" tabIndex={0} role="group" aria-label={t('act_cmp_scroll')}>
+        <table className="cmp">
+          <thead>
+            <tr>
+              <th scope="col">{t('act_cmp_feature')}</th>
+              {data.packages.map((p) => (
+                <th key={p.id} scope="col" className={state.pkg === p.id ? 'on' : undefined}>
+                  <span className="cmp-name">{p.name}</span>
+                  {isPriced(p) ? (
+                    <span className="num cmp-price" dir="ltr">
+                      {money(p.priceMinor)}
+                    </span>
+                  ) : (
+                    <span className="cmp-price cmp-ask">{t('act_price_on_request')}</span>
+                  )}
+                  {!p.available || !isPriced(p) ? (
+                    <small className="cmp-off">{t('act_pkg_unavailable')}</small>
+                  ) : null}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key} className={row.differs ? 'diff' : undefined}>
+                <th scope="row">{row.label}</th>
+                {row.has.map((yes, i) => (
+                  <td key={data.packages[i]?.id ?? i} className={yes ? 'y' : 'n'}>
+                    <Icon name={yes ? 'check' : 'minus'} size={18} stroke={2.4} />
+                    <span className="sr-only">
+                      {yes ? t('act_included') : t('act_not_included')}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr>
+              <th scope="row">{t('act_cmp_pricing')}</th>
+              {data.packages.map((p) => (
+                <td key={p.id}>{isPriced(p) ? perLabel(t, p) : '—'}</td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <small className="muted cmp-hint">
+        {differs ? `${t('act_cmp_hint')} ` : ''}
+        <span className="cmp-swipe">{t('act_cmp_swipe')}</span>
+      </small>
+    </div>
   )
 }
 
@@ -1224,6 +1462,8 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
   const t = useTranslations()
   const { data, pkgInfo, money, cap, min, promise } = useBooking()
   const info = data.info
+  // A long rule is a sentence, not a tile: it is printed in full under the facts.
+  const cancelTile = info.cancelShort !== null && info.cancelShort.length <= CANCEL_TILE_MAX
   const facts: { icon: IconName; value: string; label: string; ltr?: boolean; ok?: boolean }[] = []
   if (info.freeCancellationHours !== null) {
     facts.push({
@@ -1232,7 +1472,7 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
       label: t('act_spec_until_h', { n: info.freeCancellationHours }),
       ok: true,
     })
-  } else if (info.cancelShort) {
+  } else if (info.cancelShort && cancelTile) {
     facts.push({ icon: 'shield', value: info.cancelShort, label: t('act_spec_cancel') })
   }
   // Supplier terms, when set up, decide the promise; otherwise the page flag.
@@ -1260,7 +1500,7 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
       icon: 'cal',
       value: schedule,
       label: t('act_qf_schedule'),
-      ltr: /^[\d:·\s]+$/.test(schedule),
+      ltr: /^[\d:·–\s]+$/.test(schedule),
     })
   }
   const duration = pkgInfo?.duration ?? info.duration
@@ -1268,7 +1508,7 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
   if (showsGroupSize(cap, min)) {
     facts.push({
       icon: 'users',
-      value: t('act_qf_group_v', { min, max: cap }),
+      value: partyText(t, { min, max: cap }),
       label: t('act_spec_people'),
     })
   }
@@ -1299,14 +1539,24 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
         <div className="selpkg-buy">
           {pkgInfo ? (
             <PackagePrice p={pkgInfo} />
-          ) : (
+          ) : data.basePriceMinor > 0 ? (
             <p className="pprice">
               <b className="price" dir="ltr">
                 {money(data.basePriceMinor)}
               </b>
             </p>
+          ) : (
+            <p className="pprice">
+              <b className="price price-ask">{t('act_price_on_request')}</b>
+            </p>
           )}
-          <small className="punit">{pkgInfo ? perLabel(t, pkgInfo) : t('act_per_person')}</small>
+          {pkgInfo ? (
+            isPriced(pkgInfo) ? (
+              <small className="punit">{perLabel(t, pkgInfo)}</small>
+            ) : null
+          ) : data.basePriceMinor > 0 ? (
+            <small className="punit">{t('act_per_person')}</small>
+          ) : null}
           {data.bookable ? (
             <>
               <div className="pqty">
@@ -1344,9 +1594,30 @@ export function TierDetail({ schedule }: { schedule: string | null }) {
           ))}
         </ul>
       ) : null}
+      {info.freeCancellationHours === null && info.cancelShort && !cancelTile ? (
+        <p className="selpkg-cancel">
+          <Icon name="shield" size={18} />
+          <span>
+            <b>{t('act_spec_cancel')}:</b> {info.cancelShort}{' '}
+            <a
+              className="link"
+              href="#details"
+              onClick={() => {
+                // The full policy lives in the «cancellation» tab of the details.
+                document.getElementById('itab-cancel')?.click()
+              }}
+            >
+              {t('act_cancel_read')}
+            </a>
+          </span>
+        </p>
+      ) : null}
     </section>
   )
 }
+
+/** Longest cancellation line that still fits a fact tile. */
+const CANCEL_TILE_MAX = 34
 
 /**
  * تشمل الباقة / لا تشمل الباقة / مناسبة لـ / ملاحظات مهمة — for the chosen
@@ -1361,15 +1632,23 @@ export function InfoBoxes() {
     lines.filter((l) => l.pkg !== null && l.pkg === state.pkg).map((l) => l.text)
   const general = (lines: readonly ScopedLine[]) =>
     lines.filter((l) => l.pkg === null).map((l) => l.text)
-  const own = pkgInfo ? cardChecks(pkgInfo) : []
-  const includes = [
+  // The package's own inclusions (never its condition chips), the lines tied
+  // to it, then the extras it contains — each thing once, however it was typed.
+  const own = pkgInfo ? pkgInfo.includes : []
+  const typed = [
     ...new Set([
-      ...(own.length > 0 ? own : general(info.included)),
+      ...own,
+      // The activity's general lines hold for every package.
+      ...withoutRepeats(general(info.included), own),
       ...only(info.included),
-      ...includedAddons(data.addons, pkgInfo).map((a) =>
-        t('act_addon_in_pkg_line', { name: a.name }),
-      ),
     ]),
+  ]
+  const includes = [
+    ...typed,
+    ...withoutRepeats(
+      packageExtras(data, pkgInfo).included.map((a) => a.name),
+      typed,
+    ),
   ]
   const excludes = [
     ...new Set([
@@ -1523,6 +1802,21 @@ export function AddonStrip() {
   )
 }
 
+/**
+ * An extra's name as a short title and a note: «Glass boat (per boat: 2 adults
+ * + 2 children)» reads as the title with the bracket in small print under it.
+ */
+function addonTitle(name: string): { title: string; note: string | null } {
+  const match = /^(.{3,}?)\s*[(（]([^()（）]{12,})[)）]\s*$/.exec(name)
+  if (!match || !match[1] || !match[2]) return { title: name, note: null }
+  return { title: match[1].trim(), note: match[2].trim() }
+}
+
+/** A line the package already contains: listed, never priced. */
+function isFreeInclusion(line: { included?: boolean; totalMinor: number }): boolean {
+  return line.included === true && line.totalMinor === 0
+}
+
 /** How an add-on is charged, for its card and the booking box. */
 function perAddon(t: ReturnType<typeof useTranslations>, a: BookingAddon): string {
   switch (a.pricing) {
@@ -1563,21 +1857,20 @@ export function BookingBox() {
   const uid = useId()
   const b = useBooking()
   const { data, state, errors, price, money, moneyText, pkgInfo } = b
+  // The form needs the whole width of a phone: the floating chat buttons step
+  // aside while it is on screen (it has its own «questions? contact us» link).
+  const formRef = useRef<HTMLFormElement>(null)
+  useFabAside(formRef, data.bookable)
 
-  const intlLocale = locale === 'ar' ? 'ar-EG' : locale
+  // Western digits, as prices and steppers use (never «١٦ نوفمبر» beside «2026»).
+  const intlLocale = locale === 'ar' ? 'ar-EG-u-nu-latn' : locale
   const fmtDate = (value: string) =>
     new Intl.DateTimeFormat(intlLocale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
       new Date(`${value}T00:00:00Z`),
     )
 
-  // The cheapest bookable package (or the base price) heads the box.
-  const from = data.packages.length
-    ? data.packages.reduce<BookingPackage | null>(
-        (min, p) => (p.available && (!min || p.priceMinor < min.priceMinor) ? p : min),
-        null,
-      )
-    : null
-  const fromMinor = from?.priceMinor ?? data.basePriceMinor
+  // The «from» price heads the box: the same package the cards print.
+  const from = data.from
 
   const rules = b.rules
   const win = bookingWindow(data)
@@ -1642,14 +1935,14 @@ export function BookingBox() {
 
   const selected = new Set(Object.keys(state.addons))
   // Add-ons the chosen package already includes are not offered again.
-  const offered = offeredAddons(data.addons, pkgInfo)
-  const inPackage = includedAddons(data.addons, pkgInfo)
+  const { offered, included: inPackage } = packageExtras(data, pkgInfo)
   const ownSlots = ownSlotIncluded(pkgInfo)
 
   if (!data.bookable) return <UnavailableBox />
 
   return (
     <form
+      ref={formRef}
       className="panel bk"
       id="bk-form"
       noValidate
@@ -1664,7 +1957,7 @@ export function BookingBox() {
         {/* L8: price before its unit, so the text reads "From US$22 per person". */}
         <span className="bk-price">
           <b className="price" dir="ltr">
-            {money(fromMinor)}
+            {money(from?.priceMinor ?? data.basePriceMinor)}
           </b>
           <small>{from ? perLabel(t, from) : t('act_per_person')}</small>
         </span>
@@ -1684,8 +1977,10 @@ export function BookingBox() {
               onChange={(event) => b.setPackage(event.target.value)}
             >
               {data.packages.map((p) => (
-                <option key={p.id} value={p.id} disabled={!p.available}>
-                  {`${p.name} — ${moneyText(p.priceMinor)} ${perLabel(t, p)}`}
+                <option key={p.id} value={p.id} disabled={!p.available || !isPriced(p)}>
+                  {isPriced(p)
+                    ? `${p.name} — ${moneyText(p.priceMinor)} ${perLabel(t, p)}`
+                    : `${p.name} — ${t('act_price_on_request')}`}
                 </option>
               ))}
             </select>
@@ -1886,7 +2181,8 @@ export function BookingBox() {
                       onChange={(event) => b.toggleAddon(a.id, event.target.checked)}
                     />
                     <span className="addon">
-                      <b>{a.name}</b>
+                      <b>{addonTitle(a.name).title}</b>
+                      {addonTitle(a.name).note ? <small>{addonTitle(a.name).note}</small> : null}
                       {a.description ? <small>{a.description}</small> : null}
                       {why ? <small className="why">{why}</small> : null}
                       {addonHasQty(a.pricing) && state.addons[a.id] !== undefined ? (
@@ -1908,11 +2204,14 @@ export function BookingBox() {
                         </span>
                       ) : null}
                     </span>
-                    <span className="ad-price">
-                      <span dir="ltr">{included ? '—' : <>+{money(a.priceMinor)}</>}</span>
-                      <br />
-                      <small className="muted">{a.unitLabel ?? perAddon(t, a)}</small>
-                    </span>
+                    {/* No «+0» beside an extra that is off sale or not priced. */}
+                    {st.kind === 'unavailable' || (!included && a.priceMinor <= 0) ? null : (
+                      <span className="ad-price">
+                        <span dir="ltr">{included ? '—' : <>+{money(a.priceMinor)}</>}</span>
+                        <br />
+                        <small className="muted">{a.unitLabel ?? perAddon(t, a)}</small>
+                      </span>
+                    )}
                   </label>
                 )
               })}
@@ -1982,14 +2281,36 @@ export function BookingBox() {
               ) : null}
             </span>
           </div>
-          {price.lines.map((line) => (
-            <div className="sum-row" key={`${line.kind}-${line.refId ?? ''}`}>
-              <span>{lineLabel(line)}</span>
-              <span className="price" dir="ltr">
-                {money(line.totalMinor)}
+          {price.lines
+            .filter((line) => !isFreeInclusion(line))
+            .map((line) => (
+              <div className="sum-row" key={`${line.kind}-${line.refId ?? ''}`}>
+                <span>{lineLabel(line)}</span>
+                <span className="price" dir="ltr">
+                  {money(line.totalMinor)}
+                </span>
+              </div>
+            ))}
+          {/* What the package already contains: one line, no «0» prices. */}
+          {price.lines.some(isFreeInclusion) ? (
+            <div className="sum-row sum-inc">
+              <span>
+                {t('act_sum_in_pkg')}
+                <small className="muted">
+                  {price.lines
+                    .filter(isFreeInclusion)
+                    .map((line) =>
+                      line.kind === 'included'
+                        ? ((line.refId ? includedById.get(line.refId)?.name : undefined) ?? '')
+                        : ((line.refId ? addonById.get(line.refId)?.name : undefined) ?? ''),
+                    )
+                    .filter((name) => name !== '')
+                    .join(locale === 'ar' ? '، ' : ', ')}
+                </small>
               </span>
+              <span className="sum-inc-v">{t('act_included')}</span>
             </div>
-          ))}
+          ) : null}
           <div className="sum-total">
             <span>{t('act_sum_total')}</span>
             <b key={b.bump} className={b.bump > 0 ? 'price bump' : 'price'} dir="ltr">
@@ -2008,7 +2329,10 @@ export function BookingBox() {
             </small>
           ) : null}
           <small className="muted">
-            {t('act_sum_currency', { currency: data.currency })} · {t('act_sum_note')}
+            {data.currency === 'SAR'
+              ? t('act_sum_charged_sar')
+              : t('act_sum_currency', { currency: data.currency })}{' '}
+            · {t('act_sum_note')}
           </small>
         </div>
 

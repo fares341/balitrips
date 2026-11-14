@@ -9,7 +9,9 @@
   z-index: calc(var(--z-tabbar) - 1);
   inset-inline-end: 16px;
   /* Above the WhatsApp button (52px + 12px gap), which sits above the tab bar. */
-  bottom: calc(var(--tabbar-h) + 16px + 64px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(
+    var(--tabbar-h) + 16px + 64px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px)
+  );
   width: 52px;
   height: 52px;
   border: 0;
@@ -23,7 +25,9 @@
   font: inherit;
   transition:
     transform var(--d-fast) var(--ease),
-    box-shadow var(--d-fast) var(--ease);
+    box-shadow var(--d-fast) var(--ease),
+    bottom var(--d-base) var(--ease),
+    opacity var(--d-fast) var(--ease);
 }
 .ai-fab:hover {
   transform: translateY(-2px);
@@ -39,7 +43,7 @@
   display: none;
 }
 .ai-fab.is-solo {
-  bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 1023px) {
   /* Map: above the Map / List bar (10px + ~56px), and out of the way while a
