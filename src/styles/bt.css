@@ -4308,3 +4308,10 @@ html {
     padding-bottom: 168px;
   }
 }
+
+/* --- Footer bottom line on phones: clear of the floating buttons ---------- */
+@media (max-width: 1023px) {
+  .ftr-bottom {
+    padding-inline-end: 84px;
+  }
+}

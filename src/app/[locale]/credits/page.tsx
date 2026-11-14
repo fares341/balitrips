@@ -27,6 +27,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { db } from '@/db'
 import { media } from '@/db/schema'
 import { locales } from '@/i18n/config'
+import { creditLinkUrl } from '@/lib/free-photos/credit-link'
 
 import { alternatesFor, toLocale } from '../_seo-hreflang'
 import { PageBanner } from '../_ui/page-banner'
@@ -114,7 +115,20 @@ export default async function CreditsPage({ params }: { params: PageParams }) {
     .where(and(isNotNull(media.credit), ne(media.credit, '')))
     .orderBy(asc(media.credit))
 
-  const credits = rows.map((row) => ({ id: row.id, ...parseCredit(row.credit ?? '') }))
+  // One line per distinct credit: the same photo credit stored on several
+  // media rows (ladder copies, re-imports) is listed once.
+  const seen = new Set<string>()
+  const distinct = rows.filter((row) => {
+    const key = (row.credit ?? '').trim()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  const credits = distinct.map((row) => {
+    const credit = parseCredit(row.credit ?? '')
+    // The attribution text stays as stored; only the link is repaired.
+    return { id: row.id, ...credit, url: creditLinkUrl(credit.url) }
+  })
   const incomplete = credits.filter((c) => c.photographer === null || c.licence === null).length
 
   return (
@@ -130,6 +144,18 @@ export default async function CreditsPage({ params }: { params: PageParams }) {
         <div className="bt-wrap">
           <p className="muted" style={{ maxWidth: '62ch' }}>
             {t('cr_intro')}
+          </p>
+          {/* Attribution required by the IP → country data behind the automatic
+              display currency (src/lib/currency/geoip.ts); it used to sit in
+              the footer of every page. */}
+          <p className="muted" style={{ maxWidth: '62ch', fontSize: 14 }}>
+            {t.rich('cr_geo', {
+              nro: (chunks) => (
+                <a href="https://www.nro.net/" rel="noopener noreferrer" target="_blank">
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
 
           {credits.length === 0 ? (

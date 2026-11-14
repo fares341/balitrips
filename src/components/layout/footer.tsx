@@ -195,15 +195,6 @@ export async function Footer({ hidden = [] }: { hidden?: readonly string[] } = {
           <span>
             © <span dir="ltr">{year}</span> {t('foot_rights')}
           </span>
-          {/* Attribution required by the IP → country data behind the
-              automatic display currency (src/lib/currency/geoip.ts). */}
-          <small dir="ltr" lang="en" style={{ opacity: 0.6, fontSize: 11 }}>
-            IP geolocation data ©{' '}
-            <a href="https://www.nro.net/" rel="noopener noreferrer" target="_blank">
-              NRO
-            </a>
-            , CC BY 4.0
-          </small>
         </div>
       </div>
     </footer>
