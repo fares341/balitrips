@@ -55,7 +55,7 @@ import {
   tags,
 } from '@/db/schema'
 import { isIconName, type IconName } from '@/components/ui/icon'
-import { defaultLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, type Locale } from '@/i18n/config'
 import type { VehicleClass } from '@/lib/booking-rules'
 import type {
   ActivityDetail,
@@ -363,13 +363,13 @@ function localizedText(
   locale: Locale,
   fallback: SQL | unknown,
 ): SQL<string> {
-  return sql<string>`coalesce(nullif(${column} ->> ${locale}::text, ''), nullif(${column} ->> ${defaultLocale}::text, ''), ${fallback})`
+  return sql<string>`coalesce(nullif(${column} ->> ${locale}::text, ''), nullif(${column} ->> ${fallbackLocale}::text, ''), ${fallback})`
 }
 
 /** Case-insensitive contains, against the requested locale and English. */
 function matchesLocalized(column: SQL | unknown, locale: Locale, needle: string): SQL {
   const pattern = `%${escapeLike(needle)}%`
-  return sql`((${column} ->> ${locale}::text) ilike ${pattern} escape '\\' or (${column} ->> ${defaultLocale}::text) ilike ${pattern} escape '\\')`
+  return sql`((${column} ->> ${locale}::text) ilike ${pattern} escape '\\' or (${column} ->> ${fallbackLocale}::text) ilike ${pattern} escape '\\')`
 }
 
 /**
@@ -605,7 +605,7 @@ export async function listArticleCategories(): Promise<ArticleCategoryDto[]> {
 export async function listActivities(
   options: ListActivitiesOptions = {},
 ): Promise<ActivitySummary[]> {
-  const locale = options.locale ?? defaultLocale
+  const locale = options.locale ?? fallbackLocale
   const categoryKey = normalizeKey(options.categoryKey)
   const limit = clampLimit(options.limit, DEFAULT_LIMIT)
   const offset = clampOffset(options.offset)
@@ -1028,7 +1028,7 @@ export async function listHomeActivities(options: {
   locale?: Locale
   exclude?: (activity: ActivitySummary) => boolean
 }): Promise<ActivitySummary[]> {
-  const locale = options.locale ?? defaultLocale
+  const locale = options.locale ?? fallbackLocale
   const limit = clampLimit(options.limit, 6)
   const nameOrder = localizedText(activities.name, locale, activities.slug)
   const rows = await db
@@ -1543,7 +1543,7 @@ function toArticleSummary({ article, category, hero }: ArticleJoin): ArticleSumm
 }
 
 export async function listArticles(options: ListArticlesOptions = {}): Promise<ArticleSummary[]> {
-  const locale = options.locale ?? defaultLocale
+  const locale = options.locale ?? fallbackLocale
   const categoryKey = normalizeKey(options.categoryKey)
   const q = normalizeQuery(options.q)
   const limit = clampLimit(options.limit, DEFAULT_LIMIT)

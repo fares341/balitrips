@@ -4,7 +4,7 @@ import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { itineraries, orderItems, orders, users } from '@/db/schema'
-import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { pick } from '@/lib/content/localize'
 import { notifyUsers } from '@/lib/notify'
 
@@ -21,7 +21,7 @@ export async function notifyItineraryHolders(
 ): Promise<number> {
   try {
     const receives = locales.filter(
-      (locale) => locale === uploadedLocale || (uploadedLocale === defaultLocale && !keys[locale]),
+      (locale) => locale === uploadedLocale || (uploadedLocale === fallbackLocale && !keys[locale]),
     )
     const holders = await db
       .selectDistinct({ userId: orders.userId, locale: users.locale })
@@ -40,7 +40,7 @@ export async function notifyItineraryHolders(
     const byLocale = new Map<Locale, string[]>()
     for (const holder of holders) {
       if (!holder.userId) continue
-      const locale = isLocale(holder.locale) ? holder.locale : defaultLocale
+      const locale = isLocale(holder.locale) ? holder.locale : fallbackLocale
       if (!receives.includes(locale)) continue
       byLocale.set(locale, [...(byLocale.get(locale) ?? []), holder.userId])
     }

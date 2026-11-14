@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { customTripRequests, users } from '@/db/schema'
-import { defaultLocale } from '@/i18n/config'
+import { fallbackLocale } from '@/i18n/config'
 import { toMailLocale, translator } from '@/lib/email'
 import { notifyUser } from '@/lib/notify'
 import { emailGuest } from '@/lib/notify/guest'
@@ -62,9 +62,9 @@ export async function notifyRequestStatus(requestId: string, status: string): Pr
   if (!row.userId) {
     await emailGuest({
       to: row.email,
-      locale: defaultLocale,
+      locale: fallbackLocale,
       type: 'custom_status_guest',
-      params: { status: statusLabel(defaultLocale, status) },
+      params: { status: statusLabel(fallbackLocale, status) },
       // بلا الاسم: كتبه الضيف والعنوان غير متحقق منه (كما في تأكيد الاستلام).
       href: '/account/schedules',
     })

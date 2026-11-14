@@ -11,7 +11,20 @@ export const locales = ['en', 'ar', 'id'] as const
 
 export type Locale = (typeof locales)[number]
 
-export const defaultLocale: Locale = 'en'
+/**
+ * The site's main language: where the bare domain and any path without a
+ * locale prefix land (src/proxy.ts), and what hreflang `x-default` names.
+ * Arabic — the owner's main market (H20; site audit, Nov 2026).
+ */
+export const defaultLocale: Locale = 'ar'
+
+/**
+ * The language content falls back to when a translation is missing (stored
+ * text is authored in English first), and the language assumed for a record
+ * that carries no valid locale (an old account, a malformed request). Not a
+ * routing concept: never use it to build a URL.
+ */
+export const fallbackLocale: Locale = 'en'
 
 export const localeConfig: Record<Locale, { label: string; short: string; dir: 'ltr' | 'rtl' }> = {
   en: { label: 'English', short: 'EN', dir: 'ltr' },

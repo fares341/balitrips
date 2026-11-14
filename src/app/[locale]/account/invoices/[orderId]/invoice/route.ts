@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server'
 
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { invoiceAvailable, invoiceRendered, loadOrderInvoice, presignOrderInvoice } from '@/lib/pdf'
 import { checkSecureAccess } from '@/lib/security/guard'
@@ -23,7 +23,7 @@ export async function GET(
   { params }: { params: Promise<{ locale: string; orderId: string }> },
 ) {
   const { locale: raw, orderId } = await params
-  const locale = isLocale(raw) ? raw : defaultLocale
+  const locale = isLocale(raw) ? raw : fallbackLocale
   const access = await checkSecureAccess(`invoice:${orderId}`)
   const back = (query: Record<string, string>) =>
     localRedirect(getPathname({ href: { pathname: '/account/invoices', query }, locale }), {

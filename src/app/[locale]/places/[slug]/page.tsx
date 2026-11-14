@@ -15,7 +15,7 @@ import { readSetting } from '@/app/(admin)/_lib/settings'
 import { Breadcrumbs, LinkButton, Stars, Tag } from '@/components/bt'
 import { ActivityCompact } from '@/components/cards'
 import { Icon, Photo } from '@/components/ui'
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { Link } from '@/i18n/routing'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { listActivities } from '@/lib/content/queries'
@@ -41,7 +41,7 @@ type PageProps = { params: Promise<{ locale: string; slug: string }> }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params
-  const lang: Locale = isLocale(locale) ? locale : defaultLocale
+  const lang: Locale = isLocale(locale) ? locale : fallbackLocale
   const t = await getTranslations({ locale: lang })
   const place = (await listMapPlacesCached()).find((entry) => entry.slug === slug)
   // Only a free place is named here: metadata is not per-viewer.
@@ -89,7 +89,7 @@ function placeDescription(
 export default async function PlacePage({ params }: PageProps) {
   const { locale, slug } = await params
   setRequestLocale(locale)
-  const lang: Locale = isLocale(locale) ? locale : defaultLocale
+  const lang: Locale = isLocale(locale) ? locale : fallbackLocale
 
   // The viewer-independent reads start before the access check resolves
   // instead of waiting behind it; only the entitlements need the user.

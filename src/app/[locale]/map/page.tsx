@@ -23,7 +23,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { formatPrice } from '@/components/bt'
-import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
+import { defaultLocale, fallbackLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname, Link } from '@/i18n/routing'
 import { contactLabel } from '@/lib/auth/phone'
 import { can } from '@/lib/auth/roles'
@@ -92,7 +92,7 @@ function firstValue(value: string | string[] | undefined): string | null {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
-  const lang: Locale = isLocale(locale) ? locale : defaultLocale
+  const lang: Locale = isLocale(locale) ? locale : fallbackLocale
   const t = await getTranslations({ locale: lang })
 
   const url = (target: Locale) => `${SITE_URL}${getPathname({ href: MAP_PATH, locale: target })}`
@@ -120,7 +120,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function MapPage({ params, searchParams }: PageProps) {
   const { locale } = await params
   setRequestLocale(locale)
-  const lang: Locale = isLocale(locale) ? locale : defaultLocale
+  const lang: Locale = isLocale(locale) ? locale : fallbackLocale
 
   const query = await searchParams
   const initialSlug = firstValue(query.place)

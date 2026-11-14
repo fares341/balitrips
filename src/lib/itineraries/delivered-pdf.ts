@@ -10,7 +10,7 @@
  *  5. else nothing yet («not ready»).
  */
 
-import { defaultLocale } from '@/i18n/config'
+import { fallbackLocale } from '@/i18n/config'
 
 export type DeliveredPdf =
   | { kind: 'uploaded'; locale: string; objectKey: string }
@@ -24,7 +24,7 @@ export function deliveredPdf(input: {
   generated: readonly { locale: string; objectKey: string }[]
   fallbackLocale?: string
 }): DeliveredPdf {
-  const fallback = input.fallbackLocale ?? defaultLocale
+  const fallback = input.fallbackLocale ?? fallbackLocale
   const uploaded = input.uploadedKeys ?? {}
   for (const locale of [input.locale, fallback]) {
     const key = uploaded[locale]

@@ -5,7 +5,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { localRedirect } from '@/lib/http/local-redirect'
 
@@ -20,7 +20,7 @@ export async function GET(
   { params }: { params: Promise<{ locale: string; planId: string }> },
 ) {
   const { locale: raw, planId } = await params
-  const locale = isLocale(raw) ? raw : defaultLocale
+  const locale = isLocale(raw) ? raw : fallbackLocale
   // `?devices=3` from the stepper; clamped and priced on the server.
   const devices = new URL(request.url).searchParams.get('devices')
   const added = await addPlanToCart(planId, devices)

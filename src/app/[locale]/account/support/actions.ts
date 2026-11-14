@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation'
 
 import { db } from '@/db'
 import { orders, supportTickets } from '@/db/schema'
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import { activeUserOrNull } from '@/lib/security/require'
@@ -23,7 +23,7 @@ import {
 } from '@/lib/support/service'
 
 function localeOf(value: FormDataEntryValue | null): Locale {
-  return typeof value === 'string' && isLocale(value) ? value : defaultLocale
+  return typeof value === 'string' && isLocale(value) ? value : fallbackLocale
 }
 
 function text(form: FormData, name: string): string {

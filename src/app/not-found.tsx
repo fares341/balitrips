@@ -6,7 +6,7 @@ import { fontVariables } from '@/styles/fonts'
 import '@/styles/tokens.css'
 import '@/styles/base.css'
 
-import messages from '../../messages/en.json'
+import messages from '../../messages/ar.json'
 
 /**
  * Global 404.
@@ -17,9 +17,11 @@ import messages from '../../messages/en.json'
  * harmful for SEO.
  *
  * This file sits ABOVE the [locale] segment and renders its own <html>, so
- * it cannot use the request-scoped translation context. It falls back to
- * English deliberately: a locale-aware 404 lives inside [locale], and this
- * one only catches paths that never matched a locale in the first place.
+ * it cannot use the request-scoped translation context. It is written in the
+ * site's main language (`defaultLocale`, Arabic — the messages import above
+ * must match it): a locale-aware 404 lives inside [locale], and this one only
+ * catches paths that never matched a locale in the first place. The proxy
+ * redirects unprefixed public paths to /ar/…, so it is rarely seen.
  */
 export default function NotFound() {
   const { dir } = localeConfig[defaultLocale]

@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation'
 import { absoluteUrl } from '@/app/[locale]/_meta'
 import { db } from '@/db'
 import { customTripDocuments, customTripRequests, users } from '@/db/schema'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { can } from '@/lib/auth/roles'
 import { studioMoney as formatMoney } from '@/lib/currency/studio'
 import { notifyUser } from '@/lib/notify'
@@ -194,7 +194,8 @@ export async function setCustomQuote(id: string, form: FormData): Promise<void> 
 
     if (minor === null || currency === null) return t('leads.ok_price_cleared')
     if (before.userId === null) return t('leads.ok_price_saved_unlinked')
-    const locale = before.locale !== null && isLocale(before.locale) ? before.locale : defaultLocale
+    const locale =
+      before.locale !== null && isLocale(before.locale) ? before.locale : fallbackLocale
     await notifyUser(
       before.userId,
       'custom_quote',
@@ -249,7 +250,7 @@ async function whatsappTarget(
   if (toWhatsappNumber(row.phone) === null) {
     return { ok: false, reason: t('leads.wa_no_phone') }
   }
-  const locale = row.locale !== null && isLocale(row.locale) ? row.locale : defaultLocale
+  const locale = row.locale !== null && isLocale(row.locale) ? row.locale : fallbackLocale
   return {
     ok: true,
     userId: row.userId,

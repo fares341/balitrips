@@ -21,7 +21,7 @@
 
 import { NextResponse } from 'next/server'
 
-import { defaultLocale, isLocale, type Locale } from '@/i18n/config'
+import { fallbackLocale, isLocale, type Locale } from '@/i18n/config'
 import { pick, pickOptional } from '@/lib/content/localize'
 import { search } from '@/lib/content/queries'
 import type { SearchHitType } from '@/lib/content/types'
@@ -66,7 +66,7 @@ export interface SearchResponse {
 }
 
 function localeOf(value: string | null): Locale {
-  return value !== null && isLocale(value) ? value : defaultLocale
+  return value !== null && isLocale(value) ? value : fallbackLocale
 }
 
 function empty(q: string): NextResponse {

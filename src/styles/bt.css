@@ -4300,3 +4300,11 @@ html {
 .drawer-pref .lang-pop {
   min-width: 100%;
 }
+
+/* --- 404 on phones: room to scroll the quick links clear of the floating
+   assistant and WhatsApp buttons (site audit, Nov 2026). */
+@media (max-width: 1023px) {
+  .nf {
+    padding-bottom: 168px;
+  }
+}

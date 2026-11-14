@@ -37,7 +37,7 @@ import { db } from '@/db'
 import { favorites } from '@/db/schema'
 import { MAX_NAME_LENGTH, MAX_PHONE_LENGTH, fieldErrors } from '@/components/auth/schemas'
 import { CART_HREF } from '@/components/layout/routes'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { isAPIError } from 'better-auth/api'
 
@@ -115,7 +115,7 @@ export async function updateProfileAction(
   const rawLocale = text(formData.get('locale'))
   // An unknown locale would break the reset email and every transactional
   // message; fall back rather than persisting a value nothing can render.
-  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const locale = isLocale(rawLocale) ? rawLocale : fallbackLocale
 
   try {
     await auth.api.updateUser({
@@ -229,7 +229,7 @@ export async function createTripFromFavoritesAction(formData: FormData): Promise
   // يعيد توجيهاً: محظور/جهاز مُزال ← صفحة الحساب مع السبب، غير مسجّل ← تسجيل الدخول.
   const user = await requireActiveUser('favorite:create_trip')
   const rawLocale = text(formData.get('locale'))
-  const locale = isLocale(rawLocale) ? rawLocale : defaultLocale
+  const locale = isLocale(rawLocale) ? rawLocale : fallbackLocale
 
   const rows = await db
     .select({ kind: favorites.kind, refId: favorites.refId })

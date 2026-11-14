@@ -23,7 +23,7 @@
 
 import type { Metadata } from 'next'
 
-import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
+import { defaultLocale, fallbackLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { canonicalPolicyHref } from '@/components/layout/routes'
 import { getPathname } from '@/i18n/routing'
 
@@ -38,14 +38,25 @@ export function localeUrl(href: string, locale: Locale): string {
 /**
  * `alternates` for a page that exists in all three locales.
  *
- * `x-default` points at English, the authoring locale — it is the page a
- * search engine should serve when it cannot infer the visitor's language.
+ * `x-default` points at the main language (`defaultLocale`, Arabic) — the
+ * page a search engine should serve when it cannot infer the visitor's
+ * language, and where the bare domain lands.
+ *
+ * The old per-policy pages (/terms, /privacy, /refund, /payment-policy,
+ * /cookies) exist in English and Indonesian only: in Arabic they redirect
+ * into the policies centre, which has its own three-language set. Naming
+ * /ar/policies as their Arabic alternate was not reciprocal (the centre
+ * points back at /en/policies, not at /en/terms), so they list just the two
+ * real pages, with `x-default` on the English one.
  */
 export function alternatesFor(href: string, locale: Locale): Metadata['alternates'] {
   const languages: Record<string, string> = {}
-  for (const candidate of locales)
-    languages[candidate] = localeUrl(canonicalPolicyHref(href, candidate), candidate)
-  languages['x-default'] = localeUrl(href, defaultLocale)
+  const real = locales.filter((candidate) => canonicalPolicyHref(href, candidate) === href)
+  for (const candidate of real) languages[candidate] = localeUrl(href, candidate)
+  languages['x-default'] = localeUrl(
+    href,
+    real.includes(defaultLocale) ? defaultLocale : fallbackLocale,
+  )
 
   return { canonical: localeUrl(canonicalPolicyHref(href, locale), locale), languages }
 }
@@ -60,5 +71,5 @@ export function alternatesFor(href: string, locale: Locale): Metadata['alternate
  * crashing the render of a URL that is about to 404 anyway.
  */
 export function toLocale(value: string): Locale {
-  return isLocale(value) ? value : defaultLocale
+  return isLocale(value) ? value : fallbackLocale
 }

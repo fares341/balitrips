@@ -40,7 +40,7 @@ import { ITINERARY_TIERS, normaliseTierPrices } from '@/lib/itineraries/tiers'
 import { formatMoneyInput } from '@/lib/money-input'
 import { can } from '@/lib/auth/roles'
 import { pick } from '@/lib/content/localize'
-import { defaultLocale, localeConfig, locales } from '@/i18n/config'
+import { fallbackLocale, localeConfig, locales } from '@/i18n/config'
 
 import { adminHref } from '../../../_lib/admin-path'
 import { activityOptions, mediaOptions, placeOptions, regionOptions } from '../../../_lib/lookups'
@@ -888,7 +888,7 @@ export default async function ItineraryEditorPage({
                     locale,
                     uploadedKeys: itinerary.uploadedPdfKeys,
                     generated,
-                    fallbackLocale: defaultLocale,
+                    fallbackLocale: fallbackLocale,
                   })
                   const doc =
                     sent.kind === 'none'

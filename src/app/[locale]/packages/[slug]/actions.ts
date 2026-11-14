@@ -17,7 +17,7 @@ import { and, gt, sql } from 'drizzle-orm'
 
 import { db } from '@/db'
 import { customTripRequests } from '@/db/schema'
-import { defaultLocale, isLocale } from '@/i18n/config'
+import { fallbackLocale, isLocale } from '@/i18n/config'
 import { readSetting } from '@/app/(admin)/_lib/settings'
 import { isPastInBali } from '@/lib/booking-rules'
 import { pick } from '@/lib/content/localize'
@@ -68,7 +68,7 @@ export async function requestPackageAction(
     .trim()
     .slice(0, 1000)
   const travellers = Math.trunc(Number(input.travellers))
-  const locale = isLocale(input.locale) ? input.locale : defaultLocale
+  const locale = isLocale(input.locale) ? input.locale : fallbackLocale
 
   if (
     name.length < 2 ||

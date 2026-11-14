@@ -19,7 +19,14 @@ const POPULAR = [
   { href: '/contact', key: 'navr_contact' },
 ] as const
 
-export function PopularLinks({ headingId }: { headingId: string }) {
+export function PopularLinks({
+  headingId,
+  hidden = [],
+}: {
+  headingId: string
+  /** Sections with nothing in them yet (no article, no package): not offered. */
+  hidden?: readonly string[]
+}) {
   const t = useTranslations()
   return (
     <nav className="nf-pop" aria-labelledby={headingId}>
@@ -27,7 +34,7 @@ export function PopularLinks({ headingId }: { headingId: string }) {
         {t('nf5_popular')}
       </h2>
       <ul role="list">
-        {POPULAR.map((item) => (
+        {POPULAR.filter((item) => !hidden.includes(item.href)).map((item) => (
           <li key={item.href}>
             <Link href={item.href} prefetch={false}>
               {t(item.key)}
