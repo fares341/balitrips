@@ -106,6 +106,7 @@ import {
   PAGE_STATUSES,
 } from './activity-status'
 import { resolveChildAges } from './child-ages'
+import { fromPrice, type FromPriceTier } from './from-price'
 import { parseVideoUrl } from './video'
 import { imageFileKey } from './image-dedupe'
 import { googlePhotosEnabled } from '@/lib/google-places/config'
@@ -316,6 +317,7 @@ function toActivitySummary(
   region: RegionRow | null,
   hero: MediaRow | null,
   cats: CategoryRef[],
+  tiers: readonly FromPriceTier[],
 ): ActivitySummary {
   // The owner's main category leads (card chip, breadcrumbs); the rest follow.
   const primary = row.primaryCategoryId
@@ -323,6 +325,9 @@ function toActivitySummary(
     primary === null
       ? cats
       : [...cats.filter((c) => c.id === primary), ...cats.filter((c) => c.id !== primary)]
+  // The «from» price and its unit come from the packages (see from-price.ts);
+  // an activity with nothing to sell has none, and its price reads as 0.
+  const from = fromPrice({ priceMinor: row.priceMinor ?? 0, currency: row.currency }, tiers)
   return {
     id: row.id,
     slug: row.slug,
@@ -332,15 +337,17 @@ function toActivitySummary(
     duration: row.duration,
     region: toRegionRef(region),
     categories: ordered,
-    priceMinor: row.priceMinor,
+    priceMinor: from?.priceMinor ?? 0,
     currency: row.currency,
+    from,
     rating: row.rating,
     reviewCount: row.reviewCount,
     hero: toMedia(hero),
     blurb: row.description,
     shortDescription: row.shortDescription,
     mostPopular: row.isMostPopular,
-    unavailable: activityStatus(row.status) === 'unavailable',
+    // Booking switched off, or nothing to sell: both read «not available now».
+    unavailable: activityStatus(row.status) === 'unavailable' || from === null,
   }
 }
 
@@ -459,6 +466,47 @@ async function categoriesByActivity(
   return out
 }
 
+type TierRow = typeof activityTiers.$inferSelect
+
+function toFromTier(tier: TierRow): FromPriceTier {
+  return {
+    key: tier.key,
+    nameEn: tier.name?.en ?? null,
+    priceMinor: tier.priceMinor ?? 0,
+    currency: tier.currency,
+    pricing: tierPricing(tier.pricingMode),
+    groupMax: tier.groupMax,
+    available: tier.available,
+    isPopular: tier.isPopular,
+    sortOrder: tier.sortOrder,
+  }
+}
+
+/** Published packages of each activity, as the «from» price reads them. */
+async function fromTiersByActivity(
+  activityIds: readonly string[],
+): Promise<Map<string, FromPriceTier[]>> {
+  const out = new Map<string, FromPriceTier[]>()
+  if (activityIds.length === 0) return out
+  const rows = await db
+    .select()
+    .from(activityTiers)
+    .where(
+      and(
+        inArray(activityTiers.activityId, [...activityIds]),
+        eq(activityTiers.status, 'published'),
+        isNull(activityTiers.deletedAt),
+      ),
+    )
+    .orderBy(asc(activityTiers.sortOrder), asc(activityTiers.priceMinor))
+  for (const row of rows) {
+    const list = out.get(row.activityId) ?? []
+    list.push(toFromTier(row))
+    out.set(row.activityId, list)
+  }
+  return out
+}
+
 async function regionsByOwner(
   kind: 'itinerary' | 'package',
   ownerIds: readonly string[],
@@ -521,12 +569,21 @@ async function activitySummariesByIds(
     .leftJoin(media, eq(media.id, activities.heroImageId))
     .where(and(LIVE_ACTIVITY, inArray(activities.id, [...ids])))
 
-  const cats = await categoriesByActivity(rows.map((r) => r.activity.id))
+  const [cats, tiers] = await Promise.all([
+    categoriesByActivity(rows.map((r) => r.activity.id)),
+    fromTiersByActivity(rows.map((r) => r.activity.id)),
+  ])
 
   for (const row of rows) {
     out.set(
       row.activity.id,
-      toActivitySummary(row.activity, row.region, row.hero, cats.get(row.activity.id) ?? []),
+      toActivitySummary(
+        row.activity,
+        row.region,
+        row.hero,
+        cats.get(row.activity.id) ?? [],
+        tiers.get(row.activity.id) ?? [],
+      ),
     )
   }
   return out
@@ -671,10 +728,19 @@ export async function listActivities(
     .limit(limit)
     .offset(offset)
 
-  const cats = await categoriesByActivity(rows.map((r) => r.activity.id))
+  const [cats, tiers] = await Promise.all([
+    categoriesByActivity(rows.map((r) => r.activity.id)),
+    fromTiersByActivity(rows.map((r) => r.activity.id)),
+  ])
 
   return rows.map((row) =>
-    toActivitySummary(row.activity, row.region, row.hero, cats.get(row.activity.id) ?? []),
+    toActivitySummary(
+      row.activity,
+      row.region,
+      row.hero,
+      cats.get(row.activity.id) ?? [],
+      tiers.get(row.activity.id) ?? [],
+    ),
   )
 }
 
@@ -824,6 +890,7 @@ export async function getActivityBySlug(
     row.region,
     row.hero,
     cats.get(row.activity.id) ?? [],
+    tierRows.map(toFromTier),
   )
 
   const galleryDtos = gallery.map((g) => toMedia(g.image)).filter((m): m is MediaDto => m !== null)
@@ -836,11 +903,7 @@ export async function getActivityBySlug(
     // Nothing to sell (no priced, available package and no base price):
     // the page shows the «ask us» panel instead of a 0 total and a live
     // «Book now» button.
-    bookable:
-      visibility.bookable &&
-      (tierRows.length > 0
-        ? tierRows.some((tier) => tier.available && (tier.priceMinor ?? 0) > 0)
-        : (a.priceMinor ?? 0) > 0),
+    bookable: visibility.bookable && summary.from !== null,
     description: a.description,
     headline: a.headline,
     highlights: toLocalizedList(a.highlights),
@@ -862,7 +925,12 @@ export async function getActivityBySlug(
         : null,
     minGuests: Math.max(1, a.minGuests),
     // Default band 3–11 (infants under 3 free, 12+ adult) unless set per activity.
-    childAges: resolveChildAges(a.childAgeMin, a.childAgeMax),
+    childAges: {
+      ...resolveChildAges(a.childAgeMin, a.childAgeMax),
+      // False = the site-wide default band, not one the owner set for this
+      // activity: the page then names no ages (its own typed rules do).
+      explicit: a.childAgeMin !== null || a.childAgeMax !== null,
+    },
     mobileHero: toMedia(mobileHero),
     video: parseVideoUrl(a.videoUrl),
     tags: tagRows,
@@ -1045,9 +1113,20 @@ export async function listHomeActivities(options: {
     )
     .orderBy(asc(activities.sortOrder), asc(nameOrder))
     .limit(limit * 2)
-  const cats = await categoriesByActivity(rows.map((r) => r.activity.id))
+  const [cats, tiers] = await Promise.all([
+    categoriesByActivity(rows.map((r) => r.activity.id)),
+    fromTiersByActivity(rows.map((r) => r.activity.id)),
+  ])
   const picked = rows
-    .map((r) => toActivitySummary(r.activity, r.region, r.hero, cats.get(r.activity.id) ?? []))
+    .map((r) =>
+      toActivitySummary(
+        r.activity,
+        r.region,
+        r.hero,
+        cats.get(r.activity.id) ?? [],
+        tiers.get(r.activity.id) ?? [],
+      ),
+    )
     .filter((activity) => !(options.exclude?.(activity) ?? false))
     .slice(0, limit)
   if (picked.length >= limit) return picked
@@ -1156,6 +1235,7 @@ async function toItinerarySummaries(
     version: itinerary.version,
     hero: toMedia(hero),
     tierPrices: normaliseTierPrices(itinerary.tierPrices),
+    includesMap: itinerary.includesMap,
   }))
 }
 

@@ -409,15 +409,39 @@
   padding: 3px 10px;
   border-radius: 99px;
 }
+/* Compare packages: the table scrolls inside its own box (the page never
+   grows wider than the screen) and the feature column stays pinned. */
+.cmp-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  scroll-margin-top: 76px;
+}
+.cmp-box:focus {
+  outline: none;
+}
 .cmp-wrap {
+  /* Positioned: the screen-reader labels in the cells are absolutely placed,
+     and without this they escaped the scroll box and widened the whole page. */
+  position: relative;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--line);
   border-radius: 16px;
+  background: var(--white);
+}
+.cmp-wrap:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 .cmp {
   width: 100%;
-  border-collapse: collapse;
-  min-width: 520px;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 14px;
 }
 .cmp th,
@@ -425,14 +449,67 @@
   padding: 12px 14px;
   text-align: center;
   border-bottom: 1px solid var(--line-soft);
+  min-width: 118px;
+  vertical-align: middle;
 }
-.cmp th:first-child,
-.cmp td:first-child {
+.cmp tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.cmp th:first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
   text-align: start;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--white);
+  width: 132px;
+  min-width: 132px;
+  max-width: 132px;
+  border-inline-end: 1px solid var(--line);
+  overflow-wrap: anywhere;
 }
 .cmp thead th {
   background: var(--ivory-2);
   color: var(--forest);
+  vertical-align: top;
+}
+.cmp thead th:first-child {
+  background: var(--ivory-2);
+  z-index: 2;
+  color: var(--forest);
+  font-weight: 700;
+}
+.cmp thead th.on {
+  box-shadow: inset 0 3px 0 var(--orange);
+}
+.cmp-name,
+.cmp-price,
+.cmp-off {
+  display: block;
+}
+.cmp-name {
+  font-weight: 700;
+  line-height: 1.35;
+}
+.cmp-price {
+  margin-top: 4px;
+  font-weight: 800;
+  color: var(--orange-deep);
+}
+.cmp-ask {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+.cmp-off {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a4b00;
+}
+.cmp td {
+  position: relative;
 }
 .cmp td.y {
   color: var(--ok);
@@ -440,8 +517,28 @@
 .cmp td.n {
   color: #b0b7b1;
 }
-.cmp tr.diff td {
+.cmp tr.diff > * {
   background: #fffbf2;
+}
+.cmp-hint {
+  font-size: 12.5px;
+}
+/* The swipe hint is for a table wider than the screen only. */
+@media (min-width: 720px) {
+  .cmp-swipe {
+    display: none;
+  }
+  .cmp th:first-child {
+    width: 34%;
+    max-width: none;
+  }
+}
+@media (max-width: 719px) {
+  .cmp th,
+  .cmp td {
+    padding: 11px 10px;
+    min-width: 108px;
+  }
 }
 
 /* Included / excluded */
@@ -2496,4 +2593,229 @@
  * sticky section bar instead of landing under it. */
 html:has(.act3 .anav) {
   scroll-padding-top: 72px;
+}
+
+/* ==========================================================================
+   Audit fixes, Nov 2026 (UX #4 #9 #12 #23 #24 #25 #29 #30)
+   ========================================================================== */
+
+/* A flex column's children may not push the page wider than the screen (the
+   comparison table made the whole page 498px wide on a 390px phone). */
+.act3 .blk3 > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* «Price on request» where a package has no price (never «0»). */
+.price.price-ask {
+  font: 800 16px var(--f);
+  color: var(--muted);
+}
+
+/* Package conditions («per person», «minimum two») as chips, not ticks. */
+.pchips {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pchips li {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--ivory-2);
+  color: var(--forest);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* The cancellation rule, in full, under the selected package's facts. */
+.selpkg-cancel {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ivory-2);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.selpkg-cancel svg {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: var(--forest);
+}
+.selpkg-cancel .link {
+  display: inline-block;
+  font-weight: 700;
+  white-space: nowrap;
+  padding-block: 4px;
+}
+
+/* «Included in the package»: one summary line, no zero prices. */
+.sum-inc > span:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sum-inc small {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.sum-inc-v {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ok);
+}
+
+/* Tap targets of the booking flow: 44px and up. */
+.act3 .stepper.sm button {
+  width: 44px;
+  height: 44px;
+}
+.act3 .pmore {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: 2px 0;
+  padding-inline: 8px;
+}
+.act3 .relrow-arrow {
+  width: 44px;
+  height: 44px;
+}
+.act3 .relcard-fav {
+  inset-block-start: 10px;
+  inset-inline-start: 10px;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+}
+/* The visible disc stays small; the button around it is the 44px target. */
+.act3 .relcard-fav::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+}
+.act3 .relcard-fav svg {
+  position: relative;
+}
+.act3 .relcard-name {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.act3 .check.addon-row {
+  min-height: 56px;
+}
+.act3 .check.addon-row input {
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+}
+.act3 .bk-help {
+  min-height: 44px;
+}
+.lb .icon-btn {
+  width: 48px;
+  height: 48px;
+}
+/* The photo's frame shrinks to the photo, so everything around it is backdrop. */
+.lb-frame {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  max-height: 80vh;
+  pointer-events: none;
+}
+.lb-frame img {
+  display: block;
+  pointer-events: auto;
+  width: auto;
+  height: auto;
+}
+
+/* Phones: the floating chat buttons ride above the book bar while it shows. */
+@media (max-width: 1023px) {
+  body:has(.mbar.show) {
+    --fab-lift: 66px;
+  }
+}
+
+/* A fact left alone on the last row spans it (UX #27: five tiles, one orphan). */
+@media (max-width: 559px) {
+  .qfacts2 li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 639px) {
+  .selpkg-facts li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    border-inline-start: 0;
+  }
+  .selpkg-facts li:nth-child(odd) {
+    border-inline-start: 0;
+  }
+}
+
+/* The section bar is solid: headings scrolling under it no longer show through (UX #60). */
+.act3 .anav {
+  background: var(--ivory, #fffbf8);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Breadcrumb links: a 44px touch height, and a long last crumb is cut, not wrapped (UX #57). */
+.act-detail .crumbs,
+.act-hub .crumbs {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.act-detail .crumbs a,
+.act-hub .crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  flex-shrink: 0;
+}
+.act-detail .crumbs [aria-current] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Activities list: on a wide screen every category chip is visible (the row
+   used to be cut at the edge with no hint that it scrolled) (UX #33). */
+@media (min-width: 1024px) {
+  .act-toolbar .chips.scroll {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    max-width: 100%;
+  }
+}
+/* On a phone the row fades at its far edge, so it reads as scrollable. */
+@media (max-width: 1023px) {
+  .act-toolbar .chips.scroll {
+    -webkit-mask-image: linear-gradient(to left, transparent 0, #000 28px);
+    mask-image: linear-gradient(to left, transparent 0, #000 28px);
+  }
+  [dir='ltr'] .act-toolbar .chips.scroll {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px);
+    mask-image: linear-gradient(to right, transparent 0, #000 28px);
+  }
+}
+
+.act-detail .crumbs,
+.act-hub .crumbs {
+  padding-block: 4px;
 }

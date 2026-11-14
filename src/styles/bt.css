@@ -1680,8 +1680,8 @@ body:has(> .tabbar) {
 }
 .cal-nav button {
   pointer-events: auto;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
 }
 .cal-nav button:disabled {
   opacity: 0.25;
@@ -1713,6 +1713,8 @@ body:has(> .tabbar) {
 }
 .cd {
   aspect-ratio: 1;
+  /* Never under 44px tall, however narrow the column gets on a phone. */
+  min-height: 44px;
   max-height: 44px;
   border: 0;
   background: transparent;
@@ -1990,7 +1992,10 @@ body:has(> .tabbar) {
   position: fixed;
   z-index: calc(var(--z-tabbar) - 1);
   inset-inline-end: 16px;
-  bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom, 0px));
+  /* `--fab-lift`: set on <body> by a page whose own bar is fixed to the bottom
+     (the activity book bar, the itinerary buy bar), so the button floats above
+     that bar instead of on top of its price or its button. */
+  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -1999,7 +2004,27 @@ body:has(> .tabbar) {
   background: var(--forest);
   color: var(--palm);
   box-shadow: var(--sh-2);
-  transition: transform var(--d-fast) var(--ease);
+  transition:
+    transform var(--d-fast) var(--ease),
+    bottom var(--d-base) var(--ease),
+    opacity var(--d-fast) var(--ease);
+}
+/* While a block that needs its whole width is on screen (the activity booking
+   box, the package cards, the comparison: `data-fab="aside"` on <body>, see
+   components/layout/fab-aside.ts), the floating buttons slide off the edge
+   rather than sit on prices and steppers. Up to the width where the buttons
+   clear the 1160px content column on their own. */
+@media (max-width: 1559px) {
+  body[data-fab='aside'] .wa-fab,
+  body[data-fab='aside'] .ai-fab {
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    pointer-events: none;
+  }
+  [dir='ltr'] body[data-fab='aside'] .wa-fab,
+  [dir='ltr'] body[data-fab='aside'] .ai-fab {
+    transform: translateX(calc(100% + 24px));
+  }
 }
 .wa-fab:hover {
   transform: translateY(-2px);
@@ -2091,6 +2116,21 @@ body:has(> .tabbar) {
 .card .tr,
 .card .card-act {
   z-index: 2;
+}
+/* Activity cards: a soft scrim under the badges, so they read on a bright
+   photo; and «price on request» where an activity has nothing on sale yet. */
+.act-card .card-media::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 76px;
+  z-index: 1;
+  background: linear-gradient(rgba(10, 26, 14, 0.4), transparent);
+  pointer-events: none;
+}
+.from.from-ask b {
+  font-size: 14.5px;
+  color: var(--muted);
 }
 .card .card-act {
   position: relative;
@@ -4314,4 +4354,58 @@ html {
   .ftr-bottom {
     padding-inline-end: 84px;
   }
+}
+
+/* --- Events page: a short list sits beside a note; suggestions fill the rest --- */
+.ev-few {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+@media (min-width: 760px) {
+  .ev-few {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .ev-few {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* One event: the note takes the two columns the card leaves. */
+  .ev-few > .ev-more:nth-child(2) {
+    grid-column: 2 / -1;
+  }
+}
+.ev-more {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  background: var(--palm-soft);
+  border: 0;
+}
+.ev-more h3 {
+  margin: 0;
+  color: var(--forest);
+}
+.ev-more p {
+  margin: 0 0 6px;
+  max-width: 52ch;
+  line-height: 1.8;
+}
+.ev-more-ic {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--white);
+  color: var(--forest);
+}
+.ev-suggest {
+  margin-top: 44px;
+  display: grid;
+  gap: 18px;
 }

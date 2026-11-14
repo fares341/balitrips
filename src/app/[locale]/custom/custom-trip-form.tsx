@@ -31,6 +31,7 @@ import { useActionState, useEffect, useId, useRef, useState, useSyncExternalStor
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 
 import { ActivityCard } from '@/components/cards'
+import { useFabAside } from '@/components/layout/fab-aside'
 import { CART_CHANGED_EVENT, CART_HREF } from '@/components/layout/routes'
 import { Button, LinkButton, Stepper, Tag, useToast } from '@/components/shared'
 import { Icon } from '@/components/ui'
@@ -40,6 +41,14 @@ import { BUDGET_TIER_LABEL, BUDGET_TIERS, type BudgetTier } from '@/lib/budget-t
 import { FEATURES } from '@/lib/features'
 import { todayInBali } from '@/lib/booking-rules'
 import { Calendar } from '@/components/booking/calendar'
+import {
+  PhoneField,
+  defaultCountry,
+  hasSavedCountry,
+  rememberCountry,
+  useVisitorCountry,
+} from '@/components/auth/fields'
+import { toE164 } from '@/lib/auth/phone'
 import { Money } from '@/components/currency/currency-context'
 import {
   sortedTiers,
@@ -97,6 +106,9 @@ const FIELD_STEP: Record<string, number> = {
   notes: 5,
 }
 
+/** What a step can be missing before «Next» moves on (message keys). */
+type StepErrors = Partial<Record<'dates' | 'areas' | 'interests' | 'phone', string>>
+
 function stepOfErrors(fields: readonly string[]): number {
   const steps = fields.map((field) => FIELD_STEP[field] ?? STEP_LABELS.length - 1)
   return steps.length === 0 ? STEP_LABELS.length - 1 : Math.min(...steps)
@@ -153,6 +165,22 @@ export function CustomTripForm({
   )
   const [wantsDriver, setWantsDriver] = useState(FEATURES.driver)
   const [pickedAreas, setPickedAreas] = useState<string[]>([])
+  // «No preference — suggest for me»: an answer to the areas question too.
+  const [anyArea, setAnyArea] = useState(false)
+  // The phone field shared with sign-up (same countries, same validation).
+  const [phone, setPhone] = useState('')
+  const [phoneCountry, setPhoneCountry] = useState(locale === 'id' ? 'ID' : 'SA')
+  const countryTouched = useRef(false)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the visitor's saved / browser country, known only after mount
+    setPhoneCountry(defaultCountry(locale))
+  }, [locale])
+  useVisitorCountry((iso) => {
+    if (!countryTouched.current && !hasSavedCountry()) setPhoneCountry(iso)
+  })
+  const phoneE164 = phone.trim() === '' ? '' : toE164(phone, phoneCountry)
+  // Problems found on this device before anything is sent (per step).
+  const [stepErrors, setStepErrors] = useState<StepErrors>({})
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   // Trip length from the picked dates (both days count) → the matching tier.
@@ -170,7 +198,9 @@ export function CustomTripForm({
   const [dismissed, setDismissed] = useState<string | null>(null)
 
   const done = state.status === 'done' && state.requestId !== dismissed
-  const errors = state.status === 'error' ? (state.fields ?? {}) : {}
+  const serverErrors = state.status === 'error' ? (state.fields ?? {}) : {}
+  // A step's own check wins over an older server reply for the same field.
+  const errors = { ...serverErrors, ...stepErrors }
 
   // ---- wizard (v3 custom-trip.html): one question group per step ----------
   // Before hydration (or without JavaScript) every step shows and the form
@@ -181,6 +211,8 @@ export function CustomTripForm({
     () => false,
   )
   const formRef = useRef<HTMLFormElement>(null)
+  // The form fills a phone's width: the floating chat buttons step aside over it.
+  useFabAside(formRef)
 
   // Phase 3, sale mode D: "make me something like this itinerary" opens the
   // form with `?from=<slug>&name=…&days=N`; the notes start with that request
@@ -207,14 +239,47 @@ export function CustomTripForm({
   const [seenReply, setSeenReply] = useState<unknown>(INITIAL_STATE)
   // A fresh error reply jumps to the first step with a problem in it.
   const errorStep =
-    state.status === 'error' && state !== seenReply ? stepOfErrors(Object.keys(errors)) : null
+    state.status === 'error' && state !== seenReply ? stepOfErrors(Object.keys(serverErrors)) : null
   const step = errorStep ?? chosenStep
   const goTo = (index: number) => {
     setSeenReply(state)
     setChosenStep(Math.max(0, Math.min(STEP_LABELS.length - 1, index)))
     formRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
+  /**
+   * What the step in view still needs. Every step is checked before «Next»
+   * (it used to walk through all seven with nothing chosen), and the last one
+   * again before the request is sent.
+   */
+  const checkStep = (index: number): StepErrors => {
+    const found: StepErrors = {}
+    if (index === 0 && (start === '' || end === '')) found.dates = 'cp_err_dates'
+    if (index === 2 && areas.length > 0 && pickedAreas.length === 0 && !anyArea) {
+      found.areas = 'cp_err_areas'
+    }
+    if (index === 3 && selected.length === 0) found.interests = 'cp_err_ints'
+    if (index === STEP_LABELS.length - 1 && phone.trim() !== '' && phoneE164 === null) {
+      found.phone = 'cp_err_phone'
+    }
+    return found
+  }
+  /** Show a step's problems and move the reader to the first of them. */
+  const report = (found: StepErrors) => {
+    setStepErrors(found)
+    requestAnimationFrame(() => {
+      const first = formRef.current?.querySelector<HTMLElement>(
+        'fieldset[data-step]:not([hidden]) [data-step-error]',
+      )
+      first?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    })
+  }
   const next = () => {
+    const found = checkStep(step)
+    if (Object.keys(found).length > 0) {
+      report(found)
+      return
+    }
+    setStepErrors({})
     // The browser's own checks on the fields of this step (required, email…).
     const fields = formRef.current?.querySelectorAll<HTMLInputElement>(
       `fieldset[data-step]:not([hidden]) input, fieldset[data-step]:not([hidden]) textarea`,
@@ -228,7 +293,9 @@ export function CustomTripForm({
     goTo(step + 1)
   }
 
-  const toggleArea = (key: string) =>
+  const toggleArea = (key: string) => {
+    setAnyArea(false)
+    setStepErrors((previous) => ({ ...previous, areas: undefined }))
     setPickedAreas((previous) =>
       previous.includes(key)
         ? previous.filter((one) => one !== key)
@@ -236,11 +303,14 @@ export function CustomTripForm({
           ? previous
           : [...previous, key],
     )
+  }
 
-  const toggleInterest = (key: string) =>
+  const toggleInterest = (key: string) => {
+    setStepErrors((previous) => ({ ...previous, interests: undefined }))
     setSelected((previous) =>
       previous.includes(key) ? previous.filter((one) => one !== key) : [...previous, key],
     )
+  }
 
   if (done && state.status === 'done') {
     return (
@@ -265,6 +335,25 @@ export function CustomTripForm({
       action={action}
       className={wizard ? 'panel wiz bt-form is-wizard' : 'panel wiz bt-form'}
       noValidate={wizard}
+      onSubmit={(event) => {
+        if (!wizard) return
+        // Every step once more (Enter can submit from any of them), then the
+        // browser's own checks on the contact fields; only then is it sent.
+        for (let index = 0; index < STEP_LABELS.length; index += 1) {
+          const found = checkStep(index)
+          if (Object.keys(found).length > 0) {
+            event.preventDefault()
+            if (index !== step) goTo(index)
+            report(found)
+            return
+          }
+        }
+        if (!event.currentTarget.checkValidity()) {
+          event.preventDefault()
+          if (step !== STEP_LABELS.length - 1) goTo(STEP_LABELS.length - 1)
+          requestAnimationFrame(() => formRef.current?.reportValidity())
+        }
+      }}
     >
       {/* The catalogue is ordered in the language the form was rendered in. */}
       <input type="hidden" name="locale" value={locale} />
@@ -312,6 +401,7 @@ export function CustomTripForm({
                   onChange={([from, to]) => {
                     setStart(from ?? '')
                     setEnd(to ?? '')
+                    if (from && to) setStepErrors((previous) => ({ ...previous, dates: undefined }))
                   }}
                   today={todayInBali()}
                   label={t('cp_when')}
@@ -356,6 +446,11 @@ export function CustomTripForm({
                   />
                 </label>
               </div>
+            )}
+            {wizard && start !== '' && end === '' && errors.dates === undefined && (
+              <p className="muted" style={{ margin: '8px 0 0', fontSize: 13.5 }}>
+                {t('act_cal_pick_end')}
+              </p>
             )}
             {errors.dates !== undefined && (
               <FieldError id={`${baseId}-dates-err`}>{t(errors.dates)}</FieldError>
@@ -403,25 +498,25 @@ export function CustomTripForm({
           <div className="row" style={{ gap: 18, flexWrap: 'wrap' }}>
             <label
               className="row"
-              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, minHeight: 44 }}
             >
               <input type="checkbox" name="hasChildren" /> {t('cp_children')}
             </label>
             <label
               className="row"
-              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, minHeight: 44 }}
             >
               <input type="checkbox" name="wantsVipMap" /> {t('cp_vipmap')}
             </label>
             <label
               className="row"
-              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, minHeight: 44 }}
             >
               <input type="checkbox" name="wantsLuxuryDining" /> {t('cp_luxury_dining')}
             </label>
             <label
               className="row"
-              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14 }}
+              style={{ gap: 8, alignItems: 'center', fontWeight: 600, fontSize: 14, minHeight: 44 }}
             >
               <input type="checkbox" name="wantsAdventure" /> {t('cp_adventure')}
             </label>
@@ -457,10 +552,30 @@ export function CustomTripForm({
                     </button>
                   )
                 })}
+                {wizard && (
+                  <button
+                    type="button"
+                    aria-pressed={anyArea}
+                    className={anyArea ? 'bt-ct-pick on' : 'bt-ct-pick'}
+                    onClick={() => {
+                      setAnyArea((previous) => !previous)
+                      setPickedAreas([])
+                      setStepErrors((previous) => ({ ...previous, areas: undefined }))
+                    }}
+                  >
+                    {t('cp_areas_any')}
+                  </button>
+                )}
               </div>
+              <p className="muted" style={{ margin: '8px 0 0', fontSize: 13.5 }}>
+                {t('cp_areas_hint', { n: AREAS_MAX })}
+              </p>
               {pickedAreas.map((key) => (
                 <input key={key} type="hidden" name="areas" value={key} />
               ))}
+              {errors.areas !== undefined && (
+                <FieldError id={`${baseId}-areas-err`}>{t(errors.areas)}</FieldError>
+              )}
             </div>
           )}
         </fieldset>
@@ -671,40 +786,56 @@ export function CustomTripForm({
               </label>
             </div>
 
-            <label className="bt-field" style={{ marginTop: 12, marginBottom: 0, maxWidth: 420 }}>
-              <span className="bt-flabel">{t('auth_phone')}</span>
-              {/* H16: the country code is picked, the number typed after it;
-                  the action joins the two. */}
-              <span className="row" style={{ gap: 8 }} dir="ltr">
-                <select
-                  name="phoneCountry"
-                  aria-label={t('cp_phone_code')}
-                  defaultValue={DEFAULT_DIAL[locale]}
-                  className="bt-input"
-                  style={{ width: 'auto', flex: '0 0 auto' }}
-                >
-                  {DIAL_CODES.map(([code, dial]) => (
-                    <option key={code} value={dial}>
-                      {code} {dial}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel-national"
-                  maxLength={PHONE_MAX}
-                  style={{ flex: 1, minWidth: 0 }}
-                  className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
-                  aria-invalid={errors.phone !== undefined}
-                  aria-describedby={errors.phone === undefined ? undefined : `${baseId}-phone-err`}
-                />
-              </span>
-              {errors.phone !== undefined && (
-                <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
+            {/* The phone field shared with sign-up and the account page: every
+                country, the number typed the local way, checked for that
+                country. What is sent is the international form. */}
+            <div style={{ marginTop: 12, maxWidth: 420 }}>
+              {wizard ? (
+                <>
+                  <PhoneField
+                    label={`${t('auth_phone')} ${t('lead_optional')}`}
+                    value={phone}
+                    onChange={(value) => {
+                      setPhone(value)
+                      setStepErrors((previous) => ({ ...previous, phone: undefined }))
+                    }}
+                    country={phoneCountry}
+                    onCountryChange={(iso) => {
+                      countryTouched.current = true
+                      rememberCountry(iso)
+                      setPhoneCountry(iso)
+                      setStepErrors((previous) => ({ ...previous, phone: undefined }))
+                    }}
+                    maxLength={PHONE_MAX}
+                    error={errors.phone ?? null}
+                    disabled={pending}
+                  />
+                  <input type="hidden" name="phone" value={phoneE164 ?? phone.trim()} />
+                </>
+              ) : (
+                // Before the page is interactive (or without JavaScript): a plain
+                // box, typed with the country code; the server checks it the same way.
+                <label className="bt-field" style={{ marginBottom: 0 }}>
+                  <span className="bt-flabel">
+                    {t('auth_phone')} {t('lead_optional')}
+                  </span>
+                  <input
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    dir="ltr"
+                    placeholder="+966 50 123 4567"
+                    maxLength={PHONE_MAX}
+                    className={errors.phone === undefined ? 'bt-input' : 'bt-input bt-input-err'}
+                    aria-invalid={errors.phone !== undefined}
+                  />
+                  {errors.phone !== undefined && (
+                    <FieldError id={`${baseId}-phone-err`}>{t(errors.phone)}</FieldError>
+                  )}
+                </label>
               )}
-            </label>
+            </div>
 
             {/* موافقة واتساب صريحة (سياسة Meta): غير محددة افتراضياً، وتُحفظ في الحساب
                 إن كان المرسل مسجّلاً. */}
@@ -893,34 +1024,9 @@ function RequiredMark() {
   )
 }
 
-/** Country calling codes offered beside the phone field (H16). */
-const DIAL_CODES: readonly (readonly [string, string])[] = [
-  ['SA', '+966'],
-  ['AE', '+971'],
-  ['KW', '+965'],
-  ['QA', '+974'],
-  ['BH', '+973'],
-  ['OM', '+968'],
-  ['JO', '+962'],
-  ['EG', '+20'],
-  ['ID', '+62'],
-  ['MY', '+60'],
-  ['SG', '+65'],
-  ['GB', '+44'],
-  ['US', '+1'],
-  ['AU', '+61'],
-  ['DE', '+49'],
-  ['FR', '+33'],
-  ['NL', '+31'],
-  ['TR', '+90'],
-  ['IN', '+91'],
-]
-
-const DEFAULT_DIAL: Record<Locale, string> = { ar: '+966', en: '+44', id: '+62' }
-
 function FieldError({ id, children }: { id: string; children: string }) {
   return (
-    <p className="bt-errmsg" id={id}>
+    <p className="bt-errmsg" id={id} role="alert" data-step-error>
       <Icon name="cross" size={12} color="var(--orange-deep)" />
       {children}
     </p>

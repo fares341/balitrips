@@ -27,6 +27,7 @@ import type { VehicleClass } from '@/lib/booking-rules'
 import type { LocalizedText } from './localize'
 import type { ActivityStatus } from './activity-status'
 import type { ParsedVideo } from './video'
+import type { FromPrice } from './from-price'
 
 export type { LocalizedText }
 
@@ -140,8 +141,15 @@ export interface ActivitySummary {
   duration: LocalizedText | null
   region: RegionRef | null
   categories: CategoryRef[]
+  /** The «from» price in minor units; 0 when there is nothing to sell. */
   priceMinor: number
   currency: string
+  /**
+   * The package behind the «from» price, with its unit (per person, couple,
+   * group, booking); null when the activity has nothing to sell. Optional so
+   * hand-built summaries (tests, previews) read as «per person».
+   */
+  from?: FromPrice | null
   rating: number | null
   reviewCount: number
   hero: MediaDto | null
@@ -242,7 +250,7 @@ export interface ActivityDetail extends ActivitySummary {
   freeCancellationHours: number | null
   minGuests: number
   /** Child age band (phase 2); younger = infant, free. Null = no child pricing. */
-  childAges: { min: number; max: number } | null
+  childAges: { min: number; max: number; explicit?: boolean } | null
   /** Portrait hero for phones, when one is set. */
   mobileHero: MediaDto | null
   video: ParsedVideo | null
@@ -322,6 +330,11 @@ export interface ItinerarySummary {
   hero: MediaDto | null
   /** Priced levels only (economy / mid / luxury), minor units. */
   tierPrices: Partial<Record<'economy' | 'mid' | 'luxury', number>>
+  /**
+   * The price shown already includes the interactive map. Cards label the
+   * price «PDF + map» only then (optional: read as false when absent).
+   */
+  includesMap?: boolean
 }
 
 /**

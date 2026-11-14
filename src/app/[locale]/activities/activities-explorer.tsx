@@ -28,6 +28,7 @@ import {
 } from '@/lib/budget-tier'
 import { pick, searchableText } from '@/lib/content/localize'
 import type { ActivitySummary } from '@/lib/content/types'
+import { foldSearch, matchesQuery } from '@/lib/search/activity-match'
 
 import { ACTIVITY_SORTS, type ExplorerSort } from './explorer-contract'
 
@@ -116,38 +117,73 @@ export function ActivitiesExplorer({
     apply({ cat: 'all', region: 'all', budget: null, q: '' })
   }
 
-  const counts = useMemo(() => {
-    const out = new Map<string, number>()
-    for (const a of activities)
-      for (const c of a.categories) out.set(c.key, (out.get(c.key) ?? 0) + 1)
-    return out
-  }, [activities])
+  /**
+   * The category chips. Two categories that read the same in this language
+   * («Restaurants» twice) are one chip covering both, and a chip counts each
+   * activity once however many of its categories it carries.
+   */
+  const chips = useMemo(() => {
+    const byLabel = new Map<string, { key: string; label: string; keys: string[] }>()
+    for (const category of categories) {
+      const label = category.label.trim()
+      if (label === '') continue
+      const id = foldSearch(label)
+      const chip = byLabel.get(id)
+      if (chip) chip.keys.push(category.key)
+      else byLabel.set(id, { key: category.key, label, keys: [category.key] })
+    }
+    return [...byLabel.values()]
+      .map((chip) => ({
+        ...chip,
+        count: activities.filter((a) => a.categories.some((c) => chip.keys.includes(c.key))).length,
+      }))
+      .filter((chip) => chip.count > 0)
+  }, [activities, categories])
+  /** Keys the selected chip stands for (a link may name any of them). */
+  const catKeys = useMemo(
+    () => chips.find((chip) => chip.keys.includes(filters.cat))?.keys ?? [filters.cat],
+    [chips, filters.cat],
+  )
 
   const results = useMemo(() => {
-    const q = filters.q.trim().toLowerCase()
+    const q = filters.q.trim()
     const list = activities.filter(
       (a) =>
-        (filters.cat === 'all' || a.categories.some((c) => c.key === filters.cat)) &&
+        (filters.cat === 'all' || a.categories.some((c) => catKeys.includes(c.key))) &&
         (filters.region === 'all' || a.region?.key === filters.region) &&
         (filters.budget === null || tierOf.get(a.id) === filters.budget) &&
         (q === '' ||
-          `${searchableText(a.name, locale)} ${searchableText(a.blurb ?? null, locale)} ${searchableText(a.area, locale)}`
-            .toLowerCase()
-            .includes(q)),
+          matchesQuery(
+            foldSearch(
+              [
+                searchableText(a.name, locale),
+                searchableText(a.shortDescription ?? null, locale),
+                searchableText(a.blurb ?? null, locale),
+                searchableText(a.area, locale),
+                searchableText(a.region?.label ?? null, locale),
+                ...a.categories.map((c) => searchableText(c.label, locale)),
+              ].join(' '),
+            ),
+            q,
+          )),
     )
-    const name = (a: ActivitySummary) => pick(a.name, locale, a.slug)
+    const unpriced = (a: ActivitySummary) => Number(a.priceMinor <= 0)
     const regionName = (a: ActivitySummary) => (a.region ? pick(a.region.label, locale) : '')
     const by: Record<ExplorerSort, (a: ActivitySummary, b: ActivitySummary) => number> = {
+      // «Recommended»: the most-requested first, then real ratings; everything
+      // else keeps the owner's order (the list arrives in it, and the sort is
+      // stable) instead of falling back to the alphabet.
       rating: (a, b) =>
+        Number(b.mostPopular === true) - Number(a.mostPopular === true) ||
         (b.rating ?? -1) - (a.rating ?? -1) ||
-        b.reviewCount - a.reviewCount ||
-        name(a).localeCompare(name(b), locale),
-      'price-asc': (a, b) => a.priceMinor - b.priceMinor,
-      'price-desc': (a, b) => b.priceMinor - a.priceMinor,
+        b.reviewCount - a.reviewCount,
+      // An activity with no price yet (nothing on sale) never leads a price sort.
+      'price-asc': (a, b) => unpriced(a) - unpriced(b) || a.priceMinor - b.priceMinor,
+      'price-desc': (a, b) => unpriced(a) - unpriced(b) || b.priceMinor - a.priceMinor,
       region: (a, b) => regionName(a).localeCompare(regionName(b), locale),
     }
     return [...list].sort(by[filters.sort])
-  }, [activities, filters, tierOf, locale])
+  }, [activities, filters, tierOf, locale, catKeys])
 
   const regionLabel = regions.find((r) => r.key === filters.region)?.label
   const active: { key: 'region' | 'budget' | 'q'; label: string }[] = []
@@ -219,25 +255,24 @@ export function ActivitiesExplorer({
           </div>
 
           <div className="chips scroll" role="group" aria-label={t('act_cats_label')}>
-            {[{ key: 'all', label: t('act_cat_all') }, ...categories].map((chip) => {
-              const count = chip.key === 'all' ? activities.length : (counts.get(chip.key) ?? 0)
-              // Empty categories, and any with no label in this language, stay out.
-              if (chip.key !== 'all' && (count === 0 || chip.label.trim() === '')) return null
-              return (
-                <button
-                  key={chip.key}
-                  type="button"
-                  className="chip"
-                  aria-pressed={filters.cat === chip.key}
-                  onClick={() => apply({ cat: chip.key })}
-                >
-                  {chip.label}{' '}
-                  <span className="ct" dir="ltr">
-                    {format.number(count)}
-                  </span>
-                </button>
-              )
-            })}
+            {/* Empty categories, and any with no label in this language, stay out. */}
+            {[
+              { key: 'all', label: t('act_cat_all'), keys: ['all'], count: activities.length },
+              ...chips,
+            ].map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                className="chip"
+                aria-pressed={chip.keys.includes(filters.cat)}
+                onClick={() => apply({ cat: chip.key })}
+              >
+                {chip.label}{' '}
+                <span className="ct" dir="ltr">
+                  {format.number(chip.count)}
+                </span>
+              </button>
+            ))}
           </div>
 
           <div className="act-more" id="act-more" hidden={!moreOpen}>
@@ -331,8 +366,8 @@ export function ActivitiesExplorer({
               <EmptyState
                 as="h3"
                 icon="search"
-                title={t('act_empty_t')}
-                text={t('act_empty_b')}
+                title={filters.q !== '' ? t('act_empty_q_t', { q: filters.q }) : t('act_empty_t')}
+                text={filters.q !== '' ? t('act_empty_q_b') : t('act_empty_b')}
                 style={{ gridColumn: '1 / -1' }}
                 action={
                   <div className="row" style={{ justifyContent: 'center' }}>

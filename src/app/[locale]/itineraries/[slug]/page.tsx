@@ -421,6 +421,11 @@ export default async function ItineraryPage({
                               <span className="itp-day-n">
                                 <b dir="ltr">{String(day.dayNumber).padStart(2, '0')}</b>
                                 <span>{t('itd_day_ord', { n: String(day.dayNumber) })}</span>
+                                {/* The day's theme, when the owner wrote one in the Studio:
+                                    a hint of the day without naming its places. */}
+                                {(day.mood?.[locale] ?? '').trim() !== '' && (
+                                  <em className="itp-day-mood">{day.mood?.[locale]}</em>
+                                )}
                               </span>
                             </li>
                           ))}

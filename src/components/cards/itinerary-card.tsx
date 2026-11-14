@@ -141,7 +141,14 @@ export function ItineraryCard({
         {extra}
         <CardFoot>
           <PriceFrom
-            label={levels > 0 || stats !== undefined ? t('it_price_from') : t('bt_pdf_map')}
+            label={
+              levels > 0 || stats !== undefined
+                ? t('it_price_from')
+                : // «PDF + map» only when the price really includes the map.
+                  itinerary.includesMap === true
+                  ? t('bt_pdf_map')
+                  : t('bt_pdf_only')
+            }
             amount={formatPrice(priceMinor, itinerary.currency, locale)}
             minor={priceMinor}
             currency={itinerary.currency}

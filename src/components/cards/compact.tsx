@@ -15,9 +15,12 @@ import { Money } from '@/components/currency/currency-context'
 import { CompactCard, type CompactCardLayout } from '@/components/bt/compact-card'
 import { FavButton } from '@/components/bt/fav-button'
 import type { Locale } from '@/i18n/config'
+import { placeLine } from '@/lib/content/area'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { ActivitySummary, ItinerarySummary, PackageSummary } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
+
+import { fromUnit } from './from-unit'
 
 type Common = {
   layout?: CompactCardLayout
@@ -40,7 +43,10 @@ export function ActivityCompact({
   const t = useTranslations()
   const locale = useLocale() as Locale
   const category = activity.categories[0]
-  const meta = [pickOptional(activity.area, locale), pickOptional(activity.duration, locale)]
+  const meta = [
+    placeLine(activity.area, activity.region, locale),
+    pickOptional(activity.duration, locale),
+  ]
     .filter((part): part is string => part !== null)
     .join(SEP)
 
@@ -62,7 +68,7 @@ export function ActivityCompact({
           ? {
               label: t('bt_from'),
               amount: <Money minor={activity.priceMinor} currency={activity.currency} />,
-              unit: t('bt_per_person'),
+              unit: fromUnit(t, activity.from),
             }
           : null
       }
@@ -156,7 +162,11 @@ export function ItineraryCompact({
         itinerary.priceMinor > 0
           ? {
               label:
-                pricedTiers(itinerary.tierPrices).length > 0 ? t('it_price_from') : t('bt_pdf_map'),
+                pricedTiers(itinerary.tierPrices).length > 0
+                  ? t('it_price_from')
+                  : itinerary.includesMap === true
+                    ? t('bt_pdf_map')
+                    : t('bt_pdf_only'),
               amount: (
                 <Money
                   minor={fromPrice(itinerary.priceMinor, itinerary.tierPrices)}

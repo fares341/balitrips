@@ -1515,15 +1515,26 @@ html[dir='ltr'] .home-v3 .rm-track > li {
 /* Custom itinerary price tiers (owner, Nov 2026) — home card, itinerary pages, /custom. */
 .ct-prices {
   margin: 8px 0 0;
-  font-size: 14px;
-  line-height: 1.7;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: inherit;
 }
 .ct-prices .bt-money {
   white-space: nowrap;
 }
+/* One chip per tier; the border follows the text colour so it reads on the
+   light panels and on the dark home card alike. */
 .ct-tier {
-  white-space: normal;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  white-space: nowrap;
 }
 .ct-live-price {
   margin: 10px 0 0;
