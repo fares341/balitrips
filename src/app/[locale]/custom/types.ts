@@ -124,7 +124,7 @@ export const EMAIL_MAX = 256
 export const PHONE_MAX = 32
 
 /** Fields the form can report an error against. */
-export type CustomTripField = 'name' | 'email' | 'phone' | 'dates' | 'interests' | 'notes'
+export type CustomTripField = 'name' | 'email' | 'phone' | 'dates' | 'areas' | 'interests' | 'notes'
 
 /**
  * Field → message key.
@@ -149,5 +149,4 @@ export type CustomTripState =
     }
 
 export type AddToTripResult =
-  | { ok: true; itemCount: number }
-  | { ok: false; reason: 'validation' | 'server' }
+  { ok: true; itemCount: number } | { ok: false; reason: 'validation' | 'server' }
