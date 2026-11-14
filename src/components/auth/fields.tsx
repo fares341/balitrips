@@ -25,7 +25,7 @@
  * remember to do it.
  */
 
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/ui'
@@ -292,15 +292,28 @@ export function rememberCountry(iso: string): void {
 const flag = (iso: string) =>
   String.fromCodePoint(...[...iso].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
 
+const noSubscription = () => () => undefined
+
+/**
+ * Country names from the browser's own data. Null until hydration is done:
+ * Node and the browser spell some regions differently, and a different
+ * <option> text between the two is a hydration error.
+ */
 function useRegionNames() {
   const locale = useLocale()
+  const hydrated = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  )
   return useMemo(() => {
+    if (!hydrated) return null
     try {
       return new Intl.DisplayNames([locale], { type: 'region' })
     } catch {
       return null
     }
-  }, [locale])
+  }, [locale, hydrated])
 }
 
 /** «🇸🇦 +966 ▾» مضغوط وهو مغلق، وقائمة كل الدول بأسمائها وهو مفتوح. */
