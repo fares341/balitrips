@@ -186,8 +186,19 @@ export function inArea(place: PlaceKeys, area: string): boolean {
   return place.regionKey === area || place.parentRegionKey === area
 }
 
-/** One aggregate row: how many places of a category sit in a region. */
-export type CountRow = [regionKey: string, parentKey: string | null, categoryKey: string, n: number]
+/**
+ * One aggregate row: how many places of a category sit in a region, and how
+ * many of those this viewer cannot open (`locked`, absent = 0). The locked
+ * number uses the same rule as `selectPlaces`, so the category badges and the
+ * «N VIP places» chip always add up.
+ */
+export type CountRow = [
+  regionKey: string,
+  parentKey: string | null,
+  categoryKey: string,
+  n: number,
+  locked?: number,
+]
 
 /**
  * Region key of the count row for places that sit in no region yet (e.g. a
@@ -196,29 +207,55 @@ export type CountRow = [regionKey: string, parentKey: string | null, categoryKey
  */
 export const NO_REGION = ''
 
-/** Counts per (region, category) — the only thing the step screens need. */
-export function countRows(places: readonly PlaceKeys[]): CountRow[] {
+/**
+ * Counts per (region, category) — the only thing the step screens need.
+ * With `canOpen`, each row also carries how many of its places are locked
+ * for this viewer.
+ */
+export function countRows<T extends PlaceKeys>(
+  places: readonly T[],
+  canOpen?: (place: T) => boolean,
+): CountRow[] {
   const map = new Map<string, CountRow>()
   for (const place of places) {
     if (place.categoryKey === null) continue
     const region = place.regionKey ?? place.parentRegionKey ?? NO_REGION
     const parent = place.regionKey === null ? null : place.parentRegionKey
     const id = `${region}|${parent ?? ''}|${place.categoryKey}`
+    const locked = canOpen !== undefined && !canOpen(place) ? 1 : 0
     const row = map.get(id)
-    if (row) row[3] += 1
-    else map.set(id, [region, parent, place.categoryKey, 1])
+    if (row) {
+      row[3] += 1
+      if (canOpen !== undefined) row[4] = (row[4] ?? 0) + locked
+    } else if (canOpen !== undefined) {
+      map.set(id, [region, parent, place.categoryKey, 1, locked])
+    } else {
+      map.set(id, [region, parent, place.categoryKey, 1])
+    }
   }
   return [...map.values()]
+}
+
+function rowInArea(region: string, parent: string | null, area: string): boolean {
+  return area === ALL_AREA || (region !== NO_REGION && (region === area || parent === area))
 }
 
 /** Places per category inside an area. */
 export function categoryCounts(rows: readonly CountRow[], area: string): Map<string, number> {
   const out = new Map<string, number>()
   for (const [region, parent, category, n] of rows) {
-    if (area !== ALL_AREA && (region === NO_REGION || (region !== area && parent !== area))) {
-      continue
-    }
+    if (!rowInArea(region, parent, area)) continue
     out.set(category, (out.get(category) ?? 0) + n)
+  }
+  return out
+}
+
+/** Locked places per category inside an area (categories with none are absent). */
+export function lockedCounts(rows: readonly CountRow[], area: string): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const [region, parent, category, , locked] of rows) {
+    if (!locked || !rowInArea(region, parent, area)) continue
+    out.set(category, (out.get(category) ?? 0) + locked)
   }
   return out
 }

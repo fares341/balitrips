@@ -172,7 +172,17 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   // Public, aggregate data only: counts per (region, category). The places
   // themselves stay on the server; the results come from /api/map/places,
   // redacted per request.
-  const rows = countRows(places)
+  // Only the map's own categories are counted (a hidden category's places are
+  // not on the map), and each row says how many of its places this viewer
+  // cannot open — the same rule the results API applies.
+  const mapKeys = new Set(categories.map((one) => one.key))
+  const canOpen = (place: (typeof places)[number]) =>
+    place.isFree || held.has(place.requiredEntitlement)
+  const mapPlaces = places.filter(
+    (place) => place.categoryKey !== null && mapKeys.has(place.categoryKey),
+  )
+  const rows = countRows(mapPlaces, canOpen)
+  const openCategories = new Set(mapPlaces.filter(canOpen).map((place) => place.categoryKey))
   const areas = areaOptions(
     taxonomy.regions,
     rows,
@@ -200,7 +210,9 @@ export default async function MapPage({ params, searchParams }: PageProps) {
   // A locked type in a link is never applied for a visitor: the step screen
   // shows it with its lock instead.
   const lockedKeys = new Set(
-    categories.filter((one) => one.tier === 'vip' && !unlocked).map((one) => one.key),
+    categories
+      .filter((one) => one.tier === 'vip' && !unlocked && !openCategories.has(one.key))
+      .map((one) => one.key),
   )
   selection.categories = selection.categories.filter((key) => !lockedKeys.has(key))
   // Map v3: the map is the landing — no area means the whole island, no
@@ -264,7 +276,8 @@ export default async function MapPage({ params, searchParams }: PageProps) {
         key: one.key,
         label: pick(one.label, lang, one.key),
         tier: one.tier,
-        locked: one.tier === 'vip' && !unlocked,
+        // A VIP type with free places in it (owner's free picks) stays selectable.
+        locked: lockedKeys.has(one.key),
         color: one.color,
         icon: one.icon,
       }))}
