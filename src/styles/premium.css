@@ -694,9 +694,10 @@ h2.section-title {
   gap: 4px;
 }
 
+/* 40px: a comfortable tap on a phone (was 32px, audit UX 45). */
 .bt-pdev-step button {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
   background: transparent;
@@ -745,6 +746,37 @@ h2.section-title {
 
 .bt-ptier-cta {
   min-height: 52px;
+}
+
+/* The buy button is a form (POST), laid out as the link it replaced. */
+.bt-ptier-buy {
+  display: block;
+  margin: 0;
+}
+
+/* /plans/buy/<id>: one plan and its "add to my trip" button. */
+.bt-buyplan {
+  padding-block: 8px 72px;
+}
+.bt-buyplan-card {
+  max-width: 520px;
+  margin-inline: auto;
+  margin-block-start: 16px;
+}
+.bt-buyplan-ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ivory-2);
+  color: var(--forest);
+  margin-block-end: 10px;
+}
+.bt-buyplan-note {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 12px 0;
 }
 
 .bt-ptier-list {

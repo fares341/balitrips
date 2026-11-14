@@ -27,7 +27,16 @@ import { useWhatsappLink } from './contact-context'
 
 // Sign-in / sign-up / reset: on a phone the buttons sit on top of the form fields.
 // My Trip: they sat on the item prices and the total (audit M8).
-const HIDDEN_ON = ['/map', '/checkout', '/my-trip', '/login', '/register', '/forgot-password']
+// /plans/buy/<id>: one plan and its "add" button, nothing over it.
+const HIDDEN_ON = [
+  '/map',
+  '/checkout',
+  '/my-trip',
+  '/plans/buy',
+  '/login',
+  '/register',
+  '/forgot-password',
+]
 
 export function WhatsAppFab() {
   const t = useTranslations()

@@ -84,7 +84,7 @@ export function AssistantLauncher() {
   // Auth pages: the launcher would cover the form fields on a phone.
   if (AUTH_PAGES.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return null
   // Exact paths: the order page after payment (/checkout/confirmation/…) keeps its help.
-  if (PAYING_PAGES.includes(pathname)) return null
+  if (PAYING_PAGES.includes(pathname) || pathname.startsWith('/plans/buy/')) return null
 
   return (
     <>

@@ -4,7 +4,9 @@
  * Device-count stepper on a plan card (owner, Nov 2026): plans are sold per
  * device. Shown only when the plan sells extra devices. The total here is a
  * preview — the server clamps the count and prices it again at checkout
- * (`buildQuote` → `planTotalMinor`); only the count travels, as `?devices=n`.
+ * (`buildQuote` → `planTotalMinor`); only the plan id and the count travel,
+ * posted by the button (a server action — never a GET link, which crawlers
+ * and link previewers follow).
  */
 
 import { useId, useState } from 'react'
@@ -14,24 +16,30 @@ import { Money } from '@/components/currency/currency-context'
 import { Icon } from '@/components/ui'
 import { planDeviceRange, planTotalMinor, type PlanDeviceFacts } from '@/lib/pricing/plan-devices'
 
+import { buyPlan } from './actions'
+
 export function DevicePicker({
   plan,
   currency,
-  buyHref,
+  planId,
+  initialDevices,
   ctaLabel,
   ctaClassName,
 }: {
   plan: PlanDeviceFacts
   currency: string
-  /** `/plans/buy/<id>` already localised; the count is appended. */
-  buyHref: string
+  planId: string
+  /** The count to start from (`?devices=n` on /plans/buy/<id>); clamped. */
+  initialDevices?: number
   ctaLabel: string
   ctaClassName: string
 }) {
   const t = useTranslations()
   const labelId = useId()
   const { min, max } = planDeviceRange(plan)
-  const [devices, setDevices] = useState(min)
+  const [devices, setDevices] = useState(() =>
+    Math.min(max, Math.max(min, Math.trunc(initialDevices ?? min) || min)),
+  )
   const { totalMinor } = planTotalMinor(plan, devices)
   const extra = plan.extraDevicePriceMinor ?? 0
 
@@ -39,7 +47,7 @@ export function DevicePicker({
     <>
       <div className="bt-pdev">
         <span className="bt-pdev-l" id={labelId}>
-          <Icon name="phone" size={15} /> {t('pl_devices_label')}
+          <Icon name="mobile" size={15} /> {t('pl_devices_label')}
         </span>
         <div className="bt-pdev-step" role="group" aria-labelledby={labelId}>
           <button
@@ -74,9 +82,13 @@ export function DevicePicker({
         <span>/ {t('pl_devices_count', { count: devices })}</span>
       </p>
 
-      <a href={`${buyHref}?devices=${devices}`} rel="nofollow" className={ctaClassName}>
-        {ctaLabel}
-      </a>
+      <form action={buyPlan} className="bt-ptier-buy">
+        <input type="hidden" name="planId" value={planId} />
+        <input type="hidden" name="devices" value={devices} />
+        <button type="submit" className={ctaClassName}>
+          {ctaLabel}
+        </button>
+      </form>
     </>
   )
 }

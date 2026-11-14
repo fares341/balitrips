@@ -41,8 +41,7 @@ import { HOME_HREF } from '@/components/layout'
 import { Button } from '@/components/shared'
 import { Icon, Photo, isIconName, type IconName } from '@/components/ui'
 import { isLocale, locales, type Locale } from '@/i18n/config'
-import { getPathname } from '@/i18n/routing'
-import { listActivities } from '@/lib/content/queries'
+import { listActivities, listArticles } from '@/lib/content/queries'
 import { pick, pickOptional } from '@/lib/content/localize'
 import type { MediaDto } from '@/lib/content/types'
 import {
@@ -61,12 +60,17 @@ import { MONEY_SLOT, withMoney } from '@/components/currency/with-money'
 import { Money } from '@/components/currency/currency-context'
 import { currentUserId } from '../_viewer/session'
 import { planDeviceRange, sellsExtraDevices } from '@/lib/pricing/plan-devices'
+import { buyPlan } from './actions'
 import { DevicePicker } from './device-picker'
+import { planAccessMessage } from './duration'
 import { PLAN_TIERS } from './tiers'
 
 const PLANS_HREF = '/plans'
 
 const NO_PLANS: ReadonlySet<string> = new Set()
+
+/** The free card's "read every article" line (see `hasArticles`). */
+const ARTICLES_FEATURE = 'sub_free_f3'
 
 /**
  * The awaited translator, passed down rather than re-awaited per component.
@@ -95,7 +99,7 @@ export async function generateMetadata({
   return pageMetadata({
     locale,
     path: PLANS_HREF,
-    title: t('acct_nav_subs'),
+    title: t('navr_plans'),
     description: t('sub_sub'),
   })
 }
@@ -105,12 +109,15 @@ export default async function PlansPage({ params }: { params: Promise<{ locale: 
   if (!isLocale(locale)) notFound()
   setRequestLocale(locale)
 
-  const [t, activities, allPlans, vip] = await Promise.all([
+  const [t, activities, allPlans, vip, articles] = await Promise.all([
     getTranslations({ locale }),
     listActivities({ locale, limit: IMAGE_SOURCE_LIMIT }),
     listPublishedPlans(),
     readSetting('vip'),
+    // "Read every article" is only a benefit while there is one to read.
+    listArticles({ locale, limit: 1 }).catch(() => []),
   ])
+  const hasArticles = articles.length > 0
   // Phase 3: VIP may be sold only as an extra / inside packages (Studio → VIP).
   const plans = allPlans.filter((plan) => vip.sellStandalone || plan.entitlementKind !== 'vip')
 
@@ -124,7 +131,9 @@ export default async function PlansPage({ params }: { params: Promise<{ locale: 
         title={t('sub_title')}
         subtitle={t('sub_sub')}
         breadcrumbLabel={t('c_breadcrumb')}
-        trail={[{ label: t('c_home'), href: HOME_HREF }, { label: t('acct_nav_subs') }]}
+        // The page's name as the menu has it — not the account's "my
+        // subscription" label, which this trail used to borrow.
+        trail={[{ label: t('c_home'), href: HOME_HREF }, { label: t('navr_plans') }]}
       />
 
       <section className="bt-band bt-band-ivory bt-ptiers-band">
@@ -143,11 +152,18 @@ export default async function PlansPage({ params }: { params: Promise<{ locale: 
                 images={pool}
                 held={emptyEntitlements()}
                 livePlanIds={NO_PLANS}
+                hasArticles={hasArticles}
                 t={t}
               />
             }
           >
-            <EntitledPlanGrid locale={locale} plans={plans} images={pool} t={t} />
+            <EntitledPlanGrid
+              locale={locale}
+              plans={plans}
+              images={pool}
+              hasArticles={hasArticles}
+              t={t}
+            />
           </Suspense>
         </div>
       </section>
@@ -168,11 +184,13 @@ async function EntitledPlanGrid({
   locale,
   plans,
   images,
+  hasArticles,
   t,
 }: {
   locale: Locale
   plans: readonly PlanRow[]
   images: readonly MediaDto[]
+  hasArticles: boolean
   t: Translator
 }) {
   const userId = await currentUserId()
@@ -185,6 +203,7 @@ async function EntitledPlanGrid({
       images={images}
       held={held}
       livePlanIds={livePlanIds}
+      hasArticles={hasArticles}
       t={t}
     />
   )
@@ -242,6 +261,7 @@ function PlanGrid({
   images,
   held,
   livePlanIds,
+  hasArticles,
   t,
 }: {
   locale: Locale
@@ -249,6 +269,8 @@ function PlanGrid({
   images: readonly MediaDto[]
   held: EntitlementSet
   livePlanIds: ReadonlySet<string>
+  /** False while the blog is empty: the free card then does not promise it. */
+  hasArticles: boolean
   t: Translator
 }) {
   const free = PLAN_TIERS[0]
@@ -262,12 +284,14 @@ function PlanGrid({
             <h2 className="bt-ptier-t">{t(free.titleKey)}</h2>
             <p className="bt-ptier-d">{t(free.bodyKey)}</p>
             <ul className="bt-ptier-facts">
-              {free.featureKeys.map((key) => (
-                <li key={key}>
-                  <Icon name="check" size={16} />
-                  {t(key)}
-                </li>
-              ))}
+              {free.featureKeys
+                .filter((key) => hasArticles || key !== ARTICLES_FEATURE)
+                .map((key) => (
+                  <li key={key}>
+                    <Icon name="check" size={16} />
+                    {t(key)}
+                  </li>
+                ))}
             </ul>
             <p className="bt-ptier-price">
               <strong>{t('sub_free_price')}</strong>
@@ -301,20 +325,12 @@ function PlanGrid({
         const mapLine = kind === 'vip' ? 'sub_vip_f2' : 'sub_map_f2'
         // Sold per device (owner, Nov 2026): a stepper replaces the fixed price.
         const perDevice = sellsExtraDevices(plan)
-        const buyHref = getPathname({
-          href: `/plans/buy/${encodeURIComponent(plan.id)}`,
-          locale,
-        })
+        const access = planAccessMessage(plan.durationDays)
         const facts: { icon: IconName; text: string }[] = [
           {
             icon: 'clock',
             // Stated before purchase (client, Oct 2026): "3 months", or lifetime.
-            text:
-              plan.durationDays === null
-                ? t('pl_lifetime')
-                : plan.durationDays % 30 === 0
-                  ? t('sub_for_months', { months: plan.durationDays / 30 })
-                  : t('sub_for_days', { days: plan.durationDays }),
+            text: t(access.key, access.values),
           },
           {
             icon: mapless ? 'pdf' : 'pin',
@@ -323,7 +339,7 @@ function PlanGrid({
               : t(mapLine),
           },
           {
-            icon: 'phone',
+            icon: 'mobile',
             text: perDevice
               ? t('pl_devices_from', { count: plan.deviceLimit, max: planDeviceRange(plan).max })
               : t('sub_devices', { count: plan.deviceLimit }),
@@ -384,9 +400,11 @@ function PlanGrid({
               <p className="muted" style={{ fontSize: 12.5, margin: '0 0 6px' }}>
                 {plan.durationDays === null
                   ? t('sub_lifetime_note')
-                  : plan.durationDays % 30 === 0
-                    ? t('sub_duration_note', { months: plan.durationDays / 30 })
-                    : t('sub_for_days', { days: plan.durationDays })}
+                  : plan.durationDays % 365 === 0
+                    ? t('sub_duration_note_years', { years: plan.durationDays / 365 })
+                    : plan.durationDays % 30 === 0
+                      ? t('sub_duration_note', { months: plan.durationDays / 30 })
+                      : t('sub_duration_note_days', { days: plan.durationDays })}
               </p>
 
               <p className="bt-ptier-upsell">
@@ -425,7 +443,7 @@ function PlanGrid({
                 </Button>
               ) : perDevice ? (
                 // Sold per device: the stepper shows the live total and the
-                // link carries only the count; checkout clamps and prices it.
+                // form posts only the count; checkout clamps and prices it.
                 <DevicePicker
                   plan={{
                     priceMinor: plan.priceMinor,
@@ -434,7 +452,7 @@ function PlanGrid({
                     maxDevices: plan.maxDevices,
                   }}
                   currency={plan.currency}
-                  buyHref={buyHref}
+                  planId={plan.id}
                   ctaLabel={t('sub_choose')}
                   ctaClassName={buttonClass(
                     { variant: plan.featured ? 'orange' : 'ghost', block: true },
@@ -442,19 +460,23 @@ function PlanGrid({
                   )}
                 />
               ) : (
-                // The only thing that grants this plan is a settled payment; the
-                // link puts the plan in the cart (a real href — list H12; no
-                // prefetch, it is not a page), and checkout prices it server-side.
-                <a
-                  href={buyHref}
-                  rel="nofollow"
-                  className={buttonClass(
-                    { variant: plan.featured ? 'orange' : 'ghost', block: true },
-                    'bt-ptier-cta',
-                  )}
-                >
-                  {t('sub_choose')}
-                </a>
+                // The only thing that grants this plan is a settled payment. A
+                // button that POSTs the plan id (never a price): a plain GET
+                // link used to add the plan for every crawler and link
+                // previewer that followed it (crawl audit 13). Works without
+                // JavaScript; checkout prices it server-side.
+                <form action={buyPlan} className="bt-ptier-buy">
+                  <input type="hidden" name="planId" value={plan.id} />
+                  <button
+                    type="submit"
+                    className={buttonClass(
+                      { variant: plan.featured ? 'orange' : 'ghost', block: true },
+                      'bt-ptier-cta',
+                    )}
+                  >
+                    {t('sub_choose')}
+                  </button>
+                </form>
               )}
 
               <ul className="bt-ptier-list">
