@@ -15,7 +15,7 @@ export const PIN_SIZE_BY_ZOOM: unknown[] = ['interpolate', ['linear'], ['zoom'],
 export const CLUSTER_RADIUS = 12
 export const CLUSTER_MAX_ZOOM = 11
 export const CLUSTER_MIN_POINTS = 3
-/** Filter change → ease to the new pins. */
-export const FIT_MS = 600
+/** Filter change → ease to the new pins (only when none is on screen). */
+export const FIT_MS = 500
 /** Labels/pins fade quickly (MapLibre's default 300ms smears during pinch). */
 export const SYMBOL_FADE_MS = 120

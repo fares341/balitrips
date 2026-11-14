@@ -1937,7 +1937,8 @@
 }
 /* Restaurant sections: a second, lighter pill row (horizontal scroll). */
 .mx5-secs {
-  padding-top: 0;
+  /* Room for the pills' 44px tap band (see «tap targets» below). */
+  padding-top: 6px;
 }
 .mx5-sec {
   min-height: 32px;
@@ -2718,7 +2719,9 @@
 .mx4-desc {
   white-space: pre-line;
 }
-.mx4-near {
+/* The nearby list (a <ul>); the «Near me» chip shares the class name, and
+   this list's negative margins used to pull that chip over its neighbour. */
+ul.mx4-near {
   list-style: none;
   margin: 0 -16px;
   padding: 0 16px;
@@ -2728,10 +2731,10 @@
   scrollbar-width: none;
   touch-action: pan-x pan-y;
 }
-.mx4-near::-webkit-scrollbar {
+ul.mx4-near::-webkit-scrollbar {
   display: none;
 }
-.mx4-near button {
+ul.mx4-near button {
   width: 140px;
   padding: 0;
   border: 0;
@@ -2755,7 +2758,7 @@
   height: 100%;
   object-fit: cover;
 }
-.mx4-near b {
+ul.mx4-near b {
   display: block;
   margin-top: 4px;
   font-size: 13px;
@@ -2764,7 +2767,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mx4-near small {
+ul.mx4-near small {
   font-size: 12px;
   color: #5d6b61;
 }
@@ -2825,6 +2828,35 @@
   .mx4-sheet {
     transition: none;
   }
+}
+
+/* ---- tap targets: 44px on phones without changing the look ------------ */
+/* The filter chips (38px) and section pills (32px) reach 44px through an
+   invisible band above and below, inside the row's own padding. */
+.mx3-chip {
+  position: relative;
+}
+.mx3-chip::before {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+.mx5-sec::before {
+  inset: -6px 0;
+}
+/* The sheet's ✕ (36px) and the card heart (40px). */
+.mx4-x::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+.mx3 .mx3-fav {
+  top: 2px;
+  inset-inline-end: 2px;
+}
+.mx3 .mx3-fav .mp-heart {
+  width: 44px;
+  height: 44px;
 }
 
 /* ---------- Category glyph: a place with no unique photo ---------- */
