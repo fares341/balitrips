@@ -1134,6 +1134,14 @@
   border: 2px solid var(--mx-forest);
   color: var(--mx-forest);
 }
+/* Paywall plan button: «3 months – 150 SAR», the amount kept on one line. */
+.mx-cta.mx-plan {
+  gap: 8px;
+  padding-inline: 14px;
+}
+.mx-cta.mx-plan bdi {
+  white-space: nowrap;
+}
 .mx-link {
   min-height: 44px;
   border: 0;
@@ -2616,7 +2624,12 @@
   border-radius: 14px;
   overflow: hidden;
   scroll-snap-align: center;
-  background: #dfe7da;
+  background: #dfe7da center / cover no-repeat;
+}
+/* The photo box itself is see-through until its image paints (Photo's own
+   ivory fill would hide the small preview behind it). */
+.mx4-shot .photo {
+  background: transparent !important;
 }
 .mx4-shot:only-child {
   width: 100%;

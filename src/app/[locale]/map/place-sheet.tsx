@@ -37,6 +37,11 @@ interface Detail {
   hours: string | null
 }
 
+/** Only our own media paths and plain https URLs go into a CSS `url()`. */
+function cssUrlSafe(url: string): boolean {
+  return /^(\/|https:\/\/)[^"'()\\\s]+$/.test(url)
+}
+
 /** Details per slug for this page's life (a re-open does not refetch). */
 const detailCache = new Map<string, Detail>()
 
@@ -237,15 +242,17 @@ export function PlaceSheet({
     }
   }
 
+  // Photos that failed to load (every fallback tried): their slot is removed,
+  // and with none left the gallery is not rendered at all.
+  const [broken, setBroken] = useState<readonly string[]>([])
+  const markBroken = (src: string) =>
+    setBroken((prev) => (prev.includes(src) ? prev : [...prev, src]))
+
   if (shown === null) return null
   const p = shown
-  const images = info?.images.length
-    ? info.images
-    : p.images.length
-      ? p.images
-      : p.thumb
-        ? [p.thumb]
-        : []
+  const images = (
+    info?.images.length ? info.images : p.images.length ? p.images : p.thumb ? [p.thumb] : []
+  ).filter((src) => !broken.includes(src))
   const description = info?.description ?? p.desc
   // An activity marker uses the activity's own map link; others route to the pin.
   const directions =
@@ -318,24 +325,8 @@ export function PlaceSheet({
           </div>
         </header>
 
-        {images.length > 0 && (
-          <div className="mx4-gallery" data-no-drag aria-roledescription="carousel">
-            {images.map((src, i) => (
-              <figure
-                key={src}
-                className="mx4-shot"
-                aria-label={t('mx4_photo', { i: i + 1, n: images.length })}
-              >
-                <Photo
-                  src={src}
-                  alt={i === 0 ? p.name : ''}
-                  sizes="(min-width: 1024px) 360px, 80vw"
-                />
-              </figure>
-            ))}
-          </div>
-        )}
-
+        {/* Actions first: at the half stop «Directions» is always on screen,
+            whatever the photo's height. */}
         <div className="mx4-actions">
           <a
             className="mx4-btn is-primary"
@@ -362,6 +353,35 @@ export function PlaceSheet({
             {copied ? t('mx4_copied') : t('mx4_share')}
           </button>
         </div>
+
+        {images.length > 0 && (
+          <div className="mx4-gallery" data-no-drag aria-roledescription="carousel">
+            {images.map((src, i) => (
+              <figure
+                key={src}
+                className="mx4-shot"
+                aria-label={t('mx4_photo', { i: i + 1, n: images.length })}
+                // The card's small photo is already loaded: it fills the slot
+                // until the large one arrives, so the slot is never empty.
+                style={
+                  i === 0 && p.thumb && cssUrlSafe(p.thumb)
+                    ? { backgroundImage: `url("${p.thumb}")` }
+                    : undefined
+                }
+              >
+                <Photo
+                  src={src}
+                  alt={images.length > 1 ? `${p.name} — ${i + 1}` : p.name}
+                  sizes="(min-width: 1024px) 360px, 80vw"
+                  // Lazy loading inside this horizontal strip can leave the
+                  // visible photo unloaded (WebKit): the two in view load now.
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                  onUnavailable={() => markBroken(src)}
+                />
+              </figure>
+            ))}
+          </div>
+        )}
 
         {description && (
           <section className="mx4-sec">

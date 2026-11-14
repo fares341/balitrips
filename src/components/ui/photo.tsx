@@ -22,7 +22,7 @@
  */
 
 import Image from 'next/image'
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 
 import { mediaIdFromUrl } from '@/lib/free-photos/attribution'
 import { rungSrcSet } from '@/lib/media/fallback'
@@ -71,6 +71,18 @@ export type PhotoProps = {
    * glyph. Rendered inside the same box, so swapping causes no layout shift.
    */
   placeholder?: ReactNode
+  /**
+   * `eager` for an image the visitor is looking at that is not the page's
+   * main image (no preload, no high priority): lazy loading inside a
+   * horizontally scrolling strip is unreliable in WebKit. `priority` wins.
+   */
+  loading?: 'eager' | 'lazy'
+  /**
+   * Called once when there is nothing to show for a `src` that was given
+   * (every fallback failed), so a gallery can drop the slot instead of
+   * keeping an empty box.
+   */
+  onUnavailable?: () => void
 }
 
 export function Photo({
@@ -86,6 +98,8 @@ export function Photo({
   srcSetWebp,
   sizes,
   placeholder,
+  loading,
+  onUnavailable,
 }: PhotoProps) {
   /**
    * Retry, then smaller ladder rungs, then the placeholder; keyed by `src` so
@@ -93,6 +107,13 @@ export function Photo({
    * fired before hydration are caught on mount (see useImageFallback).
    */
   const { src: current, degraded, onError, attach } = useImageFallback(src)
+
+  const unavailable = current === null && !!src
+  useEffect(() => {
+    if (unavailable) onUnavailable?.()
+    // Reported once per failed `src`; the callback's identity does not matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unavailable, src])
 
   const hasIntrinsicSize = typeof width === 'number' && typeof height === 'number'
 
@@ -188,7 +209,7 @@ export function Photo({
       alt={alt}
       {...(derivedSrcSet ? { srcSet: derivedSrcSet } : {})}
       {...(sizes ? { sizes } : {})}
-      loading={priority ? 'eager' : 'lazy'}
+      loading={priority ? 'eager' : (loading ?? 'lazy')}
       fetchPriority={priority ? 'high' : 'auto'}
       decoding="async"
       className={photoClass}
