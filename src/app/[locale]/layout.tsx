@@ -12,6 +12,7 @@ import { Tracking } from '@/components/analytics/tracking'
 import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { FabScroll } from '@/components/layout/fab-scroll'
+import { PreloaderHead, PreloaderHost } from '@/components/layout/preloader'
 import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
 import { hiddenHrefs } from '@/lib/content/public-sections'
@@ -141,8 +142,11 @@ export default async function LocaleLayout({
         />
         {/* Cookie banner before first paint, for visitors with no stored choice. */}
         <script dangerouslySetInnerHTML={{ __html: consentBootScript() }} />
+        {/* «Bali Trips» preloader: first page of a visit only (see the component). */}
+        <PreloaderHead />
       </head>
       <body>
+        <PreloaderHost />
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <ContactProvider value={contact}>
             <CurrencyProvider rates={fx.rates} supported={fx.presentment}>
