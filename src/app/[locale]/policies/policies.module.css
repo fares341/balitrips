@@ -279,8 +279,10 @@
 }
 
 .totop {
-  display: inline-block;
-  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 8px;
   font-size: 13px;
   color: var(--muted) !important;
   text-decoration: none;
@@ -297,6 +299,7 @@
   border: 1px solid #cfe5dc;
   border-radius: 999px;
   padding: 7px 16px;
+  min-height: 44px;
   cursor: pointer;
 }
 
@@ -341,7 +344,7 @@
     margin: 0 -20px;
     padding: 10px 14px;
     display: flex;
-    gap: 6px;
+    gap: 8px;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -360,6 +363,8 @@
     border-radius: 999px;
     padding: 7px 14px;
     font-size: 13.5px;
+    /* 44px touch height, 8px apart (full QA, Nov 2026) */
+    min-height: 44px;
   }
 
   .toc a svg {

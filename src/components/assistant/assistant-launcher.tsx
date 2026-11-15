@@ -36,7 +36,7 @@ const AssistantPanel = dynamic(
 /** Where the WhatsApp button hides (whatsapp-fab.tsx): the assistant takes its spot. */
 const NO_WHATSAPP = ['/map', '/checkout']
 
-const AUTH_PAGES = ['/login', '/register', '/forgot-password']
+const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password']
 
 /**
  * My Trip and checkout: on a phone the launcher sat on the corner of the pay

@@ -714,7 +714,7 @@
   "auth_err_social": "We couldn't continue with that provider. Please try again.",
   "auth_err_suspended": "Your account is suspended pending review. Our team will look at it shortly; contact support if you need help sooner.",
   "auth_forgot_link": "Forgot password?",
-  "auth_forgot_sub": "Enter your email and we'll send a reset link.",
+  "auth_forgot_sub": "Enter the email or mobile number you signed up with, and we will send you a link to choose a new password.",
   "auth_forgot_t": "Reset your password",
   "auth_google": "Continue with Google",
   "auth_has_acct": "Already have an account?",
@@ -744,7 +744,7 @@
   "auth_reset_sub": "Pick something you haven't used before. It takes effect right away.",
   "auth_reset_t": "Choose a new password",
   "auth_send_btn": "Send reset link",
-  "auth_sent": "If that email has an account, a reset link is on its way. Check your inbox and your spam folder.",
+  "auth_sent": "If that email or number is registered with us, a reset link will reach you within a few minutes: by email, or on WhatsApp if you signed up with your mobile number. The link works once and expires after one hour.",
   "auth_signin_sub": "Sign in to pick up your trip where you left off.",
   "auth_signin_t": "Welcome back",
   "auth_signup_sub": "Save places, build trips, and unlock the map.",
@@ -3064,5 +3064,9 @@
   "pl_buy_add": "Add to my trip",
   "pl_buy_all": "See all plans",
   "pl_buy_note": "The plan is added to your trip; nothing is charged until you complete payment. Access starts as soon as the payment succeeds.",
-  "cart_plan_devices": "{count, plural, one {# device} other {# devices}}"
+  "cart_plan_devices": "{count, plural, one {# device} other {# devices}}",
+  "auth_sent_help": "Nothing arrived? Check your spam folder, make sure the address is spelled as when you signed up, then try again.",
+  "auth_sent_retry": "Send the link again",
+  "auth_sent_retry_in": "You can send it again in {s}s",
+  "auth_reset_request_new": "Request a new link"
 }

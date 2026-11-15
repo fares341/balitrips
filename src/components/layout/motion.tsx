@@ -15,10 +15,14 @@
  *    that are still streaming in) and nothing is left behind afterwards.
  * 2. A short fade of the page content after each in-app navigation (opacity
  *    only, so fixed bars inside the page are not displaced). Not on the first
- *    load, which the preloader covers.
+ *    load: the server HTML is shown as soon as it paints.
  *
  * Both are off under `prefers-reduced-motion` and on the map, which manages
- * its own screen.
+ * its own screen. The reveal (1) is also off on touch screens (full QA,
+ * Nov 2026): on a 4x-throttled phone every paused card animation is a layer
+ * the compositor carries while scrolling, and cards fading in under a moving
+ * thumb read as late, ghosted content. Phones get the page as it is; mouse
+ * screens keep the gentle rise.
  *
  * To turn the reveal off site-wide, remove <Motion /> from the locale layout
  * (or add `data-no-motion` on a block to leave just that block alone).
@@ -59,6 +63,11 @@ function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+/** Phones and tablets (no hover, coarse pointer): no scroll reveal. */
+function touchScreen(): boolean {
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches
+}
+
 // useLayoutEffect warns on the server; this component only matters in the browser.
 const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect
 
@@ -85,6 +94,7 @@ export function Motion() {
     if (
       isExcluded(pathname) ||
       reducedMotion() ||
+      touchScreen() ||
       typeof IntersectionObserver === 'undefined' ||
       typeof Element.prototype.animate !== 'function'
     ) {

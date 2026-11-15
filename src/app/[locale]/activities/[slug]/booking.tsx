@@ -916,6 +916,35 @@ function perLabel(
 }
 
 /**
+ * «From 100 SAR per person» under the title (full QA, Nov 2026): the first
+ * screen of a phone showed the photos, the title and the facts but no price
+ * at all; it first appeared ~1,000px down, in the package cards. Unpriced
+ * stays «Price on request» (never an invented figure).
+ */
+export function HeroPrice() {
+  const t = useTranslations()
+  const { data, money } = useBooking()
+  if (!data.bookable) return null
+  const from = data.from
+  const minor = from?.priceMinor ?? data.basePriceMinor
+  return (
+    <a className="ahero-price" href="#book">
+      <small>{t('act_from')}</small>{' '}
+      {minor > 0 ? (
+        <>
+          <b className="price" dir="ltr">
+            {money(minor)}
+          </b>{' '}
+          <small>{from ? perLabel(t, from) : t('act_per_person')}</small>
+        </>
+      ) : (
+        <b className="price price-ask">{t('act_price_on_request')}</b>
+      )}
+    </a>
+  )
+}
+
+/**
  * The party-size stepper: people, or couples for a couples package (the
  * state always holds people; a couple is two).
  */
@@ -2000,6 +2029,20 @@ export function BookingBox() {
                 </option>
               ))}
             </select>
+            {/* The closed <select> cuts «name — price unit» on a 320px phone
+                (the price was left as «6.67 —»): the chosen package's price
+                is repeated in full under it. */}
+            {(() => {
+              const chosen = data.packages.find((p) => p.id === state.pkg)
+              return chosen && isPriced(chosen) ? (
+                <p className="bk-pkg-price">
+                  <b className="price" dir="ltr">
+                    {money(chosen.priceMinor)}
+                  </b>{' '}
+                  <small>{perLabel(t, chosen)}</small>
+                </p>
+              ) : null
+            })()}
             <StepError id={`${uid}-pkg-err`} message={errors.package} />
           </div>
         ) : null}
@@ -2450,11 +2493,35 @@ export function MobileBookBar() {
   useEffect(() => {
     const target = document.getElementById('bk-form')
     if (!target || typeof IntersectionObserver === 'undefined') return
+    // The observer only fires when the form enters or leaves the screen, so
+    // on its own the bar stayed hidden all the way down to the form: the
+    // «scrolled past 300px» half is re-checked on scroll (full QA, Nov 2026).
+    let formInView = false
+    let frame = 0
+    let shown = false
+    const update = () => {
+      frame = 0
+      const next = !formInView && window.scrollY > 300
+      // Only on a change: no React work on the other frames of a fling.
+      if (next !== shown) {
+        shown = next
+        setShow(next)
+      }
+    }
+    const onScroll = () => {
+      if (frame === 0) frame = window.requestAnimationFrame(update)
+    }
     const observer = new IntersectionObserver(([entry]) => {
-      setShow(entry !== undefined && !entry.isIntersecting && window.scrollY > 300)
+      formInView = entry !== undefined && entry.isIntersecting
+      update()
     })
     observer.observe(target)
-    return () => observer.disconnect()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      if (frame !== 0) window.cancelAnimationFrame(frame)
+    }
   }, [])
 
   if (!data.bookable) return null

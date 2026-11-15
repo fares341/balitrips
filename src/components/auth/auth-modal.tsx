@@ -31,7 +31,7 @@
  * whole auth client in the shell bundle.
  */
 
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 
 import { Button, Modal } from '@/components/shared'
@@ -229,6 +229,13 @@ export function AuthModal({
   const [formError, setFormError] = useState<string | null>(null)
   const [pending, setPending] = useState<Pending>(null)
   const [forgotSubmitted, setForgotSubmitted] = useState(false)
+  /** Seconds before «send again» is offered (the server throttles resets). */
+  const [resendIn, setResendIn] = useState(0)
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const id = window.setTimeout(() => setResendIn((s) => s - 1), 1000)
+    return () => window.clearTimeout(id)
+  }, [resendIn])
 
   /*
    * Reopening the dialog must not show the previous attempt's errors, the
@@ -456,6 +463,7 @@ export function AuthModal({
     }
 
     setForgotSubmitted(true)
+    setResendIn(60)
   }
 
   const startSocial = async (provider: SocialProviderId) => {
@@ -562,7 +570,15 @@ export function AuthModal({
           flexWrap: 'wrap',
         }}
       >
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            cursor: 'pointer',
+            minHeight: 44,
+          }}
+        >
           <input
             type="checkbox"
             checked={rememberMe}
@@ -590,6 +606,9 @@ export function AuthModal({
             cursor: 'pointer',
             fontSize: 13.5,
             padding: 0,
+            display: 'inline-flex',
+            alignItems: 'center',
+            minHeight: 44,
           }}
         >
           {t('auth_forgot_link')}
@@ -818,7 +837,21 @@ export function AuthModal({
       <FormError messageKey={formError} />
 
       {forgotSubmitted ? (
-        <FormNotice>{t('auth_sent')}</FormNotice>
+        <>
+          <FormNotice>{t('auth_sent')}</FormNotice>
+          {/* Delivery is not instant and can land in spam: say what to check,
+              and offer a second send once the throttle window has passed. */}
+          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+            {t('auth_sent_help')}
+          </p>
+          <Button type="submit" variant="ghost" block disabled={busy || resendIn > 0}>
+            {pending === 'email'
+              ? t('co_sending')
+              : resendIn > 0
+                ? t('auth_sent_retry_in', { s: resendIn })
+                : t('auth_sent_retry')}
+          </Button>
+        </>
       ) : (
         <>
           <IdentifierField
@@ -855,6 +888,7 @@ export function AuthModal({
           alignItems: 'center',
           gap: 6,
           alignSelf: 'start',
+          minHeight: 44,
         }}
       >
         {/*

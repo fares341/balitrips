@@ -70,7 +70,9 @@ export function PageBanner({
           <Breadcrumbs trail={trail} light label={breadcrumbLabel} />
         )}
 
-        {tag !== undefined && (
+        {/* A pill that only repeats the title (and the last breadcrumb) is
+            noise: «Tour packages › Tour packages › Tour packages». */}
+        {tag !== undefined && tag.trim() !== title.trim() && (
           <span
             className="tag"
             style={{ background: 'var(--orange)', color: 'var(--on-orange)', width: 'fit-content' }}

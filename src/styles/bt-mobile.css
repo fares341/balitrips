@@ -37,13 +37,17 @@
      while the visitor scrolls down; they come back on the first scroll up.
      Same slide as `data-fab='aside'` (bt.css). */
   body[data-fab-scroll='down'] .wa-fab,
-  body[data-fab-scroll='down'] .ai-fab {
+  body[data-fab-scroll='down'] .ai-fab,
+  body[data-fab-typing] .wa-fab,
+  body[data-fab-typing] .ai-fab {
     transform: translateX(calc(-100% - 24px));
     opacity: 0;
     pointer-events: none;
   }
   [dir='ltr'] body[data-fab-scroll='down'] .wa-fab,
-  [dir='ltr'] body[data-fab-scroll='down'] .ai-fab {
+  [dir='ltr'] body[data-fab-scroll='down'] .ai-fab,
+  [dir='ltr'] body[data-fab-typing] .wa-fab,
+  [dir='ltr'] body[data-fab-typing] .ai-fab {
     transform: translateX(calc(100% + 24px));
   }
 
@@ -107,5 +111,214 @@ html {
   }
   .tabbar a:active {
     transform: scale(0.92);
+  }
+}
+
+/* ---------- Scroll smoothness (full QA, Nov 2026) ----------------------
+   `backdrop-filter` re-blurs everything behind an element on every frame
+   that content moves under it: the fixed tab bar and the sticky section bar
+   while the page scrolls, the hero chips while the video plays, and a glass
+   tag on every card of a list. On a 4x-throttled phone this was the main
+   cost of a fling; iOS Safari is worse still. Each of these already had a
+   near-opaque or tinted background, so the blur is swapped for a slightly
+   denser tint: same look, no per-frame blur. */
+.tabbar,
+.act3 .anav {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.tabbar {
+  background: rgba(255, 251, 248, 0.985);
+}
+.act3 .anav {
+  background: rgba(255, 251, 248, 0.985);
+}
+/* Over the hero video (every video frame re-blurred). */
+.home-v3 .hv-place,
+.home-v3 .hv-pause,
+.home-v3 .hv-cap,
+.home-v3 .hv-info-i {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.home-v3 .hv-place {
+  background: rgba(10, 30, 16, 0.36);
+}
+.home-v3 .hv-info-i,
+.home-v3 .hv-cap {
+  background: rgba(10, 30, 16, 0.42);
+}
+/* Card tags and glass buttons over photos (one per card in every list). */
+.tag-glass {
+  background: rgba(19, 48, 26, 0.7);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (hover: none) {
+  .btn-glass {
+    --bg: rgba(10, 30, 16, 0.3);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .act3 .mgal-play-btn {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* ---------- Prices never break (full QA, Nov 2026) ----------------------
+   «≈ $53.33» wrapped after the «≈» in the 320px booking summary, leaving
+   the sign alone on one line and the amount on the next. An amount is one
+   word; figures are tabular so totals and add-on prices line up. */
+.price,
+.bt-money,
+.bk-price b,
+.cmp-price {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.price.price-ask,
+.cmp-price.cmp-ask {
+  white-space: normal;
+}
+.sum-total > span,
+.sum-row > span:first-child {
+  min-width: 0;
+}
+.sum-total > b,
+.sum-row > .price {
+  flex-shrink: 0;
+}
+
+/* ---------- Touch targets and small print (full QA, Nov 2026) ----------
+   Measured on every page at 320–430px: small buttons were 40px tall, the
+   header language button 34px wide, the package stepper sat 7px above
+   «Book now», and the footer card badges were 11px. */
+@media (pointer: coarse) {
+  .btn-sm,
+  .chip,
+  .seg button {
+    min-height: 44px;
+  }
+  .fav-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .home-v3 .about-more,
+  .stack > a.link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .ftr nav ul a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .hdr .lang-btn {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+.pqty {
+  margin-bottom: 4px;
+  /* «Number of groups (two people per group)» wrapped to three lines beside
+     the stepper on a phone: a long label takes the row, the stepper goes
+     under it. */
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+.pqty > small {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  .hdr-start {
+    gap: 8px;
+  }
+  /* The logo link filled its whole grid track, so its tap area touched the
+     language button (1px apart at 390px): it now hugs the logo. */
+  .hdr-top {
+    gap: 8px;
+  }
+  .hdr .hdr-logo {
+    width: auto;
+  }
+}
+/* 320px: menu + language (44px each, 8px apart) need a slightly smaller
+   logo to stay clear of it. */
+@media (max-width: 359px) {
+  .hdr .hdr-logo {
+    padding-inline: 0;
+  }
+  .hdr .hdr-logo img {
+    height: 24px !important;
+  }
+}
+.pay-row span {
+  font-size: 12px;
+}
+.tabbar a {
+  font-size: 12px;
+}
+
+/* ---------- Desktop floating buttons: round once reading (full QA) --------
+   At 1280–1440px the two labelled pills (~180px wide) sat on the content at
+   the inline-end edge: the «Compare packages» button, card prices, the hero's
+   clip tabs. On the first screen they keep their labels; once the page is
+   scrolled (`data-fab-compact` on <body>, fab-scroll.tsx) they are 52px
+   circles, and the label comes back on hover or keyboard focus. */
+@media (min-width: 1024px) {
+  body[data-fab-compact] .wa-fab:not(:hover):not(:focus-visible),
+  body[data-fab-compact] .ai-fab:not(:hover):not(:focus-visible) {
+    width: 52px;
+    padding-inline: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  body[data-fab-compact] .wa-fab:not(:hover):not(:focus-visible) .wa-fab-label,
+  body[data-fab-compact] .ai-fab:not(:hover):not(:focus-visible) .ai-fab-label {
+    display: none;
+  }
+}
+
+/* ---------- 12px floor for small print (full QA, Nov 2026) --------------
+   Counts in filter chips, per-unit labels under add-on prices, badges and
+   table notes were 11–11.7px: hard to read on a phone, and smaller than the
+   same labels elsewhere on the page. */
+.chip .ct,
+.ad-price small,
+.itp-badge,
+.ihw-labels span,
+td small {
+  font-size: 12px;
+}
+
+/* ---------- Tablets (iPad: 1024px wide, touch) (full QA, Nov 2026) -------
+   The phone rules stop at 1023px, so on an iPad the header currency select
+   was 13px (Safari zooms the page into it on focus) and the footer phone /
+   e-mail links were 25px tall, 6px apart. */
+@media (pointer: coarse) {
+  .currency-select {
+    font-size: 16px;
+  }
+  .ftr-contact a,
+  .ftr .soc a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+.ftr-contact {
+  gap: 8px;
+}
+/* Desktop footer links were 16px tall: 24px is the WCAG 2.2 minimum target
+   (phones and tablets already have 44px). */
+@media (min-width: 1024px) and (pointer: fine) {
+  .ftr ul a,
+  .ftr-pay-label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
   }
 }

@@ -2605,6 +2605,12 @@ html:has(.act3 .anav) {
   min-width: 0;
   max-width: 100%;
 }
+/* The booking form stays a readable 760px column on wide screens: the rule
+   above (0,2,0, later) had overridden `.booksec .bk`, so on a 1440px screen
+   the calendar, «Book now» and «Add to trip» ran 1,160px wide (full QA). */
+.act3 .booksec > .bk {
+  max-width: min(760px, 100%);
+}
 
 /* «Price on request» where a package has no price (never «0»). */
 .price.price-ask {
@@ -2818,4 +2824,45 @@ html:has(.act3 .anav) {
 .act-detail .crumbs,
 .act-hub .crumbs {
   padding-block: 4px;
+}
+
+/* Chosen package's price under the package <select> (full QA, Nov 2026). */
+.bk .bk-pkg-price {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.bk .bk-pkg-price .price {
+  font: 800 16px var(--f-en);
+  color: var(--forest);
+}
+
+/* «From … per person» under the activity title (full QA, Nov 2026). */
+.act3 .ahero-price {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 44px;
+  margin-block: 0;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+}
+.act3 .ahero-price small {
+  font-size: 13px;
+}
+.act3 .ahero-price .price {
+  font: 800 22px var(--f-en);
+  color: var(--forest);
+}
+.act3 .ahero-price .price.price-ask {
+  font: 700 17px var(--f);
+}
+.bk .bk-pkg-price small {
+  font-size: 13px;
 }

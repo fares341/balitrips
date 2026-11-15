@@ -122,12 +122,16 @@ export default async function PackagesPage({
             light
             trail={[{ label: t('c_home'), href: HOME_HREF }, { label: t('svc_pkg_t') }]}
           />
-          <span
-            className="tag"
-            style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
-          >
-            {t('tp_eyebrow')}
-          </span>
+          {/* The pill said the title again («Tour packages» ×3 with the
+              breadcrumb): shown only when it adds something. */}
+          {t('tp_eyebrow').trim() !== t('ph_title').trim() && (
+            <span
+              className="tag"
+              style={{ background: 'var(--orange)', color: '#fff', width: 'fit-content' }}
+            >
+              {t('tp_eyebrow')}
+            </span>
+          )}
           <h1 className="bt-banner-title">{t('ph_title')}</h1>
           <p className="bt-banner-sub">{t('ph_sub')}</p>
         </div>

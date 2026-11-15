@@ -526,7 +526,9 @@ h3 {
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: 15px;
+  /* 16px: iOS Safari zooms the page into any field under 16px on focus */
+  font-size: 16px;
+  min-height: 32px;
   color: var(--forest);
 }
 
@@ -1689,6 +1691,7 @@ select.bt-mchip option {
 .bt-auth-tabs button {
   border: 0;
   background: transparent;
+  min-height: 44px;
   padding: 9px 20px;
   border-radius: 999px;
   font-weight: 700;
