@@ -53,7 +53,8 @@ export function ResetPasswordForm({ socialProviders = [] }: ResetPasswordFormPro
   const [done, setDone] = useState(false)
   const [signInOpen, setSignInOpen] = useState(false)
 
-  const linkIsDead = token === null || token === '' || callbackError !== null
+  const [expired, setExpired] = useState(false)
+  const linkIsDead = token === null || token === '' || callbackError !== null || expired
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -78,7 +79,11 @@ export function ResetPasswordForm({ socialProviders = [] }: ResetPasswordFormPro
     setPending(false)
 
     if (error) {
-      setFormError(authErrorKey(error))
+      const key = authErrorKey(error)
+      // Expired or already used: the form can never succeed with this link,
+      // so show the «request a new link» screen instead of the same form.
+      if (key === 'auth_reset_bad') setExpired(true)
+      else setFormError(key)
       return
     }
 
@@ -106,7 +111,7 @@ export function ResetPasswordForm({ socialProviders = [] }: ResetPasswordFormPro
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <FormError messageKey="auth_reset_bad" />
         <Button type="button" variant="orange" onClick={() => setSignInOpen(true)}>
-          {t('auth_send_btn')}
+          {t('auth_reset_request_new')}
         </Button>
         <Link href={ACCOUNT_HREF} style={{ color: 'var(--orange-ink)', fontWeight: 700 }}>
           {t('auth_back')}

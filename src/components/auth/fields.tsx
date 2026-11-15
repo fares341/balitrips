@@ -177,11 +177,11 @@ export function TextField({
             disabled={disabled}
             style={{
               position: 'absolute',
-              insetInlineEnd: 6,
+              insetInlineEnd: 4,
               top: '50%',
               transform: 'translateY(-50%)',
-              width: 36,
-              height: 36,
+              width: 44,
+              height: 44,
               display: 'grid',
               placeItems: 'center',
               border: 0,
