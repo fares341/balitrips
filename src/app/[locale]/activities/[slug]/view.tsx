@@ -29,6 +29,7 @@ import { ART_H, ART_SMALL_URL, ART_SMALL_W, ART_W, geoToArt } from '../../map/ar
 import {
   BookingBox,
   BookingProvider,
+  HeroPrice,
   InfoBoxes,
   MobileBookBar,
   PackageCards,
@@ -485,6 +486,7 @@ export async function ActivityView({
                   <span className="muted">{t('act_rev_count_paren', { n: reviews.length })}</span>
                 </p>
               ) : null}
+              <HeroPrice />
               {lede ? <p className="lede act-lede">{lede}</p> : null}
               {quick.length > 0 ? (
                 <ul className={`qfacts2 n${quick.length}`} aria-label={t('act_sec_details')}>

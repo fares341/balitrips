@@ -1696,11 +1696,15 @@ body:has(> .tabbar) {
   text-align: center;
   font-weight: 700;
   color: var(--forest);
-  padding: 6px 0 10px;
+  /* clear of the two 44px month arrows, which sit over this line */
+  padding: 6px 40px 10px;
 }
 .cal-g {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr): a day never forces its column wider than the panel
+     (1fr's floor is the 44px day, so at 320px the week overflowed by ~70px
+     and the first column was cut off — full QA, Nov 2026). */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px 0;
 }
 .cal-g .dw {
@@ -1711,13 +1715,14 @@ body:has(> .tabbar) {
   padding-bottom: 6px;
 }
 .cd {
-  aspect-ratio: 1;
-  /* Never under 44px tall, however narrow the column gets on a phone. */
-  min-height: 44px;
-  max-height: 44px;
+  /* 44px tall, as wide as its column: a circle where there is room, a soft
+     capsule on the narrowest phones. Never under 44px tall. */
+  width: 100%;
+  min-width: 0;
+  height: 44px;
   border: 0;
   background: transparent;
-  border-radius: 50%;
+  border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);

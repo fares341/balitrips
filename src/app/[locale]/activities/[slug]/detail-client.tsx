@@ -212,6 +212,9 @@ export function Gallery({
                 key={image.id}
                 type="button"
                 aria-pressed={active === i}
+                // A photo with no alt text left the button nameless for screen
+                // readers and keyboard users (full QA, Nov 2026).
+                aria-label={image.alt ? undefined : t('mx4_photo', { i: i + 1, n: images.length })}
                 onClick={() => {
                   setActive(i)
                   setPlaying(false)
