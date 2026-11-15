@@ -1610,6 +1610,13 @@ html[dir='ltr'] .home-v3 .rm-track > li {
     min-height: max(400px, calc(100svh - var(--hdr-h) - var(--tabbar-h) - var(--safe-b)));
   }
 }
+/* Under 640px tall the two floating buttons sit side by side (bt-mobile.css):
+   the clip tabs stop short of both, not just one. */
+@media (max-width: 999px) and (max-height: 640px) {
+  .home-v3 .hv-tabs {
+    inset-inline-end: calc(16px + 52px + 10px + 52px + 10px);
+  }
+}
 /* Small print over the video stays legible: 12px floor. */
 .home-v3 .hv-info-l {
   font-size: 12px;

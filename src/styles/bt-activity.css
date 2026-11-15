@@ -2844,13 +2844,17 @@ html:has(.act3 .anav) {
 /* «From … per person» under the activity title (full QA, Nov 2026). */
 .act3 .ahero-price {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-block: 2px 4px;
+  min-height: 44px;
+  margin-block: 0;
   color: var(--muted);
   text-decoration: none;
   font-size: 14px;
+}
+.act3 .ahero-price small {
+  font-size: 13px;
 }
 .act3 .ahero-price .price {
   font: 800 22px var(--f-en);

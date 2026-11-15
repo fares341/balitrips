@@ -204,7 +204,8 @@ html {
     width: 44px;
     height: 44px;
   }
-  .home-v3 .about-more {
+  .home-v3 .about-more,
+  .stack > a.link {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -236,12 +237,23 @@ html {
   .hdr-start {
     gap: 8px;
   }
+  /* The logo link filled its whole grid track, so its tap area touched the
+     language button (1px apart at 390px): it now hugs the logo. */
+  .hdr-top {
+    gap: 8px;
+  }
+  .hdr .hdr-logo {
+    width: auto;
+  }
 }
 /* 320px: menu + language (44px each, 8px apart) need a slightly smaller
    logo to stay clear of it. */
 @media (max-width: 359px) {
+  .hdr .hdr-logo {
+    padding-inline: 0;
+  }
   .hdr .hdr-logo img {
-    height: 25px !important;
+    height: 24px !important;
   }
 }
 .pay-row span {
