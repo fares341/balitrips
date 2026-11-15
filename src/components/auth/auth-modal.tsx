@@ -888,6 +888,7 @@ export function AuthModal({
           alignItems: 'center',
           gap: 6,
           alignSelf: 'start',
+          minHeight: 44,
         }}
       >
         {/*
