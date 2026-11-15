@@ -103,6 +103,11 @@
   --hdr-h: 64px;
   /* Height of the mobile bottom tab bar (without the safe-area inset). */
   --tabbar-h: 64px;
+  /* Bottom clearance for the iPhone home indicator. The full inset (34px)
+     left a blank strip under the tab bar, most visibly in Chrome on iOS,
+     which reports it even while its own toolbar sits below the page. 18px
+     still keeps labels clear of the indicator. */
+  --safe-b: max(0px, calc(env(safe-area-inset-bottom, 0px) - 16px));
 
   /* =====================================================================
      Aliases: pre-v3 names → v3 values. Do not give these their own values.

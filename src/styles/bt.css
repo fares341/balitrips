@@ -1050,8 +1050,7 @@ a.card:hover .card-media img {
   transition: transform var(--d-slow) var(--ease);
   display: flex;
   flex-direction: column;
-  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px
-    calc(env(safe-area-inset-bottom, 0px) + 20px);
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(var(--safe-b) + 20px);
   overflow-y: auto;
 }
 [dir='ltr'] .drawer {
@@ -1084,7 +1083,7 @@ a.card:hover .card-media img {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--safe-b);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
 }
@@ -1125,7 +1124,7 @@ a.card:hover .card-media img {
   padding: 0 4px;
 }
 body:has(> .tabbar) {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(64px + var(--safe-b));
 }
 @media (min-width: 1024px) {
   .tabbar {
@@ -1321,7 +1320,7 @@ body:has(> .tabbar) {
   position: fixed;
   z-index: var(--z-toast);
   inset-inline: 16px;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(80px + var(--safe-b));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1502,7 +1501,7 @@ body:has(> .tabbar) {
   overflow-y: auto;
   background: var(--ivory);
   border-radius: 24px 24px 0 0;
-  padding: 22px 20px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding: 22px 20px calc(22px + var(--safe-b));
   transform: translateY(40px);
   transition: transform var(--d-slow) var(--ease);
 }
@@ -1995,7 +1994,7 @@ body:has(> .tabbar) {
   /* `--fab-lift`: set on <body> by a page whose own bar is fixed to the bottom
      (the activity book bar, the itinerary buy bar), so the button floats above
      that bar instead of on top of its price or its button. */
-  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + var(--safe-b));
   width: 52px;
   height: 52px;
   border-radius: 50%;

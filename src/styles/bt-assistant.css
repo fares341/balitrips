@@ -9,9 +9,7 @@
   z-index: calc(var(--z-tabbar) - 1);
   inset-inline-end: 16px;
   /* Above the WhatsApp button (52px + 12px gap), which sits above the tab bar. */
-  bottom: calc(
-    var(--tabbar-h) + 16px + 64px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px)
-  );
+  bottom: calc(var(--tabbar-h) + 16px + 64px + var(--fab-lift, 0px) + var(--safe-b));
   width: 52px;
   height: 52px;
   border: 0;
@@ -43,7 +41,7 @@
   display: none;
 }
 .ai-fab.is-solo {
-  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + 16px + var(--fab-lift, 0px) + var(--safe-b));
 }
 @media (min-width: 1024px) {
   .ai-fab {
@@ -425,7 +423,7 @@
   border-top: 1px solid var(--line-soft);
   background: var(--white);
   padding: 10px 12px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(10px + var(--safe-b));
 }
 @media (min-width: 641px) {
   .ai-foot {

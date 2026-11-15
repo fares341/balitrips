@@ -726,7 +726,7 @@
 .itp-mbar {
   position: fixed;
   inset-inline: 0;
-  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h) + var(--safe-b));
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;

@@ -1036,7 +1036,7 @@ select.bt-mchip option {
     border-radius: 20px 20px 0 0;
     z-index: var(--z-modal);
     /* Clears the home indicator on iOS rather than hiding content behind it. */
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--safe-b);
   }
 
   /* More of the photo, now that there is room for it. */

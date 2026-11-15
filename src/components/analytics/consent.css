@@ -4,7 +4,7 @@
 .bt-consent {
   position: fixed;
   inset-inline: 12px;
-  bottom: calc(var(--tabbar-h, 64px) + 12px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--tabbar-h, 64px) + 12px + var(--safe-b));
   z-index: calc(var(--z-header, 60) + 1);
   display: flex;
   justify-content: center;

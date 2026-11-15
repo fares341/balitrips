@@ -500,7 +500,7 @@
   position: fixed;
   inset-inline: 0;
   /* Above the site's mobile tab bar, like the activity page's .mbar. */
-  inset-block-end: calc(var(--tabbar-h, 64px) + env(safe-area-inset-bottom, 0px));
+  inset-block-end: calc(var(--tabbar-h, 64px) + var(--safe-b));
   z-index: 56;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

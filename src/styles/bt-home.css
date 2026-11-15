@@ -1561,10 +1561,7 @@ html[dir='ltr'] .home-v3 .rm-track > li {
     padding-top: 56px;
   }
   .home-v3 .hv-grid {
-    min-height: max(
-      500px,
-      calc(100svh - var(--hdr-h) - var(--tabbar-h) - env(safe-area-inset-bottom, 0px))
-    );
+    min-height: max(500px, calc(100svh - var(--hdr-h) - var(--tabbar-h) - var(--safe-b)));
   }
   /* Clip tabs stop short of the floating chat buttons' column. */
   .home-v3 .hv-tabs {

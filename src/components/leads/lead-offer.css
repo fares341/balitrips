@@ -17,7 +17,7 @@
   background: var(--ivory, #fffbf8);
   color: var(--ink, #1c2a1f);
   border-radius: 22px 22px 0 0;
-  padding: 28px 20px calc(20px + env(safe-area-inset-bottom));
+  padding: 28px 20px calc(20px + var(--safe-b));
   box-shadow: 0 -12px 40px rgba(19, 48, 26, 0.18);
   border-top: 5px solid var(--orange, #ff9000);
   animation: lo-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
