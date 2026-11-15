@@ -13,7 +13,6 @@ import { ErrorBeacon } from '@/components/monitoring/error-beacon'
 import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import { FabScroll } from '@/components/layout/fab-scroll'
 import { Motion } from '@/components/layout/motion'
-import { PreloaderHead, PreloaderHost } from '@/components/layout/preloader'
 import { ContactProvider } from '@/components/layout/contact-context'
 import { getContact } from '@/components/layout/contact-server'
 import { hiddenHrefs } from '@/lib/content/public-sections'
@@ -52,8 +51,6 @@ import '@/styles/bt-home.css'
 import '@/styles/bt-assistant.css'
 // Phone polish: safe areas, footer, floating buttons, press feedback, reveal.
 import '@/styles/bt-mobile.css'
-// «Bali Trips» preloader overlay (first page of a visit; see the component).
-import '@/styles/bt-preloader.css'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
@@ -145,11 +142,8 @@ export default async function LocaleLayout({
         />
         {/* Cookie banner before first paint, for visitors with no stored choice. */}
         <script dangerouslySetInnerHTML={{ __html: consentBootScript() }} />
-        {/* «Bali Trips» preloader: first page of a visit only (see the component). */}
-        <PreloaderHead />
       </head>
       <body>
-        <PreloaderHost />
         <NextIntlClientProvider messages={pickClientMessages(messages)}>
           <ContactProvider value={contact}>
             <CurrencyProvider rates={fx.rates} supported={fx.presentment}>
