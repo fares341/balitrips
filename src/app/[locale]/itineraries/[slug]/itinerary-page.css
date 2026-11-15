@@ -847,3 +847,18 @@
     display: none;
   }
 }
+
+/* One price face across the site (full QA, Nov 2026): activity cards, the
+   booking box and the book bar set amounts in the Latin display face at 800;
+   the itinerary's price pill, options and buy bar used the Arabic text face at
+   700, so the same «100 SAR» looked like two different numbers. */
+.itp-from strong,
+.itp-opt-price strong,
+.itp-mbar-price strong {
+  font-family: var(--f-en);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.itp-mbar-price strong {
+  font-size: 20px;
+}
