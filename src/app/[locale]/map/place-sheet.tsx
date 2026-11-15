@@ -31,6 +31,7 @@ import type { ResultPlace } from '@/lib/map/explore'
 import { smallestRung } from '@/lib/media/fallback'
 import {
   dragIntent,
+  PHONE_STOPS,
   scrollsInside,
   snapAfterDrag,
   stopOffsets,
@@ -245,7 +246,13 @@ export function PlaceSheet({
       if (stop === 'peek' && !d.onControl) onSnap('half')
       return
     }
-    const next = snapAfterDrag(d.from, offsets[d.from] + (event.clientY - d.startY), d.v, offsets)
+    const next = snapAfterDrag(
+      d.from,
+      offsets[d.from] + (event.clientY - d.startY),
+      d.v,
+      offsets,
+      PHONE_STOPS,
+    )
     if (next === 'closed') onClose()
     else onSnap(next)
   }

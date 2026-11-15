@@ -1,14 +1,17 @@
 /**
  * Camera decisions for the public map, as pure functions (the component only
- * measures the screen and calls MapLibre). Owner, Nov 2026: tapping one pin
- * and then another must never throw the view far away or zoom it out.
+ * measures the screen and calls MapLibre). Owner, Nov 2026 (iPhone video:
+ * every card swipe flew across the whole island and zoomed into empty sea):
  *
- *   - a pin tap keeps the zoom and only moves when the pin is hidden under the
- *     chrome (header, cards, the place sheet); from far out it zooms in a
- *     little, never out;
- *   - a filter change only re-frames when none of the new results is on screen
- *     (an area pick always frames its area);
- *   - every move is short (300–500 ms) and instant with reduced motion.
+ *   - the camera never zooms in on its own (only a cluster tap, the visitor's
+ *     own pinch, and a `?place=` deep link do);
+ *   - a pin tap or a card swipe only moves when that pin is hidden under the
+ *     chrome (header, cards, the place sheet), and then by a short pan;
+ *   - a swipe to a far pin zooms out just enough to keep the way there in
+ *     view, and never lands on an empty view (`planGlide`);
+ *   - a filter change only re-frames when none of the new results is on
+ *     screen (an area pick always frames its area);
+ *   - every move is short (300–450 ms) and instant with reduced motion.
  */
 
 import type { SheetStop } from './sheet-state'
@@ -31,18 +34,12 @@ export interface Point {
   y: number
 }
 
-/** Below this zoom the island is «far out»: a tapped pin zooms in a little. */
-export const FAR_OUT_ZOOM = 9.5
-/** How much a tap from far out zooms in (moderate, never more than this). */
-export const TAP_ZOOM_STEP = 2
-/** A tap never zooms in beyond this on its own. */
-export const TAP_ZOOM_CAP = 11
 /** The drawn pin's height above its tip (the selected one is the largest). */
 export const PIN_HEAD_PX = 40
 /** Breathing room between a pin and the edge of the open area. */
 export const EDGE_PX = 16
 export const MIN_MS = 300
-export const MAX_MS = 500
+export const MAX_MS = 450
 /** Side room on phones (the island fills the width). */
 export const SIDE_PX = 16
 
@@ -67,7 +64,7 @@ export function pinVisible(point: Point, view: Size, insets: Insets): boolean {
   )
 }
 
-/** Short and calm: 300 ms for a nudge, up to 500 ms across the island. */
+/** Short and calm: 300 ms for a nudge, up to 450 ms for the longest move. */
 export function moveDuration(
   distancePx: number,
   zoomDelta: number,
@@ -85,32 +82,81 @@ export interface PinMove {
 }
 
 /**
- * A pin was selected (tap, card, sheet stop change, back/forward). Null means
- * «leave the camera alone». The zoom only ever goes up, and only from far out.
+ * A pin was selected for the sheet (card tap, sheet stop change, back /
+ * forward). Null means «leave the camera alone». It never changes the zoom:
+ * a pin the visitor can already see stays where it is, a hidden one is panned
+ * into the middle of the open area.
  */
 export function planPinMove(input: {
   point: Point
   zoom: number
-  maxZoom: number
   view: Size
   insets: Insets
   reducedMotion: boolean
 }): PinMove | null {
-  const { point, zoom, maxZoom, view, insets, reducedMotion } = input
-  const far = zoom < FAR_OUT_ZOOM
-  const visible = pinVisible(point, view, insets)
-  if (visible && !far) return null
-  const target = far
-    ? Math.min(maxZoom, Math.max(zoom, Math.min(TAP_ZOOM_CAP, zoom + TAP_ZOOM_STEP)))
-    : zoom
+  const { point, zoom, view, insets, reducedMotion } = input
+  if (pinVisible(point, view, insets)) return null
   const area = openArea(view, insets)
   const cx = (area.left + area.right) / 2
   const cy = (area.top + area.bottom) / 2
+  return { zoom, duration: moveDuration(Math.hypot(point.x - cx, point.y - cy), 0, reducedMotion) }
+}
+
+/** A swipe pans at most this many open-area sizes before it zooms out. */
+export const GLIDE_PAN_SCREENS = 1.2
+/** Other pins that must stay in view around the one a swipe lands on. */
+export const CONTEXT_PINS = 2
+
+/**
+ * A card swipe (or a pin tap) selected the pin at `point`. Null: the pin is
+ * in view, so only the highlight changes and the map stays still.
+ *
+ * Otherwise the camera pans to it. A far pin (more than ~1 screen away) is
+ * reached with a zoom-out of just the extra distance, so the move stays one
+ * short ease instead of a long flight at street zoom; and the view it lands
+ * on keeps at least `CONTEXT_PINS` other pins around the selected one (never
+ * one lone pin in the sea). The zoom only ever goes down, never under
+ * `minZoom` (the whole island).
+ *
+ * `others`: the other places' pins, in map-box pixels at the current zoom.
+ */
+export function planGlide(input: {
+  point: Point
+  zoom: number
+  minZoom: number
+  view: Size
+  insets: Insets
+  others: readonly Point[]
+  reducedMotion: boolean
+}): PinMove | null {
+  const { point, zoom, view, insets, others, reducedMotion } = input
+  const minZoom = Math.min(input.minZoom, zoom)
+  if (pinVisible(point, view, insets)) return null
+  const area = openArea(view, insets)
+  const w = Math.max(1, area.right - area.left)
+  const h = Math.max(1, area.bottom - area.top)
+  const cx = (area.left + area.right) / 2
+  const cy = (area.top + area.bottom) / 2
   const distance = Math.hypot(point.x - cx, point.y - cy)
-  return {
-    zoom: Math.max(zoom, target),
-    duration: moveDuration(distance, target - zoom, reducedMotion),
+  let target = zoom
+  const reach = GLIDE_PAN_SCREENS * Math.max(w, h)
+  if (distance > reach) target = zoom - Math.log2(distance / reach)
+  // Context: enough other pins inside the open area once the pin is centred.
+  const inView = (z: number) => {
+    const k = 2 ** (z - zoom)
+    let n = 0
+    for (const other of others) {
+      const dx = (other.x - point.x) * k
+      const dy = (other.y - point.y) * k
+      if (Math.abs(dx) <= w / 2 - EDGE_PX && dy <= h / 2 && -dy <= h / 2 - PIN_HEAD_PX) n += 1
+    }
+    return n
   }
+  const wanted = Math.min(CONTEXT_PINS, others.length)
+  while (target > minZoom && inView(target) < wanted) target -= 0.5
+  target = Math.max(minZoom, Math.min(zoom, target))
+  target = Math.round(target * 100) / 100
+  return { zoom: target, duration: moveDuration(distance, zoom - target, reducedMotion) }
 }
 
 /**

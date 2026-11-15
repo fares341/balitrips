@@ -2947,3 +2947,249 @@ ul.mx4-near small {
 :where(.cat-glyph) svg {
   opacity: 0.95;
 }
+
+/* ==========================================================================
+   Map v6 (owner, 15 Nov 2026 — iPhone video: «no smoothness at all»).
+   A clear title, one surface at a time on phones, smooth hand-offs.
+   ========================================================================== */
+
+/* ---- header: back · «Bali interactive map» + count · List ------------- */
+.mx3-bar {
+  /* Equal outer columns keep the title centred whatever the buttons' width. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 58px;
+  padding: 6px 12px 2px;
+}
+.mx3-bar > .mx3-back {
+  justify-self: start;
+}
+.mx3-bar > .mx6-view {
+  justify-self: end;
+}
+.mx3 .mx3-back {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  background: var(--ivory-2, #f6f0e9);
+  color: var(--forest-deep, #1b3f22);
+}
+.mx3 .mx3-back:hover {
+  background: var(--ivory-3, #ede5db);
+}
+.mx6-titles {
+  min-width: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+.mx3 .mx3-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+  color: var(--forest-deep, #1b3f22);
+}
+.mx6-sub {
+  margin: 2px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted, #5f6e62);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mx6-sub::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange, #ff9000);
+}
+.mx6-view {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line, rgba(38, 85, 46, 0.16));
+  border-radius: 999px;
+  background: #fff;
+  color: var(--forest-deep, #1b3f22);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.mx6-view[aria-pressed='true'] {
+  background: var(--forest-deep, #1b3f22);
+  border-color: var(--forest-deep, #1b3f22);
+  color: #fff;
+}
+/* 44px tap targets around the 40px header buttons. */
+.mx3 .mx3-back::before,
+.mx6-view::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+@media (max-width: 359px) {
+  /* iPhone SE (1st gen) / small Android: icon-only list button. */
+  .mx6-view span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .mx6-view {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .mx3 .mx3-title {
+    font-size: 15.5px;
+  }
+}
+
+/* ---- filter chips: one smooth sideways row ------------------------------ */
+.mx3-chips {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  padding-top: 6px;
+}
+.mx3-chip {
+  min-height: 40px;
+}
+
+/* ---- the cards: one surface at a time ---------------------------------- */
+/* The cards make way for the place sheet (fade + slide), and come back only
+   once the sheet has mostly gone: never two surfaces at once. */
+.mx3-bottom {
+  transition:
+    opacity 0.2s ease 0.14s,
+    transform 0.26s var(--ease, ease) 0.14s,
+    visibility 0s linear 0s;
+}
+.mx3-bottom[data-hidden] {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(28px);
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    transform 0.2s ease,
+    visibility 0s linear 0.2s;
+}
+.mx3-bottom[data-hidden] > * {
+  pointer-events: none;
+}
+.mx3-carousel {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+.mx3-card {
+  border: 2px solid transparent;
+  transition:
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+.mx3-card.is-on {
+  border-color: var(--forest-deep, #1b3f22);
+  box-shadow: 0 10px 26px rgba(19, 48, 26, 0.24);
+}
+.mx3-card-desc {
+  font-size: 13px;
+}
+.mx6-more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  background: var(--forest-deep, #1b3f22);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+[dir='rtl'] .mx6-more {
+  padding: 3px 10px 3px 6px;
+}
+
+/* The place sheet glides on the compositor only (no repaint while moving). */
+.mx4-sheet {
+  backface-visibility: hidden;
+}
+.mx4-body[data-scroll] {
+  -webkit-overflow-scrolling: touch;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mx3-bottom,
+  .mx3-bottom[data-hidden],
+  .mx3-card,
+  .mx6-view {
+    transition: none;
+  }
+}
+
+/* ---- phone on its side: the map keeps room to be seen ------------------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .mx3-bar {
+    min-height: 44px;
+    padding-block: 2px 0;
+  }
+  .mx6-sub {
+    display: none;
+  }
+  .mx3 .mx3-title {
+    font-size: 15px;
+  }
+  .mx3 .mx3-back,
+  .mx6-view {
+    height: 36px;
+  }
+  .mx3 .mx3-back {
+    width: 36px;
+  }
+  .mx3 .mx3-back::before,
+  .mx6-view::before {
+    inset: -4px;
+  }
+  .mx3-chips {
+    padding-block: 2px 6px;
+  }
+  .mx3-chip {
+    min-height: 34px;
+  }
+  .mx3-card {
+    height: 92px;
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .mx3-card .mx3-thumb {
+    width: 80px;
+  }
+  .mx3-card-body {
+    padding-block: 6px;
+  }
+  .mx3-card-desc {
+    -webkit-line-clamp: 1;
+  }
+  .mx3-skeleton {
+    height: 92px;
+  }
+  .mx3-bottom {
+    padding-bottom: 6px;
+  }
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DRAG_SLOP,
+  PHONE_STOPS,
   SHEET_CLOSED,
   dragIntent,
   scrollsInside,
@@ -76,6 +77,29 @@ describe('sheet state machine', () => {
     expect(scrollsInside('full')).toBe(true)
     expect(scrollsInside('half')).toBe(false)
     expect(scrollsInside('peek')).toBe(false)
+  })
+})
+
+describe('phone sheet: one surface at a time (no peek)', () => {
+  const offsets = stopOffsets(800)
+  it('a pull down from half closes it (the cards come back), never stops at peek', () => {
+    // Released just above the old peek stop, slowly.
+    expect(snapAfterDrag('half', offsets.peek - 10, 0, offsets, PHONE_STOPS)).toBe('closed')
+    expect(snapAfterDrag('half', offsets.peek, 0.9, offsets, PHONE_STOPS)).toBe('closed')
+  })
+  it('a pull up from half goes full; a short pull stays at half', () => {
+    expect(snapAfterDrag('half', offsets.half - 40, -0.9, offsets, PHONE_STOPS)).toBe('full')
+    expect(snapAfterDrag('half', offsets.half - 20, 0, offsets, PHONE_STOPS)).toBe('half')
+  })
+  it('a flick down from full lands on half', () => {
+    expect(snapAfterDrag('full', 40, 0.9, offsets, PHONE_STOPS)).toBe('half')
+  })
+  it('never returns a stop it was not given', () => {
+    for (const y of [0, 100, 300, 500, 700, 900]) {
+      for (const v of [-2, -0.6, 0, 0.6, 2]) {
+        expect(PHONE_STOPS).toContain(snapAfterDrag('half', y, v, offsets, PHONE_STOPS))
+      }
+    }
   })
 })
 

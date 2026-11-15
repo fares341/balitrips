@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  FAR_OUT_ZOOM,
+  CONTEXT_PINS,
   MAX_MS,
   MIN_MS,
   PIN_HEAD_PX,
-  TAP_ZOOM_CAP,
   areaOfKey,
   moveDuration,
   openArea,
   pinVisible,
+  planGlide,
   planPinMove,
   sheetCover,
   planFilterView,
@@ -46,10 +46,12 @@ describe('pinVisible', () => {
 })
 
 describe('planPinMove', () => {
-  const base = { maxZoom: 18, view, insets: peek, reducedMotion: false }
+  const base = { view, insets: peek, reducedMotion: false }
 
-  it('leaves the camera alone for a visible pin at a normal zoom', () => {
+  it('leaves the camera alone for a visible pin, at any zoom', () => {
     expect(planPinMove({ ...base, point: { x: 200, y: 200 }, zoom: 12 })).toBeNull()
+    // Owner video: a tap from the whole island used to zoom in by 2.
+    expect(planPinMove({ ...base, point: { x: 200, y: 200 }, zoom: 7.96 })).toBeNull()
   })
 
   it('pans without zooming when the pin is under the sheet', () => {
@@ -58,31 +60,13 @@ describe('planPinMove', () => {
     expect(move!.zoom).toBe(13.4)
   })
 
-  it('zooms in moderately from far out, never past the cap', () => {
-    const move = planPinMove({ ...base, point: { x: 200, y: 200 }, zoom: 7.96 })
-    expect(move!.zoom).toBeCloseTo(9.96)
-    const close = planPinMove({ ...base, point: { x: 200, y: 200 }, zoom: 9.2 })
-    expect(close!.zoom).toBe(TAP_ZOOM_CAP)
-  })
-
-  it('a second tap after zooming in from the island does not zoom again', () => {
-    const first = planPinMove({ ...base, point: { x: 200, y: 200 }, zoom: 7.96 })
-    expect(first!.zoom).toBeGreaterThanOrEqual(FAR_OUT_ZOOM)
-    expect(planPinMove({ ...base, point: { x: 220, y: 230 }, zoom: first!.zoom })).toBeNull()
-  })
-
-  it('never zooms out', () => {
-    for (const zoom of [5, 8, FAR_OUT_ZOOM - 0.01, FAR_OUT_ZOOM, 12, 16]) {
+  it('never changes the zoom', () => {
+    for (const zoom of [5, 8, 9.5, 12, 16]) {
       for (const y of [10, 200, 460]) {
         const move = planPinMove({ ...base, point: { x: 200, y }, zoom })
-        if (move) expect(move.zoom).toBeGreaterThanOrEqual(zoom)
+        if (move) expect(move.zoom).toBe(zoom)
       }
     }
-  })
-
-  it('respects the max zoom', () => {
-    const move = planPinMove({ ...base, maxZoom: 9, point: { x: 200, y: 200 }, zoom: 8 })
-    expect(move!.zoom).toBe(9)
   })
 
   it('is instant with reduced motion', () => {
@@ -98,8 +82,82 @@ describe('planPinMove', () => {
   })
 })
 
+describe('planGlide (card swipe)', () => {
+  // The open area of `view` with `peek`: x 16–374, y 24–322 (358 × 298).
+  const base = { view, insets: peek, reducedMotion: false, minZoom: 8 }
+  /** A few pins around (dx, dy) from `p`, so the landing view has company. */
+  const around = (p: { x: number; y: number }) => [
+    { x: p.x + 40, y: p.y + 10 },
+    { x: p.x - 50, y: p.y - 20 },
+    { x: p.x + 10, y: p.y + 60 },
+  ]
+
+  it('does not move the map while the next pin is in view', () => {
+    const point = { x: 120, y: 200 }
+    expect(planGlide({ ...base, point, zoom: 10, others: around(point) })).toBeNull()
+  })
+
+  it('a near pin off screen: one short pan, same zoom', () => {
+    const point = { x: 520, y: 180 }
+    const move = planGlide({ ...base, point, zoom: 11, others: around(point) })
+    expect(move).not.toBeNull()
+    expect(move!.zoom).toBe(11)
+    expect(move!.duration).toBeGreaterThanOrEqual(MIN_MS)
+    expect(move!.duration).toBeLessThanOrEqual(MAX_MS)
+  })
+
+  it('a far pin (owner video: Canggu → Gilimanuk at street zoom): zooms out, no long flight', () => {
+    // ~6 screens away at zoom 12.
+    const point = { x: 195 - 2400, y: 173 - 600 }
+    const move = planGlide({ ...base, point, zoom: 12, others: around(point) })
+    expect(move!.zoom).toBeLessThan(12)
+    // Seen from the new zoom, the pin is at most ~1.2 screens from the centre.
+    const k = 2 ** (move!.zoom - 12)
+    expect(Math.hypot(2400, 600) * k).toBeLessThanOrEqual(1.2 * 358 + 1)
+    expect(move!.duration).toBeLessThanOrEqual(MAX_MS)
+  })
+
+  it('never lands on an empty view: zooms out until other pins show', () => {
+    const point = { x: 520, y: 180 }
+    // The only other pins are ~500px away at zoom 12 (one lone pin in the sea).
+    const others = [
+      { x: 520 + 500, y: 180 },
+      { x: 520 - 520, y: 180 + 40 },
+    ]
+    const move = planGlide({ ...base, point, zoom: 12, others })
+    expect(move!.zoom).toBeLessThan(12)
+    const k = 2 ** (move!.zoom - 12)
+    const seen = others.filter((o) => Math.abs((o.x - point.x) * k) <= 358 / 2)
+    expect(seen.length).toBeGreaterThanOrEqual(Math.min(CONTEXT_PINS, others.length))
+  })
+
+  it('never zooms in, and never out past the whole island', () => {
+    for (const zoom of [8, 9, 11, 14]) {
+      for (const x of [-9000, -600, 500, 9000]) {
+        const point = { x, y: 170 }
+        const move = planGlide({ ...base, point, zoom, others: [] })
+        if (move) {
+          expect(move.zoom).toBeLessThanOrEqual(zoom)
+          expect(move.zoom).toBeGreaterThanOrEqual(Math.min(8, zoom))
+        }
+      }
+    }
+  })
+
+  it('is instant with reduced motion', () => {
+    const move = planGlide({
+      ...base,
+      reducedMotion: true,
+      point: { x: 900, y: 170 },
+      zoom: 11,
+      others: [],
+    })
+    expect(move!.duration).toBe(0)
+  })
+})
+
 describe('moveDuration', () => {
-  it('stays within 300–500 ms', () => {
+  it('stays within 300–450 ms', () => {
     expect(moveDuration(0, 0, false)).toBe(MIN_MS)
     expect(moveDuration(100000, 6, false)).toBe(MAX_MS)
     expect(moveDuration(300, 0, true)).toBe(0)
