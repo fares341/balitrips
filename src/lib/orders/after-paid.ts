@@ -10,7 +10,7 @@
  *  4. the coupon use is counted and the invoice number issued (phase 4).
  *  5. the server analytics events (purchase, payment, VIP, booking request —
  *     phase 5), with ids derived from the rows so a replay writes nothing.
- *  6. the customer's confirmation email and voucher are queued in the same
+ *  6. the customer's confirmation email, voucher and invoice are queued in the same
  *     transaction, deduplicated with the reconcile sweep (paid-paperwork.ts).
  *  7. bought itineraries are delivered by e-mail and WhatsApp (itineraries/delivery.ts).
  */

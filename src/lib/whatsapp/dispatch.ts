@@ -32,7 +32,24 @@ import {
   templateValues,
   type AutomationKey,
 } from './automations'
-import { createProvider, type SendResult } from './providers'
+import {
+  ensureInvoiceRender,
+  INVOICE_POLL_SECONDS,
+  INVOICE_WAIT_MS,
+  invoiceStep,
+  loadInvoiceFile,
+  readInvoiceState,
+  WHATSAPP_DOCUMENT_MAX_BYTES,
+  type InvoiceFile,
+  type InvoiceStep,
+} from '@/lib/pdf/invoice-delivery'
+
+import {
+  createProvider,
+  type OutgoingDocument,
+  type OutgoingMessage,
+  type SendResult,
+} from './providers'
 import {
   automationTemplate,
   automationText,
@@ -137,6 +154,7 @@ async function loadOrder(orderId: string) {
       userId: orders.userId,
       totalMinor: orders.totalMinor,
       currency: orders.presentmentCurrency,
+      invoiceNumber: orders.invoiceNumber,
       snapshot: orders.customerSnapshot,
       userPhone: users.phone,
       userName: users.name,
@@ -234,10 +252,17 @@ export async function triggerOrderAutomation(
       return
     }
 
-    if (!isAutomationOn(settings, key)) return
+    // The payment message goes out as `payment_success` or, with the invoice
+    // PDF, as `payment_invoice` — one row either way (decided at delivery).
+    const on =
+      key === 'payment_success'
+        ? isAutomationOn(settings, 'payment_success') || isAutomationOn(settings, 'payment_invoice')
+        : isAutomationOn(settings, key)
+    if (!on) return
     const vars: Record<string, string> = {
       ...base,
       amount: formatMoney(order.totalMinor, order.currency, locale),
+      ...(key === 'payment_success' ? { invoice: order.invoiceNumber ?? '' } : {}),
     }
     const dedupe = [key, orderId, options.itemId ?? '', options.suffix ?? '']
       .filter((part) => part !== '')
@@ -294,15 +319,170 @@ export async function triggerCustomItineraryReady(requestId: string): Promise<vo
 
 export async function sendWithSettings(
   settings: WhatsappSettings,
-  message: { to: string; text: string; locale: Locale; template: string | null; params: string[] },
+  message: OutgoingMessage,
 ): Promise<{ provider: string; result: SendResult }> {
   const creds = await resolveCredentials(settings)
   const provider = createProvider(creds)
   return { provider: provider.name, result: await provider.send(message) }
 }
 
+/* ---------------- The payment message (with the invoice PDF) ---------------- */
+
+/**
+ * The payment message is ONE row (`payment_success:<order>`), sent one of two
+ * ways — never both:
+ *
+ *  - `payment_invoice` (template with a DOCUMENT header) carrying the invoice
+ *    PDF, when that automation is on, has an approved template for the
+ *    customer's language, and the PDF is ready within `INVOICE_WAIT_MS` of
+ *    the payment and is at most 5 MB;
+ *  - otherwise `payment_success` (no header), the fallback — a template with a
+ *    document header cannot be sent without the document.
+ *
+ * While the PDF is being rendered the job re-queues itself every
+ * `INVOICE_POLL_SECONDS`. Pure.
+ */
+export type PaymentPlan =
+  | { kind: 'invoice' }
+  | { kind: 'wait'; afterSeconds: number }
+  | { kind: 'plain'; reason: string }
+  | { kind: 'skip'; reason: string }
+
+export function planPaymentMessage(input: {
+  /** `payment_invoice` on and an approved template for this language. */
+  invoiceUsable: boolean
+  /** `payment_success` on. */
+  plainOn: boolean
+  /** Where the invoice stands (null when not usable). */
+  step: InvoiceStep | null
+}): PaymentPlan {
+  const fallback = (reason: string): PaymentPlan =>
+    input.plainOn
+      ? { kind: 'plain', reason }
+      : { kind: 'skip', reason: `payment_success_off:${reason}` }
+  if (!input.invoiceUsable || input.step === null) return fallback('invoice_off')
+  switch (input.step.action) {
+    case 'attach':
+      return { kind: 'invoice' }
+    case 'wait':
+      return { kind: 'wait', afterSeconds: input.step.afterSeconds }
+    case 'without':
+      return fallback(input.step.reason)
+  }
+}
+
+export interface DeliveryHooks {
+  /** Run this message's job again later (the worker's own boss). */
+  requeue?: (messageId: string, afterSeconds: number) => Promise<string | null>
+  /** Make sure the order's invoice render is queued. */
+  renderInvoice?: (orderId: string) => Promise<unknown>
+  now?: () => Date
+}
+
+interface PreparedSend {
+  key: AutomationKey
+  text: string
+  template: string | null
+  params: string[]
+  document: OutgoingDocument | null
+}
+
+type Row = typeof whatsappMessages.$inferSelect
+
+/** The payment row: what to send now, or null when it waits / is skipped. */
+async function preparePaymentMessage(
+  row: Row,
+  settings: WhatsappSettings,
+  locale: Locale,
+  hooks: DeliveryHooks,
+): Promise<PreparedSend | null> {
+  const now = hooks.now?.() ?? new Date()
+  const invoiceTemplate = automationTemplate(settings, 'payment_invoice', locale)
+  const invoiceUsable =
+    row.orderId !== null && isAutomationOn(settings, 'payment_invoice') && invoiceTemplate !== null
+  const state = invoiceUsable && row.orderId ? await readInvoiceState(row.orderId) : null
+  let plan = planPaymentMessage({
+    invoiceUsable,
+    plainOn: isAutomationOn(settings, 'payment_success'),
+    step:
+      state === null ? null : invoiceStep(state, row.createdAt, now, WHATSAPP_DOCUMENT_MAX_BYTES),
+  })
+
+  let file: InvoiceFile | null = null
+  if (plan.kind === 'invoice' && row.orderId) {
+    file = await loadInvoiceFile(row.orderId, WHATSAPP_DOCUMENT_MAX_BYTES)
+    if (file === null) {
+      // Recorded as rendered but not readable (storage hiccup, or over 5 MB).
+      plan =
+        now.getTime() - row.createdAt.getTime() < INVOICE_WAIT_MS
+          ? { kind: 'wait', afterSeconds: INVOICE_POLL_SECONDS }
+          : planPaymentMessage({
+              invoiceUsable: false,
+              plainOn: isAutomationOn(settings, 'payment_success'),
+              step: null,
+            })
+    }
+  }
+
+  if (plan.kind === 'wait' && row.orderId) {
+    await ensureInvoiceRender(row.orderId, hooks.renderInvoice)
+    // Keep the stale-row sweep away from a row that is only waiting.
+    await db
+      .update(whatsappMessages)
+      .set({ updatedAt: new Date() })
+      .where(eq(whatsappMessages.id, row.id))
+    const requeue =
+      hooks.requeue ??
+      (async (messageId: string, afterSeconds: number) => {
+        const { enqueueWaAuto } = await import('@/worker/queues')
+        return enqueueWaAuto({ messageId }, { startAfterSeconds: afterSeconds })
+      })
+    const job = await requeue(row.id, plan.afterSeconds)
+    // No follow-up job: let pg-boss retry this one rather than lose the message.
+    if (job === null) throw new Error('WhatsApp payment message: could not re-queue the wait')
+    return null
+  }
+
+  if (plan.kind === 'skip') {
+    await db
+      .update(whatsappMessages)
+      .set({ status: 'skipped', error: plan.reason.slice(0, 500), updatedAt: new Date() })
+      .where(eq(whatsappMessages.id, row.id))
+    return null
+  }
+
+  if (plan.kind === 'invoice' && file !== null) {
+    const vars = { ...row.vars, invoice: file.invoiceNumber }
+    return {
+      key: 'payment_invoice',
+      text: renderText(automationText(settings, 'payment_invoice', locale), vars),
+      template: invoiceTemplate,
+      params: templateValues('payment_invoice', vars),
+      document: { bytes: file.bytes, filename: file.filename },
+    }
+  }
+
+  if (plan.kind === 'plain' && plan.reason !== 'invoice_off') {
+    console.info('[whatsapp] payment message sent without the invoice', {
+      messageId: row.id,
+      orderId: row.orderId,
+      reason: plan.reason,
+    })
+  }
+  return {
+    key: 'payment_success',
+    text: row.body ?? '',
+    template: automationTemplate(settings, 'payment_success', locale),
+    params: templateValues('payment_success', row.vars),
+    document: null,
+  }
+}
+
 /** pg-boss `whatsapp.auto`. Throws only for a retryable provider failure. */
-export async function deliverWhatsappMessage(messageId: string): Promise<void> {
+export async function deliverWhatsappMessage(
+  messageId: string,
+  hooks: DeliveryHooks = {},
+): Promise<void> {
   const [row] = await db
     .select()
     .from(whatsappMessages)
@@ -319,19 +499,34 @@ export async function deliverWhatsappMessage(messageId: string): Promise<void> {
     return
   }
   const locale = messageLocale(row.locale)
+  const prepared: PreparedSend | null =
+    key === 'payment_success' || key === 'payment_invoice'
+      ? await preparePaymentMessage(row, settings, locale, hooks)
+      : {
+          key,
+          text: row.body ?? '',
+          template: automationTemplate(settings, key, locale),
+          params: templateValues(key, row.vars),
+          document: null,
+        }
+  if (prepared === null) return
   const attempts = row.attempts + 1
   const { provider, result } = await sendWithSettings(settings, {
     to: row.toPhone,
-    text: row.body ?? '',
+    text: prepared.text,
     locale,
-    template: automationTemplate(settings, key, locale),
-    params: templateValues(key, row.vars),
+    template: prepared.template,
+    params: prepared.params,
+    document: prepared.document,
   })
   if (result.ok) {
     await db
       .update(whatsappMessages)
       .set({
         status: 'sent',
+        // The log shows which of the two payment messages went out.
+        automation: prepared.key,
+        body: prepared.text,
         provider,
         providerMessageId: result.messageId,
         error: null,
@@ -441,7 +636,7 @@ export async function runWhatsappSweep(): Promise<Record<string, number>> {
         and o.created_at <= now() - make_interval(mins => ${minutes})
         and o.created_at > now() - interval '24 hours'
         and not exists (select 1 from whatsapp_messages w where w.order_id = o.id
-          and w.automation in ('payment_incomplete','payment_failed','payment_success'))
+          and w.automation in ('payment_incomplete','payment_failed','payment_success','payment_invoice'))
       limit 200`)
     for (const order of due) await triggerOrderAutomation('payment_incomplete', order.id)
     counts.payment_incomplete = due.length

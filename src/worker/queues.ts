@@ -533,8 +533,15 @@ export async function enqueueEmail(job: EmailJob): Promise<string | null> {
   return enqueue(QUEUES.email, job)
 }
 
-export async function enqueueWaAuto(job: WaAutoJob): Promise<string | null> {
-  return enqueue(QUEUES.waAuto, job)
+export async function enqueueWaAuto(
+  job: WaAutoJob,
+  options: { startAfterSeconds?: number } = {},
+): Promise<string | null> {
+  return enqueue(
+    QUEUES.waAuto,
+    job,
+    options.startAfterSeconds === undefined ? {} : { startAfter: options.startAfterSeconds },
+  )
 }
 
 export async function enqueueWhatsapp(job: WhatsappJob): Promise<string | null> {
@@ -570,8 +577,25 @@ export async function enqueueVoucherPdf(orderId: string): Promise<string | null>
   return enqueuePdf({ kind: 'voucher', orderId })
 }
 
-export async function enqueueInvoicePdf(orderId: string): Promise<string | null> {
-  return enqueuePdf({ kind: 'invoice', orderId })
+/**
+ * `throttled`: at most one render job per order per 30 minutes, under the key
+ * the reconcile sweep and the paid-order paperwork use (`invoice:<id>`) — for
+ * senders that poll while they wait for the PDF.
+ */
+export async function enqueueInvoicePdf(
+  orderId: string,
+  options: { throttled?: boolean } = {},
+): Promise<string | null> {
+  return enqueue(
+    QUEUES.pdf,
+    { kind: 'invoice', orderId },
+    {
+      group: { id: 'chromium' },
+      ...(options.throttled === true
+        ? { singletonKey: `invoice:${orderId}`, singletonSeconds: 30 * 60 }
+        : {}),
+    },
+  )
 }
 
 export async function enqueueReportPdf(exportId: string): Promise<string | null> {

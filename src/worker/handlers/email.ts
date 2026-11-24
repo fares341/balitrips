@@ -38,7 +38,17 @@ import {
   type OrderEmailLine,
 } from '@/lib/email'
 
+import {
+  EMAIL_ATTACHMENT_MAX_BYTES,
+  INVOICE_THROTTLE_SECONDS,
+  invoiceJobKey,
+  invoiceStep,
+  loadInvoiceFile,
+  readInvoiceState,
+} from '@/lib/pdf/invoice-delivery'
+
 import type { EmailJob } from '../queues'
+import type { WorkerContext } from './context'
 
 const AUDIT_ACTION = 'email.sent'
 
@@ -133,12 +143,12 @@ async function recordSent(
    Handler
    -------------------------------------------------------------------------- */
 
-export async function handleEmailJob(job: EmailJob): Promise<void> {
+export async function handleEmailJob(job: EmailJob, context?: WorkerContext): Promise<void> {
   switch (job.kind) {
     case 'welcome':
       return sendWelcome(job.userId, job.verifyUrl)
     case 'order_confirmation':
-      return sendOrderConfirmation(job.orderId)
+      return sendOrderConfirmation(job.orderId, context)
     case 'refund_notice':
       return sendRefundNotice(job.orderId, job.refundId)
     case 'notification': {
@@ -194,7 +204,45 @@ async function sendWelcome(userId: string, verifyUrl: string | undefined): Promi
 /** Statuses for which a confirmation is meaningful. */
 const CONFIRMABLE = new Set(['paid', 'confirmed', 'partially_refunded'])
 
-async function sendOrderConfirmation(orderId: string): Promise<void> {
+/**
+ * The invoice PDF for the confirmation e-mail. The PDF is rendered by the
+ * worker right after the payment (queued with this e-mail), so it is usually
+ * missing for a few seconds: then this job re-queues itself (`INVOICE_POLL_SECONDS`)
+ * until it exists, for at most `INVOICE_WAIT_MS` after the invoice was issued,
+ * and then sends without it. Returns 'deferred' when a later job will send.
+ */
+export async function confirmationInvoice(
+  orderId: string,
+  context: WorkerContext | undefined,
+): Promise<{ filename: string; bytes: Uint8Array } | null | 'deferred'> {
+  const state = await readInvoiceState(orderId)
+  const step = invoiceStep(
+    state,
+    state.invoicedAt ?? new Date(0),
+    new Date(),
+    EMAIL_ATTACHMENT_MAX_BYTES,
+  )
+  if (step.action === 'without') return null
+  if (step.action === 'attach') {
+    const file = await loadInvoiceFile(orderId, EMAIL_ATTACHMENT_MAX_BYTES)
+    return file === null ? null : { filename: file.filename, bytes: file.bytes }
+  }
+  // Waiting needs the worker's queue; without one (a direct call) send now.
+  if (context === undefined) return null
+  await context.enqueuePdf(
+    { kind: 'invoice', orderId },
+    { throttleKey: invoiceJobKey(orderId), throttleSeconds: INVOICE_THROTTLE_SECONDS },
+  )
+  // No singleton key: the paperwork's `order_confirmation:<id>` window would
+  // swallow it. `alreadySent` still guards against a double send.
+  const next = await context.enqueueEmail(
+    { kind: 'order_confirmation', orderId },
+    { startAfterSeconds: step.afterSeconds },
+  )
+  return next === null ? null : 'deferred'
+}
+
+async function sendOrderConfirmation(orderId: string, context?: WorkerContext): Promise<void> {
   const [order] = await db
     .select({
       id: orders.id,
@@ -273,7 +321,27 @@ async function sendOrderConfirmation(orderId: string): Promise<void> {
   })
 
   if (isPlaceholderEmail(recipient)) return
-  const result = await sendEmail({ to: recipient, ...rendered })
+
+  let invoice: Awaited<ReturnType<typeof confirmationInvoice>> = null
+  try {
+    invoice = await confirmationInvoice(orderId, context)
+  } catch (error) {
+    // The attachment is a bonus; the confirmation is not.
+    console.error('[email] invoice attachment unavailable', { orderId, error })
+  }
+  if (invoice === 'deferred') return
+
+  const result = await sendEmail({
+    to: recipient,
+    ...rendered,
+    ...(invoice === null
+      ? {}
+      : {
+          attachments: [
+            { filename: invoice.filename, content: invoice.bytes, contentType: 'application/pdf' },
+          ],
+        }),
+  })
   if (!result.delivered) {
     throw new Error(`Order confirmation not delivered: ${result.error ?? 'unknown'}`)
   }

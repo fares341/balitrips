@@ -16,7 +16,7 @@
  * all — a fake context records what would have been enqueued.
  */
 
-import type { EmailJob, PdfJob } from '../queues'
+import type { EmailJob, PdfJob, WaAutoJob } from '../queues'
 
 export interface EnqueueOptions {
   /**
@@ -30,10 +30,13 @@ export interface EnqueueOptions {
    */
   throttleKey?: string
   throttleSeconds?: number
+  /** Run the job no earlier than this many seconds from now (a sender polling for a file). */
+  startAfterSeconds?: number
 }
 
 export interface WorkerContext {
   /** Returns the new job id, or null when throttled or the insert failed. */
   enqueueEmail(job: EmailJob, options?: EnqueueOptions): Promise<string | null>
   enqueuePdf(job: PdfJob, options?: EnqueueOptions): Promise<string | null>
+  enqueueWaAuto(job: WaAutoJob, options?: EnqueueOptions): Promise<string | null>
 }
