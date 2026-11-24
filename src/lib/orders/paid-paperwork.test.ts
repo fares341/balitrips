@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
   confirmationKey,
+  invoiceKey,
   queuePaidPaperwork,
   toSql,
   voucherKey,
@@ -36,14 +37,14 @@ function singletonSender(): PaperworkSender & { jobs: Array<{ queue: string; key
 }
 
 describe('queuePaidPaperwork', () => {
-  it('queues the confirmation email and the voucher once, with the sweep’s keys', async () => {
+  it('queues the confirmation email, the voucher and the invoice once, with the sweep’s keys', async () => {
     const sender = singletonSender()
     const send = vi.spyOn(sender, 'send')
     const tx = fakeTx()
 
     const created = await queuePaidPaperwork(tx as never, 'o1', sender)
 
-    expect(created).toBe(2)
+    expect(created).toBe(3)
     expect(send).toHaveBeenCalledWith(
       'email',
       { kind: 'order_confirmation', orderId: 'o1' },
@@ -54,6 +55,11 @@ describe('queuePaidPaperwork', () => {
       { kind: 'voucher', orderId: 'o1' },
       expect.objectContaining({ singletonKey: 'voucher:o1', singletonSeconds: 1800 }),
     )
+    expect(send).toHaveBeenCalledWith(
+      'pdf',
+      { kind: 'invoice', orderId: 'o1' },
+      expect.objectContaining({ singletonKey: 'invoice:o1', singletonSeconds: 1800 }),
+    )
     // Inside a savepoint of the payment transaction.
     expect(tx.transaction).toHaveBeenCalledTimes(1)
   })
@@ -63,7 +69,7 @@ describe('queuePaidPaperwork', () => {
     await queuePaidPaperwork(fakeTx() as never, 'o1', sender)
     const again = await queuePaidPaperwork(fakeTx() as never, 'o1', sender)
     expect(again).toBe(0)
-    expect(sender.jobs).toHaveLength(2)
+    expect(sender.jobs).toHaveLength(3)
     expect(sender.jobs.filter((job) => job.key === confirmationKey('o1'))).toHaveLength(1)
   })
 
@@ -71,6 +77,7 @@ describe('queuePaidPaperwork', () => {
     // src/worker/handlers/reconcile.ts throttles on these exact strings.
     expect(confirmationKey('abc')).toBe('order_confirmation:abc')
     expect(voucherKey('abc')).toBe('voucher:abc')
+    expect(invoiceKey('abc')).toBe('invoice:abc')
   })
 
   it('never throws into the payment transaction', async () => {

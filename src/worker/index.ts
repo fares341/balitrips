@@ -60,6 +60,7 @@ import { handleSystemMonitor } from './handlers/monitor'
 import { handleSecurityPruneJob } from './handlers/security'
 import type { EnqueueOptions, WorkerContext } from './handlers/context'
 import { handleEmailJob } from './handlers/email'
+import { INVOICE_THROTTLE_SECONDS, invoiceJobKey } from '@/lib/pdf/invoice-delivery'
 import { deliverWhatsappMessage, runWhatsappSweep } from '@/lib/whatsapp/dispatch'
 import { handlePdfJob } from './handlers/pdf'
 import { handleReconcileJob } from './handlers/reconcile'
@@ -552,6 +553,10 @@ function createContext(boss: PgBoss): WorkerContext {
     sendOptions: object,
     enqueueOptions: EnqueueOptions | undefined,
   ): Promise<string | null> {
+    const options =
+      enqueueOptions?.startAfterSeconds === undefined
+        ? sendOptions
+        : { ...sendOptions, startAfter: enqueueOptions.startAfterSeconds }
     try {
       if (
         enqueueOptions?.throttleKey !== undefined &&
@@ -563,12 +568,12 @@ function createContext(boss: PgBoss): WorkerContext {
         return await boss.sendThrottled(
           queue,
           data,
-          sendOptions,
+          options,
           enqueueOptions.throttleSeconds,
           enqueueOptions.throttleKey,
         )
       }
-      return await boss.send(queue, data, sendOptions)
+      return await boss.send(queue, data, options)
     } catch (error) {
       // A handler that could not fan out has still done its own work; the
       // next scheduled sweep will try again.
@@ -582,6 +587,7 @@ function createContext(boss: PgBoss): WorkerContext {
     // Every PDF job carries the chromium group id, which is what makes
     // `groupConcurrency: 1` a cluster-wide cap rather than a local one.
     enqueuePdf: (job, options) => send(QUEUES.pdf, job, { group: { id: 'chromium' } }, options),
+    enqueueWaAuto: (job, options) => send(QUEUES.waAuto, job, {}, options),
   }
 }
 
@@ -663,7 +669,7 @@ async function main(): Promise<void> {
 
   const context = createContext(boss)
 
-  await register(boss, QUEUES.email, emailJobSchema, (job) => handleEmailJob(job))
+  await register(boss, QUEUES.email, emailJobSchema, (job) => handleEmailJob(job, context))
   await register(boss, QUEUES.pdf, pdfJobSchema, (job) => handlePdfJob(job, context))
   await register(boss, QUEUES.reconcile, reconcileJobSchema, (job) =>
     handleReconcileJob(job, context),
@@ -671,7 +677,16 @@ async function main(): Promise<void> {
   await register(boss, QUEUES.capacity, capacityJobSchema, (job) => handleCapacityJob(job))
   await register(boss, QUEUES.whatsapp, whatsappJobSchema, (job) => handleWhatsappJob(job))
   await register(boss, QUEUES.waAuto, waAutoJobSchema, (job) =>
-    deliverWhatsappMessage(job.messageId),
+    deliverWhatsappMessage(job.messageId, {
+      // Waiting for the invoice PDF: check again later / make sure it renders.
+      requeue: (messageId, afterSeconds) =>
+        context.enqueueWaAuto({ messageId }, { startAfterSeconds: afterSeconds }),
+      renderInvoice: (orderId) =>
+        context.enqueuePdf(
+          { kind: 'invoice', orderId },
+          { throttleKey: invoiceJobKey(orderId), throttleSeconds: INVOICE_THROTTLE_SECONDS },
+        ),
+    }),
   )
   await register(boss, QUEUES.waSweep, waSweepJobSchema, () => runWhatsappSweep())
   await register(boss, QUEUES.notifySweep, notifySweepJobSchema, (job) => handleNotifySweep(job))

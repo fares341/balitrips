@@ -33,9 +33,9 @@ import { BRAND } from './itinerary'
 import { invoicePdfHtml, type VoucherPdfLine } from './templates'
 import { adjustmentWords } from './voucher'
 
-export function invoiceObjectKey(orderId: string, locale: Locale): string {
-  return `invoices/${orderId}/${locale}.pdf`
-}
+import { invoiceObjectKey } from './invoice-delivery'
+
+export { invoiceObjectKey }
 
 export class InvoiceError extends Error {
   constructor(

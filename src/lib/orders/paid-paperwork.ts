@@ -1,6 +1,6 @@
 /**
- * The customer's paperwork for a paid order — the `order_confirmation` email
- * and the voucher PDF — queued at the paid transition itself, inside the
+ * The customer's paperwork for a paid order — the `order_confirmation` email,
+ * the voucher PDF and the invoice PDF — queued at the paid transition itself, inside the
  * transaction that records the money.
  *
  * Before this, only the reconcile sweep queued them, so a customer waited up
@@ -28,12 +28,21 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 /** Same windows as `queueFollowUps` in src/worker/handlers/reconcile.ts. */
 export const CONFIRMATION_THROTTLE_SECONDS = 15 * 60
 export const VOUCHER_THROTTLE_SECONDS = 30 * 60
+export const INVOICE_THROTTLE_SECONDS = 30 * 60
 
 export function confirmationKey(orderId: string): string {
   return `order_confirmation:${orderId}`
 }
 export function voucherKey(orderId: string): string {
   return `voucher:${orderId}`
+}
+/**
+ * The invoice render, queued at payment so the PDF exists (usually within
+ * seconds) when the confirmation e-mail and the WhatsApp payment message go
+ * out with it attached (src/lib/pdf/invoice-delivery.ts).
+ */
+export function invoiceKey(orderId: string): string {
+  return `invoice:${orderId}`
 }
 
 /** Minimal executor pg-boss accepts as `db`: runs its SQL on our transaction. */
@@ -86,7 +95,7 @@ async function defaultSender(): Promise<PaperworkSender> {
 }
 
 /**
- * Queue the confirmation email and the voucher for `orderId`. Never throws.
+ * Queue the confirmation email, the voucher and the invoice for `orderId`. Never throws.
  * Returns how many jobs were created (0 when a singleton already existed).
  */
 export async function queuePaidPaperwork(
@@ -118,7 +127,16 @@ export async function queuePaidPaperwork(
           db: executor,
         },
       )
-      created = (email ? 1 : 0) + (voucher ? 1 : 0)
+      const invoice = await out.send(
+        'pdf',
+        { kind: 'invoice', orderId },
+        {
+          singletonKey: invoiceKey(orderId),
+          singletonSeconds: INVOICE_THROTTLE_SECONDS,
+          db: executor,
+        },
+      )
+      created = (email ? 1 : 0) + (voucher ? 1 : 0) + (invoice ? 1 : 0)
     })
   } catch (error) {
     console.error('[orders] could not queue paid-order paperwork; the sweep will', {

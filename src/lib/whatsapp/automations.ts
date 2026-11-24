@@ -21,6 +21,7 @@ export const AUTOMATION_KEYS = [
   'booking_confirmed',
   'booking_cancelled',
   'payment_success',
+  'payment_invoice',
   'payment_incomplete',
   'payment_failed',
   'itinerary_purchased',
@@ -79,6 +80,20 @@ export const AUTOMATIONS: Record<AutomationKey, AutomationSpec> = {
       ar: 'مرحبًا {name}،\nتم استلام دفعتك بقيمة {amount} بنجاح للطلب #{order}.\n\nشكرًا لثقتك بمنصة Bali Trips.',
       en: 'Hello {name},\nWe have received your payment of {amount} for order #{order}.\n\nThank you for trusting Bali Trips.',
       id: 'Halo {name},\nPembayaran Anda sebesar {amount} untuk pesanan #{order} telah kami terima.\n\nTerima kasih atas kepercayaan Anda kepada Bali Trips.',
+    },
+  },
+  /**
+   * The payment message WITH the invoice PDF as the template's DOCUMENT
+   * header. Not a second message: it replaces `payment_success` for the same
+   * payment (one row, one dedupe key) when the PDF is ready in time — see
+   * `deliverPaymentMessage` in ./dispatch.ts.
+   */
+  payment_invoice: {
+    vars: ['name', 'amount', 'order', 'invoice'],
+    defaults: {
+      ar: 'مرحبًا {name}،\nتم استلام دفعتك بقيمة {amount} بنجاح للطلب #{order}.\n\nمرفق فاتورتك رقم {invoice}.\n\nشكرًا لثقتك بمنصة Bali Trips.',
+      en: 'Hello {name},\nWe have received your payment of {amount} for order #{order}.\n\nYour invoice {invoice} is attached.\n\nThank you for trusting Bali Trips.',
+      id: 'Halo {name},\nPembayaran Anda sebesar {amount} untuk pesanan #{order} telah kami terima.\n\nFaktur Anda {invoice} terlampir.\n\nTerima kasih atas kepercayaan Anda kepada Bali Trips.',
     },
   },
   payment_incomplete: {

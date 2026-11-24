@@ -81,7 +81,11 @@ const section: Section = {
     'wa.a_booking_cancelled': 'Booking cancelled',
     'wa.w_booking_cancelled': 'When a booking is cancelled or its card hold released.',
     'wa.a_payment_success': 'Payment successful',
-    'wa.w_payment_success': 'Only after the payment gateway confirms the payment.',
+    'wa.w_payment_success':
+      'Only after the payment gateway confirms the payment. Also the fallback of «Payment successful + invoice PDF» when the invoice is not ready within 10 minutes (or is over 5 MB). The customer gets one of the two, never both.',
+    'wa.a_payment_invoice': 'Payment successful + invoice PDF',
+    'wa.w_payment_invoice':
+      'Replaces «Payment successful» once the invoice PDF is ready (usually seconds after the payment; waits up to 10 minutes). Needs an approved template with a DOCUMENT header (Utility) per language — {invoice} is the invoice number; the PDF is attached as Bali-Trips-Invoice-<number>.pdf. Without a template id for the customer’s language, «Payment successful» is sent instead.',
     'wa.a_payment_incomplete': 'Payment incomplete',
     'wa.w_payment_incomplete': 'When an order stays unpaid for the set time (default 1 hour).',
     'wa.a_payment_failed': 'Payment failed',
@@ -180,7 +184,11 @@ const section: Section = {
     'wa.a_booking_cancelled': 'إلغاء الحجز',
     'wa.w_booking_cancelled': 'عند إلغاء الحجز أو تحرير المبلغ المحجوز.',
     'wa.a_payment_success': 'نجاح الدفع',
-    'wa.w_payment_success': 'فقط بعد وصول تأكيد فعلي من بوابة الدفع.',
+    'wa.w_payment_success':
+      'فقط بعد وصول تأكيد فعلي من بوابة الدفع. وهي أيضًا البديل لرسالة «نجاح الدفع + الفاتورة PDF» إذا لم تجهز الفاتورة خلال 10 دقائق (أو تجاوزت 5 ميجابايت). يصل العميل إحدى الرسالتين فقط، لا الاثنتان.',
+    'wa.a_payment_invoice': 'نجاح الدفع + الفاتورة PDF',
+    'wa.w_payment_invoice':
+      'تحل محل «نجاح الدفع» عند جاهزية ملف الفاتورة (عادةً بعد الدفع بثوانٍ؛ الانتظار حتى 10 دقائق). تحتاج قالبًا معتمدًا برأس من نوع مستند DOCUMENT (فئة Utility) لكل لغة — {invoice} رقم الفاتورة، ويُرفق الملف باسم Bali-Trips-Invoice-<الرقم>.pdf. إن لم يُدخل رقم قالب للغة العميل تُرسل «نجاح الدفع» بدلًا منها.',
     'wa.a_payment_incomplete': 'عدم إكمال الدفع',
     'wa.w_payment_incomplete': 'بعد مدة محددة من بقاء الطلب دون دفع (افتراضيًا ساعة).',
     'wa.a_payment_failed': 'فشل الدفع',

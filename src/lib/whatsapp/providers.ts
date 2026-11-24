@@ -20,6 +20,22 @@ export interface OutgoingMessage {
   /** Mazbot template id, or Meta template name. Null = plain text. */
   template: string | null
   params: string[]
+  /**
+   * A PDF for the template's DOCUMENT header (the invoice). Only with a
+   * template that HAS such a header: WhatsApp rejects a header parameter the
+   * template does not declare, and a declared one that is missing.
+   */
+  document?: OutgoingDocument | null
+}
+
+export interface OutgoingDocument {
+  bytes: Uint8Array
+  /** What the customer sees, e.g. `Bali-Trips-Invoice-BT-INV-2026-00042.pdf`. */
+  filename: string
+}
+
+function pdfBlob(document: OutgoingDocument): Blob {
+  return new Blob([new Uint8Array(document.bytes)], { type: 'application/pdf' })
 }
 
 export type SendResult =
@@ -87,6 +103,24 @@ export function mazbotTemplatePayload(message: OutgoingMessage) {
   }
 }
 
+/**
+ * The same request as multipart/form-data, for a template with a header file
+ * (Mazbot: `document` = header PDF, max 5 MB; arrays in bracket notation,
+ * 1-based: `body_matchs[1]=input_value`, `body_values[1]=…`). Mazbot has no
+ * filename field — the customer sees the uploaded file's own name.
+ */
+export function mazbotTemplateForm(message: OutgoingMessage & { document: OutgoingDocument }) {
+  const form = new FormData()
+  form.append('template_id', String(Number(message.template)))
+  form.append('mobile', message.to)
+  message.params.forEach((value, index) => {
+    form.append(`body_matchs[${index + 1}]`, 'input_value')
+    form.append(`body_values[${index + 1}]`, value)
+  })
+  form.append('document', pdfBlob(message.document), message.document.filename)
+  return form
+}
+
 export function createMazbotProvider(
   creds: ResolvedCredentials,
   fetchImpl: Fetch = fetch,
@@ -112,24 +146,37 @@ export function createMazbotProvider(
     return token
   }
 
-  async function post(path: string, payload: object, retried = false): Promise<SendResult> {
+  /** JSON, or multipart when a header file is sent (fetch sets the boundary). */
+  async function post(
+    path: string,
+    payload: object | FormData,
+    retried = false,
+  ): Promise<SendResult> {
     let token: string | null
     try {
       token = await login()
     } catch (error) {
       return { ok: false, retryable: false, error: (error as Error).message }
     }
+    const multipart = payload instanceof FormData
     const headers: Record<string, string> = {
       apikey: apiKey,
       Accept: 'application/json',
-      'Content-Type': 'application/json',
+      ...(multipart ? {} : { 'Content-Type': 'application/json' }),
     }
     if (token) headers.Authorization = `Bearer ${token}`
-    const response = await fetchImpl(`${base}${path}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-    })
+    let response: Response
+    try {
+      response = await fetchImpl(`${base}${path}`, {
+        method: 'POST',
+        headers,
+        body: multipart ? payload : JSON.stringify(payload),
+        // Mazbot may wait ~60 s for WhatsApp's answer.
+        signal: AbortSignal.timeout(65_000),
+      })
+    } catch (error) {
+      return { ok: false, retryable: true, error: `Mazbot unreachable: ${String(error)}` }
+    }
     const body: unknown = await response.json().catch(() => null)
     if (response.status === 401 && token && !retried) {
       resetMazbotToken()
@@ -159,7 +206,16 @@ export function createMazbotProvider(
         if (!/^\d+$/.test(message.template)) {
           return { ok: false, retryable: false, error: 'Mazbot template id must be a number' }
         }
+        if (message.document) {
+          return post(
+            '/whatsapp/send-template',
+            mazbotTemplateForm({ ...message, document: message.document }),
+          )
+        }
         return post('/whatsapp/send-template', mazbotTemplatePayload(message))
+      }
+      if (message.document) {
+        return { ok: false, retryable: false, error: 'A document needs an approved template' }
       }
       return post('/send-message', { mobile: message.to, message: message.text })
     },
@@ -174,45 +230,103 @@ class LoginError extends Error {
 
 const GRAPH = 'https://graph.facebook.com/v20.0'
 
+/** The template message; `mediaId` = an uploaded header document. */
+export function metaTemplatePayload(
+  message: OutgoingMessage,
+  media: { id: string; filename: string } | null = null,
+) {
+  if (message.template === null) {
+    return {
+      messaging_product: 'whatsapp',
+      to: message.to,
+      type: 'text',
+      text: { body: message.text },
+    }
+  }
+  return {
+    messaging_product: 'whatsapp',
+    to: message.to,
+    type: 'template',
+    template: {
+      name: message.template,
+      language: { code: message.locale },
+      components: [
+        ...(media === null
+          ? []
+          : [
+              {
+                type: 'header',
+                parameters: [
+                  { type: 'document', document: { id: media.id, filename: media.filename } },
+                ],
+              },
+            ]),
+        {
+          type: 'body',
+          parameters: message.params.map((text) => ({ type: 'text', text })),
+        },
+      ],
+    },
+  }
+}
+
+/** `POST /{phone-number-id}/media` (multipart): the PDF, for a header document. */
+export function metaMediaForm(document: OutgoingDocument): FormData {
+  const form = new FormData()
+  form.append('messaging_product', 'whatsapp')
+  form.append('type', 'application/pdf')
+  form.append('file', pdfBlob(document), document.filename)
+  return form
+}
+
 export function createMetaProvider(
   creds: ResolvedCredentials,
   fetchImpl: Fetch = fetch,
 ): WhatsappProvider {
   const token = process.env.WHATSAPP_TOKEN?.trim() || creds.apiKey || ''
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || creds.senderNumber || ''
+
+  async function upload(
+    document: OutgoingDocument,
+  ): Promise<{ ok: true; id: string } | { ok: false; retryable: boolean; error: string }> {
+    const response = await fetchImpl(`${GRAPH}/${encodeURIComponent(phoneNumberId)}/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: metaMediaForm(document),
+    })
+    const body = (await response.json().catch(() => ({}))) as {
+      id?: string
+      error?: { message?: string }
+    }
+    if (!response.ok || typeof body.id !== 'string' || body.id === '') {
+      return {
+        ok: false,
+        retryable: retryableStatus(response.status),
+        error: `Meta media upload: ${body.error?.message ?? `HTTP ${response.status}`}`,
+      }
+    }
+    return { ok: true, id: body.id }
+  }
+
   return {
     name: 'meta',
     async send(message) {
       if (!token || !phoneNumberId) {
         return { ok: false, retryable: false, error: 'Meta token / phone number id not set' }
       }
-      const payload =
-        message.template !== null
-          ? {
-              messaging_product: 'whatsapp',
-              to: message.to,
-              type: 'template',
-              template: {
-                name: message.template,
-                language: { code: message.locale },
-                components: [
-                  {
-                    type: 'body',
-                    parameters: message.params.map((text) => ({ type: 'text', text })),
-                  },
-                ],
-              },
-            }
-          : {
-              messaging_product: 'whatsapp',
-              to: message.to,
-              type: 'text',
-              text: { body: message.text },
-            }
+      let media: { id: string; filename: string } | null = null
+      if (message.document) {
+        if (message.template === null) {
+          return { ok: false, retryable: false, error: 'A document needs an approved template' }
+        }
+        const uploaded = await upload(message.document)
+        if (!uploaded.ok) return uploaded
+        media = { id: uploaded.id, filename: message.document.filename }
+      }
       const response = await fetchImpl(`${GRAPH}/${encodeURIComponent(phoneNumberId)}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(metaTemplatePayload(message, media)),
       })
       const body = (await response.json().catch(() => ({}))) as {
         messages?: { id?: string }[]
