@@ -41,6 +41,7 @@ const STATIC_PATHS = [
   '/services',
   '/map',
   '/activities',
+  '/nusa-penida',
   '/events',
   '/itineraries',
   ...(FEATURES.driver ? ['/driver'] : []),
