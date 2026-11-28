@@ -21,6 +21,7 @@ import { defaultLocale, isLocale, locales, type Locale } from '@/i18n/config'
 import { getPathname } from '@/i18n/routing'
 import { parseBudgetTier } from '@/lib/budget-tier'
 import { pick } from '@/lib/content/localize'
+import { isNusaPenida, NUSA_PENIDA_PATH } from '@/lib/content/nusa-penida'
 import { listActivities, listCategories } from '@/lib/content/queries'
 import { ENTITY_PATHS } from '@/lib/content/types'
 import { FEATURES } from '@/lib/features'
@@ -154,6 +155,24 @@ export default async function ActivitiesPage({ params, searchParams }: PageProps
           </ol>
         </div>
       </section>
+
+      {activities.some(isNusaPenida) && (
+        <section className="sec-tight" aria-labelledby="np-teaser">
+          <div className="wrap">
+            <div className="panel row between np-teaser">
+              <div className="stack" style={{ gap: 6, maxWidth: 620 }}>
+                <b id="np-teaser" className="h3" style={{ color: 'var(--forest)' }}>
+                  {t('np_teaser_t')}
+                </b>
+                <span className="muted">{t('np_teaser_b')}</span>
+              </div>
+              <LinkButton href={NUSA_PENIDA_PATH} variant="forest">
+                {t('np_teaser_go')}
+              </LinkButton>
+            </div>
+          </div>
+        </section>
+      )}
 
       <ActivitiesExplorer
         activities={activities}
