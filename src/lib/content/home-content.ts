@@ -61,9 +61,9 @@ export const ABOUT_DOWN = [
 ] as const
 export const CUSTOM_TRIP_FALLBACK = '/brand/custom-trip-team.webp'
 export const HERO_POSTERS: Record<string, string> = {
-  penida: '/brand/hero/hero-penida.webp',
-  rice: '/brand/hero/hero-rice.webp',
-  uluwatu: '/brand/hero/hero-uluwatu.webp',
+  kelingking: '/brand/hero/hero-kelingking.webp',
+  boat: '/brand/hero/hero-boat.webp',
+  coast: '/brand/hero/hero-coast.webp',
 }
 
 export interface HomeSectionDef {
@@ -85,12 +85,12 @@ export const HOME_SECTIONS: readonly HomeSectionDef[] = [
       'hv4_search_ph',
       'hv4_search_btn',
       'hv3_cta_plan',
-      'hv4_pl_penida',
-      'hv4_pl_penida_s',
-      'hv4_pl_rice',
-      'hv4_pl_rice_s',
-      'hv4_pl_uluwatu',
-      'hv4_pl_uluwatu_s',
+      'hv4_pl_kelingking',
+      'hv4_pl_kelingking_s',
+      'hv4_pl_boat',
+      'hv4_pl_boat_s',
+      'hv4_pl_coast',
+      'hv4_pl_coast_s',
       'hv3_meta_title',
       'hv3_hero_lede',
     ],
