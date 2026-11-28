@@ -21,7 +21,7 @@ describe('rungSrcSet', () => {
     expect(rungSrcSet(`/media/${id}/320.webp`)).toBeNull()
     expect(rungSrcSet(`/media/${id}/1280.avif`)).toBeNull()
     expect(rungSrcSet(`/media/${id}/1280.webp?img-retry=1`)).toBeNull()
-    expect(rungSrcSet('/brand/hero/hero-penida.webp')).toBeNull()
+    expect(rungSrcSet('/brand/hero/hero-kelingking.webp')).toBeNull()
     expect(rungSrcSet(null)).toBeNull()
   })
 })
